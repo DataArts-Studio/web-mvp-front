@@ -1,34 +1,33 @@
 {
+  /* ─────────────────────────────────────────────────────
+   * 루트 TSConfig
+   * - 공통 설정(경로 alias 등)만 관리
+   * - app / server TSConfig를 project reference로 연결
+   * - 실제 타입 체크는 tsconfig.app.json / tsconfig.server.json에서 수행
+   * ────────────────────────────────────────────────────*/
+  "files": [],
+  /* ─────────────────────────────────────────────────────
+   * 프로젝트 참조(Project References)
+   * - TypeScript가 여러 TSConfig를 독립 프로젝트로 인식하도록 함
+   * - Next.js 클라이언트(app) / 서버(server) 환경을 분리할 수 있음
+   * ────────────────────────────────────────────────────*/
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.server.json" }],
+
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    /* ─────────────────────────────────────────────────────
+     * baseUrl
+     * - paths의 기준 경로를 정의
+     * - "." = 프로젝트 루트 경로
+     * ────────────────────────────────────────────────────*/
+    "baseUrl": ".",
+    /* ─────────────────────────────────────────────────────
+     * paths
+     * - 절대경로 import alias 설정
+     * - "@/something" -> "src/something" 으로 매핑
+     * - Webpack / Next.js / TS 모두 동일하게 맞춰야 편함
+     * ────────────────────────────────────────────────────*/
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["src/*"]
     }
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
-  "exclude": ["node_modules"]
+  }
 }
