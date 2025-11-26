@@ -2,7 +2,8 @@ import type { StorybookConfig } from '@storybook/nextjs';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import path from 'path';
 
-const ROOT = process.cwd();
+// const ROOT = process.cwd();
+const ROOT = path.resolve(__dirname, '..');
 
 const config: StorybookConfig = {
   stories: ['../src/stories/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -19,16 +20,6 @@ const config: StorybookConfig = {
   // webpackFinal 설정 추가
   webpackFinal: async (config) => {
     if (!config.resolve) config.resolve = {};
-    /*config.resolve.alias = {
-      ...(config.resolve.alias || {}),
-      '@': path.resolve(ROOT, 'src'),
-      '@app': path.resolve(ROOT, 'src/app'),
-      '@entities': path.resolve(ROOT, 'src/entities'),
-      '@features': path.resolve(ROOT, 'src/features'),
-      '@shared': path.resolve(ROOT, 'src/shared'),
-      '@widgets': path.resolve(ROOT, 'src/widgets'),
-      '@stories': path.resolve(ROOT, 'src/stories'),
-    };*/
     config.resolve.plugins = [
       ...(config.resolve.plugins || []),
       new TsconfigPathsPlugin({
@@ -41,6 +32,7 @@ const config: StorybookConfig = {
   },
 
   // 크로스 플랫폼 호환 (\\ -> /)
-  staticDirs: ['../public'],
+  // staticDirs 경로를 __dirname 기준으로 절대 경로로 변경
+  staticDirs: [path.resolve(__dirname, '../public')],
 };
 export default config;
