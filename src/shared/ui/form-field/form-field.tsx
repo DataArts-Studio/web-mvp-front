@@ -33,7 +33,7 @@ const useFormFieldContext = () => {
 // ------------------------------------------------------------------
 // Root Component (Provider)
 // ------------------------------------------------------------------
-interface FormFieldRootProps {
+interface FormFieldRootProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   error?: FormFieldError;
   name?: string;

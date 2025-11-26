@@ -1,5 +1,8 @@
 import React from 'react';
-
+import {
+  VisuallyHidden,
+  type VisuallyHiddenProps,
+} from '@/shared/ui/visually-hidden';
 import type { Meta, StoryObj } from '@storybook/react';
 
 // ------------------------------------------------------------------

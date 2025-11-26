@@ -17,7 +17,7 @@ type FormFieldRootOmittedProps = Omit<
   'children' | 'ref' | 'className'
 >;
 
-const meta: Meta<FormFieldRootOmittedProps> = {
+const meta: Meta<typeof FormField.Root> = {
   title: 'Primitive Components/FormField',
   component: FormField.Root,
   parameters: {
@@ -64,7 +64,7 @@ const meta: Meta<FormFieldRootOmittedProps> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<FormFieldRootOmittedProps>;
 
 // ------------------------------------------------------------------
 // 재사용 가능한 기본 폼 컨트롤 래퍼 컴포넌트 (v. React 19)
@@ -74,39 +74,39 @@ type Story = StoryObj<typeof meta>;
  * Storybook에서 사용될 실제 Input 컴포넌트입니다.
  * React 19의 동작 방식을 가정하고 forwardRef 없이 ref를 인자로 받습니다.
  */
-const StoryInput = (
-  { ...props }: React.ComponentProps<'input'>,
-  ref: React.Ref<HTMLInputElement> // ref를 두 번째 인자로 받음
-) => {
-  const { id, labelId, descriptionId, messageId, invalid, disabled, name } = useFormField();
+const StoryInput = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
+  (props, ref) => {
+    // useFormField 훅을 사용하여 FormField Context에서 필요한 ID와 상태를 가져옵니다.
+    const { id, labelId, descriptionId, messageId, invalid, disabled, name } = useFormField();
 
-  const ariaDescribedBy = invalid
-    ? `${descriptionId} ${messageId}`
-    : descriptionId;
+    const ariaDescribedBy = invalid
+      ? `${descriptionId} ${messageId}`
+      : descriptionId;
 
-  return (
-    <input
-      ref={ref} // ref를 직접 사용
-      type="text"
-      id={id}
-      name={name}
-      aria-labelledby={labelId}
-      aria-describedby={ariaDescribedBy}
-      aria-invalid={invalid}
-      disabled={disabled}
-      placeholder="값을 입력하세요"
-      style={{
-        padding: '8px 12px',
-        border: `1px solid ${invalid ? 'red' : disabled ? '#ccc' : '#333'}`,
-        borderRadius: '4px',
-        width: '300px',
-        opacity: disabled ? 0.6 : 1,
-        backgroundColor: disabled ? '#f3f4f6' : 'white',
-      }}
-      {...props}
-    />
-  );
-};
+    return (
+      <input
+        ref={ref}
+        type="text"
+        id={id} // FormFieldControl의 ID와 동일하게 설정 (asChild를 사용하지 않는 경우)
+        name={name}
+        aria-labelledby={labelId}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={invalid}
+        disabled={disabled}
+        placeholder="값을 입력하세요"
+        style={{
+          padding: '8px 12px',
+          border: `1px solid ${invalid ? 'red' : disabled ? '#ccc' : '#333'}`,
+          borderRadius: '4px',
+          width: '300px',
+          opacity: disabled ? 0.6 : 1,
+        }}
+        {...props}
+      />
+    );
+  }
+);
+StoryInput.displayName = 'StoryInput';
 
 /**
  * 기본 렌더링 함수입니다.
