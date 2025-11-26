@@ -15,13 +15,17 @@ const config: StorybookConfig = {
 
   // webpackFinal 설정 추가
   webpackFinal: async (config) => {
-    if (config.resolve) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        // process.cwd() -> 프로젝트 루트
-        '@': path.resolve(process.cwd(), 'src'),
-      };
-    }
+    if (!config.resolve) config.resolve = {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@': path.resolve(__dirname, '../src'),
+      '@app': path.resolve(__dirname, '../src/app'),
+      '@entities': path.resolve(__dirname, '../src/entities'),
+      '@features': path.resolve(__dirname, '../src/features'),
+      '@shared': path.resolve(__dirname, '../src/shared'),
+      '@widgets': path.resolve(__dirname, '../src/widgets'),
+      '@stories': path.resolve(__dirname, '../src/stories'),
+    };
 
     return config;
   },
