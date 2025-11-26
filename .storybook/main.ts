@@ -18,13 +18,13 @@ const config: StorybookConfig = {
     if (!config.resolve) config.resolve = {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      '@': path.resolve(__dirname, '../src'),
-      '@app': path.resolve(__dirname, '../src/app'),
-      '@entities': path.resolve(__dirname, '../src/entities'),
-      '@features': path.resolve(__dirname, '../src/features'),
-      '@shared': path.resolve(__dirname, '../src/shared'),
-      '@widgets': path.resolve(__dirname, '../src/widgets'),
-      '@stories': path.resolve(__dirname, '../src/stories'),
+      '@': path.resolve(process.cwd(), '../src'),
+      '@app': path.resolve(process.cwd(), '../src/app'),
+      '@entities': path.resolve(process.cwd(), '../src/entities'),
+      '@features': path.resolve(process.cwd(), '../src/features'),
+      '@shared': path.resolve(process.cwd(), '../src/shared'),
+      '@widgets': path.resolve(process.cwd(), '../src/widgets'),
+      '@stories': path.resolve(process.cwd(), '../src/stories'),
     };
 
     return config;
