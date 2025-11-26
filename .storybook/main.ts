@@ -2,8 +2,8 @@ import type { StorybookConfig } from '@storybook/nextjs';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import path from 'path';
 
-// const ROOT = process.cwd();
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = process.cwd();
+// const ROOT = path.resolve(__dirname, '..');
 
 const config: StorybookConfig = {
   stories: ['../src/stories/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -32,7 +32,7 @@ const config: StorybookConfig = {
   },
 
   // 크로스 플랫폼 호환 (\\ -> /)
-  // staticDirs 경로를 __dirname 기준으로 절대 경로로 변경
-  staticDirs: [path.resolve(__dirname, '../public')],
+  staticDirs: [path.resolve(process.cwd(), 'public')],
 };
+
 export default config;
