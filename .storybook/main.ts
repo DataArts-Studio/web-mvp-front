@@ -1,6 +1,6 @@
 import type { StorybookConfig } from '@storybook/nextjs';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
-// import path from 'path';
+import path from 'path';
 
 // const ROOT = process.cwd();
 
