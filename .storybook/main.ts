@@ -2,7 +2,7 @@ import type { StorybookConfig } from '@storybook/nextjs';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import path from 'path';
 
-// const ROOT = process.cwd();
+const ROOT = process.cwd();
 
 const config: StorybookConfig = {
   stories: ['../src/stories/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -32,7 +32,7 @@ const config: StorybookConfig = {
     config.resolve.plugins = [
       ...(config.resolve.plugins || []),
       new TsconfigPathsPlugin({
-        configFile: path.resolve(__dirname, './tsconfig.json'),
+        configFile: path.resolve(ROOT, './tsconfig.json'),
         extensions: config.resolve.extensions,
       }),
     ];
