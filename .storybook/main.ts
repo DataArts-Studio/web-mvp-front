@@ -1,5 +1,8 @@
 import type { StorybookConfig } from '@storybook/nextjs';
-import path from 'path';
+import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
+// import path from 'path';
+
+// const ROOT = process.cwd();
 
 const config: StorybookConfig = {
   stories: ['../src/stories/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -16,16 +19,22 @@ const config: StorybookConfig = {
   // webpackFinal 설정 추가
   webpackFinal: async (config) => {
     if (!config.resolve) config.resolve = {};
-    config.resolve.alias = {
+    /*config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      '@': path.resolve(process.cwd(), '../src'),
-      '@app': path.resolve(process.cwd(), '../src/app'),
-      '@entities': path.resolve(process.cwd(), '../src/entities'),
-      '@features': path.resolve(process.cwd(), '../src/features'),
-      '@shared': path.resolve(process.cwd(), '../src/shared'),
-      '@widgets': path.resolve(process.cwd(), '../src/widgets'),
-      '@stories': path.resolve(process.cwd(), '../src/stories'),
-    };
+      '@': path.resolve(ROOT, 'src'),
+      '@app': path.resolve(ROOT, 'src/app'),
+      '@entities': path.resolve(ROOT, 'src/entities'),
+      '@features': path.resolve(ROOT, 'src/features'),
+      '@shared': path.resolve(ROOT, 'src/shared'),
+      '@widgets': path.resolve(ROOT, 'src/widgets'),
+      '@stories': path.resolve(ROOT, 'src/stories'),
+    };*/
+    config.resolve.plugins = [
+      ...(config.resolve.plugins || []),
+      new TsconfigPathsPlugin({
+        extensions: config.resolve.extensions,
+      }),
+    ];
 
     return config;
   },
