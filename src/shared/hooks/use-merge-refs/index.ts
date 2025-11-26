@@ -1,0 +1,1 @@
+export { useMergeRefs } from '@/shared/hooks/use-merge-refs/use-merge-refs';
