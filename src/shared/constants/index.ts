@@ -1,6 +1,11 @@
-export { ROUTES } from '@/shared/constants/routes';
-export { HTTP } from '@/shared/constants/http';
-export { ENV } from '@/shared/constants/env';
-export { REGEX } from '@/shared/constants/regex';
-export { QUERY_KEYS } from '@/shared/constants/query-keys';
-export { UI } from '@/shared/constants/ui';
+// ARIA (a11y)
+export { ARIA, ROLE, FOCUS, KEYBOARD } from '@/shared/constants/a11y';
+
+// INFRA
+export { API, HTTP, ENV } from '@/shared/constants/infra';
+
+// CORE
+export { FORMAT, REGEX, UI, ROUTES, QUERY_KEYS } from '@/shared/constants/core';
+
+// SEO
+export { SEO } from '@/shared/constants/seo';

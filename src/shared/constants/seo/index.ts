@@ -1,1 +1,1 @@
-export * from '@/shared/constants/seo/seo';
+export { SEO } from '@/shared/constants/seo/seo';

@@ -1,65 +1,136 @@
-import Image from "next/image";
+'use client';
+import React from 'react';
+
+import Image from 'next/image';
+import Link from 'next/link';
+
+import { SEO } from '@/shared/constants';
+import { Checkbox, Container } from '@/shared/ui';
+import type { CheckedState } from '@/shared/ui';
 
 export default function Home() {
+  /* Footer Fn - TODO: 추후 분리 예정 */
+  const currentYear = new Date().getFullYear();
+  const copyright = SEO.BRAND.COPYRIGHT.replace('testea.', `${currentYear} ${SEO.BRAND.NAME}.`);
+
+  /* Private Mode 활성화 여부 - TODO: 추후 리팩토링 예정 */
+  const [isPrivateMode, setIsPrivateMode] = React.useState(false);
+  const handlePrivateModeChange = (checkedState: CheckedState) => {
+    // Checkbox 컴포넌트는 boolean 또는 'indeterminate'를 반환하므로,
+    // 여기서 boolean 값만 사용합니다.
+    if (typeof checkedState === 'boolean') {
+      setIsPrivateMode(checkedState);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <Container className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans text-white dark:bg-black">
+      {/* Header - TODO: 추후 분리 예정 */}
+      <header className="fixed top-0 right-0 left-0 z-10 flex h-16 items-center justify-between px-6">
+        <div className="flex items-center space-x-2 text-xl font-bold text-teal-400">
+          <Image src="/next.svg" alt="Testeo Logo" width={20} height={20} className="invert" />
+          <span>Testeo</span>
+        </div>
+        {/* 임시 상태 표시등 (와이어프레임 오른쪽 상단) */}
+        <div className="h-4 w-4 rounded-full bg-green-500 shadow-md shadow-green-500/50"></div>
+      </header>
+
+      {/* Main Content - TODO: 추후 분리 예정 */}
+      <main className="flex w-full max-w-5xl flex-grow flex-col items-center justify-start px-4 pt-32 pb-20 text-center">
+        {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
+        <div className="text-left">
+          <h1 className="max-w-4xl text-left text-5xl leading-snug font-extrabold tracking-tighter md:text-7xl">
+            <span className="text-teal-400">테스트케이스 작성</span>,
+            <br /> 이제 단 5분이면 끝납니다.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-6 max-w-4xl text-left text-xl text-neutral-400">
+            Testea는 복잡한 테스트 관리 프로세스를 단순화하여, 개발 주기 초기에 품질을 확보할 수
+            있도록 돕는{' '}
+            <span className="font-medium text-teal-300">테스트 자동화 및 관리 도구</span>입니다.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {/* 입력 폼 (와이어프레임의 Enter your website's url 부분) */}
+        <section id="create-project" className="mt-16 w-full max-w-2xl text-center">
+          <div className="mx-auto w-full max-w-lg p-8">
+            {/* 입력 폼 타이틀 및 서브타이틀 */}
+            <div className="mb-10 flex flex-col items-center gap-2 text-center">
+              <h2 className="text-3xl font-extrabold tracking-tight text-teal-400">
+                Testify Your Website!
+              </h2>
+              <p className="mt-2 text-base text-neutral-400">
+                프로젝트 이름과 옵션을 설정하고 테스트 환경을 만드세요.
+              </p>
+            </div>
+            <div className="flex w-full flex-col items-start gap-4">
+              {/* 프로젝트 이름 입력 */}
+              <label htmlFor="projectName" className="sr-only">
+                프로젝트 이름 (Project Name)
+              </label>{' '}
+              {/* 시각적으로 숨김 */}
+              <input
+                id="projectName"
+                type="text"
+                placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
+                className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
+              />
+              {/* Private Mode 체크박스 */}
+              <Checkbox.Root
+                id="privateModeCheckbox"
+                checked={isPrivateMode}
+                onCheckedChange={handlePrivateModeChange}
+                className="group mt-2 flex cursor-pointer items-center"
+              >
+                <Checkbox.Indicator className="flex h-4 w-4 items-center justify-center rounded-md border border-neutral-600 bg-neutral-700 transition-colors duration-150 data-[state=checked]:border-teal-500 data-[state=checked]:bg-teal-500" />
+                <span className="ml-2 text-sm text-neutral-300 select-none">
+                  Private Mode 활성화 (식별번호/비밀번호 설정)
+                </span>
+              </Checkbox.Root>
+              {/* Private Mode 입력 필드 */}
+              {isPrivateMode && (
+                <div className="mt-4 flex w-full flex-col gap-4 transition-all duration-300 ease-in-out">
+                  <label htmlFor="identifier" className="sr-only">
+                    프로젝트 식별번호 (Identifier/Password)
+                  </label>{' '}
+                  {/* 시각적으로 숨김 */}
+                  <input
+                    id="identifier"
+                    type="password"
+                    placeholder="식별번호를 입력하세요"
+                    className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
+                  />
+                  <label htmlFor="identifierConfirm" className="sr-only">
+                    식별번호 재확인
+                  </label>{' '}
+                  {/* 시각적으로 숨김 */}
+                  <input
+                    id="identifierConfirm"
+                    type="password"
+                    placeholder="식별번호를 다시 입력하세요"
+                    className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              )}
+              {/* 프로젝트 생성 버튼 */}
+              <button className="mt-4 h-12 w-full rounded-lg bg-teal-500 text-lg font-semibold text-black transition-colors hover:bg-teal-400">
+                프로젝트 생성 시작
+              </button>
+            </div>
+          </div>
+        </section>
       </main>
-    </div>
+
+      {/* Footer - TODO: 추후 분리 예정 */}
+      <footer className="fixed right-0 bottom-0 left-0 border-t border-neutral-800 py-4 text-center text-xs text-neutral-500">
+        {copyright} |
+        <Link href="#" className="ml-2 hover:text-teal-400">
+          Privacy
+        </Link>{' '}
+        |
+        <Link href="#" className="ml-2 hover:text-teal-400">
+          Terms
+        </Link>
+      </footer>
+    </Container>
   );
 }
