@@ -2,6 +2,9 @@
 /* https://tailwindcss.com/ */
 @import 'tailwindcss';
 
+/* Font import(Pretendard CDN) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css");
+
 /* theme variables */
 /* 커스텀 폰트, 컬러 변수 */
 /* https://tailwindcss.com/docs/theme */
@@ -9,43 +12,102 @@
 /* DesignSystem */
 /* https://www.figma.com/design/FQLscVYmrqj3fewEBqqeS9/%EC%A0%9C%EB%AA%A9-%EC%97%86%EC%9D%8C?node-id=1-7&t=EBfzP1d3M6MYU6Pj-1 */
 @theme {
+  /* ========================================= */
+  /* 폰트 정의 */
+  /* ========================================= */
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+
+  /* ========================================= */
+  /* 텍스트 사이즈 (Font Size) 정의 */
+  /* 사용법: text-title, text-h1, text-body1 ... */
+  /* ========================================= */
+  --text-title: 32px;
+  --text-h1: 24px;
+  --text-h2: 20px;
+  --text-body1: 18px;
+  --text-body2: 16px;
+  --text-label: 14px;
+  --text-caption: 12px;
+
+  /* ========================================= */
+  /* 행간 (Line Height) 정의 */
+  /* 디자인 시스템의 %를 소수점으로 변환 */
+  /* ========================================= */
+  --leading-130: 1.3;  /* Caption */
+  --leading-140: 1.4;  /* Title, Headline1 */
+  --leading-160: 1.6;  /* Headline2, Body, Label */
+
+  /* ========================================= */
+  /* 자간 (Letter Spacing) 정의 */
+  /* -4% -> -0.04em */
+  /* ========================================= */
+  --tracking-tightest: -0.04em; /* 대부분의 텍스트 */
+  --tracking-normal: 0em;       /* Caption */
+
+  /* ========================================= */
   /* Text Colors */
+  /* ========================================= */
   --color-text-1: #FFFFFF;
   --color-text-2: rgb(255 255 255 / 0.7); /* 70% */
   --color-text-3: rgb(255 255 255 / 0.4); /* 40% */
   --color-text-4: rgb(255 255 255 / 0.2); /* 20% */
 
+  /* ========================================= */
   /* Brand Colors */
+  /* ========================================= */
   --color-primary: #0BB57F;
   --color-secondary: #007351;
 
+  /* ========================================= */
   /* Status Colors */
+  /* ========================================= */
   --color-inactive: rgb(255 255 255 / 0.4);
   --color-line-1: #8F96A3;
   --color-line-2: #2B2D31;
 
+  /* ========================================= */
   /* System Notification */
+  /* ========================================= */
   --color-system-red: #FC4141;
   --color-system-blue: #EAF9FF;
   --color-system-green: #ECFBF6;
 
+  /* ========================================= */
   /* Background Colors (Dark Mode Base) */
+  /* ========================================= */
   --color-bg-1: #0C0D0E;
   --color-bg-2: #18191B;
   --color-bg-3: #1E2024;
   --color-bg-4: #2B2D31;
   --color-bg-inactive: #1E2024;
 
+  /* ========================================= */
   /* Radius (Border Radius) */
   /* 사용법: rounded-0, rounded-1, rounded-2 ... */
+  /* ========================================= */
   --radius-0: 0px;
   --radius-1: 2px;
   --radius-2: 4px;
   --radius-3: 8px;
   --radius-4: 12px;
+
+  /* ========================================= */
+  /* [Shadow] 박스 쉐도우 설정 */
+  /* ========================================= */
+  /* 사용법: shadow-1, shadow-2 ... */
+  /* Shadow 1 (아주 얕은 깊이) */
+  --shadow-1: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  /* Shadow 2 (보통 카드 UI) */
+  --shadow-2: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  /* Shadow 3 (모달, 팝업 등 강조) */
+  --shadow-3: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  /* Shadow 4 (가장 높은 깊이) */
+  --shadow-4: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
+/* ========================================= */
 /* HTML Elements */
+/* ========================================= */
 @layer base {
   /* 기본 레이아웃 및 렌더링 설정 */
   html, body {
@@ -62,7 +124,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* 기본 텍스트, 배경색 (테마 변수 연결 가능) */
-    @apply bg-white text-slate-900;
+    @apply bg-bg-1 text-text-1 antialiased;
   }
 
   /* [tailwind ver] modern css reset 2025 */
@@ -94,6 +156,68 @@
   input, textarea, select {
     /* 모바일 기본 폰트 사이즈 강제 */
     font-size: 16px;
+  }
+}
+
+/* ========================================= */
+/* Typography Utility Components */
+/* 디자인 시스템 세트 메뉴 구현 */
+/* ========================================= */
+@layer utilities {
+  /* Title (32px, 140%, -4%) */
+  .typo-title-heading {
+    @apply text-title font-bold leading-140 tracking-tight-4;
+  }
+  .typo-title-normal {
+    @apply text-title font-regular leading-140 tracking-tight-4;
+  }
+
+  /* Headline 1 (24px, 140%, -4%) */
+  .typo-h1-heading {
+    @apply text-h1 font-bold leading-140 tracking-tight-4;
+  }
+  .typo-h1-normal {
+    @apply text-h1 font-regular leading-140 tracking-tight-4;
+  }
+
+  /* Headline 2 (20px, 160%, -4%) */
+  .typo-h2-heading {
+    @apply text-h2 font-semibold leading-160 tracking-tight-4;
+  }
+  .typo-h2-normal {
+    @apply text-h2 font-regular leading-160 tracking-tight-4;
+  }
+
+  /* Body 1 (18px, 160%, -4%) */
+  .typo-body1-heading {
+    @apply text-body1 font-semibold leading-160 tracking-tight-4;
+  }
+  .typo-body1-normal {
+    @apply text-body1 font-regular leading-160 tracking-tight-4;
+  }
+
+  /* Body 2 (16px, 160%, -4%) */
+  .typo-body2-heading {
+    @apply text-body2 font-semibold leading-160 tracking-tight-4;
+  }
+  .typo-body2-normal {
+    @apply text-body2 font-regular leading-160 tracking-tight-4;
+  }
+
+  /* Label (14px, 160%, -4%) */
+  .typo-label-heading {
+    @apply text-label font-semibold leading-160 tracking-tight-4;
+  }
+  .typo-label-normal {
+    @apply text-label font-regular leading-160 tracking-tight-4;
+  }
+
+  /* Caption (12px, 130%, 0%) - 자간 다름 주의 */
+  .typo-caption-heading {
+    @apply text-caption font-medium leading-130 tracking-zero;
+  }
+  .typo-caption-normal {
+    @apply text-caption font-regular leading-130 tracking-zero;
   }
 }
 
