@@ -1,4 +1,4 @@
-import { ENV } from '@/shared/constants/env';
+import { ENV } from '@/shared/constants';
 
 const LIB_PREFIX = '[TEST]';
 const isDev = ENV.CONFIG.IS_DEV;
