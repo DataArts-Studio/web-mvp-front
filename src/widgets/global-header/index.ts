@@ -1,0 +1,1 @@
+export { GlobalHeader } from '@/widgets/global-header/global-header';

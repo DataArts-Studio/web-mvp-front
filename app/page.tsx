@@ -7,12 +7,10 @@ import Link from 'next/link';
 import { SEO } from '@/shared/constants';
 import { Checkbox, Container } from '@/shared/ui';
 import type { CheckedState } from '@/shared/ui';
+import { Footer } from '../src/widgets/footer';
+import { GlobalHeader } from '../src/widgets/global-header';
 
 export default function Home() {
-  /* Footer Fn - TODO: 추후 분리 예정 */
-  const currentYear = new Date().getFullYear();
-  const copyright = SEO.BRAND.COPYRIGHT.replace('testea.', `${currentYear} ${SEO.BRAND.NAME}.`);
-
   /* Private Mode 활성화 여부 - TODO: 추후 리팩토링 예정 */
   const [isPrivateMode, setIsPrivateMode] = React.useState(false);
   const handlePrivateModeChange = (checkedState: CheckedState) => {
@@ -25,16 +23,8 @@ export default function Home() {
 
   return (
     <Container className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans text-white dark:bg-black">
-      {/* Header - TODO: 추후 분리 예정 */}
-      <header className="fixed top-0 right-0 left-0 z-10 flex h-16 items-center justify-between px-6">
-        <div className="flex items-center space-x-2 text-xl font-bold text-teal-400">
-          <Image src="/next.svg" alt="Testeo Logo" width={20} height={20} className="invert" />
-          <span>Testeo</span>
-        </div>
-        {/* 임시 상태 표시등 (와이어프레임 오른쪽 상단) */}
-        <div className="h-4 w-4 rounded-full bg-green-500 shadow-md shadow-green-500/50"></div>
-      </header>
-
+      {/* Header */}
+      <GlobalHeader/>
       {/* Main Content - TODO: 추후 분리 예정 */}
       <main className="flex w-full max-w-5xl flex-grow flex-col items-center justify-start px-4 pt-32 pb-20 text-center">
         {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
@@ -119,18 +109,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-
-      {/* Footer - TODO: 추후 분리 예정 */}
-      <footer className="fixed right-0 bottom-0 left-0 border-t border-neutral-800 py-4 text-center text-xs text-neutral-500">
-        {copyright} |
-        <Link href="#" className="ml-2 hover:text-teal-400">
-          Privacy
-        </Link>{' '}
-        |
-        <Link href="#" className="ml-2 hover:text-teal-400">
-          Terms
-        </Link>
-      </footer>
+      <Footer/>
     </Container>
   );
 }
