@@ -1,19 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
+import { ENV } from '@/shared/constants';
 import { Database } from '@/shared/lib/supabase/schema';
-import { ENV } from '@/shared/constants/env';
+import { SUPABASE_AUTH_OPTIONS } from '@/shared/lib/supabase/config';
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = ENV.CLIENT.SUPABASE_URL!;
-const supabaseKey = ENV.CLIENT.SUPABASE_ANON_KEY!;
+export const createSupabaseClient = () => {
+  const supabaseUrl = ENV.CLIENT.SUPABASE_URL!;
+  const supabaseKey = ENV.CLIENT.SUPABASE_ANON_KEY!;
 
-// 환경변수 체크
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Supabase URL or Anon Key is missing in environment variables.');
-}
+  // 환경변수 체크
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase URL or Anon Key is missing in environment variables.');
+  }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-  },
-});
+  return createClient<Database>(supabaseUrl, supabaseKey, {
+    auth: SUPABASE_AUTH_OPTIONS,
+  });
+};

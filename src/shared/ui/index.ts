@@ -54,6 +54,9 @@ export type {
 export { Container } from '@/shared/ui/container';
 export type { ContainerProps } from '@/shared/ui/container';
 
+export { MainContainer} from '@/shared/ui/main-container';
+export type { MainContainerProps } from '@/shared/ui/main-container';
+
 // ------------------------------------------------------------------
 // Export SR
 // ------------------------------------------------------------------
