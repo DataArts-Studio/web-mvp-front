@@ -1,9 +1,7 @@
-const Page = () => {
-  return (
-    <div>
-      Page
-    </div>
-  );
+import { ProjectDashboardView } from '@/view';
+
+const ProjectDashboardRoute = () => {
+  return <ProjectDashboardView />;
 };
 
-export default Page;
+export default ProjectDashboardRoute;

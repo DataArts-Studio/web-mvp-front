@@ -1,12 +1,10 @@
 'use client';
 import React from 'react';
 
-import Image from 'next/image';
-import Link from 'next/link';
-
-import { SEO } from '@/shared/constants';
-import { Checkbox, Container } from '@/shared/ui';
 import type { CheckedState } from '@/shared/ui';
+import { Checkbox, Container } from '@/shared/ui';
+
+import { MainContainer } from '../src/shared';
 import { Footer } from '../src/widgets/footer';
 import { GlobalHeader } from '../src/widgets/global-header';
 
@@ -24,9 +22,9 @@ export default function Home() {
   return (
     <Container className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans text-white dark:bg-black">
       {/* Header */}
-      <GlobalHeader/>
-      {/* Main Content - TODO: 추후 분리 예정 */}
-      <main className="flex w-full max-w-5xl flex-grow flex-col items-center justify-start px-4 pt-32 pb-20 text-center">
+      <GlobalHeader />
+      {/* Main Content */}
+      <MainContainer className="flex w-full max-w-5xl flex-grow flex-col items-center justify-start px-4 pt-32 pb-20 text-center">
         {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
         <div className="text-left">
           <h1 className="max-w-4xl text-left text-5xl leading-snug font-extrabold tracking-tighter md:text-7xl">
@@ -108,8 +106,8 @@ export default function Home() {
             </div>
           </div>
         </section>
-      </main>
-      <Footer/>
+      </MainContainer>
+      <Footer />
     </Container>
   );
 }
