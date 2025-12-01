@@ -5,8 +5,44 @@
 /* theme variables */
 /* 커스텀 폰트, 컬러 변수 */
 /* https://tailwindcss.com/docs/theme */
-@theme {
 
+/* DesignSystem */
+/* https://www.figma.com/design/FQLscVYmrqj3fewEBqqeS9/%EC%A0%9C%EB%AA%A9-%EC%97%86%EC%9D%8C?node-id=1-7&t=EBfzP1d3M6MYU6Pj-1 */
+@theme {
+  /* Text Colors */
+  --color-text-1: #FFFFFF;
+  --color-text-2: rgb(255 255 255 / 0.7); /* 70% */
+  --color-text-3: rgb(255 255 255 / 0.4); /* 40% */
+  --color-text-4: rgb(255 255 255 / 0.2); /* 20% */
+
+  /* Brand Colors */
+  --color-primary: #0BB57F;
+  --color-secondary: #007351;
+
+  /* Status Colors */
+  --color-inactive: rgb(255 255 255 / 0.4);
+  --color-line-1: #8F96A3;
+  --color-line-2: #2B2D31;
+
+  /* System Notification */
+  --color-system-red: #FC4141;
+  --color-system-blue: #EAF9FF;
+  --color-system-green: #ECFBF6;
+
+  /* Background Colors (Dark Mode Base) */
+  --color-bg-1: #0C0D0E;
+  --color-bg-2: #18191B;
+  --color-bg-3: #1E2024;
+  --color-bg-4: #2B2D31;
+  --color-bg-inactive: #1E2024;
+
+  /* Radius (Border Radius) */
+  /* 사용법: rounded-0, rounded-1, rounded-2 ... */
+  --radius-0: 0px;
+  --radius-1: 2px;
+  --radius-2: 4px;
+  --radius-3: 8px;
+  --radius-4: 12px;
 }
 
 /* HTML Elements */
