@@ -1,1 +1,1 @@
-export { ProjectDashboardView } from '@/view/project-dashboard/project-dashboard';
+export { ProjectDashboardView } from '@/view/project-dashboard/ui/project-dashboard';
