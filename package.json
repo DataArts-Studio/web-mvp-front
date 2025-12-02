@@ -1,5 +1,6 @@
 {
   "name": "playground-next",
+  "packageManager": "pnpm@10.21.0",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,6 +14,15 @@
     "test:watch": "vitest --watch",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "core-js-pure",
+      "esbuild",
+      "msw",
+      "sharp",
+      "unrs-resolver"
+    ]
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
