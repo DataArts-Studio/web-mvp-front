@@ -1,1 +1,1 @@
-export * from '@/shared/ui/index';
+export * from '@/shared/ui/ds-button';

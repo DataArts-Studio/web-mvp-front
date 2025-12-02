@@ -1,2 +1,2 @@
-export type {ButtonDesignSystemProps} from '@/shared/ui/ds-button/ds-button';
-export {DsButton} from '@/shared/ui/ds-button/ds-button';
+export type {DSButtonProps} from '@/shared/ui/ds-button/ds-button';
+export { DSButton } from '@/shared/ui/ds-button/ds-button';

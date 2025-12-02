@@ -5,7 +5,7 @@ import { Container, MainContainer } from '@/shared/lib/primitives';
 import { Footer } from '@/widgets/footer';
 import { GlobalHeader } from '@/widgets/global-header';
 import { LendingHeader } from '@/widgets';
-import { ButtonDesignSystem } from '@/shared/ui';
+import { DSButton } from '@/shared/ui';
 
 export const LendingView = () => {
   return (
@@ -18,7 +18,7 @@ export const LendingView = () => {
         <LendingHeader/>
         {/* CTA Section */}
         <section>
-          <ButtonDesignSystem title="무료로 시작하기"/>
+          <DSButton title="무료로 시작하기"/>
         </section>
       </MainContainer>
       <Footer />
