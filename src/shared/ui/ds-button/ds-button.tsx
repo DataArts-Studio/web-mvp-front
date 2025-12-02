@@ -1,13 +1,12 @@
-'use client';
 import React from 'react';
 
-import { Button } from '@/shared';
+import { Button, buttonVariants, cn } from '@/shared';
+import { DSButtonProps } from '@/shared/ui/ds-button';
 
-export interface DSButtonProps {
-  title: string;
-  className?: string;
-}
-
-export const DSButton = ({ title }: DSButtonProps) => {
-  return <Button>{title}</Button>;
+export const DSButton = ({ children, variant, size, className, ref, ...props }: DSButtonProps) => {
+  return (
+    <Button ref={ref} className={cn(buttonVariants({ variant, size }), className)} {...props}>
+      {children}
+    </Button>
+  );
 };

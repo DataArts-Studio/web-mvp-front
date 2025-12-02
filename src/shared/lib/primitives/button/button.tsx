@@ -8,6 +8,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   pressed?: boolean;
   children?: React.ReactNode;
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 const Button = ({
@@ -18,6 +19,7 @@ const Button = ({
   type,
   disabled,
   children,
+  ref,
   ...rest
 }: ButtonProps) => {
   // const Component: any = asChild ? Slot : 'ds-button';

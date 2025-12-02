@@ -2,7 +2,7 @@ import React from 'react';
 
 export const LendingHeader = () => {
   return (
-    <header className="text-left">
+    <header className="w-full text-left">
       {/* title */}
       <h1 className="w-full max-w-7xl text-left text-3xl leading-snug font-extrabold tracking-tighter md:text-5xl">
         <span className="text-teal-400">테스트 문서 관리 방식 자체를 개선합니다.</span>

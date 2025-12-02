@@ -13,12 +13,14 @@ export const LendingView = () => {
       {/* Header */}
       <GlobalHeader />
       {/* Main Content */}
-      <MainContainer className="flex w-full flex-1 max-w-7xl flex-grow flex-col items-center justify-start px-4 pt-32 pb-20 text-center">
+      <MainContainer className="flex w-full flex-1 max-w-6xl flex-grow flex-col items-center justify-start px-4 pt-32 pb-20 text-center">
         {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
         <LendingHeader/>
         {/* CTA Section */}
-        <section>
-          <DSButton title="무료로 시작하기"/>
+        <section className='w-full mt-10 flex justify-start'>
+          <DSButton onClick={() => alert('클릭!')}>
+            무료로 시작하기
+          </DSButton>
         </section>
       </MainContainer>
       <Footer />
