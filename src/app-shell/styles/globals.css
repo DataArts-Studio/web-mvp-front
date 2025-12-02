@@ -1,9 +1,9 @@
+/* Font import(Pretendard CDN) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css");
+
 /* Tailwind CSS */
 /* https://tailwindcss.com/ */
 @import 'tailwindcss';
-
-/* Font import(Pretendard CDN) */
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css");
 
 /* theme variables */
 /* 커스텀 폰트, 컬러 변수 */
@@ -42,7 +42,7 @@
   /* -4% -> -0.04em */
   /* ========================================= */
   --tracking-tightest: -0.04em; /* 대부분의 텍스트 */
-  --tracking-normal: 0em;       /* Caption */
+  --tracking-zero: 0em;       /* Caption */
 
   /* ========================================= */
   /* Text Colors */
@@ -166,50 +166,50 @@
 @layer utilities {
   /* Title (32px, 140%, -4%) */
   .typo-title-heading {
-    @apply text-title font-bold leading-140 tracking-tight-4;
+    @apply text-title font-bold leading-140 tracking-tightest;
   }
   .typo-title-normal {
-    @apply text-title font-regular leading-140 tracking-tight-4;
+    @apply text-title font-normal leading-140 tracking-tightest;
   }
 
   /* Headline 1 (24px, 140%, -4%) */
   .typo-h1-heading {
-    @apply text-h1 font-bold leading-140 tracking-tight-4;
+    @apply text-h1 font-bold leading-140 tracking-tightest;
   }
   .typo-h1-normal {
-    @apply text-h1 font-regular leading-140 tracking-tight-4;
+    @apply text-h1 font-normal leading-140 tracking-tightest;
   }
 
   /* Headline 2 (20px, 160%, -4%) */
   .typo-h2-heading {
-    @apply text-h2 font-semibold leading-160 tracking-tight-4;
+    @apply text-h2 font-semibold leading-160 tracking-tightest;
   }
   .typo-h2-normal {
-    @apply text-h2 font-regular leading-160 tracking-tight-4;
+    @apply text-h2 font-normal leading-160 tracking-tightest;
   }
 
   /* Body 1 (18px, 160%, -4%) */
   .typo-body1-heading {
-    @apply text-body1 font-semibold leading-160 tracking-tight-4;
+    @apply text-body1 font-semibold leading-160 tracking-tightest;
   }
   .typo-body1-normal {
-    @apply text-body1 font-regular leading-160 tracking-tight-4;
+    @apply text-body1 font-normal leading-160 tracking-tightest;
   }
 
   /* Body 2 (16px, 160%, -4%) */
   .typo-body2-heading {
-    @apply text-body2 font-semibold leading-160 tracking-tight-4;
+    @apply text-body2 font-semibold leading-160 tracking-tightest;
   }
   .typo-body2-normal {
-    @apply text-body2 font-regular leading-160 tracking-tight-4;
+    @apply text-body2 font-normal leading-160 tracking-tightest;
   }
 
   /* Label (14px, 160%, -4%) */
   .typo-label-heading {
-    @apply text-label font-semibold leading-160 tracking-tight-4;
+    @apply text-label font-semibold leading-160 tracking-tightest;
   }
   .typo-label-normal {
-    @apply text-label font-regular leading-160 tracking-tight-4;
+    @apply text-label font-normal leading-160 tracking-tightest;
   }
 
   /* Caption (12px, 130%, 0%) - 자간 다름 주의 */
@@ -217,7 +217,7 @@
     @apply text-caption font-medium leading-130 tracking-zero;
   }
   .typo-caption-normal {
-    @apply text-caption font-regular leading-130 tracking-zero;
+    @apply text-caption font-normal leading-130 tracking-zero;
   }
 }
 
