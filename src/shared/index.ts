@@ -1,3 +1,4 @@
+export * from '@/shared/lib/primitives';
 export * from '@/shared/ui';
 export * from '@/shared/utils';
 export * from '@/shared/constants';

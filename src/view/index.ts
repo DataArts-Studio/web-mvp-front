@@ -1,1 +1,1 @@
-export * from '@/view/project-dashboard';
+export * from '@/view/lending';

@@ -1,7 +1,7 @@
 "use client"
 import React from 'react';
-import { Checkbox } from '@/shared/ui';
-import type { CheckedState } from '@/shared/ui';
+import { Checkbox } from '@/shared/lib/primitives';
+import type { CheckedState } from '@/shared/lib/primitives';
 
 export const ProjectCreateForm = () => {
   /* Private Mode 활성화 여부 - TODO: 추후 리팩토링 예정 */

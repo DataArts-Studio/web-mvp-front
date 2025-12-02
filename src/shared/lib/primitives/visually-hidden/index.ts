@@ -1,0 +1,2 @@
+export { VisuallyHidden, visuallyHiddenStyles } from '@/shared/lib/primitives/visually-hidden/visually-hidden';
+export type { VisuallyHiddenProps } from '@/shared/lib/primitives/visually-hidden/visually-hidden';
