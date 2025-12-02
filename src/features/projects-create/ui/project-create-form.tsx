@@ -25,8 +25,8 @@ export const ProjectCreateForm = ({onClick}: ProjectCreateFormProps) => {
       <div className="mx-auto w-full max-w-lg p-8">
         {/* 입력 폼 타이틀 및 서브타이틀 */}
         <div className="mb-10 flex flex-col items-center gap-2 text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight text-teal-400">
-            Testify Your Website!
+          <h2 className="text-3xl font-extrabold tracking-tight text-primary">
+            Build Your Test Environment
           </h2>
           <p className="mt-2 text-base text-neutral-400">
             프로젝트 이름과 옵션을 설정하고 테스트 환경을 만드세요.
@@ -82,7 +82,7 @@ export const ProjectCreateForm = ({onClick}: ProjectCreateFormProps) => {
             </div>
           )}
           {/* 프로젝트 생성 버튼 */}
-          <button className="mt-4 h-12 w-full rounded-lg bg-teal-500 text-lg font-semibold text-black transition-colors hover:bg-teal-400">
+          <button className="mt-4 h-12 w-full rounded-lg text-text-1 text-lg font-semibold bg-primary transition-colors hover:bg-secondary">
             프로젝트 생성 시작
           </button>
           {/* 모달 종료 버튼 */}
