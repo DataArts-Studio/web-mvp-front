@@ -2,8 +2,13 @@
 import React from 'react';
 import { Checkbox } from '@/shared/lib/primitives';
 import type { CheckedState } from '@/shared/lib/primitives';
+import { DSButton } from '@/shared';
 
-export const ProjectCreateForm = () => {
+interface ProjectCreateFormProps {
+  onClick?: () => void;
+}
+
+export const ProjectCreateForm = ({onClick}: ProjectCreateFormProps) => {
   /* Private Mode 활성화 여부 - TODO: 추후 리팩토링 예정 */
   const [isPrivateMode, setIsPrivateMode] = React.useState(false);
   const handlePrivateModeChange = (checkedState: CheckedState) => {
@@ -16,7 +21,7 @@ export const ProjectCreateForm = () => {
 
   return (
     /* 입력 폼 (와이어프레임의 Enter your website's url 부분) */
-    <section id="create-project" className="mt-16 w-full max-w-2xl text-center">
+    <section id="create-project" className="fixed inset-0 z-50 flex items-center justify-center mt-16 w-full bg-bg-1/50 backdrop-blur-sm">
       <div className="mx-auto w-full max-w-lg p-8">
         {/* 입력 폼 타이틀 및 서브타이틀 */}
         <div className="mb-10 flex flex-col items-center gap-2 text-center">
@@ -80,6 +85,8 @@ export const ProjectCreateForm = () => {
           <button className="mt-4 h-12 w-full rounded-lg bg-teal-500 text-lg font-semibold text-black transition-colors hover:bg-teal-400">
             프로젝트 생성 시작
           </button>
+          {/* 모달 종료 버튼 */}
+        <DSButton onClick={onClick} variant='text' className="mt-2 mx-auto">돌아가기</DSButton>
         </div>
       </div>
     </section>
