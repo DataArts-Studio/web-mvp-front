@@ -12,7 +12,8 @@
    * - Next.js 클라이언트(app) / 서버(server) 환경을 분리할 수 있음
    * ────────────────────────────────────────────────────*/
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.server.json" }],
-
+  "esModuleInterop": true,
+  "allowSyntheticDefaultImports": true,
   "compilerOptions": {
     /* ─────────────────────────────────────────────────────
      * baseUrl
