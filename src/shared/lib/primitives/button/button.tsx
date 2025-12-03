@@ -27,6 +27,7 @@ const Button = ({
   const isDisabled = disabled || loading;
   return (
     <Component
+      ref={ref}
       type={asChild ? undefined : (type ?? 'button')}
       disabled={asChild ? undefined : isDisabled}
       aria-busy={loading || undefined}

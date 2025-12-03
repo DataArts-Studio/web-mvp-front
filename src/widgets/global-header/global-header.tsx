@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export const GlobalHeader = () => {
   return (
-    <header className="fixed top-0 right-0 left-0 z-10 flex h-16 items-center justify-between px-6">
+    <header className="fixed top-0 right-0 left-0 z-10 flex h-16 items-center justify-between px-12">
       <div className="flex items-center space-x-2 text-xl font-bold text-teal-400">
         <Image src="/logo.svg" alt="Testea Logo" width={120} height={120}/>
       </div>
