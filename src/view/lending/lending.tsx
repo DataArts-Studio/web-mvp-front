@@ -1,13 +1,10 @@
 'use client';
 import React from 'react';
-
-import Image from 'next/image';
-
 import { ProjectCreateForm } from '@/features';
 import { Logo } from '@/shared';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
-import { GridBackground } from '@/shared/ui/grid-background/grid-background';
+import { GridBackground } from '@/shared/layout';
 import { LendingHeader } from '@/widgets';
 import { Footer } from '@/widgets/footer';
 import { GlobalHeader } from '@/widgets/global-header';
@@ -20,28 +17,11 @@ export const LendingView = () => {
   };
 
   return (
-    <div className="relative size-full min-h-screen overflow-hidden bg-bg-1" data-name="Main">
-      {/* Background Layer (z-0) */}
-      <GridBackground />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#0BB57F]/5 via-transparent to-transparent" />
-      <div className="pointer-events-none absolute top-[84px] left-[calc(60%+5px)] z-0 h-[972px] w-[972px] opacity-30 select-none">
-        <Image
-          src="/backgrounds/circular.svg"
-          width={1137.1}
-          height={972.6}
-          alt="Arrow"
-          className="absolute top-0 left-0 z-10"
-        />
-      </div>
-      <div className="pointer-events-none absolute top-[460px] left-[calc(80%-153px)] z-10 h-[50px] w-[50px] select-none">
-        <Image
-          src="/backgrounds/arrow.svg"
-          width={37.5}
-          height={37.5}
-          alt="Arrow"
-          className="absolute top-0 left-0 z-10"
-        />
-      </div>
+    <GridBackground.Root>
+      <GridBackground.Grid/>
+      <GridBackground.Gradient/>
+      <GridBackground.CircleDecoration/>
+      <GridBackground.ArrowDecoration/>
       {/* Contents */}
       <Container className="text-text1 dark:bg-bg-1 flex min-h-screen items-start justify-start bg-zinc-50 font-sans">
         {/* Header */}
@@ -66,6 +46,6 @@ export const LendingView = () => {
         </MainContainer>
         <Footer />
       </Container>
-    </div>
+    </GridBackground.Root>
   );
 };
