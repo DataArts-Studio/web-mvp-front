@@ -7,8 +7,7 @@ export const GlobalHeader = () => {
   return (
     <header className="fixed top-0 right-0 left-0 z-10 flex h-16 items-center justify-between px-6">
       <div className="flex items-center space-x-2 text-xl font-bold text-teal-400">
-        <Image src="/next.svg" alt="Testeo Logo" width={20} height={20} className="invert" />
-        <span>Testea</span>
+        <Image src="/logo.svg" alt="Testea Logo" width={120} height={120}/>
       </div>
       {/* 테스트용 임시 메뉴 */}
       <div>
