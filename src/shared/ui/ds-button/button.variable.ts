@@ -11,7 +11,7 @@ import { cva } from 'class-variance-authority';
 // 공통 기본 스타일 (Base Style)
 // ------------------------------------------------------------------
 const BASE_STYLE =
-  'inline-flex items-center justify-center whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
+  'cursor-pointer inline-flex items-center justify-center whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
 
 // ------------------------------------------------------------------
 // 변형 스타일 (Variants) - Color

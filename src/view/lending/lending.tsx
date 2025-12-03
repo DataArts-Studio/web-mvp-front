@@ -31,8 +31,8 @@ export const LendingView = () => {
           {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
           <LendingHeader />
           {/* CTA Section */}
-          <section className="mt-10 flex w-full justify-start">
-            <DSButton onClick={handleOpen}>무료로 시작하기</DSButton>
+          <section className="mt-10 flex w-full justify-start relative z-10">
+            <DSButton type='button' onClick={handleOpen}>무료로 시작하기</DSButton>
           </section>
           {isOpened && <ProjectCreateForm onClick={handleOpen}/>}
         </MainContainer>
