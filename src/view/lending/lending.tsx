@@ -3,7 +3,7 @@ import React from 'react';
 
 import { ProjectCreateForm } from '@/features';
 import { Container, MainContainer } from '@/shared/lib/primitives';
-import { DSButton, MvpBottomNavbar } from '@/shared/ui';
+import { DSButton } from '@/shared/ui';
 import { LendingHeader } from '@/widgets';
 import { Footer } from '@/widgets/footer';
 import { GlobalHeader } from '@/widgets/global-header';
