@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import '@/app-shell/styles/globals.css';
+import { MvpBottomNavbar } from 'src/shared';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        {/* 테스트용 컴포넌트 */}
+        <MvpBottomNavbar/>
       </body>
     </html>
   );
