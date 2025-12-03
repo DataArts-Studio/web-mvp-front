@@ -4,19 +4,17 @@ export const LendingHeader = () => {
   return (
     <header className="w-full text-left">
       {/* title */}
-      <h1 className="w-full max-w-7xl text-left text-3xl leading-snug font-extrabold tracking-tighter md:text-5xl">
-        <span className="text-primary">테스트 문서 관리 방식 자체를 개선합니다.</span>
+      <h1 className="text-7xl leading-[140%] font-bold not-italic">
+        <span>테스트 케이스 작성,</span>
         <br />
-        <span>Testea가 테스트 케이스를 구조화된 형태로 유지합니다.</span>
+        <span className="text-primary">단 5분</span>
+        <span>이면 끝!</span>
       </h1>
       {/* sub-title */}
-      <div className="mt-6 max-w-4xl text-left text-xl text-neutral-400">
-        <p>Testea는 문서 기반 테스트 관리의 복잡함을 줄이고, 테스트 케이스를</p>
-        <p>더 명확하고 일관된 방식으로 운영할 수 있도록 돕는
-          <span className="font-medium text-primary">테스트 관리 도구</span>입니다.
-        </p>
+      <div className="text-lg leading-[160%] font-semibold not-italic">
+        <p>테스트 케이스, 엑셀에 복사-붙여넣기를 반복하고 계신가요?</p>
+        <p>Testea로 클릭 몇 번만에 테스트 문서를 자동으로 생성하고 관리하세요. </p>
       </div>
-
     </header>
   );
 };

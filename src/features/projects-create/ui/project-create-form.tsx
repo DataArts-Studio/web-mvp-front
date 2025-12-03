@@ -31,7 +31,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     /* 입력 폼 (와이어프레임의 Enter your website's url 부분) */
     <section
       id="create-project"
-      className="absolute top-1/2 left-[calc(50%+0.5px)] box-border flex w-[46.25rem] translate-x-[-50%] translate-y-[-50%] flex-col content-stretch items-center gap-[48px] overflow-clip rounded-[36px] border border-[rgba(11,181,127,0.1)] bg-[rgba(255,255,255,0.02)] px-32 py-16 backdrop-blur-[20px] backdrop-filter"
+      className="absolute z-50 top-1/2 left-[calc(50%+0.5px)] box-border flex w-[46.25rem] translate-x-[-50%] translate-y-[-50%] flex-col content-stretch items-center gap-[48px] overflow-clip rounded-[36px] border border-[rgba(11,181,127,0.1)] bg-[rgba(255,255,255,0.02)] px-32 py-16 backdrop-blur-[20px] backdrop-filter"
     >
       <div className="absolute top-[288.72px] left-[-114.09px] h-[413.272px] w-[1033.17px]">
         <div className="absolute inset-[-48.39%_-19.36%]">

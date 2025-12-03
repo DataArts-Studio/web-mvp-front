@@ -19,7 +19,7 @@ const BASE_STYLE =
 const COLOR_VARIANTS = {
   solid: 'bg-primary text-white hover:bg-[#27AE60] active:bg-[#145A32] border border-transparent',
   ghost:
-    'bg-white text-primary border border-primary hover:text-[#27AE60] hover:border-[#27AE60] active:text-[#145A32] active:border-[#145A32]',
+    'bg-none text-primary border border-primary hover:text-[#27AE60] hover:border-[#27AE60] active:text-[#145A32] active:border-[#145A32]',
   text: 'bg-transparent text-primary hover:text-[#27AE60] active:text-[#145A32] border-none',
 };
 
