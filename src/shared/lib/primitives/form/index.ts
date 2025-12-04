@@ -1,0 +1,1 @@
+export { Form } from '@/shared/lib/primitives/form/form';
