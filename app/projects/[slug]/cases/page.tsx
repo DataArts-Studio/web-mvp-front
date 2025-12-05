@@ -1,11 +1,8 @@
 import React from 'react';
+import { TestCasesView } from '@/view';
 
 const Page = () => {
-  return (
-    <div>
-      
-    </div>
-  );
+  return <TestCasesView/>
 };
 
 export default Page;

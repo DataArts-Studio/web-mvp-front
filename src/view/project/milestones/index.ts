@@ -1,0 +1,1 @@
+export { MilestonesView } from '@/view/project/milestones/milestones-view';

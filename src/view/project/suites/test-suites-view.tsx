@@ -1,11 +1,9 @@
 import React from 'react';
 
-const Page = () => {
+export const TestSuitesView = () => {
   return (
     <div>
-      
+      TestSuitesView
     </div>
   );
 };
-
-export default Page;

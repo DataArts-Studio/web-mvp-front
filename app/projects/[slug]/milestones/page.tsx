@@ -1,11 +1,8 @@
 import React from 'react';
+import { MilestonesView } from '@/view';
 
 const Page = () => {
-  return (
-    <div>
-      
-    </div>
-  );
+  return <MilestonesView/>
 };
 
 export default Page;

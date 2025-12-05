@@ -1,11 +1,8 @@
 import React from 'react';
+import { TestSuitesView } from '@/view';
 
 const Page = () => {
-  return (
-    <div>
-      
-    </div>
-  );
+  return <TestSuitesView/>
 };
 
 export default Page;
