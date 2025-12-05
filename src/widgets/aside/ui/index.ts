@@ -1,0 +1,1 @@
+export {AsideNavItem} from '@/widgets/aside/ui/aside-nav-item';

@@ -2,19 +2,15 @@
 import React from 'react';
 
 import { Container, MainContainer } from '@/shared/lib/primitives';
-import { Footer } from '@/widgets/footer';
-import { GlobalHeader } from '@/widgets/global-header';
 import { Aside } from '@/widgets';
 
 export const ProjectDashboardView = () => {
   return (
     <Container className="text-text1 dark:bg-bg-1 flex min-h-screen items-center justify-center bg-zinc-50 font-sans">
-      {/* Header */}
-      <GlobalHeader />
       {/* Aside */}
       <Aside/>
       {/* Main Content */}
-      <MainContainer className="flex w-full max-w-7xl flex-1 flex-grow flex-col items-center justify-start px-4 pt-32 pb-20 text-center">
+      <MainContainer className="flex w-full flex-1 flex-grow items-center justify-center">
         <div id="temp-container" className="flex flex-col gap-12">
           <header>
             <h2>Test Dashboard</h2>
@@ -42,7 +38,6 @@ export const ProjectDashboardView = () => {
           </section>
         </div>
       </MainContainer>
-      <Footer />
     </Container>
   );
 };
