@@ -8,20 +8,19 @@ import { usePathname } from 'next/navigation';
 import {
   Eye,
   EyeOff,
-  // FolderTree,
+  FolderTree,
   Home,
   LayoutDashboard,
-  // ListChecks,
-  // Milestone,
-  // Zap,
+  ListChecks,
+  Milestone,
 } from 'lucide-react';
 
 const pages = [
   { id: '/', label: '홈', icon: Home, href: '/' },
   { id: 'dashboard', label: '대시보드', icon: LayoutDashboard, href: '/projects/dashboard' },
-  // { id: 'milestones', label: '마일스톤', icon: Milestone, href: '/milestones' },
-  // { id: 'test-suites', label: '테스트 스위트', icon: FolderTree, href: '/test-suites' },
-  // { id: 'test-cases', label: '테스트 케이스', icon: ListChecks, href: '/test-cases' },
+  { id: 'milestones', label: '마일스톤', icon: Milestone, href: '/projects/p-name/milestones' },
+  { id: 'test-suites', label: '테스트 스위트', icon: FolderTree, href: '/projects/p-name/suites' },
+  { id: 'test-cases', label: '테스트 케이스', icon: ListChecks, href: '/projects/p-name/cases' },
 ];
 
 /**
