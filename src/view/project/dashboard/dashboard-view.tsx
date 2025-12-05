@@ -4,6 +4,7 @@ import React from 'react';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { Footer } from '@/widgets/footer';
 import { GlobalHeader } from '@/widgets/global-header';
+import { Aside } from '@/widgets';
 
 export const ProjectDashboardView = () => {
   return (
@@ -11,29 +12,7 @@ export const ProjectDashboardView = () => {
       {/* Header */}
       <GlobalHeader />
       {/* Aside */}
-      <aside className="flex flex-col gap-6">
-        <div>
-          <h2>로고</h2>
-          <p>테스트 도구</p>
-        </div>
-        <div>
-          <p>홈</p>
-          <p>대시보드</p>
-          <p>마일스톤</p>
-          <p>테스트 스위트</p>
-          <p>테스트 케이스</p>
-        </div>
-        <div>
-          <h2>빠른 시작</h2>
-          <p>마일스톤 생성</p>
-          <p>테스트케이스 생성</p>
-          <p>테스트스위트 생성</p>
-        </div>
-        <div>
-          <p>설정</p>
-          <p>도움말</p>
-        </div>
-      </aside>
+      <Aside/>
       {/* Main Content */}
       <MainContainer className="flex w-full max-w-7xl flex-1 flex-grow flex-col items-center justify-start px-4 pt-32 pb-20 text-center">
         <div id="temp-container" className="flex flex-col gap-12">
