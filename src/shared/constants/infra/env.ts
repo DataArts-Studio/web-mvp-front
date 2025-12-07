@@ -16,6 +16,7 @@ const CLIENT = {
 const SERVER = {
   NODE_ENV: process.env.NODE_ENV,
   DATABASE_URL: process.env.DATABASE_URL,
+  SUPABASE_DB_URL: process.env.SUPABASE_DB_URL,
   SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
   SUPABASE_URL: process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
