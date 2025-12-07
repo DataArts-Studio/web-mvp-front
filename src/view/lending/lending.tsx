@@ -23,7 +23,7 @@ export const LendingView = () => {
       <GridBackground.CircleDecoration/>
       <GridBackground.ArrowDecoration/>
       {/* Contents */}
-      <Container className="text-text1 dark:bg-bg-1 flex min-h-screen items-start justify-start bg-zinc-50 font-sans">
+      <Container className="text-text1 bg-bg-1 flex min-h-screen items-start justify-start font-sans">
         {/* Header */}
         <GlobalHeader />
         {/* Main Content */}
