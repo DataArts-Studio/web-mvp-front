@@ -5,6 +5,13 @@ import Image from 'next/image';
 
 import { DSButton } from '@/shared';
 import { CheckCircle, Copy, XIcon } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+
+interface IFormInput {
+  projectName: string;
+  identifier: string;
+  identifierConfirm: string;
+}
 
 interface ProjectCreateFormProps {
   onClick?: () => void;
@@ -12,14 +19,15 @@ interface ProjectCreateFormProps {
 
 export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
-  const [projectName, setProjectName] = useState('');
+  const {register, handleSubmit, getValues, watch, formState: {errors}} = useForm<IFormInput>();
+  // const projectName = watch("projectName");
+  const projectName = getValues("projectName");
 
   const handleNext = () => setStep((prev) => prev + 1);
   const handlePrev = () => setStep((prev) => prev - 1);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    alert('프로젝트 생성 시작');
+  const onSubmit = (data: IFormInput) => {
+    alert('프로젝트 생성 시작\n' + JSON.stringify(data, null, ' '));
   };
 
   return (
@@ -77,7 +85,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
 
       {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit(onSubmit)}
         className="relative z-10 flex w-full shrink-0 flex-col content-stretch items-center gap-[32px]"
       >
         {step === 1 && (
@@ -97,6 +105,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <input
                 id="projectName"
                 type="text"
+                {...register('projectName', {required: true})}
                 placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
                 className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
@@ -127,6 +136,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <input
                 id="identifier"
                 type="password"
+                {...register('identifier', {required: true})}
                 placeholder="식별번호를 입력하세요"
                 className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
@@ -136,6 +146,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <input
                 id="identifierConfirm"
                 type="password"
+                {...register('identifierConfirm', {required: true})}
                 placeholder="식별번호를 다시 입력하세요"
                 className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
@@ -149,7 +160,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         {step === 3 && (
           <div className="flex w-full flex-col items-start gap-4">
             <div className="w-full text-center">
-              <p>z가나다라마바사아자</p>
+              <p>{projectName || 'z가나다라마바사아자'}</p>
               <p>프로젝트를 생성하시겠습니까?</p>
             </div>
             <div className="flex w-full gap-4">
@@ -178,7 +189,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                 <Copy className="h-4 w-4" />
               </DSButton>
             </div>
-            <DSButton type="button" variant="ghost" className="mt-2 w-full" onClick={() => alert("시작버튼 클릭(테스트중)")}>
+            <DSButton type="submit" variant="ghost" className="mt-2 w-full">
               시작하기
             </DSButton>
           </div>
