@@ -1,5 +1,5 @@
 import { ENV } from '@/shared/constants';
-import { Database } from '@/shared/lib/db/schema';
+import { Database } from '@/shared/lib/db';
 import { SUPABASE_AUTH_OPTIONS } from '@/shared/lib/db/supabase/config';
 import { createClient } from '@supabase/supabase-js';
 
