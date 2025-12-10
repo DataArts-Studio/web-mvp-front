@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getDatabase, project } from '@/shared/lib/db';
-import { CreateProjectSchema, type CreateProjectDTO } from '@/entities/project/model';
+import { CreateProjectSchema } from '@/entities/project/model';
 
 // TODO: 빠른 개발용 any 적용
 const createProject = async (data: any) => {
