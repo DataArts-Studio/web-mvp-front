@@ -1,15 +1,16 @@
 'use client';
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
 
 import Image from 'next/image';
 
 import { DSButton } from '@/shared';
 import { CheckCircle, Copy, XIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { createProjectMock } from '@/features';
 
 interface IFormInput {
-  projectName: string;
-  identifier: string;
+  name: string;
+  password: string;
   identifierConfirm: string;
 }
 
@@ -21,13 +22,20 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
   const {register, handleSubmit, getValues, watch, formState: {errors}} = useForm<IFormInput>();
   // const projectName = watch("projectName");
-  const projectName = getValues("projectName");
+  const projectName = getValues("name");
 
   const handleNext = () => setStep((prev) => prev + 1);
   const handlePrev = () => setStep((prev) => prev - 1);
 
-  const onSubmit = (data: IFormInput) => {
-    alert('프로젝트 생성 시작\n' + JSON.stringify(data, null, ' '));
+  const onSubmit = async (data: IFormInput) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+    const result = await createProjectMock(formData);
+    if (!result.success) {
+      console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
+      return;
+    }
+    alert('프로젝트 생성 시작\n' + JSON.stringify(data, null, 2));
   };
 
   return (
@@ -105,7 +113,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <input
                 id="projectName"
                 type="text"
-                {...register('projectName', {required: true})}
+                {...register('name', {required: true})}
                 placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
                 className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
@@ -136,7 +144,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <input
                 id="identifier"
                 type="password"
-                {...register('identifier', {required: true})}
+                {...register('password', {required: true})}
                 placeholder="식별번호를 입력하세요"
                 className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
