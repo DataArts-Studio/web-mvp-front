@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Search,
 } from 'lucide-react';
+import { SuiteCreateForm } from '@/features/suites-create';
 
 export const TestSuitesView = () => {
   return (
@@ -18,9 +19,9 @@ export const TestSuitesView = () => {
       <Aside />
 
       {/* Main Content */}
-      <MainContainer className="flex min-h-screen w-full flex-1 flex-col gap-8 px-10 py-8">
+      <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">
         {/* 헤더 영역 */}
-        <header className="flex w-full items-start justify-between gap-6">
+        <header className="col-span-6 flex w-full items-start justify-between gap-6">
           <div className="flex flex-col gap-2">
             <h1 className="typo-title-heading">테스트 스위트 관리</h1>
             <p className="typo-body1-normal text-text-3">
@@ -30,7 +31,6 @@ export const TestSuitesView = () => {
           </div>
 
           <button className="typo-body2-heading bg-primary text-bg-1 shadow-3 flex items-center gap-2 rounded-lg px-5 py-3 hover:opacity-90">
-            <span className="text-lg">＋</span>
             <span>새 테스트 스위트</span>
           </button>
         </header>
@@ -38,7 +38,7 @@ export const TestSuitesView = () => {
         {/* 상단 컨트롤 바: 검색 + 필터 + 요약 */}
         <section
           aria-label="테스트 스위트 컨트롤"
-          className="bg-bg-2 shadow-1 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-3"
+          className="col-span-6 bg-bg-2 shadow-1 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-3"
         >
           {/* 검색 + 필터 */}
           <div className="flex flex-wrap items-center gap-3">
@@ -81,14 +81,14 @@ export const TestSuitesView = () => {
         </section>
 
         {/* 컬럼 헤더 */}
-        <div className="mt-2 hidden items-center justify-between text-label-normal text-text-3 md:flex">
+        <div className="col-span-6 mt-2 hidden items-center justify-between text-label-normal text-text-3 md:flex">
           <span className="w-[40%]">스위트</span>
           <span className="w-[30%]">구성</span>
           <span className="w-[30%] text-right">최근 실행</span>
         </div>
 
         {/* 테스트 스위트 리스트 */}
-        <section aria-label="테스트 스위트 리스트" className="flex flex-col gap-3">
+        <section aria-label="테스트 스위트 리스트" className="col-span-6 flex flex-col gap-3">
           {/* 스위트 1: 기능별 - 인증 플로우 */}
           <article className="bg-bg-2 shadow-1 flex w-full flex-col gap-4 rounded-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
             {/* 왼쪽: 이름/타입/설명 */}
@@ -227,6 +227,7 @@ export const TestSuitesView = () => {
             </div>
           </article>
         </section>
+        <SuiteCreateForm/>
       </MainContainer>
     </Container>
   );

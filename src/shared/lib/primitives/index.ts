@@ -20,7 +20,7 @@ export type {
   FormFieldError,
   FormFieldControlProps,
   FormFieldContextValue,
-} from '@/shared/lib/primitives/form-field/form-field';
+} from '@/shared/lib/primitives/form-field';
 
 export { Dialog, useDialog } from '@/shared/lib/primitives/dialog';
 export type {

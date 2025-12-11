@@ -98,7 +98,7 @@ const FormFieldLabel = ({ children, className, ref, ...props }: React.ComponentP
 // ------------------------------------------------------------------
 // Control Component
 // ------------------------------------------------------------------
-interface FormFieldControlProps extends React.ComponentProps<'div'> {
+interface FormFieldControlProps extends React.ComponentProps<'input'> {
   asChild?: boolean;
 }
 
@@ -106,7 +106,7 @@ const FormFieldControl = ({ asChild, children, ...props }: FormFieldControlProps
   const { id, descriptionId, messageId, invalid, labelId } = useFormFieldContext();
 
   // asChild가 true면 Slot, 아니면 div
-  const Comp = asChild ? Slot : 'div';
+  const Comp = asChild ? Slot : 'input';
 
   return (
     <Comp
@@ -116,7 +116,9 @@ const FormFieldControl = ({ asChild, children, ...props }: FormFieldControlProps
       aria-invalid={invalid}
       data-invalid={invalid}
       {...props}
-    />
+    >
+      {asChild ? children : null}
+    </Comp>
   );
 };
 
