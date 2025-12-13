@@ -1,45 +1,55 @@
 'use server';
-
-import {getDatabase, suite} from "@/shared/lib/db";
 import { CreateMilestoneSchema } from '@/entities/milestone';
+import { getDatabase, milestone } from '@/shared/lib/db';
+import { z } from 'zod';
 
-type MockTestSuiteData = {
+type MockMilestoneData = {
   name: string;
-  password: string;
+  project_id: string;
+  start_date: string;
+  end_date: string;
+  status?: string;
   description?: string;
-  owner_name?: string;
 };
 
 type MockFlatErrors = {
   formErrors: string[];
-  fieldErrors: { [key in keyof MockTestSuiteData]?: string[] };
+  fieldErrors: { [key in keyof MockMilestoneData]?: string[] };
 };
 
 const createMilestone = async (data: any) => {
   const db = getDatabase();
-  return await db.insert(suite).values(data).returning();
-}
+  return await db.insert(milestone).values(data).returning();
+};
 
 export const createMilestoneAction = async (formData: any) => {
   const data = Object.fromEntries(formData.entries());
   const validation = CreateMilestoneSchema.safeParse(data);
-  if (!validation.success) return { success: false, errors: validation.error };
-  const newSuite = await createMilestone(validation.data);
-  return { success: true, suite: newSuite };
-}
+  if (!validation.success) return { success: false, errors: z.flattenError(validation.error) };
 
-export const createMilestoneMock = async (formData: any) => {
+  const newMilestone = await createMilestone(validation.data);
+  return { success: true, milestone: newMilestone };
+};
+
+export const createMilestoneMock = async (formData: FormData) => {
   const data = Object.fromEntries(formData.entries());
   const name = typeof data.name === 'string' ? data.name : '';
+  const project_id = typeof data.project_id === 'string' ? data.project_id : '';
+  const start_date = typeof data.start_date === 'string' ? data.start_date : '';
+  const end_date = typeof data.end_date === 'string' ? data.end_date : '';
 
   await new Promise((resolve) => setTimeout(resolve, 500));
-  if (name.length === 0) {
-    const mockErrors: any = {
+
+  if (!name || !project_id || !start_date || !end_date) {
+    const mockErrors: MockFlatErrors = {
       formErrors: ['필수 입력 항목이 누락되었습니다.'],
       fieldErrors: {
-        name: name.length === 0 ? ['테스트 스위트 이름을 입력해야 합니다.'] : undefined,
-      }
-    }
+        name: !name ? ['마일스톤 이름을 입력해야 합니다.'] : undefined,
+        project_id: !project_id ? ['프로젝트 ID가 필요합니다.'] : undefined,
+        start_date: !start_date ? ['시작일을 입력해야 합니다.'] : undefined,
+        end_date: !end_date ? ['종료일을 입력해야 합니다.'] : undefined,
+      },
+    };
     return { success: false, errors: mockErrors };
   }
 
@@ -53,6 +63,6 @@ export const createMilestoneMock = async (formData: any) => {
 
   return {
     success: true,
-    errors: {id: `uuid-${Date.now()}`, ...data },
+    errors: { id: `uuid-${Date.now()}`, ...data },
   };
-}
+};
