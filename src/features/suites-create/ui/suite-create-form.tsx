@@ -3,10 +3,23 @@ import React from 'react';
 
 import { DSButton, FormField } from '@/shared';
 import { useForm } from 'react-hook-form';
+import {createSuiteMock} from "@/features/suites-create";
+
+interface IFormInput {
+  name: string;
+}
 
 export const SuiteCreateForm = () => {
-  const { register, handleSubmit } = useForm();
-  const onSubmit = (data: any) => {
+  const { register, handleSubmit } = useForm<IFormInput>();
+  const onSubmit = async (data: IFormInput) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+
+    const result = await createSuiteMock(formData);
+    if (!result.success) {
+      console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
+      return;
+    }
     alert('생성 클릭\n' + JSON.stringify(data, null, 2));
   };
   return (
