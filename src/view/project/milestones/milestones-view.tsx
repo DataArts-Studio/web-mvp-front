@@ -1,8 +1,9 @@
 import React from 'react';
 
-import { Container, MainContainer } from '@/shared';
+import { Container, DSButton, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
 import { Calendar, CheckCircle, ListChecks, PlayCircle } from 'lucide-react';
+import { MilestoneCreateForm } from '@/features';
 
 export const MilestonesView = () => {
   return (
@@ -11,26 +12,22 @@ export const MilestonesView = () => {
       <Aside />
 
       {/* Main Content */}
-      <MainContainer className="flex min-h-screen w-full flex-1 flex-col gap-8 px-10 py-8">
+      <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">
         {/* 헤더 영역 */}
-        <header className="flex w-full items-start justify-between gap-6">
+        <header className="col-span-6 flex w-full items-start justify-between gap-6">
           <div className="flex flex-col gap-2">
             <h1 className="typo-title-heading">마일스톤 & 테스트 진행 현황</h1>
             <p className="typo-body1-normal text-text-3">
               스프레드시트 복사 대신, 마일스톤별 테스트 케이스와 실행 결과를 한 화면에서 확인하세요.
             </p>
           </div>
-
-          <button className="typo-body2-heading bg-primary text-bg-1 shadow-3 flex items-center gap-2 rounded-lg px-5 py-3 hover:opacity-90">
-            <span className="text-lg">＋</span>
-            <span>새 마일스톤</span>
-          </button>
+          <DSButton type='button' variant='solid'>마일스톤 생성하기</DSButton>
         </header>
 
         {/* 필터 / 요약 바 */}
         <section
           aria-label="마일스톤 필터"
-          className="bg-bg-2 shadow-1 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-3"
+          className="col-span-6 bg-bg-2 shadow-1 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-3"
         >
           {/* 상태 필터 탭 */}
           <nav className="flex flex-wrap gap-2">
@@ -58,14 +55,14 @@ export const MilestonesView = () => {
         </section>
 
         {/* 컬럼 헤더 (엑셀 헤더 느낌으로) */}
-        <div className="mt-2 hidden items-center justify-between text-label-normal text-text-3 md:flex">
+        <div className="col-span-6 mt-2 hidden items-center justify-between text-label-normal text-text-3 md:flex">
           <span className="w-[40%]">마일스톤</span>
           <span className="w-[30%]">진행률</span>
           <span className="w-[30%] text-right">테스트 현황</span>
         </div>
 
         {/* 마일스톤 리스트 */}
-        <section aria-label="마일스톤 리스트" className="flex flex-col gap-3">
+        <section aria-label="마일스톤 목록" className="col-span-6 flex flex-col gap-3">
           {/* 카드 1 */}
           <article className="bg-bg-2 shadow-1 flex w-full flex-col gap-4 rounded-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
             {/* 왼쪽: 이름 + 상태 + 설명 + 기간 */}
@@ -201,6 +198,7 @@ export const MilestonesView = () => {
             </div>
           </article>
         </section>
+        <MilestoneCreateForm/>
       </MainContainer>
     </Container>
   );

@@ -1,9 +1,9 @@
 'use client';
 import React from 'react';
-
-import { DSButton, FormField } from '@/shared';
 import { useForm } from 'react-hook-form';
-import {createSuiteMock} from "@/features/suites-create";
+
+import { createSuiteMock } from '@/features/suites-create';
+import { DSButton, FormField } from '@/shared';
 
 interface IFormInput {
   name: string;
@@ -20,7 +20,7 @@ export const MilestoneCreateForm = () => {
       console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
       return;
     }
-    alert('생성 클릭\n' + JSON.stringify(data, null, 2));
+    alert('마일스톤이 생성되었습니다.\n' + JSON.stringify(data, null, 2));
   };
   return (
     <section
@@ -29,15 +29,26 @@ export const MilestoneCreateForm = () => {
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
         <div>
-          <h2 className="text-primary text-3xl">테스트 스위트를 만들어 볼까요?</h2>
-          <p className="mt-2 text-base text-neutral-400">필요한 테스트들을 한 곳에 모아 관리해요</p>
+          <h2 className="text-primary text-3xl">마일스톤을 만들어 볼까요?</h2>
+          <p className="mt-2 text-base text-neutral-400">
+            프로젝트의 중요한 목표 지점을 설정하고 한곳에서 관리해요.
+          </p>
         </div>
-        <FormField.Root className='flex flex-col gap-2'>
-          <FormField.Label>name</FormField.Label>
-          <FormField.Control placeholder="테스트 스위트 이름 입력" type='text' {...register('name', {required: true})}/>
+        <FormField.Root className="flex flex-col gap-2">
+          <FormField.Label>마일스톤 이름</FormField.Label>
+          <FormField.Control
+            placeholder="마일스톤 이름을 입력해 주세요"
+            type="text"
+            {...register('name', { required: true })}
+          />
         </FormField.Root>
-        <div className='flex gap-2'>
-          <DSButton type="button" variant="ghost" className="mt-2 w-full" onClick={()=> alert('취소 클릭')}>
+        <div className="flex gap-2">
+          <DSButton
+            type="button"
+            variant="ghost"
+            className="mt-2 w-full"
+            onClick={() => alert('취소 클릭')}
+          >
             취소
           </DSButton>
           <DSButton type="submit" variant="solid" className="mt-2 w-full">
