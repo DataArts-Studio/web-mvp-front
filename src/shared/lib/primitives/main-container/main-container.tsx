@@ -8,7 +8,7 @@ export interface MainContainerProps extends React.HTMLAttributes<HTMLElement> {
 /* TODO: 추후 위젯으로 변경 */
 export const MainContainer = ({ children, className, ...props }: MainContainerProps) => {
   return (
-    <main className={className} {...props}>
+    <main id="main-contents" className={className} {...props}>
       {children}
     </main>
   );

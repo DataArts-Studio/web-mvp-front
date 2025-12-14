@@ -12,149 +12,151 @@
 /* DesignSystem */
 /* https://www.figma.com/design/FQLscVYmrqj3fewEBqqeS9/%EC%A0%9C%EB%AA%A9-%EC%97%86%EC%9D%8C?node-id=1-7&t=EBfzP1d3M6MYU6Pj-1 */
 @theme {
-    /* ========================================= */
-    /* 폰트 정의 */
-    /* ========================================= */
-    --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  /* ========================================= */
+  /* 폰트 정의 */
+  /* ========================================= */
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
 
-    /* ========================================= */
-    /* 텍스트 사이즈 (Font Size) 정의 */
-    /* 사용법: text-title, text-h1, text-body1 ... */
-    /* ========================================= */
-    --text-title: 32px;
-    --text-h1: 24px;
-    --text-h2: 20px;
-    --text-body1: 18px;
-    --text-body2: 16px;
-    --text-label: 14px;
-    --text-caption: 12px;
+  /* ========================================= */
+  /* 텍스트 사이즈 (Font Size) 정의 */
+  /* 사용법: text-title, text-h1, text-body1 ... */
+  /* ========================================= */
+  --text-title: 32px;
+  --text-h1: 24px;
+  --text-h2: 20px;
+  --text-body1: 18px;
+  --text-body2: 16px;
+  --text-label: 14px;
+  --text-caption: 12px;
 
-    /* ========================================= */
-    /* 행간 (Line Height) 정의 */
-    /* 디자인 시스템의 %를 소수점으로 변환 */
-    /* ========================================= */
-    --leading-130: 1.3;  /* Caption */
-    --leading-140: 1.4;  /* Title, Headline1 */
-    --leading-160: 1.6;  /* Headline2, Body, Label */
-    /* ========================================= */
-    /* 자간 (Letter Spacing) 정의 */
-    /* -4% -> -0.04em */
-    /* ========================================= */
-    --tracking-tightest: -0.04em; /* 대부분의 텍스트 */
-    --tracking-zero: 0em;       /* Caption */
-    /* ========================================= */
-    /* Text Colors */
-    /* ========================================= */
-    --color-text-1: #FFFFFF;
-    --color-text-2: rgb(255 255 255 / 0.7); /* 70% */
-    --color-text-3: rgb(255 255 255 / 0.4); /* 40% */
-    --color-text-4: rgb(255 255 255 / 0.2); /* 20% */
-    /* ========================================= */
-    /* Brand Colors */
-    /* ========================================= */
-    --color-primary: #0BB57F;
-    --color-secondary: #007351;
+  /* ========================================= */
+  /* 행간 (Line Height) 정의 */
+  /* 디자인 시스템의 %를 소수점으로 변환 */
+  /* ========================================= */
+  --leading-130: 1.3;  /* Caption */
+  --leading-140: 1.4;  /* Title, Headline1 */
+  --leading-160: 1.6;  /* Headline2, Body, Label */
+  /* ========================================= */
+  /* 자간 (Letter Spacing) 정의 */
+  /* -4% -> -0.04em */
+  /* ========================================= */
+  --tracking-tightest: -0.04em; /* 대부분의 텍스트 */
+  --tracking-zero: 0em;       /* Caption */
+  /* ========================================= */
+  /* Text Colors */
+  /* ========================================= */
+  --color-text-1: #FFFFFF;
+  --color-text-2: rgb(255 255 255 / 0.7); /* 70% */
+  --color-text-3: rgb(255 255 255 / 0.4); /* 40% */
+  --color-text-4: rgb(255 255 255 / 0.2); /* 20% */
+  /* ========================================= */
+  /* Brand Colors */
+  /* ========================================= */
+  --color-primary: #0BB57F;
+  --color-secondary: #007351;
 
-    /* ========================================= */
-    /* Status Colors */
-    /* ========================================= */
-    --color-inactive: rgb(255 255 255 / 0.4);
-    --color-line-1: #8F96A3;
-    --color-line-2: #2B2D31;
+  /* ========================================= */
+  /* Status Colors */
+  /* ========================================= */
+  --color-inactive: rgb(255 255 255 / 0.4);
+  --color-line-1: #8F96A3;
+  --color-line-2: #2B2D31;
 
-    /* ========================================= */
-    /* System Notification */
-    /* ========================================= */
-    --color-system-red: #FC4141;
-    --color-system-blue: #EAF9FF;
-    --color-system-green: #ECFBF6;
+  /* ========================================= */
+  /* System Notification */
+  /* ========================================= */
+  --color-system-red: #FC4141;
+  --color-system-blue: #EAF9FF;
+  --color-system-green: #ECFBF6;
 
-    /* ========================================= */
-    /* Background Colors (Dark Mode Base) */
-    /* ========================================= */
-    --color-bg-1: #0C0D0E;
-    --color-bg-2: #18191B;
-    --color-bg-3: #1E2024;
-    --color-bg-4: #2B2D31;
-    --color-bg-inactive: #1E2024;
+  /* ========================================= */
+  /* Background Colors (Dark Mode Base) */
+  /* ========================================= */
+  --color-bg-1: #0C0D0E;
+  --color-bg-2: #18191B;
+  --color-bg-3: #1E2024;
+  --color-bg-4: #2B2D31;
+  --color-bg-inactive: #1E2024;
 
-    /* ========================================= */
-    /* Radius (Border Radius) */
-    /* 사용법: rounded-0, rounded-1, rounded-2 ... */
-    /* ========================================= */
-    --radius-0: 0px;
-    --radius-1: 2px;
-    --radius-2: 4px;
-    --radius-3: 6px;
-    --radius-4: 8px;
-    --radius-5: 12px;
+  /* ========================================= */
+  /* Radius (Border Radius) */
+  /* 사용법: rounded-0, rounded-1, rounded-2 ... */
+  /* ========================================= */
+  --radius-0: 0px;
+  --radius-1: 2px;
+  --radius-2: 4px;
+  --radius-3: 6px;
+  --radius-4: 8px;
+  --radius-5: 12px;
 
-    /* ========================================= */
-    /* [Shadow] 박스 쉐도우 설정 */
-    /* ========================================= */
-    /* 사용법: shadow-1, shadow-2 ... */
-    /* Shadow 1 (아주 얕은 깊이) */
-    --shadow-1: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    /* Shadow 2 (보통 카드 UI) */
-    --shadow-2: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    /* Shadow 3 (모달, 팝업 등 강조) */
-    --shadow-3: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    /* Shadow 4 (가장 높은 깊이) */
-    --shadow-4: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  /* ========================================= */
+  /* [Shadow] 박스 쉐도우 설정 */
+  /* ========================================= */
+  /* 사용법: shadow-1, shadow-2 ... */
+  /* Shadow 1 (아주 얕은 깊이) */
+  --shadow-1: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  /* Shadow 2 (보통 카드 UI) */
+  --shadow-2: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  /* Shadow 3 (모달, 팝업 등 강조) */
+  --shadow-3: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  /* Shadow 4 (가장 높은 깊이) */
+  --shadow-4: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
 /* ========================================= */
 /* HTML Elements */
 /* ========================================= */
 @layer base {
-    /* 기본 레이아웃 및 렌더링 설정 */
-    html, body {
-        width: 100%;
-        height: 100%;
-    }
+  /* 기본 레이아웃 및 렌더링 설정 */
+  html, body {
+    width: 100%;
+    /*height: 100%;*/
+  }
 
-    html {
-        scroll-behavior: smooth;
-    }
+  html {
+    scroll-behavior: smooth;
+    min-height: 100vh;
+  }
 
-    body {
-        /* 맥/iOS 폰트 선명하게 */
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        /* 기본 텍스트, 배경색 (테마 변수 연결 가능) */
-        @apply bg-bg-1 text-text-1 antialiased;
-    }
+  body {
+    /* 맥/iOS 폰트 선명하게 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+    /* 기본 텍스트, 배경색 (테마 변수 연결 가능) */
+    @apply bg-bg-1 text-text-1 antialiased;
+  }
 
-    /* [tailwind ver] modern css reset 2025 */
-    /* 모바일 터치 하이라이트 제거 */
-    * {
-        -webkit-tap-highlight-color: transparent;
-    }
+  /* [tailwind ver] modern css reset 2025 */
+  /* 모바일 터치 하이라이트 제거 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 
-    /* 제목 밸런스 잡기 */
-    h1, h2, h3, h4, h5, h6 {
-        text-wrap: balance;
-    }
+  /* 제목 밸런스 잡기 */
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
 
-    /* 긴 본문에서 고아(orphan) 단어 방지 */
-    p {
-        text-wrap: pretty;
-    }
+  /* 긴 본문에서 고아(orphan) 단어 방지 */
+  p {
+    text-wrap: pretty;
+  }
 
-    /* 이미지, 비디오 비율 깨짐 방지 */
-    img, video {
-        height: auto;
-        /* 이미지는 기본이 inline이라 */
-        /* block으로 잡는게 정신건강에 좋음 */
-        display: block;
-    }
+  /* 이미지, 비디오 비율 깨짐 방지 */
+  img, video {
+    height: auto;
+    /* 이미지는 기본이 inline이라 */
+    /* block으로 잡는게 정신건강에 좋음 */
+    display: block;
+  }
 
-    /* 폼 요소 입력 시 줌인 방지 (아이폰 대응) */
-    /* font-size가 16px 미만이면 아이폰에서 input 클릭 시 화면이 확대됨 */
-    input, textarea, select {
-        /* 모바일 기본 폰트 사이즈 강제 */
-        font-size: 16px;
-    }
+  /* 폼 요소 입력 시 줌인 방지 (아이폰 대응) */
+  /* font-size가 16px 미만이면 아이폰에서 input 클릭 시 화면이 확대됨 */
+  input, textarea, select {
+    /* 모바일 기본 폰트 사이즈 강제 */
+    font-size: 16px;
+  }
 }
 
 /* ========================================= */
@@ -162,68 +164,68 @@
 /* 디자인 시스템 세트 메뉴 구현 */
 /* ========================================= */
 @layer utilities {
-    /* Title (32px, 140%, -4%) */
-    .typo-title-heading {
-        @apply text-title font-bold leading-140 tracking-tightest;
-    }
+  /* Title (32px, 140%, -4%) */
+  .typo-title-heading {
+    @apply text-title font-bold leading-140 tracking-tightest;
+  }
 
-    .typo-title-normal {
-        @apply text-title font-normal leading-140 tracking-tightest;
-    }
+  .typo-title-normal {
+    @apply text-title font-normal leading-140 tracking-tightest;
+  }
 
-    /* Headline 1 (24px, 140%, -4%) */
-    .typo-h1-heading {
-        @apply text-h1 font-bold leading-140 tracking-tightest;
-    }
+  /* Headline 1 (24px, 140%, -4%) */
+  .typo-h1-heading {
+    @apply text-h1 font-bold leading-140 tracking-tightest;
+  }
 
-    .typo-h1-normal {
-        @apply text-h1 font-normal leading-140 tracking-tightest;
-    }
+  .typo-h1-normal {
+    @apply text-h1 font-normal leading-140 tracking-tightest;
+  }
 
-    /* Headline 2 (20px, 160%, -4%) */
-    .typo-h2-heading {
-        @apply text-h2 font-semibold leading-160 tracking-tightest;
-    }
+  /* Headline 2 (20px, 160%, -4%) */
+  .typo-h2-heading {
+    @apply text-h2 font-semibold leading-160 tracking-tightest;
+  }
 
-    .typo-h2-normal {
-        @apply text-h2 font-normal leading-160 tracking-tightest;
-    }
+  .typo-h2-normal {
+    @apply text-h2 font-normal leading-160 tracking-tightest;
+  }
 
-    /* Body 1 (18px, 160%, -4%) */
-    .typo-body1-heading {
-        @apply text-body1 font-semibold leading-160 tracking-tightest;
-    }
+  /* Body 1 (18px, 160%, -4%) */
+  .typo-body1-heading {
+    @apply text-body1 font-semibold leading-160 tracking-tightest;
+  }
 
-    .typo-body1-normal {
-        @apply text-body1 font-normal leading-160 tracking-tightest;
-    }
+  .typo-body1-normal {
+    @apply text-body1 font-normal leading-160 tracking-tightest;
+  }
 
-    /* Body 2 (16px, 160%, -4%) */
-    .typo-body2-heading {
-        @apply text-body2 font-semibold leading-160 tracking-tightest;
-    }
+  /* Body 2 (16px, 160%, -4%) */
+  .typo-body2-heading {
+    @apply text-body2 font-semibold leading-160 tracking-tightest;
+  }
 
-    .typo-body2-normal {
-        @apply text-body2 font-normal leading-160 tracking-tightest;
-    }
+  .typo-body2-normal {
+    @apply text-body2 font-normal leading-160 tracking-tightest;
+  }
 
-    /* Label (14px, 160%, -4%) */
-    .typo-label-heading {
-        @apply text-label font-semibold leading-160 tracking-tightest;
-    }
+  /* Label (14px, 160%, -4%) */
+  .typo-label-heading {
+    @apply text-label font-semibold leading-160 tracking-tightest;
+  }
 
-    .typo-label-normal {
-        @apply text-label font-normal leading-160 tracking-tightest;
-    }
+  .typo-label-normal {
+    @apply text-label font-normal leading-160 tracking-tightest;
+  }
 
-    /* Caption (12px, 130%, 0%) - 자간 다름 주의 */
-    .typo-caption-heading {
-        @apply text-caption font-medium leading-130 tracking-zero;
-    }
+  /* Caption (12px, 130%, 0%) - 자간 다름 주의 */
+  .typo-caption-heading {
+    @apply text-caption font-medium leading-130 tracking-zero;
+  }
 
-    .typo-caption-normal {
-        @apply text-caption font-normal leading-130 tracking-zero;
-    }
+  .typo-caption-normal {
+    @apply text-caption font-normal leading-130 tracking-zero;
+  }
 }
 
 /* Simple utilities */
@@ -231,18 +233,18 @@
 /* [sr-only] 라이브러리 포팅용 */
 /* 나중에 이 블록만 별도 CSS 파일로 분리해서 라이브러리에 포함 */
 @utility sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    /* 구형 브라우저 호환 */
-    clip: rect(0, 0, 0, 0);
-    /* 최신 브라우저 표준(필요하면 사용) */
-    /* clip-path: inset(50%); */
-    white-space: nowrap;
-    border: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  /* 구형 브라우저 호환 */
+  clip: rect(0, 0, 0, 0);
+  /* 최신 브라우저 표준(필요하면 사용) */
+  /* clip-path: inset(50%); */
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Using custom CSS */
