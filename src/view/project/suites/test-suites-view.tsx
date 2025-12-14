@@ -1,16 +1,22 @@
 import React from 'react';
 
-import { Container, MainContainer } from '@/shared';
-import { Aside } from '@/widgets';
-import {
-  FolderTree,
-  FileText,
-  Layers,
-  PlayCircle,
-  AlertCircle,
-  Search,
-} from 'lucide-react';
+
+
 import { SuiteCreateForm } from '@/features/suites-create';
+import { Container, DSButton, MainContainer } from '@/shared';
+import { Aside } from '@/widgets';
+import { AlertCircle, FileText, FolderTree, Layers, PlayCircle, Search } from 'lucide-react';
+
+
+
+
+
+
+
+
+
+
+
 
 export const TestSuitesView = () => {
   return (
@@ -29,10 +35,7 @@ export const TestSuitesView = () => {
               문서 복사 없이 같은 스위트를 반복 실행하세요.
             </p>
           </div>
-
-          <button className="typo-body2-heading bg-primary text-bg-1 shadow-3 flex items-center gap-2 rounded-lg px-5 py-3 hover:opacity-90">
-            <span>새 테스트 스위트</span>
-          </button>
+          <DSButton type='button' variant='solid'>테스트 스위트 생성하기</DSButton>
         </header>
 
         {/* 상단 컨트롤 바: 검색 + 필터 + 요약 */}
