@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Milestone,
+  Play,
 } from 'lucide-react';
 
 const pages = [
@@ -21,6 +22,7 @@ const pages = [
   { id: 'milestones', label: '마일스톤', icon: Milestone, href: '/projects/p-name/milestones' },
   { id: 'test-suites', label: '테스트 스위트', icon: FolderTree, href: '/projects/p-name/suites' },
   { id: 'test-cases', label: '테스트 케이스', icon: ListChecks, href: '/projects/p-name/cases' },
+  { id: 'test-runs', label: '테스트 실행', icon: Play, href: '/projects/p-name/runs' },
 ];
 
 /**
