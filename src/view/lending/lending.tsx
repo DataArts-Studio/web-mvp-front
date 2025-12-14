@@ -15,7 +15,7 @@ export const LendingView = () => {
     setIsOpened((prev) => !prev);
     console.log(`클릭: handleOpen실행 -> setIsOpened 실행 ${isOpened}`);
   };
-
+  // flex flex-1 flex-grow flex-col items-center justify-start
   return (
     <GridBackground.Root>
       <GridBackground.Grid/>
@@ -23,13 +23,13 @@ export const LendingView = () => {
       <GridBackground.CircleDecoration/>
       <GridBackground.ArrowDecoration/>
       {/* Contents */}
-      <Container className="text-text1 bg-bg-1 flex min-h-screen items-start justify-start font-sans">
+      <Container id='container' className="w-full text-text1 bg-bg-1 flex min-h-screen items-start justify-start flex-1 font-sans">
         {/* Header */}
         <GlobalHeader />
         {/* Main Content */}
-        <MainContainer className="flex w-full max-w-6xl flex-1 flex-grow flex-col items-center justify-start px-4 mt-48 ml-80 pb-20 text-center">
+        <MainContainer className="w-full min-h-screen mx-auto max-w-6xl grid grid-cols-10 gap-3 items-center px-4 text-center">
           {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
-          <div className="w-[47.56rem] flex flex-col items-start gap-9">
+          <div className="col-start-2 mx-auto flex flex-col items-start gap-9">
             <Logo className="h-12 w-48" />
             <LendingHeader />
             {/* CTA Section */}
