@@ -223,7 +223,7 @@ export const TestCasesView = () => {
           </div>
         </section>
       </MainContainer>
-      {/*<TestCaseSideView/>*/}
+      <TestCaseSideView/>
     </Container>
   );
 };
