@@ -32,7 +32,7 @@ export const TestCasesView = () => {
               </div>
               <input
                 type="text"
-                placeholder="테스트 케이스 제목 검색..."
+                placeholder="테스트 케이스 제목을 입력해 주세요."
                 className="typo-body2-normal rounded-2 border-line-2 bg-bg-2 text-text-1 placeholder:text-text-4 focus:border-primary focus:ring-primary w-full border py-2 pr-4 pl-10 focus:ring-1 focus:outline-none"
               />
             </div>
@@ -62,8 +62,11 @@ export const TestCasesView = () => {
         <section className="col-span-6 rounded-4 border-line-2 bg-bg-2 shadow-1 flex flex-col overflow-hidden border">
           {/* Table Header */}
           <div className="border-line-2 bg-bg-3 grid grid-cols-12 gap-4 border-b px-6 py-3">
-            <div className="typo-caption-heading text-text-3 col-span-6 uppercase">
-              테스트 케이스 제목 / 스위트
+            <div className="typo-caption-heading text-text-3 col-span-2 uppercase">
+              ID
+            </div>
+            <div className="typo-caption-heading text-text-3 col-span-4 uppercase">
+              제목
             </div>
             <div className="typo-caption-heading text-text-3 col-span-2 text-center uppercase">
               상태
@@ -90,7 +93,12 @@ export const TestCasesView = () => {
 
           {/* Untested */}
           <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors">
-            <div className="col-span-6 flex flex-col gap-1">
+            <div className='col-span-2'>
+              <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
+                TC-1001
+              </span>
+            </div>
+            <div className="col-span-4 flex flex-col gap-1">
               {/* Title */}
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 회원가입 - 이메일 형식이 잘못된 경우
@@ -116,7 +124,12 @@ export const TestCasesView = () => {
 
           {/* Passed */}
           <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors">
-            <div className="col-span-6 flex flex-col gap-1">
+            <div className='col-span-2'>
+              <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
+                TC-1002
+              </span>
+            </div>
+            <div className="col-span-4 flex flex-col gap-1">
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 로그인 - 정상 로그인 처리
               </span>
@@ -142,7 +155,12 @@ export const TestCasesView = () => {
 
           {/* Failed */}
           <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors">
-            <div className="col-span-6 flex flex-col gap-1">
+            <div className='col-span-2'>
+              <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
+                TC-1003
+              </span>
+            </div>
+            <div className="col-span-4 flex flex-col gap-1">
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 결제 - 잔액 부족 시 알림 팝업 노출
               </span>
@@ -168,7 +186,12 @@ export const TestCasesView = () => {
 
           {/* Blocked */}
           <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors">
-            <div className="col-span-6 flex flex-col gap-1">
+            <div className='col-span-2'>
+              <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
+                TC-1004
+              </span>
+            </div>
+            <div className="col-span-4 flex flex-col gap-1">
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 어드민 - 사용자 강제 탈퇴 기능
               </span>

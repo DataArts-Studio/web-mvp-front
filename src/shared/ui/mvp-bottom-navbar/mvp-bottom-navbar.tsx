@@ -81,7 +81,7 @@ export const MvpBottomNavbar = () => {
     <div className={`${baseClasses} ${isVisible ? visiblePosition : hiddenPosition}`}>
       {isVisible ? (
         // visiblePosition: 전체 네비게이션 바
-        <div className="flex flex-row items-center gap-[8px] rounded-[16px] border border-[rgba(11,181,127,0.2)] bg-[rgba(255,255,255,0.05)] px-[24px] py-[16px] shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[20px] backdrop-filter">
+        <div className="flex flex-row items-center gap-[8px] rounded-[16px] border border-[rgba(11,181,127,0.2)] bg-[rgba(255,255,255,0.05)] px-[12px] py-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-[20px] backdrop-filter">
           {pages.map((page) => {
             const Icon = page.icon;
             const isActive = isPageActive(page.href);
@@ -96,8 +96,8 @@ export const MvpBottomNavbar = () => {
                     : 'text-[rgba(198,204,215,0.7)] hover:bg-[rgba(11,181,127,0.1)] hover:text-[#0bb57f]'
                 }`}
               >
-                <Icon className="h-[20px] w-[20px]" />
-                <span className="font-['Pretendard:Medium',sans-serif] text-[12px] tracking-[-0.24px]">
+                <Icon className="h-4 w-4" />
+                <span className="font-['Pretendard:Medium',sans-serif] text-[8px] tracking-[-0.24px]">
                   {page.label}
                 </span>
               </Link>
@@ -110,7 +110,7 @@ export const MvpBottomNavbar = () => {
             className="flex cursor-pointer flex-col items-center gap-[4px] rounded-[8px] px-[16px] py-[8px] text-[rgba(198,204,215,0.7)] transition-all hover:bg-[rgba(11,181,127,0.1)] hover:text-[#0bb57f]"
             title="퀵 메뉴 숨기기"
           >
-            <EyeOff className="h-[20px] w-[20px]" />
+            <EyeOff className="h-4 w-4" />
             <span className="font-['Pretendard:Medium',sans-serif] text-[12px] tracking-[-0.24px]">
               숨기기
             </span>
@@ -122,7 +122,7 @@ export const MvpBottomNavbar = () => {
           className="flex h-[56px] w-[56px] cursor-pointer items-center justify-center rounded-full bg-[#0bb57f] text-white shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-colors hover:bg-[#099f6b]"
           title="퀵 메뉴 보이기"
         >
-          <Eye className="h-[24px] w-[24px]" />
+          <Eye className="h-4 w-4" />
         </div>
       )}
     </div>
