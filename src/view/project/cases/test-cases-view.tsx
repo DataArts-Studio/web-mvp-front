@@ -3,6 +3,7 @@ import React from 'react';
 import { Container, DSButton, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
 import { ChevronDown, Filter, MoreHorizontal, Plus, Search } from 'lucide-react';
+import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
 
 export const TestCasesView = () => {
   return (
@@ -199,6 +200,7 @@ export const TestCasesView = () => {
           </div>
         </section>
       </MainContainer>
+      <TestCaseSideView/>
     </Container>
   );
 };
