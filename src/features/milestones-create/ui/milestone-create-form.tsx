@@ -13,7 +13,11 @@ interface IFormInput {
   endDate: string;
 }
 
-export const MilestoneCreateForm = () => {
+interface MilestoneCreateFormProps {
+  onClose?: () => void;
+}
+
+export const MilestoneCreateForm = ({onClose}: MilestoneCreateFormProps) => {
   const { register, handleSubmit } = useForm<IFormInput>();
   const onSubmit = async (data: IFormInput) => {
     const formData = new FormData();
@@ -84,7 +88,7 @@ export const MilestoneCreateForm = () => {
               type="button"
               variant="ghost"
               className="mt-2 w-full"
-              onClick={() => alert('취소 클릭')}
+              onClick={onClose}
             >
               취소
             </DSButton>

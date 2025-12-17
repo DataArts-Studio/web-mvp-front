@@ -1,16 +1,17 @@
+'use client';
 import React from 'react';
-
 import { Container, DSButton, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
 import { ChevronDown, Filter, MoreHorizontal, Plus, Search } from 'lucide-react';
 import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
+import { useDisclosure } from '@/shared/hooks';
 
 export const TestCasesView = () => {
+  const { isOpen, onClose, onOpen } = useDisclosure();
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans">
       {/* Aside */}
       <Aside />
-
       {/* Main Content */}
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         {/* Header */}
@@ -20,7 +21,6 @@ export const TestCasesView = () => {
             프로젝트의 모든 테스트 케이스를 조회하고 관리합니다.
           </p>
         </header>
-
         {/* Toolbar (Search, Filter, Actions) */}
         <section className="col-span-6 flex items-center justify-between gap-4">
           {/* Left: Search & Filters */}
@@ -36,21 +36,18 @@ export const TestCasesView = () => {
                 className="typo-body2-normal rounded-2 border-line-2 bg-bg-2 text-text-1 placeholder:text-text-4 focus:border-primary focus:ring-primary w-full border py-2 pr-4 pl-10 focus:ring-1 focus:outline-none"
               />
             </div>
-
             {/* Filter Dropdown Trigger */}
             <DSButton className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors">
               <Filter className="h-4 w-4" />
               <span>상태: All</span>
               <ChevronDown className="text-text-3 h-4 w-4" />
             </DSButton>
-
             {/* Sort Dropdown Trigger */}
             <DSButton className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors">
               <span>정렬: 최근 수정 순</span>
               <ChevronDown className="text-text-3 h-4 w-4" />
             </DSButton>
           </div>
-
           {/* Right: Advanced Create Button */}
           <button className="typo-body2-heading flex items-center gap-2 rounded-2 bg-primary px-4 py-2 text-text-1 shadow-2 hover:opacity-90 transition-opacity">
             <Plus className="h-4 w-4" />
@@ -74,7 +71,7 @@ export const TestCasesView = () => {
             <div className="typo-caption-heading text-text-3 col-span-3 text-right uppercase">
               최종 수정
             </div>
-            <div className="col-span-1"></div>
+            <div className="col-span-1"/>
           </div>
 
           {/* Inline Create Row */}
@@ -92,7 +89,7 @@ export const TestCasesView = () => {
           </div>
 
           {/* Untested */}
-          <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors">
+          <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors" onClick={onOpen}>
             <div className='col-span-2'>
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 TC-1001
@@ -223,7 +220,7 @@ export const TestCasesView = () => {
           </div>
         </section>
       </MainContainer>
-      <TestCaseSideView/>
+      {isOpen && <TestCaseSideView onClose={onClose} />}
     </Container>
   );
 };

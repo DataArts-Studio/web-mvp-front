@@ -1,15 +1,18 @@
 import React from 'react';
-
 import { DSButton } from '@/shared';
 import { Calendar, Clock, Copy, Edit2, Flag, Folder, Play, Tag, Trash2, X } from 'lucide-react';
 
-export const TestCaseSideView = () => {
+interface TestCaseSideViewProps {
+  onClose: () => void;
+}
+
+export const TestCaseSideView = ({ onClose }: TestCaseSideViewProps) => {
   return (
     <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
       <div className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
           <div className="flex justify-between">
-            <DSButton size="small" variant="ghost" className="px-2">
+            <DSButton size="small" variant="ghost" className="px-2" onClick={onClose}>
               <X className="h-4 w-4" />
             </DSButton>
             <DSButton size="small" variant="ghost" className="flex items-center gap-1 px-2">
