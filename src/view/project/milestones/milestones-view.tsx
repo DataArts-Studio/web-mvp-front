@@ -1,16 +1,17 @@
+'use client';
 import React from 'react';
-
 import { Container, DSButton, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
 import { Calendar, CheckCircle, ListChecks, PlayCircle } from 'lucide-react';
 import { MilestoneCreateForm } from '@/features';
+import { useDisclosure } from '@/shared/hooks';
 
 export const MilestonesView = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}
       <Aside />
-
       {/* Main Content */}
       <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">
         {/* 헤더 영역 */}
@@ -21,9 +22,8 @@ export const MilestonesView = () => {
               스프레드시트 복사 대신, 마일스톤별 테스트 케이스와 실행 결과를 한 화면에서 확인하세요.
             </p>
           </div>
-          <DSButton type='button' variant='solid'>마일스톤 생성하기</DSButton>
+          <DSButton type='button' variant='solid' onClick={onOpen}>마일스톤 생성하기</DSButton>
         </header>
-
         {/* 필터 / 요약 바 */}
         <section
           aria-label="마일스톤 필터"
@@ -53,14 +53,12 @@ export const MilestonesView = () => {
             <span>오늘 실행 12건</span>
           </div>
         </section>
-
         {/* 컬럼 헤더 (엑셀 헤더 느낌으로) */}
         <div className="col-span-6 mt-2 hidden items-center justify-between text-label-normal text-text-3 md:flex">
           <span className="w-[40%]">마일스톤</span>
           <span className="w-[30%]">진행률</span>
           <span className="w-[30%] text-right">테스트 현황</span>
         </div>
-
         {/* 마일스톤 리스트 */}
         <section aria-label="마일스톤 목록" className="col-span-6 flex flex-col gap-3">
           {/* 카드 1 */}
@@ -198,7 +196,7 @@ export const MilestonesView = () => {
             </div>
           </article>
         </section>
-        <MilestoneCreateForm/>
+        {isOpen && <MilestoneCreateForm onClose={onClose}/>}
       </MainContainer>
     </Container>
   );

@@ -1,16 +1,17 @@
+'use client'
 import React from 'react';
-
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, DSButton, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
 import { AlertCircle, FileText, FolderTree, Layers, PlayCircle, Search } from 'lucide-react';
+import { useDisclosure } from '@/shared/hooks';
 
 export const TestSuitesView = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}
       <Aside />
-
       {/* Main Content */}
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         {/* 헤더 영역 */}
@@ -22,7 +23,7 @@ export const TestSuitesView = () => {
               스위트를 반복 실행하세요.
             </p>
           </div>
-          <DSButton type="button" variant="solid">
+          <DSButton type="button" variant="solid" onClick={onOpen}>
             테스트 스위트 생성하기
           </DSButton>
         </header>
@@ -217,7 +218,7 @@ export const TestSuitesView = () => {
             </div>
           </article>
         </section>
-        <SuiteCreateForm />
+        {isOpen && <SuiteCreateForm onClose={onClose} />}
       </MainContainer>
     </Container>
   );

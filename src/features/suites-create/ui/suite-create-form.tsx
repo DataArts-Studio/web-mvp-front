@@ -10,7 +10,11 @@ interface IFormInput {
   description?: string;
 }
 
-export const SuiteCreateForm = ({ onClose }: { onClose?: () => void }) => {
+interface SuiteCreateFormProps {
+  onClose?: () => void;
+}
+
+export const SuiteCreateForm = ({ onClose }: SuiteCreateFormProps) => {
   const {
     register,
     handleSubmit,
@@ -96,10 +100,7 @@ export const SuiteCreateForm = ({ onClose }: { onClose?: () => void }) => {
               variant="ghost"
               className="w-full"
               disabled={isSubmitting}
-              onClick={() => {
-                if (onClose) onClose();
-                else alert('취소 클릭');
-              }}
+              onClick={onClose}
             >
               취소
             </DSButton>
