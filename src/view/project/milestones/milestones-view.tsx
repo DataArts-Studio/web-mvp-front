@@ -26,60 +26,10 @@ export const MilestonesView = () => {
           <DSButton type='button' variant='solid' onClick={onOpen}>마일스톤 생성하기</DSButton>
         </header>
         <MilestoneToolBar/>
-        {/* 컬럼 헤더 (엑셀 헤더 느낌으로) */}
-        <div className="col-span-6 mt-2 hidden items-center justify-between text-label-normal text-text-3 md:flex">
-          <span className="w-[40%]">마일스톤</span>
-          <span className="w-[30%]">진행률</span>
-          <span className="w-[30%] text-right">테스트 현황</span>
-        </div>
         {/* 마일스톤 리스트 */}
         <section aria-label="마일스톤 목록" className="col-span-6 flex flex-col gap-3">
           {/* 카드 1 */}
-          <article className="bg-bg-2 shadow-1 flex w-full flex-col gap-4 rounded-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
-            {/* 왼쪽: 이름 + 상태 + 설명 + 기간 */}
-            <div className="flex w-full flex-col gap-2 md:w-[40%]">
-              <div className="flex items-center gap-3">
-                <h2 className="typo-h2-heading">v1.0 릴리즈</h2>
-                <span className="typo-label-heading rounded-full bg-amber-500/20 px-3 py-1 text-amber-300">
-                  진행중
-                </span>
-              </div>
-              <p className="typo-body2-normal text-text-2">
-                정식 릴리즈 전 핵심 플로우 회귀 테스트와 주요 기능 검증.
-              </p>
-              <div className="flex items-center gap-1.5 text-label-normal text-text-3">
-                <Calendar className="h-4 w-4 text-text-3" strokeWidth={1.5} />
-                <span>2024-12-15 ~ 2024-12-25</span>
-              </div>
-            </div>
 
-            {/* 가운데: 진행률 바 */}
-            <div className="flex w-full flex-col gap-2 md:w-[30%]">
-              <div className="flex items-center justify-between text-label-normal text-text-3">
-                <span>진행률</span>
-                <span className="typo-body2-heading text-primary">85%</span>
-              </div>
-              <div className="bg-bg-3 h-1.5 w-full rounded-full">
-                <div className="bg-primary h-full w-[85%] rounded-full" />
-              </div>
-            </div>
-
-            {/* 오른쪽: 테스트 케이스 / 완료 / 실행 */}
-            <div className="flex w-full flex-col gap-1 text-label-normal text-text-3 md:w-[30%] md:items-end">
-              <div className="flex items-center gap-1.5 md:justify-end">
-                <ListChecks className="h-4 w-4 text-text-3" strokeWidth={1.5} />
-                <span>테스트 케이스 45개</span>
-              </div>
-              <div className="flex items-center gap-1.5 md:justify-end">
-                <CheckCircle className="h-4 w-4 text-text-3" strokeWidth={1.5} />
-                <span>38개 완료</span>
-              </div>
-              <div className="flex items-center gap-1.5 md:justify-end">
-                <PlayCircle className="h-4 w-4 text-text-3" strokeWidth={1.5} />
-                <span>실행 3회</span>
-              </div>
-            </div>
-          </article>
 
           {/* 카드 2 */}
           <article className="bg-bg-2 shadow-1 flex w-full flex-col gap-4 rounded-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
