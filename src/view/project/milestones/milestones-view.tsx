@@ -5,6 +5,7 @@ import { Aside } from '@/widgets';
 import { Calendar, CheckCircle, ListChecks, PlayCircle } from 'lucide-react';
 import { MilestoneCreateForm } from '@/features';
 import { useDisclosure } from '@/shared/hooks';
+import { MilestoneToolBar } from '@/widgets/milestone/ui/milestone-tool-bar';
 
 export const MilestonesView = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -24,35 +25,7 @@ export const MilestonesView = () => {
           </div>
           <DSButton type='button' variant='solid' onClick={onOpen}>마일스톤 생성하기</DSButton>
         </header>
-        {/* 필터 / 요약 바 */}
-        <section
-          aria-label="마일스톤 필터"
-          className="col-span-6 bg-bg-2 shadow-1 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-3"
-        >
-          {/* 상태 필터 탭 */}
-          <nav className="flex flex-wrap gap-2">
-            {['전체', '진행 중', '완료', '예정'].map((label, index) => (
-              <button
-                key={label}
-                className={[
-                  'typo-label-normal rounded-full px-3 py-1',
-                  index === 0
-                    ? 'bg-bg-3 text-primary'
-                    : 'text-text-3 hover:bg-bg-3 hover:text-text-1',
-                ].join(' ')}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-
-          {/* 요약 숫자 */}
-          <div className="text-label-normal text-text-3 flex flex-wrap gap-4">
-            <span>마일스톤 3개</span>
-            <span>테스트 케이스 88개</span>
-            <span>오늘 실행 12건</span>
-          </div>
-        </section>
+        <MilestoneToolBar/>
         {/* 컬럼 헤더 (엑셀 헤더 느낌으로) */}
         <div className="col-span-6 mt-2 hidden items-center justify-between text-label-normal text-text-3 md:flex">
           <span className="w-[40%]">마일스톤</span>
