@@ -5,7 +5,7 @@ import { MilestoneCard, milestonesMock } from '@/entities/milestone';
 import { MilestoneCreateForm } from '@/features';
 import { Container, DSButton, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
-import { Aside } from '@/widgets';
+import { ActionToolbar, Aside } from '@/widgets';
 import { MilestoneToolBar } from '@/widgets/milestone/ui/milestone-tool-bar';
 import { FolderOpen } from 'lucide-react';
 
@@ -19,7 +19,6 @@ export const MilestonesView = () => {
       <Aside />
       {/* Main Content */}
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
-        {/* 헤더 영역 */}
         <header className="col-span-6 flex w-full items-start justify-between gap-6">
           <div className="flex flex-col gap-2">
             <h1 className="typo-title-heading">마일스톤 & 테스트 진행 현황</h1>
@@ -27,11 +26,20 @@ export const MilestonesView = () => {
               스프레드시트 복사 대신, 마일스톤별 테스트 케이스와 실행 결과를 한 화면에서 확인하세요.
             </p>
           </div>
-          <DSButton type="button" variant="solid" onClick={onOpen}>
-            마일스톤 생성하기
-          </DSButton>
         </header>
-        <MilestoneToolBar />
+        <ActionToolbar.Root ariaLabel="마일스톤 컨트롤">
+          <ActionToolbar.Group>
+            <ActionToolbar.Search placeholder="마일스톤 이름 또는 키워드로 검색" />
+            <ActionToolbar.Filter
+              options={['전체', '진행 중', '완료', '예정']}
+              currentValue={'전체'}
+              onChange={() => '진행 중'}
+            />
+          </ActionToolbar.Group>
+          <ActionToolbar.Action size='small' type="button" variant="solid" onClick={onOpen}>
+            마일스톤 생성하기
+          </ActionToolbar.Action>
+        </ActionToolbar.Root>
         {/* 마일스톤 리스트 */}
         <section aria-label="마일스톤 목록" className="col-span-6 flex flex-col gap-3">
           {data.length === 0 ? (

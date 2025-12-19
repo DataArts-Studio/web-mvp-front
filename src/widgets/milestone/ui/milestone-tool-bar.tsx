@@ -1,11 +1,5 @@
 import React from 'react';
 
-
-
-
-
-
-
 export const MilestoneToolBar = () => {
   return (
     <section

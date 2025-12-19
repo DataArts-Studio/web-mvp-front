@@ -5,6 +5,7 @@ import { Container, DSButton, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
 import { AlertCircle, FileText, FolderTree, Layers, PlayCircle, Search } from 'lucide-react';
 import { useDisclosure } from '@/shared/hooks';
+import { ActionToolbar } from '@/widgets';
 
 export const TestSuitesView = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -23,61 +24,14 @@ export const TestSuitesView = () => {
               스위트를 반복 실행하세요.
             </p>
           </div>
-          <DSButton type="button" variant="solid" onClick={onOpen}>
-            테스트 스위트 생성하기
-          </DSButton>
         </header>
-
-        {/* 상단 컨트롤 바: 검색 + 필터 + 요약 */}
-        <section
-          aria-label="테스트 스위트 컨트롤"
-          className="bg-bg-2 shadow-1 col-span-6 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-3"
-        >
-          {/* 검색 + 필터 */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* 검색 */}
-            <div className="bg-bg-3 flex items-center gap-2 rounded-lg px-3 py-2">
-              <Search className="text-text-3 h-4 w-4" strokeWidth={1.5} />
-              <input
-                type="text"
-                placeholder="스위트 이름 또는 키워드로 검색"
-                className="typo-label-normal text-text-1 placeholder:text-text-4 bg-transparent focus:outline-none"
-              />
-            </div>
-
-            {/* 타입 필터 */}
-            <nav className="flex flex-wrap gap-2">
-              {['전체', '기능별', '시나리오', '회귀 테스트'].map((label, index) => (
-                <button
-                  key={label}
-                  className={[
-                    'typo-label-normal rounded-full px-3 py-1',
-                    index === 0
-                      ? 'bg-bg-3 text-primary'
-                      : 'text-text-3 hover:bg-bg-3 hover:text-text-1',
-                  ].join(' ')}
-                >
-                  {label}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* 요약 숫자 */}
-          <div className="text-label-normal text-text-3 flex flex-wrap gap-4">
-            <span>스위트 5개</span>
-            <span>테스트 케이스 120개</span>
-            <span>오늘 실행 4회</span>
-          </div>
-        </section>
-
-        {/* 컬럼 헤더 */}
-        <div className="text-label-normal text-text-3 col-span-6 mt-2 hidden items-center justify-between md:flex">
-          <span className="w-[40%]">스위트</span>
-          <span className="w-[30%]">구성</span>
-          <span className="w-[30%] text-right">최근 실행</span>
-        </div>
-
+        <ActionToolbar.Root ariaLabel='테스트 스위트 컨트롤'>
+          <ActionToolbar.Group>
+            <ActionToolbar.Search placeholder='스위트 이름 또는 키워드로 검색'/>
+            <ActionToolbar.Filter options={['전체', '기능별', '시나리오']} currentValue={'전체'} onChange={() => '기능별'}/>
+          </ActionToolbar.Group>
+          <ActionToolbar.Action size='small' type="button" variant="solid" onClick={onOpen}>테스트 스위트 생성하기</ActionToolbar.Action>
+        </ActionToolbar.Root>
         {/* 테스트 스위트 리스트 */}
         <section aria-label="테스트 스위트 리스트" className="col-span-6 flex flex-col gap-3">
           {/* 스위트 1: 기능별 - 인증 플로우 */}
