@@ -34,7 +34,7 @@ export const MilestoneCard = ({ milestone }: MilestoneCardProps) => {
   };
 
   return (
-    <div className="bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
+    <div className="cursor-pointer bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
       <div className="flex w-full flex-col gap-2 md:w-[40%]">
         <div className="flex items-center gap-3">
           <h2 className="typo-h2-heading">{milestone.title}</h2>
