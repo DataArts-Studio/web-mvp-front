@@ -1,0 +1,1 @@
+export const MOCK_PROJECT_ID = '0193a2d1-7c21-7b11-9a9a-1a2b3c4d5e6f';

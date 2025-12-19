@@ -9,3 +9,5 @@ export { FORMAT, REGEX, UI, ROUTES, QUERY_KEYS } from '@/shared/constants/core';
 
 // SEO
 export { SEO } from '@/shared/constants/seo';
+
+export * from './mock';
