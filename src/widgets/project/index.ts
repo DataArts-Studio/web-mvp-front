@@ -1,1 +1,1 @@
-export {ProjectHeader} from '@/widgets/project/ui/project-header';
+export {ProjectHeader, ActionToolbar} from '@/widgets/project/ui';

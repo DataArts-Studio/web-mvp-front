@@ -3,7 +3,6 @@ import React from 'react';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
-import { AlertCircle, FileText, FolderTree, Layers, PlayCircle, Search } from 'lucide-react';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar } from '@/widgets';
 import {TEST_SUITES_RICH_MOCK as SUITES} from '@/entities/test-suite';

@@ -3,10 +3,9 @@ import React from 'react';
 
 import { MilestoneCard, milestonesMock } from '@/entities/milestone';
 import { MilestoneCreateForm } from '@/features';
-import { Container, DSButton, MainContainer } from '@/shared';
+import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
-import { MilestoneToolBar } from '@/widgets/milestone/ui/milestone-tool-bar';
 import { FolderOpen } from 'lucide-react';
 
 export const MilestonesView = () => {

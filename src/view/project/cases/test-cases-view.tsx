@@ -1,10 +1,11 @@
 'use client';
 import React from 'react';
+
 import { Container, DSButton, MainContainer } from '@/shared';
-import { Aside } from '@/widgets';
-import { ChevronDown, Filter, MoreHorizontal, Plus, Search } from 'lucide-react';
-import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
 import { useDisclosure } from '@/shared/hooks';
+import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
+import { ActionToolbar, Aside } from '@/widgets';
+import { ChevronDown, Filter, MoreHorizontal, Plus, Search } from 'lucide-react';
 
 export const TestCasesView = () => {
   const { isOpen, onClose, onOpen } = useDisclosure();
@@ -15,27 +16,15 @@ export const TestCasesView = () => {
       {/* Main Content */}
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         {/* Header */}
-        <header className="col-span-6 border-line-2 flex flex-col gap-1 border-b pb-6">
+        <header className="border-line-2 col-span-6 flex flex-col gap-1 border-b pb-6">
           <h2 className="typo-h1-heading text-text-1">테스트 케이스 관리</h2>
           <p className="typo-body2-normal text-text-2">
             프로젝트의 모든 테스트 케이스를 조회하고 관리합니다.
           </p>
         </header>
-        {/* Toolbar (Search, Filter, Actions) */}
-        <section className="col-span-6 flex items-center justify-between gap-4">
-          {/* Left: Search & Filters */}
-          <div className="flex flex-1 items-center gap-3">
-            {/* Search Input */}
-            <div className="relative w-full max-w-md">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400">
-                <Search className="h-4 w-4" />
-              </div>
-              <input
-                type="text"
-                placeholder="테스트 케이스 제목을 입력해 주세요."
-                className="typo-body2-normal rounded-2 border-line-2 bg-bg-2 text-text-1 placeholder:text-text-4 focus:border-primary focus:ring-primary w-full border py-2 pr-4 pl-10 focus:ring-1 focus:outline-none"
-              />
-            </div>
+        <ActionToolbar.Root ariaLabel="마일스톤 컨트롤" className='col-span-6 flex items-center justify-between gap-4 bg-transparent p-0'>
+          <ActionToolbar.Group className='relative w-full max-w-md'>
+            <ActionToolbar.Search placeholder="테스트 케이스 제목을 입력해 주세요."/>
             {/* Filter Dropdown Trigger */}
             <DSButton className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors">
               <Filter className="h-4 w-4" />
@@ -47,31 +36,26 @@ export const TestCasesView = () => {
               <span>정렬: 최근 수정 순</span>
               <ChevronDown className="text-text-3 h-4 w-4" />
             </DSButton>
-          </div>
-          {/* Right: Advanced Create Button */}
-          <button className="typo-body2-heading flex items-center gap-2 rounded-2 bg-primary px-4 py-2 text-text-1 shadow-2 hover:opacity-90 transition-opacity">
+          </ActionToolbar.Group>
+          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={onOpen}>
             <Plus className="h-4 w-4" />
             상세 생성
-          </button>
-        </section>
+          </ActionToolbar.Action>
+        </ActionToolbar.Root>
 
         {/* Test Case List Container */}
-        <section className="col-span-6 rounded-4 border-line-2 bg-bg-2 shadow-1 flex flex-col overflow-hidden border">
+        <section className="rounded-4 border-line-2 bg-bg-2 shadow-1 col-span-6 flex flex-col overflow-hidden border">
           {/* Table Header */}
           <div className="border-line-2 bg-bg-3 grid grid-cols-12 gap-4 border-b px-6 py-3">
-            <div className="typo-caption-heading text-text-3 col-span-2 uppercase">
-              ID
-            </div>
-            <div className="typo-caption-heading text-text-3 col-span-4 uppercase">
-              제목
-            </div>
+            <div className="typo-caption-heading text-text-3 col-span-2 uppercase">ID</div>
+            <div className="typo-caption-heading text-text-3 col-span-4 uppercase">제목</div>
             <div className="typo-caption-heading text-text-3 col-span-2 text-center uppercase">
               상태
             </div>
             <div className="typo-caption-heading text-text-3 col-span-3 text-right uppercase">
               최종 수정
             </div>
-            <div className="col-span-1"/>
+            <div className="col-span-1" />
           </div>
 
           {/* Inline Create Row */}
@@ -89,8 +73,11 @@ export const TestCasesView = () => {
           </div>
 
           {/* Untested */}
-          <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors" onClick={onOpen}>
-            <div className='col-span-2'>
+          <div
+            className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors"
+            onClick={onOpen}
+          >
+            <div className="col-span-2">
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 TC-1001
               </span>
@@ -121,7 +108,7 @@ export const TestCasesView = () => {
 
           {/* Passed */}
           <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors">
-            <div className='col-span-2'>
+            <div className="col-span-2">
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 TC-1002
               </span>
@@ -152,7 +139,7 @@ export const TestCasesView = () => {
 
           {/* Failed */}
           <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors">
-            <div className='col-span-2'>
+            <div className="col-span-2">
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 TC-1003
               </span>
@@ -183,7 +170,7 @@ export const TestCasesView = () => {
 
           {/* Blocked */}
           <div className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors">
-            <div className='col-span-2'>
+            <div className="col-span-2">
               <span className="typo-body2-heading text-text-1 group-hover:text-primary transition-colors">
                 TC-1004
               </span>
