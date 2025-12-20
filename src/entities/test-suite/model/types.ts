@@ -25,7 +25,7 @@ export type CreateTestSuite = {
 export type SuiteTagTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 export type RunStatus = 'passed' | 'failed' | 'blocked' | 'running' | 'not_run';
 
-export type TestSuiteRich = TestSuite & {
+export type TestSuiteCard = TestSuite & {
   tag: {
     label: string;
     tone: SuiteTagTone;

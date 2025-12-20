@@ -1,7 +1,7 @@
-import { TestSuiteRich } from '@/entities/test-suite';
+import { TestSuiteCard } from '@/entities/test-suite';
 import { MOCK_PROJECT_ID } from '@/shared';
 
-export const TEST_SUITES_RICH_MOCK: TestSuiteRich[] = [
+export const TEST_SUITES_RICH_MOCK: TestSuiteCard[] = [
   {
     id: '0193a2e7-0f11-7d21-8c44-0b1c2d3e4f50',
     projectId: MOCK_PROJECT_ID,

@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 
-import { TestSuiteRich } from '@/entities/test-suite';
+import { TestSuiteCard } from '@/entities/test-suite';
 import { AlertCircle, FileText, FolderTree, Layers, PlayCircle } from 'lucide-react';
 
 interface SuiteCardProps {
-  suite: TestSuiteRich;
+  suite: TestSuiteCard;
 }
 
 const formatDate = (d: Date) => {
@@ -14,7 +14,7 @@ const formatDate = (d: Date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-const tagToneText = (tone: TestSuiteRich['tag']['tone']) => {
+const tagToneText = (tone: TestSuiteCard['tag']['tone']) => {
   switch (tone) {
     case 'info':
       return '정보';
