@@ -20,7 +20,9 @@ interface ProjectCreateFormProps {
 
 export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
-  const {register, handleSubmit, getValues, watch, formState: {errors}} = useForm<IFormInput>();
+  const {register, handleSubmit, getValues, watch, formState: {errors}} = useForm<IFormInput>({
+    mode: 'onChange',
+  });
   // const projectName = watch("projectName");
   const projectName = getValues("name");
 
@@ -28,14 +30,18 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const handlePrev = () => setStep((prev) => prev - 1);
 
   const onSubmit = async (data: IFormInput) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => formData.append(key, value));
-    const result = await createProjectMock(formData);
-    if (!result.success) {
-      console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
-      return;
+    try {
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+      const result = await createProjectMock(formData);
+      if (!result.success) {
+        console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
+        return;
+      }
+      alert('프로젝트 생성 시작\n' + JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error('네트워크 에러 발생:', error);
     }
-    alert('프로젝트 생성 시작\n' + JSON.stringify(data, null, 2));
   };
 
   return (
@@ -93,6 +99,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
 
       {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
       <form
+        aria-label="project-create-form"
         onSubmit={handleSubmit(onSubmit)}
         className="relative z-10 flex w-full shrink-0 flex-col content-stretch items-center gap-[32px]"
       >
