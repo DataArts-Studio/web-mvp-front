@@ -1,0 +1,1 @@
+export const isBlank = (value: string) => value.trim().length === 0;
