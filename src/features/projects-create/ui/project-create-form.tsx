@@ -1,18 +1,14 @@
 'use client';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 import Image from 'next/image';
 
-import { DSButton } from '@/shared';
-import { CheckCircle, Copy, XIcon } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProjectMock } from '@/features';
-
-interface IFormInput {
-  name: string;
-  password: string;
-  identifierConfirm: string;
-}
+import { DSButton } from '@/shared';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CheckCircle, Copy, XIcon } from 'lucide-react';
 
 interface ProjectCreateFormProps {
   onClick?: () => void;
@@ -20,25 +16,33 @@ interface ProjectCreateFormProps {
 
 export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
-  const {register, handleSubmit, getValues, watch, formState: {errors}} = useForm<IFormInput>({
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    watch,
+    formState: { errors },
+  } = useForm<ProjectForm>({
     mode: 'onChange',
+    resolver: zodResolver(ProjectFormSchema),
   });
-  // const projectName = watch("projectName");
-  const projectName = getValues("name");
-
+  const projectName = getValues('projectName');
   const handleNext = () => setStep((prev) => prev + 1);
   const handlePrev = () => setStep((prev) => prev - 1);
 
-  const onSubmit = async (data: IFormInput) => {
+  const onSubmit = async (formData: ProjectForm) => {
     try {
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => formData.append(key, value));
-      const result = await createProjectMock(formData);
-      if (!result.success) {
-        console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
-        return;
+      const domain = formToDomain(formData);
+      const result = await createProjectMock(domain);
+
+      if (result.success) {
+        console.log(result);
+        alert(
+          `프로젝트 "${result.data.projectName}" 생성 완료!\n` + JSON.stringify(result, null, 2)
+        );
+      } else {
+        alert(`생성 실패: ${result.errors.message}`);
       }
-      alert('프로젝트 생성 시작\n' + JSON.stringify(data, null, 2));
     } catch (error) {
       console.error('네트워크 에러 발생:', error);
     }
@@ -120,7 +124,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <input
                 id="projectName"
                 type="text"
-                {...register('name', {required: true})}
+                {...register('projectName', { required: true })}
                 placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
                 className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
@@ -151,7 +155,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <input
                 id="identifier"
                 type="password"
-                {...register('password', {required: true})}
+                {...register('identifier', { required: true })}
                 placeholder="식별번호를 입력하세요"
                 className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
@@ -161,7 +165,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <input
                 id="identifierConfirm"
                 type="password"
-                {...register('identifierConfirm', {required: true})}
+                {...register('identifierConfirm', { required: true })}
                 placeholder="식별번호를 다시 입력하세요"
                 className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
@@ -175,7 +179,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         {step === 3 && (
           <div className="flex w-full flex-col items-start gap-4">
             <div className="w-full text-center">
-              <p>{projectName || 'z가나다라마바사아자'}</p>
+              <p>{!projectName ? 'z가나다라마바사아자' : projectName}</p>
               <p>프로젝트를 생성하시겠습니까?</p>
             </div>
             <div className="flex w-full gap-4">
@@ -191,7 +195,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         {/* Step4: URL 제공 및 CTA 버튼 */}
         {step === 4 && (
           <div className="flex w-full flex-col items-start gap-4">
-            <div className="w-full flex flex-col items-center gap-2">
+            <div className="flex w-full flex-col items-center gap-2">
               <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-teal-500/20 text-teal-400">
                 <CheckCircle className="h-8 w-8" />
               </div>
@@ -199,7 +203,9 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <p className="text-neutral-400">아래 링크를 통해 접속할 수 있습니다.</p>
             </div>
             <div className="flex w-full items-center gap-2">
-              <p className="w-full">https://testea.com/project/{projectName || 'sample'}</p>
+              <p className="w-full">
+                https://testea.com/project/{!projectName ? 'sample' : projectName}
+              </p>
               <DSButton type="button" variant="ghost">
                 <Copy className="h-4 w-4" />
               </DSButton>
