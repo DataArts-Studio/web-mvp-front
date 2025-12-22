@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends React.ComponentProps<'input'> {
   ref?: React.Ref<HTMLInputElement>;
   invalid?: boolean;
 }
