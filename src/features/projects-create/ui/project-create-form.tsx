@@ -6,7 +6,8 @@ import Image from 'next/image';
 
 import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProjectMock } from '@/features';
-import { DSButton } from '@/shared';
+import { DSButton, DsFormField, DsInput } from '@/shared';
+import { GlassBackground } from '@/shared/layout';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, Copy, XIcon } from 'lucide-react';
 
@@ -21,13 +22,28 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     handleSubmit,
     getValues,
     watch,
+    trigger,
     formState: { errors },
   } = useForm<ProjectForm>({
     mode: 'onChange',
     resolver: zodResolver(ProjectFormSchema),
   });
   const projectName = getValues('projectName');
-  const handleNext = () => setStep((prev) => prev + 1);
+  const handleNext = async () => {
+    let isStepValid = false;
+
+    if (step === 1) {
+      isStepValid = await trigger('projectName');
+    } else if (step === 2) {
+      isStepValid = await trigger(['identifier', 'identifierConfirm']);
+    } else {
+      isStepValid = true;
+    }
+
+    if (isStepValid) {
+      setStep((prev) => prev + 1);
+    }
+  };
   const handlePrev = () => setStep((prev) => prev - 1);
 
   const onSubmit = async (formData: ProjectForm) => {
@@ -53,54 +69,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       id="create-project"
       className="absolute top-1/2 left-[calc(50%+0.5px)] z-50 box-border flex w-[46.25rem] translate-x-[-50%] translate-y-[-50%] flex-col content-stretch items-center gap-[48px] overflow-clip rounded-[36px] border border-[rgba(11,181,127,0.1)] bg-[rgba(255,255,255,0.02)] px-32 py-16 backdrop-blur-[20px] backdrop-filter"
     >
-      {/* 백그라운드 */}
-      <div className="absolute top-[288.72px] left-[-114.09px] h-[413.272px] w-[1033.17px]">
-        <div className="absolute inset-[-48.39%_-19.36%]">
-          <svg
-            className="block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 1434 814"
-          >
-            <g filter="url(#filter0_f_5_659_2)" id="Ellipse 3330" opacity="0.3">
-              <ellipse
-                cx="716.586"
-                cy="406.636"
-                fill="url(#paint0_radial_5_659_2)"
-                rx="516.586"
-                ry="206.636"
-              />
-            </g>
-            <defs>
-              <filter
-                colorInterpolationFilters="sRGB"
-                filterUnits="userSpaceOnUse"
-                height="813.272"
-                id="filter0_f_5_659_2"
-                width="1433.17"
-                x="0"
-                y="0"
-              >
-                <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                <feBlend in="SourceGraphic" in2="BackgroundImageFix" mode="normal" result="shape" />
-                <feGaussianBlur result="effect1_foregroundBlur_5_659_2" stdDeviation="100" />
-              </filter>
-              <radialGradient
-                cx="0"
-                cy="0"
-                gradientTransform="translate(716.586 406.636) rotate(90) scale(206.636 516.586)"
-                gradientUnits="userSpaceOnUse"
-                id="paint0_radial_5_659_2"
-                r="1"
-              >
-                <stop stopColor="#0BB57F" />
-                <stop offset="1" stopColor="#0BB57F" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-          </svg>
-        </div>
-      </div>
-
+      <GlassBackground />
       {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
       <form
         aria-label="project-create-form"
@@ -108,7 +77,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         className="relative z-10 flex w-full shrink-0 flex-col content-stretch items-center gap-[32px]"
       >
         {step === 1 && (
-          <>
+          <div className="flex flex-col items-center justify-center gap-4">
             {/* Step1: 프로젝트 이름 입력 */}
             <div className="flex flex-col items-center justify-center gap-4 space-x-2 text-xl font-bold text-teal-400">
               <Image src="/logo.svg" alt="Testea Logo" width={120} height={120} />
@@ -117,22 +86,24 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                 클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 생성하고 관리해보세요.
               </p>
             </div>
-            <div className="flex w-full flex-col items-start gap-4">
-              <label htmlFor="projectName" className="sr-only">
+            <DsFormField.Root error={errors.projectName}>
+              <DsFormField.Label srOnly>
                 프로젝트 이름 (Project Name)
-              </label>{' '}
-              <input
-                id="projectName"
-                type="text"
-                {...register('projectName', { required: true })}
-                placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
-                className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
-              />
-              <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
-                프로젝트 생성 시작
-              </DSButton>
-            </div>
-          </>
+              </DsFormField.Label>
+              <DsFormField.Control asChild>
+                <DsInput
+                  id="projectName"
+                  type="text"
+                  {...register('projectName', { required: true })}
+                  placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
+                />
+              </DsFormField.Control>
+              <DsFormField.Message/>
+            </DsFormField.Root>
+            <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
+              프로젝트 생성 시작
+            </DSButton>
+          </div>
         )}
         {/* Step2: 프로젝트 식별번호 입력 */}
         {step === 2 && (
@@ -152,23 +123,23 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <label htmlFor="identifier" className="sr-only">
                 프로젝트 식별번호 (Identifier/Password)
               </label>{' '}
-              <input
+              <DsInput
                 id="identifier"
                 type="password"
                 {...register('identifier', { required: true })}
                 placeholder="식별번호를 입력하세요"
-                className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
+              {errors.identifier && <p>{errors.identifier.message}</p>}
               <label htmlFor="identifierConfirm" className="sr-only">
                 식별번호 재확인
               </label>{' '}
-              <input
+              <DsInput
                 id="identifierConfirm"
                 type="password"
                 {...register('identifierConfirm', { required: true })}
                 placeholder="식별번호를 다시 입력하세요"
-                className="h-12 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-white placeholder-neutral-400 transition focus:border-transparent focus:ring-2 focus:ring-teal-500"
               />
+              {errors.identifierConfirm && <p>{errors.identifierConfirm.message}</p>}
             </div>
             <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
               프로젝트 생성하기
