@@ -67,7 +67,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   return (
     <section
       id="create-project"
-      className="absolute top-1/2 left-[calc(50%+0.5px)] z-50 box-border flex w-[46.25rem] translate-x-[-50%] translate-y-[-50%] flex-col content-stretch items-center gap-[48px] overflow-clip rounded-[36px] border border-[rgba(11,181,127,0.1)] bg-[rgba(255,255,255,0.02)] px-32 py-16 backdrop-blur-[20px] backdrop-filter"
+      className="absolute top-1/2 left-[calc(50%+0.5px)] z-50 box-border flex w-[46.25rem] translate-x-[-50%] translate-y-[-50%] flex-col content-stretch items-center gap-10 overflow-clip rounded-[36px] border border-[rgba(11,181,127,0.1)] bg-[rgba(255,255,255,0.02)] px-32 py-16 backdrop-blur-[20px] backdrop-filter"
     >
       <GlassBackground />
       {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
@@ -87,9 +87,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               </p>
             </div>
             <DsFormField.Root error={errors.projectName}>
-              <DsFormField.Label srOnly>
-                프로젝트 이름 (Project Name)
-              </DsFormField.Label>
+              <DsFormField.Label srOnly>프로젝트 이름 (Project Name)</DsFormField.Label>
               <DsFormField.Control asChild>
                 <DsInput
                   id="projectName"
@@ -98,7 +96,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                   placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
                 />
               </DsFormField.Control>
-              <DsFormField.Message/>
+              <DsFormField.Message />
             </DsFormField.Root>
             <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
               프로젝트 생성 시작
@@ -119,28 +117,30 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                 프라이빗 모드란? 식별번호가 필요한 프로젝트를 의미합니다.
               </p>
             </div>
-            <div className="flex w-full flex-col gap-4 transition-all duration-300 ease-in-out">
-              <label htmlFor="identifier" className="sr-only">
-                프로젝트 식별번호 (Identifier/Password)
-              </label>{' '}
-              <DsInput
-                id="identifier"
-                type="password"
-                {...register('identifier', { required: true })}
-                placeholder="식별번호를 입력하세요"
-              />
-              {errors.identifier && <p>{errors.identifier.message}</p>}
-              <label htmlFor="identifierConfirm" className="sr-only">
-                식별번호 재확인
-              </label>{' '}
-              <DsInput
-                id="identifierConfirm"
-                type="password"
-                {...register('identifierConfirm', { required: true })}
-                placeholder="식별번호를 다시 입력하세요"
-              />
-              {errors.identifierConfirm && <p>{errors.identifierConfirm.message}</p>}
-            </div>
+            <DsFormField.Root error={errors.identifier}>
+              <DsFormField.Label srOnly>프로젝트 식별번호 (Identifier/Password)</DsFormField.Label>
+              <DsFormField.Control asChild>
+                <DsInput
+                  id="identifier"
+                  type="password"
+                  {...register('identifier', { required: true })}
+                  placeholder="식별번호를 입력하세요"
+                />
+              </DsFormField.Control>
+              <DsFormField.Message />
+            </DsFormField.Root>
+            <DsFormField.Root error={errors.identifierConfirm}>
+              <DsFormField.Label srOnly>식별번호 재확인</DsFormField.Label>
+              <DsFormField.Control asChild>
+                <DsInput
+                  id="identifierConfirm"
+                  type="password"
+                  {...register('identifierConfirm', { required: true })}
+                  placeholder="식별번호를 다시 입력하세요"
+                />
+              </DsFormField.Control>
+              <DsFormField.Message />
+            </DsFormField.Root>
             <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
               프로젝트 생성하기
             </DSButton>
@@ -150,7 +150,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         {step === 3 && (
           <div className="flex w-full flex-col items-start gap-4">
             <div className="w-full text-center">
-              <p>{!projectName ? 'z가나다라마바사아자' : projectName}</p>
+              <p>{projectName}</p>
               <p>프로젝트를 생성하시겠습니까?</p>
             </div>
             <div className="flex w-full gap-4">
@@ -175,7 +175,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             </div>
             <div className="flex w-full items-center gap-2">
               <p className="w-full">
-                https://testea.com/project/{!projectName ? 'sample' : projectName}
+                https://testea.com/project/{projectName}
               </p>
               <DSButton type="button" variant="ghost">
                 <Copy className="h-4 w-4" />
