@@ -12,11 +12,12 @@ const Slot = ({ children, ref, ...slotProps }: SlotProps) => {
   if (!React.isValidElement(children)) {
     return null;
   }
-  
+
   const childProps = children.props as any;
 
   // ref 합치기(원래ref + 외부에서 받은 ref)
-  const childRef = (children as any).ref;
+  // const childRef = (children as any).ref;
+  const childRef = childProps.ref;
   const mergedRef = mergeRefs(ref, childRef);
 
   // className 병합(slot + child)

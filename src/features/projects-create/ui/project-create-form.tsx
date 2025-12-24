@@ -1,11 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import Image from 'next/image';
 
-import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
-import { createProjectMock } from '@/features';
+import { formToDomain, ProjectFormSchema, type ProjectForm } from '@/entities';
+import { createProject } from '@/features/projects-create';
 import { DSButton, DsFormField, DsInput } from '@/shared';
 import { GlassBackground } from '@/shared/layout';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +17,7 @@ interface ProjectCreateFormProps {
 
 export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
+  const [copied, setCopied] = useState(false);
   const {
     register,
     handleSubmit,
@@ -48,21 +49,39 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
 
   const onSubmit = async (formData: ProjectForm) => {
     try {
+      console.log(formData);
       const domain = formToDomain(formData);
-      const result = await createProjectMock(domain);
-
+      console.log(domain);
+      const result = await createProject(domain);
+      console.log(result);
       if (result.success) {
         console.log(result);
-        alert(
-          `프로젝트 "${result.data.projectName}" 생성 완료!\n` + JSON.stringify(result, null, 2)
-        );
+        alert(`프로젝트 생성 완료!\n` + JSON.stringify(result.data, null, 2));
       } else {
-        alert(`생성 실패: ${result.errors.message}`);
+        const errorMessages = Object.values(result.errors).flat().join('\n');
+        alert(`생성 실패: ${errorMessages}`);
       }
     } catch (error) {
       console.error('네트워크 에러 발생:', error);
     }
   };
+
+  const handleCopyLink = () => {
+    const link = `https://testea.com/project/${projectName}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+    });
+  };
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (copied) {
+      timer = setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    }
+    return () => clearTimeout(timer);
+  }, [copied]);
 
   return (
     <section
@@ -177,8 +196,8 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <p className="w-full">
                 https://testea.com/project/{projectName}
               </p>
-              <DSButton type="button" variant="ghost">
-                <Copy className="h-4 w-4" />
+              <DSButton type="button" variant="ghost" onClick={handleCopyLink}>
+                {copied ? '링크 복사 완료!' : <Copy className="h-4 w-4" />}
               </DSButton>
             </div>
             <DSButton type="submit" variant="ghost" className="mt-2 w-full">

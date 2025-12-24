@@ -11,11 +11,11 @@ export const toProjectDomain = (dto: ProjectDTO): ProjectDomain => {
     id: dto.id,
     projectName: dto.name,
     identifier: dto.identifier,
-    description: dto.description,
-    ownerName: dto.owner_name,
-    createAt: new Date(dto.create_at),
-    updateAt: new Date(dto.update_at),
-    deleteAt: dto.delete_at ? new Date(dto.delete_at) : null,
+    description: dto.description ? dto.description : undefined,
+    ownerName: dto.owner_name ? dto.owner_name : undefined,
+    createdAt: new Date(dto.created_at),
+    updatedAt: new Date(dto.updated_at),
+    deletedAt: dto.deleted_at ? new Date(dto.deleted_at) : null,
   };
 };
 
@@ -27,8 +27,8 @@ export const toProjectDto = (domain: CreateProjectDomain): CreateProjectDTO => {
   return {
     name: domain.projectName,
     identifier: domain.identifier,
-    description: domain.description,
-    owner_name: domain.ownerName,
+    description: domain.description ? domain.description : null,
+    owner_name: domain.ownerName ? domain.ownerName : null,
   };
 };
 

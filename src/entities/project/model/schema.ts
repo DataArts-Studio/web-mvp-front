@@ -16,18 +16,18 @@ export const ProjectDtoSchema = z.object({
   id: z.uuidv7(),
   name: z.string(),
   identifier: z.string(),
-  description: z.string().optional(),
-  owner_name: z.string().optional(),
-  create_at: z.date(),
-  update_at: z.date(),
-  delete_at: z.date().nullable(),
+  description: z.string().nullable(),
+  owner_name: z.string().nullable(),
+  created_at: z.date(),
+  updated_at: z.date(),
+  deleted_at: z.date().nullable(),
 });
 
 export const CreateProjectDtoSchema = ProjectDtoSchema.omit({
   id: true,
-  create_at: true,
-  update_at: true,
-  delete_at: true,
+  created_at: true,
+  updated_at: true,
+  deleted_at: true,
 });
 
 export const ProjectDomainSchema = z.object({
@@ -42,16 +42,16 @@ export const ProjectDomainSchema = z.object({
     .max(16, '식별번호는 최대 16자리 이하여야 합니다.'),
   description: z.string().optional(),
   ownerName: z.string().optional(),
-  createAt: z.date(),
-  updateAt: z.date(),
-  deleteAt: z.date().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  deletedAt: z.date().nullable(),
 });
 
 export const CreateProjectDomainSchema = ProjectDomainSchema.omit({
   id: true,
-  createAt: true,
-  updateAt: true,
-  deleteAt: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
 });
 
 export const ProjectFormSchema = CreateProjectDomainSchema.extend({

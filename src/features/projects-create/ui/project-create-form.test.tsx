@@ -1,14 +1,15 @@
-import { ProjectDomain } from '@/entities';
-import { ProjectCreateForm, createProjectMock } from '@/features';
-import type { ActionResult } from '@/features/projects-create/model/server-action';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { ProjectCreateForm, createProject } from '@/features';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ProjectDomain } from '@/entities';
+import type { ActionResult } from '@/features';
 
-vi.mock('@/features/projects-create/actions/server-action', () => ({
-  createProjectMock: vi.fn(),
+// createProject 함수 mock
+vi.mock('@/features/projects-create/model/server-action', () => ({
+  createProject: vi.fn(),
 }));
 
-const mockedCreateProject = vi.mocked(createProjectMock);
+const mockedCreateProject = vi.mocked(createProject);
 
 const mockSuccessResponse: ActionResult<ProjectDomain> = {
   success: true,
@@ -27,7 +28,7 @@ const mockSuccessResponse: ActionResult<ProjectDomain> = {
 const mockErrorResponse: ActionResult<ProjectDomain> = {
   success: false,
   errors: {
-    name: ['이미 존재하는 프로젝트 이름입니다'],
+    projectName: ['이미 존재하는 프로젝트 이름입니다'],
   },
 };
 
@@ -115,7 +116,118 @@ describe('ProjectCreateForm 통합 테스트', () => {
       expect(mockOnClick).toHaveBeenCalled();
     });
 
-    it('프로젝트 생성에 성공해야 한다', () => {});
-    it('프로젝트 생성에 실패하면 에러를 표시해야 한다', () => {});
+    it('3단계에서 생성하기 버튼을 누르면 4단계로 이동한다', async () => {
+      render(<ProjectCreateForm />);
+      // Step 1
+      fireEvent.change(screen.getByPlaceholderText(/프로젝트 이름을 입력하세요/i), {
+        target: { value: 'Test Project' },
+      });
+      fireEvent.click(screen.getByText(/프로젝트 생성 시작/i));
+      // Step 2
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/식별번호를 입력하세요/i)).toBeInTheDocument();
+      });
+      fireEvent.change(screen.getByPlaceholderText(/식별번호를 입력하세요/i), {
+        target: { value: '1234567890' },
+      });
+      fireEvent.change(screen.getByPlaceholderText(/식별번호를 다시 입력하세요/i), {
+        target: { value: '1234567890' },
+      });
+      fireEvent.click(screen.getByText(/프로젝트 생성하기/i));
+      // Step 3
+      await waitFor(() => {
+        expect(screen.getByText(/프로젝트를 생성하시겠습니까/i)).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText(/생성하기/i));
+      // Step 4
+      await waitFor(() => {
+        expect(screen.getByText(/프로젝트 생성 완료!/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Step4: 완료 및 서버 액션', () => {
+    it('프로젝트 생성에 성공하면 성공 메시지를 표시한다', async () => {
+      mockedCreateProject.mockResolvedValue(mockSuccessResponse);
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      render(<ProjectCreateForm />);
+      // Step 1 -> 4
+      fireEvent.change(screen.getByPlaceholderText(/프로젝트 이름을 입력하세요/i), {
+        target: { value: 'Test Project' },
+      });
+      fireEvent.click(screen.getByText(/프로젝트 생성 시작/i));
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/식별번호를 입력하세요/i)).toBeInTheDocument();
+      });
+      fireEvent.change(screen.getByPlaceholderText(/식별번호를 입력하세요/i), {
+        target: { value: '1234567890' },
+      });
+      fireEvent.change(screen.getByPlaceholderText(/식별번호를 다시 입력하세요/i), {
+        target: { value: '1234567890' },
+      });
+      fireEvent.click(screen.getByText(/프로젝트 생성하기/i));
+
+      await waitFor(() => {
+        expect(screen.getByText(/프로젝트를 생성하시겠습니까/i)).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText(/생성하기/i));
+
+      await waitFor(() => {
+        expect(screen.getByText(/프로젝트 생성 완료!/i)).toBeInTheDocument();
+      });
+
+      // Submit 버튼 클릭
+      fireEvent.click(screen.getByText(/시작하기/i));
+
+      await waitFor(() => {
+        expect(mockedCreateProject).toHaveBeenCalled();
+        expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('프로젝트 생성 완료!'));
+      });
+
+      alertSpy.mockRestore();
+    });
+
+    it('프로젝트 생성에 실패하면 에러 메시지를 표시한다', async () => {
+      mockedCreateProject.mockResolvedValue(mockErrorResponse);
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      render(<ProjectCreateForm />);
+      // Step 1 -> 4
+      fireEvent.change(screen.getByPlaceholderText(/프로젝트 이름을 입력하세요/i), {
+        target: { value: 'Test Project' },
+      });
+      fireEvent.click(screen.getByText(/프로젝트 생성 시작/i));
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/식별번호를 입력하세요/i)).toBeInTheDocument();
+      });
+      fireEvent.change(screen.getByPlaceholderText(/식별번호를 입력하세요/i), {
+        target: { value: '1234567890' },
+      });
+      fireEvent.change(screen.getByPlaceholderText(/식별번호를 다시 입력하세요/i), {
+        target: { value: '1234567890' },
+      });
+      fireEvent.click(screen.getByText(/프로젝트 생성하기/i));
+
+      await waitFor(() => {
+        expect(screen.getByText(/프로젝트를 생성하시겠습니까/i)).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText(/생성하기/i));
+
+      await waitFor(() => {
+        expect(screen.getByText(/프로젝트 생성 완료!/i)).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText(/시작하기/i));
+
+      await waitFor(() => {
+        expect(mockedCreateProject).toHaveBeenCalled();
+        expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('생성 실패'));
+      });
+
+      alertSpy.mockRestore();
+    });
   });
 });

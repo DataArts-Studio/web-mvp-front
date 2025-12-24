@@ -24,9 +24,11 @@ const createClient = () => {
   if (_client) return _client;
   const databaseUrl = getDatabaseUrl();
   const isProd = ENV.SERVER.NODE_ENV === 'production';
+
   const client = postgres(databaseUrl, {
     max: isProd ? 5 : 1,
     idle_timeout: isProd ? 60 : 20,
+    ssl: 'require'
   });
 
   _client = client;
