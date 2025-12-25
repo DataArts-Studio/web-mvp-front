@@ -194,7 +194,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             </div>
             <div className="flex w-full items-center gap-2">
               <p className="w-full">
-                https://testea.com/project/{projectName}
+                https://testea.com/project/{projectName}/dashboard
               </p>
               <DSButton type="button" variant="ghost" onClick={handleCopyLink}>
                 {copied ? '링크 복사 완료!' : <Copy className="h-4 w-4" />}
