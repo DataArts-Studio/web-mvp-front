@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { Container, MainContainer } from '@/shared/lib/primitives';
+import { ShPieChart } from '@/shared/ui/sh-pie-chart';
 import { Aside } from '@/widgets';
 
 export const ProjectDashboardView = () => {
@@ -10,39 +11,12 @@ export const ProjectDashboardView = () => {
       className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans"
     >
       <Aside />
-      <MainContainer className="mx-auto grid items-center min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 gap-x-5 gap-y-8 px-10 py-8">
+      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 items-center gap-x-5 gap-y-8 px-10 py-8">
         {/* 헤더 */}
-        <header className="col-span-6 border-bg-4 flex w-full flex-col gap-3 border-b pb-6">
+        <header className="border-bg-4 col-span-6 flex w-full flex-col gap-3 border-b pb-6">
           <h2 className="typo-title-heading">사용자가 입력한 [Project Name]이 배치됩니다.</h2>
           <p className="typo-body1-normal text-text-3">통합 테스트 현황 및 빠른 작업 허브</p>
         </header>
-
-        {/* 탭 네비 */}
-        {/*<nav
-          aria-label="Project navigation"
-          className="border-bg-4 text-body2-normal flex w-full flex-wrap gap-2 border-b pb-2"
-        >
-          {[
-            'Overview',
-            'Todo',
-            'Milestones',
-            'Test Runs & Results',
-            'Test Suites & Cases',
-            'Reports',
-          ].map((tab, index) => (
-            <button
-              key={tab}
-              className={[
-                'rounded-t-md px-3 py-2 transition-colors', // ← 패딩도 살짝 키움
-                index === 0
-                  ? 'border-bg-4 bg-bg-2 text-primary border-x border-t font-semibold'
-                  : 'text-text-4 hover:text-text-2',
-              ].join(' ')}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>*/}
 
         {/* 그래프 + 요약 */}
         <section className="bg-bg-2 shadow-2 col-span-6 rounded-md p-6">
@@ -56,7 +30,16 @@ export const ProjectDashboardView = () => {
           <div className="mt-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
             {/* 그래프 자리 */}
             <div className="border-bg-4 text-label-normal text-text-4 flex h-60 items-center justify-center rounded border border-dashed">
-              그래프 영역 (Test Execution Trend)
+              <ShPieChart
+                data={[
+                  { status: 'Pass', count: 85 },
+                  { status: 'Fail', count: 10 },
+                  { status: 'Skipped', count: 5 },
+                ]}
+                category={'status'}
+                value={'count'}
+                className='w-full h-full'
+              />
             </div>
 
             {/* 상태 요약 */}
