@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
-import { formToDomain, ProjectFormSchema, type ProjectForm } from '@/entities';
+import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProject } from '@/features/projects-create';
 import { DSButton, DsFormField, DsInput } from '@/shared';
 import { GlassBackground } from '@/shared/layout';
@@ -22,7 +23,6 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     register,
     handleSubmit,
     getValues,
-    watch,
     trigger,
     formState: { errors },
   } = useForm<ProjectForm>({
@@ -49,13 +49,9 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
 
   const onSubmit = async (formData: ProjectForm) => {
     try {
-      console.log(formData);
       const domain = formToDomain(formData);
-      console.log(domain);
       const result = await createProject(domain);
-      console.log(result);
       if (result.success) {
-        console.log(result);
         alert(`프로젝트 생성 완료!\n` + JSON.stringify(result.data, null, 2));
       } else {
         const errorMessages = Object.values(result.errors).flat().join('\n');
@@ -67,10 +63,16 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   };
 
   const handleCopyLink = () => {
-    const link = `https://testea.com/project/${projectName}`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const link = `${origin}/projects/${projectName}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
     });
+  };
+
+  const router = useRouter();
+  const handleRedirectTo = (path: string) => {
+    router.replace(path);
   };
 
   useEffect(() => {
@@ -176,7 +178,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <DSButton onClick={onClick} type="button" variant="ghost" className="mt-2 w-full">
                 취소
               </DSButton>
-              <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
+              <DSButton type="submit" variant="solid" className="mt-2 w-full" onClick={handleNext}>
                 생성하기
               </DSButton>
             </div>
@@ -194,13 +196,17 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             </div>
             <div className="flex w-full items-center gap-2">
               <p className="w-full">
-                https://testea.com/project/{projectName}/dashboard
+                {typeof window !== 'undefined' ? window.location.origin : ''}/project/{projectName}
               </p>
               <DSButton type="button" variant="ghost" onClick={handleCopyLink}>
                 {copied ? '링크 복사 완료!' : <Copy className="h-4 w-4" />}
               </DSButton>
             </div>
-            <DSButton type="submit" variant="ghost" className="mt-2 w-full">
+            <DSButton
+              variant="ghost"
+              className="mt-2 w-full"
+              onClick={() => handleRedirectTo(`/projects/${projectName}`)}
+            >
               시작하기
             </DSButton>
           </div>
