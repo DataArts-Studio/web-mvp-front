@@ -1,8 +1,12 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 
+
+
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
+
+
 
 import { dashboardStatsQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared/lib/primitives';
@@ -10,6 +14,22 @@ import { DSButton } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, Plus, Settings } from 'lucide-react';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export const ProjectDashboardView = () => {
   const params = useParams();
@@ -31,7 +51,8 @@ export const ProjectDashboardView = () => {
     return <div>에러 발생</div>
   }
 
-  const { project } = dashboardData.data;
+  const { project, recentActivities } = dashboardData.data;
+  console.log(dashboardData.data);
 
   return (
     <Container
@@ -80,14 +101,14 @@ export const ProjectDashboardView = () => {
               <span className="text-text-3 text-xs">최근 활동</span>
 
               <ul className="flex flex-col gap-1">
-                {[1, 2, 3, 4].map((item) => (
-                  <li key={item} className="flex items-center gap-1">
+                {recentActivities.map((item) => (
+                  <li key={item.id} className="flex items-center gap-1">
                     <span className="text-text-1 text-base">
                       <span className="mr-2">•</span>
-                      ipsum Loremipsum Loremipsum Loremipsum
+                      {item.title}
                     </span>
                     <span className="text-text-2 mx-1">•</span>
-                    <span className="text-text-2 text-base font-semibold">3일전</span>
+                    <span className="text-text-2 text-base font-semibold">{item.created_at.toISOString()}일전</span>
                   </li>
                 ))}
               </ul>
