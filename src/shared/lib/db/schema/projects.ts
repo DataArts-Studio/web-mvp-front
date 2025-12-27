@@ -1,7 +1,7 @@
 import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 // import { relations } from 'drizzle-orm';
 
-export const project = pgTable('projects', {
+export const projects = pgTable('projects', {
   id: uuid('id').primaryKey(),
   name: varchar({ length: 255 }).notNull(),
   identifier: varchar({ length: 255 }).notNull(),

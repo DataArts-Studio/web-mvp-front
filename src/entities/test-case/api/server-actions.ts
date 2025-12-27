@@ -1,5 +1,5 @@
 import type { TestCase } from '@/entities';
-import { getDatabase, testCase } from '@/shared/lib/db';
+import { getDatabase, testCases } from '@/shared/lib/db';
 import { eq } from 'drizzle-orm';
 
 // Todo: 일단 중복으로 선언하고 나중에 분리
@@ -18,7 +18,7 @@ export const getTestCases = async ({
 }: getTestCasesParams): Promise<ActionResult<TestCase[]>> => {
   try {
     const db = getDatabase();
-    const rows = await db.select().from(testCase).where(eq(testCase.project_id, project_id));
+    const rows = await db.select().from(testCases).where(eq(testCases.project_id, project_id));
     if (!rows) return { success: false, errors: { _testCase: ['테스트 케이스가 존재하지 않습니다.'] } };
 
     const result: TestCase[] = rows.map((row) => ({

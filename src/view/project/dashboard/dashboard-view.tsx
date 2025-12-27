@@ -1,12 +1,21 @@
+'use client';
 import React from 'react';
 
-import { ChevronRight, Plus, Settings } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
+import { dashboardStatsQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
 import { Aside } from '@/widgets';
+import { useQuery } from '@tanstack/react-query';
+import { ChevronRight, Plus, Settings } from 'lucide-react';
 
 export const ProjectDashboardView = () => {
+  const params = useParams();
+  console.log(params, params.slug, typeof params, typeof params.slug);
+  const option = dashboardStatsQueryOptions(params.slug as string);
+  const { data } = useQuery(option);
+  console.log(data);
   return (
     <Container
       id="container"
@@ -17,7 +26,7 @@ export const ProjectDashboardView = () => {
         {/* 섹션 1: 헤더 + 프로젝트 정보/최근 활동 */}
         <section className="flex w-full max-w-[1200px] flex-col gap-9">
           {/* 헤더 텍스트 */}
-          <h1 className="text-text-1 text-[32px] font-bold leading-[1.4] tracking-tight">
+          <h1 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
             클릭 몇 번이면 뚝딱!
             <br />
             테스트 케이스를 자동으로 만들어보세요.
@@ -29,7 +38,7 @@ export const ProjectDashboardView = () => {
             <div className="bg-bg-2 relative flex w-[350px] flex-col gap-4 overflow-hidden rounded-lg p-4">
               <span className="text-text-3 text-xs">내 프로젝트 정보</span>
 
-              <div className="bg-white/5 flex flex-col items-center justify-center gap-1 rounded-lg p-4">
+              <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-white/5 p-4">
                 <div className="flex items-center gap-1">
                   <span className="text-primary text-base font-semibold">ipsumlorem.com</span>
                   {/* 공유 아이콘 placeholder */}
@@ -46,7 +55,7 @@ export const ProjectDashboardView = () => {
               </div>
 
               {/* 배경 데코레이션 placeholder */}
-              <div className="bg-primary/10 absolute -left-[228px] top-12 size-64 rounded-full blur-3xl" />
+              <div className="bg-primary/10 absolute top-12 -left-[228px] size-64 rounded-full blur-3xl" />
             </div>
 
             {/* 최근 활동 카드 */}
@@ -73,14 +82,14 @@ export const ProjectDashboardView = () => {
         <section className="flex w-full max-w-[1200px] flex-col gap-9">
           {/* 섹션 헤더 */}
           <div className="flex items-center gap-2">
-            <h2 className="text-text-1 text-[32px] font-bold leading-[1.4] tracking-tight">
+            <h2 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
               테스트 케이스 한눈에 보기
             </h2>
             <ChevronRight className="text-text-1 size-6" />
           </div>
 
           {/* 빈 상태 카드 */}
-          <div className="bg-bg-2 relative flex flex-col items-center gap-4 overflow-hidden rounded-2xl px-6 pb-12 pt-6">
+          <div className="bg-bg-2 relative flex flex-col items-center gap-4 overflow-hidden rounded-2xl px-6 pt-6 pb-12">
             {/* 이미지 placeholder */}
             <div className="flex h-[489px] w-[522px] items-center justify-center">
               <div className="border-line-2 flex h-full w-full items-center justify-center rounded-lg border border-dashed">
@@ -106,7 +115,7 @@ export const ProjectDashboardView = () => {
             </div>
 
             {/* 배경 데코레이션 placeholder */}
-            <div className="bg-primary/10 absolute bottom-[-200px] right-[25%] size-[500px] rounded-full blur-3xl" />
+            <div className="bg-primary/10 absolute right-[25%] bottom-[-200px] size-[500px] rounded-full blur-3xl" />
           </div>
         </section>
 
@@ -114,7 +123,7 @@ export const ProjectDashboardView = () => {
         <section className="flex w-full max-w-[1200px] flex-col gap-9">
           {/* 섹션 헤더 */}
           <div className="flex items-center gap-2">
-            <h2 className="text-text-1 text-[32px] font-bold leading-[1.4] tracking-tight">
+            <h2 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
               테스트 스위트
             </h2>
             <ChevronRight className="text-text-1 size-6" />

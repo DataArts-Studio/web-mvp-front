@@ -1,12 +1,12 @@
 import { relations } from 'drizzle-orm';
 import { integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
-import { project } from './project';
-import { suite } from './test-suite';
+import { projects } from './projects';
+import { suite } from './test-suites';
 // CHECK ((status = ANY (ARRAY['untested'::text, 'pass'::text, 'fail'::text, 'blocked'::text])))
-export const testCase = pgTable('test_cases', {
+export const testCases = pgTable('test_cases', {
   id: uuid('id').primaryKey(),
-  project_id: uuid('project_id').references(() => project.id),
+  project_id: uuid('project_id').references(() => projects.id),
   test_suite_id: uuid('test_suite_id').references(() => suite.id),
   name: varchar('name').notNull(),
   steps: text('steps'),
@@ -21,13 +21,13 @@ export const testCase = pgTable('test_cases', {
   deleted_at: timestamp(),
 });
 
-export const testCaseRelations = relations(testCase, ({ one }) => ({
-  project: one(project, {
-    fields: [testCase.project_id],
-    references: [project.id],
+export const testCaseRelations = relations(testCases, ({ one }) => ({
+  project: one(projects, {
+    fields: [testCases.project_id],
+    references: [projects.id],
   }),
   suite: one(suite, {
-    fields: [testCase.test_suite_id],
+    fields: [testCases.test_suite_id],
     references: [suite.id],
   }),
 }));

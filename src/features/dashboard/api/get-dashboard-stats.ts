@@ -1,8 +1,5 @@
 'use server';
 
-import { getDatabase, project, suite, testCase } from '@/shared/lib/db';
-import { count, eq, desc, isNull } from 'drizzle-orm';
-
 import type {
   DashboardStats,
   ProjectInfo,
@@ -11,26 +8,32 @@ import type {
   TestSuiteSummary,
 } from '@/features';
 
+import { getDatabase, projects, suite, testCases } from '@/shared/lib/db';
+import { and, count, desc, eq, isNull } from 'drizzle-orm';
+
 export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; errors: Record<string, string[]> };
 
 type GetDashboardStatsParams = {
-  projectId: string;
+  projectName: string;
 };
 
 export const getDashboardStats = async ({
-  projectId,
+  projectName,
 }: GetDashboardStatsParams): Promise<ActionResult<DashboardStats>> => {
   try {
     const db = getDatabase();
+    console.log('[Dashboard] projectName:', projectName);
 
-    // 프로젝트 정보 조회
+    // 프로젝트 정보 조회 (name으로 검색)
     const [projectRow] = await db
       .select()
-      .from(project)
-      .where(eq(project.id, projectId))
+      .from(projects)
+      .where(eq(projects.name, projectName))
       .limit(1);
+
+    console.log('[Dashboard] projectRow:', projectRow);
 
     if (!projectRow) {
       return {
@@ -45,61 +48,88 @@ export const getDashboardStats = async ({
       identifier: projectRow.identifier,
       description: projectRow.description ?? '',
       ownerName: projectRow.owner_name ?? '',
-      createdAt: projectRow.created_at,
+      created_at: projectRow.created_at,
     };
 
-    // 테스트 케이스 통계 조회 (삭제되지 않은 것만)
+    // 테스트 케이스 통계 - projectRow.id 사용
     const [testCaseCountResult] = await db
       .select({ count: count() })
-      .from(testCase)
-      .where(eq(testCase.project_id, projectId));
+      .from(testCases)
+      .where(eq(testCases.project_id, projectRow.id));
+
+    console.log('[Dashboard] testCaseCountResult:', testCaseCountResult);
+
+    // 스위트 미지정 케이스 수
+    const [unassignedCountResult] = await db
+      .select({ count: count() })
+      .from(testCases)
+      .where(and(eq(testCases.project_id, projectRow.id), isNull(testCases.test_suite_id)));
+
+    console.log('[Dashboard] unassignedCountResult:', unassignedCountResult);
 
     const testCaseStats: TestCaseStats = {
       total: testCaseCountResult?.count ?? 0,
+      unassigned: unassignedCountResult?.count ?? 0,
     };
 
-    // 테스트 스위트 목록 + 각 스위트별 케이스 수
-    const suitesWithCount = await db
+    // 테스트 스위트 목록 - 단순 조회 (케이스 수는 별도 계산)
+    const suiteRows = await db
       .select({
         id: suite.id,
         name: suite.name,
         description: suite.description,
-        caseCount: count(testCase.id),
       })
       .from(suite)
-      .leftJoin(testCase, eq(suite.id, testCase.test_suite_id))
-      .where(eq(suite.project_id, projectId))
-      .groupBy(suite.id, suite.name, suite.description);
+      .where(eq(suite.project_id, projectRow.id));
 
-    const testSuites: TestSuiteSummary[] = suitesWithCount.map((row) => ({
-      id: row.id,
-      name: row.name,
-      description: row.description ?? '',
-      caseCount: row.caseCount,
-    }));
+    console.log('[Dashboard] suiteRows:', suiteRows);
 
-    // 최근 활동 조회 (테스트 케이스 + 스위트 생성 기록)
+    // 각 스위트별 케이스 수 계산
+    const testSuites: TestSuiteSummary[] = await Promise.all(
+      suiteRows.map(async (row) => {
+        const [caseCountResult] = await db
+          .select({ count: count() })
+          .from(testCases)
+          .where(eq(testCases.test_suite_id, row.id));
+
+        return {
+          id: row.id,
+          name: row.name,
+          description: row.description ?? '',
+          case_count: caseCountResult?.count ?? 0,
+        };
+      })
+    );
+
+    console.log('[Dashboard] testSuites:', testSuites);
+
+    // 최근 테스트 케이스 - projectRow.id 사용
     const recentTestCases = await db
       .select({
-        id: testCase.id,
-        title: testCase.name,
-        createdAt: testCase.created_at,
+        id: testCases.id,
+        title: testCases.name,
+        created_at: testCases.created_at,
       })
-      .from(testCase)
-      .where(eq(testCase.project_id, projectId))
-      .orderBy(desc(testCase.created_at))
+      .from(testCases)
+      .where(eq(testCases.project_id, projectRow.id))
+      .orderBy(desc(testCases.created_at))
       .limit(5);
 
+    console.log('[Dashboard] recentTestCases:', recentTestCases);
+
+    // 최근 스위트 - projectRow.id 사용
     const recentSuites = await db
       .select({
         id: suite.id,
         title: suite.name,
-        createdAt: suite.create_at,
+        created_at: suite.created_at,
       })
       .from(suite)
-      .where(eq(suite.project_id, projectId))
-      .orderBy(desc(suite.create_at))
+      .where(eq(suite.project_id, projectRow.id))
+      .orderBy(desc(suite.created_at))
       .limit(5);
+
+    console.log('[Dashboard] recentSuites:', recentSuites);
 
     // 최근 활동 합치기 및 정렬
     const recentActivities: RecentActivity[] = [
@@ -107,16 +137,16 @@ export const getDashboardStats = async ({
         id: tc.id,
         type: 'test_case_created' as const,
         title: tc.title,
-        createdAt: tc.createdAt,
+        created_at: tc.created_at,
       })),
       ...recentSuites.map((s) => ({
         id: s.id,
         type: 'test_suite_created' as const,
         title: s.title,
-        createdAt: s.createdAt,
+        created_at: s.created_at,
       })),
     ]
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
       .slice(0, 5);
 
     return {
@@ -130,9 +160,10 @@ export const getDashboardStats = async ({
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _dashboard: ['대시보드 데이터를 불러오는 중 오류가 발생했습니다.'] },
+      errors: { _dashboard: [`대시보드 데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`] },
     };
   }
 };

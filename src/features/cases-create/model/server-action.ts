@@ -1,6 +1,6 @@
 'use server';
 
-import {getDatabase, testCase} from "@/shared/lib/db";
+import {getDatabase, testCases} from "@/shared/lib/db";
 import { CreateTestCaseSchema } from '@/entities/test-case';
 import { z } from 'zod';
 
@@ -17,7 +17,7 @@ type MockFlatErrors = {
 
 const createTestCase = async (data: any) => {
   const db = getDatabase();
-  return await db.insert(testCase).values(data).returning();
+  return await db.insert(testCases).values(data).returning();
 }
 
 export const createTestCaseAction = async (formData: any) => {

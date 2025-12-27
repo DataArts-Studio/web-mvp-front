@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
 import { toProjectDto } from '@/entities';
-import { getDatabase, project } from '@/shared/lib/db';
+import { getDatabase, projects } from '@/shared/lib/db';
 import bcrypt from 'bcryptjs';
 import { eq, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -39,7 +39,7 @@ export async function createProject(
     const id = uuidv7();
 
     const [inserted] = await db
-      .insert(project)
+      .insert(projects)
       .values({
         id,
         name: dto.name,
@@ -84,7 +84,7 @@ export async function createProject(
   }
 }
 
-const isNotDeleted = isNull(project.deleted_at);
+const isNotDeleted = isNull(projects.deleted_at);
 
 /**
  * 프로젝트 목록 조회
@@ -94,7 +94,7 @@ export async function getProjects(): Promise<ActionResult<ProjectDomain[]>> {
   try {
     const db = getDatabase();
 
-    const rows = await db.select().from(project).where(isNotDeleted).orderBy(project.created_at);
+    const rows = await db.select().from(projects).where(isNotDeleted).orderBy(projects.created_at);
 
     const result: ProjectDomain[] = rows.map((row) => ({
       id: row.id,
@@ -125,9 +125,9 @@ export async function checkProjectNameDuplicate(name: string): Promise<ActionRes
     const db = getDatabase();
 
     const [existing] = await db
-      .select({ id: project.id })
-      .from(project)
-      .where(eq(project.name, name))
+      .select({ id: projects.id })
+      .from(projects)
+      .where(eq(projects.name, name))
       .limit(1);
 
     return { success: true, data: !!existing };

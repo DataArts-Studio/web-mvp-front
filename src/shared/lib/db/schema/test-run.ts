@@ -1,11 +1,11 @@
 import { relations } from 'drizzle-orm';
 import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { milestone } from './milestone';
-import { project } from './project';
+import { projects } from './projects';
 
 export const testRun = pgTable('test_run', {
   id: uuid('id').primaryKey(),
-  project_id: uuid('project_id').references(() => project.id),
+  project_id: uuid('project_id').references(() => projects.id),
   milestone_id: uuid('milestone_id').references(() => milestone.id),
   run_name: varchar('run_name').notNull(),
   started_at: timestamp('started_at'),
@@ -16,9 +16,9 @@ export const testRun = pgTable('test_run', {
 });
 
 export const testRunRelations = relations(testRun, ({ one }) => ({
-  project: one(project, {
+  project: one(projects, {
     fields: [testRun.project_id],
-    references: [project.id],
+    references: [projects.id],
   }),
   milestone: one(milestone, {
     fields: [testRun.milestone_id],
