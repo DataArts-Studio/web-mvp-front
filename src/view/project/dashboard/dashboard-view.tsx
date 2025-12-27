@@ -1,6 +1,7 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 
 import { dashboardStatsQueryOptions } from '@/features';
@@ -12,10 +13,26 @@ import { ChevronRight, Plus, Settings } from 'lucide-react';
 
 export const ProjectDashboardView = () => {
   const params = useParams();
+  const [url, setUrl] = useState('');
+
+  useEffect(() => {
+    setUrl(window.location.href);
+  }, []);
+
   console.log(params, params.slug, typeof params, typeof params.slug);
   const option = dashboardStatsQueryOptions(params.slug as string);
-  const { data } = useQuery(option);
-  console.log(data);
+  const { data: dashboardData, isLoading, isError } = useQuery(option);
+
+  if (isLoading) {
+    return <div>로딩중...</div>;
+  }
+
+  if (isError || !dashboardData || !dashboardData.success) {
+    return <div>에러 발생</div>
+  }
+
+  const { project } = dashboardData.data;
+
   return (
     <Container
       id="container"
@@ -40,11 +57,11 @@ export const ProjectDashboardView = () => {
 
               <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-white/5 p-4">
                 <div className="flex items-center gap-1">
-                  <span className="text-primary text-base font-semibold">ipsumlorem.com</span>
+                  <span className="text-primary text-base font-semibold">{url}</span>
                   {/* 공유 아이콘 placeholder */}
                   <div className="text-primary size-4">{/* icon placeholder */}</div>
                 </div>
-                <span className="text-text-2 text-xs">YYYY-MM-DD 생성됨</span>
+                <span className="text-text-2 text-xs">{project.created_at.toISOString()} 생성됨</span>
               </div>
 
               <div className="flex justify-end">
@@ -89,29 +106,35 @@ export const ProjectDashboardView = () => {
           </div>
 
           {/* 빈 상태 카드 */}
-          <div className="bg-bg-2 relative flex flex-col items-center gap-4 overflow-hidden rounded-2xl px-6 pt-6 pb-12">
-            {/* 이미지 placeholder */}
-            <div className="flex h-[489px] w-[522px] items-center justify-center">
-              <div className="border-line-2 flex h-full w-full items-center justify-center rounded-lg border border-dashed">
-                <span className="text-text-3">이미지 에셋 영역</span>
-              </div>
-            </div>
+          <div className="bg-bg-2 relative gap-4 overflow-hidden rounded-2xl px-6 pt-6 pb-12">
+            <div className="flex flex-col items-center justify-center gap-4">
+              {/* 이미지 placeholder */}
+              <Image
+                src="/teacup/tea-cup-not-found.svg"
+                width={383.27}
+                height={488.57}
+                alt="테스트 케이스 없음"
+              />
 
-            {/* 텍스트 + CTA */}
-            <div className="flex flex-col items-center gap-4">
+              {/* 텍스트 + CTA */}
               <div className="flex flex-col items-center gap-4">
-                <h3 className="text-text-1 text-2xl font-bold">테스트 케이스를 생성해보세요!</h3>
-                <p className="text-text-1 text-center text-lg">
-                  아직 생성된 테스트 케이스가 없습니다.
-                  <br />
-                  테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.
-                </p>
-              </div>
+                <div className="flex flex-col items-center gap-4">
+                  <h3 className="text-text-1 text-2xl font-bold">테스트 케이스를 생성해보세요!</h3>
+                  <p className="text-text-1 text-center text-lg">
+                    아직 생성된 테스트 케이스가 없습니다.
+                    <br />
+                    테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.
+                  </p>
+                </div>
 
-              <DSButton variant="solid" className="flex h-14 items-center gap-2 px-5">
-                <Plus className="size-6" />
-                <span className="text-lg font-semibold">테스트 케이스 만들기</span>
-              </DSButton>
+                <DSButton
+                  variant="solid"
+                  className="flex h-14 cursor-pointer items-center gap-2 px-5"
+                >
+                  <Plus className="size-6" />
+                  <span className="text-lg font-semibold">테스트 케이스 만들기</span>
+                </DSButton>
+              </div>
             </div>
 
             {/* 배경 데코레이션 placeholder */}
@@ -141,7 +164,10 @@ export const ProjectDashboardView = () => {
                 </p>
               </div>
 
-              <DSButton variant="solid" className="flex h-14 items-center gap-2 px-5">
+              <DSButton
+                variant="solid"
+                className="flex h-14 cursor-pointer items-center gap-2 px-5"
+              >
                 <Plus className="size-6" />
                 <span className="text-lg font-semibold">테스트 스위트 만들기</span>
               </DSButton>
