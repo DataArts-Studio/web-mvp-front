@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-export const TestCaseSchema = z.object({
+
+
+
+
+
+
+export const TestCaseDtoSchema = z.object({
   id: z.uuidv7({ error: 'uuidv7 test error' }),
   project_id: z.uuidv7(),
   test_suite_id: z.uuidv7(),
@@ -21,9 +27,25 @@ export const TestCaseSchema = z.object({
   deleted_at: z.date().nullable(),
 });
 
-export const CreateTestCaseSchema = TestCaseSchema.omit({
+export const CreateTestCaseDtoSchema = TestCaseDtoSchema.omit({
   id: true,
   created_at: true,
   updated_at: true,
   deleted_at: true,
 });
+
+export const TestCaseSchema = z.object({
+  projectId: z.uuidv7(),
+  testSuiteId: z.uuidv7(),
+  caseKey: z.string(),
+  title: z.string().min(1).max(200),
+  testType: z.string(),
+  tags: z.array(z.string()).optional(),
+  preCondition: z.string().optional(),
+  testSteps: z.string().optional(),
+  expectedResult: z.string().optional(),
+  estimateMinutes: z.int().optional(),
+  sortOrder: z.int().optional(),
+});
+
+export const CreateTestCaseSchema = TestCaseSchema;
