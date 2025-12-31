@@ -2,27 +2,78 @@
 'use client';
 import React from 'react';
 
+
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import {
-  Eye,
-  EyeOff,
-  FolderTree,
-  Home,
-  LayoutDashboard,
-  ListChecks,
-  Milestone,
-  Play,
-} from 'lucide-react';
+
+
+import { Eye, EyeOff, FolderTree, Home, LayoutDashboard, ListChecks, Milestone, Play } from 'lucide-react';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const pages = [
   { id: '/', label: '홈', icon: Home, href: '/' },
-  { id: 'dashboard', label: '대시보드', icon: LayoutDashboard, href: '/projects/dashboard' },
-  { id: 'milestones', label: '마일스톤', icon: Milestone, href: '/projects/p-name/milestones' },
-  { id: 'test-suites', label: '테스트 스위트', icon: FolderTree, href: '/projects/p-name/suites' },
-  { id: 'test-cases', label: '테스트 케이스', icon: ListChecks, href: '/projects/p-name/cases' },
-  { id: 'test-runs', label: '테스트 실행', icon: Play, href: '/projects/p-name/runs' },
+  { id: 'dashboard', label: '대시보드', icon: LayoutDashboard, href: '/projects/sample-project' },
+  {
+    id: 'milestones',
+    label: '마일스톤',
+    icon: Milestone,
+    href: '/projects/sample-project/milestones',
+  },
+  {
+    id: 'test-suites',
+    label: '테스트 스위트',
+    icon: FolderTree,
+    href: '/projects/sample-project/suites',
+  },
+  {
+    id: 'test-cases',
+    label: '테스트 케이스',
+    icon: ListChecks,
+    href: '/projects/sample-project/cases',
+  },
+  { id: 'test-runs', label: '테스트 실행', icon: Play, href: '/projects/sample-project/runs' },
 ];
 
 /**

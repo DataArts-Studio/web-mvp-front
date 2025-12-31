@@ -1,1 +1,1 @@
-export { CaseCreateForm } from './case-create-form';
+export { TestCaseDetailForm } from './test-case-detail-form';
