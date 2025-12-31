@@ -4,7 +4,7 @@ import React, { useRef } from 'react';
 import { useParams } from 'next/navigation';
 
 import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
-import { useCreateCase } from '@/features/cases-create';
+import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardStatsQueryOptions } from '@/features/dashboard';
 import { Container, DSButton, Input, MainContainer } from '@/shared';
@@ -22,10 +22,12 @@ const TABLE_HEADERS = [
   { id: 'actions', label: '메뉴', colSpan: 'col-span-1', textAlign: 'text-right' },
 ] as const;
 
+type ModalType = 'create' | 'detail';
+
 export const TestCasesView = () => {
   const params = useParams();
   const inputRef = useRef<HTMLInputElement>(null);
-  const { isOpen, onClose, onOpen } = useDisclosure();
+  const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const { mutate, isPending } = useCreateCase();
 
   const { data: dashboardData } = useQuery(
@@ -94,7 +96,7 @@ export const TestCasesView = () => {
               <ChevronDown className="text-text-3 h-4 w-4" />
             </DSButton>
           </ActionToolbar.Group>
-          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={onOpen} className='flex items-center gap-2'>
+          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen('create')} className='flex items-center gap-2'>
             <Plus className="h-4 w-4" />
             <span className='leading-none'>테스트 케이스 생성</span>
           </ActionToolbar.Action>
@@ -132,7 +134,8 @@ export const TestCasesView = () => {
           </TestTable.Root>
         </section>
       </MainContainer>
-      {isOpen && <TestCaseSideView onClose={onClose} />}
+      {isActiveType('create') && <TestCaseDetailForm projectId={projectId} onClose={onClose} />}
+      {isActiveType('detail') && <TestCaseSideView onClose={onClose} />}
     </Container>
   );
 };

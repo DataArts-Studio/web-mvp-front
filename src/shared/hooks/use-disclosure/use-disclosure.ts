@@ -1,8 +1,33 @@
 import React from 'react';
 
-export const useDisclosure = (initialValue = false) => {
-  const [isOpen, setIsOpen] = React.useState(initialValue);
-  const onOpen = React.useCallback(() => setIsOpen(true), []);
-  const onClose = React.useCallback(() => setIsOpen(false), []);
-  return { isOpen, onOpen, onClose };
+/**
+ * useDisclosure - 모달/패널 상태 관리 훅
+ *
+ * @example 기본 사용 (단일 모달)
+ * const { isOpen, onOpen, onClose } = useDisclosure();
+ *
+ * @example 타입 지정 (여러 모달 구분)
+ * type ModalType = 'create' | 'detail';
+ * const { isOpen, activeType, onOpen, onClose } = useDisclosure<ModalType>();
+ * onOpen('create'); // activeType === 'create'
+ */
+export const useDisclosure = <T extends string = never>(initialValue?: T) => {
+  const [activeType, setActiveType] = React.useState<T | null>(initialValue ?? null);
+
+  const isOpen = activeType !== null;
+
+  const onOpen = React.useCallback((type?: T) => {
+    setActiveType((type ?? ('default' as T)) as T);
+  }, []);
+
+  const onClose = React.useCallback(() => {
+    setActiveType(null);
+  }, []);
+
+  const isActiveType = React.useCallback(
+    (type: T) => activeType === type,
+    [activeType]
+  );
+
+  return { isOpen, activeType, onOpen, onClose, isActiveType };
 };
