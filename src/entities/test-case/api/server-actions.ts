@@ -5,15 +5,6 @@ import { getDatabase, testCases } from '@/shared/lib/db';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
-
-
-
-
-
-
-
-
-
 // Todo: 일단 중복으로 선언하고 나중에 분리
 export type ActionResult<T> =
   | { success: true; data: T; message?: string }

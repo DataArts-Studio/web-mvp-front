@@ -3,8 +3,9 @@ import React, { useRef } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { TEST_CASES_RICH_MOCK as CASES, TestCaseCard } from '@/entities/test-case';
+import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { useCreateCase } from '@/features/cases-create';
+import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardStatsQueryOptions } from '@/features/dashboard';
 import { Container, DSButton, Input, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
@@ -30,8 +31,22 @@ export const TestCasesView = () => {
   const { data: dashboardData } = useQuery(
     dashboardStatsQueryOptions(params.slug as string),
   );
-  console.log(dashboardData, 'dashboardData');
+
   const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+
+  const { data: testCasesData } = useQuery({
+    ...testCasesQueryOptions(projectId),
+    enabled: !!projectId,
+  });
+
+  const testCases: TestCaseCardType[] = testCasesData?.success
+    ? testCasesData.data.map((item) => ({
+        ...item,
+        suiteTitle: '',
+        status: 'untested' as const,
+        lastExecutedAt: null,
+      }))
+    : [];
 
   const handleCreateTestCase = () => {
     const title = inputRef.current?.value.trim();
@@ -108,7 +123,7 @@ export const TestCasesView = () => {
                 />
               </div>
             </TestTable.Row>
-            {CASES.map((item) => (
+            {testCases.map((item) => (
               <TestTable.Row key={item.caseKey}>
                 <TestCaseCard testCase={item} />
               </TestTable.Row>
@@ -121,3 +136,4 @@ export const TestCasesView = () => {
     </Container>
   );
 };
+
