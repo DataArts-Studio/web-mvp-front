@@ -1,6 +1,39 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getDatabase, checkDatabaseHealth, closeDatabase } from './drizzle';
-import { ENV } from '@/shared/constants';
+import { SERVER_ENV } from '@/shared/constants/infra/env.server';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+
+
+import { checkDatabaseHealth, closeDatabase, getDatabase } from './drizzle';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // postgres 모듈 모킹 (실제 DB 연결 방지)
 vi.mock('postgres', () => {
@@ -26,8 +59,10 @@ describe('데이터베이스 연결 관리 (Database Connection)', () => {
     vi.clearAllMocks();
     await closeDatabase();
     process.env = { ...originalEnv };
-    vi.spyOn(ENV.SERVER, 'SUPABASE_DB_URL', 'get').mockReturnValue('postgres://user:pass@localhost:5432/db');
-    vi.spyOn(ENV.SERVER, 'NODE_ENV', 'get').mockReturnValue('development');
+    vi.spyOn(SERVER_ENV, 'SUPABASE_DB_URL', 'get').mockReturnValue(
+      'postgres://user:pass@localhost:5432/db'
+    );
+    vi.spyOn(SERVER_ENV, 'NODE_ENV', 'get').mockReturnValue('development');
   });
 
   afterEach(() => {
@@ -55,7 +90,7 @@ describe('데이터베이스 연결 관리 (Database Connection)', () => {
   });
 
   it('운영(Production) 환경 설정을 올바르게 반영해야 한다', async () => {
-    vi.spyOn(ENV.SERVER, 'NODE_ENV', 'get').mockReturnValue('production');
+    vi.spyOn(SERVER_ENV, 'NODE_ENV', 'get').mockReturnValue('production');
     const postgres = (await import('postgres')).default;
     getDatabase();
     expect(postgres).toHaveBeenCalledWith(

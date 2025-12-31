@@ -1,7 +1,7 @@
 'use server';
 
-import {getDatabase, testCase} from "@/shared/lib/db";
-import { CreateTestCaseSchema } from '@/entities/test-case';
+import { CreateTestCaseDtoSchema } from '@/entities/test-case';
+import { getDatabase, testCases } from "@/shared/lib/db";
 import { z } from 'zod';
 
 type MockTestCaseData = {
@@ -17,12 +17,12 @@ type MockFlatErrors = {
 
 const createTestCase = async (data: any) => {
   const db = getDatabase();
-  return await db.insert(testCase).values(data).returning();
+  return await db.insert(testCases).values(data).returning();
 }
 
 export const createTestCaseAction = async (formData: any) => {
   const data = Object.fromEntries(formData.entries());
-  const validation = CreateTestCaseSchema.safeParse(data);
+  const validation = CreateTestCaseDtoSchema.safeParse(data);
   if (!validation.success) return { success: false, errors: z.flattenError(validation.error) };
 
   const newTestCase = await createTestCase(validation.data);

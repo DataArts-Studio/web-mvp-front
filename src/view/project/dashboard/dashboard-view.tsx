@@ -1,181 +1,200 @@
-import React from 'react';
+'use client';
+import React, { useEffect, useState } from 'react';
 
+
+
+import Image from 'next/image';
+import { useParams } from 'next/navigation';
+
+
+
+import { dashboardStatsQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared/lib/primitives';
+import { DSButton } from '@/shared/ui';
 import { Aside } from '@/widgets';
+import { useQuery } from '@tanstack/react-query';
+import { ChevronRight, Plus, Settings } from 'lucide-react';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export const ProjectDashboardView = () => {
+  const params = useParams();
+  const [url, setUrl] = useState('');
+
+  useEffect(() => {
+    setUrl(window.location.href);
+  }, []);
+
+  console.log(params, params.slug, typeof params, typeof params.slug);
+  const option = dashboardStatsQueryOptions(params.slug as string);
+  const { data: dashboardData, isLoading, isError } = useQuery(option);
+
+  if (isLoading) {
+    return <div>로딩중...</div>;
+  }
+
+  if (isError || !dashboardData || !dashboardData.success) {
+    return <div>에러 발생</div>
+  }
+
+  const { project, recentActivities } = dashboardData.data;
+  console.log(dashboardData.data);
+
   return (
     <Container
       id="container"
-      className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans"
+      className="bg-bg-1 text-text-1 flex min-h-screen items-start justify-start font-sans"
     >
       <Aside />
-      <MainContainer className="mx-auto grid items-center min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 gap-x-5 gap-y-8 px-10 py-8">
-        {/* 헤더 */}
-        <header className="col-span-6 border-bg-4 flex w-full flex-col gap-3 border-b pb-6">
-          <h2 className="typo-title-heading">사용자가 입력한 [Project Name]이 배치됩니다.</h2>
-          <p className="typo-body1-normal text-text-3">통합 테스트 현황 및 빠른 작업 허브</p>
-        </header>
+      <MainContainer className="flex min-h-screen w-full flex-1 flex-col gap-20 px-10 py-20">
+        {/* 섹션 1: 헤더 + 프로젝트 정보/최근 활동 */}
+        <section className="flex w-full max-w-[1200px] flex-col gap-9">
+          {/* 헤더 텍스트 */}
+          <h1 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
+            클릭 몇 번이면 뚝딱!
+            <br />
+            테스트 케이스를 자동으로 만들어보세요.
+          </h1>
 
-        {/* 탭 네비 */}
-        {/*<nav
-          aria-label="Project navigation"
-          className="border-bg-4 text-body2-normal flex w-full flex-wrap gap-2 border-b pb-2"
-        >
-          {[
-            'Overview',
-            'Todo',
-            'Milestones',
-            'Test Runs & Results',
-            'Test Suites & Cases',
-            'Reports',
-          ].map((tab, index) => (
-            <button
-              key={tab}
-              className={[
-                'rounded-t-md px-3 py-2 transition-colors', // ← 패딩도 살짝 키움
-                index === 0
-                  ? 'border-bg-4 bg-bg-2 text-primary border-x border-t font-semibold'
-                  : 'text-text-4 hover:text-text-2',
-              ].join(' ')}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>*/}
+          {/* 프로젝트 정보 + 최근 활동 카드 */}
+          <div className="flex w-full gap-3">
+            {/* 내 프로젝트 정보 카드 */}
+            <div className="bg-bg-2 relative flex w-[350px] flex-col gap-4 overflow-hidden rounded-lg p-4">
+              <span className="text-text-3 text-xs">내 프로젝트 정보</span>
 
-        {/* 그래프 + 요약 */}
-        <section className="bg-bg-2 shadow-2 col-span-6 rounded-md p-6">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="typo-h2-heading">Test Activity (지난 14일)</h2>
-            <button className="border-bg-4 text-label-normal text-text-3 hover:bg-bg-3 rounded border px-3 py-1">
-              Reports
-            </button>
-          </div>
+              <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-white/5 p-4">
+                <div className="flex items-center gap-1">
+                  <span className="text-primary text-base font-semibold">{url}</span>
+                  {/* 공유 아이콘 placeholder */}
+                  <div className="text-primary size-4">{/* icon placeholder */}</div>
+                </div>
+                <span className="text-text-2 text-xs">{project.created_at.toISOString()} 생성됨</span>
+              </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
-            {/* 그래프 자리 */}
-            <div className="border-bg-4 text-label-normal text-text-4 flex h-60 items-center justify-center rounded border border-dashed">
-              그래프 영역 (Test Execution Trend)
+              <div className="flex justify-end">
+                <DSButton variant="text" className="text-text-2 flex items-center gap-2">
+                  <Settings className="size-4" />
+                  <span>환경설정</span>
+                </DSButton>
+              </div>
+
+              {/* 배경 데코레이션 placeholder */}
+              <div className="bg-primary/10 absolute top-12 -left-[228px] size-64 rounded-full blur-3xl" />
             </div>
 
-            {/* 상태 요약 */}
-            <ul className="text-body2-normal text-text-2 space-y-3">
-              <li className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-emerald-500" />
-                  Passed
-                </span>
-                <span className="text-text-1 font-semibold">2208</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-rose-500" />
-                  Failed
-                </span>
-                <span className="text-text-1 font-semibold">175</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-amber-400" />
-                  Blocked
-                </span>
-                <span className="text-text-1 font-semibold">35</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="bg-text-4 h-3 w-3 rounded-full" />
-                  Untested
-                </span>
-                <span className="text-text-1 font-semibold">50</span>
-              </li>
-            </ul>
+            {/* 최근 활동 카드 */}
+            <div className="bg-bg-2 flex flex-1 flex-col gap-4 rounded-lg p-4">
+              <span className="text-text-3 text-xs">최근 활동</span>
+
+              <ul className="flex flex-col gap-1">
+                {recentActivities.map((item) => (
+                  <li key={item.id} className="flex items-center gap-1">
+                    <span className="text-text-1 text-base">
+                      <span className="mr-2">•</span>
+                      {item.title}
+                    </span>
+                    <span className="text-text-2 mx-1">•</span>
+                    <span className="text-text-2 text-base font-semibold">{item.created_at.toISOString()}일전</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </section>
 
-        {/* Milestones / Test Runs */}
-        <section className="col-span-6 grid gap-6 md:grid-cols-2">
-          <article className="bg-bg-2 shadow-1 flex flex-col rounded-md p-6">
-            <header className="mb-3 flex items-center justify-between">
-              <span className="typo-body2-heading">Milestones</span>
-              <button className="text-label-normal text-text-4 hover:text-text-2">View all</button>
-            </header>
-            <ul className="text-body2-normal text-text-2 space-y-2">
-              <li>
-                <span className="text-text-1 font-semibold">Release 1.0</span> — 2025-01-10 (In
-                progress)
-              </li>
-              <li>
-                <span className="text-text-1 font-semibold">Release 1.1</span> — 2025-02-02
-                (Planned)
-              </li>
-            </ul>
-          </article>
+        {/* 섹션 2: 테스트 케이스 한눈에 보기 */}
+        <section className="flex w-full max-w-[1200px] flex-col gap-9">
+          {/* 섹션 헤더 */}
+          <div className="flex items-center gap-2">
+            <h2 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
+              테스트 케이스 한눈에 보기
+            </h2>
+            <ChevronRight className="text-text-1 size-6" />
+          </div>
 
-          <article className="bg-bg-2 shadow-1 flex flex-col rounded-md p-6">
-            <header className="mb-3 flex items-center justify-between">
-              <span className="typo-body2-heading">Test Runs</span>
-              <button className="text-label-normal text-text-4 hover:text-text-2">View all</button>
-            </header>
-            <ul className="text-body2-normal text-text-2 space-y-2">
-              <li>
-                <span className="text-text-1 font-semibold">Run 1: Smoke</span> — 73% passed
-              </li>
-              <li>
-                <span className="text-text-1 font-semibold">Run 2: Regression</span> — 52% passed
-              </li>
-            </ul>
-          </article>
+          {/* 빈 상태 카드 */}
+          <div className="bg-bg-2 relative gap-4 overflow-hidden rounded-2xl px-6 pt-6 pb-12">
+            <div className="flex flex-col items-center justify-center gap-4">
+              {/* 이미지 placeholder */}
+              <Image
+                src="/teacup/tea-cup-not-found.svg"
+                width={383.27}
+                height={488.57}
+                alt="테스트 케이스 없음"
+              />
+
+              {/* 텍스트 + CTA */}
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-col items-center gap-4">
+                  <h3 className="text-text-1 text-2xl font-bold">테스트 케이스를 생성해보세요!</h3>
+                  <p className="text-text-1 text-center text-lg">
+                    아직 생성된 테스트 케이스가 없습니다.
+                    <br />
+                    테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.
+                  </p>
+                </div>
+
+                <DSButton
+                  variant="solid"
+                  className="flex h-14 cursor-pointer items-center gap-2 px-5"
+                >
+                  <Plus className="size-6" />
+                  <span className="text-lg font-semibold">테스트 케이스 만들기</span>
+                </DSButton>
+              </div>
+            </div>
+
+            {/* 배경 데코레이션 placeholder */}
+            <div className="bg-primary/10 absolute right-[25%] bottom-[-200px] size-[500px] rounded-full blur-3xl" />
+          </div>
         </section>
 
-        {/* Activity */}
-        <section className="bg-bg-2 shadow-1 col-span-6 rounded-md p-6">
-          <header className="mb-3 flex items-center justify-between">
-            <span className="typo-body2-heading">Activity</span>
-            <button className="text-label-normal text-text-4 hover:text-text-2">History</button>
-          </header>
-          <ul className="text-label-normal text-text-2 space-y-2">
-            <li>• Test Run "Run 1" updated by admin — 5분 전</li>
-            <li>• Test Case "Login with invalid password" edited — 12분 전</li>
-            <li>• Milestone "Release 1.0" status changed to In progress — 1시간 전</li>
-          </ul>
+        {/* 섹션 3: 테스트 스위트 */}
+        <section className="flex w-full max-w-[1200px] flex-col gap-9">
+          {/* 섹션 헤더 */}
+          <div className="flex items-center gap-2">
+            <h2 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
+              테스트 스위트
+            </h2>
+            <ChevronRight className="text-text-1 size-6" />
+          </div>
+
+          {/* 빈 상태 카드 */}
+          <div className="bg-bg-2 flex flex-col items-center gap-4 rounded-lg px-0 py-12">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-4">
+                <h3 className="text-text-1 text-2xl font-bold">테스트 스위트를 생성해보세요!</h3>
+                <p className="text-text-1 text-center text-lg">
+                  아직 생성된 테스트 스위트가 없습니다.
+                  <br />
+                  테스트 스위트로, 테스트 케이스를 더 쉽게 관리해보세요!
+                </p>
+              </div>
+
+              <DSButton
+                variant="solid"
+                className="flex h-14 cursor-pointer items-center gap-2 px-5"
+              >
+                <Plus className="size-6" />
+                <span className="text-lg font-semibold">테스트 스위트 만들기</span>
+              </DSButton>
+            </div>
+          </div>
         </section>
-
-        {/* ASIDE */}
-        {/*<aside className="flex flex-col gap-6">
-            <section id='action-section' className="bg-bg-2 shadow-1 rounded-md p-6">
-              <h2 className="text-label-heading text-text-3 mb-3 tracking-wide uppercase">
-                Actions
-              </h2>
-              <ul className="text-body2-normal space-y-2">
-                <li>
-                  <button className="text-text-1 hover:text-primary w-full text-left">
-                    + Add Test Run
-                  </button>
-                </li>
-                <li>
-                  <button className="text-text-1 hover:text-primary w-full text-left">
-                    + Add Test Case
-                  </button>
-                </li>
-                <li>
-                  <button className="text-text-1 hover:text-primary w-full text-left">
-                    + Add Milestone
-                  </button>
-                </li>
-              </ul>
-            </section>
-
-            <section id='todo-section' className="bg-bg-2 shadow-1 rounded-md p-6">
-              <h2 className="text-label-heading text-text-3 mb-3 tracking-wide uppercase">Todos</h2>
-              <ul className="text-label-normal text-text-2 space-y-2">
-                <li>• 브라우저 호환성 테스트 케이스 작성</li>
-                <li>• 결제 모듈 회귀 테스트 실행</li>
-                <li>• Release 1.0 마일스톤 범위 재확인</li>
-              </ul>
-            </section>
-          </aside>*/}
-        {/*<div className="grid w-full gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]"></div>*/}
       </MainContainer>
     </Container>
   );
