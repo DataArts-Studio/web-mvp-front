@@ -1,14 +1,18 @@
-import {
-  CreateTestCase,
-  TestCase,
-  TestCaseDTO,
-  toCreateTestCaseDTO,
-  toTestCase,
-  toTestCaseDto,
-} from '@/entities';
+'use server';
+
+import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
 import { getDatabase, testCases } from '@/shared/lib/db';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+
+
+
+
+
+
+
+
+
 
 // Todo: 일단 중복으로 선언하고 나중에 분리
 export type ActionResult<T> =
@@ -60,7 +64,7 @@ export const getTestCases = async ({
   }
 };
 
-export const getTestCase = () => {
+export const getTestCase = async () => {
   try {
     return {
       success: true,
@@ -82,19 +86,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
 
     const [inserted] = await db
       .insert(testCases)
-      .values({
-        id,
-        project_id: dto.project_id,
-        test_suite_id: dto.test_suite_id ?? '',
-        case_key: dto.case_key ?? '',
-        name: dto.name,
-        test_type: dto.test_type ?? '',
-        tags: dto.tags ?? [],
-        pre_condition: dto.pre_condition ?? '',
-        steps: dto.steps ?? '',
-        expected_result: dto.expected_result ?? '',
-        sort_order: dto.sort_order ?? 0,
-      })
+      .values({ id, ...dto, created_at: new Date(), updated_at: new Date(), deleted_at: null })
       .returning();
 
     if (!inserted) {

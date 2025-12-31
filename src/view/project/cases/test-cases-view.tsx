@@ -1,12 +1,17 @@
 'use client';
-import React from 'react';
+import React, { useRef } from 'react';
+
+import { useParams } from 'next/navigation';
 
 import { TEST_CASES_RICH_MOCK as CASES, TestCaseCard } from '@/entities/test-case';
+import { useCreateCase } from '@/features/cases-create';
+import { dashboardStatsQueryOptions } from '@/features/dashboard';
 import { Container, DSButton, Input, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
-import { ChevronDown, Filter, MoreHorizontal, Plus } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { ChevronDown, Filter, Plus } from 'lucide-react';
 
 const TABLE_HEADERS = [
   { id: 'id', label: 'ID', colSpan: 'col-span-2' },
@@ -17,7 +22,31 @@ const TABLE_HEADERS = [
 ] as const;
 
 export const TestCasesView = () => {
+  const params = useParams();
+  const inputRef = useRef<HTMLInputElement>(null);
   const { isOpen, onClose, onOpen } = useDisclosure();
+  const { mutate, isPending } = useCreateCase();
+
+  const { data: dashboardData } = useQuery(
+    dashboardStatsQueryOptions(params.slug as string),
+  );
+  console.log(dashboardData, 'dashboardData');
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+
+  const handleCreateTestCase = () => {
+    const title = inputRef.current?.value.trim();
+    if (!title || isPending) return;
+
+    mutate(
+      { title, projectId },
+      {
+        onSuccess: () => {
+          if (inputRef.current) inputRef.current.value = '';
+        },
+      },
+    );
+  };
+
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans">
       {/* Aside */}
@@ -50,9 +79,9 @@ export const TestCasesView = () => {
               <ChevronDown className="text-text-3 h-4 w-4" />
             </DSButton>
           </ActionToolbar.Group>
-          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={onOpen}>
+          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={onOpen} className='flex items-center gap-2'>
             <Plus className="h-4 w-4" />
-            상세 생성
+            <span className='leading-none'>테스트 케이스 생성</span>
           </ActionToolbar.Action>
         </ActionToolbar.Root>
 
@@ -66,9 +95,16 @@ export const TestCasesView = () => {
                   <Plus className="h-4 w-4" />
                 </div>
                 <Input
+                  ref={inputRef}
                   type="text"
                   placeholder="새로운 테스트 케이스 이름을 입력하고 Enter를 누르세요..."
                   className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent focus:outline-none"
+                  disabled={isPending}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateTestCase();
+                    }
+                  }}
                 />
               </div>
             </TestTable.Row>

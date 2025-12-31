@@ -4,14 +4,6 @@ import { CreateTestCaseDtoSchema } from '@/entities/test-case';
 import { getDatabase, testCases } from "@/shared/lib/db";
 import { z } from 'zod';
 
-
-
-
-
-
-
-
-
 type MockTestCaseData = {
   name: string;
   project_id: string;

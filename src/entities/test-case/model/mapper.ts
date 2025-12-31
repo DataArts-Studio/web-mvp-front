@@ -34,7 +34,7 @@ export const toTestCase = (dto: TestCaseDTO): TestCase => {
 export const toCreateTestCase = (dto: CreateTestCaseDTO): CreateTestCase => {
   return {
     projectId: dto.project_id,
-    testSuiteId: dto.test_suite_id,
+    testSuiteId: dto.test_suite_id || null,
     caseKey: dto.case_key,
     title: dto.name,
     testType: dto.test_type ?? '',
@@ -68,14 +68,14 @@ export const toTestCaseDto = (domain: TestCase): TestCaseDTO => {
 export const toCreateTestCaseDTO = (domain: CreateTestCase): CreateTestCaseDTO => {
   return {
     project_id: domain.projectId,
-    test_suite_id: domain.testSuiteId,
-    case_key: domain.caseKey,
+    test_suite_id: domain.testSuiteId || null,
+    case_key: `TC-${Date.now()}`,
     name: domain.title,
-    test_type: domain.testType,
-    tags: domain.tags,
-    pre_condition: domain.preCondition,
-    steps: domain.testSteps,
-    expected_result: domain.expectedResult,
-    sort_order: domain.sortOrder,
+    test_type: 'untested',
+    tags: domain.tags ?? [],
+    pre_condition: domain.preCondition ?? '',
+    steps: domain.testSteps ?? '',
+    expected_result: domain.expectedResult ?? '',
+    sort_order: domain.sortOrder ?? 0,
   };
 };
