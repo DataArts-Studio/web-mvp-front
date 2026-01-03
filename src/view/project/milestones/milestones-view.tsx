@@ -1,17 +1,22 @@
 'use client';
 import React from 'react';
 
+import { useParams } from 'next/navigation';
+
 import { MilestoneCard, milestonesMock } from '@/entities/milestone';
-import { MilestoneCreateForm } from '@/features';
+import { MilestoneCreateForm, dashboardStatsQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
+import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
 
 export const MilestonesView = () => {
+  const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const data = milestonesMock;
-  // const data = [];
+  const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+  const milestonesData = milestonesMock;
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}
@@ -35,13 +40,13 @@ export const MilestonesView = () => {
               onChange={() => '진행 중'}
             />
           </ActionToolbar.Group>
-          <ActionToolbar.Action size='small' type="button" variant="solid" onClick={onOpen}>
+          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen()}>
             마일스톤 생성하기
           </ActionToolbar.Action>
         </ActionToolbar.Root>
         {/* 마일스톤 리스트 */}
         <section aria-label="마일스톤 목록" className="col-span-6 flex flex-col gap-3">
-          {data.length === 0 ? (
+          {milestonesData.length === 0 ? (
             <div className="rounded-3 border-border-2 bg-bg-2/50 col-span-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
               <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
                 <FolderOpen className="h-6 w-6" strokeWidth={1.5} />
@@ -54,10 +59,12 @@ export const MilestonesView = () => {
               </div>
             </div>
           ) : (
-            data.map((milestone) => <MilestoneCard key={milestone.id} milestone={milestone} />)
+            milestonesData.map((milestone) => (
+              <MilestoneCard key={milestone.id} milestone={milestone} />
+            ))
           )}
         </section>
-        {isOpen && <MilestoneCreateForm onClose={onClose} />}
+        {isOpen && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
       </MainContainer>
     </Container>
   );

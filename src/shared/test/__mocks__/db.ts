@@ -1,10 +1,5 @@
+import { CreateMilestone, MilestoneDTO } from '@/entities/milestone';
 import { type Mock, vi } from 'vitest';
-
-
-
-
-
-
 
 // 모킹된 DB 결과를 저장할 변수
 let mockReturnValue: unknown = [];
@@ -22,7 +17,9 @@ const createMockQueryBuilder = () => ({
   values: vi.fn().mockReturnThis(),
   update: vi.fn().mockReturnThis(),
   set: vi.fn().mockReturnThis(),
-  returning: vi.fn(() => Promise.resolve(mockInsertReturnValue ?? mockUpdateReturnValue ?? mockReturnValue)),
+  returning: vi.fn(() =>
+    Promise.resolve(mockInsertReturnValue ?? mockUpdateReturnValue ?? mockReturnValue)
+  ),
   then: vi.fn((resolve) => Promise.resolve(mockReturnValue).then(resolve)),
 });
 
@@ -91,16 +88,18 @@ export const resetMockDb = () => {
 };
 
 // 테스트용 fixture 데이터
-export const createMockTestSuiteRow = (overrides: Partial<{
-  id: string;
-  project_id: string;
-  name: string;
-  description: string | null;
-  sort_order: number | null;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
-}> = {}) => ({
+export const createMockTestSuiteRow = (
+  overrides: Partial<{
+    id: string;
+    project_id: string;
+    name: string;
+    description: string | null;
+    sort_order: number | null;
+    created_at: Date;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }> = {}
+) => ({
   id: overrides.id ?? '01234567-89ab-cdef-0123-456789abcdef',
   project_id: overrides.project_id ?? 'project-123',
   name: overrides.name ?? '테스트 스위트 제목입니다',
@@ -111,14 +110,41 @@ export const createMockTestSuiteRow = (overrides: Partial<{
   deleted_at: 'deleted_at' in overrides ? overrides.deleted_at : null,
 });
 
-export const createMockCreateTestSuiteInput = (overrides: Partial<{
-  projectId: string;
-  title: string;
-  description: string;
-  sortOrder: number;
-}> = {}) => ({
+export const createMockCreateTestSuiteInput = (
+  overrides: Partial<{
+    projectId: string;
+    title: string;
+    description: string;
+    sortOrder: number;
+  }> = {}
+) => ({
   projectId: overrides.projectId ?? 'project-123',
   title: overrides.title ?? '테스트 스위트 제목입니다',
   description: overrides.description ?? '테스트 설명',
   sortOrder: overrides.sortOrder ?? 0,
+});
+
+export const createMockCreateMilestoneInput = (
+  overrides?: Partial<CreateMilestone>
+): CreateMilestone => ({
+  projectId: 'project-123',
+  title: '테스트 마일스톤',
+  description: '테스트용 마일스톤 설명입니다.',
+  startDate: new Date('2024-01-01'),
+  endDate: new Date('2024-12-31'),
+  ...overrides,
+});
+
+export const createMockMilestoneRow = (overrides?: Partial<MilestoneDTO>): MilestoneDTO => ({
+  id: 'milestone-123',
+  project_id: 'project-123',
+  name: '테스트 마일스톤',
+  description: '테스트용 마일스톤 설명입니다.',
+  start_date: new Date('2024-01-01'),
+  end_date: new Date('2024-12-31'),
+  status: 'open',
+  created_at: new Date(),
+  updated_at: new Date(),
+  deleted_at: null,
+  ...overrides,
 });

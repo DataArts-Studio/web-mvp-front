@@ -1,16 +1,20 @@
 'use server';
 
-import { 
-  CreateMilestone, 
-  Milestone, 
-  MilestoneDTO, 
-  toCreateMilestoneDTO, 
-  toMilestone 
-} from '@/entities/milestone';
+import { CreateMilestone, Milestone, MilestoneDTO, UpdateMilestone, toCreateMilestoneDTO, toMilestone } from '@/entities/milestone';
 import { getDatabase, milestones } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+
+
+
+
+
+
+
+
+
+
 
 type GetMilestonesParams = {
   projectId: string;
@@ -118,7 +122,7 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
  */
 export const updateMilestone = async (
   id: string,
-  input: Partial<CreateMilestone>
+  input: Partial<UpdateMilestone>
 ): Promise<ActionResult<Milestone>> => {
   try {
     const db = getDatabase();
@@ -126,7 +130,7 @@ export const updateMilestone = async (
     const [updated] = await db
       .update(milestones)
       .set({
-        name: input.name,
+        ...(input.title && { title: input.title }),
         description: input.description,
         start_date: input.startDate,
         end_date: input.endDate,

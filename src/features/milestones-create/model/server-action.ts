@@ -1,6 +1,6 @@
 'use server';
 import { CreateMilestoneSchema } from '@/entities/milestone';
-import { getDatabase, milestone } from '@/shared/lib/db';
+import { getDatabase, milestones } from '@/shared/lib/db';
 import { z } from 'zod';
 
 type MockMilestoneData = {
@@ -19,7 +19,7 @@ type MockFlatErrors = {
 
 const createMilestone = async (data: any) => {
   const db = getDatabase();
-  return await db.insert(milestone).values(data).returning();
+  return await db.insert(milestones).values(data).returning();
 };
 
 export const createMilestoneAction = async (formData: any) => {
