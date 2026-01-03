@@ -2,7 +2,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { createSuiteMock } from '@/features/suites-create';
+import { createTestSuite } from '@/entities';
 import { DSButton, FormField } from '@/shared';
 
 interface IFormInput {
@@ -27,7 +27,7 @@ export const MilestoneCreateForm = ({onClose}: MilestoneCreateFormProps) => {
     formData.append('startDate', data.startDate);
     formData.append('endDate', data.endDate);
 
-    const result = await createSuiteMock(formData);
+    const result = await createTestSuite(formData);
     if (!result.success) {
       console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
       return;
