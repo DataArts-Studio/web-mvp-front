@@ -1,13 +1,18 @@
 import React from 'react';
 
-import {
-  Dialog,
-  useDialog,
-  type DialogContentProps,
-  type DialogOverlayProps,
-  type DialogRootProps,
-} from '@/shared/lib/primitives';
+
+
+import { Dialog, type DialogContentProps, type DialogOverlayProps, type DialogRootProps, useDialog } from '@/shared/lib/primitives';
 import type { Meta, StoryObj } from '@storybook/react';
+
+
+
+
+
+
+
+
+
 
 // ------------------------------------------------------------------
 // Meta 정의
@@ -16,7 +21,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 // Storybook Controls에 노출할 Dialog.Root의 Props를 정의합니다.
 type DialogRootOmittedProps = Omit<DialogRootProps, 'children'>;
 
-const meta: Meta<DialogRootOmittedProps> = {
+const meta: Meta<DialogRootProps> = {
   title: 'Primitive Components/Dialog',
   component: Dialog.Root,
   parameters: {

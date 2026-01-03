@@ -5,16 +5,10 @@ import { revalidatePath } from 'next/cache';
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
 import { toProjectDto } from '@/entities';
 import { getDatabase, projects } from '@/shared/lib/db';
+import { ActionResult } from '@/shared/types';
 import bcrypt from 'bcryptjs';
 import { eq, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-
-// ============================================================================
-// Types
-// ============================================================================
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; errors: Record<string, string[]> };
 
 // ============================================================================
 // Helpers
