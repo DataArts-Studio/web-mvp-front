@@ -42,6 +42,6 @@ export const toCreateTestSuiteDTO = (domain: CreateTestSuite): CreateTestSuiteDT
     project_id: domain.projectId,
     name: domain.title,
     description: domain.description,
-    sort_order: domain.sortOrder,
+    sort_order: domain.sortOrder ?? 0,
   };
 };
