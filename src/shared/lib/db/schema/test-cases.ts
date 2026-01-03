@@ -1,13 +1,16 @@
 import { relations } from 'drizzle-orm';
 import { integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
+
+
 import { projects } from './projects';
-import { suite } from './test-suites';
+import { testSuite } from './test-suites';
+
 // CHECK ((status = ANY (ARRAY['untested'::text, 'pass'::text, 'fail'::text, 'blocked'::text])))
 export const testCases = pgTable('test_cases', {
   id: uuid('id').primaryKey(),
   project_id: uuid('project_id').references(() => projects.id),
-  test_suite_id: uuid('test_suite_id').references(() => suite.id),
+  test_suite_id: uuid('test_suite_id').references(() => testSuite.id),
   name: varchar('name').notNull(),
   steps: text('steps'),
   test_type: varchar('test_type'),
@@ -26,8 +29,8 @@ export const testCaseRelations = relations(testCases, ({ one }) => ({
     fields: [testCases.project_id],
     references: [projects.id],
   }),
-  suite: one(suite, {
+  testSuite: one(testSuite, {
     fields: [testCases.test_suite_id],
-    references: [suite.id],
+    references: [testSuite.id],
   }),
 }));

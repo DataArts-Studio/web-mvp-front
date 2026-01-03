@@ -1,7 +1,7 @@
 import { integer, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { projects } from './projects';
 
-export const suite = pgTable('test_suites', {
+export const testSuite = pgTable('test_suites', {
   id: uuid('id').primaryKey(),
   project_id: uuid('project_id').references(() => projects.id),
   name: varchar('name').notNull(),
