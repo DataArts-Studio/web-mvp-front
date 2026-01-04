@@ -49,7 +49,7 @@ export const TestSuitesView = () => {
         {/* 테스트 스위트 리스트 */}
         <section aria-label="테스트 스위트 리스트" className="col-span-6 flex flex-col gap-3">
           {SUITES.map((suite) => (
-            <SuiteCard suite={suite} />
+            <SuiteCard suite={suite} key={suite.id}/>
           ))}
         </section>
         {isOpen && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
