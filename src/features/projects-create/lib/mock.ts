@@ -84,9 +84,9 @@ export async function createProjectMock(
       identifier: hashedIdentifier,
       description: input.description,
       ownerName: input.ownerName,
-      createAt: new Date(),
-      updateAt: new Date(),
-      deleteAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
     };
 
     mockDatabase.push(newProject);
@@ -111,8 +111,8 @@ export async function getProjectsMock(): Promise<ActionResult<ProjectDomain[]>> 
     await simulateNetworkDelay(50);
 
     const activeProjects = mockDatabase
-      .filter((p) => !p.deleteAt)
-      .sort((a, b) => b.createAt.getTime() - a.createAt.getTime());
+      .filter((p) => !p.deletedAt)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return { success: true, data: activeProjects };
   } catch (error) {

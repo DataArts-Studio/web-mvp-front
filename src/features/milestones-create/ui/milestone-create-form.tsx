@@ -2,98 +2,131 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { createTestSuite } from '@/entities';
+import { CreateMilestone, CreateMilestoneSchema } from '@/entities/milestone';
 import { DSButton, FormField } from '@/shared';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useCreateMilestone } from '@/features';
 
-interface IFormInput {
-  name: string;
-  description: string;
-  priority: string;
-  startDate: string;
-  endDate: string;
-}
 
 interface MilestoneCreateFormProps {
+  projectId: string;
   onClose?: () => void;
 }
 
-export const MilestoneCreateForm = ({onClose}: MilestoneCreateFormProps) => {
-  const { register, handleSubmit } = useForm<IFormInput>();
-  const onSubmit = async (data: IFormInput) => {
-    const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('description', data.description);
-    formData.append('priority', data.priority);
-    formData.append('startDate', data.startDate);
-    formData.append('endDate', data.endDate);
+export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormProps) => {
+  const { mutate, isPending } = useCreateMilestone();
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateMilestone>({
+    resolver: zodResolver(CreateMilestoneSchema),
+    defaultValues: {
+      projectId,
+      title: '',
+      description: '',
+      startDate: null,
+      endDate: null,
+    },
+  });
 
-    const result = await createTestSuite(formData);
-    if (!result.success) {
-      console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
-      return;
-    }
-    alert('마일스톤이 생성되었습니다.\n' + JSON.stringify(data, null, 2));
+  const onSubmit = async (data: CreateMilestone) => {
+    mutate(data, {
+      onSuccess: () => {
+        onClose?.();
+      },
+    });
   };
+
   return (
     <section
       id="create-milestone"
       className="bg-bg-2/20 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-[4px]"
     >
-      <div className="bg-bg-2 max-h-[80vh] w-[700px] overflow-y-hidden rounded-xl p-10">
+      <div className="bg-bg-2 shadow-4 w-[600px] overflow-hidden rounded-xl p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8" noValidate>
-          <div className="border-line-1 border-b py-4">
+          {/* Header */}
+          <div className="border-line-1 border-b pb-6">
             <h2 className="text-primary text-3xl">마일스톤을 만들어 볼까요?</h2>
             <p className="mt-2 text-base text-neutral-400">
               프로젝트의 중요한 목표 지점을 설정하고 한곳에서 관리해요.
             </p>
           </div>
-          <div className="flex flex-col gap-8">
+
+          {/* Body */}
+          <div className="flex flex-col gap-6">
             <FormField.Root className="flex flex-col gap-2">
-              <FormField.Label>마일스톤 이름</FormField.Label>
+              <FormField.Label className="text-text-1 font-medium">
+                마일스톤 이름 <span className="text-system-red">*</span>
+              </FormField.Label>
               <FormField.Control
                 placeholder="마일스톤 이름을 입력해 주세요."
                 type="text"
-                {...register('name', { required: true })}
+                disabled={isPending}
+                {...register('title')}
+                className={errors.title ? 'border-system-red focus:border-system-red' : ''}
               />
+              {errors.title && (
+                <span className="text-system-red mt-1 text-sm">{errors.title.message}</span>
+              )}
             </FormField.Root>
+
             <FormField.Root className="flex flex-col gap-2">
-              <FormField.Label>설명</FormField.Label>
+              <FormField.Label className="text-text-1 font-medium">설명 (선택)</FormField.Label>
               <FormField.Control
-                placeholder="이 마일스톤의 상세 내용을 적어주세요."
+                placeholder="이 마일스톤에 대한 간략한 설명을 입력해주세요."
                 type="text"
-                {...register('description', { required: true })}
+                disabled={isPending}
+                {...register('description')}
               />
             </FormField.Root>
-            <FormField.Root className="flex flex-col gap-2">
-              <FormField.Label>우선순위</FormField.Label>
-              <FormField.Control
-                placeholder="High, Normal(셀렉트로 바꿀예정)"
-                type="text"
-                {...register('priority', { required: true })}
-              />
-            </FormField.Root>
+
             <div className="grid grid-cols-2 gap-4">
-              <FormField.Root className="col-span-1 flex flex-col gap-2">
-                <FormField.Label>시작일</FormField.Label>
-                <FormField.Control type="date" {...register('startDate', { required: true })} />
+              <FormField.Root className="flex flex-col gap-2">
+                <FormField.Label className="text-text-1 font-medium">시작일</FormField.Label>
+                <FormField.Control
+                  type="date"
+                  disabled={isPending}
+                  {...register('startDate', { valueAsDate: true })}
+                />
+                {errors.startDate && (
+                  <span className="text-system-red mt-1 text-sm">{errors.startDate.message}</span>
+                )}
               </FormField.Root>
-              <FormField.Root className="col-span-1 flex flex-col gap-2">
-                <FormField.Label>종료일</FormField.Label>
-                <FormField.Control type="date" {...register('endDate', { required: true })} />
+
+              <FormField.Root className="flex flex-col gap-2">
+                <FormField.Label className="text-text-1 font-medium">종료일</FormField.Label>
+                <FormField.Control
+                  type="date"
+                  disabled={isPending}
+                  {...register('endDate', { valueAsDate: true })}
+                />
+                {errors.endDate && (
+                  <span className="text-system-red mt-1 text-sm">{errors.endDate.message}</span>
+                )}
               </FormField.Root>
             </div>
           </div>
-          <div className="border-line-1 border-t py-4 flex gap-2">
+
+          {/* Footer */}
+          <div className="border-line-1 flex gap-3 border-t pt-6">
             <DSButton
               type="button"
               variant="ghost"
-              className="mt-2 w-full"
+              className="w-full"
+              disabled={isPending}
               onClick={onClose}
             >
               취소
             </DSButton>
-            <DSButton type="submit" variant="solid" className="mt-2 w-full">
-              생성
+            <DSButton
+              type="submit"
+              variant="solid"
+              className="w-full"
+              disabled={isPending}
+            >
+              {isPending ? '생성 중...' : '생성'}
             </DSButton>
           </div>
         </form>

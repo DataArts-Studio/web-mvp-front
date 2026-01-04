@@ -3,6 +3,7 @@
 import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features';
 import { getDatabase, projects, testCases, testSuite } from '@/shared/lib/db';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { ActionResult } from '@/shared/types';
 
 
 
@@ -11,11 +12,6 @@ import { and, count, desc, eq, isNull } from 'drizzle-orm';
 
 
 
-
-
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; errors: Record<string, string[]> };
 
 type GetDashboardStatsParams = {
   projectName: string;
