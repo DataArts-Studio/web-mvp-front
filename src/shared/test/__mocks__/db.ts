@@ -1,6 +1,13 @@
 import { CreateMilestone, MilestoneDTO } from '@/entities/milestone';
 import { type Mock, vi } from 'vitest';
 
+
+
+
+
+
+
+
 // 모킹된 DB 결과를 저장할 변수
 let mockReturnValue: unknown = [];
 let mockInsertReturnValue: unknown = undefined;
@@ -59,10 +66,25 @@ const updateMock = vi.fn(() => ({
 }));
 
 export const mockDb: any = {
-  select: selectMock,
-  insert: insertMock,
-  update: updateMock,
-  delete: vi.fn(),
+  select: vi.fn(() => ({
+    from: vi.fn(() => ({
+      where: vi.fn(() => Promise.resolve(mockReturnValue)),
+      then: (resolve: (value: unknown) => void) => Promise.resolve(mockReturnValue).then(resolve),
+    })),
+  })),
+  insert: vi.fn(() => ({
+    values: vi.fn(() => ({
+      returning: vi.fn(() => Promise.resolve(mockInsertReturnValue ? [mockInsertReturnValue] : [])),
+    })),
+  })),
+  update: vi.fn(() => ({
+    set: vi.fn(() => ({
+      where: vi.fn(() => ({
+        returning: vi.fn(() => Promise.resolve(mockUpdateReturnValue ? [mockUpdateReturnValue] : [])),
+      })),
+    })),
+  })),
+  delete: vi.fn().mockReturnThis(),
 };
 
 export const mockGetDatabase: Mock<any> = vi.fn(() => mockDb);
@@ -142,7 +164,7 @@ export const createMockMilestoneRow = (overrides?: Partial<MilestoneDTO>): Miles
   description: '테스트용 마일스톤 설명입니다.',
   start_date: new Date('2024-01-01'),
   end_date: new Date('2024-12-31'),
-  status: 'open',
+  status: 'planned',
   created_at: new Date(),
   updated_at: new Date(),
   deleted_at: null,

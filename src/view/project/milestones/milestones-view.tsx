@@ -3,8 +3,8 @@ import React from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { MilestoneCard, milestonesMock } from '@/entities/milestone';
-import { MilestoneCreateForm, dashboardStatsQueryOptions } from '@/features';
+import { MilestoneCard } from '@/entities/milestone';
+import { MilestoneCreateForm, dashboardStatsQueryOptions, milestonesQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
@@ -16,7 +16,8 @@ export const MilestonesView = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
-  const milestonesData = milestonesMock;
+  const { data: milestonesResult } = useQuery(milestonesQueryOptions(projectId));
+  const milestonesData = milestonesResult?.success ? milestonesResult.data : [];
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}

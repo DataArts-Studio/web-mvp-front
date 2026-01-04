@@ -8,16 +8,16 @@ export const toMilestone = (dto: MilestoneDTO): Milestone => ({
   startDate: dto.start_date,
   endDate: dto.end_date,
   status: dto.status,
-  createdAt: dto.create_at,
-  updatedAt: dto.update_at,
-  deletedAt: dto.delete_at,
+  createdAt: dto.created_at,
+  updatedAt: dto.updated_at,
+  deletedAt: dto.deleted_at,
 });
 
 export const toCreateMilestoneDTO = (m: CreateMilestone): CreateMilestoneDTO => ({
   project_id: m.projectId,
-  name: m.name,
+  name: m.title,
   description: m.description,
-  start_date: m.startDate,
-  end_date: m.endDate,
-  status: m.status,
+  start_date: m.startDate ?? null,
+  end_date: m.endDate ?? null,
+  status: 'planned',
 });

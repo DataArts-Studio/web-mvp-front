@@ -5,7 +5,7 @@ import { createMilestone } from './server-actions';
 
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase,
+  getDatabase: () => (mockGetDatabase as any)(),
   milestones: { id: 'id', project_id: 'project_id', name: 'name' },
 }));
 
@@ -16,12 +16,17 @@ vi.mock('uuid', () => ({
 
 
 
+const MOCK_DATE = new Date('2024-01-15T12:00:00.000Z');
+
 describe('createMilestone', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(MOCK_DATE);
     resetMockDb();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
