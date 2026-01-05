@@ -126,7 +126,7 @@ export const TestCasesView = () => {
               </div>
             </TestTable.Row>
             {testCases.map((item) => (
-              <TestTable.Row key={item.caseKey}>
+              <TestTable.Row key={item.caseKey} onClick={() => onOpen('detail')}>
                 <TestCaseCard testCase={item} />
               </TestTable.Row>
             ))}

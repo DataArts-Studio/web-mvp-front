@@ -48,7 +48,10 @@ export const TestCaseCard = ({ testCase }: TestCaseCardProps) => {
       <div className="typo-caption-normal text-text-3 col-span-3 text-center">{timeText}</div>
 
       <div className="col-span-1 flex justify-end">
-        <button className="rounded-1 text-text-3 hover:bg-bg-4 hover:text-text-1 p-1 transition-colors">
+        <button
+          className="rounded-1 text-text-3 hover:bg-bg-4 hover:text-text-1 p-1 transition-colors cursor-pointer group"
+          onClick={(e) => e.stopPropagation()}
+        >
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </div>

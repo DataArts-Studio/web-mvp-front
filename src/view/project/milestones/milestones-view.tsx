@@ -61,7 +61,16 @@ export const MilestonesView = () => {
             </div>
           ) : (
             milestonesData.map((milestone) => (
-              <MilestoneCard key={milestone.id} milestone={milestone} />
+              <MilestoneCard
+                key={milestone.id}
+                milestone={{
+                  ...milestone,
+                  totalCases: 0,
+                  completedCases: 0,
+                  progressRate: 0,
+                  runCount: 0,
+                }}
+              />
             ))
           )}
         </section>

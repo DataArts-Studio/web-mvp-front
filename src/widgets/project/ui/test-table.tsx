@@ -63,9 +63,9 @@ const TestTableHeaderItem = ({label, colSpan, textAlign, ...props}: TestTableHea
   )
 }
 
-const TestTableRow = ({ children, className }: ComponentProps<'div'>) => {
+const TestTableRow = ({ children, className, onClick, ...props }: ComponentProps<'div'>) => {
   return (
-    <div className={cn(className, "group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors")}>
+    <div className={cn(className, "group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors")} onClick={onClick} {...props}>
       {children}
     </div>
   )
