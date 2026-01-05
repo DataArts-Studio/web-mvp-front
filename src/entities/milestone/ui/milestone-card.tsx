@@ -23,7 +23,8 @@ const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   },
 };
 
-const formatDate = (date: Date) => {
+const formatDate = (date: Date | null) => {
+  if (!date) return '-';
   return date.toISOString().split('T')[0];
 };
 

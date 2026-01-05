@@ -1,15 +1,22 @@
-'use client'
+'use client';
 import React from 'react';
+
+import { useParams } from 'next/navigation';
+
+import { TEST_SUITES_RICH_MOCK as SUITES } from '@/entities/test-suite';
+import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
+import { dashboardStatsQueryOptions } from '@/features';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared';
-import { Aside } from '@/widgets';
 import { useDisclosure } from '@/shared/hooks';
-import { ActionToolbar } from '@/widgets';
-import {TEST_SUITES_RICH_MOCK as SUITES} from '@/entities/test-suite';
-import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
+import { ActionToolbar, Aside } from '@/widgets';
+import { useQuery } from '@tanstack/react-query';
 
 export const TestSuitesView = () => {
+  const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}
@@ -26,20 +33,26 @@ export const TestSuitesView = () => {
             </p>
           </div>
         </header>
-        <ActionToolbar.Root ariaLabel='테스트 스위트 컨트롤'>
+        <ActionToolbar.Root ariaLabel="테스트 스위트 컨트롤">
           <ActionToolbar.Group>
-            <ActionToolbar.Search placeholder='스위트 이름 또는 키워드로 검색'/>
-            <ActionToolbar.Filter options={['전체', '기능별', '시나리오']} currentValue={'전체'} onChange={() => '기능별'}/>
+            <ActionToolbar.Search placeholder="스위트 이름 또는 키워드로 검색" />
+            <ActionToolbar.Filter
+              options={['전체', '기능별', '시나리오']}
+              currentValue={'전체'}
+              onChange={() => '기능별'}
+            />
           </ActionToolbar.Group>
-          <ActionToolbar.Action size='small' type="button" variant="solid" onClick={onOpen}>테스트 스위트 생성하기</ActionToolbar.Action>
+          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen()}>
+            테스트 스위트 생성하기
+          </ActionToolbar.Action>
         </ActionToolbar.Root>
         {/* 테스트 스위트 리스트 */}
         <section aria-label="테스트 스위트 리스트" className="col-span-6 flex flex-col gap-3">
           {SUITES.map((suite) => (
-            <SuiteCard suite={suite}/>
+            <SuiteCard suite={suite} key={suite.id}/>
           ))}
         </section>
-        {isOpen && <SuiteCreateForm onClose={onClose} />}
+        {isOpen && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
       </MainContainer>
     </Container>
   );

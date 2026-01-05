@@ -1,16 +1,19 @@
 import { z } from 'zod';
-import { CreateMilestoneSchema, MilestoneSchema } from './schema';
 
-export type MilestoneDTO = z.infer<typeof MilestoneSchema>;
-export type CreateMilestoneDTO = z.infer<typeof CreateMilestoneSchema>;
+import { CreateMilestoneDtoSchema, CreateMilestoneSchema, MilestoneDtoSchema, UpdateMilestoneSchema } from './schema';
+
+export type MilestoneDTO = z.infer<typeof MilestoneDtoSchema>;
+export type CreateMilestoneDTO = z.infer<typeof CreateMilestoneDtoSchema>;
+export type CreateMilestone = z.infer<typeof CreateMilestoneSchema>;
+export type UpdateMilestone = z.infer<typeof UpdateMilestoneSchema>;
 
 export type Milestone = {
   id: string;
   projectId: string;
   title: string;
   description?: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: Date | null;
+  endDate: Date | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -25,12 +28,3 @@ export type MilestoneStats = {
 };
 
 export type MilestoneWithStats = Milestone & MilestoneStats;
-
-export type CreateMilestone = {
-  projectId: string;
-  name: string;
-  description?: string;
-  startDate: Date;
-  endDate: Date;
-  status: string;
-};

@@ -1,8 +1,9 @@
-import {TestSuiteSchema, CreateTestSuiteSchema} from './schema';
 import { z } from 'zod';
 
-export type TestSuiteDTO = z.infer<typeof TestSuiteSchema>;
-export type CreateTestSuiteDTO = z.infer<typeof CreateTestSuiteSchema>;
+import { CreateTestSuiteDtoSchema, CreateTestSuiteSchema, TestSuiteDtoSchema } from './schema';
+export type TestSuiteDTO = z.infer<typeof TestSuiteDtoSchema>;
+export type CreateTestSuiteDTO = z.infer<typeof CreateTestSuiteDtoSchema>;
+export type CreateTestSuite = z.infer<typeof CreateTestSuiteSchema>;
 
 export type TestSuite = {
   id: string;
@@ -13,13 +14,6 @@ export type TestSuite = {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
-};
-
-export type CreateTestSuite = {
-  projectId: string;
-  title: string;
-  description?: string;
-  sortOrder: number;
 };
 
 export type SuiteTagTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';

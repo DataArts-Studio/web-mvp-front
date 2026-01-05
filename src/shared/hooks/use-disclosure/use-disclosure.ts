@@ -11,8 +11,13 @@ import React from 'react';
  * const { isOpen, activeType, onOpen, onClose } = useDisclosure<ModalType>();
  * onOpen('create'); // activeType === 'create'
  */
-export const useDisclosure = <T extends string = never>(initialValue?: T) => {
-  const [activeType, setActiveType] = React.useState<T | null>(initialValue ?? null);
+export const useDisclosure = <T extends string = never>(initialValue?: T | boolean) => {
+  const [activeType, setActiveType] = React.useState<T | null>(() => {
+    if (typeof initialValue === 'boolean') {
+      return initialValue ? ('default' as T) : null;
+    }
+    return initialValue ?? null;
+  });
 
   const isOpen = activeType !== null;
 

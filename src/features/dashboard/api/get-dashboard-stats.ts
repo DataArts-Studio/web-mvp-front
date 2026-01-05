@@ -1,19 +1,17 @@
 'use server';
 
-import type {
-  DashboardStats,
-  ProjectInfo,
-  RecentActivity,
-  TestCaseStats,
-  TestSuiteSummary,
-} from '@/features';
-
-import { getDatabase, projects, suite, testCases } from '@/shared/lib/db';
+import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features';
+import { getDatabase, projects, testCases, testSuite } from '@/shared/lib/db';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { ActionResult } from '@/shared/types';
 
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; errors: Record<string, string[]> };
+
+
+
+
+
+
+
 
 type GetDashboardStatsParams = {
   projectName: string;
@@ -75,12 +73,12 @@ export const getDashboardStats = async ({
     // 테스트 스위트 목록 - 단순 조회 (케이스 수는 별도 계산)
     const suiteRows = await db
       .select({
-        id: suite.id,
-        name: suite.name,
-        description: suite.description,
+        id: testSuite.id,
+        name: testSuite.name,
+        description: testSuite.description,
       })
-      .from(suite)
-      .where(eq(suite.project_id, projectRow.id));
+      .from(testSuite)
+      .where(eq(testSuite.project_id, projectRow.id));
 
     console.log('[Dashboard] suiteRows:', suiteRows);
 
@@ -120,13 +118,13 @@ export const getDashboardStats = async ({
     // 최근 스위트 - projectRow.id 사용
     const recentSuites = await db
       .select({
-        id: suite.id,
-        title: suite.name,
-        created_at: suite.created_at,
+        id: testSuite.id,
+        title: testSuite.name,
+        created_at: testSuite.created_at,
       })
-      .from(suite)
-      .where(eq(suite.project_id, projectRow.id))
-      .orderBy(desc(suite.created_at))
+      .from(testSuite)
+      .where(eq(testSuite.project_id, projectRow.id))
+      .orderBy(desc(testSuite.created_at))
       .limit(5);
 
     console.log('[Dashboard] recentSuites:', recentSuites);

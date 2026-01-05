@@ -2,38 +2,38 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { createSuiteMock } from '@/features/suites-create';
+import { CreateTestSuite, CreateTestSuiteSchema, createTestSuite } from '@/entities';
+import { useCreateSuite } from '@/features';
 import { DSButton, FormField } from '@/shared';
-
-interface IFormInput {
-  name: string;
-  description?: string;
-}
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface SuiteCreateFormProps {
+  projectId: string;
   onClose?: () => void;
 }
 
-export const SuiteCreateForm = ({ onClose }: SuiteCreateFormProps) => {
+export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) => {
+  const { mutate, isPending } = useCreateSuite();
   const {
     register,
     handleSubmit,
-    setError,
-    formState: { errors, isSubmitting },
-  } = useForm<IFormInput>();
+    formState: { errors },
+  } = useForm<CreateTestSuite>({
+    resolver: zodResolver(CreateTestSuiteSchema),
+    defaultValues: {
+      projectId,
+      title: '',
+      description: '',
+      sortOrder: 0,
+    },
+  });
 
-  const onSubmit = async (data: IFormInput) => {
-    const payload = {
-      name: data.name.trim(),
-      description: data.description || '',
-    };
-
-    const result = await createSuiteMock(payload);
-    if (!result.success) {
-      console.error('서버 에러 발생:', JSON.stringify(result.errors, null, 2));
-      return;
-    }
-    alert('생성 클릭\n' + JSON.stringify(data, null, 2));
+  const onSubmit = async (data: CreateTestSuite) => {
+    mutate(data, {
+      onSuccess: () => {
+        onClose?.();
+      },
+    })
   };
 
   return (
@@ -59,8 +59,8 @@ export const SuiteCreateForm = ({ onClose }: SuiteCreateFormProps) => {
               <FormField.Control
                 placeholder="스위트 이름을 입력해 주세요."
                 type="text"
-                disabled={isSubmitting} // 로딩 중 수정 불가
-                {...register('name', {
+                disabled={isPending}
+                {...register('title', {
                   required: '유효한 이름을 입력해주세요.',
                   minLength: {
                     value: 5,
@@ -72,16 +72,15 @@ export const SuiteCreateForm = ({ onClose }: SuiteCreateFormProps) => {
                   },
                   validate: (value) => !!value.trim() || '공백만으로는 이름을 생성할 수 없습니다.',
                   pattern: {
-                    // 특수문자 입력 제한 (-, _, ., 공백, 한글, 영문, 숫자만 허용)
                     value: /^[a-zA-Z0-9가-힣\s._-]+$/,
                     message: '특수문자는 사용할 수 없습니다. (-, _, ., 공백만 허용)',
                   },
                 })}
-                className={errors.name ? 'border-system-red focus:border-system-red' : ''}
+                className={errors.title ? 'border-system-red focus:border-system-red' : ''}
               />
               {/* 에러 메시지 출력 */}
-              {errors.name && (
-                <span className="text-system-red mt-1 text-sm">{errors.name.message}</span>
+              {errors.title && (
+                <span className="text-system-red mt-1 text-sm">{errors.title.message}</span>
               )}
             </FormField.Root>
             <FormField.Root className="flex flex-col gap-2">
@@ -89,7 +88,7 @@ export const SuiteCreateForm = ({ onClose }: SuiteCreateFormProps) => {
               <FormField.Control
                 placeholder="이 스위트에 대한 간략한 설명을 입력해주세요."
                 type="text"
-                disabled={isSubmitting}
+                disabled={isPending}
                 {...register('description')}
               />
             </FormField.Root>
@@ -99,7 +98,7 @@ export const SuiteCreateForm = ({ onClose }: SuiteCreateFormProps) => {
               type="button"
               variant="ghost"
               className="w-full"
-              disabled={isSubmitting}
+              disabled={isPending}
               onClick={onClose}
             >
               취소
@@ -108,9 +107,9 @@ export const SuiteCreateForm = ({ onClose }: SuiteCreateFormProps) => {
               type="submit"
               variant="solid"
               className="w-full"
-              disabled={isSubmitting} // 로딩 중 클릭 방지
+              disabled={isPending}
             >
-              {isSubmitting ? '생성 중...' : '생성'}
+              {isPending ? '생성 중...' : '생성'}
             </DSButton>
           </div>
         </form>
