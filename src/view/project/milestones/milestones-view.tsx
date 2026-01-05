@@ -1,23 +1,33 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { MilestoneCard } from '@/entities/milestone';
+import { MilestoneCard, MilestoneWithStats } from '@/entities/milestone';
 import { MilestoneCreateForm, dashboardStatsQueryOptions, milestonesQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
+import { MilestoneSideView } from './milestone-side-view';
 
 export const MilestonesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedMilestone, setSelectedMilestone] = useState<MilestoneWithStats | null>(null);
   const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
   const { data: milestonesResult } = useQuery(milestonesQueryOptions(projectId));
   const milestonesData = milestonesResult?.success ? milestonesResult.data : [];
+
+  const handleMilestoneClick = (milestone: MilestoneWithStats) => {
+    setSelectedMilestone(milestone);
+  };
+
+  const handleSideViewClose = () => {
+    setSelectedMilestone(null);
+  };
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}
@@ -60,21 +70,36 @@ export const MilestonesView = () => {
               </div>
             </div>
           ) : (
-            milestonesData.map((milestone) => (
-              <MilestoneCard
-                key={milestone.id}
-                milestone={{
-                  ...milestone,
-                  totalCases: 0,
-                  completedCases: 0,
-                  progressRate: 0,
-                  runCount: 0,
-                }}
-              />
-            ))
+            milestonesData.map((milestone) => {
+              const milestoneWithStats: MilestoneWithStats = {
+                ...milestone,
+                totalCases: 0,
+                completedCases: 0,
+                progressRate: 0,
+                runCount: 0,
+              };
+              return (
+                <div
+                  key={milestone.id}
+                  onClick={() => handleMilestoneClick(milestoneWithStats)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      handleMilestoneClick(milestoneWithStats);
+                    }
+                  }}
+                >
+                  <MilestoneCard milestone={milestoneWithStats} />
+                </div>
+              );
+            })
           )}
         </section>
         {isOpen && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
+        {selectedMilestone && (
+          <MilestoneSideView milestone={selectedMilestone} onClose={handleSideViewClose} />
+        )}
       </MainContainer>
     </Container>
   );
