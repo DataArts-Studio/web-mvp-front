@@ -1,1 +1,2 @@
 export { createTestSuite, deleteTestSuite, updateTestSuite, getTestSuiteById, getTestSuites } from './server-actions';
+export { testSuiteQueryKeys, testSuitesQueryOptions, testSuiteByIdQueryOptions } from './query';
