@@ -9,7 +9,7 @@ import {
 
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase(),
+  getDatabase: mockGetDatabase,
   testSuite: { id: 'id', project_id: 'project_id', name: 'name' },
 }));
 

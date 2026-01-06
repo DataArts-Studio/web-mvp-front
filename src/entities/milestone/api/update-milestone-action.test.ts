@@ -7,7 +7,7 @@ import {
 } from '@/shared/test/__mocks__/db';
 
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase(),
+  getDatabase: mockGetDatabase,
   milestones: { id: 'id', name: 'name' },
 }));
 
