@@ -1,9 +1,9 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { TEST_SUITES_RICH_MOCK as SUITES } from '@/entities/test-suite';
+import { TEST_SUITES_RICH_MOCK as SUITES, TestSuiteCard } from '@/entities/test-suite';
 import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
 import { dashboardStatsQueryOptions } from '@/features';
 import { SuiteCreateForm } from '@/features/suites-create';
@@ -11,12 +11,23 @@ import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
+import { TestSuiteSideView } from './test-suite-side-view';
 
 export const TestSuitesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedSuite, setSelectedSuite] = useState<TestSuiteCard | null>(null);
   const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+
+  const handleSuiteClick = (suite: TestSuiteCard) => {
+    setSelectedSuite(suite);
+  };
+
+  const handleSideViewClose = () => {
+    setSelectedSuite(null);
+  };
+
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}
@@ -49,10 +60,25 @@ export const TestSuitesView = () => {
         {/* 테스트 스위트 리스트 */}
         <section aria-label="테스트 스위트 리스트" className="col-span-6 flex flex-col gap-3">
           {SUITES.map((suite) => (
-            <SuiteCard suite={suite} key={suite.id}/>
+            <div
+              key={suite.id}
+              onClick={() => handleSuiteClick(suite)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleSuiteClick(suite);
+                }
+              }}
+            >
+              <SuiteCard suite={suite} />
+            </div>
           ))}
         </section>
         {isOpen && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
+        {selectedSuite && (
+          <TestSuiteSideView suite={selectedSuite} onClose={handleSideViewClose} />
+        )}
       </MainContainer>
     </Container>
   );
