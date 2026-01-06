@@ -1,6 +1,7 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { MilestoneCard, MilestoneWithStats } from '@/entities/milestone';
@@ -10,24 +11,14 @@ import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
-import { MilestoneSideView } from './milestone-side-view';
 
 export const MilestonesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [selectedMilestone, setSelectedMilestone] = useState<MilestoneWithStats | null>(null);
   const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
   const { data: milestonesResult } = useQuery(milestonesQueryOptions(projectId));
   const milestonesData = milestonesResult?.success ? milestonesResult.data : [];
-
-  const handleMilestoneClick = (milestone: MilestoneWithStats) => {
-    setSelectedMilestone(milestone);
-  };
-
-  const handleSideViewClose = () => {
-    setSelectedMilestone(null);
-  };
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}
@@ -79,27 +70,17 @@ export const MilestonesView = () => {
                 runCount: 0,
               };
               return (
-                <div
+                <Link
                   key={milestone.id}
-                  onClick={() => handleMilestoneClick(milestoneWithStats)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      handleMilestoneClick(milestoneWithStats);
-                    }
-                  }}
+                  href={`/projects/${params.slug}/milestones/${milestone.id}`}
                 >
                   <MilestoneCard milestone={milestoneWithStats} />
-                </div>
+                </Link>
               );
             })
           )}
         </section>
         {isOpen && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
-        {selectedMilestone && (
-          <MilestoneSideView milestone={selectedMilestone} onClose={handleSideViewClose} />
-        )}
       </MainContainer>
     </Container>
   );

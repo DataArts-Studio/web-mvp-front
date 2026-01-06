@@ -1,7 +1,10 @@
 import type { StorybookConfig } from '@storybook/nextjs';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const ROOT = process.cwd();
 // const ROOT = path.resolve(__dirname, '..');
 
@@ -27,6 +30,10 @@ const config: StorybookConfig = {
         extensions: config.resolve.extensions,
       }),
     ];
+
+    // server-only 모듈을 빈 모듈로 대체 (Storybook은 클라이언트 환경)
+    if (!config.resolve.alias) config.resolve.alias = {};
+    config.resolve.alias['server-only'] = path.resolve(__dirname, 'mocks/server-only.js');
 
     return config;
   },
