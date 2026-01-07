@@ -4,10 +4,12 @@ import React from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 
-import { TestSuiteCard } from '@/entities/test-suite';
-import { TEST_SUITES_RICH_MOCK } from '@/entities/test-suite/model/suite.mock';
-import { TEST_CASES_RICH_MOCK } from '@/entities/test-case/model/cases.mock';
+import { testSuiteByIdQueryOptions } from '@/entities/test-suite/api/query';
+import { getTestCases } from '@/entities/test-case/api/server-actions';
+import type { TestSuiteCard, RunStatus } from '@/entities/test-suite';
+import type { TestCase } from '@/entities/test-case';
 import { Container, DSButton, MainContainer, cn } from '@/shared';
 import { Aside } from '@/widgets';
 import {
@@ -71,11 +73,51 @@ const SuiteDetailView = () => {
     router.push(`/projects/${params.slug}/runs/create`);
   };
 
-  // Mock 데이터 사용 (실제로는 API 조회)
-  const suite: TestSuiteCard | undefined = TEST_SUITES_RICH_MOCK.find((s) => s.id === suiteId) ?? TEST_SUITES_RICH_MOCK[0];
+  // 실제 API로 스위트 데이터 조회
+  const { data: suiteResult, isLoading: isSuiteLoading } = useQuery(testSuiteByIdQueryOptions(suiteId));
+
+  // 해당 프로젝트의 테스트 케이스 조회
+  const { data: casesResult, isLoading: isCasesLoading } = useQuery({
+    queryKey: ['testCases', 'bySuite', suiteId],
+    queryFn: () => getTestCases({ project_id: suiteResult?.data?.projectId ?? '' }),
+    enabled: !!suiteResult?.data?.projectId,
+  });
+
+  // 로딩 중
+  if (isSuiteLoading) {
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <p className="text-text-2">로딩 중...</p>
+          </div>
+        </MainContainer>
+      </Container>
+    );
+  }
+
+  // 실제 데이터를 TestSuiteCard 형태로 변환 (추가 필드는 기본값)
+  const rawSuite = suiteResult?.data;
+  const suite: TestSuiteCard | undefined = rawSuite
+    ? {
+        ...rawSuite,
+        tag: { label: '기본', tone: 'neutral' as const },
+        includedPaths: [],
+        caseCount: 0,
+        executionHistoryCount: 0,
+        recentRuns: [],
+      }
+    : undefined;
 
   // 해당 스위트에 속한 테스트 케이스 필터링
-  const testCases = TEST_CASES_RICH_MOCK.filter((tc) => tc.testSuiteId === suite?.id);
+  const allCases = casesResult?.data ?? [];
+  const testCases = allCases.filter((tc: TestCase) => tc.testSuiteId === suite?.id);
+
+  // 케이스 수 업데이트
+  if (suite) {
+    suite.caseCount = testCases.length;
+  }
 
   if (!suite) {
     return (
