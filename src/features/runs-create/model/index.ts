@@ -1,1 +1,1 @@
-export { createTestRunMock, createTestRunAction } from './server-action';
+export { createTestRunAction } from './server-action';

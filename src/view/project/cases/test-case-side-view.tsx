@@ -1,4 +1,5 @@
 import React from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { DSButton } from '@/shared';
 import { Calendar, Clock, Copy, Edit2, Flag, Folder, Play, Tag, Trash2, X } from 'lucide-react';
 
@@ -7,6 +8,12 @@ interface TestCaseSideViewProps {
 }
 
 export const TestCaseSideView = ({ onClose }: TestCaseSideViewProps) => {
+  const router = useRouter();
+  const params = useParams();
+
+  const handleRunTest = () => {
+    router.push(`/projects/${params.slug}/runs/create`);
+  };
   return (
     <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
       <div className="flex flex-col gap-6">
@@ -96,7 +103,7 @@ export const TestCaseSideView = ({ onClose }: TestCaseSideViewProps) => {
         </div>
         {/* 테스트 실행 */}
         <div className="flex gap-2">
-          <DSButton className="flex flex-1 items-center gap-2">
+          <DSButton className="flex flex-1 items-center gap-2" onClick={handleRunTest}>
             <Play className="h-4 w-4" />
             테스트 실행
           </DSButton>

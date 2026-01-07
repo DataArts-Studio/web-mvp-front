@@ -1,24 +1,25 @@
 import { queryOptions } from '@tanstack/react-query';
-
-import { getTestSuiteById, getTestSuites } from './server-actions';
-
-export const testSuiteQueryKeys = {
-  all: ['testSuite'] as const,
-  list: (projectId: string) => [...testSuiteQueryKeys.all, 'list', projectId] as const,
-  byId: (id: string) => [...testSuiteQueryKeys.all, 'byId', id] as const,
-};
+import { getTestSuites, getTestSuiteById } from './server-actions'; // Added getTestSuiteById
 
 export const testSuitesQueryOptions = (projectId: string) =>
   queryOptions({
-    queryKey: testSuiteQueryKeys.list(projectId),
+    queryKey: ['testSuites', projectId],
     queryFn: () => getTestSuites({ projectId }),
-    staleTime: 1000 * 60 * 5, // 5분
   });
+
+// --- New content for missing exports ---
+
+// Helper for query keys (assuming simple structure)
+export const testSuiteQueryKeys = {
+  all: ['testSuites'] as const,
+  lists: () => [...testSuiteQueryKeys.all, 'list'] as const,
+  list: (projectId: string) => [...testSuiteQueryKeys.lists(), projectId] as const,
+  details: () => [...testSuiteQueryKeys.all, 'detail'] as const,
+  detail: (id: string) => [...testSuiteQueryKeys.details(), id] as const,
+};
 
 export const testSuiteByIdQueryOptions = (id: string) =>
   queryOptions({
-    queryKey: testSuiteQueryKeys.byId(id),
+    queryKey: testSuiteQueryKeys.detail(id),
     queryFn: () => getTestSuiteById(id),
-    staleTime: 1000 * 60 * 5, // 5분
-    enabled: !!id,
   });

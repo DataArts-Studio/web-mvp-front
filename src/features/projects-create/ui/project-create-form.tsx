@@ -52,13 +52,16 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       const domain = formToDomain(formData);
       const result = await createProject(domain);
       if (result.success) {
-        alert(`프로젝트 생성 완료!\n` + JSON.stringify(result.data, null, 2));
+        setStep(4);
       } else {
         const errorMessages = Object.values(result.errors).flat().join('\n');
         alert(`생성 실패: ${errorMessages}`);
+        // Optionally, reset to a previous step on failure
+        // setStep(1); 
       }
     } catch (error) {
       console.error('네트워크 에러 발생:', error);
+      alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -178,7 +181,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <DSButton onClick={onClick} type="button" variant="ghost" className="mt-2 w-full">
                 취소
               </DSButton>
-              <DSButton type="submit" variant="solid" className="mt-2 w-full" onClick={handleNext}>
+              <DSButton type="submit" variant="solid" className="mt-2 w-full">
                 생성하기
               </DSButton>
             </div>

@@ -1,6 +1,4 @@
-import { relations } from 'drizzle-orm';
-import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
-
+import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { projects } from './projects';
 
 export const milestones = pgTable('milestones', (t) => ({
@@ -14,11 +12,4 @@ export const milestones = pgTable('milestones', (t) => ({
   created_at: t.timestamp('created_at').defaultNow().notNull(),
   updated_at: t.timestamp('updated_at').defaultNow().notNull(),
   deleted_at: t.timestamp('deleted_at'),
-}));
-
-export const milestoneRelations = relations(milestones, ({ one }) => ({
-  project: one(projects, {
-    fields: [milestones.project_id],
-    references: [projects.id],
-  }),
 }));

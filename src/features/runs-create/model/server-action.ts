@@ -1,62 +1,73 @@
 'use server';
 import { CreateTestRunSchema } from '@/entities/test-run';
-import { getDatabase, testRun } from '@/shared/lib/db';
+import { getDatabase, testRuns, testRunMilestones, testRunSuites } from '@/shared/lib/db';
 import { z } from 'zod';
 
-type MockTestRunData = {
-  project_id: string;
-  milestone_id?: string;
-  run_name?: string;
-  started_at?: string;
-  ended_at?: string;
-};
-
-type MockFlatErrors = {
+type FlatErrors = {
   formErrors: string[];
-  fieldErrors: { [key in keyof MockTestRunData]?: string[] };
+  fieldErrors: Record<string, string[] | undefined>;
 };
 
-const createTestRun = async (data: any) => {
+type CreateRunInput = z.infer<typeof CreateTestRunSchema>;
+
+export const createTestRunAction = async (input: CreateRunInput) => {
+  console.log('[createTestRunAction] Received input:', input); // Log input
+
+  const validation = CreateTestRunSchema.safeParse(input);
+
+  if (!validation.success) {
+    console.error('[createTestRunAction] Validation failed:', validation.error.flatten());
+    return { success: false, errors: validation.error.flatten() as FlatErrors };
+  }
+
+  console.log('[createTestRunAction] Validation successful, data:', validation.data); // Log validated data
+
+  const { project_id, name, description, suite_ids, milestone_ids } = validation.data;
   const db = getDatabase();
-  return await db.insert(testRun).values(data).returning();
-};
 
-export const createTestRunAction = async (formData: any) => {
-  const data = Object.fromEntries(formData.entries());
-  const validation = CreateTestRunSchema.safeParse(data);
-  if (!validation.success) return { success: false, errors: z.flattenError(validation.error) };
+  try {
+    const [newTestRun] = await db.transaction(async (tx) => {
+      // 1. Create the main test run entry
+      const [run] = await tx
+        .insert(testRuns)
+        .values({
+          project_id,
+          name,
+          description,
+        })
+        .returning();
 
-  const newTestRun = await createTestRun(validation.data);
-  return { success: true, testRun: newTestRun };
-};
+      // 2. Link suites if provided
+      if (suite_ids && suite_ids.length > 0) {
+        const suiteLinks = suite_ids.map((suiteId) => ({
+          test_run_id: run.id,
+          test_suite_id: suiteId,
+        }));
+        await tx.insert(testRunSuites).values(suiteLinks);
+      }
 
-export const createTestRunMock = async (formData: FormData) => {
-  const data = Object.fromEntries(formData.entries());
-  const project_id = typeof data.project_id === 'string' ? data.project_id : '';
-  const run_name = typeof data.run_name === 'string' ? data.run_name : '';
+      // 3. Link milestones if provided
+      if (milestone_ids && milestone_ids.length > 0) {
+        const milestoneLinks = milestone_ids.map((milestoneId) => ({
+          test_run_id: run.id,
+          milestone_id: milestoneId,
+        }));
+        await tx.insert(testRunMilestones).values(milestoneLinks);
+      }
 
-  await new Promise((resolve) => setTimeout(resolve, 500));
+      return [run];
+    });
 
-  if (!project_id) {
-    const mockErrors: MockFlatErrors = {
-      formErrors: ['필수 입력 항목이 누락되었습니다.'],
-      fieldErrors: {
-        project_id: ['프로젝트 ID가 필요합니다.'],
-      },
+    return { success: true, testRun: newTestRun };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[createTestRunAction] DB Error:', errorMessage, error);
+    return {
+      success: false,
+      errors: {
+        formErrors: [`테스트 실행 생성에 실패했습니다: ${errorMessage}`],
+        fieldErrors: {},
+      } as FlatErrors,
     };
-    return { success: false, errors: mockErrors };
   }
-
-  if (run_name.toUpperCase() === 'SERVER_ERROR') {
-    const mockServerError: MockFlatErrors = {
-      formErrors: ['DB 연결 실패: 서버 내부에서 치명적인 오류가 발생했습니다.'],
-      fieldErrors: {},
-    };
-    return { success: false, errors: mockServerError };
-  }
-
-  return {
-    success: true,
-    errors: { id: `uuid-${Date.now()}`, ...data },
-  };
 };
