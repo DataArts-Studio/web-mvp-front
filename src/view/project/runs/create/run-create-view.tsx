@@ -43,10 +43,9 @@ export const RunCreateView = () => {
     }
 
     const input: CreateRunInput = {
-      projectId,
-      runName: data.runName,
+      project_id: projectId,
+      name: data.runName,
       description: data.description || undefined,
-      sourceType: 'ADHOC',
     };
 
     mutate(input, {

@@ -8,20 +8,10 @@ type FlatErrors = {
   fieldErrors: Record<string, string[] | undefined>;
 };
 
-export const createTestRunAction = async (formData: FormData) => {
-  const rawData = Object.fromEntries(formData.entries());
+type CreateRunInput = z.infer<typeof CreateTestRunSchema>;
 
-  // FormData can have multiple entries for the same key if they are sent as an array
-  const suiteIds = formData.getAll('suite_ids[]');
-  const milestoneIds = formData.getAll('milestone_ids[]');
-
-  const dataToValidate = {
-    ...rawData,
-    suite_ids: suiteIds.length > 0 ? suiteIds : undefined,
-    milestone_ids: milestoneIds.length > 0 ? milestoneIds : undefined,
-  };
-
-  const validation = CreateTestRunSchema.safeParse(dataToValidate);
+export const createTestRunAction = async (input: CreateRunInput) => {
+  const validation = CreateTestRunSchema.safeParse(input);
 
   if (!validation.success) {
     console.error('[createTestRunAction] Validation failed:', validation.error.flatten());
