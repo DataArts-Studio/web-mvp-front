@@ -1,39 +1,21 @@
 import { z } from 'zod';
 
-export const TestRunStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
-export const TestRunSourceTypeEnum = z.enum(['SUITE', 'MILESTONE', 'ADHOC']);
-
 export const TestRunSchema = z.object({
   id: z.string().uuid(),
   project_id: z.string().uuid(),
-  milestone_id: z.string().uuid().nullable(),
-  run_name: z.string(),
-  status: TestRunStatusEnum.default('NOT_STARTED'),
-  source_type: TestRunSourceTypeEnum,
-  started_at: z.coerce.date().optional(),
-  ended_at: z.coerce.date().nullable().optional(),
-  total_test_cases: z.number().default(0),
-  completed_test_cases: z.number().default(0),
-  create_at: z.date(),
-  update_at: z.date(),
-  delete_at: z.date().nullable(),
-  created_by: z.string().uuid().optional(),
-  updated_by: z.string().uuid().optional(),
+  name: z.string(),
+  description: z.string().nullable(),
+  created_at: z.date(),
+  updated_at: z.date(),
+  deleted_at: z.date().nullable(),
 });
 
-// 서버 액션용 입력 스키마 (클라이언트에서 받는 데이터)
-export const CreateTestRunInputSchema = z.object({
-  project_id: z.string().uuid(),
-  run_name: z.string().min(1, '실행 이름을 입력해주세요.'),
-  source_type: TestRunSourceTypeEnum,
-  milestone_id: z.string().uuid().optional(),
+// Zod schema for creating a new test run
+export const CreateTestRunSchema = z.object({
+  project_id: z.string().uuid({ message: "유효한 프로젝트 ID를 제공해야 합니다." }),
+  name: z.string().min(1, '실행 이름을 입력해주세요.'),
   description: z.string().optional(),
-  created_by: z.string().uuid().optional(),
-});
-
-export const CreateTestRunSchema = TestRunSchema.omit({
-  id: true,
-  create_at: true,
-  update_at: true,
-  delete_at: true,
+  suite_ids: z.array(z.string().uuid()).optional(),
+  milestone_ids: z.array(z.string().uuid()).optional(),
+  // created_by can be added here if you have user management
 });

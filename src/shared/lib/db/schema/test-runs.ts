@@ -1,35 +1,24 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
-import { milestones } from './milestones';
+import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { projects } from './projects';
-
-export const testRunStatus = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as const;
-export type TestRunStatus = (typeof testRunStatus)[number];
-
-export const testRunSourceType = ['SUITE', 'MILESTONE', 'ADHOC'] as const;
-export type TestRunSourceType = (typeof testRunSourceType)[number];
+import { testCaseRuns, testRunMilestones, testRunSuites } from '@/shared/lib/db';
 
 export const testRuns = pgTable('test_runs', {
   id: uuid('id').primaryKey(),
   project_id: uuid('project_id').references(() => projects.id),
-  milestone_id: uuid('milestone_id').references(() => milestones.id),
-  run_name: varchar('run_name').notNull(),
-  status: varchar('status').$type<TestRunStatus>().default('NOT_STARTED').notNull(),
-  source_type: varchar('source_type').$type<TestRunSourceType>().notNull(),
-  started_at: timestamp('started_at'),
-  ended_at: timestamp('ended_at'),
-  create_at: timestamp().defaultNow().notNull(),
-  update_at: timestamp().defaultNow().notNull(),
-  delete_at: timestamp(),
+  name: varchar('name').notNull(),
+  description: text('description'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+  deleted_at: timestamp('deleted_at'),
 });
 
-export const testRunRelations = relations(testRuns, ({ one }) => ({
+export const testRunRelations = relations(testRuns, ({ one, many }) => ({
   project: one(projects, {
     fields: [testRuns.project_id],
     references: [projects.id],
   }),
-  milestone: one(milestones, {
-    fields: [testRuns.milestone_id],
-    references: [milestones.id],
-  }),
+  testCaseRuns: many(testCaseRuns),
+  testRunSuites: many(testRunSuites),
+  testRunMilestones: many(testRunMilestones),
 }));

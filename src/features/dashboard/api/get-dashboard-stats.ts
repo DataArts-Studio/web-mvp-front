@@ -1,17 +1,9 @@
 'use server';
 
 import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features';
-import { getDatabase, projects, testCases, testSuite } from '@/shared/lib/db';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { getDatabase, projects, suiteTestCases, testCases, testSuite } from '@/shared/lib/db';
+import { and, count, desc, eq, isNull, notInArray } from 'drizzle-orm';
 import { ActionResult } from '@/shared/types';
-
-
-
-
-
-
-
-
 
 type GetDashboardStatsParams = {
   projectName: string;
@@ -58,10 +50,19 @@ export const getDashboardStats = async ({
     console.log('[Dashboard] testCaseCountResult:', testCaseCountResult);
 
     // 스위트 미지정 케이스 수
+    const assignedTestCasesSubquery = db
+        .select({ id: suiteTestCases.test_case_id })
+        .from(suiteTestCases);
+
     const [unassignedCountResult] = await db
-      .select({ count: count() })
-      .from(testCases)
-      .where(and(eq(testCases.project_id, projectRow.id), isNull(testCases.test_suite_id)));
+        .select({ count: count() })
+        .from(testCases)
+        .where(
+            and(
+                eq(testCases.project_id, projectRow.id),
+                notInArray(testCases.id, assignedTestCasesSubquery)
+            )
+        );
 
     console.log('[Dashboard] unassignedCountResult:', unassignedCountResult);
 
@@ -87,8 +88,8 @@ export const getDashboardStats = async ({
       suiteRows.map(async (row) => {
         const [caseCountResult] = await db
           .select({ count: count() })
-          .from(testCases)
-          .where(eq(testCases.test_suite_id, row.id));
+          .from(suiteTestCases)
+          .where(eq(suiteTestCases.suite_id, row.id));
 
         return {
           id: row.id,

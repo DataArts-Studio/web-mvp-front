@@ -3,3 +3,7 @@ export * from './test-suites';
 export * from './test-cases';
 export * from './test-runs';
 export * from './milestones';
+export * from './test-case-runs';
+export * from './test-run-suites';
+export * from './test-run-milestones';
+export * from './suite-test-cases';

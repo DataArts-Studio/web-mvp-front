@@ -1,50 +1,68 @@
 'use server';
-import { CreateTestRunInputSchema } from '@/entities/test-run';
-import { getDatabase, testRuns } from '@/shared/lib/db';
-import { v7 as uuidv7 } from 'uuid';
+import { CreateTestRunSchema } from '@/entities/test-run';
+import { getDatabase, testRuns, testRunMilestones, testRunSuites } from '@/shared/lib/db';
+import { z } from 'zod';
 
 type FlatErrors = {
   formErrors: string[];
   fieldErrors: Record<string, string[] | undefined>;
 };
 
-const createTestRun = async (data: {
-  id: string;
-  project_id: string;
-  run_name: string;
-  source_type: 'SUITE' | 'MILESTONE' | 'ADHOC';
-  milestone_id?: string | null;
-  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
-}) => {
-  const db = getDatabase();
-  return await db.insert(testRuns).values(data).returning();
-};
-
 export const createTestRunAction = async (formData: FormData) => {
   const rawData = Object.fromEntries(formData.entries());
-  console.log('[createTestRunAction] rawData:', rawData);
 
-  const validation = CreateTestRunInputSchema.safeParse(rawData);
+  // FormData can have multiple entries for the same key if they are sent as an array
+  const suiteIds = formData.getAll('suite_ids[]');
+  const milestoneIds = formData.getAll('milestone_ids[]');
+
+  const dataToValidate = {
+    ...rawData,
+    suite_ids: suiteIds.length > 0 ? suiteIds : undefined,
+    milestone_ids: milestoneIds.length > 0 ? milestoneIds : undefined,
+  };
+
+  const validation = CreateTestRunSchema.safeParse(dataToValidate);
+
   if (!validation.success) {
     console.error('[createTestRunAction] Validation failed:', validation.error.flatten());
     return { success: false, errors: validation.error.flatten() as FlatErrors };
   }
 
-  console.log('[createTestRunAction] Validation passed:', validation.data);
+  const { project_id, name, description, suite_ids, milestone_ids } = validation.data;
+  const db = getDatabase();
 
   try {
-    const insertData = {
-      id: uuidv7(),
-      project_id: validation.data.project_id,
-      run_name: validation.data.run_name,
-      source_type: validation.data.source_type,
-      milestone_id: validation.data.milestone_id || null,
-      status: 'NOT_STARTED' as const,
-    };
-    console.log('[createTestRunAction] Inserting:', insertData);
+    const [newTestRun] = await db.transaction(async (tx) => {
+      // 1. Create the main test run entry
+      const [run] = await tx
+        .insert(testRuns)
+        .values({
+          project_id,
+          name,
+          description,
+        })
+        .returning();
 
-    const newTestRun = await createTestRun(insertData);
-    console.log('[createTestRunAction] Created:', newTestRun);
+      // 2. Link suites if provided
+      if (suite_ids && suite_ids.length > 0) {
+        const suiteLinks = suite_ids.map((suiteId) => ({
+          test_run_id: run.id,
+          test_suite_id: suiteId,
+        }));
+        await tx.insert(testRunSuites).values(suiteLinks);
+      }
+
+      // 3. Link milestones if provided
+      if (milestone_ids && milestone_ids.length > 0) {
+        const milestoneLinks = milestone_ids.map((milestoneId) => ({
+          test_run_id: run.id,
+          milestone_id: milestoneId,
+        }));
+        await tx.insert(testRunMilestones).values(milestoneLinks);
+      }
+
+      return [run];
+    });
 
     return { success: true, testRun: newTestRun };
   } catch (error) {
@@ -58,35 +76,4 @@ export const createTestRunAction = async (formData: FormData) => {
       } as FlatErrors,
     };
   }
-};
-
-export const createTestRunMock = async (formData: FormData) => {
-  const data = Object.fromEntries(formData.entries());
-  const project_id = typeof data.project_id === 'string' ? data.project_id : '';
-  const run_name = typeof data.run_name === 'string' ? data.run_name : '';
-
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  if (!project_id) {
-    const mockErrors: FlatErrors = {
-      formErrors: ['필수 입력 항목이 누락되었습니다.'],
-      fieldErrors: {
-        project_id: ['프로젝트 ID가 필요합니다.'],
-      },
-    };
-    return { success: false, errors: mockErrors };
-  }
-
-  if (run_name.toUpperCase() === 'SERVER_ERROR') {
-    const mockServerError: FlatErrors = {
-      formErrors: ['DB 연결 실패: 서버 내부에서 치명적인 오류가 발생했습니다.'],
-      fieldErrors: {},
-    };
-    return { success: false, errors: mockServerError };
-  }
-
-  return {
-    success: true,
-    data: { id: `uuid-${Date.now()}`, ...data },
-  };
 };
