@@ -11,12 +11,16 @@ type FlatErrors = {
 type CreateRunInput = z.infer<typeof CreateTestRunSchema>;
 
 export const createTestRunAction = async (input: CreateRunInput) => {
+  console.log('[createTestRunAction] Received input:', input); // Log input
+
   const validation = CreateTestRunSchema.safeParse(input);
 
   if (!validation.success) {
     console.error('[createTestRunAction] Validation failed:', validation.error.flatten());
     return { success: false, errors: validation.error.flatten() as FlatErrors };
   }
+
+  console.log('[createTestRunAction] Validation successful, data:', validation.data); // Log validated data
 
   const { project_id, name, description, suite_ids, milestone_ids } = validation.data;
   const db = getDatabase();
