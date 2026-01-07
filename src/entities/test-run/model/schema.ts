@@ -1,10 +1,13 @@
 import { z } from 'zod';
 
+export const TestRunStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
+
 export const TestRunSchema = z.object({
   id: z.string().uuid(),
   project_id: z.string().uuid(),
   name: z.string(),
   description: z.string().nullable(),
+  status: TestRunStatusEnum.default('NOT_STARTED'),
   created_at: z.date(),
   updated_at: z.date(),
   deleted_at: z.date().nullable(),

@@ -1,8 +1,5 @@
-import { relations } from 'drizzle-orm';
 import { integer, pgTable, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core';
 import { projects } from './projects';
-import { testCaseRuns } from './test-case-runs';
-import { suiteTestCases } from './suite-test-cases';
 
 export const testCases = pgTable('test_cases', (t) => ({
   id: t.uuid('id').primaryKey(),
@@ -20,13 +17,4 @@ export const testCases = pgTable('test_cases', (t) => ({
   deleted_at: t.timestamp('deleted_at'),
 }), (t) => ({
     unq: unique().on(t.project_id, t.name),
-}));
-
-export const testCaseRelations = relations(testCases, ({ one, many }) => ({
-  project: one(projects, {
-    fields: [testCases.project_id],
-    references: [projects.id],
-  }),
-  testCaseRuns: many(testCaseRuns),
-  suiteTestCases: many(suiteTestCases),
 }));

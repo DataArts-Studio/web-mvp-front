@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { testCases } from './test-cases';
 import { testRuns } from './test-runs';
@@ -16,14 +15,3 @@ export const testCaseRuns = pgTable('test_case_runs', {
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
-
-export const testCaseRunRelations = relations(testCaseRuns, ({ one }) => ({
-    testRun: one(testRuns, {
-        fields: [testCaseRuns.test_run_id],
-        references: [testRuns.id],
-    }),
-    testCase: one(testCases, {
-        fields: [testCaseRuns.test_case_id],
-        references: [testCases.id],
-    }),
-}));
