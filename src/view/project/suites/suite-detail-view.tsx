@@ -3,7 +3,7 @@
 import React from 'react';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { TestSuiteCard } from '@/entities/test-suite';
 import { TEST_SUITES_RICH_MOCK } from '@/entities/test-suite/model/suite.mock';
@@ -64,7 +64,12 @@ const formatDateTime = (date: Date | null | undefined) => {
 
 const SuiteDetailView = () => {
   const params = useParams();
+  const router = useRouter();
   const suiteId = params.suiteId as string;
+
+  const handleRunTest = () => {
+    router.push(`/projects/${params.slug}/runs/create`);
+  };
 
   // Mock 데이터 사용 (실제로는 API 조회)
   const suite: TestSuiteCard | undefined = TEST_SUITES_RICH_MOCK.find((s) => s.id === suiteId) ?? TEST_SUITES_RICH_MOCK[0];
@@ -263,7 +268,7 @@ const SuiteDetailView = () => {
 
         {/* 테스트 실행 생성 버튼 */}
         <section className="col-span-6">
-          <DSButton className="flex items-center gap-2">
+          <DSButton className="flex items-center gap-2" onClick={handleRunTest}>
             <Play className="h-4 w-4" />
             스위트 기반 테스트 실행 생성
           </DSButton>

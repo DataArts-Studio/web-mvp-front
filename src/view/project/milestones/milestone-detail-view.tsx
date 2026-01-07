@@ -2,7 +2,7 @@
 import React from 'react';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { MilestoneWithStats } from '@/entities/milestone';
 import { Container, DSButton, MainContainer, cn } from '@/shared';
@@ -78,7 +78,12 @@ const TEST_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
 
 export const MilestoneDetailView = () => {
   const params = useParams();
+  const router = useRouter();
   const milestone = MOCK_MILESTONE; // 실제로는 milestoneId로 API 조회
+
+  const handleRunTest = () => {
+    router.push(`/projects/${params.slug}/runs/create`);
+  };
   const statusInfo = STATUS_CONFIG[milestone.status] || {
     label: milestone.status,
     style: 'bg-gray-500/20 text-gray-300',
@@ -173,7 +178,7 @@ export const MilestoneDetailView = () => {
 
         {/* 테스트 실행 생성 버튼 */}
         <section className="col-span-6">
-          <DSButton className="flex items-center gap-2">
+          <DSButton className="flex items-center gap-2" onClick={handleRunTest}>
             <Play className="h-4 w-4" />
             마일스톤 기반 테스트 실행 생성
           </DSButton>

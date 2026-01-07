@@ -1,1 +1,1 @@
-export { RunCreateView } from '@/view/project/runs/create/run-create-view';
+export { RunCreateView } from './run-create-view';
