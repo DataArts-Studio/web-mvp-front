@@ -1,9 +1,68 @@
+'use client';
 import React from 'react';
+import { useForm } from 'react-hook-form';
+import { useParams, useRouter } from 'next/navigation';
 
-import { Container, MainContainer } from '@/shared';
+import { useCreateRun, type CreateRunInput } from '@/features/runs-create';
+import { dashboardStatsQueryOptions } from '@/features/dashboard';
+import { Container, DSButton, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
+import { useQuery } from '@tanstack/react-query';
+
+interface RunFormData {
+  runName: string;
+  description: string;
+}
 
 export const RunCreateView = () => {
+  const router = useRouter();
+  const params = useParams();
+  const { mutate, isPending } = useCreateRun();
+
+  const { data: dashboardData } = useQuery(
+    dashboardStatsQueryOptions(params.slug as string)
+  );
+
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RunFormData>({
+    defaultValues: {
+      runName: '',
+      description: '',
+    },
+  });
+
+  const onSubmit = (data: RunFormData) => {
+    if (!projectId) {
+      alert('프로젝트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    const input: CreateRunInput = {
+      projectId,
+      runName: data.runName,
+      description: data.description || undefined,
+      sourceType: 'ADHOC',
+    };
+
+    mutate(input, {
+      onSuccess: () => {
+        router.push(`/projects/${params.slug}/runs`);
+      },
+      onError: (error) => {
+        alert(error.message || '테스트 실행 생성에 실패했습니다.');
+      },
+    });
+  };
+
+  const handleCancel = () => {
+    router.back();
+  };
+
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans">
       {/* Aside */}
@@ -23,13 +82,13 @@ export const RunCreateView = () => {
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <span className="typo-caption-heading inline-flex w-fit items-center rounded-1 bg-primary/10 px-2 py-1 text-primary">
-                SUITE 기반 실행
+                ADHOC 실행
               </span>
               <h3 className="typo-h2-heading mt-1 text-text-1">
-                회원가입 및 인증 프로세스 스위트
+                직접 선택한 테스트 케이스
               </h3>
               <p className="typo-caption-normal text-text-3">
-                이 실행은 선택된 스위트 내의 모든 케이스를 포함합니다.
+                개별적으로 선택한 케이스들로 테스트를 실행합니다.
               </p>
             </div>
 
@@ -37,7 +96,7 @@ export const RunCreateView = () => {
             <div className="flex flex-col items-end gap-1 border-l border-line-2 pl-8">
               <span className="typo-caption-heading text-text-3">대상 케이스</span>
               <div className="flex items-baseline gap-1">
-                <span className="typo-title-heading text-primary">24</span>
+                <span className="typo-title-heading text-primary">-</span>
                 <span className="typo-body2-normal text-text-3">건</span>
               </div>
             </div>
@@ -45,7 +104,11 @@ export const RunCreateView = () => {
         </section>
 
         {/* 실행 정보 입력 폼 */}
-        <form className="col-span-full flex flex-col gap-6">
+        <form
+          className="col-span-full flex flex-col gap-6"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+        >
           {/* 실행 이름 필드 */}
           <div className="flex flex-col gap-2">
             <label htmlFor="run-name" className="typo-body2-heading text-text-1">
@@ -55,12 +118,31 @@ export const RunCreateView = () => {
               id="run-name"
               type="text"
               placeholder="예: 2024-05-20 정기 배포 회귀 테스트"
-              className="typo-body2-normal w-full rounded-2 border border-line-2 bg-bg-2 px-4 py-2.5 text-text-1 placeholder:text-text-4 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              required
+              className={`typo-body2-normal w-full rounded-2 border bg-bg-2 px-4 py-2.5 text-text-1 placeholder:text-text-4 focus:outline-none focus:ring-1 ${
+                errors.runName
+                  ? 'border-system-red focus:border-system-red focus:ring-system-red'
+                  : 'border-line-2 focus:border-primary focus:ring-primary'
+              }`}
+              disabled={isPending}
+              {...register('runName', {
+                required: '실행 이름을 입력해주세요.',
+                minLength: {
+                  value: 2,
+                  message: '실행 이름은 최소 2자 이상이어야 합니다.',
+                },
+                maxLength: {
+                  value: 100,
+                  message: '실행 이름은 100자를 초과할 수 없습니다.',
+                },
+              })}
             />
-            <p className="typo-caption-normal text-text-3">
-              프로젝트 내에서 식별하기 쉬운 이름을 입력해주세요.
-            </p>
+            {errors.runName ? (
+              <p className="typo-caption-normal text-system-red">{errors.runName.message}</p>
+            ) : (
+              <p className="typo-caption-normal text-text-3">
+                프로젝트 내에서 식별하기 쉬운 이름을 입력해주세요.
+              </p>
+            )}
           </div>
 
           {/* 실행 설명 필드 */}
@@ -73,25 +155,32 @@ export const RunCreateView = () => {
               rows={5}
               placeholder="이번 실행의 목적, 테스트 환경, 특이사항 등을 기록하세요."
               className="typo-body2-normal w-full resize-none rounded-2 border border-line-2 bg-bg-2 px-4 py-2.5 text-text-1 placeholder:text-text-4 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              disabled={isPending}
+              {...register('description')}
             />
           </div>
-        </form>
 
-        {/* Actions: 버튼 영역 */}
-        <div className="col-span-full mt-4 flex items-center justify-end gap-3 border-t border-line-2 pt-6">
-          <button
-            type="button"
-            className="typo-body2-heading rounded-2 px-5 py-2.5 text-text-2 hover:bg-bg-3 hover:text-text-1 transition-colors"
-          >
-            취소
-          </button>
-          <button
-            type="submit"
-            className="typo-body2-heading rounded-2 bg-primary px-5 py-2.5 text-text-1 shadow-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            실행 생성하기
-          </button>
-        </div>
+          {/* Actions: 버튼 영역 */}
+          <div className="col-span-full mt-4 flex items-center justify-end gap-3 border-t border-line-2 pt-6">
+            <DSButton
+              type="button"
+              variant="ghost"
+              className="px-5 py-2.5"
+              disabled={isPending}
+              onClick={handleCancel}
+            >
+              취소
+            </DSButton>
+            <DSButton
+              type="submit"
+              variant="solid"
+              className="px-5 py-2.5"
+              disabled={isPending}
+            >
+              {isPending ? '생성 중...' : '실행 생성하기'}
+            </DSButton>
+          </div>
+        </form>
       </MainContainer>
     </Container>
   );
