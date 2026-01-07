@@ -1,17 +1,9 @@
 'use server';
 
 import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features';
-import { getDatabase, projects, testCases, testSuite } from '@/shared/lib/db';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { getDatabase, projects, suiteTestCases, testCases, testSuites } from '@/shared/lib/db';
+import { and, count, desc, eq, isNull, notInArray } from 'drizzle-orm';
 import { ActionResult } from '@/shared/types';
-
-
-
-
-
-
-
-
 
 type GetDashboardStatsParams = {
   projectName: string;
@@ -58,10 +50,19 @@ export const getDashboardStats = async ({
     console.log('[Dashboard] testCaseCountResult:', testCaseCountResult);
 
     // 스위트 미지정 케이스 수
+    const assignedTestCasesSubquery = db
+        .select({ id: suiteTestCases.test_case_id })
+        .from(suiteTestCases);
+
     const [unassignedCountResult] = await db
-      .select({ count: count() })
-      .from(testCases)
-      .where(and(eq(testCases.project_id, projectRow.id), isNull(testCases.test_suite_id)));
+        .select({ count: count() })
+        .from(testCases)
+        .where(
+            and(
+                eq(testCases.project_id, projectRow.id),
+                notInArray(testCases.id, assignedTestCasesSubquery)
+            )
+        );
 
     console.log('[Dashboard] unassignedCountResult:', unassignedCountResult);
 
@@ -73,22 +74,22 @@ export const getDashboardStats = async ({
     // 테스트 스위트 목록 - 단순 조회 (케이스 수는 별도 계산)
     const suiteRows = await db
       .select({
-        id: testSuite.id,
-        name: testSuite.name,
-        description: testSuite.description,
+        id: testSuites.id,
+        name: testSuites.name,
+        description: testSuites.description,
       })
-      .from(testSuite)
-      .where(eq(testSuite.project_id, projectRow.id));
+      .from(testSuites)
+      .where(eq(testSuites.project_id, projectRow.id));
 
     console.log('[Dashboard] suiteRows:', suiteRows);
 
     // 각 스위트별 케이스 수 계산
-    const testSuites: TestSuiteSummary[] = await Promise.all(
+    const testSuitesResult: TestSuiteSummary[] = await Promise.all(
       suiteRows.map(async (row) => {
         const [caseCountResult] = await db
           .select({ count: count() })
-          .from(testCases)
-          .where(eq(testCases.test_suite_id, row.id));
+          .from(suiteTestCases)
+          .where(eq(suiteTestCases.suite_id, row.id));
 
         return {
           id: row.id,
@@ -99,7 +100,7 @@ export const getDashboardStats = async ({
       })
     );
 
-    console.log('[Dashboard] testSuites:', testSuites);
+    console.log('[Dashboard] testSuites:', testSuitesResult);
 
     // 최근 테스트 케이스 - projectRow.id 사용
     const recentTestCases = await db
@@ -118,13 +119,13 @@ export const getDashboardStats = async ({
     // 최근 스위트 - projectRow.id 사용
     const recentSuites = await db
       .select({
-        id: testSuite.id,
-        title: testSuite.name,
-        created_at: testSuite.created_at,
+        id: testSuites.id,
+        title: testSuites.name,
+        created_at: testSuites.created_at,
       })
-      .from(testSuite)
-      .where(eq(testSuite.project_id, projectRow.id))
-      .orderBy(desc(testSuite.created_at))
+      .from(testSuites)
+      .where(eq(testSuites.project_id, projectRow.id))
+      .orderBy(desc(testSuites.created_at))
       .limit(5);
 
     console.log('[Dashboard] recentSuites:', recentSuites);
@@ -152,7 +153,7 @@ export const getDashboardStats = async ({
       data: {
         project: projectInfo,
         testCases: testCaseStats,
-        testSuites,
+        testSuites: testSuitesResult,
         recentActivities,
       },
     };

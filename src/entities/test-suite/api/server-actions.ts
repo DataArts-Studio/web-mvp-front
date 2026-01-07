@@ -2,7 +2,7 @@
 
 import type { CreateTestSuite, TestSuite } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
-import { getDatabase, testSuite } from '@/shared/lib/db';
+import { getDatabase, testSuites } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -19,7 +19,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     const id = uuidv7();
 
     const [inserted] = await db
-      .insert(testSuite)
+      .insert(testSuites)
       .values({
         id,
         project_id: dto.project_id,
@@ -72,8 +72,8 @@ export const getTestSuites = async ({
     const db = getDatabase();
     const rows = await db
       .select()
-      .from(testSuite)
-      .where(eq(testSuite.project_id, projectId))
+      .from(testSuites)
+      .where(eq(testSuites.project_id, projectId))
       .limit(limits.limit)
       .offset(limits.offset);
 
@@ -111,7 +111,7 @@ export const getTestSuites = async ({
 export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSuite>> => {
   try {
     const db = getDatabase();
-    const [row] = await db.select().from(testSuite).where(eq(testSuite.id, id));
+    const [row] = await db.select().from(testSuites).where(eq(testSuites.id, id));
 
     if (!row) {
       return {
@@ -171,9 +171,9 @@ export const updateTestSuite = async (params: UpdateTestSuiteParams): Promise<Ac
     }
 
     const [updated] = await db
-      .update(testSuite)
+      .update(testSuites)
       .set(updateData)
-      .where(eq(testSuite.id, id))
+      .where(eq(testSuites.id, id))
       .returning();
 
     if (!updated) {
@@ -214,12 +214,12 @@ export const deleteTestSuite = async (id: string): Promise<ActionResult<{ id: st
 
     // Soft delete: deleted_at 필드 업데이트
     const [deleted] = await db
-      .update(testSuite)
+      .update(testSuites)
       .set({
         deleted_at: new Date(),
         updated_at: new Date(),
       })
-      .where(eq(testSuite.id, id))
+      .where(eq(testSuites.id, id))
       .returning();
 
     if (!deleted) {

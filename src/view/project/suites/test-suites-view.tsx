@@ -1,16 +1,20 @@
 'use client';
 import React from 'react';
 
+
+
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import { TEST_SUITES_RICH_MOCK as SUITES } from '@/entities/test-suite';
+
+
 import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
+import type { TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { dashboardStatsQueryOptions } from '@/features';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
-import { ActionToolbar, Aside } from '@/widgets';
+import { ActionToolbar, Aside, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 
 export const TestSuitesView = () => {
@@ -18,6 +22,16 @@ export const TestSuitesView = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+
+  const { data: suiteData } = useQuery(testSuitesQueryOptions(projectId));
+  const suites: TestSuiteCard[] = suiteData?.success ? suiteData.data.map((suite: TestSuite): TestSuiteCard => ({
+    ...suite,
+    tag: { label: '기본', tone: 'neutral' },
+    includedPaths: [],
+    caseCount: 0,
+    executionHistoryCount: 0,
+    recentRuns: []
+  })) : [];
 
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
@@ -48,9 +62,8 @@ export const TestSuitesView = () => {
             테스트 스위트 생성하기
           </ActionToolbar.Action>
         </ActionToolbar.Root>
-        {/* 테스트 스위트 리스트 */}
         <section aria-label="테스트 스위트 리스트" className="col-span-6 flex flex-col gap-3">
-          {SUITES.map((suite) => (
+          {suites.map((suite) => (
             <Link
               key={suite.id}
               href={`/projects/${params.slug}/suites/${suite.id}`}

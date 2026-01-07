@@ -1,15 +1,12 @@
 import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
-// import { relations } from 'drizzle-orm';
 
 export const projects = pgTable('projects', {
   id: uuid('id').primaryKey(),
-  name: varchar({ length: 255 }).notNull(),
-  identifier: varchar({ length: 255 }).notNull(),
-  description: varchar({ length: 255 }),
-  owner_name: varchar({ length: 255 }),
-  created_at: timestamp().defaultNow().notNull(),
-  updated_at: timestamp().defaultNow().notNull(),
-  deleted_at: timestamp(),
+  name: varchar('name', { length: 255 }).notNull(),
+  identifier: varchar('identifier', { length: 255 }).notNull(),
+  description: varchar('description', { length: 255 }),
+  owner_name: varchar('owner_name', { length: 255 }),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+  deleted_at: timestamp('deleted_at'),
 });
-
-// export const projectRelations = relations(project, ({ one }) => {});
