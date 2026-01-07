@@ -12,9 +12,13 @@ export const TestRunSchema = z.object({
   source_type: TestRunSourceTypeEnum,
   started_at: z.coerce.date().optional(),
   ended_at: z.coerce.date().nullable().optional(),
+  total_test_cases: z.number().default(0),
+  completed_test_cases: z.number().default(0),
   create_at: z.date(),
   update_at: z.date(),
   delete_at: z.date().nullable(),
+  created_by: z.string().uuid().optional(),
+  updated_by: z.string().uuid().optional(),
 });
 
 // 서버 액션용 입력 스키마 (클라이언트에서 받는 데이터)
@@ -24,6 +28,7 @@ export const CreateTestRunInputSchema = z.object({
   source_type: TestRunSourceTypeEnum,
   milestone_id: z.string().uuid().optional(),
   description: z.string().optional(),
+  created_by: z.string().uuid().optional(),
 });
 
 export const CreateTestRunSchema = TestRunSchema.omit({

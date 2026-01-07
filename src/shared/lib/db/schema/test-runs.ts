@@ -9,7 +9,7 @@ export type TestRunStatus = (typeof testRunStatus)[number];
 export const testRunSourceType = ['SUITE', 'MILESTONE', 'ADHOC'] as const;
 export type TestRunSourceType = (typeof testRunSourceType)[number];
 
-export const testRun = pgTable('test_run', {
+export const testRuns = pgTable('test_runs', {
   id: uuid('id').primaryKey(),
   project_id: uuid('project_id').references(() => projects.id),
   milestone_id: uuid('milestone_id').references(() => milestones.id),
@@ -23,13 +23,13 @@ export const testRun = pgTable('test_run', {
   delete_at: timestamp(),
 });
 
-export const testRunRelations = relations(testRun, ({ one }) => ({
+export const testRunRelations = relations(testRuns, ({ one }) => ({
   project: one(projects, {
-    fields: [testRun.project_id],
+    fields: [testRuns.project_id],
     references: [projects.id],
   }),
   milestone: one(milestones, {
-    fields: [testRun.milestone_id],
+    fields: [testRuns.milestone_id],
     references: [milestones.id],
   }),
 }));

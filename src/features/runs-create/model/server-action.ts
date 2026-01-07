@@ -1,6 +1,6 @@
 'use server';
 import { CreateTestRunInputSchema } from '@/entities/test-run';
-import { getDatabase, testRun } from '@/shared/lib/db';
+import { getDatabase, testRuns } from '@/shared/lib/db';
 import { v7 as uuidv7 } from 'uuid';
 
 type FlatErrors = {
@@ -17,7 +17,7 @@ const createTestRun = async (data: {
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 }) => {
   const db = getDatabase();
-  return await db.insert(testRun).values(data).returning();
+  return await db.insert(testRuns).values(data).returning();
 };
 
 export const createTestRunAction = async (formData: FormData) => {
