@@ -12,7 +12,7 @@ import {
   ListTodo
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { dashboardStatsQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions } from '@/features/runs';
 
@@ -30,6 +30,7 @@ interface ITestRun {
 
 export const TestRunsListView = () => {
   const params = useParams();
+  const router = useRouter();
   const projectSlug = params.slug as string;
   const [sortOption, setSortOption] = useState<'UPDATED' | 'NAME'>('UPDATED');
 
@@ -141,7 +142,7 @@ export const TestRunsListView = () => {
             return (
               <div
                 key={run.id}
-                onClick={() => alert(`네비게이션: /runs/${run.id}`)}
+                onClick={() => router.push(`/projects/${projectSlug}/runs/${run.id}`)}
                 className="group grid cursor-pointer grid-cols-12 items-center gap-4 border-b border-line-2 px-6 py-5 transition-colors hover:bg-bg-3 last:border-b-0"
               >
                 <div className="col-span-5 flex flex-col gap-1.5">
