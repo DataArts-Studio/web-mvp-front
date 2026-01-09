@@ -14,13 +14,15 @@ export const getDashboardStats = async ({
 }: GetDashboardStatsParams): Promise<ActionResult<DashboardStats>> => {
   try {
     const db = getDatabase();
-    console.log('[Dashboard] projectName:', projectName);
+    // URL slug에서 하이픈을 공백으로 변환하여 원래 프로젝트명으로 복원
+    const normalizedName = projectName.replace(/-/g, ' ');
+    console.log('[Dashboard] projectName:', projectName, '-> normalizedName:', normalizedName);
 
     // 프로젝트 정보 조회 (name으로 검색)
     const [projectRow] = await db
       .select()
       .from(projects)
-      .where(eq(projects.name, projectName))
+      .where(eq(projects.name, normalizedName))
       .limit(1);
 
     console.log('[Dashboard] projectRow:', projectRow);
@@ -38,7 +40,7 @@ export const getDashboardStats = async ({
       identifier: projectRow.identifier,
       description: projectRow.description ?? '',
       ownerName: projectRow.owner_name ?? '',
-      created_at: projectRow.created_at,
+      created_at: projectRow.created_at.toISOString(),
     };
 
     // 테스트 케이스 통계 - projectRow.id 사용
@@ -136,16 +138,16 @@ export const getDashboardStats = async ({
         id: tc.id,
         type: 'test_case_created' as const,
         title: tc.title,
-        created_at: tc.created_at,
+        created_at: tc.created_at.toISOString(),
       })),
       ...recentSuites.map((s) => ({
         id: s.id,
         type: 'test_suite_created' as const,
         title: s.title,
-        created_at: s.created_at,
+        created_at: s.created_at.toISOString(),
       })),
     ]
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
 
     return {

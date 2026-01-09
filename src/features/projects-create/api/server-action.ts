@@ -18,6 +18,13 @@ export async function hashIdentifier(identifier: string): Promise<string> {
   return await bcrypt.hash(identifier, saltRounds);
 }
 
+// Server Action에서 클라이언트로 전달할 때 Date 객체는 직렬화 불가능하므로 string으로 변환
+type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
 /**
  * 프로젝트 생성
  * - CreateProjectDomain을 받아서 DB에 저장
@@ -25,7 +32,7 @@ export async function hashIdentifier(identifier: string): Promise<string> {
  */
 export async function createProject(
   input: CreateProjectDomain
-): Promise<ActionResult<ProjectDomain>> {
+): Promise<ActionResult<SerializableProjectDomain>> {
   try {
     const db = getDatabase();
     const dto = toProjectDto(input);
@@ -50,15 +57,15 @@ export async function createProject(
       };
     }
 
-    const result: ProjectDomain = {
+    const result = {
       id: inserted.id,
       projectName: inserted.name,
       identifier: inserted.identifier,
       description: inserted.description ?? undefined,
       ownerName: inserted.owner_name ?? undefined,
-      createdAt: inserted.created_at,
-      updatedAt: inserted.updated_at,
-      deletedAt: inserted.deleted_at,
+      createdAt: inserted.created_at.toISOString(),
+      updatedAt: inserted.updated_at.toISOString(),
+      deletedAt: inserted.deleted_at?.toISOString() ?? null,
     };
 
     revalidatePath('/projects');
@@ -84,21 +91,21 @@ const isNotDeleted = isNull(projects.deleted_at);
  * 프로젝트 목록 조회
  * - 삭제되지 않은 프로젝트만 조회
  */
-export async function getProjects(): Promise<ActionResult<ProjectDomain[]>> {
+export async function getProjects(): Promise<ActionResult<SerializableProjectDomain[]>> {
   try {
     const db = getDatabase();
 
     const rows = await db.select().from(projects).where(isNotDeleted).orderBy(projects.created_at);
 
-    const result: ProjectDomain[] = rows.map((row) => ({
+    const result: SerializableProjectDomain[] = rows.map((row) => ({
       id: row.id,
       projectName: row.name,
       identifier: row.identifier,
       description: row.description ?? undefined,
       ownerName: row.owner_name ?? undefined,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      deletedAt: row.deleted_at,
+      createdAt: row.created_at.toISOString(),
+      updatedAt: row.updated_at.toISOString(),
+      deletedAt: row.deleted_at?.toISOString() ?? null,
     }));
 
     return { success: true, data: result };
