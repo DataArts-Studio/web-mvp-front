@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -8,8 +8,9 @@ import { useQuery } from '@tanstack/react-query';
 
 import { testSuiteByIdQueryOptions } from '@/entities/test-suite/api/query';
 import { getTestCases } from '@/entities/test-case/api/server-actions';
-import type { TestSuiteCard, RunStatus } from '@/entities/test-suite';
+import type { TestSuiteCard } from '@/entities/test-suite';
 import type { TestCase } from '@/entities/test-case';
+import { SuiteEditForm } from '@/features';
 import { Container, DSButton, MainContainer, cn } from '@/shared';
 import { Aside } from '@/widgets';
 import {
@@ -68,6 +69,7 @@ const SuiteDetailView = () => {
   const params = useParams();
   const router = useRouter();
   const suiteId = params.suiteId as string;
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleRunTest = () => {
     router.push(`/projects/${params.slug}/runs/create`);
@@ -188,7 +190,7 @@ const SuiteDetailView = () => {
             </div>
 
             <div className="flex gap-2">
-              <DSButton variant="ghost" className="flex items-center gap-2">
+              <DSButton variant="ghost" className="flex items-center gap-2" onClick={() => setIsEditing(true)}>
                 <Edit2 className="h-4 w-4" />
                 수정
               </DSButton>
@@ -438,6 +440,7 @@ const SuiteDetailView = () => {
             </div>
           )}
         </section>
+        {isEditing && suite && <SuiteEditForm suite={suite} onClose={() => setIsEditing(false)} />}
       </MainContainer>
     </Container>
   );
