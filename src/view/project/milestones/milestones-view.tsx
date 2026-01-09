@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { MilestoneCard, MilestoneWithStats } from '@/entities/milestone';
-import { MilestoneCreateForm, dashboardStatsQueryOptions, milestonesQueryOptions } from '@/features';
+import { MilestoneCreateForm, dashboardQueryOptions, milestonesQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
@@ -15,10 +15,38 @@ import { FolderOpen } from 'lucide-react';
 export const MilestonesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
-  const { data: milestonesResult } = useQuery(milestonesQueryOptions(projectId));
+  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
+  const { data: milestonesResult, isLoading: isLoadingMilestones } = useQuery({
+    ...milestonesQueryOptions(projectId!),
+    enabled: !!projectId,
+  });
   const milestonesData = milestonesResult?.success ? milestonesResult.data : [];
+
+  // 로딩 상태
+  if (isLoadingProject || isLoadingMilestones) {
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-text-3">로딩 중...</div>
+        </MainContainer>
+      </Container>
+    );
+  }
+
+  // 에러 상태
+  if (!dashboardData?.success) {
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+        </MainContainer>
+      </Container>
+    );
+  }
+
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       {/* Aside */}
@@ -80,7 +108,7 @@ export const MilestonesView = () => {
             })
           )}
         </section>
-        {isOpen && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
+        {isOpen && projectId && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
       </MainContainer>
     </Container>
   );

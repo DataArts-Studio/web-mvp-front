@@ -6,23 +6,20 @@ import { and, count, desc, eq, isNull, notInArray } from 'drizzle-orm';
 import { ActionResult } from '@/shared/types';
 
 type GetDashboardStatsParams = {
-  projectName: string;
+  slug: string;
 };
 
 export const getDashboardStats = async ({
-  projectName,
+  slug,
 }: GetDashboardStatsParams): Promise<ActionResult<DashboardStats>> => {
   try {
     const db = getDatabase();
-    // URL slug에서 하이픈을 공백으로 변환하여 원래 프로젝트명으로 복원
-    const normalizedName = projectName.replace(/-/g, ' ');
-    console.log('[Dashboard] projectName:', projectName, '-> normalizedName:', normalizedName);
 
-    // 프로젝트 정보 조회 (name으로 검색)
+    // 프로젝트 정보 조회 (slug로 검색)
     const [projectRow] = await db
       .select()
       .from(projects)
-      .where(eq(projects.name, normalizedName))
+      .where(eq(projects.name, slug))
       .limit(1);
 
     console.log('[Dashboard] projectRow:', projectRow);

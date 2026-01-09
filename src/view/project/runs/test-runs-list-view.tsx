@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
-import { dashboardStatsQueryOptions } from '@/features/dashboard';
+import { dashboardQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions } from '@/features/runs';
 
 type RunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
@@ -35,7 +35,7 @@ export const TestRunsListView = () => {
   const [sortOption, setSortOption] = useState<'UPDATED' | 'NAME'>('UPDATED');
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
-    dashboardStatsQueryOptions(projectSlug)
+    dashboardQueryOptions.stats(projectSlug)
   );
 
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;

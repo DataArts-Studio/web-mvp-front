@@ -8,7 +8,7 @@ import { useParams } from 'next/navigation';
 
 
 
-import { dashboardStatsQueryOptions } from '@/features';
+import { dashboardQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
 import { Aside } from '@/widgets';
@@ -40,8 +40,14 @@ export const ProjectDashboardView = () => {
   }, []);
 
   console.log(params, params.slug, typeof params, typeof params.slug);
-  const option = dashboardStatsQueryOptions(params.slug as string);
-  const { data: dashboardData, isLoading, isError } = useQuery(option);
+  const {
+    data: dashboardData,
+    isLoading,
+    isError,
+  } = useQuery({
+    ...dashboardQueryOptions.stats(params.slug as string),
+    enabled: !!params.slug,
+  });
 
   if (isLoading) {
     return <div>로딩중...</div>;

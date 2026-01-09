@@ -20,6 +20,7 @@ export async function hashIdentifier(identifier: string): Promise<string> {
 
 // Server Action에서 클라이언트로 전달할 때 Date 객체는 직렬화 불가능하므로 string으로 변환
 type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  slug: string;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -39,11 +40,17 @@ export async function createProject(
     const hashedIdentifier = await hashIdentifier(dto.identifier);
     const id = uuidv7();
 
+    // 프로젝트 이름 정규화: trim + 연속 공백을 단일 공백으로 변환
+    const normalizedName = dto.name.trim().replace(/\s+/g, ' ');
+    // URL slug 생성: 공백을 하이픈으로 변환, 소문자로 변환
+    const slug = normalizedName.toLowerCase().replace(/\s+/g, '-');
+
     const [inserted] = await db
       .insert(projects)
       .values({
         id,
-        name: dto.name,
+        name: normalizedName,
+        slug,
         identifier: hashedIdentifier,
         description: dto.description ?? null,
         owner_name: dto.owner_name ?? null,
@@ -60,6 +67,7 @@ export async function createProject(
     const result = {
       id: inserted.id,
       projectName: inserted.name,
+      slug: inserted.slug,
       identifier: inserted.identifier,
       description: inserted.description ?? undefined,
       ownerName: inserted.owner_name ?? undefined,
@@ -100,6 +108,7 @@ export async function getProjects(): Promise<ActionResult<SerializableProjectDom
     const result: SerializableProjectDomain[] = rows.map((row) => ({
       id: row.id,
       projectName: row.name,
+      slug: row.slug,
       identifier: row.identifier,
       description: row.description ?? undefined,
       ownerName: row.owner_name ?? undefined,
@@ -124,11 +133,13 @@ export async function getProjects(): Promise<ActionResult<SerializableProjectDom
 export async function checkProjectNameDuplicate(name: string): Promise<ActionResult<boolean>> {
   try {
     const db = getDatabase();
+    // 동일한 정규화 적용
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
 
     const [existing] = await db
       .select({ id: projects.id })
       .from(projects)
-      .where(eq(projects.name, name))
+      .where(eq(projects.name, normalizedName))
       .limit(1);
 
     return { success: true, data: !!existing };
