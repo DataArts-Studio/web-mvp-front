@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
-import { dashboardStatsQueryOptions } from '@/features/dashboard';
+import { dashboardQueryOptions } from '@/features/dashboard';
 import { Container, DSButton, Input, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
@@ -30,14 +30,14 @@ export const TestCasesView = () => {
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const { mutate, isPending } = useCreateCase();
 
-  const { data: dashboardData } = useQuery(
-    dashboardStatsQueryOptions(params.slug as string),
+  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
+    dashboardQueryOptions.stats(params.slug as string),
   );
 
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
-  const { data: testCasesData } = useQuery({
-    ...testCasesQueryOptions(projectId),
+  const { data: testCasesData, isLoading: isLoadingCases } = useQuery({
+    ...testCasesQueryOptions(projectId!),
     enabled: !!projectId,
   });
 
@@ -49,6 +49,30 @@ export const TestCasesView = () => {
         lastExecutedAt: null,
       }))
     : [];
+
+  // 로딩 상태
+  if (isLoadingProject || isLoadingCases) {
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-text-3">로딩 중...</div>
+        </MainContainer>
+      </Container>
+    );
+  }
+
+  // 에러 상태
+  if (!dashboardData?.success) {
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+        </MainContainer>
+      </Container>
+    );
+  }
 
   const handleCreateTestCase = () => {
     const title = inputRef.current?.value.trim();

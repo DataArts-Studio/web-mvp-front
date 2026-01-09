@@ -19,6 +19,7 @@ interface ProjectCreateFormProps {
 export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
   const [copied, setCopied] = useState(false);
+  const [createdSlug, setCreatedSlug] = useState<string>('');
   const {
     register,
     handleSubmit,
@@ -30,7 +31,6 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     resolver: zodResolver(ProjectFormSchema),
   });
   const projectName = getValues('projectName');
-  const projectSlug = projectName?.trim().replace(/\s+/g, '-') ?? '';
   const handleNext = async () => {
     let isStepValid = false;
 
@@ -53,12 +53,13 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       const domain = formToDomain(formData);
       const result = await createProject(domain);
       if (result.success) {
+        setCreatedSlug(result.data.slug);
         setStep(4);
       } else {
         const errorMessages = Object.values(result.errors).flat().join('\n');
         alert(`생성 실패: ${errorMessages}`);
         // Optionally, reset to a previous step on failure
-        // setStep(1); 
+        // setStep(1);
       }
     } catch (error) {
       console.error('네트워크 에러 발생:', error);
@@ -68,7 +69,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
 
   const handleCopyLink = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const link = `${origin}/projects/${projectSlug}`;
+    const link = `${origin}/projects/${createdSlug}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
     });
@@ -200,7 +201,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             </div>
             <div className="flex w-full items-center gap-2">
               <p className="w-full">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/projects/{projectSlug}
+                {typeof window !== 'undefined' ? window.location.origin : ''}/projects/{createdSlug}
               </p>
               <DSButton type="button" variant="ghost" onClick={handleCopyLink}>
                 {copied ? '링크 복사 완료!' : <Copy className="h-4 w-4" />}
@@ -209,7 +210,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             <DSButton
               variant="ghost"
               className="mt-2 w-full"
-              onClick={() => handleRedirectTo(`/projects/${projectSlug}`)}
+              onClick={() => handleRedirectTo(`/projects/${createdSlug}`)}
             >
               시작하기
             </DSButton>

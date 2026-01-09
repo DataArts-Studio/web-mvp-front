@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useCreateRun, type CreateRunInput } from '@/features/runs-create';
-import { dashboardStatsQueryOptions } from '@/features/dashboard';
+import { dashboardQueryOptions } from '@/features/dashboard';
 import { milestonesQueryOptions, getMilestones } from '@/entities/milestone';
 import { testSuitesQueryOptions, getTestSuites } from '@/entities/test-suite';
 import { Container, DSButton, MainContainer } from '@/shared';
@@ -26,18 +26,18 @@ export const RunCreateView = () => {
   const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>([]);
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
-    dashboardStatsQueryOptions(projectSlug)
+    dashboardQueryOptions.stats(projectSlug)
   );
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
   const { data: suitesData, isLoading: isLoadingSuites } = useQuery({
-    ...testSuitesQueryOptions(projectId),
+    ...testSuitesQueryOptions(projectId!),
     enabled: !!projectId,
   });
   const suites = suitesData?.success ? suitesData.data : [];
 
   const { data: milestonesData, isLoading: isLoadingMilestones } = useQuery({
-    ...milestonesQueryOptions(projectId),
+    ...milestonesQueryOptions(projectId!),
     enabled: !!projectId,
   });
   const milestones = milestonesData?.success ? milestonesData.data : [];

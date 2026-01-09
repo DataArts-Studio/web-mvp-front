@@ -10,7 +10,7 @@ import { useParams } from 'next/navigation';
 
 import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
 import type { TestSuite, TestSuiteCard } from '@/entities/test-suite';
-import { dashboardStatsQueryOptions } from '@/features';
+import { dashboardQueryOptions } from '@/features';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
@@ -20,10 +20,13 @@ import { useQuery } from '@tanstack/react-query';
 export const TestSuitesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { data: dashboardData } = useQuery(dashboardStatsQueryOptions(params.slug as string));
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : '';
+  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
-  const { data: suiteData } = useQuery(testSuitesQueryOptions(projectId));
+  const { data: suiteData, isLoading: isLoadingSuites } = useQuery({
+    ...testSuitesQueryOptions(projectId!),
+    enabled: !!projectId,
+  });
   const suites: TestSuiteCard[] = suiteData?.success ? suiteData.data.map((suite: TestSuite): TestSuiteCard => ({
     ...suite,
     tag: { label: '기본', tone: 'neutral' },
@@ -32,6 +35,30 @@ export const TestSuitesView = () => {
     executionHistoryCount: 0,
     recentRuns: []
   })) : [];
+
+  // 로딩 상태
+  if (isLoadingProject || isLoadingSuites) {
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-text-3">로딩 중...</div>
+        </MainContainer>
+      </Container>
+    );
+  }
+
+  // 에러 상태
+  if (!dashboardData?.success) {
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+        </MainContainer>
+      </Container>
+    );
+  }
 
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
@@ -72,7 +99,7 @@ export const TestSuitesView = () => {
             </Link>
           ))}
         </section>
-        {isOpen && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
+        {isOpen && projectId && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
       </MainContainer>
     </Container>
   );
