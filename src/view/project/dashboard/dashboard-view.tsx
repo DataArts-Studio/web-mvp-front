@@ -82,7 +82,7 @@ export const ProjectDashboardView = () => {
                   {/* 공유 아이콘 placeholder */}
                   <div className="text-primary size-4">{/* icon placeholder */}</div>
                 </div>
-                <span className="text-text-2 text-xs">{project.created_at.toISOString()} 생성됨</span>
+                <span className="text-text-2 text-xs">{project.created_at} 생성됨</span>
               </div>
 
               <div className="flex justify-end">
@@ -108,7 +108,7 @@ export const ProjectDashboardView = () => {
                       {item.title}
                     </span>
                     <span className="text-text-2 mx-1">•</span>
-                    <span className="text-text-2 text-base font-semibold">{item.created_at.toISOString()}일전</span>
+                    <span className="text-text-2 text-base font-semibold">{item.created_at}일전</span>
                   </li>
                 ))}
               </ul>

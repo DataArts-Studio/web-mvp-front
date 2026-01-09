@@ -30,6 +30,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     resolver: zodResolver(ProjectFormSchema),
   });
   const projectName = getValues('projectName');
+  const projectSlug = projectName?.trim().replace(/\s+/g, '-') ?? '';
   const handleNext = async () => {
     let isStepValid = false;
 
@@ -67,7 +68,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
 
   const handleCopyLink = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const link = `${origin}/projects/${projectName}`;
+    const link = `${origin}/projects/${projectSlug}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
     });
@@ -199,7 +200,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             </div>
             <div className="flex w-full items-center gap-2">
               <p className="w-full">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/project/{projectName}
+                {typeof window !== 'undefined' ? window.location.origin : ''}/projects/{projectSlug}
               </p>
               <DSButton type="button" variant="ghost" onClick={handleCopyLink}>
                 {copied ? '링크 복사 완료!' : <Copy className="h-4 w-4" />}
@@ -208,7 +209,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             <DSButton
               variant="ghost"
               className="mt-2 w-full"
-              onClick={() => handleRedirectTo(`/projects/${projectName}`)}
+              onClick={() => handleRedirectTo(`/projects/${projectSlug}`)}
             >
               시작하기
             </DSButton>
