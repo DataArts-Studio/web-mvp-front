@@ -14,8 +14,8 @@ export const MilestoneDtoSchema = z.object({
     .min(1, '마일스톤 이름은 최소 1글자 이상이어야 합니다.')
     .max(100, '마일스톤 이름은 100자를 넘을 수 없습니다.'),
   description: z.string().optional(),
-  start_date: z.coerce.date().nullable(),
-  end_date: z.coerce.date().nullable(),
+  start_date: z.string().nullable(),
+  end_date: z.string().nullable(),
   status: z.string(),
   created_at: z.date(),
   updated_at: z.date(),

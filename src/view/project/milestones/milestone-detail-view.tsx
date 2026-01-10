@@ -1,13 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-
-import { Container, DSButton, MainContainer, cn } from '@/shared';
+import { Container , MainContainer} from '@/shared/lib'
+import { DSButton } from '@/shared/ui';
+import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
-import { milestoneByIdQueryOptions } from '@/features/milestones';
+import { milestoneByIdQueryOptions, MilestoneEditForm } from '@/features';
 import {
   ArrowLeft,
   Calendar,
@@ -48,12 +49,16 @@ const RUN_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   COMPLETED: { label: 'Completed', style: 'bg-green-500/20 text-green-300' },
 };
 
-const formatDate = (date: Date | null | undefined) => {
+const formatDateTime = (date: Date | string | null | undefined) => {
   if (!date) return '-';
-  return new Date(date).toLocaleDateString('ko-KR', {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '-';
+  return d.toLocaleString('ko-KR', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
@@ -62,12 +67,14 @@ export const MilestoneDetailView = () => {
   const router = useRouter();
   const milestoneId = params.milestoneId as string;
   const projectSlug = params.slug as string;
+  const [isEditing, setIsEditing] = useState(false);
 
   const { data, isLoading, isError } = useQuery(milestoneByIdQueryOptions(milestoneId));
 
   const handleRunTest = () => {
     router.push(`/projects/${projectSlug}/runs/create`);
   };
+  console.log(data);
 
   if (isLoading) {
     return (
@@ -103,6 +110,10 @@ export const MilestoneDetailView = () => {
     style: 'bg-gray-500/20 text-gray-300',
   };
 
+  const stats = { progressRate: milestone.progressRate, completedCases: milestone.completedCases, totalCases: milestone.totalCases, runCount: milestone.runCount };
+  const testCases = milestone.testCases ?? [];
+  const testRuns = milestone.testRuns ?? [];
+
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       <Aside />
@@ -120,7 +131,7 @@ export const MilestoneDetailView = () => {
           <div className="flex items-start justify-between">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <h1 className="typo-title-heading">{milestone.name}</h1>
+                <h1 className="typo-title-heading">{milestone.title}</h1>
                 <span className={cn('rounded-full px-3 py-1 text-sm font-medium', statusInfo.style)}>
                   {statusInfo.label}
                 </span>
@@ -128,13 +139,13 @@ export const MilestoneDetailView = () => {
               <div className="text-text-3 flex items-center gap-1.5 text-sm">
                 <Calendar className="h-4 w-4" strokeWidth={1.5} />
                 <span>
-                  {formatDate(milestone.startDate)} ~ {formatDate(milestone.endDate)}
+                  {formatDateTime(milestone.startDate)} ~ {formatDateTime(milestone.endDate)}
                 </span>
               </div>
             </div>
 
             <div className="flex gap-2">
-              <DSButton variant="ghost" className="flex items-center gap-2">
+              <DSButton variant="ghost" className="flex items-center gap-2" onClick={() => setIsEditing(true)}>
                 <Edit2 className="h-4 w-4" />
                 수정
               </DSButton>
@@ -159,16 +170,16 @@ export const MilestoneDetailView = () => {
           <div className="bg-bg-2 border-line-2 rounded-4 col-span-2 border p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-text-3 font-semibold">진행률</h3>
-              <span className="text-primary text-2xl font-bold">{milestone.stats.progressRate}%</span>
+              <span className="text-primary text-2xl font-bold">{stats.progressRate}%</span>
             </div>
             <div className="bg-bg-3 h-3 w-full rounded-full">
               <div
                 className="bg-primary h-full rounded-full transition-all duration-300"
-                style={{ width: `${milestone.stats.progressRate}%` }}
+                style={{ width: `${stats.progressRate}%` }}
               />
             </div>
             <p className="text-text-3 mt-2 text-sm">
-              {milestone.stats.completedCases} / {milestone.stats.totalCases} 케이스 완료
+              {stats.completedCases} / {stats.totalCases} 케이스 완료
             </p>
           </div>
 
@@ -178,7 +189,7 @@ export const MilestoneDetailView = () => {
               <ListChecks className="h-4 w-4" strokeWidth={1.5} />
               <span>테스트 케이스</span>
             </div>
-            <span className="text-text-1 text-2xl font-bold">{milestone.stats.totalCases}개</span>
+            <span className="text-text-1 text-2xl font-bold">{stats.totalCases}개</span>
           </div>
 
           <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
@@ -186,7 +197,7 @@ export const MilestoneDetailView = () => {
               <PlayCircle className="h-4 w-4" strokeWidth={1.5} />
               <span>테스트 실행</span>
             </div>
-            <span className="text-text-1 text-2xl font-bold">{milestone.stats.runCount}회</span>
+            <span className="text-text-1 text-2xl font-bold">{stats.runCount}회</span>
           </div>
         </section>
 
@@ -208,7 +219,7 @@ export const MilestoneDetailView = () => {
             </DSButton>
           </div>
 
-          {milestone.testCases.length === 0 ? (
+          {testCases.length === 0 ? (
             <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
               <ListChecks className="text-text-3 h-8 w-8" />
               <div className="text-center">
@@ -222,7 +233,7 @@ export const MilestoneDetailView = () => {
             </div>
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
-              {milestone.testCases.map((testCase) => {
+              {testCases.map((testCase) => {
                 const statusConfig = TEST_STATUS_CONFIG[testCase.lastStatus || 'untested'] || TEST_STATUS_CONFIG.untested;
                 return (
                   <div
@@ -251,7 +262,7 @@ export const MilestoneDetailView = () => {
         {/* 테스트 실행 이력 */}
         <section className="col-span-6 flex flex-col gap-4">
           <h2 className="typo-h2-heading">테스트 실행 이력</h2>
-          {milestone.testRuns.length === 0 ? (
+          {testRuns.length === 0 ? (
             <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
               <PlayCircle className="text-text-3 h-8 w-8" />
               <div className="text-center">
@@ -261,7 +272,7 @@ export const MilestoneDetailView = () => {
             </div>
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
-              {milestone.testRuns.map((run) => {
+              {testRuns.map((run) => {
                 const runStatusConfig = RUN_STATUS_CONFIG[run.status] || RUN_STATUS_CONFIG.NOT_STARTED;
                 return (
                   <Link
@@ -279,7 +290,7 @@ export const MilestoneDetailView = () => {
                       >
                         {runStatusConfig.label}
                       </span>
-                      <span className="text-text-3 text-sm">{formatDate(run.updatedAt)}</span>
+                      <span className="text-text-3 text-sm">{formatDateTime(run.updatedAt)}</span>
                     </div>
                   </Link>
                 );
@@ -287,6 +298,7 @@ export const MilestoneDetailView = () => {
             </div>
           )}
         </section>
+        {isEditing && <MilestoneEditForm milestone={milestone} onClose={() => setIsEditing(false)} />}
       </MainContainer>
     </Container>
   );

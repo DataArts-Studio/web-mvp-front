@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 
 
 
@@ -10,7 +10,7 @@ import { useParams } from 'next/navigation';
 
 import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
 import type { TestSuite, TestSuiteCard } from '@/entities/test-suite';
-import { dashboardQueryOptions } from '@/features';
+import { dashboardQueryOptions, SuiteEditForm } from '@/features';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
@@ -20,6 +20,8 @@ import { useQuery } from '@tanstack/react-query';
 export const TestSuitesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [editingSuite, setEditingSuite] = useState<TestSuiteCard | null>(null);
+
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
@@ -35,6 +37,14 @@ export const TestSuitesView = () => {
     executionHistoryCount: 0,
     recentRuns: []
   })) : [];
+
+  const handleEdit = (suite: TestSuiteCard) => {
+    setEditingSuite(suite);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingSuite(null);
+  };
 
   // 로딩 상태
   if (isLoadingProject || isLoadingSuites) {
@@ -95,11 +105,12 @@ export const TestSuitesView = () => {
               key={suite.id}
               href={`/projects/${params.slug}/suites/${suite.id}`}
             >
-              <SuiteCard suite={suite} />
+              <SuiteCard suite={suite} onEdit={() => handleEdit(suite)} />
             </Link>
           ))}
         </section>
         {isOpen && projectId && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
+        {editingSuite && <SuiteEditForm suite={editingSuite} onClose={handleCloseEdit} />}
       </MainContainer>
     </Container>
   );

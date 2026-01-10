@@ -2,7 +2,10 @@ import { SERVER_ENV } from '@/shared/constants/infra/env.server';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres, { Sql } from 'postgres';
-import * as schema from './schema';
+import * as tables from './schema';
+import * as relations from './schema/relations';
+
+const schema = { ...tables, ...relations };
 
 
 
