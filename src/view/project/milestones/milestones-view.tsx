@@ -1,11 +1,11 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import { MilestoneCard, MilestoneWithStats } from '@/entities/milestone';
-import { MilestoneCreateForm, dashboardQueryOptions, milestonesQueryOptions } from '@/features';
+import { MilestoneCard, MilestoneWithStats, Milestone } from '@/entities/milestone';
+import { MilestoneCreateForm, MilestoneEditForm, dashboardQueryOptions, milestonesQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
@@ -15,6 +15,8 @@ import { FolderOpen } from 'lucide-react';
 export const MilestonesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
+
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
   const { data: milestonesResult, isLoading: isLoadingMilestones } = useQuery({
@@ -22,6 +24,14 @@ export const MilestonesView = () => {
     enabled: !!projectId,
   });
   const milestonesData = milestonesResult?.success ? milestonesResult.data : [];
+
+  const handleEdit = (milestone: Milestone) => {
+    setEditingMilestone(milestone);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingMilestone(null);
+  };
 
   // 로딩 상태
   if (isLoadingProject || isLoadingMilestones) {
@@ -89,7 +99,7 @@ export const MilestonesView = () => {
               </div>
             </div>
           ) : (
-            milestonesData.map((milestone) => {
+            milestonesData.map((milestone: Milestone) => {
               const milestoneWithStats: MilestoneWithStats = {
                 ...milestone,
                 totalCases: 0,
@@ -102,13 +112,14 @@ export const MilestonesView = () => {
                   key={milestone.id}
                   href={`/projects/${params.slug}/milestones/${milestone.id}`}
                 >
-                  <MilestoneCard milestone={milestoneWithStats} />
+                  <MilestoneCard milestone={milestoneWithStats} onEdit={() => handleEdit(milestone)} />
                 </Link>
               );
             })
           )}
         </section>
         {isOpen && projectId && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
+        {editingMilestone && <MilestoneEditForm milestone={editingMilestone} onClose={handleCloseEdit} />}
       </MainContainer>
     </Container>
   );

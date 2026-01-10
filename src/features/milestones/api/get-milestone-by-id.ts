@@ -6,7 +6,7 @@ import { eq, and, sql } from 'drizzle-orm';
 
 export interface MilestoneDetail {
   id: string;
-  name: string;
+  title: string;
   description: string | null;
   startDate: Date | null;
   endDate: Date | null;
@@ -94,7 +94,7 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
 
     const result: MilestoneDetail = {
       id: milestone.id,
-      name: milestone.name,
+      title: milestone.name,
       description: milestone.description,
       startDate: milestone.start_date,
       endDate: milestone.end_date,
