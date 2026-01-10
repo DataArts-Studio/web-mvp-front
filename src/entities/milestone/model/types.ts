@@ -27,4 +27,7 @@ export type MilestoneStats = {
   runCount: number;
 };
 
-export type MilestoneWithStats = Milestone & MilestoneStats;
+export type MilestoneWithStats = Milestone & MilestoneStats & {
+  testCases?: Array<{ id: string; caseKey: string; title: string; lastStatus: string | null }>;
+  testRuns?: Array<any>;
+};

@@ -7,4 +7,5 @@ export * from './test-case-runs';
 export * from './test-run-suites';
 export * from './test-run-milestones';
 export * from './suite-test-cases';
+export * from './milestone-test-cases';
 export * from './relations';
