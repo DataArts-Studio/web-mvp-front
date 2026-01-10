@@ -4,8 +4,12 @@ import { MilestoneWithStats } from '@/entities/milestone';
 import { Calendar, CheckCircle, ListChecks, PlayCircle } from 'lucide-react';
 import { cn } from '@/shared';
 
+import { Edit } from 'lucide-react';
+import { DSButton } from '@/shared';
+
 interface MilestoneCardProps {
   milestone: MilestoneWithStats;
+  onEdit: () => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
@@ -23,25 +27,35 @@ const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   },
 };
 
-const formatDate = (date: Date | null) => {
+const formatDate = (date: Date | string | null) => {
   if (!date) return '-';
-  return date.toISOString().split('T')[0];
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toISOString().split('T')[0];
 };
 
-export const MilestoneCard = ({ milestone }: MilestoneCardProps) => {
+export const MilestoneCard = ({ milestone, onEdit }: MilestoneCardProps) => {
   const statusInfo = STATUS_CONFIG[milestone.status] || {
     label: milestone.status,
     style: 'bg-gray-500/20 text-gray-300',
   };
 
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onEdit();
+  };
+
   return (
-    <div className="cursor-pointer bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
+    <div className="bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
       <div className="flex w-full flex-col gap-2 md:w-[40%]">
         <div className="flex items-center gap-3">
           <h2 className="typo-h2-heading">{milestone.title}</h2>
           <span className={cn('typo-label-heading rounded-full px-3 py-1', statusInfo.style)}>
             {statusInfo.label}
           </span>
+          <DSButton variant="ghost" size="icon" onClick={handleEditClick}>
+            <Edit className="h-4 w-4" />
+          </DSButton>
         </div>
         <p className="typo-body2-normal text-text-2">
           {milestone.description || '설명이 없습니다.'}

@@ -1,20 +1,16 @@
 'use server';
 
-import { CreateMilestone, Milestone, MilestoneDTO, UpdateMilestone, toCreateMilestoneDTO, toMilestone } from '@/entities/milestone';
+import {
+  CreateMilestone,
+  Milestone,
+  MilestoneDTO,
+  toCreateMilestoneDTO,
+  toMilestone,
+} from '@/entities/milestone';
 import { getDatabase, milestones } from '@/shared/lib/db';
-import type { ActionResult } from '@/shared/types';
+import { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-
-
-
-
-
-
-
-
-
-
 
 type GetMilestonesParams = {
   projectId: string;
@@ -28,29 +24,39 @@ export const getMilestones = async ({
 }: GetMilestonesParams): Promise<ActionResult<Milestone[]>> => {
   try {
     const db = getDatabase();
+
     const rows = await db
+
       .select()
+
       .from(milestones)
+
       .where(eq(milestones.project_id, projectId));
 
     const result: Milestone[] = rows.map((row) => toMilestone(row as MilestoneDTO));
 
     return {
       success: true,
+
       data: result,
     };
   } catch (error) {
     console.error('Error fetching milestones:', error);
+
     return {
       success: false,
+
       errors: { _milestone: ['마일스톤 목록을 불러오는 도중 오류가 발생했습니다.'] },
     };
   }
 };
 
 /**
+
  * ID로 특정 마일스톤을 조회합니다.
+
  */
+
 export const getMilestoneById = async (id: string): Promise<ActionResult<Milestone>> => {
   try {
     const db = getDatabase();
@@ -121,22 +127,45 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
  * 마일스톤 정보를 수정합니다.
  */
 export const updateMilestone = async (
-  id: string,
-  input: Partial<UpdateMilestone>
+  input: { id: string } & Partial<CreateMilestone>
 ): Promise<ActionResult<Milestone>> => {
   try {
     const db = getDatabase();
+    const { id, ...updateFields } = input;
+
+    console.log('=== updateMilestone input ===');
+    console.log('id:', id);
+    console.log('updateFields:', JSON.stringify(updateFields, null, 2));
+
     // input 데이터를 DTO 형태로 변환하거나 직접 set 절에 구성
+    const setData: Record<string, unknown> = {
+      updated_at: new Date(),
+    };
+
+    if (updateFields.title !== undefined) {
+      setData.name = updateFields.title;
+    }
+    if (updateFields.description !== undefined) {
+      setData.description = updateFields.description;
+    }
+    if (updateFields.startDate !== undefined) {
+      // Date 객체를 ISO 문자열로 변환
+      setData.start_date = updateFields.startDate instanceof Date
+        ? updateFields.startDate.toISOString()
+        : updateFields.startDate;
+    }
+    if (updateFields.endDate !== undefined) {
+      // Date 객체를 ISO 문자열로 변환
+      setData.end_date = updateFields.endDate instanceof Date
+        ? updateFields.endDate.toISOString()
+        : updateFields.endDate;
+    }
+
+    console.log('setData:', JSON.stringify(setData, null, 2));
+
     const [updated] = await db
       .update(milestones)
-      .set({
-        ...(input.title && { title: input.title }),
-        description: input.description,
-        start_date: input.startDate,
-        end_date: input.endDate,
-        status: input.status,
-        updated_at: new Date(),
-      })
+      .set(setData)
       .where(eq(milestones.id, id))
       .returning();
 
