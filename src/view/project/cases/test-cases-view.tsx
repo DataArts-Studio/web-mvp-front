@@ -1,9 +1,9 @@
 'use client';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
+import { TestCase, TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
@@ -29,6 +29,7 @@ export const TestCasesView = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const { mutate, isPending } = useCreateCase();
+  const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(params.slug as string),
@@ -150,7 +151,10 @@ export const TestCasesView = () => {
               </div>
             </TestTable.Row>
             {testCases.map((item) => (
-              <TestTable.Row key={item.caseKey} onClick={() => onOpen('detail')}>
+              <TestTable.Row key={item.caseKey} onClick={() => {
+                setSelectedTestCase(item);
+                onOpen('detail');
+              }}>
                 <TestCaseCard testCase={item} />
               </TestTable.Row>
             ))}
@@ -159,7 +163,15 @@ export const TestCasesView = () => {
         </section>
       </MainContainer>
       {isActiveType('create') && <TestCaseDetailForm projectId={projectId} onClose={onClose} />}
-      {isActiveType('detail') && <TestCaseSideView onClose={onClose} />}
+      {isActiveType('detail') && selectedTestCase && (
+        <TestCaseSideView
+          testCase={selectedTestCase}
+          onClose={() => {
+            setSelectedTestCase(null);
+            onClose();
+          }}
+        />
+      )}
     </Container>
   );
 };

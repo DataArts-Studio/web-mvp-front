@@ -97,3 +97,74 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     };
   }
 };
+
+type UpdateTestCaseParams = {
+  id: string;
+  title?: string;
+  testType?: string;
+  tags?: string[];
+  preCondition?: string;
+  testSteps?: string;
+  expectedResult?: string;
+  sortOrder?: number;
+};
+
+export const updateTestCase = async (params: UpdateTestCaseParams): Promise<ActionResult<TestCase>> => {
+  try {
+    const db = getDatabase();
+    const { id, ...updateFields } = params;
+
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date(),
+    };
+
+    if (updateFields.title !== undefined) {
+      updateData.name = updateFields.title;
+    }
+    if (updateFields.testType !== undefined) {
+      updateData.test_type = updateFields.testType;
+    }
+    if (updateFields.tags !== undefined) {
+      updateData.tags = updateFields.tags;
+    }
+    if (updateFields.preCondition !== undefined) {
+      updateData.pre_condition = updateFields.preCondition;
+    }
+    if (updateFields.testSteps !== undefined) {
+      updateData.steps = updateFields.testSteps;
+    }
+    if (updateFields.expectedResult !== undefined) {
+      updateData.expected_result = updateFields.expectedResult;
+    }
+    if (updateFields.sortOrder !== undefined) {
+      updateData.sort_order = updateFields.sortOrder;
+    }
+
+    const [updated] = await db
+      .update(testCases)
+      .set(updateData)
+      .where(eq(testCases.id, id))
+      .returning();
+
+    if (!updated) {
+      return {
+        success: false,
+        errors: { _testCase: ['테스트케이스를 찾을 수 없습니다.'] },
+      };
+    }
+
+    const result: TestCase = toTestCase(updated as TestCaseDTO);
+
+    return {
+      success: true,
+      data: result,
+      message: '테스트케이스를 수정하였습니다.',
+    };
+  } catch (error) {
+    console.error('Error updating test case:', error);
+    return {
+      success: false,
+      errors: { _testCase: ['테스트케이스를 수정하는 도중 오류가 발생했습니다.'] },
+    };
+  }
+};
