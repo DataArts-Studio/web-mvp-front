@@ -7,8 +7,11 @@ export const useUpdateMilestone = () => {
 
   return useMutation({
     mutationFn: (input: UpdateMilestone) => updateMilestone(input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['milestones'] });
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['milestones'] }),
+        queryClient.invalidateQueries({ queryKey: ['milestone', variables.id] }),
+      ]);
     },
   });
 };

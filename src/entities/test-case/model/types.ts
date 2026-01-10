@@ -12,7 +12,6 @@ export type CreateTestCase = z.infer<typeof CreateTestCaseSchema>;
 export type TestCase = {
   id: string;
   projectId: string;
-  testSuiteId: string;
   caseKey: string;
   title: string;
   testType: string;

@@ -24,7 +24,6 @@ export const getTestCases = async ({
     const result: TestCase[] = rows.map((row) => ({
       id: row.id,
       projectId: row.project_id ?? '',
-      testSuiteId: row.test_suite_id ?? '',
       caseKey: row.case_key ?? '',
       title: row.name,
       testType: row.test_type ?? '',

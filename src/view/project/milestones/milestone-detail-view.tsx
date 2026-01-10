@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-
-import { Container, DSButton, MainContainer, cn } from '@/shared';
+import { Container , MainContainer} from '@/shared/lib'
+import { DSButton } from '@/shared/ui';
+import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
 import { milestoneByIdQueryOptions, MilestoneEditForm } from '@/features';
-import { Milestone, MilestoneStats } from '@/entities/milestone';
 import {
   ArrowLeft,
   Calendar,
@@ -49,12 +49,16 @@ const RUN_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   COMPLETED: { label: 'Completed', style: 'bg-green-500/20 text-green-300' },
 };
 
-const formatDate = (date: Date | null | undefined) => {
+const formatDateTime = (date: Date | string | null | undefined) => {
   if (!date) return '-';
-  return new Date(date).toLocaleDateString('ko-KR', {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '-';
+  return d.toLocaleString('ko-KR', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
@@ -70,6 +74,7 @@ export const MilestoneDetailView = () => {
   const handleRunTest = () => {
     router.push(`/projects/${projectSlug}/runs/create`);
   };
+  console.log(data);
 
   if (isLoading) {
     return (
@@ -99,13 +104,13 @@ export const MilestoneDetailView = () => {
     );
   }
 
-  const milestone = data.data as unknown as Milestone & { stats?: MilestoneStats, testCases?: any[], testRuns?: any[] };
+  const milestone = data.data;
   const statusInfo = STATUS_CONFIG[milestone.status] || {
     label: milestone.status,
     style: 'bg-gray-500/20 text-gray-300',
   };
-  
-  const stats = milestone.stats ?? { progressRate: 0, completedCases: 0, totalCases: 0, runCount: 0 };
+
+  const stats = { progressRate: milestone.progressRate, completedCases: milestone.completedCases, totalCases: milestone.totalCases, runCount: milestone.runCount };
   const testCases = milestone.testCases ?? [];
   const testRuns = milestone.testRuns ?? [];
 
@@ -134,7 +139,7 @@ export const MilestoneDetailView = () => {
               <div className="text-text-3 flex items-center gap-1.5 text-sm">
                 <Calendar className="h-4 w-4" strokeWidth={1.5} />
                 <span>
-                  {formatDate(milestone.startDate)} ~ {formatDate(milestone.endDate)}
+                  {formatDateTime(milestone.startDate)} ~ {formatDateTime(milestone.endDate)}
                 </span>
               </div>
             </div>
@@ -285,7 +290,7 @@ export const MilestoneDetailView = () => {
                       >
                         {runStatusConfig.label}
                       </span>
-                      <span className="text-text-3 text-sm">{formatDate(run.updatedAt)}</span>
+                      <span className="text-text-3 text-sm">{formatDateTime(run.updatedAt)}</span>
                     </div>
                   </Link>
                 );

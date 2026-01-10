@@ -13,6 +13,14 @@ interface MilestoneEditFormProps {
   onClose?: () => void;
 }
 
+const toDateTimeInputValue = (date: Date | string | null | undefined): string => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  // datetime-local 형식: YYYY-MM-DDTHH:mm
+  return d.toISOString().slice(0, 16);
+};
+
 export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps) => {
   const { mutate, isPending } = useUpdateMilestone();
   const {
@@ -24,9 +32,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
     defaultValues: {
       id: milestone.id,
       title: milestone.title,
-      description: milestone.description,
-      startDate: milestone.startDate,
-      endDate: milestone.endDate,
+      description: milestone.description ?? '',
+      startDate: toDateTimeInputValue(milestone.startDate),
+      endDate: toDateTimeInputValue(milestone.endDate),
     },
   });
 
@@ -83,11 +91,11 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
             <div className="grid grid-cols-2 gap-4">
               <FormField.Root className="flex flex-col gap-2">
-                <FormField.Label className="text-text-1 font-medium">시작일</FormField.Label>
+                <FormField.Label className="text-text-1 font-medium">시작일시</FormField.Label>
                 <FormField.Control
-                  type="date"
+                  type="datetime-local"
                   disabled={isPending}
-                  {...register('startDate', { valueAsDate: true })}
+                  {...register('startDate')}
                 />
                 {errors.startDate && (
                   <span className="text-system-red mt-1 text-sm">{errors.startDate.message}</span>
@@ -95,11 +103,11 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
               </FormField.Root>
 
               <FormField.Root className="flex flex-col gap-2">
-                <FormField.Label className="text-text-1 font-medium">종료일</FormField.Label>
+                <FormField.Label className="text-text-1 font-medium">종료일시</FormField.Label>
                 <FormField.Control
-                  type="date"
+                  type="datetime-local"
                   disabled={isPending}
-                  {...register('endDate', { valueAsDate: true })}
+                  {...register('endDate')}
                 />
                 {errors.endDate && (
                   <span className="text-system-red mt-1 text-sm">{errors.endDate.message}</span>
