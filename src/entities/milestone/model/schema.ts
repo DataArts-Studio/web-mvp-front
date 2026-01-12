@@ -2,9 +2,6 @@ import { z } from 'zod';
 import { LifecycleStatusEnum } from '../../project/model/schema';
 export const MilestoneProgressStatusEnum = z.enum(['planned', 'inProgress', 'done']);
 
-
-
-
 export const MilestoneDtoSchema = z.object({
   id: z.uuidv7({ error: 'uuidv7 test error' }),
   project_id: z.uuidv7(),

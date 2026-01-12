@@ -1,10 +1,20 @@
 'use server';
 
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
-import type { ActionResult } from '@/shared/types';
 import { getDatabase, testCases } from '@/shared/lib/db';
+import type { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+
+
+
+
+
+
+
+
+
+
 
 type getTestCasesParams = {
   project_id: string;
@@ -119,7 +129,9 @@ type UpdateTestCaseParams = {
   sortOrder?: number;
 };
 
-export const updateTestCase = async (params: UpdateTestCaseParams): Promise<ActionResult<TestCase>> => {
+export const updateTestCase = async (
+  params: UpdateTestCaseParams
+): Promise<ActionResult<TestCase>> => {
   try {
     const db = getDatabase();
     const { id, ...updateFields } = params;
@@ -175,6 +187,40 @@ export const updateTestCase = async (params: UpdateTestCaseParams): Promise<Acti
     return {
       success: false,
       errors: { _testCase: ['테스트케이스를 수정하는 도중 오류가 발생했습니다.'] },
+    };
+  }
+};
+
+export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: string }>> => {
+  try {
+    const db = getDatabase();
+    const [archived] = await db
+      .update(testCases)
+      .set({
+        archived_at: new Date(),
+        lifecycle_status: 'ARCHIVED',
+        updated_at: new Date(),
+      })
+      .where(eq(testCases.id, id))
+      .returning();
+
+    if (!archived) {
+      return {
+        success: false,
+        errors: { _testCase: ['테스트케이스를 찾을 수 없습니다.'] },
+      }
+    }
+
+    return {
+      success: true,
+      data: { id: archived.id },
+      message: '테스트케이스가 성공적으로 삭제되었습니다.',
+    }
+  } catch (error) {
+    console.error('Error archiving test case:', error);
+    return {
+      success: false,
+      errors: { _milestone: ['테스트 케이스를 삭제하는 도중 오류가 발생했습니다.'] },
     };
   }
 };
