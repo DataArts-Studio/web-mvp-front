@@ -1,13 +1,5 @@
 import { z } from 'zod';
-
-import { CreateMilestoneDtoSchema, CreateMilestoneSchema, MilestoneDtoSchema, UpdateMilestoneSchema } from './schema';
-
-export type MilestoneDTO = z.infer<typeof MilestoneDtoSchema>;
-export type CreateMilestoneDTO = z.infer<typeof CreateMilestoneDtoSchema>;
-export type CreateMilestone = z.infer<typeof CreateMilestoneSchema>;
-export type UpdateMilestone = z.infer<typeof UpdateMilestoneSchema>;
-
-export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+import type { LifecycleStatus } from '../../test-case/model/types';
 export type MilestoneProgressStatus = 'planned' | 'inProgress' | 'done';
 
 export type Milestone = {

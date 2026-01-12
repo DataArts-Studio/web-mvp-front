@@ -27,7 +27,7 @@ describe('deleteTestSuite', () => {
     it('테스트 스위트를 soft delete 한다', async () => {
       const mockRow = createMockTestSuiteRow({
         id: 'suite-123',
-        deleted_at: new Date(),
+        archived_at: new Date(),
       });
       setMockUpdateReturn(mockRow);
 

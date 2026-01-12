@@ -23,7 +23,7 @@ describe('deleteMilestone', () => {
   });
 
   it('마일스톤을 삭제(Soft Delete)하면 삭제된 ID를 반환한다', async () => {
-    const mockRow = createMockMilestoneRow({ deleted_at: new Date() });
+    const mockRow = createMockMilestoneRow({ archived_at: new Date() });
     setMockUpdateReturn(mockRow);
 
     const result = await deleteMilestone(mockRow.id);

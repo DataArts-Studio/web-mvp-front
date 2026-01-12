@@ -1,11 +1,5 @@
 import { z } from 'zod';
-
-import { CreateTestSuiteDtoSchema, CreateTestSuiteSchema, TestSuiteDtoSchema } from './schema';
-export type TestSuiteDTO = z.infer<typeof TestSuiteDtoSchema>;
-export type CreateTestSuiteDTO = z.infer<typeof CreateTestSuiteDtoSchema>;
-export type CreateTestSuite = z.infer<typeof CreateTestSuiteSchema>;
-
-export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+import type { LifecycleStatus } from '../../test-case/model/types';
 
 export type TestSuite = {
   id: string;

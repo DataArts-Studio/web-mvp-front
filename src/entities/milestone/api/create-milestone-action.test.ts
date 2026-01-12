@@ -47,10 +47,11 @@ describe('createMilestone', () => {
           description: mockRow.description,
           startDate: mockRow.start_date,
           endDate: mockRow.end_date,
-          status: mockRow.status,
+          status: mockRow.progress_status,
           createdAt: mockRow.created_at,
           updatedAt: mockRow.updated_at,
-          deletedAt: mockRow.deleted_at,
+          archivedAt: mockRow.archived_at,
+          lifecycleStatus: mockRow.lifecycle_status,
         });
         expect(result.message).toBe('마일스톤을 생성하였습니다.');
       }

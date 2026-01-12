@@ -1,13 +1,11 @@
 import { z } from 'zod';
 import {
   CreateTestCaseDtoSchema,
-  CreateTestCaseSchema,
   TestCaseDtoSchema,
 } from './schema';
 
 export type TestCaseDTO = z.infer<typeof TestCaseDtoSchema>;
 export type CreateTestCaseDTO = z.infer<typeof CreateTestCaseDtoSchema>;
-export type CreateTestCase = z.infer<typeof CreateTestCaseSchema>;
 
 export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
 export type TestCaseResultStatus = 'untested' | 'pass' | 'fail' | 'blocked';
@@ -30,6 +28,8 @@ export type TestCase = {
   archivedAt: Date | null;
   lifecycleStatus: LifecycleStatus;
 };
+
+export type CreateTestCase = Omit<TestCase, 'id' | 'resultStatus' | 'createdAt' | 'updatedAt' | 'archivedAt' | 'lifecycleStatus'>;
 
 export type TestCaseExecutionStatus = 'untested' | 'passed' | 'failed' | 'blocked';
 
