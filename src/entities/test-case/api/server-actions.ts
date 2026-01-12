@@ -32,9 +32,11 @@ export const getTestCases = async ({
       testSteps: row.steps ?? '',
       expectedResult: row.expected_result ?? '',
       sortOrder: row.sort_order ?? 0,
+      resultStatus: row.result_status,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      deletedAt: row.deleted_at ?? null,
+      archivedAt: row.archived_at ?? null,
+      lifecycleStatus: row.lifecycle_status,
     }));
 
     return {
@@ -72,7 +74,15 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
 
     const [inserted] = await db
       .insert(testCases)
-      .values({ id, ...dto, created_at: new Date(), updated_at: new Date(), deleted_at: null })
+      .values({
+        id,
+        ...dto,
+        result_status: 'untested',
+        created_at: new Date(),
+        updated_at: new Date(),
+        archived_at: null,
+        lifecycle_status: 'ACTIVE',
+      })
       .returning();
 
     if (!inserted) {

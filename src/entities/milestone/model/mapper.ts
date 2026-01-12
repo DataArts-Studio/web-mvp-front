@@ -15,10 +15,11 @@ export const toMilestone = (dto: MilestoneDTO): Milestone => ({
   description: dto.description,
   startDate: dto.start_date ? new Date(dto.start_date) : null,
   endDate: dto.end_date ? new Date(dto.end_date) : null,
-  status: dto.status,
+  progressStatus: dto.progress_status,
   createdAt: dto.created_at,
   updatedAt: dto.updated_at,
-  deletedAt: dto.deleted_at,
+  archivedAt: dto.archived_at,
+  lifecycleStatus: dto.lifecycle_status,
 });
 
 export const toCreateMilestoneDTO = (m: CreateMilestone): CreateMilestoneDTO => ({
@@ -27,5 +28,5 @@ export const toCreateMilestoneDTO = (m: CreateMilestone): CreateMilestoneDTO => 
   description: m.description,
   start_date: toDateString(m.startDate),
   end_date: toDateString(m.endDate),
-  status: 'planned',
+  progress_status: 'planned',
 });

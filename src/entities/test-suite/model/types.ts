@@ -5,6 +5,8 @@ export type TestSuiteDTO = z.infer<typeof TestSuiteDtoSchema>;
 export type CreateTestSuiteDTO = z.infer<typeof CreateTestSuiteDtoSchema>;
 export type CreateTestSuite = z.infer<typeof CreateTestSuiteSchema>;
 
+export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+
 export type TestSuite = {
   id: string;
   projectId: string;
@@ -13,7 +15,8 @@ export type TestSuite = {
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
+  archivedAt: Date | null;
+  lifecycleStatus: LifecycleStatus;
 };
 
 export type SuiteTagTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';

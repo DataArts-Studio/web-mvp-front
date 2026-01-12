@@ -98,7 +98,8 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
         ...dto,
         created_at: new Date(),
         updated_at: new Date(),
-        deleted_at: null,
+        archived_at: null,
+        lifecycle_status: 'ACTIVE',
       })
       .returning();
 
@@ -191,34 +192,43 @@ export const updateMilestone = async (
 };
 
 /**
- * 마일스톤을 삭제합니다. (Soft Delete)
+ * 마일스톤을 아카이브합니다. (Soft Delete)
  */
-export const deleteMilestone = async (id: string): Promise<ActionResult<{ id: string }>> => {
+export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: string }>> => {
   try {
     const db = getDatabase();
-    const [deleted] = await db
+    const [archived] = await db
       .update(milestones)
-      .set({ deleted_at: new Date() })
+      .set({
+        archived_at: new Date(),
+        lifecycle_status: 'ARCHIVED',
+        updated_at: new Date(),
+      })
       .where(eq(milestones.id, id))
       .returning();
 
-    if (!deleted) {
+    if (!archived) {
       return {
         success: false,
-        errors: { _milestone: ['마일스톤 삭제에 실패했습니다.'] },
+        errors: { _milestone: ['마일스톤 아카이브에 실패했습니다.'] },
       };
     }
 
     return {
       success: true,
-      data: { id: deleted.id },
-      message: '마일스톤이 삭제되었습니다.',
+      data: { id: archived.id },
+      message: '마일스톤이 아카이브되었습니다.',
     };
   } catch (error) {
-    console.error('Error deleting milestone:', error);
+    console.error('Error archiving milestone:', error);
     return {
       success: false,
-      errors: { _milestone: ['마일스톤을 삭제하는 도중 오류가 발생했습니다.'] },
+      errors: { _milestone: ['마일스톤을 아카이브하는 도중 오류가 발생했습니다.'] },
     };
   }
 };
+
+/**
+ * @deprecated Use archiveMilestone instead
+ */
+export const deleteMilestone = archiveMilestone;

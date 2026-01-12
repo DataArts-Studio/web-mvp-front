@@ -28,7 +28,8 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
         sort_order: dto.sort_order,
         created_at: new Date(),
         updated_at: new Date(),
-        deleted_at: null,
+        archived_at: null,
+        lifecycle_status: 'ACTIVE',
       })
       .returning();
 
@@ -47,7 +48,8 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
       sortOrder: inserted.sort_order ?? 0,
       createdAt: inserted.created_at,
       updatedAt: inserted.updated_at,
-      deletedAt: inserted.deleted_at ?? null,
+      archivedAt: inserted.archived_at ?? null,
+      lifecycleStatus: inserted.lifecycle_status,
     };
 
     return {
@@ -92,7 +94,8 @@ export const getTestSuites = async ({
       sortOrder: row.sort_order ?? 0,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      deletedAt: row.deleted_at ?? null,
+      archivedAt: row.archived_at ?? null,
+      lifecycleStatus: row.lifecycle_status,
     }));
 
     return {
@@ -128,7 +131,8 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
       sortOrder: row.sort_order ?? 0,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      deletedAt: row.deleted_at ?? null,
+      archivedAt: row.archived_at ?? null,
+      lifecycleStatus: row.lifecycle_status,
     };
 
     return {
@@ -191,7 +195,8 @@ export const updateTestSuite = async (params: UpdateTestSuiteParams): Promise<Ac
       sortOrder: updated.sort_order ?? 0,
       createdAt: updated.created_at,
       updatedAt: updated.updated_at,
-      deletedAt: updated.deleted_at ?? null,
+      archivedAt: updated.archived_at ?? null,
+      lifecycleStatus: updated.lifecycle_status,
     };
 
     return {
@@ -208,21 +213,24 @@ export const updateTestSuite = async (params: UpdateTestSuiteParams): Promise<Ac
   }
 };
 
-export const deleteTestSuite = async (id: string): Promise<ActionResult<{ id: string }>> => {
+/**
+ * 테스트 스위트를 아카이브합니다. (Soft Delete)
+ */
+export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: string }>> => {
   try {
     const db = getDatabase();
 
-    // Soft delete: deleted_at 필드 업데이트
-    const [deleted] = await db
+    const [archived] = await db
       .update(testSuites)
       .set({
-        deleted_at: new Date(),
+        archived_at: new Date(),
+        lifecycle_status: 'ARCHIVED',
         updated_at: new Date(),
       })
       .where(eq(testSuites.id, id))
       .returning();
 
-    if (!deleted) {
+    if (!archived) {
       return {
         success: false,
         errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] },
@@ -231,14 +239,19 @@ export const deleteTestSuite = async (id: string): Promise<ActionResult<{ id: st
 
     return {
       success: true,
-      data: { id: deleted.id },
-      message: '테스트 스위트를 삭제하였습니다.',
+      data: { id: archived.id },
+      message: '테스트 스위트를 아카이브하였습니다.',
     };
   } catch (error) {
-    console.error('Error deleting test suite:', error);
+    console.error('Error archiving test suite:', error);
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 삭제하는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: ['테스트 스위트를 아카이브하는 도중 오류가 발생했습니다.'] },
     };
   }
 };
+
+/**
+ * @deprecated Use archiveTestSuite instead
+ */
+export const deleteTestSuite = archiveTestSuite;

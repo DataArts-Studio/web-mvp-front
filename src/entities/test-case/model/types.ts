@@ -9,6 +9,9 @@ export type TestCaseDTO = z.infer<typeof TestCaseDtoSchema>;
 export type CreateTestCaseDTO = z.infer<typeof CreateTestCaseDtoSchema>;
 export type CreateTestCase = z.infer<typeof CreateTestCaseSchema>;
 
+export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+export type TestCaseResultStatus = 'untested' | 'pass' | 'fail' | 'blocked';
+
 export type TestCase = {
   id: string;
   projectId: string;
@@ -21,9 +24,11 @@ export type TestCase = {
   testSteps: string;
   expectedResult: string;
   sortOrder: number;
+  resultStatus: TestCaseResultStatus;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
+  archivedAt: Date | null;
+  lifecycleStatus: LifecycleStatus;
 };
 
 export type TestCaseExecutionStatus = 'untested' | 'passed' | 'failed' | 'blocked';

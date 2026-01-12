@@ -7,7 +7,7 @@ import { toProjectDto } from '@/entities';
 import { getDatabase, projects } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import bcrypt from 'bcryptjs';
-import { eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 // ============================================================================
@@ -19,11 +19,11 @@ export async function hashIdentifier(identifier: string): Promise<string> {
 }
 
 // Server Action에서 클라이언트로 전달할 때 Date 객체는 직렬화 불가능하므로 string으로 변환
-type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' | 'archivedAt'> & {
   slug: string;
   createdAt: string;
   updatedAt: string;
-  deletedAt: string | null;
+  archivedAt: string | null;
 };
 
 /**
@@ -73,7 +73,8 @@ export async function createProject(
       ownerName: inserted.owner_name ?? undefined,
       createdAt: inserted.created_at.toISOString(),
       updatedAt: inserted.updated_at.toISOString(),
-      deletedAt: inserted.deleted_at?.toISOString() ?? null,
+      archivedAt: inserted.archived_at?.toISOString() ?? null,
+      lifecycleStatus: inserted.lifecycle_status,
     };
 
     revalidatePath('/projects');
@@ -93,7 +94,7 @@ export async function createProject(
   }
 }
 
-const isNotDeleted = isNull(projects.deleted_at);
+const isActive = eq(projects.lifecycle_status, 'ACTIVE');
 
 /**
  * 프로젝트 목록 조회
@@ -103,7 +104,7 @@ export async function getProjects(): Promise<ActionResult<SerializableProjectDom
   try {
     const db = getDatabase();
 
-    const rows = await db.select().from(projects).where(isNotDeleted).orderBy(projects.created_at);
+    const rows = await db.select().from(projects).where(isActive).orderBy(projects.created_at);
 
     const result: SerializableProjectDomain[] = rows.map((row) => ({
       id: row.id,
@@ -114,7 +115,8 @@ export async function getProjects(): Promise<ActionResult<SerializableProjectDom
       ownerName: row.owner_name ?? undefined,
       createdAt: row.created_at.toISOString(),
       updatedAt: row.updated_at.toISOString(),
-      deletedAt: row.deleted_at?.toISOString() ?? null,
+      archivedAt: row.archived_at?.toISOString() ?? null,
+      lifecycleStatus: row.lifecycle_status,
     }));
 
     return { success: true, data: result };

@@ -1,5 +1,8 @@
 import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
+export const lifecycleStatusEnum = ['ACTIVE', 'ARCHIVED', 'DELETED'] as const;
+export type LifecycleStatus = (typeof lifecycleStatusEnum)[number];
+
 export const projects = pgTable('projects', {
   id: uuid('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
@@ -8,5 +11,6 @@ export const projects = pgTable('projects', {
   owner_name: varchar('owner_name', { length: 255 }),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
-  deleted_at: timestamp('deleted_at'),
+  archived_at: timestamp('archived_at'),
+  lifecycle_status: varchar('lifecycle_status', { length: 20 }).$type<LifecycleStatus>().default('ACTIVE').notNull(),
 });

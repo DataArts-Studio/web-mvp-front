@@ -1,5 +1,8 @@
 import { integer, pgTable, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core';
-import { projects } from './projects';
+import { projects, LifecycleStatus } from './projects';
+
+export const testCaseResultStatusEnum = ['untested', 'pass', 'fail', 'blocked'] as const;
+export type TestCaseResultStatus = (typeof testCaseResultStatusEnum)[number];
 
 export const testCases = pgTable('test_cases', (t) => ({
   id: t.uuid('id').primaryKey(),
@@ -12,9 +15,11 @@ export const testCases = pgTable('test_cases', (t) => ({
   tags: t.text('tags').array(10),
   expected_result: t.text('expected_result'),
   sort_order: t.integer('sort_order'),
+  result_status: t.varchar('result_status', { length: 20 }).$type<TestCaseResultStatus>().default('untested').notNull(),
   created_at: t.timestamp('created_at').defaultNow().notNull(),
   updated_at: t.timestamp('updated_at').defaultNow().notNull(),
-  deleted_at: t.timestamp('deleted_at'),
+  archived_at: t.timestamp('archived_at'),
+  lifecycle_status: t.varchar('lifecycle_status', { length: 20 }).$type<LifecycleStatus>().default('ACTIVE').notNull(),
 }), (t) => ({
     unq: unique().on(t.project_id, t.name),
 }));

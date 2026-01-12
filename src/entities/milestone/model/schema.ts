@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-
-
+export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
+export const MilestoneProgressStatusEnum = z.enum(['planned', 'inProgress', 'done']);
 
 
 
@@ -16,17 +16,19 @@ export const MilestoneDtoSchema = z.object({
   description: z.string().optional(),
   start_date: z.string().nullable(),
   end_date: z.string().nullable(),
-  status: z.string(),
+  progress_status: MilestoneProgressStatusEnum.default('planned'),
   created_at: z.date(),
   updated_at: z.date(),
-  deleted_at: z.date().nullable(),
+  archived_at: z.date().nullable(),
+  lifecycle_status: LifecycleStatusEnum.default('ACTIVE'),
 });
 
 export const CreateMilestoneDtoSchema = MilestoneDtoSchema.omit({
   id: true,
   created_at: true,
   updated_at: true,
-  deleted_at: true,
+  archived_at: true,
+  lifecycle_status: true,
 });
 
 export const CreateMilestoneSchema = z.object({
@@ -38,5 +40,5 @@ export const CreateMilestoneSchema = z.object({
 });
 
 export const UpdateMilestoneSchema = CreateMilestoneSchema.extend({
-  status: z.string().optional(),
+  progressStatus: MilestoneProgressStatusEnum.optional(),
 })
