@@ -1,7 +1,7 @@
 import { z } from 'zod';
+import { LifecycleStatusEnum } from '../../project/model/schema';
 
 export const TestRunStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
-export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
 
 export const TestRunSchema = z.object({
   id: z.string().uuid(),

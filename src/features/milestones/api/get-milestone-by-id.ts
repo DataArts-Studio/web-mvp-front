@@ -85,15 +85,16 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
 
     const result: MilestoneWithStats = {
       id: dbMilestone.id,
-      projectId: dbMilestone.project_id,
+      projectId: dbMilestone.project_id ?? '',
       title: dbMilestone.name,
       description: dbMilestone.description ?? undefined,
       startDate: dbMilestone.start_date ? new Date(dbMilestone.start_date) : null,
       endDate: dbMilestone.end_date ? new Date(dbMilestone.end_date) : null,
-      status: dbMilestone.status,
+      progressStatus: dbMilestone.progress_status,
       createdAt: dbMilestone.created_at,
       updatedAt: dbMilestone.updated_at,
-      deletedAt: dbMilestone.deleted_at ? new Date(dbMilestone.deleted_at) : null,
+      archivedAt: dbMilestone.archived_at,
+      lifecycleStatus: dbMilestone.lifecycle_status,
       ...stats,
       testCases,
       testRuns: relatedTestRuns.map(run => ({

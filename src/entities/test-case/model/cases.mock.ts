@@ -24,9 +24,11 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
 
     createdAt: new Date('2024-12-01T03:00:00.000Z'),
     updatedAt: new Date('2024-12-20T01:35:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     suiteTitle: '인증 플로우 로그인 회원가입',
+    resultStatus: 'untested',
     status: 'untested',
     lastExecutedAt: null,
   },
@@ -47,9 +49,11 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
 
     createdAt: new Date('2024-12-02T03:00:00.000Z'),
     updatedAt: new Date('2024-12-20T01:30:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     suiteTitle: '인증 플로우 로그인 회원가입',
+    resultStatus: 'pass',
     status: 'passed',
     lastExecutedAt: new Date('2024-12-20T01:30:00.000Z'),
   },
@@ -70,9 +74,11 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
 
     createdAt: new Date('2024-12-03T03:00:00.000Z'),
     updatedAt: new Date('2024-12-20T00:40:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     suiteTitle: '결제 플로우 카드 결제 환불',
+    resultStatus: 'fail',
     status: 'failed',
     lastExecutedAt: new Date('2024-12-20T00:40:00.000Z'),
   },
@@ -93,9 +99,11 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
 
     createdAt: new Date('2024-12-04T03:00:00.000Z'),
     updatedAt: new Date('2024-12-20T01:10:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     suiteTitle: '권한과 접근 제어',
+    resultStatus: 'blocked',
     status: 'blocked',
     lastExecutedAt: new Date('2024-12-20T01:10:00.000Z'),
   },
@@ -116,9 +124,11 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
 
     createdAt: new Date('2024-12-05T03:00:00.000Z'),
     updatedAt: new Date('2024-12-19T23:40:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     suiteTitle: '온보딩과 튜토리얼',
+    resultStatus: 'pass',
     status: 'passed',
     lastExecutedAt: new Date('2024-12-19T23:40:00.000Z'),
   },

@@ -87,7 +87,7 @@
    * - src/../*: 앱 소스 전체
    * - .next/types/**: Next 빌드 시 생성되는 타입 정의
    * ────────────────────────────────────────────────────*/
-  "include": ["next-env.d.ts", "src/**/*", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+  "include": ["next-env.d.ts", "src/**/*", ".next/types/**/*.ts", ".next/dev/types/**/*.ts", "app/**/*.ts", "app/**/*.tsx", "vitest.config.ts"],
   /* ─────────────────────────────────────────────────────
    * 제외 폴더
    * 외부 라이브러리(node_modules)는 타입 검사에서 제외

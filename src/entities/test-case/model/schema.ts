@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
+import { LifecycleStatusEnum } from '../../project/model/schema';
 export const TestCaseResultStatusEnum = z.enum(['untested', 'pass', 'fail', 'blocked']);
 
 export const TestCaseDtoSchema = z.object({

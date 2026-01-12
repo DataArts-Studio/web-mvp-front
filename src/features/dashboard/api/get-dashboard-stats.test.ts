@@ -121,7 +121,7 @@ describe('getDashboardStats', () => {
       }
     });
 
-    const result = await getDashboardStats({ projectId: 'proj-1' });
+    const result = await getDashboardStats({ slug: 'proj-1' });
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -129,7 +129,7 @@ describe('getDashboardStats', () => {
       expect(result.data.project.name).toBe('Test Project');
       expect(result.data.testCases.total).toBe(10);
       expect(result.data.testSuites).toHaveLength(2);
-      expect(result.data.testSuites[0].caseCount).toBe(5);
+      expect(result.data.testSuites[0].case_count).toBe(5);
       expect(result.data.recentActivities).toHaveLength(2);
     }
   });
@@ -143,7 +143,7 @@ describe('getDashboardStats', () => {
       })),
     }));
 
-    const result = await getDashboardStats({ projectId: 'non-existent' });
+    const result = await getDashboardStats({ slug: 'non-existent' });
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -160,7 +160,7 @@ describe('getDashboardStats', () => {
       })),
     }));
 
-    const result = await getDashboardStats({ projectId: 'proj-1' });
+    const result = await getDashboardStats({ slug: 'proj-1' });
 
     expect(result.success).toBe(false);
     if (!result.success) {

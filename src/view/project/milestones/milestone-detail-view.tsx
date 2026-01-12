@@ -105,8 +105,8 @@ export const MilestoneDetailView = () => {
   }
 
   const milestone = data.data;
-  const statusInfo = STATUS_CONFIG[milestone.status] || {
-    label: milestone.status,
+  const statusInfo = STATUS_CONFIG[milestone.progressStatus] || {
+    label: milestone.progressStatus,
     style: 'bg-gray-500/20 text-gray-300',
   };
 
@@ -241,7 +241,7 @@ export const MilestoneDetailView = () => {
                     className="hover:bg-bg-3 flex items-center justify-between px-4 py-3 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-primary font-mono text-sm">{testCase.code}</span>
+                      <span className="text-primary font-mono text-sm">{testCase.caseKey}</span>
                       <span className="text-text-1">{testCase.title}</span>
                     </div>
                     <span
