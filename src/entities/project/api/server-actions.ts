@@ -81,7 +81,11 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
     const db = getDatabase();
     const [archived] = await db
       .update(projects)
-      .set({ archived_at: new Date() })
+      .set({
+        archived_at: new Date(),
+        lifecycle_status: 'ARCHIVED',
+        updated_at: new Date(),
+      })
       .where(eq(projects.id, id))
       .returning();
 
