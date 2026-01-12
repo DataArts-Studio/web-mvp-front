@@ -119,7 +119,8 @@ export const createMockTestSuiteRow = (
     sort_order: number | null;
     created_at: Date;
     updated_at: Date;
-    deleted_at: Date | null;
+    archived_at: Date | null;
+    lifecycle_status: 'ACTIVE' | 'ARCHIVED' | 'DELETED';
   }> = {}
 ) => ({
   id: overrides.id ?? '01234567-89ab-cdef-0123-456789abcdef',
@@ -129,7 +130,8 @@ export const createMockTestSuiteRow = (
   sort_order: 'sort_order' in overrides ? overrides.sort_order : 0,
   created_at: overrides.created_at ?? new Date('2024-01-01'),
   updated_at: overrides.updated_at ?? new Date('2024-01-01'),
-  deleted_at: 'deleted_at' in overrides ? overrides.deleted_at : null,
+  archived_at: 'archived_at' in overrides ? overrides.archived_at : null,
+  lifecycle_status: overrides.lifecycle_status ?? 'ACTIVE',
 });
 
 export const createMockCreateTestSuiteInput = (
@@ -164,9 +166,10 @@ export const createMockMilestoneRow = (overrides?: Partial<MilestoneDTO>): Miles
   description: '테스트용 마일스톤 설명입니다.',
   start_date: new Date('2024-01-01'),
   end_date: new Date('2024-12-31'),
-  status: 'planned',
+  progress_status: 'planned',
   created_at: new Date(),
   updated_at: new Date(),
-  deleted_at: null,
+  archived_at: null,
+  lifecycle_status: 'ACTIVE',
   ...overrides,
 });

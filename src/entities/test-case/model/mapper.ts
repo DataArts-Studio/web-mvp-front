@@ -25,9 +25,11 @@ export const toTestCase = (dto: TestCaseDTO): TestCase => {
     testSteps: dto.steps ?? '',
     expectedResult: dto.expected_result ?? '',
     sortOrder: dto.sort_order ?? 0,
+    resultStatus: dto.result_status,
     createdAt: toDate(dto.created_at),
     updatedAt: toDate(dto.updated_at),
-    deletedAt: dto.deleted_at ? toDate(dto.deleted_at) : null,
+    archivedAt: dto.archived_at ? toDate(dto.archived_at) : null,
+    lifecycleStatus: dto.lifecycle_status,
   };
 };
 
@@ -59,9 +61,11 @@ export const toTestCaseDto = (domain: TestCase): TestCaseDTO => {
     steps: domain.testSteps,
     expected_result: domain.expectedResult,
     sort_order: domain.sortOrder,
+    result_status: domain.resultStatus,
     created_at: domain.createdAt,
     updated_at: domain.updatedAt,
-    deleted_at: domain.deletedAt,
+    archived_at: domain.archivedAt,
+    lifecycle_status: domain.lifecycleStatus,
   };
 };
 

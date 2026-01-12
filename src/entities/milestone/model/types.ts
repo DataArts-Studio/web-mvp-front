@@ -7,6 +7,9 @@ export type CreateMilestoneDTO = z.infer<typeof CreateMilestoneDtoSchema>;
 export type CreateMilestone = z.infer<typeof CreateMilestoneSchema>;
 export type UpdateMilestone = z.infer<typeof UpdateMilestoneSchema>;
 
+export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+export type MilestoneProgressStatus = 'planned' | 'inProgress' | 'done';
+
 export type Milestone = {
   id: string;
   projectId: string;
@@ -14,10 +17,11 @@ export type Milestone = {
   description?: string;
   startDate: Date | null;
   endDate: Date | null;
-  status: string;
+  progressStatus: MilestoneProgressStatus;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
+  archivedAt: Date | null;
+  lifecycleStatus: LifecycleStatus;
 };
 
 export type MilestoneStats = {

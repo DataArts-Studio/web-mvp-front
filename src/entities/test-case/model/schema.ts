@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
+export const TestCaseResultStatusEnum = z.enum(['untested', 'pass', 'fail', 'blocked']);
+
 export const TestCaseDtoSchema = z.object({
   id: z.string().uuid(),
   project_id: z.string().uuid(),
@@ -12,14 +15,18 @@ export const TestCaseDtoSchema = z.object({
   steps: z.string().optional(),
   expected_result: z.string().optional(),
   sort_order: z.number().int().optional(),
+  result_status: TestCaseResultStatusEnum.default('untested'),
   created_at: z.date(),
   updated_at: z.date(),
-  deleted_at: z.date().nullable(),
+  archived_at: z.date().nullable(),
+  lifecycle_status: LifecycleStatusEnum.default('ACTIVE'),
 });
 
 export const CreateTestCaseDtoSchema = TestCaseDtoSchema.omit({
   id: true,
   created_at: true,
   updated_at: true,
-  deleted_at: true,
+  archived_at: true,
+  lifecycle_status: true,
+  result_status: true,
 });

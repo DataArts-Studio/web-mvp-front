@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const TestRunStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
+export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
 
 export const TestRunSchema = z.object({
   id: z.string().uuid(),
@@ -10,7 +11,8 @@ export const TestRunSchema = z.object({
   status: TestRunStatusEnum.default('NOT_STARTED'),
   created_at: z.date(),
   updated_at: z.date(),
-  deleted_at: z.date().nullable(),
+  archived_at: z.date().nullable(),
+  lifecycle_status: LifecycleStatusEnum.default('ACTIVE'),
 });
 
 // Zod schema for creating a new test run

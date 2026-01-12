@@ -1,5 +1,8 @@
 import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
-import { projects } from './projects';
+import { projects, LifecycleStatus } from './projects';
+
+export const milestoneProgressStatusEnum = ['planned', 'inProgress', 'done'] as const;
+export type MilestoneProgressStatus = (typeof milestoneProgressStatusEnum)[number];
 
 export const milestones = pgTable('milestones', (t) => ({
   id: t.uuid('id').primaryKey(),
@@ -8,8 +11,9 @@ export const milestones = pgTable('milestones', (t) => ({
   description: t.text('description'),
   start_date: t.timestamp('start_date', { mode: 'string' }),
   end_date: t.timestamp('end_date', { mode: 'string' }),
-  status: t.varchar('status', { length: 50 }).default('planned').notNull(),
+  progress_status: t.varchar('progress_status', { length: 50 }).$type<MilestoneProgressStatus>().default('planned').notNull(),
   created_at: t.timestamp('created_at').defaultNow().notNull(),
   updated_at: t.timestamp('updated_at').defaultNow().notNull(),
-  deleted_at: t.timestamp('deleted_at'),
+  archived_at: t.timestamp('archived_at'),
+  lifecycle_status: t.varchar('lifecycle_status', { length: 20 }).$type<LifecycleStatus>().default('ACTIVE').notNull(),
 }));

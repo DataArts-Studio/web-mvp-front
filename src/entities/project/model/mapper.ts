@@ -15,7 +15,8 @@ export const toProjectDomain = (dto: ProjectDTO): ProjectDomain => {
     ownerName: dto.owner_name ? dto.owner_name : undefined,
     createdAt: new Date(dto.created_at),
     updatedAt: new Date(dto.updated_at),
-    deletedAt: dto.deleted_at ? new Date(dto.deleted_at) : null,
+    archivedAt: dto.archived_at ? new Date(dto.archived_at) : null,
+    lifecycleStatus: dto.lifecycle_status,
   };
 };
 
