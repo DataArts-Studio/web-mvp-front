@@ -39,80 +39,81 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
   return (
     <section
       id="create-suite"
-      className="bg-bg-2/20 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-[4px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
     >
-      <div className="bg-bg-2 shadow-4 w-[600px] overflow-hidden rounded-xl p-8">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8" noValidate>
-          {/* Header */}
-          <div className="border-line-1 border-b pb-6">
-            <h2 className="text-primary text-3xl">테스트 스위트를 만들어 볼까요?</h2>
-            <p className="mt-2 text-base text-neutral-400">
-              필요한 테스트들을 한 곳에 모아 관리해요
-            </p>
-          </div>
-          {/* Body */}
-          <div className="flex flex-col gap-6">
-            <FormField.Root className="flex flex-col gap-2">
-              <FormField.Label className="text-text-1 font-medium">
-                스위트 이름 <span className="text-system-red">*</span>
-              </FormField.Label>
-              <FormField.Control
-                placeholder="스위트 이름을 입력해 주세요."
-                type="text"
-                disabled={isPending}
-                {...register('title', {
-                  required: '유효한 이름을 입력해주세요.',
-                  minLength: {
-                    value: 5,
-                    message: '스위트 이름은 최소 5자 이상이어야 합니다.',
-                  },
-                  maxLength: {
-                    value: 50,
-                    message: '스위트 이름은 50자를 초과할 수 없습니다.',
-                  },
-                  validate: (value) => !!value.trim() || '공백만으로는 이름을 생성할 수 없습니다.',
-                  pattern: {
-                    value: /^[a-zA-Z0-9가-힣\s._-]+$/,
-                    message: '특수문자는 사용할 수 없습니다. (-, _, ., 공백만 허용)',
-                  },
-                })}
-                className={errors.title ? 'border-system-red focus:border-system-red' : ''}
-              />
-              {/* 에러 메시지 출력 */}
-              {errors.title && (
-                <span className="text-system-red mt-1 text-sm">{errors.title.message}</span>
-              )}
-            </FormField.Root>
-            <FormField.Root className="flex flex-col gap-2">
-              <FormField.Label className="text-text-1 font-medium">설명 (선택)</FormField.Label>
-              <FormField.Control
-                placeholder="이 스위트에 대한 간략한 설명을 입력해주세요."
-                type="text"
-                disabled={isPending}
-                {...register('description')}
-              />
-            </FormField.Root>
-          </div>
-          <div className="border-line-1 flex gap-3 border-t pt-6">
-            <DSButton
-              type="button"
-              variant="ghost"
-              className="w-full"
+      <div className="bg-bg-2 shadow-4 flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden rounded-xl">
+        {/* Header */}
+        <div className="border-line-2 shrink-0 border-b px-6 py-5">
+          <h2 className="text-text-1 text-lg font-bold">테스트 스위트 생성</h2>
+          <p className="text-text-3 mt-1 text-sm">
+            필요한 테스트들을 한 곳에 모아 관리해요
+          </p>
+        </div>
+
+        {/* Body */}
+        <form id="suite-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-5 overflow-y-auto p-6" noValidate>
+          <FormField.Root className="flex flex-col gap-2">
+            <FormField.Label className="text-text-2 text-sm font-medium">
+              스위트 이름 <span className="text-system-red">*</span>
+            </FormField.Label>
+            <FormField.Control
+              placeholder="스위트 이름을 입력해 주세요."
+              type="text"
               disabled={isPending}
-              onClick={onClose}
-            >
-              취소
-            </DSButton>
-            <DSButton
-              type="submit"
-              variant="solid"
-              className="w-full"
+              {...register('title', {
+                required: '유효한 이름을 입력해주세요.',
+                minLength: {
+                  value: 5,
+                  message: '스위트 이름은 최소 5자 이상이어야 합니다.',
+                },
+                maxLength: {
+                  value: 50,
+                  message: '스위트 이름은 50자를 초과할 수 없습니다.',
+                },
+                validate: (value) => !!value.trim() || '공백만으로는 이름을 생성할 수 없습니다.',
+                pattern: {
+                  value: /^[a-zA-Z0-9가-힣\s._-]+$/,
+                  message: '특수문자는 사용할 수 없습니다. (-, _, ., 공백만 허용)',
+                },
+              })}
+              className={errors.title ? 'border-system-red focus:border-system-red' : ''}
+            />
+            {errors.title && (
+              <span className="text-system-red text-sm">{errors.title.message}</span>
+            )}
+          </FormField.Root>
+          <FormField.Root className="flex flex-col gap-2">
+            <FormField.Label className="text-text-2 text-sm font-medium">설명 (선택)</FormField.Label>
+            <FormField.Control
+              placeholder="이 스위트에 대한 간략한 설명을 입력해주세요."
+              type="text"
               disabled={isPending}
-            >
-              {isPending ? '생성 중...' : '생성'}
-            </DSButton>
-          </div>
+              {...register('description')}
+            />
+          </FormField.Root>
         </form>
+
+        {/* Actions */}
+        <div className="border-line-2 flex shrink-0 gap-3 border-t px-6 py-4">
+          <DSButton
+            type="button"
+            variant="ghost"
+            className="w-full"
+            disabled={isPending}
+            onClick={onClose}
+          >
+            취소
+          </DSButton>
+          <DSButton
+            type="submit"
+            form="suite-form"
+            variant="solid"
+            className="w-full"
+            disabled={isPending}
+          >
+            {isPending ? '생성 중...' : '생성'}
+          </DSButton>
+        </div>
       </div>
     </section>
   );

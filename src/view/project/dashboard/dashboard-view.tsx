@@ -5,16 +5,22 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import { dashboardQueryOptions } from '@/features';
+import { TestCaseDetailForm } from '@/features/cases-create';
+import { dashboardQueryOptions } from '@/features/dashboard';
+import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared/lib/primitives';
+import { useDisclosure } from '@/shared/hooks';
 import { DSButton } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, Clock, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
 
+type ModalType = 'case' | 'suite';
+
 export const ProjectDashboardView = () => {
   const params = useParams();
   const slug = params.slug as string;
+  const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
 
   const {
     data: dashboardData,
@@ -23,6 +29,8 @@ export const ProjectDashboardView = () => {
     ...dashboardQueryOptions.stats(slug),
     enabled: !!slug,
   });
+
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
   // 로딩 상태
   if (isLoading) {
@@ -142,12 +150,10 @@ export const ProjectDashboardView = () => {
               </p>
             </div>
 
-            <Link href={`/projects/${slug}/cases`}>
-              <DSButton variant="solid" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                <span>테스트 케이스 만들기</span>
-              </DSButton>
-            </Link>
+            <DSButton variant="solid" className="flex items-center gap-2" onClick={() => onOpen('case')}>
+              <Plus className="h-4 w-4" />
+              <span>테스트 케이스 만들기</span>
+            </DSButton>
           </div>
         </section>
 
@@ -173,15 +179,21 @@ export const ProjectDashboardView = () => {
               </p>
             </div>
 
-            <Link href={`/projects/${slug}/suites`}>
-              <DSButton variant="solid" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                <span>테스트 스위트 만들기</span>
-              </DSButton>
-            </Link>
+            <DSButton variant="solid" className="flex items-center gap-2" onClick={() => onOpen('suite')}>
+              <Plus className="h-4 w-4" />
+              <span>테스트 스위트 만들기</span>
+            </DSButton>
           </div>
         </section>
       </MainContainer>
+
+      {/* Modals */}
+      {isActiveType('case') && projectId && (
+        <TestCaseDetailForm projectId={projectId} onClose={onClose} />
+      )}
+      {isActiveType('suite') && projectId && (
+        <SuiteCreateForm projectId={projectId} onClose={onClose} />
+      )}
     </Container>
   );
 };
