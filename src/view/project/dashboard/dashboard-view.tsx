@@ -1,204 +1,184 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-
-
+import React from 'react';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-
-
 
 import { dashboardQueryOptions } from '@/features';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Plus, Settings } from 'lucide-react';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import { ChevronRight, Clock, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
 
 export const ProjectDashboardView = () => {
   const params = useParams();
-  const [url, setUrl] = useState('');
+  const slug = params.slug as string;
 
-  useEffect(() => {
-    setUrl(window.location.href);
-  }, []);
-
-  console.log(params, params.slug, typeof params, typeof params.slug);
   const {
     data: dashboardData,
     isLoading,
-    isError,
   } = useQuery({
-    ...dashboardQueryOptions.stats(params.slug as string),
-    enabled: !!params.slug,
+    ...dashboardQueryOptions.stats(slug),
+    enabled: !!slug,
   });
 
+  // 로딩 상태
   if (isLoading) {
-    return <div>로딩중...</div>;
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-text-3">로딩 중...</div>
+        </MainContainer>
+      </Container>
+    );
   }
 
-  if (isError || !dashboardData || !dashboardData.success) {
-    return <div>에러 발생</div>
+  // 에러 상태
+  if (!dashboardData?.success) {
+    return (
+      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
+        <Aside />
+        <MainContainer className="flex flex-1 items-center justify-center">
+          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+        </MainContainer>
+      </Container>
+    );
   }
 
   const { project, recentActivities } = dashboardData.data;
-  console.log(dashboardData.data);
 
   return (
-    <Container
-      id="container"
-      className="bg-bg-1 text-text-1 flex min-h-screen items-start justify-start font-sans"
-    >
+    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       <Aside />
-      <MainContainer className="flex min-h-screen w-full flex-1 flex-col gap-20 px-10 py-20">
-        {/* 섹션 1: 헤더 + 프로젝트 정보/최근 활동 */}
-        <section className="flex w-full max-w-[1200px] flex-col gap-9">
-          {/* 헤더 텍스트 */}
-          <h1 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
-            클릭 몇 번이면 뚝딱!
-            <br />
-            테스트 케이스를 자동으로 만들어보세요.
-          </h1>
+      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+        {/* Header */}
+        <header className="border-line-2 col-span-6 flex flex-col gap-1 border-b pb-6">
+          <h1 className="typo-h1-heading text-text-1">대시보드</h1>
+          <p className="typo-body2-normal text-text-2">
+            클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 만들어보세요.
+          </p>
+        </header>
 
-          {/* 프로젝트 정보 + 최근 활동 카드 */}
-          <div className="flex w-full gap-3">
-            {/* 내 프로젝트 정보 카드 */}
-            <div className="bg-bg-2 relative flex w-[350px] flex-col gap-4 overflow-hidden rounded-lg p-4">
-              <span className="text-text-3 text-xs">내 프로젝트 정보</span>
+        {/* 프로젝트 정보 + 최근 활동 카드 */}
+        <section className="col-span-6 grid grid-cols-6 gap-5">
+          {/* 내 프로젝트 정보 카드 */}
+          <div className="rounded-3 border-line-2 bg-bg-2 col-span-2 flex flex-col gap-4 border p-5">
+            <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
 
-              <div className="flex flex-col items-center justify-center gap-1 rounded-lg bg-white/5 p-4">
-                <div className="flex items-center gap-1">
-                  <span className="text-primary text-base font-semibold">{url}</span>
-                  {/* 공유 아이콘 placeholder */}
-                  <div className="text-primary size-4">{/* icon placeholder */}</div>
-                </div>
-                <span className="text-text-2 text-xs">{project.created_at} 생성됨</span>
+            <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
+              <div className="flex items-center gap-2">
+                <span className="typo-body2-heading text-primary truncate max-w-[200px]">
+                  {project.name}
+                </span>
+                <button className="text-primary hover:text-primary/80 transition-colors">
+                  <Share2 className="h-4 w-4" />
+                </button>
               </div>
-
-              <div className="flex justify-end">
-                <DSButton variant="text" className="text-text-2 flex items-center gap-2">
-                  <Settings className="size-4" />
-                  <span>환경설정</span>
-                </DSButton>
-              </div>
-
-              {/* 배경 데코레이션 placeholder */}
-              <div className="bg-primary/10 absolute top-12 -left-[228px] size-64 rounded-full blur-3xl" />
+              <span className="typo-caption text-text-3">
+                {new Date(project.created_at).toLocaleDateString('ko-KR')} 생성됨
+              </span>
             </div>
 
-            {/* 최근 활동 카드 */}
-            <div className="bg-bg-2 flex flex-1 flex-col gap-4 rounded-lg p-4">
-              <span className="text-text-3 text-xs">최근 활동</span>
+            <div className="flex justify-end">
+              <DSButton variant="text" className="text-text-2 flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <span>환경설정</span>
+              </DSButton>
+            </div>
+          </div>
 
-              <ul className="flex flex-col gap-1">
-                {recentActivities.map((item) => (
-                  <li key={item.id} className="flex items-center gap-1">
-                    <span className="text-text-1 text-base">
-                      <span className="mr-2">•</span>
+          {/* 최근 활동 카드 */}
+          <div className="rounded-3 border-line-2 bg-bg-2 col-span-4 flex flex-col gap-4 border p-5">
+            <span className="typo-body2-heading text-text-3">최근 활동</span>
+
+            {recentActivities.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-6">
+                <Clock className="text-text-3 h-8 w-8" />
+                <p className="typo-body2-normal text-text-3">최근 활동이 없습니다.</p>
+              </div>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {recentActivities.slice(0, 5).map((item) => (
+                  <li key={item.id} className="flex items-center gap-2">
+                    <span className="bg-primary h-1.5 w-1.5 rounded-full" />
+                    <span className="typo-body2-normal text-text-1 flex-1 truncate">
                       {item.title}
                     </span>
-                    <span className="text-text-2 mx-1">•</span>
-                    <span className="text-text-2 text-base font-semibold">{item.created_at}일전</span>
+                    <span className="typo-caption text-text-3">
+                      {item.created_at}일 전
+                    </span>
                   </li>
                 ))}
               </ul>
-            </div>
+            )}
           </div>
         </section>
 
-        {/* 섹션 2: 테스트 케이스 한눈에 보기 */}
-        <section className="flex w-full max-w-[1200px] flex-col gap-9">
-          {/* 섹션 헤더 */}
-          <div className="flex items-center gap-2">
-            <h2 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
-              테스트 케이스 한눈에 보기
-            </h2>
-            <ChevronRight className="text-text-1 size-6" />
-          </div>
+        {/* 테스트 케이스 섹션 */}
+        <section className="col-span-6 flex flex-col gap-4">
+          <Link href={`/projects/${slug}/cases`} className="flex items-center gap-2 group">
+            <h2 className="typo-h2-heading text-text-1">테스트 케이스</h2>
+            <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
+          </Link>
 
           {/* 빈 상태 카드 */}
-          <div className="bg-bg-2 relative gap-4 overflow-hidden rounded-2xl px-6 pt-6 pb-12">
-            <div className="flex flex-col items-center justify-center gap-4">
-              {/* 이미지 placeholder */}
-              <Image
-                src="/teacup/tea-cup-not-found.svg"
-                width={383.27}
-                height={488.57}
-                alt="테스트 케이스 없음"
-              />
+          <div className="rounded-3 border-line-2 bg-bg-2 border-2 border-dashed flex flex-col items-center justify-center gap-6 py-16">
+            <Image
+              src="/teacup/tea-cup-not-found.svg"
+              width={200}
+              height={255}
+              alt="테스트 케이스 없음"
+            />
 
-              {/* 텍스트 + CTA */}
-              <div className="flex flex-col items-center gap-4">
-                <div className="flex flex-col items-center gap-4">
-                  <h3 className="text-text-1 text-2xl font-bold">테스트 케이스를 생성해보세요!</h3>
-                  <p className="text-text-1 text-center text-lg">
-                    아직 생성된 테스트 케이스가 없습니다.
-                    <br />
-                    테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.
-                  </p>
-                </div>
-
-                <DSButton
-                  variant="solid"
-                  className="flex h-14 cursor-pointer items-center gap-2 px-5"
-                >
-                  <Plus className="size-6" />
-                  <span className="text-lg font-semibold">테스트 케이스 만들기</span>
-                </DSButton>
-              </div>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <h3 className="typo-h3-heading text-text-1">테스트 케이스를 생성해보세요!</h3>
+              <p className="typo-body2-normal text-text-3">
+                아직 생성된 테스트 케이스가 없습니다.
+                <br />
+                테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.
+              </p>
             </div>
 
-            {/* 배경 데코레이션 placeholder */}
-            <div className="bg-primary/10 absolute right-[25%] bottom-[-200px] size-[500px] rounded-full blur-3xl" />
-          </div>
-        </section>
-
-        {/* 섹션 3: 테스트 스위트 */}
-        <section className="flex w-full max-w-[1200px] flex-col gap-9">
-          {/* 섹션 헤더 */}
-          <div className="flex items-center gap-2">
-            <h2 className="text-text-1 text-[32px] leading-[1.4] font-bold tracking-tight">
-              테스트 스위트
-            </h2>
-            <ChevronRight className="text-text-1 size-6" />
-          </div>
-
-          {/* 빈 상태 카드 */}
-          <div className="bg-bg-2 flex flex-col items-center gap-4 rounded-lg px-0 py-12">
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex flex-col items-center gap-4">
-                <h3 className="text-text-1 text-2xl font-bold">테스트 스위트를 생성해보세요!</h3>
-                <p className="text-text-1 text-center text-lg">
-                  아직 생성된 테스트 스위트가 없습니다.
-                  <br />
-                  테스트 스위트로, 테스트 케이스를 더 쉽게 관리해보세요!
-                </p>
-              </div>
-
-              <DSButton
-                variant="solid"
-                className="flex h-14 cursor-pointer items-center gap-2 px-5"
-              >
-                <Plus className="size-6" />
-                <span className="text-lg font-semibold">테스트 스위트 만들기</span>
+            <Link href={`/projects/${slug}/cases`}>
+              <DSButton variant="solid" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span>테스트 케이스 만들기</span>
               </DSButton>
+            </Link>
+          </div>
+        </section>
+
+        {/* 테스트 스위트 섹션 */}
+        <section className="col-span-6 flex flex-col gap-4">
+          <Link href={`/projects/${slug}/suites`} className="flex items-center gap-2 group">
+            <h2 className="typo-h2-heading text-text-1">테스트 스위트</h2>
+            <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
+          </Link>
+
+          {/* 빈 상태 카드 */}
+          <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
+            <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
+              <FolderOpen className="h-6 w-6" strokeWidth={1.5} />
             </div>
+
+            <div className="flex flex-col items-center gap-1 text-center">
+              <h3 className="typo-h3-heading text-text-1">테스트 스위트를 생성해보세요!</h3>
+              <p className="typo-body2-normal text-text-3">
+                아직 생성된 테스트 스위트가 없습니다.
+                <br />
+                테스트 스위트로, 테스트 케이스를 더 쉽게 관리해보세요!
+              </p>
+            </div>
+
+            <Link href={`/projects/${slug}/suites`}>
+              <DSButton variant="solid" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span>테스트 스위트 만들기</span>
+              </DSButton>
+            </Link>
           </div>
         </section>
       </MainContainer>
