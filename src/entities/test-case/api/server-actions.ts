@@ -3,7 +3,7 @@
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
 import { getDatabase, testCases } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 
@@ -27,7 +27,15 @@ export const getTestCases = async ({
 }: getTestCasesParams): Promise<ActionResult<TestCase[]>> => {
   try {
     const db = getDatabase();
-    const rows = await db.select().from(testCases).where(eq(testCases.project_id, project_id));
+    const rows = await db
+      .select()
+      .from(testCases)
+      .where(
+        and(
+          eq(testCases.project_id, project_id),
+          eq(testCases.lifecycle_status, 'ACTIVE')
+        )
+      );
     if (!rows)
       return { success: false, errors: { _testCase: ['테스트 케이스가 존재하지 않습니다.'] } };
 

@@ -4,7 +4,7 @@ import type { CreateTestSuite, TestSuite } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
 import { getDatabase, testSuites } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 type GetTestSuitesParams = {
@@ -75,7 +75,12 @@ export const getTestSuites = async ({
     const rows = await db
       .select()
       .from(testSuites)
-      .where(eq(testSuites.project_id, projectId))
+      .where(
+        and(
+          eq(testSuites.project_id, projectId),
+          eq(testSuites.lifecycle_status, 'ACTIVE')
+        )
+      )
       .limit(limits.limit)
       .offset(limits.offset);
 

@@ -128,7 +128,7 @@ export const TestCasesView = () => {
     if (!title || isPending) return;
 
     mutate(
-      { title, projectId },
+      { title, projectId: projectId! },
       {
         onSuccess: () => {
           if (inputRef.current) inputRef.current.value = '';
@@ -210,7 +210,7 @@ export const TestCasesView = () => {
           </TestTable.Root>
         </section>
       </MainContainer>
-      {isActiveType('create') && <TestCaseDetailForm projectId={projectId} onClose={onClose} />}
+      {isActiveType('create') && <TestCaseDetailForm projectId={projectId!} onClose={onClose} />}
       {isActiveType('detail') && selectedTestCase && (
         <TestCaseSideView
           testCase={selectedTestCase}

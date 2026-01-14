@@ -9,7 +9,7 @@ import {
 } from '@/entities/milestone';
 import { getDatabase, milestones } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 type GetMilestonesParams = {
@@ -26,12 +26,14 @@ export const getMilestones = async ({
     const db = getDatabase();
 
     const rows = await db
-
       .select()
-
       .from(milestones)
-
-      .where(eq(milestones.project_id, projectId));
+      .where(
+        and(
+          eq(milestones.project_id, projectId),
+          eq(milestones.lifecycle_status, 'ACTIVE')
+        )
+      );
 
     const result: Milestone[] = rows.map((row) => toMilestone(row as MilestoneDTO));
 
