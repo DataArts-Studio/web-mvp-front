@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ import { useDisclosure } from '@/shared/hooks';
 import { DSButton } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Clock, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
+import { Check, ChevronRight, Clock, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
 
 type ModalType = 'case' | 'suite';
 
@@ -21,6 +21,7 @@ export const ProjectDashboardView = () => {
   const params = useParams();
   const slug = params.slug as string;
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
+  const [isCopied, setIsCopied] = useState(false);
 
   const {
     data: dashboardData,
@@ -31,6 +32,16 @@ export const ProjectDashboardView = () => {
   });
 
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('링크 복사 실패:', err);
+    }
+  };
 
   // 로딩 상태
   if (isLoading) {
@@ -81,8 +92,12 @@ export const ProjectDashboardView = () => {
                 <span className="typo-body2-heading text-primary truncate max-w-[200px]">
                   {project.name}
                 </span>
-                <button className="text-primary hover:text-primary/80 transition-colors">
-                  <Share2 className="h-4 w-4" />
+                <button
+                  onClick={handleCopyLink}
+                  className="text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                  title="링크 복사"
+                >
+                  {isCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
                 </button>
               </div>
               <span className="typo-caption text-text-3">
