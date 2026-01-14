@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { testSuiteByIdQueryOptions } from '@/entities/test-suite/api/query';
 import { getTestCases } from '@/entities/test-case/api/server-actions';
 import type { TestSuiteCard } from '@/entities/test-suite';
-import type { TestCase } from '@/entities/test-case';
+import type { TestCase, TestCaseCardType } from '@/entities/test-case';
 import { SuiteEditForm } from '@/features';
 import { Container, DSButton, MainContainer, cn } from '@/shared';
 import { Aside } from '@/widgets';
@@ -25,6 +25,7 @@ import {
   Tag,
   Trash2,
 } from 'lucide-react';
+import { ArchiveButton } from '@/features/archive/ui/archive-button';
 
 const TAG_TONE_CONFIG: Record<string, { style: string }> = {
   neutral: { style: 'bg-slate-500/20 text-slate-300' },
@@ -65,7 +66,7 @@ const formatDateTime = (date: Date | null | undefined) => {
   });
 };
 
-const SuiteDetailView = () => {
+const TestSuiteDetailView = () => {
   const params = useParams();
   const router = useRouter();
   const suiteId = params.suiteId as string;
@@ -81,8 +82,8 @@ const SuiteDetailView = () => {
   // 해당 프로젝트의 테스트 케이스 조회
   const { data: casesResult, isLoading: isCasesLoading } = useQuery({
     queryKey: ['testCases', 'bySuite', suiteId],
-    queryFn: () => getTestCases({ project_id: suiteResult?.data?.projectId ?? '' }),
-    enabled: !!suiteResult?.data?.projectId,
+    queryFn: () => getTestCases({ project_id: suiteResult?.success ? suiteResult.data?.projectId ?? '' : '' }),
+    enabled: !!(suiteResult?.success && suiteResult.data?.projectId),
   });
 
   // 로딩 중
@@ -100,7 +101,7 @@ const SuiteDetailView = () => {
   }
 
   // 실제 데이터를 TestSuiteCard 형태로 변환 (추가 필드는 기본값)
-  const rawSuite = suiteResult?.data;
+  const rawSuite = suiteResult?.success ? suiteResult.data : undefined;
   const suite: TestSuiteCard | undefined = rawSuite
     ? {
         ...rawSuite,
@@ -113,8 +114,15 @@ const SuiteDetailView = () => {
     : undefined;
 
   // 해당 스위트에 속한 테스트 케이스 필터링
-  const allCases = casesResult?.data ?? [];
-  const testCases = allCases.filter((tc: TestCase) => tc.testSuiteId === suite?.id);
+  const allCases = casesResult?.success ? casesResult.data ?? [] : [];
+  const testCases: TestCaseCardType[] = allCases
+    .filter((tc: TestCase) => tc.testSuiteId === suite?.id)
+    .map((tc: TestCase) => ({
+      ...tc,
+      suiteTitle: suite?.title ?? '',
+      status: tc.resultStatus === 'untested' ? 'untested' : tc.resultStatus === 'pass' ? 'passed' : tc.resultStatus === 'fail' ? 'failed' : 'blocked',
+      lastExecutedAt: null,
+    }));
 
   // 케이스 수 업데이트
   if (suite) {
@@ -194,10 +202,7 @@ const SuiteDetailView = () => {
                 <Edit2 className="h-4 w-4" />
                 수정
               </DSButton>
-              <DSButton variant="ghost" className="flex items-center gap-2 text-red-400">
-                <Trash2 className="h-4 w-4" />
-                삭제
-              </DSButton>
+              <ArchiveButton targetType='suite' targetId={suite.id}/>
             </div>
           </div>
         </header>
@@ -342,7 +347,7 @@ const SuiteDetailView = () => {
             </div>
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
-              {testCases.map((testCase) => {
+              {testCases.map((testCase: TestCaseCardType) => {
                 const statusConfig = TEST_STATUS_CONFIG[testCase.status] ?? TEST_STATUS_CONFIG.untested;
                 return (
                   <div
@@ -353,7 +358,7 @@ const SuiteDetailView = () => {
                       <span className="text-primary font-mono text-sm">{testCase.caseKey}</span>
                       <span className="text-text-1">{testCase.title}</span>
                       <div className="flex gap-1">
-                        {testCase.tags.slice(0, 2).map((tag) => (
+                        {testCase.tags.slice(0, 2).map((tag: string) => (
                           <span
                             key={tag}
                             className="bg-bg-3 text-text-3 rounded px-1.5 py-0.5 text-xs"
@@ -446,4 +451,4 @@ const SuiteDetailView = () => {
   );
 };
 
-export default SuiteDetailView;
+export default TestSuiteDetailView;

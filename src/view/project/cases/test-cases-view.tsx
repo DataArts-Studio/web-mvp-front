@@ -1,7 +1,11 @@
 'use client';
 import React, { useRef, useState } from 'react';
 
+
+
 import { useParams } from 'next/navigation';
+
+
 
 import { TestCase, TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
@@ -13,6 +17,48 @@ import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Filter, Plus } from 'lucide-react';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const TABLE_HEADERS = [
   { id: 'id', label: 'ID', colSpan: 'col-span-2' },
@@ -50,7 +96,9 @@ export const TestCasesView = () => {
         lastExecutedAt: null,
       }))
     : [];
-
+  
+  console.log({ testCasesData });
+  
   // 로딩 상태
   if (isLoadingProject || isLoadingCases) {
     return (

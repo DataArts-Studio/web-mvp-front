@@ -1,10 +1,29 @@
 'use client';
 import React, { useState } from 'react';
+
+
+
 import { useParams, useRouter } from 'next/navigation';
+
+
+
 import { TestCase } from '@/entities/test-case';
+import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 import { DSButton } from '@/shared';
 import { Calendar, Clock, Copy, Edit2, Flag, Folder, Play, Tag, Trash2, X } from 'lucide-react';
+
+
+
+
+
+
+
+
+
+
+
+
 
 interface TestCaseSideViewProps {
   testCase?: TestCase;
@@ -15,7 +34,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);
-
+  console.log({testCase});
   const handleRunTest = () => {
     router.push(`/projects/${params.slug}/runs/create`);
   };
@@ -121,9 +140,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
             <Copy className="h-4 w-4" />
             Copy
           </DSButton>
-          <DSButton variant="ghost" className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4" />
-          </DSButton>
+          {testCase && <ArchiveButton targetType='case' targetId={testCase.id} btnType='icon'/>}
         </div>
       </div>
     </section>

@@ -8,10 +8,12 @@ import { Trash2 } from 'lucide-react';
 interface ArchiveButtonProps {
   targetType: ArchiveTargetType;
   targetId: string;
+  btnType?: 'text' | 'icon';
 }
 
-export const ArchiveButton = ({ targetType, targetId }: ArchiveButtonProps) => {
+export const ArchiveButton = ({ targetType, targetId, btnType = 'text' }: ArchiveButtonProps) => {
   const archive = useArchive();
+
   const handleClick = () => {
     archive.mutate({ targetType, targetId });
     console.log(`${targetType} 아카이브\nid:${targetId}`);
@@ -25,7 +27,7 @@ export const ArchiveButton = ({ targetType, targetId }: ArchiveButtonProps) => {
       disabled={archive.isPending}
     >
       <Trash2 className="h-4 w-4" />
-      삭제
+      {btnType === 'text' && '삭제'}
     </DSButton>
   );
 };
