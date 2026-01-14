@@ -9,7 +9,7 @@ import {
 } from '@/entities/milestone';
 import { getDatabase, milestones } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 type GetMilestonesParams = {
@@ -26,12 +26,14 @@ export const getMilestones = async ({
     const db = getDatabase();
 
     const rows = await db
-
       .select()
-
       .from(milestones)
-
-      .where(eq(milestones.project_id, projectId));
+      .where(
+        and(
+          eq(milestones.project_id, projectId),
+          eq(milestones.lifecycle_status, 'ACTIVE')
+        )
+      );
 
     const result: Milestone[] = rows.map((row) => toMilestone(row as MilestoneDTO));
 
@@ -151,15 +153,17 @@ export const updateMilestone = async (
     }
     if (updateFields.startDate !== undefined) {
       // Date 객체를 ISO 문자열로 변환
-      setData.start_date = updateFields.startDate instanceof Date
-        ? updateFields.startDate.toISOString()
-        : updateFields.startDate;
+      setData.start_date =
+        updateFields.startDate instanceof Date
+          ? updateFields.startDate.toISOString()
+          : updateFields.startDate;
     }
     if (updateFields.endDate !== undefined) {
       // Date 객체를 ISO 문자열로 변환
-      setData.end_date = updateFields.endDate instanceof Date
-        ? updateFields.endDate.toISOString()
-        : updateFields.endDate;
+      setData.end_date =
+        updateFields.endDate instanceof Date
+          ? updateFields.endDate.toISOString()
+          : updateFields.endDate;
     }
 
     console.log('setData:', JSON.stringify(setData, null, 2));
@@ -217,13 +221,13 @@ export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: s
     return {
       success: true,
       data: { id: archived.id },
-      message: '마일스톤이 아카이브되었습니다.',
+      message: '마일스톤이 성공적으로 삭제되었습니다.',
     };
   } catch (error) {
     console.error('Error archiving milestone:', error);
     return {
       success: false,
-      errors: { _milestone: ['마일스톤을 아카이브하는 도중 오류가 발생했습니다.'] },
+      errors: { _milestone: ['마일스톤을 삭제하는 도중 오류가 발생했습니다.'] },
     };
   }
 };

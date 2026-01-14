@@ -20,6 +20,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react';
+import { ArchiveButton } from '@/features/archive/ui/archive-button';
 
 const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   inProgress: {
@@ -149,10 +150,7 @@ export const MilestoneDetailView = () => {
                 <Edit2 className="h-4 w-4" />
                 수정
               </DSButton>
-              <DSButton variant="ghost" className="flex items-center gap-2 text-red-400">
-                <Trash2 className="h-4 w-4" />
-                삭제
-              </DSButton>
+              <ArchiveButton targetType='milestone' targetId={milestoneId}/>
             </div>
           </div>
         </header>

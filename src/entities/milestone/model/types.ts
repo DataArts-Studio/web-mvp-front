@@ -1,6 +1,16 @@
+import {
+  CreateMilestoneDtoSchema,
+  CreateMilestoneSchema,
+  LifecycleStatus,
+  MilestoneDtoSchema,
+} from '@/entities';
 import { z } from 'zod';
-import type { LifecycleStatus } from '../../test-case/model/types';
+
 export type MilestoneProgressStatus = 'planned' | 'inProgress' | 'done';
+
+export type MilestoneDTO = z.infer<typeof MilestoneDtoSchema>;
+export type CreateMilestoneDTO = z.infer<typeof CreateMilestoneDtoSchema>;
+export type CreateMilestone = z.infer<typeof CreateMilestoneSchema>;
 
 export type Milestone = {
   id: string;
@@ -23,7 +33,8 @@ export type MilestoneStats = {
   runCount: number;
 };
 
-export type MilestoneWithStats = Milestone & MilestoneStats & {
-  testCases?: Array<{ id: string; caseKey: string; title: string; lastStatus: string | null }>;
-  testRuns?: Array<any>;
-};
+export type MilestoneWithStats = Milestone &
+  MilestoneStats & {
+    testCases?: Array<{ id: string; caseKey: string; title: string; lastStatus: string | null }>;
+    testRuns?: Array<any>;
+  };

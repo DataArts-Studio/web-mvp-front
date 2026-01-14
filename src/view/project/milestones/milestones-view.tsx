@@ -32,7 +32,7 @@ export const MilestonesView = () => {
   const handleCloseEdit = () => {
     setEditingMilestone(null);
   };
-
+  console.log({data: milestonesData});
   // 로딩 상태
   if (isLoadingProject || isLoadingMilestones) {
     return (

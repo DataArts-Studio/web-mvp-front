@@ -75,3 +75,37 @@ export const getProjectById = async (id: string): Promise<ActionResult<ProjectBa
     };
   }
 };
+
+export const archiveProject = async (id: string): Promise<ActionResult<{ id: string }>> => {
+  try {
+    const db = getDatabase();
+    const [archived] = await db
+      .update(projects)
+      .set({
+        archived_at: new Date(),
+        lifecycle_status: 'ARCHIVED',
+        updated_at: new Date(),
+      })
+      .where(eq(projects.id, id))
+      .returning();
+
+    if (!archived) {
+      return {
+        success: false,
+        errors: { _project: ['프로젝트를 찾을 수 없습니다.'] },
+      }
+    }
+
+    return {
+      success: true,
+      data: { id: archived.id },
+      message: '프로젝트가 성공적으로 삭제되었습니다.',
+    }
+  } catch (error) {
+    console.error('Error archiving project:', error);
+    return {
+      success: false,
+      errors: { _project: ['프로젝트를 삭제하는 도중 오류가 발생했습니다.'] },
+    }
+  }
+}

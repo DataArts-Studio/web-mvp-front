@@ -29,7 +29,18 @@ export type TestCase = {
   lifecycleStatus: LifecycleStatus;
 };
 
-export type CreateTestCase = Omit<TestCase, 'id' | 'resultStatus' | 'createdAt' | 'updatedAt' | 'archivedAt' | 'lifecycleStatus'>;
+export type CreateTestCase = {
+  projectId: string;
+  title: string;
+  testSuiteId?: string;
+  caseKey?: string;
+  testType?: string;
+  tags?: string[];
+  preCondition?: string;
+  testSteps?: string;
+  expectedResult?: string;
+  sortOrder?: number;
+};
 
 export type TestCaseExecutionStatus = 'untested' | 'passed' | 'failed' | 'blocked';
 
