@@ -228,7 +228,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
     console.error('Error archiving test case:', error);
     return {
       success: false,
-      errors: { _milestone: ['테스트 케이스를 삭제하는 도중 오류가 발생했습니다.'] },
+      errors: { _testCase: ['테스트 케이스를 삭제하는 도중 오류가 발생했습니다.'] },
     };
   }
 };
