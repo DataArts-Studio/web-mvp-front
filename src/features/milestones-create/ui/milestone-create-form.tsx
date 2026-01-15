@@ -63,6 +63,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
               <FormField.Control
                 placeholder="마일스톤 이름을 입력해 주세요."
                 type="text"
+                maxLength={50}
                 disabled={isPending}
                 {...register('title')}
                 className={errors.title ? 'border-system-red focus:border-system-red' : ''}
@@ -77,9 +78,14 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
               <FormField.Control
                 placeholder="이 마일스톤에 대한 간략한 설명을 입력해주세요."
                 type="text"
+                maxLength={500}
                 disabled={isPending}
                 {...register('description')}
+                className={errors.description ? 'border-system-red focus:border-system-red' : ''}
               />
+              {errors.description && (
+                <span className="text-system-red mt-1 text-sm">{errors.description.message}</span>
+              )}
             </FormField.Root>
 
             <div className="grid grid-cols-2 gap-4">

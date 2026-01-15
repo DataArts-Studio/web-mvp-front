@@ -49,15 +49,20 @@ export const MilestoneCard = ({ milestone, onEdit }: MilestoneCardProps) => {
     <div className="bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
       <div className="flex w-full flex-col gap-2 md:w-[40%]">
         <div className="flex items-center gap-3">
-          <h2 className="typo-h2-heading">{milestone.title}</h2>
-          <span className={cn('typo-label-heading rounded-full px-3 py-1', statusInfo.style)}>
+          <h2 className="typo-h2-heading max-w-[200px] truncate" title={milestone.title}>
+            {milestone.title}
+          </h2>
+          <span className={cn('typo-label-heading shrink-0 rounded-full px-3 py-1', statusInfo.style)}>
             {statusInfo.label}
           </span>
           <DSButton variant="ghost" size="icon" onClick={handleEditClick}>
             <Edit className="h-4 w-4" />
           </DSButton>
         </div>
-        <p className="typo-body2-normal text-text-2">
+        <p
+          className="typo-body2-normal text-text-2 line-clamp-1"
+          title={milestone.description || '설명이 없습니다.'}
+        >
           {milestone.description || '설명이 없습니다.'}
         </p>
         <div className="text-label-normal text-text-3 flex items-center gap-1.5">
