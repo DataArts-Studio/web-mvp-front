@@ -47,19 +47,19 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
   };
 
   const inputClassName =
-    'bg-bg-3 border-line-2 rounded-2 w-full border px-4 py-3 text-text-1 placeholder:text-text-3 focus:border-primary focus:outline-none transition-colors';
+    'bg-bg-3 border-line-2 rounded-2 w-full border px-3 py-2.5 text-sm text-text-1 placeholder:text-text-3 focus:border-primary focus:outline-none transition-colors';
   const textareaClassName =
-    'bg-bg-3 border-line-2 rounded-2 w-full border px-4 py-3 text-text-1 placeholder:text-text-3 focus:border-primary focus:outline-none transition-colors resize-none min-h-[120px]';
+    'bg-bg-3 border-line-2 rounded-2 w-full border px-3 py-2.5 text-sm text-text-1 placeholder:text-text-3 focus:border-primary focus:outline-none transition-colors resize-none min-h-[80px]';
   const labelClassName = 'text-text-2 typo-body2-heading flex items-center gap-2';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <section className="bg-bg-1 rounded-4 flex w-full max-w-[720px] flex-col overflow-hidden shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <section className="bg-bg-1 rounded-4 flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden shadow-xl">
         {/* Header */}
-        <header className="border-line-2 flex items-center justify-between border-b px-6 py-4">
+        <header className="border-line-2 flex shrink-0 items-center justify-between border-b px-5 py-4">
           <div>
-            <h2 className="text-text-1 text-xl font-bold">테스트 케이스 생성</h2>
-            <p className="text-text-3 mt-1 text-sm">
+            <h2 className="text-text-1 text-lg font-bold">테스트 케이스 생성</h2>
+            <p className="text-text-3 mt-0.5 text-xs">
               테스트 시나리오의 상세 내용을 작성해주세요.
             </p>
           </div>
@@ -69,7 +69,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
         </header>
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 p-6" noValidate>
+        <form id="test-case-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-5 overflow-y-auto p-5" noValidate>
           {/* 제목 (필수) */}
           <FormField.Root error={errors.name} className="flex flex-col gap-2">
             <FormField.Label className={labelClassName}>
@@ -123,7 +123,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               {...register('pre_condition')}
               placeholder="테스트 실행 전 충족되어야 하는 조건을 작성해주세요."
               className={textareaClassName}
-              rows={3}
+              rows={2}
             />
           </FormField.Root>
 
@@ -137,7 +137,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               {...register('steps')}
               placeholder="1. 첫 번째 단계&#10;2. 두 번째 단계&#10;3. 세 번째 단계"
               className={textareaClassName}
-              rows={4}
+              rows={3}
             />
           </FormField.Root>
 
@@ -151,20 +151,20 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               {...register('expected_result')}
               placeholder="각 테스트 단계 수행 후 예상되는 결과를 작성해주세요."
               className={textareaClassName}
-              rows={4}
+              rows={3}
             />
           </FormField.Root>
-
-          {/* Actions */}
-          <div className="border-line-2 flex justify-end gap-3 border-t pt-6">
-            <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>
-              취소
-            </DSButton>
-            <DSButton type="submit" variant="solid" disabled={isPending}>
-              {isPending ? '생성 중...' : '테스트 케이스 생성'}
-            </DSButton>
-          </div>
         </form>
+
+        {/* Actions - 스크롤 영역 밖 */}
+        <div className="border-line-2 flex shrink-0 justify-end gap-3 border-t px-5 py-4">
+          <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>
+            취소
+          </DSButton>
+          <DSButton type="submit" form="test-case-form" variant="solid" disabled={isPending}>
+            {isPending ? '생성 중...' : '테스트 케이스 생성'}
+          </DSButton>
+        </div>
       </section>
     </div>
   );
