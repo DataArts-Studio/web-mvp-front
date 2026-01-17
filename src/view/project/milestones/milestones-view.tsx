@@ -44,7 +44,7 @@ export const MilestonesView = () => {
   const filteredMilestones = useMemo(() => {
     return milestonesData.filter((milestone: Milestone) => {
       // 상태 필터
-      const statusMatch = statusFilter === '전체' || milestone.status === FILTER_TO_STATUS[statusFilter];
+      const statusMatch = statusFilter === '전체' || milestone.progressStatus === FILTER_TO_STATUS[statusFilter];
 
       // 검색어 필터 (제목, 설명에서 검색)
       const searchLower = searchQuery.toLowerCase().trim();
