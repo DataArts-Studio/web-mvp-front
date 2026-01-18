@@ -15,7 +15,7 @@ import { DSButton } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronRight, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
-import { TestStatusChart, TestStatusData } from '@/widgets/project';
+import { TestStatusChart, TestStatusData, KPICards, KPIData } from '@/widgets/project';
 
 type ModalType = 'case' | 'suite';
 
@@ -43,22 +43,29 @@ export const ProjectDashboardView = () => {
   const testCases = testCasesData?.success ? testCasesData.data : [];
   const testSuites = dashboardData?.success ? dashboardData.data.testSuites : [];
 
-  // 테스트 상태 데이터 계산 (임시: 실제 데이터 연동 필요)
+  // 테스트 상태 데이터 계산 (실제 데이터 기반)
   const testStatusData: TestStatusData = React.useMemo(() => {
-    // TODO: 실제 테스트 결과 데이터와 연동 필요
-    // 현재는 테스트 케이스 수를 기반으로 더미 데이터 생성
-    const total = testCases.length;
-    if (total === 0) {
-      return { pass: 0, fail: 0, blocked: 0, untested: 0 };
-    }
-    // 더미 데이터: 실제로는 API에서 가져와야 함
-    return {
-      pass: Math.floor(total * 0.6),
-      fail: Math.floor(total * 0.15),
-      blocked: Math.floor(total * 0.05),
-      untested: total - Math.floor(total * 0.6) - Math.floor(total * 0.15) - Math.floor(total * 0.05),
-    };
-  }, [testCases.length]);
+    // testCases의 resultStatus 필드를 기반으로 집계
+    const statusCounts = testCases.reduce(
+      (acc, tc) => {
+        const status = tc.resultStatus;
+        if (status === 'pass') acc.pass++;
+        else if (status === 'fail') acc.fail++;
+        else if (status === 'blocked') acc.blocked++;
+        else acc.untested++; // 'untested' 또는 기타
+        return acc;
+      },
+      { pass: 0, fail: 0, blocked: 0, untested: 0 }
+    );
+    return statusCounts;
+  }, [testCases]);
+
+  // KPI 데이터 계산
+  const kpiData: KPIData = React.useMemo(() => ({
+    totalCases: testCases.length,
+    testSuites: testSuites.length,
+    ...testStatusData,
+  }), [testCases.length, testSuites.length, testStatusData]);
 
   const handleCopyLink = async () => {
     try {
@@ -107,6 +114,11 @@ export const ProjectDashboardView = () => {
             클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 만들어보세요.
           </p>
         </header>
+
+        {/* KPI 카드 섹션 */}
+        <section className="col-span-6">
+          <KPICards data={kpiData} />
+        </section>
 
         {/* 프로젝트 정보 + 최근 활동 카드 */}
         <section className="col-span-6 grid grid-cols-6 gap-5">
