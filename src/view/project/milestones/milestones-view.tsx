@@ -154,7 +154,7 @@ export const MilestonesView = () => {
 
           {milestonesData.length === 0 ? (
             // 원본 데이터가 없는 경우
-            <div className="rounded-3 border-border-2 bg-bg-2/50 col-span-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
+            <div className="rounded-3 border-line-2 bg-bg-2/50 col-span-6 flex min-h-[200px] flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
               <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
                 <FolderOpen className="h-6 w-6" strokeWidth={1.5} />
               </div>
@@ -167,7 +167,7 @@ export const MilestonesView = () => {
             </div>
           ) : filteredMilestones.length === 0 ? (
             // 필터 결과가 없는 경우
-            <div className="rounded-3 border-border-2 bg-bg-2/50 col-span-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-16 text-center">
+            <div className="rounded-3 border-line-2 bg-bg-2/50 col-span-6 flex min-h-[200px] flex-col items-center justify-center gap-4 border-2 border-dashed py-16 text-center">
               <div className="flex flex-col gap-1">
                 <p className="typo-h3-heading text-text-1">검색 결과가 없습니다.</p>
                 <p className="typo-body2-normal text-text-3">
