@@ -7,7 +7,7 @@ import { TestCase, TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { Container, DSButton, Input, MainContainer } from '@/shared';
+import { Container, Input, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
