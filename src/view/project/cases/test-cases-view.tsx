@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 
 import { useParams } from 'next/navigation';
 
@@ -59,6 +59,10 @@ export const TestCasesView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
   const [sortOption, setSortOption] = useState<SortValue>('updatedAt-desc');
+
+  // 페이지네이션 상태
+  const [visibleCount, setVisibleCount] = useState(30);
+  const PAGE_SIZE = 30;
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(params.slug as string),
@@ -121,6 +125,11 @@ export const TestCasesView = () => {
   // 현재 필터 라벨 가져오기
   const currentStatusLabel = STATUS_FILTER_OPTIONS.find((opt) => opt.value === statusFilter)?.label || '전체';
   const currentSortLabel = SORT_OPTIONS.find((opt) => opt.value === sortOption)?.label || '최근 수정 순';
+
+  // 필터 변경 시 visibleCount 초기화
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, statusFilter, sortOption]);
   
   // 로딩 상태
   if (isLoadingProject || isLoadingCases) {
@@ -185,13 +194,13 @@ export const TestCasesView = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {/* Status Filter Dropdown */}
-            <Select.Root value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilterValue)} className="relative shrink-0">
+            <Select.Root value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilterValue)} className="relative shrink-0 w-fit">
               <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
                 <Filter className="h-4 w-4 shrink-0" />
                 <span>상태: {currentStatusLabel}</span>
                 <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
               </Select.Trigger>
-              <Select.Content className="absolute top-full left-0 w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
+              <Select.Content className="absolute top-full left-0 min-w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
                 {STATUS_FILTER_OPTIONS.map((option) => (
                   <Select.Item
                     key={option.value}
@@ -204,13 +213,13 @@ export const TestCasesView = () => {
               </Select.Content>
             </Select.Root>
             {/* Sort Dropdown */}
-            <Select.Root value={sortOption} onValueChange={(value) => setSortOption(value as SortValue)} className="relative shrink-0">
+            <Select.Root value={sortOption} onValueChange={(value) => setSortOption(value as SortValue)} className="relative shrink-0 w-fit">
               <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
                 <ArrowUpDown className="h-4 w-4 shrink-0" />
                 <span>정렬: {currentSortLabel}</span>
                 <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
               </Select.Trigger>
-              <Select.Content className="absolute top-full left-0 w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
+              <Select.Content className="absolute top-full left-0 min-w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
                 {SORT_OPTIONS.map((option) => (
                   <Select.Item
                     key={option.value}
@@ -266,7 +275,7 @@ export const TestCasesView = () => {
                 </button>
               </div>
             ) : (
-              filteredAndSortedTestCases.map((item) => (
+              filteredAndSortedTestCases.slice(0, visibleCount).map((item) => (
                 <TestTable.Row key={item.caseKey} onClick={() => {
                   setSelectedTestCase(item);
                   onOpen('detail');
@@ -275,7 +284,16 @@ export const TestCasesView = () => {
                 </TestTable.Row>
               ))
             )}
-            <TestTable.Pagination />
+            {filteredAndSortedTestCases.length >= PAGE_SIZE && visibleCount < filteredAndSortedTestCases.length && (
+              <div className="flex justify-center py-4">
+                <button
+                  onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                  className="typo-body2-heading text-primary hover:text-primary/80 transition-colors"
+                >
+                  더보기 ({filteredAndSortedTestCases.length - visibleCount}개 더)
+                </button>
+              </div>
+            )}
           </TestTable.Root>
         </section>
       </MainContainer>
