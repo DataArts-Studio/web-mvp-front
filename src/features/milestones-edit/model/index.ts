@@ -14,8 +14,11 @@ const dateSchema = z.preprocess((val) => {
 
 export const UpdateMilestoneSchema = z.object({
   id: z.string(),
-  title: z.string().min(1, '마일스톤 이름을 입력해주세요.').max(100),
-  description: z.string().optional(),
+  title: z
+    .string()
+    .min(1, '마일스톤 이름을 입력해주세요.')
+    .max(50, '마일스톤 이름은 50자를 초과할 수 없습니다.'),
+  description: z.string().max(500, '설명은 500자를 초과할 수 없습니다.').optional(),
   startDate: dateSchema,
   endDate: dateSchema,
 });
