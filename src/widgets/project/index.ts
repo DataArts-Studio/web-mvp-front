@@ -1,2 +1,2 @@
-export {ProjectHeader, ActionToolbar, TestTable, TestStatusChart} from '@/widgets/project/ui';
-export type { TestStatusData } from '@/widgets/project/ui';
+export {ProjectHeader, ActionToolbar, TestTable, TestStatusChart, KPICards} from '@/widgets/project/ui';
+export type { TestStatusData, KPIData } from '@/widgets/project/ui';
