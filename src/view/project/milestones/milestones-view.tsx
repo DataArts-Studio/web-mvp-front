@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -12,10 +12,25 @@ import { ActionToolbar, Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
 
+// 필터 옵션과 상태값 매핑
+const FILTER_OPTIONS = ['전체', '진행 중', '완료', '예정'] as const;
+type FilterOption = (typeof FILTER_OPTIONS)[number];
+
+const FILTER_TO_STATUS: Record<FilterOption, string | null> = {
+  '전체': null,
+  '진행 중': 'inProgress',
+  '완료': 'done',
+  '예정': 'planned',
+};
+
 export const MilestonesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
+
+  // 필터링 상태
+  const [statusFilter, setStatusFilter] = useState<FilterOption>('전체');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
@@ -25,6 +40,32 @@ export const MilestonesView = () => {
   });
   const milestonesData = milestonesResult?.success ? milestonesResult.data : [];
 
+  // 필터링된 마일스톤 데이터
+  const filteredMilestones = useMemo(() => {
+    return milestonesData.filter((milestone: Milestone) => {
+      // 상태 필터
+      const statusMatch = statusFilter === '전체' || milestone.progressStatus === FILTER_TO_STATUS[statusFilter];
+
+      // 검색어 필터 (제목, 설명에서 검색)
+      const searchLower = searchQuery.toLowerCase().trim();
+      const searchMatch = !searchLower ||
+        milestone.title.toLowerCase().includes(searchLower) ||
+        (milestone.description?.toLowerCase().includes(searchLower) ?? false);
+
+      return statusMatch && searchMatch;
+    });
+  }, [milestonesData, statusFilter, searchQuery]);
+
+  // 필터 변경 핸들러
+  const handleFilterChange = (value: string) => {
+    setStatusFilter(value as FilterOption);
+  };
+
+  // 검색어 변경 핸들러
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
   const handleEdit = (milestone: Milestone) => {
     setEditingMilestone(milestone);
   };
@@ -32,7 +73,6 @@ export const MilestonesView = () => {
   const handleCloseEdit = () => {
     setEditingMilestone(null);
   };
-  console.log({data: milestonesData});
   // 로딩 상태
   if (isLoadingProject || isLoadingMilestones) {
     return (
@@ -73,11 +113,15 @@ export const MilestonesView = () => {
         </header>
         <ActionToolbar.Root ariaLabel="마일스톤 컨트롤">
           <ActionToolbar.Group>
-            <ActionToolbar.Search placeholder="마일스톤 이름 또는 키워드로 검색" />
+            <ActionToolbar.Search
+              placeholder="마일스톤 이름 또는 키워드로 검색"
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
             <ActionToolbar.Filter
-              options={['전체', '진행 중', '완료', '예정']}
-              currentValue={'전체'}
-              onChange={() => '진행 중'}
+              options={[...FILTER_OPTIONS]}
+              currentValue={statusFilter}
+              onChange={handleFilterChange}
             />
           </ActionToolbar.Group>
           <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen()}>
@@ -86,8 +130,31 @@ export const MilestonesView = () => {
         </ActionToolbar.Root>
         {/* 마일스톤 리스트 */}
         <section aria-label="마일스톤 목록" className="col-span-6 flex flex-col gap-3">
+          {/* 필터 결과 카운트 */}
+          {milestonesData.length > 0 && (
+            <div className="flex items-center justify-between">
+              <p className="typo-body2-normal text-text-3">
+                {statusFilter === '전체' && !searchQuery
+                  ? `총 ${milestonesData.length}개의 마일스톤`
+                  : `${filteredMilestones.length}개의 결과`}
+              </p>
+              {(statusFilter !== '전체' || searchQuery) && (
+                <button
+                  onClick={() => {
+                    setStatusFilter('전체');
+                    setSearchQuery('');
+                  }}
+                  className="typo-label-normal text-text-3 hover:text-primary transition-colors"
+                >
+                  필터 초기화
+                </button>
+              )}
+            </div>
+          )}
+
           {milestonesData.length === 0 ? (
-            <div className="rounded-3 border-border-2 bg-bg-2/50 col-span-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
+            // 원본 데이터가 없는 경우
+            <div className="rounded-3 border-line-2 bg-bg-2/50 col-span-6 flex min-h-[200px] flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
               <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
                 <FolderOpen className="h-6 w-6" strokeWidth={1.5} />
               </div>
@@ -98,8 +165,27 @@ export const MilestonesView = () => {
                 </p>
               </div>
             </div>
+          ) : filteredMilestones.length === 0 ? (
+            // 필터 결과가 없는 경우
+            <div className="rounded-3 border-line-2 bg-bg-2/50 col-span-6 flex min-h-[200px] flex-col items-center justify-center gap-4 border-2 border-dashed py-16 text-center">
+              <div className="flex flex-col gap-1">
+                <p className="typo-h3-heading text-text-1">검색 결과가 없습니다.</p>
+                <p className="typo-body2-normal text-text-3">
+                  다른 검색어나 필터를 시도해보세요.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setStatusFilter('전체');
+                  setSearchQuery('');
+                }}
+                className="typo-body2-normal text-primary hover:underline"
+              >
+                필터 초기화
+              </button>
+            </div>
           ) : (
-            milestonesData.map((milestone: Milestone) => {
+            filteredMilestones.map((milestone: Milestone) => {
               const milestoneWithStats: MilestoneWithStats = {
                 ...milestone,
                 totalCases: 0,
