@@ -1,64 +1,42 @@
 'use client';
-import React, { useRef, useState } from 'react';
-
-
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 
 import { useParams } from 'next/navigation';
-
-
 
 import { TestCase, TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { Container, DSButton, Input, MainContainer } from '@/shared';
+import { Container, Input, MainContainer } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
+import { Select } from '@/shared/lib/primitives/select/select';
 import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Filter, Plus } from 'lucide-react';
+import { ChevronDown, Filter, Plus, ArrowUpDown } from 'lucide-react';
 
+// 상태 필터 옵션
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: '전체' },
+  { value: 'pass', label: 'Pass' },
+  { value: 'fail', label: 'Fail' },
+  { value: 'blocked', label: 'Blocked' },
+  { value: 'untested', label: 'Untested' },
+] as const;
 
+type StatusFilterValue = (typeof STATUS_FILTER_OPTIONS)[number]['value'];
 
+// 정렬 옵션
+const SORT_OPTIONS = [
+  { value: 'updatedAt-desc', label: '최근 수정 순' },
+  { value: 'updatedAt-asc', label: '오래된 수정 순' },
+  { value: 'createdAt-desc', label: '최근 생성 순' },
+  { value: 'createdAt-asc', label: '오래된 생성 순' },
+  { value: 'title-asc', label: '제목 오름차순' },
+  { value: 'title-desc', label: '제목 내림차순' },
+] as const;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 
 const TABLE_HEADERS = [
   { id: 'id', label: 'ID', colSpan: 'col-span-2' },
@@ -76,6 +54,15 @@ export const TestCasesView = () => {
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const { mutate, isPending } = useCreateCase();
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
+
+  // 검색 및 필터 상태
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
+  const [sortOption, setSortOption] = useState<SortValue>('updatedAt-desc');
+
+  // 페이지네이션 상태
+  const [visibleCount, setVisibleCount] = useState(30);
+  const PAGE_SIZE = 30;
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(params.slug as string),
@@ -96,8 +83,53 @@ export const TestCasesView = () => {
         lastExecutedAt: null,
       }))
     : [];
-  
-  console.log({ testCasesData });
+
+  // 필터링 및 정렬된 테스트 케이스
+  const filteredAndSortedTestCases = useMemo(() => {
+    let result = [...testCases];
+
+    // 검색 필터링
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (tc) =>
+          tc.title.toLowerCase().includes(query) ||
+          tc.caseKey.toLowerCase().includes(query)
+      );
+    }
+
+    // 상태 필터링
+    if (statusFilter !== 'all') {
+      result = result.filter((tc) => tc.resultStatus === statusFilter);
+    }
+
+    // 정렬
+    const [sortField, sortOrder] = sortOption.split('-') as [string, 'asc' | 'desc'];
+    result.sort((a, b) => {
+      let comparison = 0;
+
+      if (sortField === 'title') {
+        comparison = a.title.localeCompare(b.title, 'ko');
+      } else if (sortField === 'updatedAt') {
+        comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+      } else if (sortField === 'createdAt') {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+
+    return result;
+  }, [testCases, searchQuery, statusFilter, sortOption]);
+
+  // 현재 필터 라벨 가져오기
+  const currentStatusLabel = STATUS_FILTER_OPTIONS.find((opt) => opt.value === statusFilter)?.label || '전체';
+  const currentSortLabel = SORT_OPTIONS.find((opt) => opt.value === sortOption)?.label || '최근 수정 순';
+
+  // 필터 변경 시 visibleCount 초기화
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, statusFilter, sortOption]);
   
   // 로딩 상태
   if (isLoadingProject || isLoadingCases) {
@@ -152,22 +184,53 @@ export const TestCasesView = () => {
         </header>
 
         <ActionToolbar.Root
-          ariaLabel="마일스톤 컨트롤"
+          ariaLabel="테스트 케이스 컨트롤"
           className="col-span-6 flex items-center justify-between gap-4 bg-transparent p-0"
         >
-          <ActionToolbar.Group className="relative w-full max-w-md">
-            <ActionToolbar.Search placeholder="테스트 케이스 제목을 입력해 주세요." />
-            {/* Filter Dropdown Trigger */}
-            <DSButton className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors">
-              <Filter className="h-4 w-4" />
-              <span>상태: All</span>
-              <ChevronDown className="text-text-3 h-4 w-4" />
-            </DSButton>
-            {/* Sort Dropdown Trigger */}
-            <DSButton className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors">
-              <span>정렬: 최근 수정 순</span>
-              <ChevronDown className="text-text-3 h-4 w-4" />
-            </DSButton>
+          <ActionToolbar.Group className="relative w-full max-w-3xl">
+            <ActionToolbar.Search
+              placeholder="테스트 케이스 제목을 입력해 주세요."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {/* Status Filter Dropdown */}
+            <Select.Root value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilterValue)} className="relative shrink-0 w-fit">
+              <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
+                <Filter className="h-4 w-4 shrink-0" />
+                <span>상태: {currentStatusLabel}</span>
+                <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
+              </Select.Trigger>
+              <Select.Content className="absolute top-full left-0 min-w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
+                {STATUS_FILTER_OPTIONS.map((option) => (
+                  <Select.Item
+                    key={option.value}
+                    value={option.value}
+                    className="typo-body2-normal px-3 py-2 text-text-2 hover:bg-bg-3 hover:text-text-1 cursor-pointer data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary whitespace-nowrap"
+                  >
+                    {option.label}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+            {/* Sort Dropdown */}
+            <Select.Root value={sortOption} onValueChange={(value) => setSortOption(value as SortValue)} className="relative shrink-0 w-fit">
+              <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
+                <ArrowUpDown className="h-4 w-4 shrink-0" />
+                <span>정렬: {currentSortLabel}</span>
+                <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
+              </Select.Trigger>
+              <Select.Content className="absolute top-full left-0 min-w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
+                {SORT_OPTIONS.map((option) => (
+                  <Select.Item
+                    key={option.value}
+                    value={option.value}
+                    className="typo-body2-normal px-3 py-2 text-text-2 hover:bg-bg-3 hover:text-text-1 cursor-pointer data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary whitespace-nowrap"
+                  >
+                    {option.label}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           </ActionToolbar.Group>
           <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen('create')} className='flex items-center gap-2'>
             <Plus className="h-4 w-4" />
@@ -198,15 +261,39 @@ export const TestCasesView = () => {
                 />
               </div>
             </TestTable.Row>
-            {testCases.map((item) => (
-              <TestTable.Row key={item.caseKey} onClick={() => {
-                setSelectedTestCase(item);
-                onOpen('detail');
-              }}>
-                <TestCaseCard testCase={item} />
-              </TestTable.Row>
-            ))}
-            <TestTable.Pagination />
+            {filteredAndSortedTestCases.length === 0 && testCases.length > 0 ? (
+              <div className="col-span-12 flex flex-col items-center justify-center gap-2 py-12">
+                <p className="typo-body2-normal text-text-3">검색 결과가 없습니다.</p>
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                  }}
+                  className="typo-body2-normal text-primary hover:underline"
+                >
+                  필터 초기화
+                </button>
+              </div>
+            ) : (
+              filteredAndSortedTestCases.slice(0, visibleCount).map((item) => (
+                <TestTable.Row key={item.caseKey} onClick={() => {
+                  setSelectedTestCase(item);
+                  onOpen('detail');
+                }}>
+                  <TestCaseCard testCase={item} />
+                </TestTable.Row>
+              ))
+            )}
+            {filteredAndSortedTestCases.length >= PAGE_SIZE && visibleCount < filteredAndSortedTestCases.length && (
+              <div className="flex justify-center py-4">
+                <button
+                  onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                  className="typo-body2-heading text-primary hover:text-primary/80 transition-colors"
+                >
+                  더보기 ({filteredAndSortedTestCases.length - visibleCount}개 더)
+                </button>
+              </div>
+            )}
           </TestTable.Root>
         </section>
       </MainContainer>
