@@ -115,6 +115,11 @@ export const MvpBottomNavbar = () => {
     if (href === '/') {
       return currentPath === '/';
     }
+    // 대시보드 경로 (/projects/[slug])는 정확히 일치해야 합니다.
+    const dashboardPattern = /^\/projects\/[^/]+$/;
+    if (dashboardPattern.test(href)) {
+      return currentPath === href;
+    }
     // 다른 경로는 해당 href로 시작하면 활성화됩니다.
     return currentPath.startsWith(href);
   };
