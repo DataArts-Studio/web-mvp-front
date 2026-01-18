@@ -185,18 +185,18 @@ export const TestCasesView = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {/* Status Filter Dropdown */}
-            <Select.Root value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilterValue)}>
-              <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer">
-                <Filter className="h-4 w-4" />
+            <Select.Root value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilterValue)} className="relative shrink-0">
+              <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
+                <Filter className="h-4 w-4 shrink-0" />
                 <span>상태: {currentStatusLabel}</span>
-                <ChevronDown className="text-text-3 h-4 w-4" />
+                <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
               </Select.Trigger>
-              <Select.Content className="absolute top-full left-0 mt-1 z-50 min-w-[160px] rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
+              <Select.Content className="absolute top-full left-0 w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
                 {STATUS_FILTER_OPTIONS.map((option) => (
                   <Select.Item
                     key={option.value}
                     value={option.value}
-                    className="typo-body2-normal px-3 py-2 text-text-2 hover:bg-bg-3 hover:text-text-1 cursor-pointer data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
+                    className="typo-body2-normal px-3 py-2 text-text-2 hover:bg-bg-3 hover:text-text-1 cursor-pointer data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary whitespace-nowrap"
                   >
                     {option.label}
                   </Select.Item>
@@ -204,18 +204,18 @@ export const TestCasesView = () => {
               </Select.Content>
             </Select.Root>
             {/* Sort Dropdown */}
-            <Select.Root value={sortOption} onValueChange={(value) => setSortOption(value as SortValue)}>
-              <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer">
-                <ArrowUpDown className="h-4 w-4" />
+            <Select.Root value={sortOption} onValueChange={(value) => setSortOption(value as SortValue)} className="relative shrink-0">
+              <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
+                <ArrowUpDown className="h-4 w-4 shrink-0" />
                 <span>정렬: {currentSortLabel}</span>
-                <ChevronDown className="text-text-3 h-4 w-4" />
+                <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
               </Select.Trigger>
-              <Select.Content className="absolute top-full left-0 mt-1 z-50 min-w-[180px] rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
+              <Select.Content className="absolute top-full left-0 w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
                 {SORT_OPTIONS.map((option) => (
                   <Select.Item
                     key={option.value}
                     value={option.value}
-                    className="typo-body2-normal px-3 py-2 text-text-2 hover:bg-bg-3 hover:text-text-1 cursor-pointer data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
+                    className="typo-body2-normal px-3 py-2 text-text-2 hover:bg-bg-3 hover:text-text-1 cursor-pointer data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary whitespace-nowrap"
                   >
                     {option.label}
                   </Select.Item>
