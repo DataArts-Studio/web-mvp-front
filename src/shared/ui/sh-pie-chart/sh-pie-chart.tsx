@@ -8,7 +8,7 @@ import {
   cn,
   constructCategoryColors,
   getColorClassName,
-} from '@/shared';
+} from '@/shared/utils';
 import {
   Pie,
   PieChart as ReChartsDonutChart,

@@ -1,6 +1,11 @@
 import React, { ComponentProps, ReactNode } from 'react';
 
-import { FormField, FormFieldError, cn, useFormField } from '@/shared';
+import {
+  FormField,
+  useFormField,
+  type FormFieldError,
+} from '@/shared/lib/primitives/form-field';
+import { cn } from '@/shared/utils';
 import { CircleAlert } from 'lucide-react';
 
 interface DsFormFieldProps extends ComponentProps<typeof FormField.Root> {
