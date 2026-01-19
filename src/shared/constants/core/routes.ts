@@ -8,15 +8,18 @@ const PUBLIC = {
 } as const;
 
 /* ────────────────────────────────────────
- * 인증 필요 - name: 프로젝트 이름
- * (MVP에서는 세션 대신 UUID 프로젝트 같은 역할)
+ * 인증 필요 - slug: 프로젝트 식별자
+ * 프로젝트 접근 시 비밀번호 인증 필요
  * ────────────────────────────────────────*/
 const PRIVATE = {
-  PROJECT: '/project',
-  PROJECT_DETAIL: (name: string) => `/project/${name}`,
-  MILESTONE: (name: string) => `/project/${name}/milestone`,
-  SUITE: (name: string) => `/project/${name}/suite`,
-  CASE: (name: string) => `/project/${name}/case`,
+  PROJECTS: '/projects',
+  PROJECT_DETAIL: (slug: string) => `/projects/${slug}`,
+  PROJECT_ACCESS: (slug: string) => `/projects/${slug}/access`,
+  MILESTONE: (slug: string) => `/projects/${slug}/milestones`,
+  SUITE: (slug: string) => `/projects/${slug}/suites`,
+  CASE: (slug: string) => `/projects/${slug}/cases`,
+  RUNS: (slug: string) => `/projects/${slug}/runs`,
+  SETTINGS: (slug: string) => `/projects/${slug}/settings`,
 } as const;
 
 /* ────────────────────────────────────────

@@ -6,6 +6,7 @@ export type LifecycleStatus = (typeof lifecycleStatusEnum)[number];
 export const projects = pgTable('projects', {
   id: uuid('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
+  /** 프로젝트 접근 비밀번호의 bcrypt 해시. 원문은 저장하지 않음. */
   identifier: varchar('identifier', { length: 255 }).notNull(),
   description: varchar('description', { length: 255 }),
   owner_name: varchar('owner_name', { length: 255 }),

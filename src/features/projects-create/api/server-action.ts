@@ -6,21 +6,24 @@ import type { CreateProjectDomain, ProjectDomain } from '@/entities';
 import { toProjectDto } from '@/entities';
 import { getDatabase, projects } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+
+import { hashPassword } from '@/access/lib/password-hash';
 
 // ============================================================================
 // Helpers
 // ============================================================================
+/**
+ * @deprecated hashPassword를 대신 사용하세요 (@/access/lib/password-hash)
+ */
 export async function hashIdentifier(identifier: string): Promise<string> {
-  const saltRounds = 10;
-  return await bcrypt.hash(identifier, saltRounds);
+  return hashPassword(identifier);
 }
 
 // Server Action에서 클라이언트로 전달할 때 Date 객체는 직렬화 불가능하므로 string으로 변환
-type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' | 'archivedAt'> & {
-  slug: string;
+// identifier(해시)는 보안상 응답에 포함하지 않음
+type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' | 'archivedAt' | 'identifier'> & {
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -37,20 +40,17 @@ export async function createProject(
   try {
     const db = getDatabase();
     const dto = toProjectDto(input);
-    const hashedIdentifier = await hashIdentifier(dto.identifier);
+    const hashedIdentifier = await hashPassword(dto.identifier);
     const id = uuidv7();
 
     // 프로젝트 이름 정규화: trim + 연속 공백을 단일 공백으로 변환
     const normalizedName = dto.name.trim().replace(/\s+/g, ' ');
-    // URL slug 생성: 공백을 하이픈으로 변환, 소문자로 변환
-    const slug = normalizedName.toLowerCase().replace(/\s+/g, '-');
 
     const [inserted] = await db
       .insert(projects)
       .values({
         id,
         name: normalizedName,
-        slug,
         identifier: hashedIdentifier,
         description: dto.description ?? null,
         owner_name: dto.owner_name ?? null,
@@ -64,11 +64,9 @@ export async function createProject(
       };
     }
 
-    const result = {
+    const result: SerializableProjectDomain = {
       id: inserted.id,
       projectName: inserted.name,
-      slug: inserted.slug,
-      identifier: inserted.identifier,
       description: inserted.description ?? undefined,
       ownerName: inserted.owner_name ?? undefined,
       createdAt: inserted.created_at.toISOString(),
@@ -109,8 +107,6 @@ export async function getProjects(): Promise<ActionResult<SerializableProjectDom
     const result: SerializableProjectDomain[] = rows.map((row) => ({
       id: row.id,
       projectName: row.name,
-      slug: row.slug,
-      identifier: row.identifier,
       description: row.description ?? undefined,
       ownerName: row.owner_name ?? undefined,
       createdAt: row.created_at.toISOString(),
