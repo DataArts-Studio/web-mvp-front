@@ -1,12 +1,8 @@
 'use client';
-import React, { useState } from 'react';
-
-
+import React, { useState, useMemo } from 'react';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-
-
 
 import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
 import type { TestSuite, TestSuiteCard } from '@/entities/test-suite';
@@ -17,10 +13,17 @@ import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 
+const FILTER_OPTIONS = ['전체', '기능별', '시나리오'] as const;
+type FilterOption = typeof FILTER_OPTIONS[number];
+
 export const TestSuitesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingSuite, setEditingSuite] = useState<TestSuiteCard | null>(null);
+
+  // 검색어 및 필터 상태
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<FilterOption>('전체');
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
@@ -37,6 +40,37 @@ export const TestSuitesView = () => {
     executionHistoryCount: 0,
     recentRuns: []
   })) : [];
+
+  // 필터링된 스위트 목록
+  const filteredSuites = useMemo(() => {
+    let result = suites;
+
+    // 검색어 필터링
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      result = result.filter((suite) =>
+        suite.title.toLowerCase().includes(query) ||
+        suite.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // 타입 필터링 (향후 tag 기반 필터링 확장 가능)
+    if (filterType !== '전체') {
+      result = result.filter((suite) => suite.tag.label === filterType);
+    }
+
+    return result;
+  }, [suites, searchQuery, filterType]);
+
+  // 검색어 변경 핸들러
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // 필터 변경 핸들러
+  const handleFilterChange = (value: string) => {
+    setFilterType(value as FilterOption);
+  };
 
   const handleEdit = (suite: TestSuiteCard) => {
     setEditingSuite(suite);
@@ -88,11 +122,15 @@ export const TestSuitesView = () => {
         </header>
         <ActionToolbar.Root ariaLabel="테스트 스위트 컨트롤">
           <ActionToolbar.Group>
-            <ActionToolbar.Search placeholder="스위트 이름 또는 키워드로 검색" />
+            <ActionToolbar.Search
+              placeholder="스위트 이름 또는 키워드로 검색"
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
             <ActionToolbar.Filter
-              options={['전체', '기능별', '시나리오']}
-              currentValue={'전체'}
-              onChange={() => '기능별'}
+              options={[...FILTER_OPTIONS]}
+              currentValue={filterType}
+              onChange={handleFilterChange}
             />
           </ActionToolbar.Group>
           <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen()}>
@@ -100,7 +138,12 @@ export const TestSuitesView = () => {
           </ActionToolbar.Action>
         </ActionToolbar.Root>
         <section aria-label="테스트 스위트 리스트" className="col-span-6 flex flex-col gap-3">
-          {suites.map((suite) => (
+          {filteredSuites.length === 0 && (searchQuery || filterType !== '전체') ? (
+            <div className="text-text-3 py-8 text-center">
+              검색 결과가 없습니다.
+            </div>
+          ) : null}
+          {filteredSuites.map((suite) => (
             <Link
               key={suite.id}
               href={`/projects/${params.slug}/suites/${suite.id}`}
