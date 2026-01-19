@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Container, MainContainer } from '@/shared';
 import { Aside } from '@/widgets';
 import {
@@ -9,7 +9,9 @@ import {
   PlayCircle,
   Clock,
   CheckCircle2,
-  ListTodo
+  ListTodo,
+  ArrowUpDown,
+  X
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
@@ -18,6 +20,7 @@ import { testRunsQueryOptions } from '@/features/runs';
 
 type RunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 type RunSourceType = 'SUITE' | 'MILESTONE' | 'ADHOC';
+type StatusFilter = 'ALL' | RunStatus;
 
 interface ITestRun {
   id: string;
@@ -32,7 +35,35 @@ export const TestRunsListView = () => {
   const params = useParams();
   const router = useRouter();
   const projectSlug = params.slug as string;
+
+  // 검색어 상태
+  const [searchTerm, setSearchTerm] = useState('');
+  // 상태 필터
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  // 정렬 옵션
   const [sortOption, setSortOption] = useState<'UPDATED' | 'NAME'>('UPDATED');
+  // 드롭다운 열림 상태
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+
+  // 드롭다운 외부 클릭 감지를 위한 ref
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setIsSortDropdownOpen(false);
+      }
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setIsStatusDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(projectSlug)
@@ -47,10 +78,38 @@ export const TestRunsListView = () => {
 
   const testRuns: ITestRun[] = (fetchedRunsData?.success ? fetchedRunsData.data : []) as ITestRun[];
 
-  const sortedRuns = [...testRuns].sort((a, b) => {
+  // 검색어 및 상태 필터링 적용
+  const filteredRuns = testRuns.filter((run) => {
+    // 검색어 필터 (이름 또는 소스 이름)
+    const matchesSearch =
+      searchTerm === '' ||
+      run.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      run.sourceName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // 상태 필터
+    const matchesStatus = statusFilter === 'ALL' || run.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // 정렬 적용
+  const sortedRuns = [...filteredRuns].sort((a, b) => {
     if (sortOption === 'NAME') return a.name.localeCompare(b.name);
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
+
+  // 상태 필터 라벨
+  const getStatusFilterLabel = (filter: StatusFilter) => {
+    switch (filter) {
+      case 'ALL': return '전체 상태';
+      case 'COMPLETED': return '완료됨';
+      case 'IN_PROGRESS': return '진행 중';
+      case 'NOT_STARTED': return '시작 전';
+    }
+  };
+
+  // 검색어 초기화
+  const clearSearch = () => setSearchTerm('');
 
   const getStatusBadgeStyle = (status: RunStatus) => {
     switch (status) {
@@ -104,6 +163,7 @@ export const TestRunsListView = () => {
         </header>
 
         <section className="col-span-6 flex items-center justify-between gap-4">
+          {/* 검색창 */}
           <div className="flex flex-1 items-center gap-3">
             <div className="relative w-full max-w-md">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-3">
@@ -111,20 +171,120 @@ export const TestRunsListView = () => {
               </div>
               <input
                 type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="실행 이름 검색..."
-                className="typo-body2-normal w-full rounded-2 border border-line-2 bg-bg-2 py-2 pl-10 pr-4 text-text-1 placeholder:text-text-4 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="typo-body2-normal w-full rounded-2 border border-line-2 bg-bg-2 py-2 pl-10 pr-10 text-text-1 placeholder:text-text-4 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-3 hover:text-text-1 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="relative">
-            <button className="typo-body2-heading flex items-center gap-2 rounded-2 border border-line-2 bg-bg-2 px-3 py-2 text-text-2 hover:bg-bg-3 transition-colors">
-              <Filter className="h-4 w-4" />
-              <span>정렬: {sortOption === 'UPDATED' ? '최근 수정 순' : '이름 순'}</span>
-              <ChevronDown className="h-4 w-4 text-text-3" />
-            </button>
+          <div className="flex items-center gap-2">
+            {/* 상태 필터 드롭다운 */}
+            <div className="relative" ref={statusDropdownRef}>
+              <button
+                onClick={() => {
+                  setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                  setIsSortDropdownOpen(false);
+                }}
+                className={`typo-body2-heading flex items-center gap-2 rounded-2 border px-3 py-2 transition-colors ${
+                  statusFilter !== 'ALL'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3'
+                }`}
+              >
+                <Filter className="h-4 w-4" />
+                <span>{getStatusFilterLabel(statusFilter)}</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isStatusDropdownOpen && (
+                <div className="absolute right-0 top-full z-10 mt-1 min-w-[160px] overflow-hidden rounded-2 border border-line-2 bg-bg-2 shadow-2">
+                  {(['ALL', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as StatusFilter[]).map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setStatusFilter(status);
+                        setIsStatusDropdownOpen(false);
+                      }}
+                      className={`typo-body2-normal flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-bg-3 ${
+                        statusFilter === status ? 'bg-bg-3 text-primary' : 'text-text-2'
+                      }`}
+                    >
+                      {statusFilter === status && <CheckCircle2 className="h-4 w-4" />}
+                      <span className={statusFilter === status ? '' : 'pl-6'}>
+                        {getStatusFilterLabel(status)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 정렬 드롭다운 */}
+            <div className="relative" ref={sortDropdownRef}>
+              <button
+                onClick={() => {
+                  setIsSortDropdownOpen(!isSortDropdownOpen);
+                  setIsStatusDropdownOpen(false);
+                }}
+                className="typo-body2-heading flex items-center gap-2 rounded-2 border border-line-2 bg-bg-2 px-3 py-2 text-text-2 hover:bg-bg-3 transition-colors"
+              >
+                <ArrowUpDown className="h-4 w-4" />
+                <span>{sortOption === 'UPDATED' ? '최근 수정 순' : '이름 순'}</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isSortDropdownOpen && (
+                <div className="absolute right-0 top-full z-10 mt-1 min-w-[160px] overflow-hidden rounded-2 border border-line-2 bg-bg-2 shadow-2">
+                  <button
+                    onClick={() => {
+                      setSortOption('UPDATED');
+                      setIsSortDropdownOpen(false);
+                    }}
+                    className={`typo-body2-normal flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-bg-3 ${
+                      sortOption === 'UPDATED' ? 'bg-bg-3 text-primary' : 'text-text-2'
+                    }`}
+                  >
+                    {sortOption === 'UPDATED' && <CheckCircle2 className="h-4 w-4" />}
+                    <span className={sortOption === 'UPDATED' ? '' : 'pl-6'}>최근 수정 순</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortOption('NAME');
+                      setIsSortDropdownOpen(false);
+                    }}
+                    className={`typo-body2-normal flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-bg-3 ${
+                      sortOption === 'NAME' ? 'bg-bg-3 text-primary' : 'text-text-2'
+                    }`}
+                  >
+                    {sortOption === 'NAME' && <CheckCircle2 className="h-4 w-4" />}
+                    <span className={sortOption === 'NAME' ? '' : 'pl-6'}>이름 순</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </section>
+
+        {/* 검색 결과 요약 */}
+        {(searchTerm || statusFilter !== 'ALL') && (
+          <div className="col-span-6 flex items-center gap-2 text-text-3">
+            <span className="typo-body2-normal">
+              {sortedRuns.length}개 결과
+              {searchTerm && <span className="ml-1">· 검색어: &quot;{searchTerm}&quot;</span>}
+              {statusFilter !== 'ALL' && <span className="ml-1">· 상태: {getStatusFilterLabel(statusFilter)}</span>}
+            </span>
+          </div>
+        )}
 
         <section className="col-span-6 flex flex-col overflow-hidden rounded-4 border border-line-2 bg-bg-2 shadow-1">
           <div className="grid grid-cols-12 gap-4 border-b border-line-2 bg-bg-3 px-6 py-3">
@@ -195,6 +355,30 @@ export const TestRunsListView = () => {
             );
           })}
 
+          {/* 검색/필터 결과가 없을 때 */}
+          {testRuns.length > 0 && sortedRuns.length === 0 && (
+            <div className="flex h-60 flex-col items-center justify-center gap-2 py-10 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-3 text-text-3">
+                <Search className="h-6 w-6" />
+              </div>
+              <p className="typo-body1-heading text-text-2">검색 결과가 없습니다.</p>
+              <p className="typo-caption-normal text-text-3">
+                {searchTerm && `"${searchTerm}"에 대한 결과가 없습니다. `}
+                {statusFilter !== 'ALL' && `상태: ${getStatusFilterLabel(statusFilter)}`}
+              </p>
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('ALL');
+                }}
+                className="mt-2 typo-body2-heading text-primary hover:underline"
+              >
+                필터 초기화
+              </button>
+            </div>
+          )}
+
+          {/* 테스트 실행이 하나도 없을 때 */}
           {testRuns.length === 0 && (
             <div className="flex h-60 flex-col items-center justify-center gap-2 py-10 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-3 text-text-3">
