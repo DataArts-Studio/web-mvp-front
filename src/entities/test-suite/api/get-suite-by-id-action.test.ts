@@ -9,7 +9,7 @@ import {
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
   getDatabase: mockGetDatabase,
-  testSuite: { id: 'id', project_id: 'project_id', name: 'name' },
+  testSuites: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));
 
 import { getTestSuiteById } from './server-actions';
@@ -61,7 +61,8 @@ describe('getTestSuiteById', () => {
           sortOrder: 10,
           createdAt: new Date('2024-02-01'),
           updatedAt: new Date('2024-02-02'),
-          deletedAt: null,
+          archivedAt: null,
+          lifecycleStatus: 'ACTIVE',
         });
       }
     });

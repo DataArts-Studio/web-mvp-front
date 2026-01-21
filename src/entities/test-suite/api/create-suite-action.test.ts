@@ -15,7 +15,7 @@ import { createTestSuite } from './server-actions';
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
   getDatabase: mockGetDatabase,
-  testSuite: { id: 'id', project_id: 'project_id', name: 'name' },
+  testSuites: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));
 
 // uuid 모킹
