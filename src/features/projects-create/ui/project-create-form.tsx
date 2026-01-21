@@ -53,7 +53,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       const domain = formToDomain(formData);
       const result = await createProject(domain);
       if (result.success) {
-        setCreatedSlug(result.data.slug);
+        setCreatedSlug(result.data.id);
         setStep(4);
       } else {
         const errorMessages = Object.values(result.errors).flat().join('\n');
@@ -106,7 +106,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
           <div className="flex flex-col items-center justify-center gap-4">
             {/* Step1: 프로젝트 이름 입력 */}
             <div className="flex flex-col items-center justify-center gap-4 space-x-2 text-xl font-bold text-teal-400">
-              <Image src="/logo.svg" alt="Testea Logo" width={120} height={120} />
+              <Image src="/logo.svg" alt="Testea Logo" width={120} height={28} />
               <h2 className="text-primary">테스트 케이스 작성, 단 5분이면 끝!</h2>
               <p className="mt-2 text-base text-neutral-400">
                 클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 생성하고 관리해보세요.

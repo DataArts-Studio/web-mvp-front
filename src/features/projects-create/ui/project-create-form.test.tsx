@@ -27,7 +27,6 @@ const mockSuccessResponse: ActionResult<ProjectDomain> = {
   data: {
     id: 'test-uuid-123',
     projectName: 'Test Project',
-    slug: 'test-project-slug',
     identifier: 'hashed_identifier',
     description: undefined,
     ownerName: undefined,
@@ -206,7 +205,7 @@ describe('ProjectCreateForm 통합 테스트', () => {
 
       // 시작하기 버튼 클릭 시 라우터 이동
       fireEvent.click(screen.getByText(/시작하기/i));
-      expect(mockReplace).toHaveBeenCalledWith('/projects/test-project-slug');
+      expect(mockReplace).toHaveBeenCalledWith('/projects/test-uuid-123');
     });
 
     it('프로젝트 생성에 실패하면 에러 메시지를 표시한다', async () => {
