@@ -34,7 +34,6 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);
-  console.log({testCase});
   const handleRunTest = () => {
     router.push(`/projects/${params.slug}/runs/create`);
   };

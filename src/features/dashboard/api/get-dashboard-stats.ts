@@ -22,8 +22,6 @@ export const getDashboardStats = async ({
       .where(eq(projects.name, slug))
       .limit(1);
 
-    console.log('[Dashboard] projectRow:', projectRow);
-
     if (!projectRow) {
       return {
         success: false,
@@ -46,8 +44,6 @@ export const getDashboardStats = async ({
       .from(testCases)
       .where(eq(testCases.project_id, projectRow.id));
 
-    console.log('[Dashboard] testCaseCountResult:', testCaseCountResult);
-
     // 스위트 미지정 케이스 수
     const assignedTestCasesSubquery = db
         .select({ id: suiteTestCases.test_case_id })
@@ -63,8 +59,6 @@ export const getDashboardStats = async ({
             )
         );
 
-    console.log('[Dashboard] unassignedCountResult:', unassignedCountResult);
-
     const testCaseStats: TestCaseStats = {
       total: testCaseCountResult?.count ?? 0,
       unassigned: unassignedCountResult?.count ?? 0,
@@ -79,8 +73,6 @@ export const getDashboardStats = async ({
       })
       .from(testSuites)
       .where(eq(testSuites.project_id, projectRow.id));
-
-    console.log('[Dashboard] suiteRows:', suiteRows);
 
     // 각 스위트별 케이스 수 계산
     const testSuitesResult: TestSuiteSummary[] = await Promise.all(
@@ -99,8 +91,6 @@ export const getDashboardStats = async ({
       })
     );
 
-    console.log('[Dashboard] testSuites:', testSuitesResult);
-
     // 최근 테스트 케이스 - projectRow.id 사용
     const recentTestCases = await db
       .select({
@@ -113,8 +103,6 @@ export const getDashboardStats = async ({
       .orderBy(desc(testCases.created_at))
       .limit(5);
 
-    console.log('[Dashboard] recentTestCases:', recentTestCases);
-
     // 최근 스위트 - projectRow.id 사용
     const recentSuites = await db
       .select({
@@ -126,8 +114,6 @@ export const getDashboardStats = async ({
       .where(eq(testSuites.project_id, projectRow.id))
       .orderBy(desc(testSuites.created_at))
       .limit(5);
-
-    console.log('[Dashboard] recentSuites:', recentSuites);
 
     // 최근 활동 합치기 및 정렬
     const recentActivities: RecentActivity[] = [

@@ -136,10 +136,6 @@ export const updateMilestone = async (
     const db = getDatabase();
     const { id, ...updateFields } = input;
 
-    console.log('=== updateMilestone input ===');
-    console.log('id:', id);
-    console.log('updateFields:', JSON.stringify(updateFields, null, 2));
-
     // input 데이터를 DTO 형태로 변환하거나 직접 set 절에 구성
     const setData: Record<string, unknown> = {
       updated_at: new Date(),
@@ -165,8 +161,6 @@ export const updateMilestone = async (
           ? updateFields.endDate.toISOString()
           : updateFields.endDate;
     }
-
-    console.log('setData:', JSON.stringify(setData, null, 2));
 
     const [updated] = await db
       .update(milestones)

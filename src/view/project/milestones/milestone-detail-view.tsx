@@ -75,7 +75,6 @@ export const MilestoneDetailView = () => {
   const handleRunTest = () => {
     router.push(`/projects/${projectSlug}/runs/create`);
   };
-  console.log(data);
 
   if (isLoading) {
     return (
