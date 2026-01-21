@@ -43,9 +43,11 @@ describe('createTestCase', () => {
     steps: '테스트 스텝',
     expected_result: '기대 결과',
     sort_order: 1,
+    result_status: 'untested',
     created_at: new Date('2024-01-01T00:00:00Z'),
     updated_at: new Date('2024-01-01T00:00:00Z'),
-    deleted_at: null,
+    archived_at: null,
+    lifecycle_status: 'ACTIVE',
   };
 
   beforeEach(() => {
@@ -72,9 +74,11 @@ describe('createTestCase', () => {
         testSteps: '테스트 스텝',
         expectedResult: '기대 결과',
         sortOrder: 1,
+        resultStatus: 'untested',
         createdAt: new Date('2024-01-01T00:00:00Z'),
         updatedAt: new Date('2024-01-01T00:00:00Z'),
-        deletedAt: null,
+        archivedAt: null,
+        lifecycleStatus: 'ACTIVE',
       });
     }
     expect(mockInsert).toHaveBeenCalled();

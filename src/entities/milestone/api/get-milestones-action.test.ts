@@ -9,8 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getMilestoneById, getMilestones } from './server-actions';
 
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase,
-  milestones: { id: 'id', project_id: 'project_id' },
+  getDatabase: mockGetDatabase,
+  milestones: { id: 'id', project_id: 'project_id', lifecycle_status: 'lifecycle_status' },
 }));
 
 describe('getMilestones', () => {

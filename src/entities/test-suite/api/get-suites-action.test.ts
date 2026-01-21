@@ -9,7 +9,7 @@ import {
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
   getDatabase: mockGetDatabase,
-  testSuite: { id: 'id', project_id: 'project_id', name: 'name' },
+  testSuites: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));
 
 import { getTestSuites } from './server-actions';
@@ -98,7 +98,8 @@ describe('getTestSuites', () => {
         expect(suite.sortOrder).toBe(5);
         expect(suite.createdAt).toEqual(new Date('2024-01-15'));
         expect(suite.updatedAt).toEqual(new Date('2024-01-16'));
-        expect(suite.deletedAt).toBeNull();
+        expect(suite.archivedAt).toBeNull();
+        expect(suite.lifecycleStatus).toBe('ACTIVE');
       }
     });
   });
