@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProject } from '@/features/projects-create';
 import { DSButton, DsFormField, DsInput } from '@/shared';
-import { GlassBackground } from '@/shared/layout';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, Copy, XIcon } from 'lucide-react';
 
@@ -91,13 +90,21 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   }, [copied]);
 
   return (
-    <section
-      id="create-project"
-      className="absolute top-1/2 left-[calc(50%+0.5px)] z-50 box-border flex w-[46.25rem] translate-x-[-50%] translate-y-[-50%] flex-col content-stretch items-center gap-10 overflow-clip rounded-[36px] border border-[rgba(11,181,127,0.1)] bg-[rgba(255,255,255,0.02)] px-32 py-16 backdrop-blur-[20px] backdrop-filter"
-    >
-      <GlassBackground />
-      {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
-      <form
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 z-[1000] bg-black/50"
+        onClick={onClick}
+        aria-hidden="true"
+      />
+
+      {/* Modal Content */}
+      <section
+        id="create-project"
+        className="fixed top-1/2 left-1/2 z-[1001] box-border flex w-[46.25rem] -translate-x-1/2 -translate-y-1/2 flex-col content-stretch items-center gap-10 overflow-clip rounded-[36px] border border-line-2 bg-bg-1 px-32 py-16"
+      >
+        {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
+        <form
         aria-label="project-create-form"
         onSubmit={handleSubmit(onSubmit)}
         className="relative z-10 flex w-full shrink-0 flex-col content-stretch items-center gap-[32px]"
@@ -223,5 +230,6 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         </DSButton>
       )}
     </section>
+    </>
   );
 };
