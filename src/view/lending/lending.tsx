@@ -8,10 +8,11 @@ import { DSButton } from '@/shared/ui';
 import { GridBackground } from '@/shared/layout';
 import { LendingHeader } from '@/widgets';
 import { Footer } from '@/widgets/footer';
-import { GlobalHeader } from '@/widgets/global-header';
+import { GlobalHeader, useBetaBanner } from '@/widgets/global-header';
 
 export const LendingView = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
+  const { isVisible: isBannerVisible } = useBetaBanner();
 
   return (
     <GridBackground.Root>
@@ -27,7 +28,7 @@ export const LendingView = () => {
         {/* Header */}
         <GlobalHeader />
         {/* Main Content */}
-        <MainContainer className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 pt-16">
+        <MainContainer className={`mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 transition-[padding-top] duration-200 ${isBannerVisible ? 'pt-26' : 'pt-16'}`}>
           {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
           <div className="flex w-full flex-col items-start gap-9 pl-8">
             <Logo className="h-12 w-48" />
