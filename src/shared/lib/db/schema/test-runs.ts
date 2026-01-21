@@ -5,7 +5,7 @@ export const testRunStatusEnum = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as 
 export type TestRunStatus = (typeof testRunStatusEnum)[number];
 
 export const testRuns = pgTable('test_runs', {
-  id: uuid('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   project_id: uuid('project_id').references(() => projects.id),
   name: varchar('name').notNull(),
   description: text('description'),

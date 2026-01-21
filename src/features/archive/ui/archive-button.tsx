@@ -16,7 +16,6 @@ export const ArchiveButton = ({ targetType, targetId, btnType = 'text' }: Archiv
 
   const handleClick = () => {
     archive.mutate({ targetType, targetId });
-    console.log(`${targetType} 아카이브\nid:${targetId}`);
   };
 
   return (
