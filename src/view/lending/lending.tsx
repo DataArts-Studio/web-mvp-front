@@ -38,6 +38,7 @@ export const LendingView = () => {
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
                 className="flex h-16 w-80 min-w-[11.25rem] items-center justify-center gap-[0.63rem] p-5"
+                aria-label="프로젝트 생성하기"
               >
                 무료로 시작하기
               </DSButton>
