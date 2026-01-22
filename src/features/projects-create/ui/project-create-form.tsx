@@ -101,6 +101,9 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       {/* Modal Content */}
       <section
         id="create-project"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-project-title"
         className="fixed top-1/2 left-1/2 z-[1001] box-border flex w-[46.25rem] -translate-x-1/2 -translate-y-1/2 flex-col content-stretch items-center gap-10 overflow-clip rounded-[36px] border border-line-2 bg-bg-1 px-32 py-16"
       >
         {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
