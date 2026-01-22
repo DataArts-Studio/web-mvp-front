@@ -11,7 +11,7 @@ const STORAGE_KEY = 'beta-banner-dismissed-v1';
 
 export const BetaBanner = ({ isVisible, onDismiss }: BetaBannerProps) => {
   const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    sessionStorage.setItem(STORAGE_KEY, 'true');
     onDismiss();
   };
 
