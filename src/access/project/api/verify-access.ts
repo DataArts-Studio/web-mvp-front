@@ -106,62 +106,70 @@ export async function verifyProjectAccess(
   projectName: string,
   password: string
 ): Promise<VerifyProjectAccessResponse> {
-  // 1. 입력 검증
-  const validation = VerifyProjectAccessRequestSchema.safeParse({ projectName, password });
-  if (!validation.success) {
+  try {
+    // 1. 입력 검증
+    const validation = VerifyProjectAccessRequestSchema.safeParse({ projectName, password });
+    if (!validation.success) {
+      return {
+        success: false,
+        error: validation.error.issues[0]?.message || '입력값이 올바르지 않습니다.',
+      };
+    }
+
+    // 2. Rate limiting 체크
+    const rateLimitKey = `project:${projectName}`;
+    const rateLimit = checkRateLimit(rateLimitKey);
+    if (!rateLimit.allowed) {
+      return {
+        success: false,
+        error: '너무 많은 시도입니다. 15분 후에 다시 시도해주세요.',
+        remainingAttempts: 0,
+      };
+    }
+
+    // 3. 프로젝트 조회
+    const project = await getProjectAccessInfo(projectName);
+    if (!project) {
+      // 프로젝트가 없어도 실패 횟수 기록 (정보 노출 방지)
+      const remaining = recordFailedAttempt(rateLimitKey);
+      return {
+        success: false,
+        error: '프로젝트를 찾을 수 없거나 비밀번호가 일치하지 않습니다.',
+        remainingAttempts: remaining,
+      };
+    }
+
+    // 4. 비밀번호 검증
+    const isValid = await verifyPassword(password, project.identifierHash);
+    if (!isValid) {
+      const remaining = recordFailedAttempt(rateLimitKey);
+      return {
+        success: false,
+        error: '비밀번호가 일치하지 않습니다.',
+        remainingAttempts: remaining,
+      };
+    }
+
+    // 5. 성공 - 토큰 발급 및 쿠키 설정
+    clearFailedAttempts(rateLimitKey);
+
+    const token = await createProjectAccessToken(project.id, project.name);
+    await setAccessTokenCookie(project.name, token);
+
+    // 캐시 갱신
+    revalidatePath(`/projects/${project.name}`);
+
+    return {
+      success: true,
+      redirectUrl: `/projects/${project.name}`,
+    };
+  } catch (error) {
+    console.error('프로젝트 접근 검증 실패:', error);
     return {
       success: false,
-      error: validation.error.issues[0]?.message || '입력값이 올바르지 않습니다.',
+      error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     };
   }
-
-  // 2. Rate limiting 체크
-  const rateLimitKey = `project:${projectName}`;
-  const rateLimit = checkRateLimit(rateLimitKey);
-  if (!rateLimit.allowed) {
-    return {
-      success: false,
-      error: '너무 많은 시도입니다. 15분 후에 다시 시도해주세요.',
-      remainingAttempts: 0,
-    };
-  }
-
-  // 3. 프로젝트 조회
-  const project = await getProjectAccessInfo(projectName);
-  if (!project) {
-    // 프로젝트가 없어도 실패 횟수 기록 (정보 노출 방지)
-    const remaining = recordFailedAttempt(rateLimitKey);
-    return {
-      success: false,
-      error: '프로젝트를 찾을 수 없거나 비밀번호가 일치하지 않습니다.',
-      remainingAttempts: remaining,
-    };
-  }
-
-  // 4. 비밀번호 검증
-  const isValid = await verifyPassword(password, project.identifierHash);
-  if (!isValid) {
-    const remaining = recordFailedAttempt(rateLimitKey);
-    return {
-      success: false,
-      error: '비밀번호가 일치하지 않습니다.',
-      remainingAttempts: remaining,
-    };
-  }
-
-  // 5. 성공 - 토큰 발급 및 쿠키 설정
-  clearFailedAttempts(rateLimitKey);
-
-  const token = await createProjectAccessToken(project.id, project.name);
-  await setAccessTokenCookie(project.name, token);
-
-  // 캐시 갱신
-  revalidatePath(`/projects/${project.name}`);
-
-  return {
-    success: true,
-    redirectUrl: `/projects/${project.name}`,
-  };
 }
 
 /**
@@ -195,4 +203,17 @@ export async function hasProjectPassword(projectName: string): Promise<boolean> 
   }
 
   return !!project.identifierHash;
+}
+
+/**
+ * 프로젝트 존재 여부 확인
+ */
+export async function checkProjectExists(projectName: string): Promise<boolean> {
+  try {
+    const project = await getProjectAccessInfo(projectName);
+    return project !== null;
+  } catch (error) {
+    console.error('프로젝트 존재 여부 확인 실패:', error);
+    return false;
+  }
 }

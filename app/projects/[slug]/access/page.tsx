@@ -6,8 +6,9 @@
  */
 
 import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import { AccessForm } from '@/access/project/ui';
+import { checkProjectExists } from '@/access/project/api';
 import { canAccessProject } from '@/access/policy';
 
 interface AccessPageProps {
@@ -26,6 +27,12 @@ export default async function ProjectAccessPage({
 }: AccessPageProps) {
   const { slug } = await params;
   const { redirect: redirectUrl, expired } = await searchParams;
+
+  // 프로젝트 존재 여부 확인
+  const projectExists = await checkProjectExists(slug);
+  if (!projectExists) {
+    notFound();
+  }
 
   // 이미 접근 권한이 있으면 대시보드로 리다이렉트
   const hasAccess = await canAccessProject(slug);
