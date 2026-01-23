@@ -1,0 +1,38 @@
+import { readFile } from 'fs/promises';
+import { join } from 'path';
+
+import { LegalView } from '@/view';
+
+interface LegalPageProps {
+  searchParams: Promise<{
+    tab?: 'privacy' | 'terms';
+  }>;
+}
+
+async function getMarkdownContent(filename: string): Promise<string> {
+  const filePath = join(process.cwd(), 'content', 'legal', filename);
+  const content = await readFile(filePath, 'utf-8');
+  return content;
+}
+
+export default async function LegalPage({ searchParams }: LegalPageProps) {
+  const { tab } = await searchParams;
+
+  const [privacyContent, termsContent] = await Promise.all([
+    getMarkdownContent('privacy.md'),
+    getMarkdownContent('terms.md'),
+  ]);
+
+  return (
+    <LegalView
+      privacyContent={privacyContent}
+      termsContent={termsContent}
+      initialTab={tab === 'terms' ? 'terms' : 'privacy'}
+    />
+  );
+}
+
+export const metadata = {
+  title: '법적 고지 | Testea',
+  description: '개인정보 처리방침 및 이용약관',
+};
