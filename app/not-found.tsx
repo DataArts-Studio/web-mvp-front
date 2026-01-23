@@ -33,7 +33,7 @@ export default function NotFound() {
         {/* Illustration */}
         <div className="relative mt-8 h-[300px] w-full max-w-[500px] self-center lg:mt-0 lg:h-[527px] lg:w-[613px]">
           <Image
-            src="/images/error-teacup.png"
+            src="/teacup/tea-cup-dizzy.svg"
             alt="엎질러진 찻잔 일러스트"
             fill
             className="object-contain"
