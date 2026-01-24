@@ -15,7 +15,7 @@ export const GlobalHeader = () => {
     <>
       <BetaBanner isVisible={isBannerVisible} onDismiss={dismissBanner} />
       <header
-        className={`fixed right-0 left-0 z-10 flex h-16 items-center justify-between bg-bg-1/80 px-12 backdrop-blur-sm transition-[top] duration-200 ${
+        className={`fixed right-0 left-0 z-10 flex h-16 items-center justify-between px-12 transition-[top] duration-200 ${
           isBannerVisible ? 'top-10' : 'top-0'
         }`}
       >
