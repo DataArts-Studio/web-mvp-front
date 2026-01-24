@@ -120,15 +120,73 @@ const DialogOverlay = ({ className, ...props }: DialogOverlayProps) => {
 // ------------------------------------------------------------------
 interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
-const DialogContent = ({ className, ...props }: DialogContentProps) => {
-  const { titleId, descriptionId } = useDialogContext();
+const DialogContent = ({ className, ref, ...props }: DialogContentProps) => {
+  const { titleId, descriptionId, onClose } = useDialogContext();
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  // ESC 키로 닫기 및 포커스 트랩
+  React.useEffect(() => {
+    const node = contentRef.current;
+    if (!node) return;
+
+    // 다이얼로그 열릴 때 포커스 이동
+    const previousActiveElement = document.activeElement as HTMLElement | null;
+    node.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ESC 키로 닫기
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      // 포커스 트랩: Tab 키
+      if (e.key === 'Tab') {
+        const focusableElements = node.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (focusableElements.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // 다이얼로그 닫힐 때 이전 포커스로 복원
+      previousActiveElement?.focus();
+    };
+  }, [onClose]);
+
   return (
     <div
+      ref={(node) => {
+        (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
+      tabIndex={-1}
       className={className}
       style={{
         position: 'fixed',
@@ -136,6 +194,7 @@ const DialogContent = ({ className, ...props }: DialogContentProps) => {
         left: '50%',
         transform: 'translate(-50%, -50%)',
         zIndex: 1001,
+        outline: 'none',
         ...props.style,
       }}
       {...props}

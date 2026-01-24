@@ -24,15 +24,23 @@ const useAvatarContext = () => {
 interface AvatarRootProps extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode;
   className?: string;
+  /** 스크린 리더를 위한 대체 텍스트 (필수 권장) */
+  label?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
 
-const AvatarRoot = ({ children, className, ref, ...props }: AvatarRootProps) => {
+const AvatarRoot = ({ children, className, label, ref, ...props }: AvatarRootProps) => {
   const [status, setStatus] = React.useState<AvatarStatus>('idle');
 
   return (
     <AvatarContext.Provider value={{ status, setStatus }}>
-      <div role="img" ref={ref} {...props} className={className}>
+      <div
+        role="img"
+        aria-label={label}
+        ref={ref}
+        {...props}
+        className={className}
+      >
         {children}
       </div>
     </AvatarContext.Provider>
@@ -82,7 +90,7 @@ const AvatarFallback = ({ children, className, ref, ...props }: AvatarFallbackPr
   const isVisible = status !== 'loaded';
 
   return (
-    <div ref={ref} role="img" className={className} hidden={!isVisible} {...props}>
+    <div ref={ref} aria-hidden="true" className={className} hidden={!isVisible} {...props}>
       {children}
     </div>
   );
