@@ -32,6 +32,7 @@ const Button = ({
       ref={ref}
       type={asChild ? undefined : (type ?? 'button')}
       disabled={asChild ? undefined : isDisabled}
+      aria-disabled={isDisabled || undefined}
       aria-busy={loading || undefined}
       aria-pressed={pressed || undefined}
       aria-label={ariaLabel || undefined}
