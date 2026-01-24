@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ProjectCreateForm } from '@/features';
-import { Logo } from '@/shared';
+import { LoadingSpinner, Logo } from '@/shared';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
 import { GridBackground } from '@/shared/layout';
