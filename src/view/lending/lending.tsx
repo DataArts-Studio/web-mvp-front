@@ -28,10 +28,10 @@ export const LendingView = () => {
         {/* Header */}
         <GlobalHeader />
         {/* Main Content */}
-        <MainContainer className={`mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 transition-[padding-top] duration-200 ${isBannerVisible ? 'pt-26' : 'pt-16'}`}>
+        <MainContainer className={`mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 transition-[padding-top] duration-200 ${isBannerVisible ? 'pt-10' : 'pt-4'}`}>
           {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
           <div className="flex w-full flex-col items-start gap-9 pl-8">
-            <Logo className="h-12 w-48" />
+            {/*<Logo className="h-12 w-48" />*/}
             <LendingHeader />
             {/* CTA Section */}
             <section className="relative z-10">
