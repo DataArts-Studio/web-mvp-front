@@ -24,6 +24,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     handleSubmit,
     getValues,
     trigger,
+    setError,
     formState: { errors },
   } = useForm<ProjectForm>({
     mode: 'onChange',
@@ -36,7 +37,18 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     if (step === 1) {
       isStepValid = await trigger('projectName');
     } else if (step === 2) {
-      isStepValid = await trigger(['identifier', 'identifierConfirm']);
+      const fieldsValid = await trigger(['identifier', 'identifierConfirm']);
+      const values = getValues();
+
+      if (fieldsValid && values.identifier !== values.identifierConfirm) {
+        setError('identifierConfirm', {
+          type: 'manual',
+          message: '식별번호가 일치하지 않습니다.',
+        });
+        isStepValid = false;
+      } else {
+        isStepValid = fieldsValid;
+      }
     } else {
       isStepValid = true;
     }
