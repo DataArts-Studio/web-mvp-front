@@ -21,14 +21,20 @@ function getAccessTokenCookieName(projectName: string): string {
 }
 
 /**
- * Base64URL 디코딩
+ * Base64URL 디코딩 (UTF-8 지원)
  */
 function base64UrlDecode(str: string): string {
   let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
   while (base64.length % 4) {
     base64 += '=';
   }
-  return atob(base64);
+  // atob은 Latin-1만 지원하므로 UTF-8 디코딩 필요
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return new TextDecoder('utf-8').decode(bytes);
 }
 
 /**
@@ -164,6 +170,8 @@ export function middleware(request: NextRequest) {
     const accessUrl = new URL(`/projects/${encodeURIComponent(projectSlug)}/access`, request.url);
     accessUrl.searchParams.set('redirect', pathname);
     console.log('[Middleware] Project mismatch, redirecting');
+    console.log('[Middleware] Token projectName:', payload.projectName);
+    console.log('[Middleware] URL projectSlug:', projectSlug);
     return NextResponse.redirect(accessUrl);
   }
 

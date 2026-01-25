@@ -25,11 +25,16 @@ export default async function ProjectAccessPage({
   params,
   searchParams,
 }: AccessPageProps) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
   const { redirect: redirectUrl, expired } = await searchParams;
 
+  // URL 인코딩된 slug 디코딩
+  const slug = decodeURIComponent(rawSlug);
+
   // 프로젝트 존재 여부 확인
+  console.log('[Access Page] 프로젝트 존재 여부 확인:', slug);
   const projectExists = await checkProjectExists(slug);
+  console.log('[Access Page] 프로젝트 존재 여부 결과:', projectExists);
   if (!projectExists) {
     notFound();
   }

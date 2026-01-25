@@ -10,6 +10,8 @@ import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 import { hashPassword } from '@/access/lib/password-hash';
+import { createProjectAccessToken } from '@/access/lib/access-token';
+import { setAccessTokenCookie } from '@/access/lib/cookies';
 
 // ============================================================================
 // Helpers
@@ -74,6 +76,13 @@ export async function createProject(
       archivedAt: inserted.archived_at?.toISOString() ?? null,
       lifecycleStatus: inserted.lifecycle_status,
     };
+
+    // 프로젝트 생성 후 자동으로 접근 토큰 발급 (생성자는 바로 접근 가능)
+    console.log('[createProject] 프로젝트 생성 완료:', inserted.name, inserted.id);
+    const token = await createProjectAccessToken(inserted.id, inserted.name);
+    console.log('[createProject] 토큰 생성 완료');
+    await setAccessTokenCookie(inserted.name, token);
+    console.log('[createProject] 쿠키 설정 완료:', inserted.name);
 
     revalidatePath('/projects');
     revalidatePath('/');
