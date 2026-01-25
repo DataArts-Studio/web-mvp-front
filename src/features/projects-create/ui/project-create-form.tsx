@@ -37,17 +37,22 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     if (step === 1) {
       isStepValid = await trigger('projectName');
     } else if (step === 2) {
-      const fieldsValid = await trigger(['identifier', 'identifierConfirm']);
-      const values = getValues();
-
-      if (fieldsValid && values.identifier !== values.identifierConfirm) {
-        setError('identifierConfirm', {
-          type: 'manual',
-          message: '식별번호가 일치하지 않습니다.',
-        });
+      // 1. 첫 번째 필드(identifier) 유효성 검사
+      const identifierValid = await trigger('identifier');
+      if (!identifierValid) {
         isStepValid = false;
       } else {
-        isStepValid = fieldsValid;
+        // 2. 첫 번째 필드 통과 시, 두 번째 필드와 일치 여부만 검사
+        const values = getValues();
+        if (values.identifier !== values.identifierConfirm) {
+          setError('identifierConfirm', {
+            type: 'manual',
+            message: '식별번호가 일치하지 않습니다.',
+          });
+          isStepValid = false;
+        } else {
+          isStepValid = true;
+        }
       }
     } else {
       isStepValid = true;
@@ -165,7 +170,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                 프라이빗 모드란? 식별번호가 필요한 프로젝트를 의미합니다.
               </p>
             </div>
-            <DsFormField.Root error={errors.identifier}>
+            <DsFormField.Root error={errors.identifier || errors.identifierConfirm}>
               <DsFormField.Label srOnly>프로젝트 식별번호 (Identifier/Password)</DsFormField.Label>
               <DsFormField.Control asChild>
                 <DsInput
@@ -175,9 +180,8 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                   placeholder="식별번호를 입력하세요"
                 />
               </DsFormField.Control>
-              <DsFormField.Message />
             </DsFormField.Root>
-            <DsFormField.Root error={errors.identifierConfirm}>
+            <DsFormField.Root error={errors.identifier || errors.identifierConfirm}>
               <DsFormField.Label srOnly>식별번호 재확인</DsFormField.Label>
               <DsFormField.Control asChild>
                 <DsInput

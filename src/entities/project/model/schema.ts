@@ -58,10 +58,7 @@ export const CreateProjectDomainSchema = ProjectDomainSchema.omit({
 });
 
 export const ProjectFormSchema = CreateProjectDomainSchema.extend({
-  identifierConfirm: z
-    .string()
-    .min(8, '식별번호는 최소 8자리 이상이어야 합니다.')
-    .max(16, '식별번호는 최대 16자리 이하여야 합니다.'),
+  identifierConfirm: z.string(),
 }).refine((data) => data.identifier === data.identifierConfirm, {
   message: '식별번호가 일치하지 않습니다.',
   path: ['identifierConfirm'],
