@@ -17,6 +17,13 @@ function base64UrlEncode(str: string): string {
 }
 
 /**
+ * Base64를 Base64URL로 변환 (이미 base64 인코딩된 문자열용)
+ */
+function base64ToBase64Url(base64: string): string {
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/**
  * Base64URL 디코딩
  */
 function base64UrlDecode(str: string): string {
@@ -34,7 +41,8 @@ async function createSignature(data: string, secret: string): Promise<string> {
   const { createHmac } = await import('crypto');
   const hmac = createHmac('sha256', secret);
   hmac.update(data);
-  return base64UrlEncode(hmac.digest('base64'));
+  // digest('base64')는 이미 base64 문자열을 반환하므로 base64ToBase64Url로 변환
+  return base64ToBase64Url(hmac.digest('base64'));
 }
 
 /**
