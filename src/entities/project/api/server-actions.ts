@@ -13,7 +13,9 @@ export type ProjectBasicInfo = Pick<
 export const getProjectByName = async (name: string): Promise<ActionResult<ProjectBasicInfo>> => {
   try {
     const db = getDatabase();
-    const [row] = await db.select().from(projects).where(eq(projects.name, name)).limit(1);
+    // URL 인코딩된 name을 디코딩
+    const decodedName = decodeURIComponent(name);
+    const [row] = await db.select().from(projects).where(eq(projects.name, decodedName)).limit(1);
 
     if (!row) {
       return {

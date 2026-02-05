@@ -77,6 +77,8 @@ function clearFailedAttempts(key: string): void {
  */
 async function getProjectAccessInfo(projectName: string): Promise<ProjectAccessInfo | null> {
   const db = getDatabase();
+  // URL 인코딩된 projectName을 디코딩
+  const decodedName = decodeURIComponent(projectName);
 
   const [project] = await db
     .select({
@@ -85,7 +87,7 @@ async function getProjectAccessInfo(projectName: string): Promise<ProjectAccessI
       identifier: projects.identifier,
     })
     .from(projects)
-    .where(eq(projects.name, projectName))
+    .where(eq(projects.name, decodedName))
     .limit(1);
 
   if (!project) {
