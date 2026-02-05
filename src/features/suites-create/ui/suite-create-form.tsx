@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 
 import { CreateTestSuite, CreateTestSuiteSchema, createTestSuite } from '@/entities';
 import { useCreateSuite } from '@/features';
-import { DSButton, FormField } from '@/shared';
+import { DSButton, FormField, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 interface SuiteCreateFormProps {
@@ -41,7 +41,12 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
       id="create-suite"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
     >
-      <div className="bg-bg-2 shadow-4 flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden rounded-xl">
+      <div className="bg-bg-2 shadow-4 relative flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden rounded-xl">
+        {isPending && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
+            <LoadingSpinner size="md" text="테스트 스위트를 생성하고 있어요" />
+          </div>
+        )}
         {/* Header */}
         <div className="border-line-2 shrink-0 border-b px-6 py-5">
           <h2 className="text-text-1 text-lg font-bold">테스트 스위트 생성</h2>

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProject } from '@/features/projects-create';
-import { DSButton, DsFormField, DsInput } from '@/shared';
+import { DSButton, DsFormField, DsInput, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, Copy, XIcon } from 'lucide-react';
 
@@ -19,6 +19,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
   const [copied, setCopied] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
     handleSubmit,
@@ -65,6 +66,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const handlePrev = () => setStep((prev) => prev - 1);
 
   const onSubmit = async (formData: ProjectForm) => {
+    setIsSubmitting(true);
     try {
       const domain = formToDomain(formData);
       const result = await createProject(domain);
@@ -74,12 +76,12 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       } else {
         const errorMessages = Object.values(result.errors).flat().join('\n');
         alert(`생성 실패: ${errorMessages}`);
-        // Optionally, reset to a previous step on failure
-        // setStep(1);
       }
     } catch (error) {
       console.error('네트워크 에러 발생:', error);
       alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -200,16 +202,21 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         )}
         {/* Step3: 프로젝트 생성 정보 확인 */}
         {step === 3 && (
-          <div className="flex w-full flex-col items-start gap-4">
+          <div className="relative flex w-full flex-col items-start gap-4">
+            {isSubmitting && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-1/80 backdrop-blur-sm">
+                <LoadingSpinner size="md" text="프로젝트를 생성하고 있어요" />
+              </div>
+            )}
             <div className="w-full text-center">
               <p>{projectName}</p>
               <p>프로젝트를 생성하시겠습니까?</p>
             </div>
             <div className="flex w-full gap-4">
-              <DSButton onClick={onClick} type="button" variant="ghost" className="mt-2 w-full">
+              <DSButton onClick={onClick} type="button" variant="ghost" className="mt-2 w-full" disabled={isSubmitting}>
                 취소
               </DSButton>
-              <DSButton type="submit" variant="solid" className="mt-2 w-full">
+              <DSButton type="submit" variant="solid" className="mt-2 w-full" disabled={isSubmitting}>
                 생성하기
               </DSButton>
             </div>

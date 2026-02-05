@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 
 import { MilestoneCard, MilestoneWithStats, Milestone } from '@/entities/milestone';
 import { MilestoneCreateForm, MilestoneEditForm, dashboardQueryOptions, milestonesQueryOptions } from '@/features';
-import { Container, MainContainer } from '@/shared';
+import { Container, MainContainer, LoadingSpinner } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
@@ -79,7 +79,7 @@ export const MilestonesView = () => {
       <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
         <Aside />
         <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-text-3">로딩 중...</div>
+          <LoadingSpinner size="lg" />
         </MainContainer>
       </Container>
     );

@@ -2,7 +2,7 @@
 import React from 'react';
 
 import { TestCase } from '@/entities/test-case';
-import { cn, DSButton, FormField } from '@/shared';
+import { cn, DSButton, FormField, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, ListChecks, Tag, TestTube2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -52,7 +52,12 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <section className="bg-bg-1 rounded-4 flex w-full max-w-[720px] flex-col overflow-hidden shadow-xl">
+      <section className="bg-bg-1 rounded-4 relative flex w-full max-w-[720px] flex-col overflow-hidden shadow-xl">
+        {isPending && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-4 bg-bg-1/80 backdrop-blur-sm">
+            <LoadingSpinner size="md" text="테스트 케이스를 수정하고 있어요" />
+          </div>
+        )}
         {/* Header */}
         <header className="border-line-2 flex items-center justify-between border-b px-6 py-4">
           <div>

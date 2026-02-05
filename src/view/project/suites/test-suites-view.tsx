@@ -8,7 +8,7 @@ import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
 import type { TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { dashboardQueryOptions, SuiteEditForm } from '@/features';
 import { SuiteCreateForm } from '@/features/suites-create';
-import { Container, MainContainer } from '@/shared';
+import { Container, MainContainer, LoadingSpinner } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
@@ -86,7 +86,7 @@ export const TestSuitesView = () => {
       <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
         <Aside />
         <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-text-3">로딩 중...</div>
+          <LoadingSpinner size="lg" />
         </MainContainer>
       </Container>
     );

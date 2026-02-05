@@ -3,7 +3,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 
 import { TestSuite } from '@/entities/test-suite';
-import { DSButton, FormField } from '@/shared';
+import { DSButton, FormField, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUpdateSuite } from '../hooks';
 import { UpdateTestSuite, UpdateTestSuiteSchema } from '../model';
@@ -41,7 +41,12 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
       id="edit-suite"
       className="bg-bg-2/20 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-[4px]"
     >
-      <div className="bg-bg-2 shadow-4 w-[600px] overflow-hidden rounded-xl p-8">
+      <div className="bg-bg-2 shadow-4 relative w-[600px] overflow-hidden rounded-xl p-8">
+        {isPending && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
+            <LoadingSpinner size="md" text="테스트 스위트를 수정하고 있어요" />
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8" noValidate>
           <input type="hidden" {...register('id')} />
           {/* Header */}

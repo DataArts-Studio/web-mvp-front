@@ -7,7 +7,7 @@ import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { Container, Input, MainContainer } from '@/shared';
+import { Container, Input, MainContainer, LoadingSpinner } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
@@ -137,7 +137,7 @@ export const TestCasesView = () => {
       <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
         <Aside />
         <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-text-3">로딩 중...</div>
+          <LoadingSpinner size="lg" />
         </MainContainer>
       </Container>
     );

@@ -28,7 +28,7 @@ export const LoadingSpinner = ({
   showDefaultText = true,
 }: LoadingSpinnerProps) => {
   const { width, height, textClass } = sizeMap[size];
-  const displayText = text ?? (showDefaultText ? '로딩 중...' : undefined);
+  const displayText = text ?? (showDefaultText ? '잠시만요, 준비하고 있어요' : undefined);
 
   const content = (
     <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
