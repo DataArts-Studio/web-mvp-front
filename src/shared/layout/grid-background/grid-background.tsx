@@ -125,7 +125,7 @@ const GridBackgroundArrowDecoration = ({ className, ...props }: React.HTMLAttrib
       width={37.5}
       height={37.5}
       alt=""
-      className={cn("top-[460px] left-[calc(80%-153px)] z-10 h-[50px] w-[50px]", className)}
+      className={cn("top-1/2 left-[calc(80%-153px)] z-10 h-[50px] w-[50px] -translate-y-1/2", className)}
       imageClassName="z-10"
       {...props}
     />
@@ -143,7 +143,7 @@ const GridBackgroundCircleDecoration = ({ className, ...props }: React.HTMLAttri
       width={1137.1}
       height={972.6}
       alt=""
-      className={cn("top-[84px] left-[calc(60%+5px)] z-0 h-[972px] w-[972px] opacity-30", className)}
+      className={cn("top-1/2 left-[calc(60%+5px)] z-0 h-[972px] w-[972px] -translate-y-1/2 opacity-30", className)}
       imageClassName="z-10"
       {...props}
     />
