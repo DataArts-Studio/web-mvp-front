@@ -11,7 +11,7 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { useDisclosure } from '@/shared/hooks';
-import { DSButton } from '@/shared/ui';
+import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronRight, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
@@ -83,7 +83,7 @@ export const ProjectDashboardView = () => {
       <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
         <Aside />
         <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-text-3">로딩 중...</div>
+          <LoadingSpinner size="lg" />
         </MainContainer>
       </Container>
     );

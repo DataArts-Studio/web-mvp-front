@@ -7,7 +7,7 @@ import { useCreateRun, type CreateRunInput } from '@/features/runs-create';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { milestonesQueryOptions, getMilestones } from '@/entities/milestone';
 import { testSuitesQueryOptions, getTestSuites } from '@/entities/test-suite';
-import { Container, DSButton, MainContainer } from '@/shared';
+import { Container, DSButton, MainContainer, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import { Checkbox } from '@/shared/ui/checkbox'; // Assuming a checkbox component exists
 
@@ -107,7 +107,9 @@ export const RunCreateView = () => {
         </header>
 
         {isLoading ? (
-          <div className="col-span-full text-center">Loading...</div>
+          <div className="col-span-full flex items-center justify-center py-20">
+            <LoadingSpinner size="lg" />
+          </div>
         ) : (
           <form
             className="col-span-full flex flex-col gap-8"

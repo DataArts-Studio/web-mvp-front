@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { Container, MainContainer } from '@/shared';
+import { Container, MainContainer, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import {
   Search,
@@ -144,7 +144,7 @@ export const TestRunsListView = () => {
       <Container className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans">
         <Aside />
         <MainContainer className="flex-1 flex items-center justify-center">
-          <div>Loading runs...</div>
+          <LoadingSpinner size="lg" />
         </MainContainer>
       </Container>
     );

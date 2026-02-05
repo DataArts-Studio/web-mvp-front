@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { Container, DSButton, MainContainer, cn } from '@/shared';
+import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import { testRunByIdQueryOptions, updateTestCaseRunStatus, TestCaseRunDetail } from '@/features/runs';
 import {
@@ -22,6 +22,7 @@ import {
   PlayCircle,
   Filter,
   Keyboard,
+  Loader2,
 } from 'lucide-react';
 
 type StatusFilter = 'all' | 'untested' | 'pass' | 'fail' | 'blocked';
@@ -205,7 +206,7 @@ export const TestRunDetailView = () => {
       <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
         <Aside />
         <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-text-3">로딩 중...</div>
+          <LoadingSpinner size="lg" />
         </MainContainer>
       </Container>
     );
@@ -384,7 +385,15 @@ export const TestRunDetailView = () => {
                 </div>
 
                 {/* Status Buttons */}
-                <div className="border-line-2 border-b p-6">
+                <div className="border-line-2 relative border-b p-6">
+                  {updateMutation.isPending && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg-1/70 backdrop-blur-sm">
+                      <div className="flex items-center gap-2 text-primary">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span className="text-sm font-medium">저장 중...</span>
+                      </div>
+                    </div>
+                  )}
                   <h3 className="text-text-2 mb-3 text-sm font-medium">결과 기록</h3>
                   <div className="grid grid-cols-4 gap-3">
                     {(['pass', 'fail', 'blocked', 'untested'] as const).map((status) => {
@@ -441,7 +450,9 @@ export const TestRunDetailView = () => {
                         }
                       }}
                       disabled={updateMutation.isPending || comment === (selectedCase?.comment || '')}
+                      className="flex items-center gap-2"
                     >
+                      {updateMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                       코멘트 저장
                     </DSButton>
                   </div>

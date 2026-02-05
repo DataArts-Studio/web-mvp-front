@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Container , MainContainer} from '@/shared/lib'
-import { DSButton } from '@/shared/ui';
+import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
 import { milestoneByIdQueryOptions, MilestoneEditForm } from '@/features';
@@ -81,7 +81,7 @@ export const MilestoneDetailView = () => {
       <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
         <Aside />
         <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-text-3">로딩 중...</div>
+          <LoadingSpinner size="lg" />
         </MainContainer>
       </Container>
     );

@@ -3,7 +3,7 @@ import React from 'react';
 import { useArchive } from '@/features/archive/hooks/use-archive';
 import { ArchiveTargetType } from '@/features/archive/model/types';
 import { DSButton } from '@/shared';
-import { Trash2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 
 interface ArchiveButtonProps {
   targetType: ArchiveTargetType;
@@ -26,8 +26,12 @@ export const ArchiveButton = ({ targetType, targetId, btnType = 'text', onSucces
       onClick={handleClick}
       disabled={archive.isPending}
     >
-      <Trash2 className="h-4 w-4" />
-      {btnType === 'text' && '삭제'}
+      {archive.isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Trash2 className="h-4 w-4" />
+      )}
+      {btnType === 'text' && (archive.isPending ? '삭제 중...' : '삭제')}
     </DSButton>
   );
 };

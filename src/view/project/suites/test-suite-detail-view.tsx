@@ -11,7 +11,7 @@ import { getTestCases } from '@/entities/test-case/api/server-actions';
 import type { TestSuiteCard } from '@/entities/test-suite';
 import type { TestCase, TestCaseCardType } from '@/entities/test-case';
 import { SuiteEditForm } from '@/features';
-import { Container, DSButton, MainContainer, cn } from '@/shared';
+import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import {
   ArrowLeft,
@@ -92,9 +92,7 @@ const TestSuiteDetailView = () => {
       <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
         <Aside />
         <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-text-2">로딩 중...</p>
-          </div>
+          <LoadingSpinner size="lg" />
         </MainContainer>
       </Container>
     );
