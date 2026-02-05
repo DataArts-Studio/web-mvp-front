@@ -8,7 +8,7 @@ export const useUpdateSuite = () => {
   return useMutation({
     mutationFn: (input: UpdateTestSuite) => updateTestSuite(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['testSuite'] });
+      await queryClient.invalidateQueries({ queryKey: ['testSuites'] });
     },
   });
 };

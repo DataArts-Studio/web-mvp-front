@@ -22,6 +22,11 @@ const isPathActive = (currentPath: string, matchPath: string): boolean => {
   return currentPath.startsWith(matchPath);
 };
 
+const handleAwaitBottom = (e: React.MouseEvent<HTMLDivElement>) => {
+  e.preventDefault();
+  alert('해당 기능은 준비중 입니다.');
+}
+
 export const Aside = () => {
   const params = useParams();
   const pathname = usePathname();
@@ -77,7 +82,7 @@ export const Aside = () => {
 
       {/* 사이드바 하단 */}
       <div className="mt-auto border-t border-bg-4 px-4 py-4">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1" onClick={handleAwaitBottom}>
           {menus.bottom.map((item: AsideMenuItem) => (
             <AsideNavItem
               key={item.label}

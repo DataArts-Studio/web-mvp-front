@@ -17,7 +17,7 @@ export const createAsideMenus = (projectSlug: string) => {
       },
     ],
     bottom: [
-      { label: '설정', href: `${basePath}/settings`, icon: Settings, matchPath: `${basePath}/settings` },
+      { label: '설정', href: `#`, icon: Settings, matchPath: `#` }, // ${basePath}/settings
       { label: '도움말', href: '#', icon: HelpCircle, matchPath: '' },
     ],
   };
