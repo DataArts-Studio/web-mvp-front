@@ -33,6 +33,13 @@ export default async function LegalPage({ searchParams }: LegalPageProps) {
 }
 
 export const metadata = {
-  title: '법적 고지 | Testea',
-  description: '개인정보 처리방침 및 이용약관',
+  title: '법적 고지',
+  description: 'Testea 개인정보 처리방침 및 서비스 이용약관을 확인하세요.',
+  alternates: {
+    canonical: '/legal',
+  },
+  robots: {
+    index: false,
+    follow: true,
+  },
 };

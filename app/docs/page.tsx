@@ -54,6 +54,13 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
 }
 
 export const metadata = {
-  title: '사용 가이드 | Testea',
-  description: 'Testea 사용 가이드 - 테스트 케이스 관리, 테스트 실행, 마일스톤 관리 방법을 안내합니다.',
+  title: '사용 가이드',
+  description: 'Testea 사용 가이드 - 테스트 케이스 관리, 테스트 스위트, 테스트 실행, 마일스톤 관리 방법을 안내합니다.',
+  alternates: {
+    canonical: '/docs',
+  },
+  openGraph: {
+    title: '사용 가이드 | Testea',
+    description: 'Testea 사용 가이드 - 테스트 케이스 관리, 테스트 실행, 마일스톤 관리 방법을 안내합니다.',
+  },
 };
