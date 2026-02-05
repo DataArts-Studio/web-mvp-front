@@ -43,6 +43,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
     >
       <div className="bg-bg-2 shadow-4 w-[600px] overflow-hidden rounded-xl p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8" noValidate>
+          <input type="hidden" {...register('id')} />
           {/* Header */}
           <div className="border-line-1 border-b pb-6">
             <h2 className="text-primary text-3xl">테스트 스위트 수정</h2>

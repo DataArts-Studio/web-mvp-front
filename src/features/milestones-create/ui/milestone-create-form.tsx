@@ -46,6 +46,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
     >
       <div className="bg-bg-2 shadow-4 w-[600px] overflow-hidden rounded-xl p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8" noValidate>
+          <input type="hidden" {...register('projectId')} />
           {/* Header */}
           <div className="border-line-1 border-b pb-6">
             <h2 className="text-primary text-3xl">마일스톤을 만들어 볼까요?</h2>

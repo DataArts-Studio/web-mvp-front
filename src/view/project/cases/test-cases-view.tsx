@@ -3,7 +3,7 @@ import React, { useRef, useState, useMemo, useEffect } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { TestCase, TestCaseCard, TestCaseCardType } from '@/entities/test-case';
+import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
@@ -53,7 +53,7 @@ export const TestCasesView = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const { mutate, isPending } = useCreateCase();
-  const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
+  const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
 
   // 검색 및 필터 상태
   const [searchQuery, setSearchQuery] = useState('');
@@ -277,7 +277,7 @@ export const TestCasesView = () => {
             ) : (
               filteredAndSortedTestCases.slice(0, visibleCount).map((item) => (
                 <TestTable.Row key={item.caseKey} onClick={() => {
-                  setSelectedTestCase(item);
+                  setSelectedTestCaseId(item.id);
                   onOpen('detail');
                 }}>
                   <TestCaseCard testCase={item} />
@@ -298,11 +298,11 @@ export const TestCasesView = () => {
         </section>
       </MainContainer>
       {isActiveType('create') && <TestCaseDetailForm projectId={projectId!} onClose={onClose} />}
-      {isActiveType('detail') && selectedTestCase && (
+      {isActiveType('detail') && selectedTestCaseId && (
         <TestCaseSideView
-          testCase={selectedTestCase}
+          testCase={testCases.find(tc => tc.id === selectedTestCaseId)}
           onClose={() => {
-            setSelectedTestCase(null);
+            setSelectedTestCaseId(null);
             onClose();
           }}
         />

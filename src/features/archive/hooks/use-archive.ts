@@ -48,6 +48,7 @@ export const useArchive = (options?: UseArchiveOptions) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys }),
         queryClient.invalidateQueries({ queryKey: [queryKeys[0], variables.targetId] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
 
       options?.onSuccess?.(data, variables);
