@@ -139,7 +139,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
             <Copy className="h-4 w-4" />
             Copy
           </DSButton>
-          {testCase && <ArchiveButton targetType='case' targetId={testCase.id} btnType='icon'/>}
+          {testCase && <ArchiveButton targetType='case' targetId={testCase.id} btnType='icon' onSuccess={onClose}/>}
         </div>
       </div>
     </section>

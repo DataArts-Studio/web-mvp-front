@@ -202,7 +202,7 @@ const TestSuiteDetailView = () => {
                 <Edit2 className="h-4 w-4" />
                 수정
               </DSButton>
-              <ArchiveButton targetType='suite' targetId={suite.id}/>
+              <ArchiveButton targetType='suite' targetId={suite.id} onSuccess={() => router.push(`/projects/${params.slug}/suites`)}/>
             </div>
           </div>
         </header>
