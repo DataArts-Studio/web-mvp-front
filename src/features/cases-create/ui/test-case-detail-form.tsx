@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 
-import { CreateTestCaseDtoSchema } from '@/entities/test-case';
+import type { CreateTestCase } from '@/entities/test-case';
 import { useCreateCase } from '@/features/cases-create/hooks';
 import { cn, DSButton, FormField } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,7 +9,19 @@ import { FileText, ListChecks, Tag, TestTube2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-type CreateTestCaseDto = z.infer<typeof CreateTestCaseDtoSchema>;
+const CreateTestCaseFormSchema = z.object({
+  projectId: z.string().uuid(),
+  title: z.string().min(1, '테스트 케이스 제목을 입력해주세요.'),
+  testType: z.string().optional(),
+  tags: z.string().optional().transform((val) =>
+    val ? val.split(',').map((tag) => tag.trim()).filter(Boolean) : []
+  ),
+  preCondition: z.string().optional(),
+  testSteps: z.string().optional(),
+  expectedResult: z.string().optional(),
+});
+
+type CreateTestCaseForm = z.input<typeof CreateTestCaseFormSchema>;
 
 interface TestCaseDetailFormProps {
   projectId: string;
@@ -24,27 +36,27 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<CreateTestCaseDto>({
-    resolver: zodResolver(CreateTestCaseDtoSchema),
+  } = useForm<CreateTestCaseForm>({
+    resolver: zodResolver(CreateTestCaseFormSchema),
     defaultValues: {
-      project_id: projectId,
-      name: '',
-      test_type: '',
-      tags: [],
-      pre_condition: '',
-      steps: '',
-      expected_result: '',
+      projectId: projectId,
+      title: '',
+      testType: '',
+      tags: '',
+      preCondition: '',
+      testSteps: '',
+      expectedResult: '',
     },
   });
 
-  const onSubmit = (data: CreateTestCaseDto) => {
-    mutate(data, {
+  const onSubmit = handleSubmit((data) => {
+    mutate(data as CreateTestCase, {
       onSuccess: () => {
         onSuccess?.();
         onClose();
       },
     });
-  };
+  });
 
   const inputClassName =
     'bg-bg-3 border-line-2 rounded-2 w-full border px-3 py-2.5 text-sm text-text-1 placeholder:text-text-3 focus:border-primary focus:outline-none transition-colors';
@@ -69,20 +81,21 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
         </header>
 
         {/* Form */}
-        <form id="test-case-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-5 overflow-y-auto p-5" noValidate>
+        <form id="test-case-form" onSubmit={onSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto p-5" noValidate>
+          <input type="hidden" {...register('projectId')} />
           {/* 제목 (필수) */}
-          <FormField.Root error={errors.name} className="flex flex-col gap-2">
+          <FormField.Root error={errors.title} className="flex flex-col gap-2">
             <FormField.Label className={labelClassName}>
               <FileText className="h-4 w-4" />
               테스트 케이스 제목 <span className="text-system-red">*</span>
             </FormField.Label>
             <FormField.Control
-              {...register('name')}
+              {...register('title')}
               placeholder="예: 회원가입 - 이메일 형식이 잘못된 경우"
-              className={cn(inputClassName, errors.name && 'border-system-red')}
+              className={cn(inputClassName, errors.title && 'border-system-red')}
             />
-            {errors.name && (
-              <span className="text-system-red text-sm">{errors.name.message}</span>
+            {errors.title && (
+              <span className="text-system-red text-sm">{errors.title.message}</span>
             )}
           </FormField.Root>
 
@@ -93,7 +106,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               테스트 종류
             </FormField.Label>
             <FormField.Control
-              {...register('test_type')}
+              {...register('testType')}
               placeholder="예: 기능 테스트, UI 테스트, API 테스트"
               className={inputClassName}
             />
@@ -120,7 +133,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               사전 조건 (Preconditions)
             </FormField.Label>
             <textarea
-              {...register('pre_condition')}
+              {...register('preCondition')}
               placeholder="테스트 실행 전 충족되어야 하는 조건을 작성해주세요."
               className={textareaClassName}
               rows={2}
@@ -134,7 +147,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               테스트 단계 (Test Steps)
             </FormField.Label>
             <textarea
-              {...register('steps')}
+              {...register('testSteps')}
               placeholder="1. 첫 번째 단계&#10;2. 두 번째 단계&#10;3. 세 번째 단계"
               className={textareaClassName}
               rows={3}
@@ -148,7 +161,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               기대 결과 (Expected Results)
             </FormField.Label>
             <textarea
-              {...register('expected_result')}
+              {...register('expectedResult')}
               placeholder="각 테스트 단계 수행 후 예상되는 결과를 작성해주세요."
               className={textareaClassName}
               rows={3}
