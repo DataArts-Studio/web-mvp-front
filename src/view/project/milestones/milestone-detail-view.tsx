@@ -149,7 +149,7 @@ export const MilestoneDetailView = () => {
                 <Edit2 className="h-4 w-4" />
                 수정
               </DSButton>
-              <ArchiveButton targetType='milestone' targetId={milestoneId}/>
+              <ArchiveButton targetType='milestone' targetId={milestoneId} onSuccess={() => router.push(`/projects/${projectSlug}/milestones`)}/>
             </div>
           </div>
         </header>

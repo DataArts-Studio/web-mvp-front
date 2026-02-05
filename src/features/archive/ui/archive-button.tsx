@@ -9,10 +9,11 @@ interface ArchiveButtonProps {
   targetType: ArchiveTargetType;
   targetId: string;
   btnType?: 'text' | 'icon';
+  onSuccess?: () => void;
 }
 
-export const ArchiveButton = ({ targetType, targetId, btnType = 'text' }: ArchiveButtonProps) => {
-  const archive = useArchive();
+export const ArchiveButton = ({ targetType, targetId, btnType = 'text', onSuccess }: ArchiveButtonProps) => {
+  const archive = useArchive({ onSuccess });
 
   const handleClick = () => {
     archive.mutate({ targetType, targetId });
