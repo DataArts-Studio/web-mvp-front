@@ -15,11 +15,14 @@ export const getDashboardStats = async ({
   try {
     const db = getDatabase();
 
-    // 프로젝트 정보 조회 (slug로 검색)
+    // URL 인코딩된 slug를 디코딩
+    const decodedSlug = decodeURIComponent(slug);
+
+    // 프로젝트 정보 조회 (디코딩된 slug로 검색)
     const [projectRow] = await db
       .select()
       .from(projects)
-      .where(eq(projects.name, slug))
+      .where(eq(projects.name, decodedSlug))
       .limit(1);
 
     if (!projectRow) {

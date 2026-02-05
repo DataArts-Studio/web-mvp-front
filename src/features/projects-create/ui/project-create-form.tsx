@@ -85,7 +85,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
 
   const handleCopyLink = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const link = `${origin}/projects/${createdSlug}`;
+    const link = `${origin}/projects/${encodeURIComponent(createdSlug)}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
     });
@@ -223,11 +223,11 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                 <CheckCircle className="h-8 w-8" />
               </div>
               <h2 className="text-2xl font-bold text-white">프로젝트 생성 완료!</h2>
-              <p className="text-neutral-400">아래 링크를 통해 접속할 수 있습니다.</p>
+              <p className="text-neutral-400">링크를 공유하여 팀원을 초대하세요.</p>
             </div>
             <div className="flex w-full items-center gap-2">
-              <p className="w-full">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/projects/{createdSlug}
+              <p className="w-full text-center text-lg font-medium">
+                {createdSlug}
               </p>
               <DSButton type="button" variant="ghost" onClick={handleCopyLink}>
                 {copied ? '링크 복사 완료!' : <Copy className="h-4 w-4" />}
@@ -236,7 +236,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             <DSButton
               variant="ghost"
               className="mt-2 w-full"
-              onClick={() => handleRedirectTo(`/projects/${createdSlug}`)}
+              onClick={() => handleRedirectTo(`/projects/${encodeURIComponent(createdSlug)}`)}
             >
               시작하기
             </DSButton>
