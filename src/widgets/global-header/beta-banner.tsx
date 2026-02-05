@@ -32,7 +32,7 @@ export const BetaBanner = ({ isVisible, onDismiss }: BetaBannerProps) => {
         <p className="text-label text-text-2">
           현재 베타 버전입니다. 서비스 이용 중 불편한 점이나 개선 의견이 있으시면{' '}
           <a
-            href="mailto:contact@testea.com"
+            href="mailto:gettestea@gmail.com"
             className="text-primary underline underline-offset-2 hover:text-primary/80"
           >
             피드백
