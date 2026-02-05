@@ -11,6 +11,7 @@ export const useUpdateMilestone = () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['milestones'] }),
         queryClient.invalidateQueries({ queryKey: ['milestone', variables.id] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     },
   });

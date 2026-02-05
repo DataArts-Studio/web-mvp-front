@@ -68,6 +68,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="flex max-h-[70vh] flex-col gap-6 overflow-y-auto p-6" noValidate>
+          <input type="hidden" {...register('id')} />
           {/* 제목 (필수) */}
           <FormField.Root error={errors.title} className="flex flex-col gap-2">
             <FormField.Label className={labelClassName}>

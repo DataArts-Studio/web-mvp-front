@@ -8,7 +8,10 @@ export const useCreateMilestone = () => {
   return useMutation({
     mutationFn: (input: CreateMilestone) => createMilestone(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: milestoneQueryKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: milestoneQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ]);
     },
   });
 };

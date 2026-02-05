@@ -52,6 +52,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
 
         {/* Body */}
         <form id="suite-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-5 overflow-y-auto p-6" noValidate>
+          <input type="hidden" {...register('projectId')} />
           <FormField.Root className="flex flex-col gap-2">
             <FormField.Label className="text-text-2 text-sm font-medium">
               스위트 이름 <span className="text-system-red">*</span>
