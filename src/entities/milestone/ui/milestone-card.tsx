@@ -36,10 +36,10 @@ const STATUS_CONFIG: Record<
   },
   planned: {
     label: '예정',
-    badgeStyle: 'bg-blue-500/30 text-blue-300 border border-blue-400/50',
-    barColor: 'bg-blue-500',
-    progressColor: 'from-blue-500 to-blue-400',
-    iconColor: 'text-blue-400',
+    badgeStyle: 'bg-slate-500/30 text-slate-300 border border-slate-400/50',
+    barColor: 'bg-slate-500',
+    progressColor: 'from-slate-500 to-slate-400',
+    iconColor: 'text-slate-400',
   },
 };
 
@@ -112,7 +112,7 @@ export const MilestoneCard = ({ milestone, onEdit, onStatusChange }: MilestoneCa
         'bg-bg-2 shadow-1 rounded-3 group relative flex w-full flex-col gap-5 border-l-4 px-6 py-5 transition-all duration-200 hover:shadow-lg hover:scale-[1.01] md:flex-row md:items-center md:justify-between',
         milestone.progressStatus === 'done' && 'border-l-green-500',
         milestone.progressStatus === 'inProgress' && 'border-l-amber-500',
-        milestone.progressStatus === 'planned' && 'border-l-blue-500',
+        milestone.progressStatus === 'planned' && 'border-l-slate-500',
         !STATUS_CONFIG[milestone.progressStatus] && 'border-l-gray-500'
       )}
     >
