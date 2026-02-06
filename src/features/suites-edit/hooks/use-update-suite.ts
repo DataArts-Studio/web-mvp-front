@@ -9,7 +9,10 @@ export const useUpdateSuite = () => {
     mutationFn: (input: UpdateTestSuite) => updateTestSuite(input),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['testSuites'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['testSuites'],
+          refetchType: 'all',
+        }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     },

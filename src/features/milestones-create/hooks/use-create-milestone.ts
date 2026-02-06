@@ -9,7 +9,10 @@ export const useCreateMilestone = () => {
     mutationFn: (input: CreateMilestone) => createMilestone(input),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: milestoneQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: milestoneQueryKeys.all,
+          refetchType: 'all',
+        }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     },
