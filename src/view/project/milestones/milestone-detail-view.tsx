@@ -220,10 +220,12 @@ export const MilestoneDetailView = () => {
         <section className="col-span-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading">포함된 테스트 케이스</h2>
-            <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
-              <Plus className="h-4 w-4" />
-              케이스 추가
-            </DSButton>
+            {testCases.length > 0 && (
+              <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
+                <Plus className="h-4 w-4" />
+                케이스 추가
+              </DSButton>
+            )}
           </div>
 
           {testCases.length === 0 ? (
