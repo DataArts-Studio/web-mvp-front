@@ -25,14 +25,14 @@ export const LendingView = () => {
         id="container"
         role="document"
         aria-label="Testea 랜딩 페이지"
-        className="flex min-h-screen w-full flex-1 items-start justify-start bg-bg-1 font-sans text-text1"
+        className="flex min-h-screen w-full flex-col bg-bg-1 font-sans text-text1"
       >
         {/* Header */}
         <GlobalHeader />
         {/* Main Content */}
         <MainContainer
           aria-label="메인 콘텐츠"
-          className={`mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 transition-[padding-top] duration-200 ${isBannerVisible ? 'pt-10' : 'pt-4'}`}
+          className={`mx-auto flex flex-1 w-full max-w-6xl items-center px-4 transition-[padding-top] duration-200 ${isBannerVisible ? 'pt-10' : 'pt-4'}`}
         >
           {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
           <div className="flex w-full flex-col items-start gap-9 pl-8">
