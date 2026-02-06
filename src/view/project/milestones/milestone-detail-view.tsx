@@ -8,7 +8,8 @@ import { Container , MainContainer} from '@/shared/lib'
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
-import { milestoneByIdQueryOptions, MilestoneEditForm } from '@/features';
+import { milestoneByIdQueryOptions, MilestoneEditForm, AddCasesToMilestoneModal } from '@/features';
+import { getTestCases } from '@/entities/test-case/api';
 import {
   ArrowLeft,
   Calendar,
@@ -71,6 +72,15 @@ export const MilestoneDetailView = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   const { data, isLoading, isError } = useQuery(milestoneByIdQueryOptions(milestoneId));
+  const [isAddingCases, setIsAddingCases] = useState(false);
+
+  // 프로젝트의 테스트 케이스 조회
+  const { data: casesResult } = useQuery({
+    queryKey: ['testCases', 'forMilestone', milestoneId],
+    queryFn: () => getTestCases({ project_id: data?.success ? data.data.projectId : '' }),
+    enabled: !!(data?.success && data.data.projectId),
+  });
+  const allCases = casesResult?.success ? casesResult.data ?? [] : [];
 
   const handleRunTest = () => {
     router.push(`/projects/${projectSlug}/runs/create`);
@@ -210,7 +220,7 @@ export const MilestoneDetailView = () => {
         <section className="col-span-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading">포함된 테스트 케이스</h2>
-            <DSButton variant="ghost" size="small" className="flex items-center gap-1">
+            <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
               <Plus className="h-4 w-4" />
               케이스 추가
             </DSButton>
@@ -223,7 +233,7 @@ export const MilestoneDetailView = () => {
                 <p className="text-text-1 font-semibold">포함된 테스트 케이스가 없습니다.</p>
                 <p className="text-text-3 text-sm">테스트 케이스를 추가하여 마일스톤 범위를 정의하세요.</p>
               </div>
-              <DSButton variant="ghost" className="flex items-center gap-1">
+              <DSButton variant="ghost" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
                 <Plus className="h-4 w-4" />
                 테스트 케이스 추가
               </DSButton>
@@ -296,6 +306,14 @@ export const MilestoneDetailView = () => {
           )}
         </section>
         {isEditing && <MilestoneEditForm milestone={milestone} onClose={() => setIsEditing(false)} />}
+        {isAddingCases && (
+          <AddCasesToMilestoneModal
+            milestoneId={milestoneId}
+            milestoneName={milestone.title}
+            availableCases={allCases.filter((tc) => !testCases.some((mtc) => mtc.id === tc.id))}
+            onClose={() => setIsAddingCases(false)}
+          />
+        )}
       </MainContainer>
     </Container>
   );

@@ -7,7 +7,7 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
-import { getDatabase, milestones } from '@/shared/lib/db';
+import { getDatabase, milestones, milestoneTestCases } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -230,3 +230,70 @@ export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: s
  * @deprecated Use archiveMilestone instead
  */
 export const deleteMilestone = archiveMilestone;
+
+/**
+ * 마일스톤에 테스트 케이스를 추가합니다.
+ */
+export const addTestCasesToMilestone = async (
+  milestoneId: string,
+  testCaseIds: string[]
+): Promise<ActionResult<{ count: number }>> => {
+  try {
+    const db = getDatabase();
+
+    const values = testCaseIds.map((testCaseId) => ({
+      milestone_id: milestoneId,
+      test_case_id: testCaseId,
+    }));
+
+    await db
+      .insert(milestoneTestCases)
+      .values(values)
+      .onConflictDoNothing();
+
+    return {
+      success: true,
+      data: { count: testCaseIds.length },
+      message: `${testCaseIds.length}개의 테스트 케이스가 마일스톤에 추가되었습니다.`,
+    };
+  } catch (error) {
+    console.error('Error adding test cases to milestone:', error);
+    return {
+      success: false,
+      errors: { _milestone: ['테스트 케이스를 마일스톤에 추가하는 도중 오류가 발생했습니다.'] },
+    };
+  }
+};
+
+/**
+ * 마일스톤에서 테스트 케이스를 제거합니다.
+ */
+export const removeTestCaseFromMilestone = async (
+  milestoneId: string,
+  testCaseId: string
+): Promise<ActionResult<{ id: string }>> => {
+  try {
+    const db = getDatabase();
+
+    await db
+      .delete(milestoneTestCases)
+      .where(
+        and(
+          eq(milestoneTestCases.milestone_id, milestoneId),
+          eq(milestoneTestCases.test_case_id, testCaseId)
+        )
+      );
+
+    return {
+      success: true,
+      data: { id: testCaseId },
+      message: '테스트 케이스가 마일스톤에서 제거되었습니다.',
+    };
+  } catch (error) {
+    console.error('Error removing test case from milestone:', error);
+    return {
+      success: false,
+      errors: { _milestone: ['테스트 케이스를 마일스톤에서 제거하는 도중 오류가 발생했습니다.'] },
+    };
+  }
+};

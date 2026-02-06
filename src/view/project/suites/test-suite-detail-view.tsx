@@ -10,7 +10,7 @@ import { testSuiteByIdQueryOptions } from '@/entities/test-suite/api/query';
 import { getTestCases } from '@/entities/test-case/api/server-actions';
 import type { TestSuiteCard } from '@/entities/test-suite';
 import type { TestCase, TestCaseCardType } from '@/entities/test-case';
-import { SuiteEditForm } from '@/features';
+import { SuiteEditForm, AddCasesToSuiteModal } from '@/features';
 import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import {
@@ -71,6 +71,7 @@ const TestSuiteDetailView = () => {
   const router = useRouter();
   const suiteId = params.suiteId as string;
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddingCases, setIsAddingCases] = useState(false);
 
   const handleRunTest = () => {
     router.push(`/projects/${params.slug}/runs/create`);
@@ -325,7 +326,7 @@ const TestSuiteDetailView = () => {
         <section className="col-span-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading">포함된 테스트 케이스</h2>
-            <DSButton variant="ghost" size="small" className="flex items-center gap-1">
+            <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
               <Plus className="h-4 w-4" />
               케이스 추가
             </DSButton>
@@ -338,7 +339,7 @@ const TestSuiteDetailView = () => {
                 <p className="text-text-1 font-semibold">포함된 테스트 케이스가 없습니다.</p>
                 <p className="text-text-3 text-sm">테스트 케이스를 추가하여 스위트 범위를 정의하세요.</p>
               </div>
-              <DSButton variant="ghost" className="flex items-center gap-1">
+              <DSButton variant="ghost" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
                 <Plus className="h-4 w-4" />
                 테스트 케이스 추가
               </DSButton>
@@ -444,6 +445,14 @@ const TestSuiteDetailView = () => {
           )}
         </section>
         {isEditing && suite && <SuiteEditForm suite={suite} onClose={() => setIsEditing(false)} />}
+        {isAddingCases && suite && (
+          <AddCasesToSuiteModal
+            suiteId={suite.id}
+            suiteName={suite.title}
+            availableCases={allCases.filter((tc: TestCase) => tc.testSuiteId !== suite.id)}
+            onClose={() => setIsAddingCases(false)}
+          />
+        )}
       </MainContainer>
     </Container>
   );
