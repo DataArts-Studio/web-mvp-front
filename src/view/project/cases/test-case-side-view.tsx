@@ -1,17 +1,15 @@
 'use client';
 import React, { useState } from 'react';
 
-
-
 import { useParams, useRouter } from 'next/navigation';
-
-
+import { useQuery } from '@tanstack/react-query';
 
 import { TestCase } from '@/entities/test-case';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
+import { testSuitesQueryOptions } from '@/widgets';
 import { DSButton } from '@/shared';
-import { Calendar, Clock, Copy, Edit2, Flag, Folder, Play, Tag, Trash2, X } from 'lucide-react';
+import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, Play, Tag, X } from 'lucide-react';
 
 
 
@@ -34,6 +32,14 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const { data: suitesData } = useQuery({
+    ...testSuitesQueryOptions(testCase?.projectId || ''),
+    enabled: !!testCase?.projectId,
+  });
+  const suites = suitesData?.success ? suitesData.data : [];
+  const currentSuite = suites.find(s => s.id === testCase?.testSuiteId);
+
   const handleRunTest = () => {
     router.push(`/projects/${params.slug}/runs/create`);
   };
@@ -48,7 +54,13 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
 
   return (
     <>
-    <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
+    {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
+    <div
+      className="fixed inset-0 z-40 bg-black/20"
+      onClick={onClose}
+      aria-hidden="true"
+    />
+    <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
       <div className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
           <div className="flex justify-between">
@@ -70,8 +82,8 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
           <h2 className="text-xl">{testCase?.title || '테스트 케이스'}</h2>
           <div className="flex gap-2">
             <div className="text-text-3 flex items-center gap-1 text-sm">
-              <Folder className="h-4 w-4" />
-              <span>Authentication / Login</span>
+              <FolderOpen className="h-4 w-4" />
+              <span>{currentSuite?.title || '스위트 없음'}</span>
             </div>
             <div className="text-text-3 flex items-center gap-1 text-sm">
               <Calendar className="h-4 w-4" />
@@ -118,7 +130,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
         {/* 테스트 정보 */}
         <div className="flex gap-2">
           <div className="bg-bg-2 border-line-2 rounded-4 flex-1 border p-4">
-            <h3 className="text-text-3 mb-1">테스트 종류</h3>
+            <h3 className="text-text-3 mb-1">테스트 상태</h3>
             <p>{testCase?.testType || '-'}</p>
           </div>
           <div className="bg-bg-2 border-line-2 rounded-4 flex-1 border p-4">

@@ -42,6 +42,7 @@ export const getTestCases = async ({
     const result: TestCase[] = rows.map((row) => ({
       id: row.id,
       projectId: row.project_id ?? '',
+      testSuiteId: row.test_suite_id ?? undefined,
       caseKey: row.case_key ?? '',
       title: row.name,
       testType: row.test_type ?? '',
@@ -129,6 +130,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
 type UpdateTestCaseParams = {
   id: string;
   title?: string;
+  testSuiteId?: string | null;
   testType?: string;
   tags?: string[];
   preCondition?: string;
@@ -150,6 +152,9 @@ export const updateTestCase = async (
 
     if (updateFields.title !== undefined) {
       updateData.name = updateFields.title;
+    }
+    if (updateFields.testSuiteId !== undefined) {
+      updateData.test_suite_id = updateFields.testSuiteId;
     }
     if (updateFields.testType !== undefined) {
       updateData.test_type = updateFields.testType;

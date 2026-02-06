@@ -2,10 +2,12 @@
 import React from 'react';
 
 import { TestCase } from '@/entities/test-case';
+import { testSuitesQueryOptions } from '@/widgets';
 import { cn, DSButton, FormField, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FileText, ListChecks, Tag, TestTube2, X } from 'lucide-react';
+import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { useUpdateCase } from '../hooks';
 import { UpdateTestCase, UpdateTestCaseSchema } from '../model';
 
@@ -18,22 +20,33 @@ interface TestCaseEditFormProps {
 export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditFormProps) => {
   const { mutate, isPending } = useUpdateCase();
 
+  const { data: suitesData } = useQuery({
+    ...testSuitesQueryOptions(testCase.projectId),
+    enabled: !!testCase.projectId,
+  });
+  const suites = suitesData?.success ? suitesData.data : [];
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<UpdateTestCase>({
+    watch,
+    setValue,
+  } = useForm({
     resolver: zodResolver(UpdateTestCaseSchema),
     defaultValues: {
       id: testCase.id,
       title: testCase.title,
+      testSuiteId: testCase.testSuiteId || null,
       testType: testCase.testType,
-      tags: testCase.tags,
+      tags: testCase.tags?.join(', ') || '',
       preCondition: testCase.preCondition,
       testSteps: testCase.testSteps,
       expectedResult: testCase.expectedResult,
     },
   });
+
+  const selectedSuiteId = watch('testSuiteId');
 
   const onSubmit = (data: UpdateTestCase) => {
     mutate(data, {
@@ -90,11 +103,32 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
             )}
           </FormField.Root>
 
+          {/* 소속 스위트 */}
+          <FormField.Root className="flex flex-col gap-2">
+            <FormField.Label className={labelClassName}>
+              <FolderOpen className="h-4 w-4" />
+              소속 스위트
+            </FormField.Label>
+            <select
+              value={selectedSuiteId || ''}
+              onChange={(e) => setValue('testSuiteId', e.target.value || null)}
+              className={cn(inputClassName, 'cursor-pointer')}
+            >
+              <option value="">스위트 없음</option>
+              {suites.map((suite) => (
+                <option key={suite.id} value={suite.id}>
+                  {suite.title}
+                </option>
+              ))}
+            </select>
+            <span className="text-text-3 text-xs">테스트 케이스가 속할 스위트를 선택하세요.</span>
+          </FormField.Root>
+
           {/* 테스트 타입 */}
           <FormField.Root className="flex flex-col gap-2">
             <FormField.Label className={labelClassName}>
               <TestTube2 className="h-4 w-4" />
-              테스트 종류
+              테스트 상태
             </FormField.Label>
             <FormField.Control
               {...register('testType')}

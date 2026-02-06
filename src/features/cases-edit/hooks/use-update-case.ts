@@ -10,6 +10,7 @@ export const useUpdateCase = () => {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['testCases'] }),
+        queryClient.invalidateQueries({ queryKey: ['testSuites'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     },
