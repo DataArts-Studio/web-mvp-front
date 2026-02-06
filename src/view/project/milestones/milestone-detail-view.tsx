@@ -1,27 +1,41 @@
 'use client';
 
 import React, { useState } from 'react';
+
+
+
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { Container , MainContainer} from '@/shared/lib'
+
+
+
+import { getTestCases } from '@/entities/test-case/api';
+import { AddCasesToMilestoneModal, AddSuitesToMilestoneModal, MilestoneEditForm, milestoneByIdQueryOptions } from '@/features';
+import { ArchiveButton } from '@/features/archive/ui/archive-button';
+import { Container, MainContainer } from '@/shared/lib';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
-import { milestoneByIdQueryOptions, MilestoneEditForm, AddCasesToMilestoneModal } from '@/features';
-import { getTestCases } from '@/entities/test-case/api';
-import {
-  ArrowLeft,
-  Calendar,
-  Edit2,
-  ListChecks,
-  Play,
-  PlayCircle,
-  Plus,
-  Trash2,
-  XCircle,
-} from 'lucide-react';
-import { ArchiveButton } from '@/features/archive/ui/archive-button';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Calendar, Edit2, ListChecks, Play, PlayCircle, Plus, Trash2, XCircle } from 'lucide-react';
+import { getTestSuites } from '@/entities';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   inProgress: {
@@ -73,6 +87,7 @@ export const MilestoneDetailView = () => {
 
   const { data, isLoading, isError } = useQuery(milestoneByIdQueryOptions(milestoneId));
   const [isAddingCases, setIsAddingCases] = useState(false);
+  const [isAddingSuites, setIsAddingSuites] = useState(false);
 
   // 프로젝트의 테스트 케이스 조회
   const { data: casesResult } = useQuery({
@@ -80,7 +95,17 @@ export const MilestoneDetailView = () => {
     queryFn: () => getTestCases({ project_id: data?.success ? data.data.projectId : '' }),
     enabled: !!(data?.success && data.data.projectId),
   });
+
   const allCases = casesResult?.success ? casesResult.data ?? [] : [];
+
+  // 프로젝트의 테스트 스위트 조회
+  const { data: suitesResult } = useQuery({
+    queryKey: ['testSuites', 'forMilestone', milestoneId],
+    queryFn: () => getTestSuites({ projectId: data?.success ? data.data.projectId : '' }),
+    enabled: !!(data?.success && data.data.projectId),
+  });
+
+  const allSuites = suitesResult?.success ? suitesResult.data ?? [] : [];
 
   const handleRunTest = () => {
     router.push(`/projects/${projectSlug}/runs/create`);
@@ -122,6 +147,7 @@ export const MilestoneDetailView = () => {
 
   const stats = { progressRate: milestone.progressRate, completedCases: milestone.completedCases, totalCases: milestone.totalCases, runCount: milestone.runCount };
   const testCases = milestone.testCases ?? [];
+  const testSuites = milestone.testSuites ?? [];
   const testRuns = milestone.testRuns ?? [];
 
   return (
@@ -221,7 +247,12 @@ export const MilestoneDetailView = () => {
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading">포함된 테스트 케이스</h2>
             {testCases.length > 0 && (
-              <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
+              <DSButton
+                variant="ghost"
+                size="small"
+                className="flex items-center gap-1"
+                onClick={() => setIsAddingCases(true)}
+              >
                 <Plus className="h-4 w-4" />
                 케이스 추가
               </DSButton>
@@ -233,9 +264,15 @@ export const MilestoneDetailView = () => {
               <ListChecks className="text-text-3 h-8 w-8" />
               <div className="text-center">
                 <p className="text-text-1 font-semibold">포함된 테스트 케이스가 없습니다.</p>
-                <p className="text-text-3 text-sm">테스트 케이스를 추가하여 마일스톤 범위를 정의하세요.</p>
+                <p className="text-text-3 text-sm">
+                  테스트 케이스를 추가하여 마일스톤 범위를 정의하세요.
+                </p>
               </div>
-              <DSButton variant="ghost" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
+              <DSButton
+                variant="ghost"
+                className="flex items-center gap-1"
+                onClick={() => setIsAddingCases(true)}
+              >
                 <Plus className="h-4 w-4" />
                 테스트 케이스 추가
               </DSButton>
@@ -243,7 +280,9 @@ export const MilestoneDetailView = () => {
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
               {testCases.map((testCase) => {
-                const statusConfig = TEST_STATUS_CONFIG[testCase.lastStatus || 'untested'] || TEST_STATUS_CONFIG.untested;
+                const statusConfig =
+                  TEST_STATUS_CONFIG[testCase.lastStatus || 'untested'] ||
+                  TEST_STATUS_CONFIG.untested;
                 return (
                   <div
                     key={testCase.id}
@@ -264,6 +303,60 @@ export const MilestoneDetailView = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </section>
+
+        {/* 테스트 스위트 목록 */}
+        <section className="col-span-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="typo-h2-heading">포함된 테스트 스위트</h2>
+            {testSuites.length > 0 && (
+              <DSButton
+                variant="ghost"
+                size="small"
+                className="flex items-center gap-1"
+                onClick={() => setIsAddingSuites(true)}
+              >
+                <Plus className="h-4 w-4" />
+                스위트 추가
+              </DSButton>
+            )}
+          </div>
+
+          {testSuites.length === 0 ? (
+            <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
+              <ListChecks className="text-text-3 h-8 w-8" />
+              <div className="text-center">
+                <p className="text-text-1 font-semibold">포함된 테스트 스위트가 없습니다.</p>
+                <p className="text-text-3 text-sm">
+                  테스트 스위트를 추가하여 마일스톤 범위를 정의하세요.
+                </p>
+              </div>
+              <DSButton
+                variant="ghost"
+                className="flex items-center gap-1"
+                onClick={() => setIsAddingSuites(true)}
+              >
+                <Plus className="h-4 w-4" />
+                테스트 스위트 추가
+              </DSButton>
+            </div>
+          ) : (
+            <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
+              {testSuites.map((suite) => (
+                <div
+                  key={suite.id}
+                  className="hover:bg-bg-3 flex items-center justify-between px-4 py-3 transition-colors"
+                >
+                  <div className="flex flex-col gap-1">
+                    <span className="text-text-1">{suite.title}</span>
+                    {suite.description && (
+                      <span className="text-text-3 text-sm">{suite.description}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>
@@ -314,6 +407,14 @@ export const MilestoneDetailView = () => {
             milestoneName={milestone.title}
             availableCases={allCases.filter((tc) => !testCases.some((mtc) => mtc.id === tc.id))}
             onClose={() => setIsAddingCases(false)}
+          />
+        )}
+        {isAddingSuites && (
+          <AddSuitesToMilestoneModal
+            milestoneId={milestoneId}
+            milestoneName={milestone.title}
+            availableSuites={allSuites.filter((suite) => !testSuites.some((mts) => mts.id === suite.id))}
+            onClose={() => setIsAddingSuites(false)}
           />
         )}
       </MainContainer>
