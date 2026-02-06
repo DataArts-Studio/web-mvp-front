@@ -7,7 +7,7 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
-import { getDatabase, milestones, milestoneTestCases } from '@/shared/lib/db';
+import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -294,6 +294,73 @@ export const removeTestCaseFromMilestone = async (
     return {
       success: false,
       errors: { _milestone: ['테스트 케이스를 마일스톤에서 제거하는 도중 오류가 발생했습니다.'] },
+    };
+  }
+};
+
+/**
+ * 마일스톤에 테스트 스위트를 추가합니다.
+ */
+export const addTestSuitesToMilestone = async (
+  milestoneId: string,
+  testSuiteIds: string[]
+): Promise<ActionResult<{ count: number }>> => {
+  try {
+    const db = getDatabase();
+
+    const values = testSuiteIds.map((testSuiteId) => ({
+      milestone_id: milestoneId,
+      test_suite_id: testSuiteId,
+    }));
+
+    await db
+      .insert(milestoneTestSuites)
+      .values(values)
+      .onConflictDoNothing();
+
+    return {
+      success: true,
+      data: { count: testSuiteIds.length },
+      message: `${testSuiteIds.length}개의 테스트 스위트가 마일스톤에 추가되었습니다.`,
+    };
+  } catch (error) {
+    console.error('Error adding test suites to milestone:', error);
+    return {
+      success: false,
+      errors: { _milestone: ['테스트 스위트를 마일스톤에 추가하는 도중 오류가 발생했습니다.'] },
+    };
+  }
+};
+
+/**
+ * 마일스톤에서 테스트 스위트를 제거합니다.
+ */
+export const removeTestSuiteFromMilestone = async (
+  milestoneId: string,
+  testSuiteId: string
+): Promise<ActionResult<{ id: string }>> => {
+  try {
+    const db = getDatabase();
+
+    await db
+      .delete(milestoneTestSuites)
+      .where(
+        and(
+          eq(milestoneTestSuites.milestone_id, milestoneId),
+          eq(milestoneTestSuites.test_suite_id, testSuiteId)
+        )
+      );
+
+    return {
+      success: true,
+      data: { id: testSuiteId },
+      message: '테스트 스위트가 마일스톤에서 제거되었습니다.',
+    };
+  } catch (error) {
+    console.error('Error removing test suite from milestone:', error);
+    return {
+      success: false,
+      errors: { _milestone: ['테스트 스위트를 마일스톤에서 제거하는 도중 오류가 발생했습니다.'] },
     };
   }
 };

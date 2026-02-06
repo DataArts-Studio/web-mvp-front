@@ -1,32 +1,32 @@
 'use client';
 import React, { useState } from 'react';
 
-import type { TestCase } from '@/entities/test-case';
-import { addTestCasesToMilestone } from '@/entities/milestone/api';
+import type { TestSuite } from '@/entities/test-suite';
+import { addTestSuitesToMilestone } from '@/entities/milestone/api';
 import { DSButton, LoadingSpinner, cn } from '@/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, ListChecks, Search, X } from 'lucide-react';
+import { Check, FolderOpen, Search, X } from 'lucide-react';
 
-interface AddCasesToMilestoneModalProps {
+interface AddSuitesToMilestoneModalProps {
   milestoneId: string;
   milestoneName: string;
-  availableCases: TestCase[];
+  availableSuites: TestSuite[];
   onClose: () => void;
 }
 
-export const AddCasesToMilestoneModal = ({
+export const AddSuitesToMilestoneModal = ({
   milestoneId,
   milestoneName,
-  availableCases,
+  availableSuites,
   onClose,
-}: AddCasesToMilestoneModalProps) => {
+}: AddSuitesToMilestoneModalProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
-    mutationFn: async (caseIds: string[]) => {
-      return addTestCasesToMilestone(milestoneId, caseIds);
+    mutationFn: async (suiteIds: string[]) => {
+      return addTestSuitesToMilestone(milestoneId, suiteIds);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['milestone', milestoneId], refetchType: 'all' });
@@ -35,13 +35,12 @@ export const AddCasesToMilestoneModal = ({
     },
   });
 
-  const filteredCases = availableCases.filter((tc) => {
+  const filteredSuites = availableSuites.filter((suite) => {
     const search = searchQuery.toLowerCase().trim();
     if (!search) return true;
     return (
-      tc.title.toLowerCase().includes(search) ||
-      tc.caseKey.toLowerCase().includes(search) ||
-      tc.tags?.some((tag) => tag.toLowerCase().includes(search))
+      suite.title.toLowerCase().includes(search) ||
+      suite.description?.toLowerCase().includes(search)
     );
   });
 
@@ -56,10 +55,10 @@ export const AddCasesToMilestoneModal = ({
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredCases.length) {
+    if (selectedIds.size === filteredSuites.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredCases.map((tc) => tc.id)));
+      setSelectedIds(new Set(filteredSuites.map((suite) => suite.id)));
     }
   };
 
@@ -73,16 +72,16 @@ export const AddCasesToMilestoneModal = ({
       <section className="bg-bg-1 rounded-4 relative flex max-h-[80vh] w-full max-w-[600px] flex-col overflow-hidden shadow-xl">
         {isPending && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-4 bg-bg-1/80 backdrop-blur-sm">
-            <LoadingSpinner size="md" text="케이스를 추가하고 있어요" />
+            <LoadingSpinner size="md" text="스위트를 추가하고 있어요" />
           </div>
         )}
 
         {/* Header */}
         <header className="border-line-2 flex items-center justify-between border-b px-6 py-4">
           <div>
-            <h2 className="text-text-1 text-lg font-bold">테스트 케이스 추가</h2>
+            <h2 className="text-text-1 text-lg font-bold">테스트 스위트 추가</h2>
             <p className="text-text-3 mt-1 text-sm">
-              <span className="text-primary font-medium">{milestoneName}</span> 마일스톤에 추가할 케이스를 선택하세요.
+              <span className="text-primary font-medium">{milestoneName}</span> 마일스톤에 추가할 스위트를 선택하세요.
             </p>
           </div>
           <DSButton variant="ghost" size="small" onClick={onClose} className="p-2">
@@ -96,7 +95,7 @@ export const AddCasesToMilestoneModal = ({
             <Search className="text-text-3 h-4 w-4" />
             <input
               type="text"
-              placeholder="케이스 이름, 키, 태그로 검색..."
+              placeholder="스위트 이름, 설명으로 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="text-text-1 placeholder:text-text-3 w-full bg-transparent text-sm outline-none"
@@ -104,14 +103,14 @@ export const AddCasesToMilestoneModal = ({
           </div>
         </div>
 
-        {/* Case List */}
+        {/* Suite List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredCases.length === 0 ? (
+          {filteredSuites.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-12">
-              <ListChecks className="text-text-3 h-8 w-8" />
+              <FolderOpen className="text-text-3 h-8 w-8" />
               <p className="text-text-3 text-sm">
-                {availableCases.length === 0
-                  ? '추가할 수 있는 테스트 케이스가 없습니다.'
+                {availableSuites.length === 0
+                  ? '추가할 수 있는 테스트 스위트가 없습니다.'
                   : '검색 결과가 없습니다.'}
               </p>
             </div>
@@ -124,53 +123,46 @@ export const AddCasesToMilestoneModal = ({
                   onClick={toggleSelectAll}
                   className={cn(
                     'flex h-5 w-5 items-center justify-center rounded border transition-colors',
-                    selectedIds.size === filteredCases.length
+                    selectedIds.size === filteredSuites.length
                       ? 'border-primary bg-primary text-white'
                       : 'border-line-2 bg-bg-3'
                   )}
                 >
-                  {selectedIds.size === filteredCases.length && <Check className="h-3 w-3" />}
+                  {selectedIds.size === filteredSuites.length && <Check className="h-3 w-3" />}
                 </button>
                 <span className="text-text-2 text-sm">
-                  전체 선택 ({selectedIds.size}/{filteredCases.length})
+                  전체 선택 ({selectedIds.size}/{filteredSuites.length})
                 </span>
               </div>
 
-              {/* Cases */}
+              {/* Suites */}
               <div className="divide-line-2 divide-y">
-                {filteredCases.map((tc) => (
+                {filteredSuites.map((suite) => (
                   <div
-                    key={tc.id}
-                    onClick={() => toggleSelect(tc.id)}
+                    key={suite.id}
+                    onClick={() => toggleSelect(suite.id)}
                     className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                   >
                     <button
                       type="button"
                       className={cn(
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
-                        selectedIds.has(tc.id)
+                        selectedIds.has(suite.id)
                           ? 'border-primary bg-primary text-white'
                           : 'border-line-2 bg-bg-3'
                       )}
                     >
-                      {selectedIds.has(tc.id) && <Check className="h-3 w-3" />}
+                      {selectedIds.has(suite.id) && <Check className="h-3 w-3" />}
                     </button>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-primary shrink-0 font-mono text-sm">{tc.caseKey}</span>
-                        <span className="text-text-1 truncate">{tc.title}</span>
+                        <FolderOpen className="text-primary h-4 w-4 shrink-0" />
+                        <span className="text-text-1 truncate">{suite.title}</span>
                       </div>
-                      {tc.tags && tc.tags.length > 0 && (
-                        <div className="mt-1 flex gap-1">
-                          {tc.tags.slice(0, 3).map((tag) => (
-                            <span
-                              key={tag}
-                              className="bg-bg-3 text-text-3 rounded px-1.5 py-0.5 text-xs"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+                      {suite.description && (
+                        <p className="text-text-3 mt-1 truncate text-sm">
+                          {suite.description}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -195,7 +187,7 @@ export const AddCasesToMilestoneModal = ({
               onClick={handleSubmit}
               disabled={isPending || selectedIds.size === 0}
             >
-              {isPending ? '추가 중...' : `${selectedIds.size}개 케이스 추가`}
+              {isPending ? '추가 중...' : `${selectedIds.size}개 스위트 추가`}
             </DSButton>
           </div>
         </div>

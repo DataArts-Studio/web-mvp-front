@@ -10,6 +10,7 @@ import { testRunSuites } from './test-run-suites';
 import { testRunMilestones } from './test-run-milestones';
 import { suiteTestCases } from './suite-test-cases';
 import { milestoneTestCases } from './milestone-test-cases';
+import { milestoneTestSuites } from './milestone-test-suites';
 
 // Project Relations
 export const projectRelations = relations(projects, ({ many }) => ({
@@ -27,6 +28,7 @@ export const testSuiteRelations = relations(testSuites, ({ one, many }) => ({
 	}),
 	testRunSuites: many(testRunSuites),
 	suiteTestCases: many(suiteTestCases),
+	milestoneTestSuites: many(milestoneTestSuites),
 }));
 
 // Test Case Relations
@@ -59,6 +61,7 @@ export const milestoneRelations = relations(milestones, ({ one, many }) => ({
 	}),
 	testRunMilestones: many(testRunMilestones),
 	milestoneTestCases: many(milestoneTestCases),
+	milestoneTestSuites: many(milestoneTestSuites),
 }));
 
 // Test Case Run Relations (Join Table)
@@ -118,5 +121,17 @@ export const milestoneTestCasesRelations = relations(milestoneTestCases, ({ one 
 	testCase: one(testCases, {
 		fields: [milestoneTestCases.test_case_id],
 		references: [testCases.id],
+	}),
+}));
+
+// Milestone Test Suites Relations (Join Table)
+export const milestoneTestSuitesRelations = relations(milestoneTestSuites, ({ one }) => ({
+	milestone: one(milestones, {
+		fields: [milestoneTestSuites.milestone_id],
+		references: [milestones.id],
+	}),
+	testSuite: one(testSuites, {
+		fields: [milestoneTestSuites.test_suite_id],
+		references: [testSuites.id],
 	}),
 }));

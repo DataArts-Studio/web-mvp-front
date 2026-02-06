@@ -33,6 +33,24 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
       },
     });
 
+    // milestoneTestSuites 별도 조회 (테이블/관계 문제 시 빈 배열 반환)
+    let milestoneTestSuitesData: Array<{ testSuite: { id: string; name: string; description: string | null } | null }> = [];
+    try {
+      const suiteResult = await db.query.milestones.findFirst({
+        where: eq(milestones.id, milestoneId),
+        with: {
+          milestoneTestSuites: {
+            with: {
+              testSuite: true,
+            },
+          },
+        },
+      });
+      milestoneTestSuitesData = suiteResult?.milestoneTestSuites || [];
+    } catch (e) {
+      console.warn('milestoneTestSuites 조회 실패:', e);
+    }
+
     if (!dbMilestone) {
       return {
         success: false,
@@ -76,6 +94,16 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
     const progressRate = totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0;
     const runCount = relatedTestRuns.length;
 
+    // 연결된 테스트 스위트 가져오기
+    const testSuites = milestoneTestSuitesData
+      .map(mts => mts.testSuite)
+      .filter(Boolean)
+      .map(suite => ({
+        id: suite!.id,
+        title: suite!.name,
+        description: suite!.description ?? null,
+      }));
+
     const stats: MilestoneStats = {
       totalCases,
       completedCases,
@@ -97,6 +125,7 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
       lifecycleStatus: dbMilestone.lifecycle_status,
       ...stats,
       testCases,
+      testSuites,
       testRuns: relatedTestRuns.map(run => ({
         id: run?.id,
         name: run?.name,
