@@ -8,7 +8,10 @@ export const useCreateSuite = () => {
     mutationFn: (input: CreateTestSuite) => createTestSuite(input),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['testSuites'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['testSuites'],
+          refetchType: 'all',
+        }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     },

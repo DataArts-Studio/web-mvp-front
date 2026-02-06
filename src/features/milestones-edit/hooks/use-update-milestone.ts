@@ -9,8 +9,14 @@ export const useUpdateMilestone = () => {
     mutationFn: (input: UpdateMilestone) => updateMilestone(input),
     onSuccess: async (_, variables) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['milestones'] }),
-        queryClient.invalidateQueries({ queryKey: ['milestone', variables.id] }),
+        queryClient.invalidateQueries({
+          queryKey: ['milestones'],
+          refetchType: 'all',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['milestone', variables.id],
+          refetchType: 'all',
+        }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     },

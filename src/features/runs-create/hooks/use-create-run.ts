@@ -19,7 +19,10 @@ export const useCreateRun = () => {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['testRuns'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['testRuns'],
+          refetchType: 'all',
+        }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]);
     },
