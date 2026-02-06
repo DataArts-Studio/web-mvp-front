@@ -19,6 +19,20 @@ export const createTestRunAction = async (input: CreateRunInput) => {
   }
 
   const { project_id, name, description, suite_ids, milestone_ids } = validation.data;
+
+  const hasSuites = suite_ids && suite_ids.length > 0;
+  const hasMilestones = milestone_ids && milestone_ids.length > 0;
+
+  if (!hasSuites && !hasMilestones) {
+    return {
+      success: false,
+      errors: {
+        formErrors: ['최소 하나의 테스트 스위트 또는 마일스톤을 선택해주세요.'],
+        fieldErrors: {},
+      } as FlatErrors,
+    };
+  }
+
   const db = getDatabase();
 
   try {
