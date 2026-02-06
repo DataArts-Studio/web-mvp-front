@@ -2,6 +2,7 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 
 import { useParams } from 'next/navigation';
+import { AnimatePresence } from 'framer-motion';
 
 import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
@@ -298,15 +299,17 @@ export const TestCasesView = () => {
         </section>
       </MainContainer>
       {isActiveType('create') && <TestCaseDetailForm projectId={projectId!} onClose={onClose} />}
-      {isActiveType('detail') && selectedTestCaseId && (
-        <TestCaseSideView
-          testCase={testCases.find(tc => tc.id === selectedTestCaseId)}
-          onClose={() => {
-            setSelectedTestCaseId(null);
-            onClose();
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {isActiveType('detail') && selectedTestCaseId && (
+          <TestCaseSideView
+            testCase={testCases.find(tc => tc.id === selectedTestCaseId)}
+            onClose={() => {
+              setSelectedTestCaseId(null);
+              onClose();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </Container>
   );
 };

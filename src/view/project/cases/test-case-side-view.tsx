@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 
 import { TestCase } from '@/entities/test-case';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
@@ -55,12 +56,22 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
   return (
     <>
     {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
-    <div
+    <motion.div
       className="fixed inset-0 z-40 bg-black/20"
       onClick={onClose}
       aria-hidden="true"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
     />
-    <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
+    <motion.section
+      className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] overflow-y-auto border-l p-4"
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+    >
       <div className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
           <div className="flex justify-between">
@@ -154,7 +165,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
           {testCase && <ArchiveButton targetType='case' targetId={testCase.id} btnType='icon' onSuccess={onClose}/>}
         </div>
       </div>
-    </section>
+    </motion.section>
     {isEditOpen && testCase && (
       <TestCaseEditForm
         testCase={testCase}
