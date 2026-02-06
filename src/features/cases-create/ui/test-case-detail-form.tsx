@@ -3,14 +3,17 @@ import React from 'react';
 
 import type { CreateTestCase } from '@/entities/test-case';
 import { useCreateCase } from '@/features/cases-create/hooks';
+import { testSuitesQueryOptions } from '@/widgets';
 import { cn, DSButton, FormField, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FileText, ListChecks, Tag, TestTube2, X } from 'lucide-react';
+import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 
 const CreateTestCaseFormSchema = z.object({
   projectId: z.string().uuid(),
+  testSuiteId: z.string().uuid().nullable().optional(),
   title: z.string().min(1, '테스트 케이스 제목을 입력해주세요.'),
   testType: z.string().optional(),
   tags: z.string().optional().transform((val) =>
@@ -32,14 +35,23 @@ interface TestCaseDetailFormProps {
 export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDetailFormProps) => {
   const { mutate, isPending } = useCreateCase();
 
+  const { data: suitesData } = useQuery({
+    ...testSuitesQueryOptions(projectId),
+    enabled: !!projectId,
+  });
+  const suites = suitesData?.success ? suitesData.data : [];
+
   const {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
+    setValue,
   } = useForm<CreateTestCaseForm>({
     resolver: zodResolver(CreateTestCaseFormSchema),
     defaultValues: {
       projectId: projectId,
+      testSuiteId: null,
       title: '',
       testType: '',
       tags: '',
@@ -48,6 +60,8 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
       expectedResult: '',
     },
   });
+
+  const selectedSuiteId = watch('testSuiteId');
 
   const onSubmit = handleSubmit((data) => {
     mutate(data as CreateTestCase, {
@@ -104,11 +118,32 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
             )}
           </FormField.Root>
 
+          {/* 소속 스위트 */}
+          <FormField.Root className="flex flex-col gap-2">
+            <FormField.Label className={labelClassName}>
+              <FolderOpen className="h-4 w-4" />
+              소속 스위트
+            </FormField.Label>
+            <select
+              value={selectedSuiteId || ''}
+              onChange={(e) => setValue('testSuiteId', e.target.value || null)}
+              className={cn(inputClassName, 'cursor-pointer')}
+            >
+              <option value="">스위트 없음</option>
+              {suites.map((suite) => (
+                <option key={suite.id} value={suite.id}>
+                  {suite.title}
+                </option>
+              ))}
+            </select>
+            <span className="text-text-3 text-xs">테스트 케이스가 속할 스위트를 선택하세요.</span>
+          </FormField.Root>
+
           {/* 테스트 타입 */}
           <FormField.Root className="flex flex-col gap-2">
             <FormField.Label className={labelClassName}>
               <TestTube2 className="h-4 w-4" />
-              테스트 종류
+              테스트 상태
             </FormField.Label>
             <FormField.Control
               {...register('testType')}
