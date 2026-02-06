@@ -43,13 +43,20 @@ export const MilestoneSideView = ({
   onDelete,
 }: MilestoneSideViewProps) => {
   const params = useParams();
-  const statusInfo = STATUS_CONFIG[milestone.status] || {
-    label: milestone.status,
+  const statusInfo = STATUS_CONFIG[milestone.progressStatus] || {
+    label: milestone.progressStatus,
     style: 'bg-gray-500/20 text-gray-300',
   };
 
   return (
-    <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
+    <>
+    {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
+    <div
+      className="fixed inset-0 z-40 bg-black/20"
+      onClick={onClose}
+      aria-hidden="true"
+    />
+    <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
       <div className="flex flex-col gap-6">
         {/* 헤더 */}
         <header className="flex flex-col gap-3">
@@ -142,5 +149,6 @@ export const MilestoneSideView = ({
         </div>
       </div>
     </section>
+    </>
   );
 };

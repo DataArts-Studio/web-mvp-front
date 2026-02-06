@@ -68,7 +68,14 @@ export const TestSuiteSideView = ({
   const tagStyle = TAG_TONE_STYLES[suite.tag.tone] || TAG_TONE_STYLES.neutral;
 
   return (
-    <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
+    <>
+    {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
+    <div
+      className="fixed inset-0 z-40 bg-black/20"
+      onClick={onClose}
+      aria-hidden="true"
+    />
+    <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
       <div className="flex flex-col gap-6">
         {/* 헤더 */}
         <header className="flex flex-col gap-3">
@@ -227,5 +234,6 @@ export const TestSuiteSideView = ({
         </div>
       </div>
     </section>
+    </>
   );
 };
