@@ -11,8 +11,10 @@ import {
   CheckCircle2,
   ListTodo,
   ArrowUpDown,
-  X
+  X,
+  Plus
 } from 'lucide-react';
+import { DSButton } from '@/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { dashboardQueryOptions } from '@/features/dashboard';
@@ -29,6 +31,11 @@ interface ITestRun {
   sourceName: string;
   status: RunStatus;
   updatedAt: Date;
+  stats: {
+    totalCases: number;
+    completedCases: number;
+    progressPercent: number;
+  };
 }
 
 export const TestRunsListView = () => {
@@ -155,11 +162,21 @@ export const TestRunsListView = () => {
       <Aside />
 
       <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">
-        <header className="col-span-6 flex flex-col gap-1 border-b border-line-2 pb-6">
-          <h2 className="typo-h1-heading text-text-1">테스트 실행 목록</h2>
-          <p className="typo-body2-normal text-text-2">
-            프로젝트의 모든 테스트 실행(Test Run) 진행 상황을 확인하고 관리합니다.
-          </p>
+        <header className="col-span-6 flex items-start justify-between border-b border-line-2 pb-6">
+          <div className="flex flex-col gap-1">
+            <h2 className="typo-h1-heading text-text-1">테스트 실행 목록</h2>
+            <p className="typo-body2-normal text-text-2">
+              프로젝트의 모든 테스트 실행(Test Run) 진행 상황을 확인하고 관리합니다.
+            </p>
+          </div>
+          <DSButton
+            variant="solid"
+            className="flex items-center gap-2"
+            onClick={() => router.push(`/projects/${projectSlug}/runs/create`)}
+          >
+            <Plus className="h-4 w-4" />
+            테스트 실행 생성
+          </DSButton>
         </header>
 
         <section className="col-span-6 flex items-center justify-between gap-4">
@@ -295,9 +312,7 @@ export const TestRunsListView = () => {
           </div>
 
           {sortedRuns.map((run) => {
-            const totalCases = 0;
-            const completedCases = 0;
-            const progressPercent = Math.round((completedCases / totalCases) * 100) || 0;
+            const { totalCases, completedCases, progressPercent } = run.stats;
 
             return (
               <div
@@ -386,6 +401,14 @@ export const TestRunsListView = () => {
               </div>
               <p className="typo-body1-heading text-text-2">생성된 테스트 실행이 없습니다.</p>
               <p className="typo-caption-normal text-text-3">새로운 테스트 실행을 생성하여 결과를 기록해보세요.</p>
+              <DSButton
+                variant="ghost"
+                className="mt-2 flex items-center gap-2"
+                onClick={() => router.push(`/projects/${projectSlug}/runs/create`)}
+              >
+                <Plus className="h-4 w-4" />
+                테스트 실행 생성
+              </DSButton>
             </div>
           )}
         </section>
