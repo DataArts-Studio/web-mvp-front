@@ -1,6 +1,6 @@
 'use server';
 
-import { getDatabase, milestones, testRuns, testRunMilestones, testRunSuites, testSuites, TestRunStatus } from '@/shared/lib/db';
+import { getDatabase, testRuns, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
 
@@ -12,6 +12,11 @@ export interface FetchedTestRun {
   sourceType: 'SUITE' | 'MILESTONE' | 'ADHOC';
   sourceName: string;
   updatedAt: Date;
+  stats: {
+    totalCases: number;
+    completedCases: number;
+    progressPercent: number;
+  };
 }
 
 export async function getTestRunsByProjectId(projectId: string): Promise<ActionResult<FetchedTestRun[]>> {
@@ -31,6 +36,7 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
             milestone: true,
           },
         },
+        testCaseRuns: true,
       },
       orderBy: (testRuns, { desc }) => [desc(testRuns.updated_at)],
     });
@@ -47,6 +53,14 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
         sourceName = run.testRunMilestones.map(m => m.milestone?.name || '').join(', ');
       }
 
+      // Calculate stats from testCaseRuns
+      const testCaseRuns = run.testCaseRuns || [];
+      const totalCases = testCaseRuns.length;
+      const completedCases = testCaseRuns.filter(
+        (tcr) => tcr.status === 'pass' || tcr.status === 'fail' || tcr.status === 'blocked'
+      ).length;
+      const progressPercent = totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0;
+
       return {
         id: run.id,
         name: run.name,
@@ -55,6 +69,11 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
         sourceType,
         sourceName,
         updatedAt: run.updated_at,
+        stats: {
+          totalCases,
+          completedCases,
+          progressPercent,
+        },
       };
     });
 
