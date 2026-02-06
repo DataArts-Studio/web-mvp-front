@@ -65,9 +65,16 @@ export const RunCreateView = () => {
     );
   };
 
+  const hasSelection = selectedSuiteIds.length > 0 || selectedMilestoneIds.length > 0;
+
   const onSubmit = (data: RunFormData) => {
     if (!projectId) {
       alert('프로젝트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    if (!hasSelection) {
+      alert('최소 하나의 테스트 스위트 또는 마일스톤을 선택해주세요.');
       return;
     }
 
@@ -201,7 +208,7 @@ export const RunCreateView = () => {
               <DSButton type="button" variant="ghost" className="px-5 py-2.5" disabled={isPending} onClick={handleCancel}>
                 취소
               </DSButton>
-              <DSButton type="submit" variant="solid" className="px-5 py-2.5" disabled={isPending}>
+              <DSButton type="submit" variant="solid" className="px-5 py-2.5" disabled={isPending || !hasSelection}>
                 {isPending ? '생성 중...' : '실행 생성하기'}
               </DSButton>
             </div>
