@@ -71,7 +71,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       const domain = formToDomain(formData);
       const result = await createProject(domain);
       if (result.success) {
-        setCreatedSlug(result.data.projectName);
+        setCreatedSlug(result.data.id);
         setStep(4);
       } else {
         const errorMessages = Object.values(result.errors).flat().join('\n');

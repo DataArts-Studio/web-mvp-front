@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useCreateRun, type CreateRunInput } from '@/features/runs-create';
 import { dashboardQueryOptions } from '@/features/dashboard';
@@ -19,11 +19,19 @@ interface RunFormData {
 export const RunCreateView = () => {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const projectSlug = params.slug as string;
+  const preselectedSuiteId = searchParams.get('suiteId');
+  const preselectedSuiteIds = searchParams.get('suiteIds');
+  const preselectedMilestoneId = searchParams.get('milestoneId');
   const { mutate, isPending } = useCreateRun();
 
-  const [selectedSuiteIds, setSelectedSuiteIds] = useState<string[]>([]);
-  const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>([]);
+  const initialSuiteIds = [...new Set([
+    ...(preselectedSuiteId ? [preselectedSuiteId] : []),
+    ...(preselectedSuiteIds ? preselectedSuiteIds.split(',').filter(Boolean) : []),
+  ])];
+  const [selectedSuiteIds, setSelectedSuiteIds] = useState<string[]>(initialSuiteIds);
+  const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>(preselectedMilestoneId ? [preselectedMilestoneId] : []);
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(projectSlug)

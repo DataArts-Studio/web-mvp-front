@@ -10,7 +10,7 @@ export async function searchProjects(keyword: string): Promise<SearchProjectsRes
     const validation = SearchKeywordSchema.safeParse({ keyword: keyword.trim() });
 
     if (!validation.success) {
-      const errorMessage = validation.error.errors[0]?.message ?? '입력값이 올바르지 않습니다';
+      const errorMessage = validation.error.issues[0]?.message ?? '입력값이 올바르지 않습니다';
       return {
         success: false,
         error: errorMessage,

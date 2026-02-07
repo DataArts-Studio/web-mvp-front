@@ -74,7 +74,7 @@ const TestSuiteDetailView = () => {
   const [isAddingCases, setIsAddingCases] = useState(false);
 
   const handleRunTest = () => {
-    router.push(`/projects/${params.slug}/runs/create`);
+    router.push(`/projects/${params.slug}/runs/create?suiteId=${suiteId}`);
   };
 
   // 실제 API로 스위트 데이터 조회

@@ -4,7 +4,7 @@ import {
   getDatabase,
   testRunSuites,
   testCaseRuns,
-  suiteTestCases,
+  testCases,
 } from '@/shared/lib/db';
 import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -32,19 +32,24 @@ export async function addSuitesToRunAction(
       }));
       await tx.insert(testRunSuites).values(suiteLinks).onConflictDoNothing();
 
-      // 2. Get test cases belonging to the selected suites (with suite_id for source tracking)
+      // 2. Get test cases belonging to the selected suites via testCases.test_suite_id
       const suiteCaseRows = await tx
         .select({
-          test_case_id: suiteTestCases.test_case_id,
-          suite_id: suiteTestCases.suite_id,
+          id: testCases.id,
+          test_suite_id: testCases.test_suite_id,
         })
-        .from(suiteTestCases)
-        .where(inArray(suiteTestCases.suite_id, suiteIds));
+        .from(testCases)
+        .where(
+          and(
+            inArray(testCases.test_suite_id, suiteIds),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        );
 
       const caseIdToSuite = new Map<string, string>();
       for (const row of suiteCaseRows) {
-        if (row.test_case_id && row.suite_id) {
-          caseIdToSuite.set(row.test_case_id, row.suite_id);
+        if (row.id && row.test_suite_id) {
+          caseIdToSuite.set(row.id, row.test_suite_id);
         }
       }
 
