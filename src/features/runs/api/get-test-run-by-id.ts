@@ -1,8 +1,8 @@
 'use server';
 
-import { getDatabase, testRuns, testCaseRuns, testCases, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
+import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 export interface TestCaseRunDetail {
   id: string;
@@ -15,6 +15,8 @@ export interface TestCaseRunDetail {
   sourceType: TestCaseRunSourceType;
   sourceId: string | null;
   sourceName: string | null;
+  testSuiteId: string | null;
+  testSuiteName: string | null;
 }
 
 export interface SourceInfo {
@@ -123,6 +125,24 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
 
     const sourceName = sourceNameParts.length > 0 ? sourceNameParts.join(' | ') : '직접 선택한 케이스';
 
+    // Collect unique test_suite_ids from test cases to fetch suite names
+    const suiteIdSet = new Set<string>();
+    for (const tcr of run.testCaseRuns || []) {
+      if (tcr.testCase?.test_suite_id) {
+        suiteIdSet.add(tcr.testCase.test_suite_id);
+      }
+    }
+    const suiteIdToName = new Map<string, string>();
+    if (suiteIdSet.size > 0) {
+      const suiteRows = await db
+        .select({ id: testSuites.id, name: testSuites.name })
+        .from(testSuites)
+        .where(inArray(testSuites.id, Array.from(suiteIdSet)));
+      for (const row of suiteRows) {
+        suiteIdToName.set(row.id, row.name);
+      }
+    }
+
     // Map test case runs with source information
     const testCaseRunDetails: TestCaseRunDetail[] = (run.testCaseRuns || []).map(tcr => ({
       id: tcr.id,
@@ -135,6 +155,8 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       sourceType: (tcr.source_type as TestCaseRunSourceType) || 'adhoc',
       sourceId: tcr.source_id || null,
       sourceName: tcr.source_id ? (sourceIdToName.get(tcr.source_id) || null) : null,
+      testSuiteId: tcr.testCase?.test_suite_id || null,
+      testSuiteName: tcr.testCase?.test_suite_id ? (suiteIdToName.get(tcr.testCase.test_suite_id) || null) : null,
     }));
 
     // Calculate stats

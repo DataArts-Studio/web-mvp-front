@@ -39,6 +39,7 @@ type StatusFilter = 'all' | 'untested' | 'pass' | 'fail' | 'blocked';
 type TestCaseRunStatus = 'untested' | 'pass' | 'fail' | 'blocked';
 
 interface GroupedCases {
+  groupKey: string;
   sourceId: string | null;
   sourceType: 'suite' | 'milestone' | 'adhoc';
   sourceName: string;
@@ -269,43 +270,71 @@ export const TestRunDetailView = () => {
     });
   }, [testRun, searchQuery, statusFilter, milestoneFilter, suiteFilter]);
 
-  // Group test cases by source
+  // Group test cases by source (adhoc cases are sub-grouped by their original suite)
   const groupedCases = useMemo((): GroupedCases[] => {
     if (!testRun) return [];
 
     const groups = new Map<string, GroupedCases>();
 
     for (const tc of filteredCases) {
-      const key = tc.sourceId || 'adhoc';
       const effectiveSourceType = tc.sourceType || 'adhoc';
+
+      let key: string;
+      let groupSourceId: string | null;
+      let groupSourceType: GroupedCases['sourceType'];
+      let groupSourceName: string;
+
+      if (effectiveSourceType === 'adhoc') {
+        // Adhoc cases: group by their original test suite
+        if (tc.testSuiteId) {
+          key = `adhoc-suite-${tc.testSuiteId}`;
+          groupSourceId = tc.testSuiteId;
+          groupSourceType = 'adhoc';
+          groupSourceName = tc.testSuiteName || '알 수 없는 스위트';
+        } else {
+          key = 'adhoc-no-suite';
+          groupSourceId = null;
+          groupSourceType = 'adhoc';
+          groupSourceName = '미분류';
+        }
+      } else {
+        key = tc.sourceId || 'unknown';
+        groupSourceId = tc.sourceId;
+        groupSourceType = effectiveSourceType;
+        groupSourceName = tc.sourceName || '알 수 없음';
+      }
+
       if (!groups.has(key)) {
         groups.set(key, {
-          sourceId: tc.sourceId,
-          sourceType: effectiveSourceType,
-          sourceName: tc.sourceName || (effectiveSourceType === 'adhoc' ? '직접 추가' : '알 수 없음'),
+          groupKey: key,
+          sourceId: groupSourceId,
+          sourceType: groupSourceType,
+          sourceName: groupSourceName,
           cases: [],
         });
       }
       groups.get(key)!.cases.push(tc);
     }
 
-    // Sort groups: suites first, then milestones, then adhoc
+    // Sort groups: suites first, then milestones, then adhoc (with suite name), then adhoc (no suite)
     const sorted = Array.from(groups.values()).sort((a, b) => {
       const order = { suite: 0, milestone: 1, adhoc: 2 };
-      return order[a.sourceType] - order[b.sourceType];
+      const diff = order[a.sourceType] - order[b.sourceType];
+      if (diff !== 0) return diff;
+      // Within same type, sort by name
+      return a.sourceName.localeCompare(b.sourceName);
     });
 
     return sorted;
   }, [testRun, filteredCases]);
 
-  const toggleGroupCollapse = (sourceId: string | null) => {
-    const key = sourceId || 'adhoc';
+  const toggleGroupCollapse = (groupKey: string) => {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
       } else {
-        next.add(key);
+        next.add(groupKey);
       }
       return next;
     });
@@ -737,16 +766,16 @@ export const TestRunDetailView = () => {
                 </div>
               ) : (
                 groupedCases.map((group) => {
-                  const groupKey = group.sourceId || 'adhoc';
-                  const isCollapsed = collapsedGroups.has(groupKey);
+                  const isCollapsed = collapsedGroups.has(group.groupKey);
                   const GroupIcon = group.sourceType === 'suite' ? FolderOpen :
-                                   group.sourceType === 'milestone' ? Milestone : PlayCircle;
+                                   group.sourceType === 'milestone' ? Milestone :
+                                   group.sourceId ? FolderOpen : PlayCircle;
 
                   return (
-                    <div key={groupKey}>
+                    <div key={group.groupKey}>
                       {/* Group Header */}
                       <button
-                        onClick={() => toggleGroupCollapse(group.sourceId)}
+                        onClick={() => toggleGroupCollapse(group.groupKey)}
                         className="border-line-2 bg-bg-2 hover:bg-bg-3 flex w-full items-center gap-2 border-b px-4 py-2 text-left transition-colors"
                       >
                         <ChevronDown
