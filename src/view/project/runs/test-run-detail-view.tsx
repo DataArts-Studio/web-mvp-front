@@ -441,8 +441,9 @@ export const TestRunDetailView = () => {
             <Link
               href={`/projects/${projectSlug}/runs`}
               className="text-text-3 hover:text-text-1 flex items-center gap-1 transition-colors"
+              aria-label="테스트 실행 목록으로 돌아가기"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
             <div>
               <div className="flex items-center gap-3">
@@ -481,9 +482,11 @@ export const TestRunDetailView = () => {
               <button
                 onClick={() => setShowActionMenu((prev) => !prev)}
                 className="text-text-3 hover:text-text-1 flex items-center gap-1 text-sm transition-colors"
-                title="더보기"
+                aria-label="테스트 추가 메뉴 열기"
+                aria-expanded={showActionMenu}
+                aria-haspopup="menu"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
               </button>
               {showActionMenu && (
                 <div className="bg-bg-2 border-line-2 absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border py-1 shadow-xl">
@@ -509,8 +512,9 @@ export const TestRunDetailView = () => {
             <button
               onClick={() => setShowShortcuts(true)}
               className="text-text-3 hover:text-text-1 flex items-center gap-1 text-sm transition-colors"
+              aria-label="키보드 단축키 보기"
             >
-              <Keyboard className="h-4 w-4" />
+              <Keyboard className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </header>

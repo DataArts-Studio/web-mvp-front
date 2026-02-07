@@ -49,8 +49,8 @@ export const Aside = () => {
     >
       {/* 사이드바 상단 */}
       <div className="border-b border-bg-4 px-6 pt-10 pb-6">
-        <Link href={`/projects/${projectSlug}`} className="block">
-          <Logo />
+        <Link href={`/projects/${projectSlug}`} className="block" aria-label="대시보드로 이동">
+          <Logo aria-hidden="true" />
         </Link>
         <p className="typo-label-normal text-text-3 mt-4 tracking-[0.2em]">
           테스트 도구
