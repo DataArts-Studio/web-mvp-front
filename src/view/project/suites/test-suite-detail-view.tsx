@@ -19,7 +19,6 @@ import {
   Edit2,
   FolderTree,
   ListChecks,
-  Play,
   PlayCircle,
   Plus,
   Tag,
@@ -72,10 +71,6 @@ const TestSuiteDetailView = () => {
   const suiteId = params.suiteId as string;
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingCases, setIsAddingCases] = useState(false);
-
-  const handleRunTest = () => {
-    router.push(`/projects/${params.slug}/runs/create?suiteId=${suiteId}`);
-  };
 
   // 실제 API로 스위트 데이터 조회
   const { data: suiteResult, isLoading: isSuiteLoading } = useQuery(testSuiteByIdQueryOptions(suiteId));
@@ -313,14 +308,6 @@ const TestSuiteDetailView = () => {
             </div>
           </section>
         )}
-
-        {/* 테스트 실행 생성 버튼 */}
-        <section className="col-span-6">
-          <DSButton className="flex items-center gap-2" onClick={handleRunTest}>
-            <Play className="h-4 w-4" />
-            스위트 기반 테스트 실행 생성
-          </DSButton>
-        </section>
 
         {/* 테스트 케이스 목록 */}
         <section className="col-span-6 flex flex-col gap-4">

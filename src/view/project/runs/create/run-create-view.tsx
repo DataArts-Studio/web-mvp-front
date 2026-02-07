@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useCreateRun, type CreateRunInput } from '@/features/runs-create';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { milestonesQueryOptions, getMilestones } from '@/entities/milestone';
-import { testSuitesQueryOptions, getTestSuites } from '@/entities/test-suite';
 import { Container, DSButton, MainContainer, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import { Checkbox } from '@/shared/ui/checkbox'; // Assuming a checkbox component exists
@@ -21,28 +20,15 @@ export const RunCreateView = () => {
   const params = useParams();
   const searchParams = useSearchParams();
   const projectSlug = params.slug as string;
-  const preselectedSuiteId = searchParams.get('suiteId');
-  const preselectedSuiteIds = searchParams.get('suiteIds');
   const preselectedMilestoneId = searchParams.get('milestoneId');
   const { mutate, isPending } = useCreateRun();
 
-  const initialSuiteIds = [...new Set([
-    ...(preselectedSuiteId ? [preselectedSuiteId] : []),
-    ...(preselectedSuiteIds ? preselectedSuiteIds.split(',').filter(Boolean) : []),
-  ])];
-  const [selectedSuiteIds, setSelectedSuiteIds] = useState<string[]>(initialSuiteIds);
   const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>(preselectedMilestoneId ? [preselectedMilestoneId] : []);
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(projectSlug)
   );
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
-
-  const { data: suitesData, isLoading: isLoadingSuites } = useQuery({
-    ...testSuitesQueryOptions(projectId!),
-    enabled: !!projectId,
-  });
-  const suites = suitesData?.success ? suitesData.data : [];
 
   const { data: milestonesData, isLoading: isLoadingMilestones } = useQuery({
     ...milestonesQueryOptions(projectId!),
@@ -61,19 +47,13 @@ export const RunCreateView = () => {
     },
   });
 
-  const handleSuiteSelect = (suiteId: string) => {
-    setSelectedSuiteIds(prev =>
-      prev.includes(suiteId) ? prev.filter(id => id !== suiteId) : [...prev, suiteId]
-    );
-  };
-
   const handleMilestoneSelect = (milestoneId: string) => {
     setSelectedMilestoneIds(prev =>
       prev.includes(milestoneId) ? prev.filter(id => id !== milestoneId) : [...prev, milestoneId]
     );
   };
 
-  const hasSelection = selectedSuiteIds.length > 0 || selectedMilestoneIds.length > 0;
+  const hasSelection = selectedMilestoneIds.length > 0;
 
   const onSubmit = (data: RunFormData) => {
     if (!projectId) {
@@ -82,7 +62,7 @@ export const RunCreateView = () => {
     }
 
     if (!hasSelection) {
-      alert('최소 하나의 테스트 스위트 또는 마일스톤을 선택해주세요.');
+      alert('최소 하나의 마일스톤을 선택해주세요.');
       return;
     }
 
@@ -90,7 +70,6 @@ export const RunCreateView = () => {
       project_id: projectId,
       name: data.runName,
       description: data.description || undefined,
-      suite_ids: selectedSuiteIds,
       milestone_ids: selectedMilestoneIds,
     };
 
@@ -108,7 +87,7 @@ export const RunCreateView = () => {
     router.back();
   };
 
-  const isLoading = isLoadingProject || isLoadingSuites || isLoadingMilestones;
+  const isLoading = isLoadingProject || isLoadingMilestones;
 
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans">
@@ -172,29 +151,9 @@ export const RunCreateView = () => {
               </div>
             </div>
 
-            {/* 테스트 스위트 선택 */}
-            <div className="flex flex-col gap-3">
-              <h3 className="typo-h3-heading border-b border-line-2 pb-2">테스트 스위트 선택 (선택)</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {suites.map((suite) => (
-                  <div key={suite.id} className="flex items-center gap-2 rounded-2 bg-bg-2 p-3">
-                    <Checkbox
-                      id={`suite-${suite.id}`}
-                      checked={selectedSuiteIds.includes(suite.id)}
-                      onCheckedChange={() => handleSuiteSelect(suite.id)}
-                    />
-                    <label htmlFor={`suite-${suite.id}`} className="flex-1 cursor-pointer typo-body2-normal">
-                      {suite.title}
-                    </label>
-                  </div>
-                ))}
-              </div>
-               {suites.length === 0 && <p className="typo-body2-normal text-text-3">선택할 테스트 스위트가 없습니다.</p>}
-            </div>
-            
             {/* 마일스톤 선택 */}
             <div className="flex flex-col gap-3">
-              <h3 className="typo-h3-heading border-b border-line-2 pb-2">마일스톤 선택 (선택)</h3>
+              <h3 className="typo-h3-heading border-b border-line-2 pb-2">마일스톤 선택 <span className="text-system-red">*</span></h3>
               <div className="grid grid-cols-3 gap-3">
                 {milestones.map((milestone) => (
                   <div key={milestone.id} className="flex items-center gap-2 rounded-2 bg-bg-2 p-3">
