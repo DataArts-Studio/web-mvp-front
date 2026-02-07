@@ -7,6 +7,7 @@ export const TestCaseDtoSchema = z.object({
   project_id: z.string().uuid(),
   test_suite_id: z.string().uuid().nullable().optional(),
   name: z.string().min(1, '테스트 케이스 이름은 최소 1글자 이상이어야 합니다.').max(200, '테스트 케이스 이름은 200자를 넘을 수 없습니다.'),
+  display_id: z.number().int(),
   case_key: z.string().optional(),
   test_type: z.string().optional(),
   tags: z.array(z.string()).optional(),
@@ -23,6 +24,7 @@ export const TestCaseDtoSchema = z.object({
 
 export const CreateTestCaseDtoSchema = TestCaseDtoSchema.omit({
   id: true,
+  display_id: true,
   created_at: true,
   updated_at: true,
   archived_at: true,
