@@ -21,10 +21,13 @@ import {
   Circle,
   Search,
   ChevronRight,
+  ChevronDown,
   MessageSquare,
   Clock,
   ListTodo,
   PlayCircle,
+  FolderOpen,
+  Milestone,
   Filter,
   Keyboard,
   Loader2,
@@ -34,6 +37,13 @@ import {
 
 type StatusFilter = 'all' | 'untested' | 'pass' | 'fail' | 'blocked';
 type TestCaseRunStatus = 'untested' | 'pass' | 'fail' | 'blocked';
+
+interface GroupedCases {
+  sourceId: string | null;
+  sourceType: 'suite' | 'milestone' | 'adhoc';
+  sourceName: string;
+  cases: TestCaseRunDetail[];
+}
 
 const STATUS_CONFIG: Record<TestCaseRunStatus, {
   label: string;
@@ -105,11 +115,22 @@ export const TestRunDetailView = () => {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [milestoneFilter, setMilestoneFilter] = useState<string>('all');
+  const [suiteFilter, setSuiteFilter] = useState<string>('all');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
+  const [showMilestoneFilterDropdown, setShowMilestoneFilterDropdown] = useState(false);
+  const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const actionMenuRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const statusFilterRef = useRef<HTMLDivElement>(null);
+  const milestoneFilterRef = useRef<HTMLDivElement>(null);
+  const suiteFilterRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isError } = useQuery(testRunByIdQueryOptions(testRunId));
 
@@ -147,6 +168,36 @@ export const TestRunDetailView = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showActionMenu]);
 
+  // Close status dropdown on click outside
+  useEffect(() => {
+    if (!showStatusDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showStatusDropdown]);
+
+  // Close filter dropdowns on click outside
+  useEffect(() => {
+    if (!showStatusFilterDropdown && !showMilestoneFilterDropdown && !showSuiteFilterDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (statusFilterRef.current && !statusFilterRef.current.contains(e.target as Node)) {
+        setShowStatusFilterDropdown(false);
+      }
+      if (milestoneFilterRef.current && !milestoneFilterRef.current.contains(e.target as Node)) {
+        setShowMilestoneFilterDropdown(false);
+      }
+      if (suiteFilterRef.current && !suiteFilterRef.current.contains(e.target as Node)) {
+        setShowSuiteFilterDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showStatusFilterDropdown, showMilestoneFilterDropdown, showSuiteFilterDropdown]);
+
   const updateMutation = useMutation({
     mutationFn: updateTestCaseRunStatus,
     onSuccess: () => {
@@ -177,6 +228,17 @@ export const TestRunDetailView = () => {
     return casesData.data.filter((tc) => !existingCaseIds.has(tc.id));
   }, [casesData, existingCaseIds]);
 
+  // Get sources separated by type
+  const milestones = useMemo(() => {
+    if (!testRun?.sources) return [];
+    return testRun.sources.filter(s => s.type === 'milestone');
+  }, [testRun]);
+
+  const suites = useMemo(() => {
+    if (!testRun?.sources) return [];
+    return testRun.sources.filter(s => s.type === 'suite');
+  }, [testRun]);
+
   // Filter and search test cases
   const filteredCases = useMemo(() => {
     if (!testRun) return [];
@@ -185,10 +247,69 @@ export const TestRunDetailView = () => {
       const matchesSearch =
         tc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tc.code.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = statusFilter === 'all' || tc.status === statusFilter;
-      return matchesSearch && matchesFilter;
+      const matchesStatus = statusFilter === 'all' || tc.status === statusFilter;
+
+      // Handle milestone filter
+      const effectiveSourceType = tc.sourceType || 'adhoc';
+      const matchesMilestone = milestoneFilter === 'all' ||
+        (effectiveSourceType === 'milestone' && tc.sourceId === milestoneFilter);
+
+      // Handle suite filter
+      const matchesSuite = suiteFilter === 'all' ||
+        (effectiveSourceType === 'suite' && tc.sourceId === suiteFilter);
+
+      // If both filters are 'all', show everything
+      // If one filter is set, show only matching items
+      const matchesSource =
+        (milestoneFilter === 'all' && suiteFilter === 'all') ||
+        (milestoneFilter !== 'all' && matchesMilestone) ||
+        (suiteFilter !== 'all' && matchesSuite);
+
+      return matchesSearch && matchesStatus && matchesSource;
     });
-  }, [testRun, searchQuery, statusFilter]);
+  }, [testRun, searchQuery, statusFilter, milestoneFilter, suiteFilter]);
+
+  // Group test cases by source
+  const groupedCases = useMemo((): GroupedCases[] => {
+    if (!testRun) return [];
+
+    const groups = new Map<string, GroupedCases>();
+
+    for (const tc of filteredCases) {
+      const key = tc.sourceId || 'adhoc';
+      const effectiveSourceType = tc.sourceType || 'adhoc';
+      if (!groups.has(key)) {
+        groups.set(key, {
+          sourceId: tc.sourceId,
+          sourceType: effectiveSourceType,
+          sourceName: tc.sourceName || (effectiveSourceType === 'adhoc' ? '직접 추가' : '알 수 없음'),
+          cases: [],
+        });
+      }
+      groups.get(key)!.cases.push(tc);
+    }
+
+    // Sort groups: suites first, then milestones, then adhoc
+    const sorted = Array.from(groups.values()).sort((a, b) => {
+      const order = { suite: 0, milestone: 1, adhoc: 2 };
+      return order[a.sourceType] - order[b.sourceType];
+    });
+
+    return sorted;
+  }, [testRun, filteredCases]);
+
+  const toggleGroupCollapse = (sourceId: string | null) => {
+    const key = sourceId || 'adhoc';
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   // Get selected case
   const selectedCase = useMemo(() => {
@@ -397,7 +518,7 @@ export const TestRunDetailView = () => {
         {/* Main Content */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left Panel - Test Case List */}
-          <div className="border-line-2 flex w-[400px] flex-col border-r">
+          <div className="border-line-2 flex w-[60%] flex-col border-r">
             {/* Search & Filter */}
             <div className="border-line-2 flex flex-col gap-3 border-b p-4">
               <div className="relative">
@@ -410,30 +531,200 @@ export const TestRunDetailView = () => {
                   className="bg-bg-2 border-line-2 text-text-1 placeholder:text-text-4 focus:border-primary w-full rounded-lg border py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
-              <div className="flex gap-1">
-                {(['all', 'untested', 'pass', 'fail', 'blocked'] as const).map((filter) => (
+
+              {/* Filter Dropdowns */}
+              <div className="flex gap-2">
+                {/* Status Filter Dropdown */}
+                <div className="relative flex-1" ref={statusFilterRef}>
                   <button
-                    key={filter}
-                    onClick={() => setStatusFilter(filter)}
-                    className={cn(
-                      'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                      statusFilter === filter
-                        ? 'bg-primary text-white'
-                        : 'bg-bg-3 text-text-3 hover:bg-bg-4'
-                    )}
+                    onClick={() => {
+                      setShowStatusFilterDropdown(!showStatusFilterDropdown);
+                      setShowMilestoneFilterDropdown(false);
+                      setShowSuiteFilterDropdown(false);
+                    }}
+                    className="bg-bg-2 border-line-2 hover:border-line-1 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
                   >
-                    {filter === 'all' ? '전체' : STATUS_CONFIG[filter].label}
-                    {filter !== 'all' && (
-                      <span className="ml-1 opacity-70">
-                        ({testRun.stats[filter]})
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {statusFilter === 'all' ? (
+                        <>
+                          <Filter className="text-text-3 h-4 w-4" />
+                          <span className="text-text-1">전체 상태</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className={STATUS_CONFIG[statusFilter].style}>
+                            {STATUS_CONFIG[statusFilter].icon}
+                          </span>
+                          <span className="text-text-1">{STATUS_CONFIG[statusFilter].label}</span>
+                          <span className="text-text-3 text-xs">({testRun.stats[statusFilter]})</span>
+                        </>
+                      )}
+                    </div>
+                    <ChevronDown className={cn('text-text-3 h-4 w-4 transition-transform', showStatusFilterDropdown && 'rotate-180')} />
                   </button>
-                ))}
+
+                  {showStatusFilterDropdown && (
+                    <div className="bg-bg-2 border-line-2 absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-lg border shadow-xl">
+                      <button
+                        onClick={() => {
+                          setStatusFilter('all');
+                          setShowStatusFilterDropdown(false);
+                        }}
+                        className={cn(
+                          'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
+                          statusFilter === 'all' ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
+                        )}
+                      >
+                        <Filter className="h-4 w-4" />
+                        <span>전체 상태</span>
+                        <span className="text-text-3 ml-auto text-xs">({testRun.stats.total})</span>
+                      </button>
+                      {(['untested', 'pass', 'fail', 'blocked'] as const).map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => {
+                            setStatusFilter(status);
+                            setShowStatusFilterDropdown(false);
+                          }}
+                          className={cn(
+                            'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
+                            statusFilter === status ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
+                          )}
+                        >
+                          <span className={STATUS_CONFIG[status].style}>{STATUS_CONFIG[status].icon}</span>
+                          <span>{STATUS_CONFIG[status].label}</span>
+                          <span className="text-text-3 ml-auto text-xs">({testRun.stats[status]})</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Milestone Filter Dropdown */}
+                <div className="relative flex-1" ref={milestoneFilterRef}>
+                  <button
+                    onClick={() => {
+                      setShowMilestoneFilterDropdown(!showMilestoneFilterDropdown);
+                      setShowStatusFilterDropdown(false);
+                      setShowSuiteFilterDropdown(false);
+                    }}
+                    className="bg-bg-2 border-line-2 hover:border-line-1 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Milestone className={cn('h-4 w-4', milestoneFilter !== 'all' ? 'text-primary' : 'text-text-3')} />
+                      <span className="text-text-1 truncate">
+                        {milestoneFilter === 'all'
+                          ? '마일스톤'
+                          : milestones.find(m => m.id === milestoneFilter)?.name || '마일스톤'}
+                      </span>
+                    </div>
+                    <ChevronDown className={cn('text-text-3 h-4 w-4 flex-shrink-0 transition-transform', showMilestoneFilterDropdown && 'rotate-180')} />
+                  </button>
+
+                  {showMilestoneFilterDropdown && (
+                    <div className="bg-bg-2 border-line-2 absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border shadow-xl">
+                      <button
+                        onClick={() => {
+                          setMilestoneFilter('all');
+                          setShowMilestoneFilterDropdown(false);
+                        }}
+                        className={cn(
+                          'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
+                          milestoneFilter === 'all' ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
+                        )}
+                      >
+                        <Milestone className="h-4 w-4" />
+                        <span>전체 마일스톤</span>
+                      </button>
+                      {milestones.length === 0 ? (
+                        <div className="text-text-3 px-3 py-2 text-sm">마일스톤 없음</div>
+                      ) : (
+                        milestones.map((milestone) => (
+                          <button
+                            key={milestone.id}
+                            onClick={() => {
+                              setMilestoneFilter(milestone.id);
+                              setSuiteFilter('all'); // 마일스톤 선택시 스위트 필터 초기화
+                              setShowMilestoneFilterDropdown(false);
+                            }}
+                            className={cn(
+                              'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
+                              milestoneFilter === milestone.id ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
+                            )}
+                          >
+                            <Milestone className="h-4 w-4" />
+                            <span className="truncate">{milestone.name}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Suite Filter Dropdown */}
+                <div className="relative flex-1" ref={suiteFilterRef}>
+                  <button
+                    onClick={() => {
+                      setShowSuiteFilterDropdown(!showSuiteFilterDropdown);
+                      setShowStatusFilterDropdown(false);
+                      setShowMilestoneFilterDropdown(false);
+                    }}
+                    className="bg-bg-2 border-line-2 hover:border-line-1 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FolderOpen className={cn('h-4 w-4', suiteFilter !== 'all' ? 'text-primary' : 'text-text-3')} />
+                      <span className="text-text-1 truncate">
+                        {suiteFilter === 'all'
+                          ? '스위트'
+                          : suites.find(s => s.id === suiteFilter)?.name || '스위트'}
+                      </span>
+                    </div>
+                    <ChevronDown className={cn('text-text-3 h-4 w-4 flex-shrink-0 transition-transform', showSuiteFilterDropdown && 'rotate-180')} />
+                  </button>
+
+                  {showSuiteFilterDropdown && (
+                    <div className="bg-bg-2 border-line-2 absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border shadow-xl">
+                      <button
+                        onClick={() => {
+                          setSuiteFilter('all');
+                          setShowSuiteFilterDropdown(false);
+                        }}
+                        className={cn(
+                          'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
+                          suiteFilter === 'all' ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
+                        )}
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        <span>전체 스위트</span>
+                      </button>
+                      {suites.length === 0 ? (
+                        <div className="text-text-3 px-3 py-2 text-sm">스위트 없음</div>
+                      ) : (
+                        suites.map((suite) => (
+                          <button
+                            key={suite.id}
+                            onClick={() => {
+                              setSuiteFilter(suite.id);
+                              setMilestoneFilter('all'); // 스위트 선택시 마일스톤 필터 초기화
+                              setShowSuiteFilterDropdown(false);
+                            }}
+                            className={cn(
+                              'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
+                              suiteFilter === suite.id ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
+                            )}
+                          >
+                            <FolderOpen className="h-4 w-4" />
+                            <span className="truncate">{suite.name}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Case List */}
+            {/* Case List - Grouped by Source */}
             <div className="flex-1 overflow-y-auto">
               {filteredCases.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -441,29 +732,61 @@ export const TestRunDetailView = () => {
                   <p className="text-text-2">검색 결과가 없습니다.</p>
                 </div>
               ) : (
-                filteredCases.map((tc, index) => {
-                  const config = STATUS_CONFIG[tc.status];
-                  const isSelected = tc.id === selectedCaseId;
+                groupedCases.map((group) => {
+                  const groupKey = group.sourceId || 'adhoc';
+                  const isCollapsed = collapsedGroups.has(groupKey);
+                  const GroupIcon = group.sourceType === 'suite' ? FolderOpen :
+                                   group.sourceType === 'milestone' ? Milestone : PlayCircle;
 
                   return (
-                    <button
-                      key={tc.id}
-                      onClick={() => setSelectedCaseId(tc.id)}
-                      className={cn(
-                        'border-line-2 flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors',
-                        isSelected ? 'bg-primary/10' : 'hover:bg-bg-2'
-                      )}
-                    >
-                      <span className={cn('flex-shrink-0', config.style)}>{config.icon}</span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-primary font-mono text-xs">{tc.code || `#${index + 1}`}</span>
-                          {tc.comment && <MessageSquare className="text-text-3 h-3 w-3" />}
-                        </div>
-                        <p className="text-text-1 truncate text-sm">{tc.title || '제목 없음'}</p>
-                      </div>
-                      {isSelected && <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />}
-                    </button>
+                    <div key={groupKey}>
+                      {/* Group Header */}
+                      <button
+                        onClick={() => toggleGroupCollapse(group.sourceId)}
+                        className="border-line-2 bg-bg-2 hover:bg-bg-3 flex w-full items-center gap-2 border-b px-4 py-2 text-left transition-colors"
+                      >
+                        <ChevronDown
+                          className={cn(
+                            'text-text-3 h-4 w-4 transition-transform',
+                            isCollapsed && '-rotate-90'
+                          )}
+                        />
+                        <GroupIcon className="text-primary h-4 w-4" />
+                        <span className="text-text-1 flex-1 text-sm font-medium">
+                          {group.sourceName}
+                        </span>
+                        <span className="text-text-3 text-xs">
+                          {group.cases.length}개
+                        </span>
+                      </button>
+
+                      {/* Group Cases */}
+                      {!isCollapsed && group.cases.map((tc, index) => {
+                        const config = STATUS_CONFIG[tc.status];
+                        const isSelected = tc.id === selectedCaseId;
+
+                        return (
+                          <button
+                            key={tc.id}
+                            onClick={() => setSelectedCaseId(tc.id)}
+                            className={cn(
+                              'border-line-2 flex w-full items-center gap-3 border-b py-3 pl-10 pr-4 text-left transition-colors',
+                              isSelected ? 'bg-primary/10' : 'hover:bg-bg-2'
+                            )}
+                          >
+                            <span className={cn('flex-shrink-0', config.style)}>{config.icon}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-primary font-mono text-xs">{tc.code || `#${index + 1}`}</span>
+                                {tc.comment && <MessageSquare className="text-text-3 h-3 w-3" />}
+                              </div>
+                              <p className="text-text-1 truncate text-sm">{tc.title || '제목 없음'}</p>
+                            </div>
+                            {isSelected && <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   );
                 })
               )}
@@ -471,7 +794,7 @@ export const TestRunDetailView = () => {
           </div>
 
           {/* Right Panel - Test Case Detail */}
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex w-[40%] flex-col overflow-hidden">
             {selectedCase ? (
               <>
                 {/* Case Header */}
@@ -490,7 +813,7 @@ export const TestRunDetailView = () => {
                   <h2 className="text-text-1 text-xl font-semibold">{selectedCase.title || '제목 없음'}</h2>
                 </div>
 
-                {/* Status Buttons */}
+                {/* Status Dropdown */}
                 <div className="border-line-2 relative border-b p-6">
                   {updateMutation.isPending && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg-1/70 backdrop-blur-sm">
@@ -501,35 +824,55 @@ export const TestRunDetailView = () => {
                     </div>
                   )}
                   <h3 className="text-text-2 mb-3 text-sm font-medium">결과 기록</h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    {(['pass', 'fail', 'blocked', 'untested'] as const).map((status) => {
-                      const config = STATUS_CONFIG[status];
-                      const isActive = selectedCase.status === status;
+                  <div className="relative" ref={statusDropdownRef}>
+                    <button
+                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                      disabled={updateMutation.isPending}
+                      className={cn(
+                        'flex w-full items-center justify-between rounded-lg border-2 px-4 py-3 transition-all',
+                        STATUS_CONFIG[selectedCase.status].bgStyle,
+                        STATUS_CONFIG[selectedCase.status].style
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{STATUS_CONFIG[selectedCase.status].icon}</span>
+                        <span className="font-medium">{STATUS_CONFIG[selectedCase.status].label}</span>
+                      </div>
+                      <ChevronDown className={cn('h-5 w-5 transition-transform', showStatusDropdown && 'rotate-180')} />
+                    </button>
 
-                      return (
-                        <button
-                          key={status}
-                          onClick={() => handleStatusChange(status)}
-                          disabled={updateMutation.isPending}
-                          className={cn(
-                            'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all',
-                            isActive
-                              ? cn(config.bgStyle, 'border-current', config.style)
-                              : 'border-line-2 hover:border-line-1 bg-bg-2 hover:bg-bg-3'
-                          )}
-                        >
-                          <span className={cn('text-2xl', isActive ? config.style : 'text-text-3')}>
-                            {config.icon}
-                          </span>
-                          <span className={cn('text-sm font-medium', isActive ? config.style : 'text-text-2')}>
-                            {config.label}
-                          </span>
-                          <kbd className="bg-bg-3 text-text-4 rounded px-1.5 py-0.5 text-xs">
-                            {config.shortcut}
-                          </kbd>
-                        </button>
-                      );
-                    })}
+                    {showStatusDropdown && (
+                      <div className="bg-bg-2 border-line-2 absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border shadow-xl">
+                        {(['pass', 'fail', 'blocked', 'untested'] as const).map((status) => {
+                          const config = STATUS_CONFIG[status];
+                          const isActive = selectedCase.status === status;
+
+                          return (
+                            <button
+                              key={status}
+                              onClick={() => {
+                                handleStatusChange(status);
+                                setShowStatusDropdown(false);
+                              }}
+                              className={cn(
+                                'flex w-full items-center gap-3 px-4 py-3 transition-colors',
+                                isActive ? cn(config.bgStyle, config.style) : 'hover:bg-bg-3'
+                              )}
+                            >
+                              <span className={cn('text-lg', isActive ? config.style : 'text-text-3')}>
+                                {config.icon}
+                              </span>
+                              <span className={cn('flex-1 text-left font-medium', isActive ? config.style : 'text-text-1')}>
+                                {config.label}
+                              </span>
+                              <kbd className="bg-bg-3 text-text-4 rounded px-1.5 py-0.5 text-xs">
+                                {config.shortcut}
+                              </kbd>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 

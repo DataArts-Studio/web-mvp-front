@@ -36,12 +36,14 @@ export async function addCasesToRunAction(
 
       if (newCaseIds.length === 0) return 0;
 
-      // 2. Create test case run records for new cases
+      // 2. Create test case run records for new cases (adhoc - directly selected)
       const newTestCaseRuns = newCaseIds.map((caseId) => ({
         id: uuidv7(),
         test_run_id: runId,
         test_case_id: caseId,
         status: 'untested' as const,
+        source_type: 'adhoc' as const,
+        source_id: null,
         created_at: new Date(),
         updated_at: new Date(),
       }));

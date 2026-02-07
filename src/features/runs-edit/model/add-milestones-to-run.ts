@@ -32,16 +32,23 @@ export async function addMilestonesToRunAction(
       }));
       await tx.insert(testRunMilestones).values(milestoneLinks).onConflictDoNothing();
 
-      // 2. Get test cases belonging to the selected milestones
+      // 2. Get test cases belonging to the selected milestones (with milestone_id for source tracking)
       const milestoneCaseRows = await tx
-        .select({ test_case_id: milestoneTestCases.test_case_id })
+        .select({
+          test_case_id: milestoneTestCases.test_case_id,
+          milestone_id: milestoneTestCases.milestone_id,
+        })
         .from(milestoneTestCases)
         .where(inArray(milestoneTestCases.milestone_id, milestoneIds));
 
-      const caseIds = milestoneCaseRows
-        .map((r) => r.test_case_id)
-        .filter((id): id is string => id !== null);
+      const caseIdToMilestone = new Map<string, string>();
+      for (const row of milestoneCaseRows) {
+        if (row.test_case_id && row.milestone_id) {
+          caseIdToMilestone.set(row.test_case_id, row.milestone_id);
+        }
+      }
 
+      const caseIds = Array.from(caseIdToMilestone.keys());
       if (caseIds.length === 0) return 0;
 
       // 3. Find existing test case runs to avoid duplicates
@@ -60,12 +67,14 @@ export async function addMilestonesToRunAction(
 
       if (newCaseIds.length === 0) return 0;
 
-      // 4. Create test case run records for new cases
+      // 4. Create test case run records for new cases with source tracking
       const newTestCaseRuns = newCaseIds.map((caseId) => ({
         id: uuidv7(),
         test_run_id: runId,
         test_case_id: caseId,
         status: 'untested' as const,
+        source_type: 'milestone' as const,
+        source_id: caseIdToMilestone.get(caseId),
         created_at: new Date(),
         updated_at: new Date(),
       }));

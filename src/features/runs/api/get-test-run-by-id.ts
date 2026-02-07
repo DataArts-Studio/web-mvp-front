@@ -1,6 +1,6 @@
 'use server';
 
-import { getDatabase, testRuns, testCaseRuns, testCases, TestRunStatus, TestCaseRunStatus } from '@/shared/lib/db';
+import { getDatabase, testRuns, testCaseRuns, testCases, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
 
@@ -12,6 +12,15 @@ export interface TestCaseRunDetail {
   status: TestCaseRunStatus;
   comment: string | null;
   executedAt: Date | null;
+  sourceType: TestCaseRunSourceType;
+  sourceId: string | null;
+  sourceName: string | null;
+}
+
+export interface SourceInfo {
+  id: string;
+  name: string;
+  type: 'suite' | 'milestone';
 }
 
 export interface TestRunDetail {
@@ -24,6 +33,7 @@ export interface TestRunDetail {
   createdAt: Date;
   updatedAt: Date;
   testCaseRuns: TestCaseRunDetail[];
+  sources: SourceInfo[];
   stats: {
     total: number;
     untested: number;
@@ -66,27 +76,65 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       };
     }
 
-    // Determine source type and name
-    let sourceType: TestRunDetail['sourceType'] = 'ADHOC';
-    let sourceName = '직접 선택한 케이스';
+    // Build source ID to name map
+    const sourceIdToName = new Map<string, string>();
+    const sources: SourceInfo[] = [];
 
-    if (run.testRunSuites && run.testRunSuites.length > 0) {
-      sourceType = 'SUITE';
-      sourceName = run.testRunSuites.map(s => s.testSuite?.name || '').filter(Boolean).join(', ');
-    } else if (run.testRunMilestones && run.testRunMilestones.length > 0) {
-      sourceType = 'MILESTONE';
-      sourceName = run.testRunMilestones.map(m => m.milestone?.name || '').filter(Boolean).join(', ');
+    const hasSuites = run.testRunSuites && run.testRunSuites.length > 0;
+    const hasMilestones = run.testRunMilestones && run.testRunMilestones.length > 0;
+
+    if (hasSuites) {
+      for (const s of run.testRunSuites!) {
+        if (s.testSuite) {
+          sourceIdToName.set(s.testSuite.id, s.testSuite.name);
+          sources.push({ id: s.testSuite.id, name: s.testSuite.name, type: 'suite' });
+        }
+      }
     }
 
-    // Map test case runs
+    if (hasMilestones) {
+      for (const m of run.testRunMilestones!) {
+        if (m.milestone) {
+          sourceIdToName.set(m.milestone.id, m.milestone.name);
+          sources.push({ id: m.milestone.id, name: m.milestone.name, type: 'milestone' });
+        }
+      }
+    }
+
+    // Determine source type and name for header display
+    let sourceType: TestRunDetail['sourceType'] = 'ADHOC';
+    const sourceNameParts: string[] = [];
+
+    if (hasSuites) {
+      sourceType = 'SUITE';
+      const suiteNames = run.testRunSuites!.map(s => s.testSuite?.name || '').filter(Boolean);
+      if (suiteNames.length > 0) {
+        sourceNameParts.push(`스위트: ${suiteNames.join(', ')}`);
+      }
+    }
+
+    if (hasMilestones) {
+      sourceType = hasSuites ? 'SUITE' : 'MILESTONE';
+      const milestoneNames = run.testRunMilestones!.map(m => m.milestone?.name || '').filter(Boolean);
+      if (milestoneNames.length > 0) {
+        sourceNameParts.push(`마일스톤: ${milestoneNames.join(', ')}`);
+      }
+    }
+
+    const sourceName = sourceNameParts.length > 0 ? sourceNameParts.join(' | ') : '직접 선택한 케이스';
+
+    // Map test case runs with source information
     const testCaseRunDetails: TestCaseRunDetail[] = (run.testCaseRuns || []).map(tcr => ({
       id: tcr.id,
       testCaseId: tcr.test_case_id || '',
-      code: tcr.testCase?.code || '',
-      title: tcr.testCase?.title || '',
+      code: tcr.testCase?.case_key || '',
+      title: tcr.testCase?.name || '',
       status: tcr.status,
       comment: tcr.comment,
       executedAt: tcr.executed_at,
+      sourceType: (tcr.source_type as TestCaseRunSourceType) || 'adhoc',
+      sourceId: tcr.source_id || null,
+      sourceName: tcr.source_id ? (sourceIdToName.get(tcr.source_id) || null) : null,
     }));
 
     // Calculate stats
@@ -108,6 +156,7 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       createdAt: run.created_at,
       updatedAt: run.updated_at,
       testCaseRuns: testCaseRunDetails,
+      sources,
       stats: {
         total,
         untested,
