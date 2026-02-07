@@ -98,15 +98,16 @@ export const MvpBottomNavbar = () => {
 
   // ------------------------------------------------------------------
   // 세션 저장소(SessionStorage)에서 상태를 읽어와 초기화
-  // 기본값: 숨김 (false)
+  // 기본값: 숨김 (false) — SSR과 일치시키기 위해 초기값은 false
   // ------------------------------------------------------------------
-  const [isVisible, setIsVisible] = React.useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('mvp_navbar_visible');
-      return stored === null ? false : JSON.parse(stored);
+  const [isVisible, setIsVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const stored = sessionStorage.getItem('mvp_navbar_visible');
+    if (stored !== null) {
+      setIsVisible(JSON.parse(stored));
     }
-    return false;
-  });
+  }, []);
 
   const toggleVisibility = React.useCallback(() => {
     const newState = !isVisible;
