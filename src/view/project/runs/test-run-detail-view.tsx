@@ -8,11 +8,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import { testRunByIdQueryOptions, updateTestCaseRunStatus, TestCaseRunDetail } from '@/features/runs';
-import { AddToRunModal } from '@/features/runs-edit';
-import { dashboardQueryOptions } from '@/features/dashboard';
-import { testSuitesQueryOptions } from '@/entities/test-suite';
-import { milestonesQueryOptions } from '@/entities/milestone';
-import { getTestCases } from '@/entities/test-case/api';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -31,8 +26,6 @@ import {
   Filter,
   Keyboard,
   Loader2,
-  Plus,
-  type LucideIcon,
 } from 'lucide-react';
 
 type StatusFilter = 'all' | 'untested' | 'pass' | 'fail' | 'blocked';
@@ -95,18 +88,6 @@ const SOURCE_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode 
   ADHOC: { label: '직접 선택', icon: <PlayCircle className="h-4 w-4" /> },
 };
 
-type HeaderAction = {
-  key: string;
-  label: string;
-  icon: LucideIcon;
-};
-
-const HEADER_ACTIONS: HeaderAction[] = [
-  { key: 'addToRun', label: '테스트 추가하기', icon: Plus },
-  // 새 메뉴를 여기에 추가하세요
-  // { key: 'export', label: '결과 내보내기', icon: Download },
-];
-
 export const TestRunDetailView = () => {
   const params = useParams();
   const queryClient = useQueryClient();
@@ -121,53 +102,16 @@ export const TestRunDetailView = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showActionMenu, setShowActionMenu] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showMilestoneFilterDropdown, setShowMilestoneFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
-  const [activeAction, setActiveAction] = useState<string | null>(null);
-  const actionMenuRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusFilterRef = useRef<HTMLDivElement>(null);
   const milestoneFilterRef = useRef<HTMLDivElement>(null);
   const suiteFilterRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isError } = useQuery(testRunByIdQueryOptions(testRunId));
-
-  // Fetch project ID via dashboard stats for loading suites/milestones/cases
-  const { data: dashboardData } = useQuery(dashboardQueryOptions.stats(projectSlug));
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
-
-  const isAddToRunOpen = activeAction === 'addToRun';
-
-  const { data: suitesData } = useQuery({
-    ...testSuitesQueryOptions(projectId!),
-    enabled: !!projectId && isAddToRunOpen,
-  });
-
-  const { data: milestonesData } = useQuery({
-    ...milestonesQueryOptions(projectId!),
-    enabled: !!projectId && isAddToRunOpen,
-  });
-
-  const { data: casesData } = useQuery({
-    queryKey: ['testCases', projectId],
-    queryFn: () => getTestCases({ project_id: projectId!, limits: { offset: 0, limit: 9999 } }),
-    enabled: !!projectId && isAddToRunOpen,
-  });
-
-  // Close action menu on click outside
-  useEffect(() => {
-    if (!showActionMenu) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
-        setShowActionMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showActionMenu]);
 
   // Close status dropdown on click outside
   useEffect(() => {
@@ -207,27 +151,6 @@ export const TestRunDetailView = () => {
   });
 
   const testRun = data?.success ? data.data : null;
-
-  // Compute available items for modals (exclude already-added)
-  const existingCaseIds = useMemo(() => {
-    if (!testRun) return new Set<string>();
-    return new Set(testRun.testCaseRuns.map((tc) => tc.testCaseId));
-  }, [testRun]);
-
-  const availableSuites = useMemo(() => {
-    if (!suitesData?.success) return [];
-    return suitesData.data;
-  }, [suitesData]);
-
-  const availableMilestones = useMemo(() => {
-    if (!milestonesData?.success) return [];
-    return milestonesData.data;
-  }, [milestonesData]);
-
-  const availableCases = useMemo(() => {
-    if (!casesData?.success) return [];
-    return casesData.data.filter((tc) => !existingCaseIds.has(tc.id));
-  }, [casesData, existingCaseIds]);
 
   // Get sources separated by type
   const milestones = useMemo(() => {
@@ -506,37 +429,6 @@ export const TestRunDetailView = () => {
                 />
               </div>
               <span className="text-text-2 text-sm font-medium">{testRun.stats.progressPercent}%</span>
-            </div>
-            <div className="relative" ref={actionMenuRef}>
-              <button
-                onClick={() => setShowActionMenu((prev) => !prev)}
-                className="text-text-3 hover:text-text-1 flex items-center gap-1 text-sm transition-colors"
-                aria-label="테스트 추가 메뉴 열기"
-                aria-expanded={showActionMenu}
-                aria-haspopup="menu"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-              </button>
-              {showActionMenu && (
-                <div className="bg-bg-2 border-line-2 absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border py-1 shadow-xl">
-                  {HEADER_ACTIONS.map((action) => {
-                    const Icon = action.icon;
-                    return (
-                      <button
-                        key={action.key}
-                        onClick={() => {
-                          setActiveAction(action.key);
-                          setShowActionMenu(false);
-                        }}
-                        className="hover:bg-bg-3 text-text-1 flex w-full items-center gap-2 px-4 py-2 text-sm transition-colors"
-                      >
-                        <Icon className="h-4 w-4 text-text-3" />
-                        {action.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
             <button
               onClick={() => setShowShortcuts(true)}
@@ -1034,16 +926,6 @@ export const TestRunDetailView = () => {
         </div>
       )}
 
-      {/* Add to Run Modal */}
-      {isAddToRunOpen && (
-        <AddToRunModal
-          runId={testRunId}
-          availableCases={availableCases}
-          availableSuites={availableSuites}
-          availableMilestones={availableMilestones}
-          onClose={() => setActiveAction(null)}
-        />
-      )}
     </Container>
   );
 };

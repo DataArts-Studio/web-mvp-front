@@ -108,11 +108,7 @@ export const MilestoneDetailView = () => {
   const allSuites = suitesResult?.success ? suitesResult.data ?? [] : [];
 
   const handleRunTest = () => {
-    const query = new URLSearchParams();
-    query.set('milestoneId', milestoneId);
-    const suiteIds = (milestone.testSuites ?? []).map((s: { id: string }) => s.id).join(',');
-    if (suiteIds) query.set('suiteIds', suiteIds);
-    router.push(`/projects/${projectSlug}/runs/create?${query.toString()}`);
+    router.push(`/projects/${projectSlug}/runs/create?milestoneId=${milestoneId}`);
   };
 
   if (isLoading) {
