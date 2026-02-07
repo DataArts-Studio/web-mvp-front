@@ -3,7 +3,7 @@
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
 import { getDatabase, testCases } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 
@@ -43,7 +43,8 @@ export const getTestCases = async ({
       id: row.id,
       projectId: row.project_id ?? '',
       testSuiteId: row.test_suite_id ?? undefined,
-      caseKey: row.case_key ?? '',
+      displayId: row.display_id ?? 0,
+      caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
       title: row.name,
       testType: row.test_type ?? '',
       tags: row.tags ?? [],
@@ -91,11 +92,19 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     const dto = toCreateTestCaseDTO(input);
     const id = uuidv7();
 
+    const [maxResult] = await db
+      .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+      .from(testCases)
+      .where(eq(testCases.project_id, input.projectId));
+    const nextDisplayId = (maxResult?.max ?? 0) + 1;
+
     const [inserted] = await db
       .insert(testCases)
       .values({
         id,
         ...dto,
+        display_id: nextDisplayId,
+        case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
         result_status: 'untested',
         created_at: new Date(),
         updated_at: new Date(),

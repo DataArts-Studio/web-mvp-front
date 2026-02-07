@@ -14,6 +14,7 @@ export type TestCase = {
   id: string;
   projectId: string;
   testSuiteId?: string;
+  displayId: number;
   caseKey: string;
   title: string;
   testType: string;

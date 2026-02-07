@@ -12,6 +12,7 @@ export const testCases = pgTable('test_cases', (t) => ({
   name: t.varchar('name').notNull(),
   steps: t.text('steps'),
   test_type: t.varchar('test_type'),
+  display_id: t.integer('display_id'),
   case_key: t.varchar('case_key'),
   pre_condition: t.text('pre_condition'),
   tags: t.text('tags').array(10),
@@ -24,4 +25,5 @@ export const testCases = pgTable('test_cases', (t) => ({
   lifecycle_status: t.varchar('lifecycle_status', { length: 20 }).$type<LifecycleStatus>().default('ACTIVE').notNull(),
 }), (t) => ({
     unq: unique().on(t.project_id, t.name),
+    unqDisplayId: unique().on(t.project_id, t.display_id),
 }));
