@@ -1,5 +1,5 @@
-/* Font import(Pretendard CDN) */
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css");
+/* Font import(Pretendard - self-hosted via npm) */
+@import 'pretendard/dist/web/static/pretendard-dynamic-subset.css';
 
 /* Tailwind CSS */
 /* https://tailwindcss.com/ */

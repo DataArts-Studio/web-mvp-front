@@ -16,7 +16,17 @@ import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronDown, ChevronRight, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
-import { TestStatusChart, TestStatusData, KPICards, KPIData, MilestoneGanttChart } from '@/widgets/project';
+import dynamic from 'next/dynamic';
+import { type TestStatusData, KPICards, type KPIData } from '@/widgets/project';
+
+const TestStatusChart = dynamic(
+  () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
+  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[400px] animate-pulse" /> }
+);
+const MilestoneGanttChart = dynamic(
+  () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
+  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" /> }
+);
 
 type ModalType = 'case' | 'suite';
 
