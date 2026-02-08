@@ -16,7 +16,7 @@ import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronDown, ChevronRight, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
-import { TestStatusChart, TestStatusData, KPICards, KPIData } from '@/widgets/project';
+import { TestStatusChart, TestStatusData, KPICards, KPIData, MilestoneGanttChart } from '@/widgets/project';
 
 type ModalType = 'case' | 'suite';
 
@@ -103,6 +103,26 @@ export const ProjectDashboardView = () => {
       { pass: 0, fail: 0, blocked: 0, untested: 0 }
     );
   }, [selectedRun, testCases]);
+
+  // 마일스톤 Gantt용 테스트 실행 선택 (차트와 독립)
+  const [milestoneRunId, setMilestoneRunId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (testRuns.length > 0 && !milestoneRunId) {
+      const inProgress = testRuns.find((r) => r.status === 'IN_PROGRESS');
+      const notStarted = testRuns.find((r) => r.status === 'NOT_STARTED');
+      const best = inProgress || notStarted || testRuns[0];
+      if (best) setMilestoneRunId(best.id);
+    }
+  }, [testRuns, milestoneRunId]);
+
+  // 마일스톤 조회 (선택된 실행 기준)
+  const { data: milestonesData } = useQuery({
+    ...dashboardQueryOptions.milestones(projectId!, milestoneRunId ?? undefined),
+    enabled: !!projectId,
+  });
+
+  const dashboardMilestones = milestonesData?.success ? milestonesData.data : [];
 
   // KPI 데이터 계산
   const kpiData: KPIData = React.useMemo(() => ({
@@ -275,6 +295,12 @@ export const ProjectDashboardView = () => {
             )}
           </div>
           <TestStatusChart data={testStatusData} />
+          <MilestoneGanttChart
+              milestones={dashboardMilestones}
+              testRuns={testRuns}
+              selectedRunId={milestoneRunId}
+              onRunChange={setMilestoneRunId}
+            />
         </section>
 
         {/* 테스트 케이스 섹션 */}
