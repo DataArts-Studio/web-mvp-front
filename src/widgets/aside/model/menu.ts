@@ -9,9 +9,9 @@ export const createAsideMenus = (projectSlug: string) => {
       {
         title: '테스트 관리',
         items: [
-          { label: '마일스톤', href: `${basePath}/milestones`, icon: Flag, matchPath: `${basePath}/milestones` },
-          { label: '테스트 스위트', href: `${basePath}/suites`, icon: FolderOpen, matchPath: `${basePath}/suites` },
           { label: '테스트 케이스', href: `${basePath}/cases`, icon: FileText, matchPath: `${basePath}/cases` },
+          { label: '테스트 스위트', href: `${basePath}/suites`, icon: FolderOpen, matchPath: `${basePath}/suites` },
+          { label: '마일스톤', href: `${basePath}/milestones`, icon: Flag, matchPath: `${basePath}/milestones` },
           { label: '테스트 실행', href: `${basePath}/runs`, icon: Play, matchPath: `${basePath}/runs` },
         ],
       },
