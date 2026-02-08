@@ -1,5 +1,4 @@
-/* Font import(Pretendard - self-hosted via npm) */
-@import 'pretendard/dist/web/static/pretendard-dynamic-subset.css';
+/* Pretendard font is loaded via <link> in layout.tsx for better performance */
 
 /* Tailwind CSS */
 /* https://tailwindcss.com/ */

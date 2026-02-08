@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
     };
   }
 
-  // production 환경: 크롤링 허용
+  // production 환경: 크롤링 허용 (프라이빗 페이지는 미들웨어 인증으로 보호)
   return {
     rules: {
       userAgent: '*',
