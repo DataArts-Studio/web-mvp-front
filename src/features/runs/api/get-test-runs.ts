@@ -16,6 +16,10 @@ export interface FetchedTestRun {
     totalCases: number;
     completedCases: number;
     progressPercent: number;
+    pass: number;
+    fail: number;
+    blocked: number;
+    untested: number;
   };
 }
 
@@ -56,9 +60,11 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
       // Calculate stats from testCaseRuns
       const testCaseRuns = run.testCaseRuns || [];
       const totalCases = testCaseRuns.length;
-      const completedCases = testCaseRuns.filter(
-        (tcr) => tcr.status === 'pass' || tcr.status === 'fail' || tcr.status === 'blocked'
-      ).length;
+      const pass = testCaseRuns.filter((tcr) => tcr.status === 'pass').length;
+      const fail = testCaseRuns.filter((tcr) => tcr.status === 'fail').length;
+      const blocked = testCaseRuns.filter((tcr) => tcr.status === 'blocked').length;
+      const untested = testCaseRuns.filter((tcr) => tcr.status === 'untested').length;
+      const completedCases = pass + fail + blocked;
       const progressPercent = totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0;
 
       return {
@@ -73,6 +79,10 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
           totalCases,
           completedCases,
           progressPercent,
+          pass,
+          fail,
+          blocked,
+          untested,
         },
       };
     });
