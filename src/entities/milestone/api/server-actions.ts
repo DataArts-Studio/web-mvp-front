@@ -7,9 +7,9 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
-import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites } from '@/shared/lib/db';
+import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites, testRunMilestones, testCaseRuns, testCases, testRunSuites } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 type GetMilestonesParams = {
@@ -251,6 +251,43 @@ export const addTestCasesToMilestone = async (
       .values(values)
       .onConflictDoNothing();
 
+    // Sync: add new cases to existing test runs linked to this milestone
+    const linkedRuns = await db
+      .select({ test_run_id: testRunMilestones.test_run_id })
+      .from(testRunMilestones)
+      .where(eq(testRunMilestones.milestone_id, milestoneId));
+
+    for (const run of linkedRuns) {
+      if (!run.test_run_id) continue;
+
+      const existingRows = await db
+        .select({ test_case_id: testCaseRuns.test_case_id })
+        .from(testCaseRuns)
+        .where(
+          and(
+            eq(testCaseRuns.test_run_id, run.test_run_id),
+            inArray(testCaseRuns.test_case_id, testCaseIds)
+          )
+        );
+      const existingSet = new Set(existingRows.map((r) => r.test_case_id));
+      const newIds = testCaseIds.filter((id) => !existingSet.has(id));
+
+      if (newIds.length > 0) {
+        await db.insert(testCaseRuns).values(
+          newIds.map((caseId) => ({
+            id: uuidv7(),
+            test_run_id: run.test_run_id!,
+            test_case_id: caseId,
+            status: 'untested' as const,
+            source_type: 'milestone' as const,
+            source_id: milestoneId,
+            created_at: new Date(),
+            updated_at: new Date(),
+          }))
+        );
+      }
+    }
+
     return {
       success: true,
       data: { count: testCaseIds.length },
@@ -317,6 +354,76 @@ export const addTestSuitesToMilestone = async (
       .insert(milestoneTestSuites)
       .values(values)
       .onConflictDoNothing();
+
+    // Sync: resolve suite cases and add to existing test runs linked to this milestone
+    const linkedRuns = await db
+      .select({ test_run_id: testRunMilestones.test_run_id })
+      .from(testRunMilestones)
+      .where(eq(testRunMilestones.milestone_id, milestoneId));
+
+    if (linkedRuns.length > 0) {
+      // Get individual test cases from the added suites
+      const suiteCaseRows = await db
+        .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
+        .from(testCases)
+        .where(
+          and(
+            inArray(testCases.test_suite_id, testSuiteIds),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        );
+
+      if (suiteCaseRows.length > 0) {
+        const caseIdToSuite = new Map<string, string>();
+        for (const row of suiteCaseRows) {
+          if (row.id && row.test_suite_id) {
+            caseIdToSuite.set(row.id, row.test_suite_id);
+          }
+        }
+        const caseIds = Array.from(caseIdToSuite.keys());
+
+        for (const run of linkedRuns) {
+          if (!run.test_run_id) continue;
+
+          // Link suites to the run
+          await db
+            .insert(testRunSuites)
+            .values(testSuiteIds.map((suiteId) => ({
+              test_run_id: run.test_run_id!,
+              test_suite_id: suiteId,
+            })))
+            .onConflictDoNothing();
+
+          // Find which cases already exist in this run
+          const existingRows = await db
+            .select({ test_case_id: testCaseRuns.test_case_id })
+            .from(testCaseRuns)
+            .where(
+              and(
+                eq(testCaseRuns.test_run_id, run.test_run_id),
+                inArray(testCaseRuns.test_case_id, caseIds)
+              )
+            );
+          const existingSet = new Set(existingRows.map((r) => r.test_case_id));
+          const newCaseIds = caseIds.filter((id) => !existingSet.has(id));
+
+          if (newCaseIds.length > 0) {
+            await db.insert(testCaseRuns).values(
+              newCaseIds.map((caseId) => ({
+                id: uuidv7(),
+                test_run_id: run.test_run_id!,
+                test_case_id: caseId,
+                status: 'untested' as const,
+                source_type: 'suite' as const,
+                source_id: caseIdToSuite.get(caseId)!,
+                created_at: new Date(),
+                updated_at: new Date(),
+              }))
+            );
+          }
+        }
+      }
+    }
 
     return {
       success: true,
