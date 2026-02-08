@@ -22,7 +22,6 @@ import {
   ListTodo,
   PlayCircle,
   FolderOpen,
-  Milestone,
   Filter,
   Keyboard,
   Loader2,
@@ -33,9 +32,8 @@ type TestCaseRunStatus = 'untested' | 'pass' | 'fail' | 'blocked';
 
 interface GroupedCases {
   groupKey: string;
-  sourceId: string | null;
-  sourceType: 'suite' | 'milestone' | 'adhoc';
-  sourceName: string;
+  suiteId: string | null;
+  suiteName: string;
   cases: TestCaseRunDetail[];
 }
 
@@ -97,18 +95,15 @@ export const TestRunDetailView = () => {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [milestoneFilter, setMilestoneFilter] = useState<string>('all');
   const [suiteFilter, setSuiteFilter] = useState<string>('all');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
-  const [showMilestoneFilterDropdown, setShowMilestoneFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusFilterRef = useRef<HTMLDivElement>(null);
-  const milestoneFilterRef = useRef<HTMLDivElement>(null);
   const suiteFilterRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isError } = useQuery(testRunByIdQueryOptions(testRunId));
@@ -127,13 +122,10 @@ export const TestRunDetailView = () => {
 
   // Close filter dropdowns on click outside
   useEffect(() => {
-    if (!showStatusFilterDropdown && !showMilestoneFilterDropdown && !showSuiteFilterDropdown) return;
+    if (!showStatusFilterDropdown && !showSuiteFilterDropdown) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (statusFilterRef.current && !statusFilterRef.current.contains(e.target as Node)) {
         setShowStatusFilterDropdown(false);
-      }
-      if (milestoneFilterRef.current && !milestoneFilterRef.current.contains(e.target as Node)) {
-        setShowMilestoneFilterDropdown(false);
       }
       if (suiteFilterRef.current && !suiteFilterRef.current.contains(e.target as Node)) {
         setShowSuiteFilterDropdown(false);
@@ -141,7 +133,7 @@ export const TestRunDetailView = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showStatusFilterDropdown, showMilestoneFilterDropdown, showSuiteFilterDropdown]);
+  }, [showStatusFilterDropdown, showSuiteFilterDropdown]);
 
   const updateMutation = useMutation({
     mutationFn: updateTestCaseRunStatus,
@@ -152,15 +144,16 @@ export const TestRunDetailView = () => {
 
   const testRun = data?.success ? data.data : null;
 
-  // Get sources separated by type
-  const milestones = useMemo(() => {
-    if (!testRun?.sources) return [];
-    return testRun.sources.filter(s => s.type === 'milestone');
-  }, [testRun]);
-
-  const suites = useMemo(() => {
-    if (!testRun?.sources) return [];
-    return testRun.sources.filter(s => s.type === 'suite');
+  // Extract unique suites from test case runs
+  const availableSuites = useMemo(() => {
+    if (!testRun?.testCaseRuns) return [];
+    const suiteMap = new Map<string, string>();
+    for (const tc of testRun.testCaseRuns) {
+      if (tc.testSuiteId && tc.testSuiteName) {
+        suiteMap.set(tc.testSuiteId, tc.testSuiteName);
+      }
+    }
+    return Array.from(suiteMap.entries()).map(([id, name]) => ({ id, name }));
   }, [testRun]);
 
   // Filter and search test cases
@@ -172,80 +165,38 @@ export const TestRunDetailView = () => {
         tc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tc.code.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'all' || tc.status === statusFilter;
+      const matchesSuite = suiteFilter === 'all' || tc.testSuiteId === suiteFilter;
 
-      // Handle milestone filter
-      const effectiveSourceType = tc.sourceType || 'adhoc';
-      const matchesMilestone = milestoneFilter === 'all' ||
-        (effectiveSourceType === 'milestone' && tc.sourceId === milestoneFilter);
-
-      // Handle suite filter
-      const matchesSuite = suiteFilter === 'all' ||
-        (effectiveSourceType === 'suite' && tc.sourceId === suiteFilter);
-
-      // If both filters are 'all', show everything
-      // If one filter is set, show only matching items
-      const matchesSource =
-        (milestoneFilter === 'all' && suiteFilter === 'all') ||
-        (milestoneFilter !== 'all' && matchesMilestone) ||
-        (suiteFilter !== 'all' && matchesSuite);
-
-      return matchesSearch && matchesStatus && matchesSource;
+      return matchesSearch && matchesStatus && matchesSuite;
     });
-  }, [testRun, searchQuery, statusFilter, milestoneFilter, suiteFilter]);
+  }, [testRun, searchQuery, statusFilter, suiteFilter]);
 
-  // Group test cases by source (adhoc cases are sub-grouped by their original suite)
+  // Group test cases by test suite
   const groupedCases = useMemo((): GroupedCases[] => {
     if (!testRun) return [];
 
     const groups = new Map<string, GroupedCases>();
 
     for (const tc of filteredCases) {
-      const effectiveSourceType = tc.sourceType || 'adhoc';
-
-      let key: string;
-      let groupSourceId: string | null;
-      let groupSourceType: GroupedCases['sourceType'];
-      let groupSourceName: string;
-
-      if (effectiveSourceType === 'adhoc') {
-        // Adhoc cases: group by their original test suite
-        if (tc.testSuiteId) {
-          key = `adhoc-suite-${tc.testSuiteId}`;
-          groupSourceId = tc.testSuiteId;
-          groupSourceType = 'adhoc';
-          groupSourceName = tc.testSuiteName || '알 수 없는 스위트';
-        } else {
-          key = 'adhoc-no-suite';
-          groupSourceId = null;
-          groupSourceType = 'adhoc';
-          groupSourceName = '미분류';
-        }
-      } else {
-        key = tc.sourceId || 'unknown';
-        groupSourceId = tc.sourceId;
-        groupSourceType = effectiveSourceType;
-        groupSourceName = tc.sourceName || '알 수 없음';
-      }
+      const key = tc.testSuiteId || '__unclassified__';
+      const suiteName = tc.testSuiteName || '미분류';
 
       if (!groups.has(key)) {
         groups.set(key, {
           groupKey: key,
-          sourceId: groupSourceId,
-          sourceType: groupSourceType,
-          sourceName: groupSourceName,
+          suiteId: tc.testSuiteId,
+          suiteName,
           cases: [],
         });
       }
       groups.get(key)!.cases.push(tc);
     }
 
-    // Sort groups: suites first, then milestones, then adhoc (with suite name), then adhoc (no suite)
+    // Sort groups: named suites first (alphabetical), then unclassified last
     const sorted = Array.from(groups.values()).sort((a, b) => {
-      const order = { suite: 0, milestone: 1, adhoc: 2 };
-      const diff = order[a.sourceType] - order[b.sourceType];
-      if (diff !== 0) return diff;
-      // Within same type, sort by name
-      return a.sourceName.localeCompare(b.sourceName);
+      if (!a.suiteId && b.suiteId) return 1;
+      if (a.suiteId && !b.suiteId) return -1;
+      return a.suiteName.localeCompare(b.suiteName);
     });
 
     return sorted;
@@ -464,7 +415,6 @@ export const TestRunDetailView = () => {
                   <button
                     onClick={() => {
                       setShowStatusFilterDropdown(!showStatusFilterDropdown);
-                      setShowMilestoneFilterDropdown(false);
                       setShowSuiteFilterDropdown(false);
                     }}
                     className="bg-bg-2 border-line-2 hover:border-line-1 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
@@ -525,74 +475,12 @@ export const TestRunDetailView = () => {
                   )}
                 </div>
 
-                {/* Milestone Filter Dropdown */}
-                <div className="relative flex-1" ref={milestoneFilterRef}>
-                  <button
-                    onClick={() => {
-                      setShowMilestoneFilterDropdown(!showMilestoneFilterDropdown);
-                      setShowStatusFilterDropdown(false);
-                      setShowSuiteFilterDropdown(false);
-                    }}
-                    className="bg-bg-2 border-line-2 hover:border-line-1 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Milestone className={cn('h-4 w-4', milestoneFilter !== 'all' ? 'text-primary' : 'text-text-3')} />
-                      <span className="text-text-1 truncate">
-                        {milestoneFilter === 'all'
-                          ? '마일스톤'
-                          : milestones.find(m => m.id === milestoneFilter)?.name || '마일스톤'}
-                      </span>
-                    </div>
-                    <ChevronDown className={cn('text-text-3 h-4 w-4 flex-shrink-0 transition-transform', showMilestoneFilterDropdown && 'rotate-180')} />
-                  </button>
-
-                  {showMilestoneFilterDropdown && (
-                    <div className="bg-bg-2 border-line-2 absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border shadow-xl">
-                      <button
-                        onClick={() => {
-                          setMilestoneFilter('all');
-                          setShowMilestoneFilterDropdown(false);
-                        }}
-                        className={cn(
-                          'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
-                          milestoneFilter === 'all' ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
-                        )}
-                      >
-                        <Milestone className="h-4 w-4" />
-                        <span>전체 마일스톤</span>
-                      </button>
-                      {milestones.length === 0 ? (
-                        <div className="text-text-3 px-3 py-2 text-sm">마일스톤 없음</div>
-                      ) : (
-                        milestones.map((milestone) => (
-                          <button
-                            key={milestone.id}
-                            onClick={() => {
-                              setMilestoneFilter(milestone.id);
-                              setSuiteFilter('all'); // 마일스톤 선택시 스위트 필터 초기화
-                              setShowMilestoneFilterDropdown(false);
-                            }}
-                            className={cn(
-                              'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
-                              milestoneFilter === milestone.id ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
-                            )}
-                          >
-                            <Milestone className="h-4 w-4" />
-                            <span className="truncate">{milestone.name}</span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-
                 {/* Suite Filter Dropdown */}
                 <div className="relative flex-1" ref={suiteFilterRef}>
                   <button
                     onClick={() => {
                       setShowSuiteFilterDropdown(!showSuiteFilterDropdown);
                       setShowStatusFilterDropdown(false);
-                      setShowMilestoneFilterDropdown(false);
                     }}
                     className="bg-bg-2 border-line-2 hover:border-line-1 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
                   >
@@ -601,7 +489,7 @@ export const TestRunDetailView = () => {
                       <span className="text-text-1 truncate">
                         {suiteFilter === 'all'
                           ? '스위트'
-                          : suites.find(s => s.id === suiteFilter)?.name || '스위트'}
+                          : availableSuites.find(s => s.id === suiteFilter)?.name || '스위트'}
                       </span>
                     </div>
                     <ChevronDown className={cn('text-text-3 h-4 w-4 flex-shrink-0 transition-transform', showSuiteFilterDropdown && 'rotate-180')} />
@@ -622,15 +510,14 @@ export const TestRunDetailView = () => {
                         <FolderOpen className="h-4 w-4" />
                         <span>전체 스위트</span>
                       </button>
-                      {suites.length === 0 ? (
+                      {availableSuites.length === 0 ? (
                         <div className="text-text-3 px-3 py-2 text-sm">스위트 없음</div>
                       ) : (
-                        suites.map((suite) => (
+                        availableSuites.map((suite) => (
                           <button
                             key={suite.id}
                             onClick={() => {
                               setSuiteFilter(suite.id);
-                              setMilestoneFilter('all'); // 스위트 선택시 마일스톤 필터 초기화
                               setShowSuiteFilterDropdown(false);
                             }}
                             className={cn(
@@ -659,33 +546,47 @@ export const TestRunDetailView = () => {
               ) : (
                 groupedCases.map((group) => {
                   const isCollapsed = collapsedGroups.has(group.groupKey);
-                  const GroupIcon = group.sourceType === 'suite' ? FolderOpen :
-                                   group.sourceType === 'milestone' ? Milestone :
-                                   group.sourceId ? FolderOpen : PlayCircle;
+                  const groupPass = group.cases.filter(c => c.status === 'pass').length;
+                  const groupFail = group.cases.filter(c => c.status === 'fail').length;
+                  const groupBlocked = group.cases.filter(c => c.status === 'blocked').length;
 
                   return (
                     <div key={group.groupKey}>
-                      {/* Group Header */}
-                      <button
+                      {/* Suite Group Header - non-interactive section divider */}
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => toggleGroupCollapse(group.groupKey)}
-                        className="border-line-2 bg-bg-2 hover:bg-bg-3 flex w-full items-center gap-2 border-b px-4 py-2 text-left transition-colors"
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroupCollapse(group.groupKey); } }}
+                        className="bg-bg-3/50 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
                       >
                         <ChevronDown
                           className={cn(
-                            'text-text-3 h-4 w-4 transition-transform',
+                            'text-text-4 h-3.5 w-3.5 transition-transform',
                             isCollapsed && '-rotate-90'
                           )}
                         />
-                        <GroupIcon className="text-primary h-4 w-4" />
-                        <span className="text-text-1 flex-1 text-sm font-medium">
-                          {group.sourceName}
+                        <FolderOpen className="text-text-3 h-3.5 w-3.5" />
+                        <span className="text-text-2 flex-1 text-xs font-semibold uppercase tracking-wide">
+                          {group.suiteName}
                         </span>
-                        <span className="text-text-3 text-xs">
-                          {group.cases.length}개
-                        </span>
-                      </button>
+                        <div className="flex items-center gap-1.5 text-[10px]">
+                          {groupPass > 0 && (
+                            <span className="text-green-400/70">{groupPass}P</span>
+                          )}
+                          {groupFail > 0 && (
+                            <span className="text-red-400/70">{groupFail}F</span>
+                          )}
+                          {groupBlocked > 0 && (
+                            <span className="text-amber-400/70">{groupBlocked}B</span>
+                          )}
+                          <span className="text-text-4">
+                            {group.cases.length}
+                          </span>
+                        </div>
+                      </div>
 
-                      {/* Group Cases */}
+                      {/* Test Case Items */}
                       {!isCollapsed && group.cases.map((tc, index) => {
                         const config = STATUS_CONFIG[tc.status];
                         const isSelected = tc.id === selectedCaseId;
@@ -695,7 +596,7 @@ export const TestRunDetailView = () => {
                             key={tc.id}
                             onClick={() => setSelectedCaseId(tc.id)}
                             className={cn(
-                              'border-line-2 flex w-full items-center gap-3 border-b py-3 pl-10 pr-4 text-left transition-colors',
+                              'border-line-2 flex w-full items-center gap-3 border-b py-3 pl-8 pr-4 text-left transition-colors',
                               isSelected ? 'bg-primary/10' : 'hover:bg-bg-2'
                             )}
                           >
