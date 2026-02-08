@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,13 +8,14 @@ import { useParams } from 'next/navigation';
 import { TestCaseDetailForm } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
+import { testRunsQueryOptions, FetchedTestRun } from '@/features/runs';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { useDisclosure } from '@/shared/hooks';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronRight, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
 import { TestStatusChart, TestStatusData, KPICards, KPIData } from '@/widgets/project';
 
 type ModalType = 'case' | 'suite';
@@ -43,22 +44,65 @@ export const ProjectDashboardView = () => {
   const testCases = testCasesData?.success ? testCasesData.data : [];
   const testSuites = dashboardData?.success ? dashboardData.data.testSuites : [];
 
-  // 테스트 상태 데이터 계산 (실제 데이터 기반)
+  // 테스트 실행 목록 조회
+  const { data: testRunsData } = useQuery({
+    ...testRunsQueryOptions(projectId!),
+    enabled: !!projectId,
+  });
+
+  const testRuns = testRunsData?.success ? testRunsData.data : [];
+
+  // 테스트 실행 선택 상태
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [showRunDropdown, setShowRunDropdown] = useState(false);
+  const runDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 드롭다운 외부 클릭 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (runDropdownRef.current && !runDropdownRef.current.contains(e.target as Node)) {
+        setShowRunDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 자동 선택: IN_PROGRESS > NOT_STARTED > 최신 COMPLETED
+  useEffect(() => {
+    if (testRuns.length > 0 && !selectedRunId) {
+      const inProgress = testRuns.find((r) => r.status === 'IN_PROGRESS');
+      const notStarted = testRuns.find((r) => r.status === 'NOT_STARTED');
+      const best = inProgress || notStarted || testRuns[0];
+      if (best) setSelectedRunId(best.id);
+    }
+  }, [testRuns, selectedRunId]);
+
+  const selectedRun = testRuns.find((r) => r.id === selectedRunId);
+
+  // 차트 데이터: 선택된 실행이 있으면 실행 기준, 없으면 전체 케이스 기준 (폴백)
   const testStatusData: TestStatusData = React.useMemo(() => {
-    // testCases의 resultStatus 필드를 기반으로 집계
-    const statusCounts = testCases.reduce(
+    if (selectedRun) {
+      return {
+        pass: selectedRun.stats.pass,
+        fail: selectedRun.stats.fail,
+        blocked: selectedRun.stats.blocked,
+        untested: selectedRun.stats.untested,
+      };
+    }
+    // 폴백: 전체 테스트 케이스의 resultStatus 집계
+    return testCases.reduce(
       (acc, tc) => {
         const status = tc.resultStatus;
         if (status === 'pass') acc.pass++;
         else if (status === 'fail') acc.fail++;
         else if (status === 'blocked') acc.blocked++;
-        else acc.untested++; // 'untested' 또는 기타
+        else acc.untested++;
         return acc;
       },
       { pass: 0, fail: 0, blocked: 0, untested: 0 }
     );
-    return statusCounts;
-  }, [testCases]);
+  }, [selectedRun, testCases]);
 
   // KPI 데이터 계산
   const kpiData: KPIData = React.useMemo(() => ({
@@ -183,6 +227,52 @@ export const ProjectDashboardView = () => {
         <section className="col-span-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading text-text-1">테스트 현황</h2>
+            {/* 테스트 실행 선택 드롭다운 */}
+            {testRuns.length > 0 && (
+              <div className="relative" ref={runDropdownRef}>
+                <button
+                  onClick={() => setShowRunDropdown((prev) => !prev)}
+                  className="border-primary/40 text-text-1 rounded-4 flex items-center gap-2 border bg-transparent px-3 py-1.5 transition-colors hover:border-primary cursor-pointer"
+                >
+                  <span className="typo-label-normal max-w-[200px] truncate">
+                    {selectedRun?.name || '테스트 실행 선택'}
+                  </span>
+                  <ChevronDown className={`text-text-3 h-4 w-4 transition-transform ${showRunDropdown ? 'rotate-180' : ''}`} />
+                </button>
+                {showRunDropdown && (
+                  <div className="bg-bg-3 border-line-2 rounded-4 shadow-3 absolute right-0 top-full z-20 mt-1 min-w-[240px] border py-1">
+                    {testRuns.map((run) => (
+                      <button
+                        key={run.id}
+                        onClick={() => {
+                          setSelectedRunId(run.id);
+                          setShowRunDropdown(false);
+                        }}
+                        className={`flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-bg-4 ${
+                          run.id === selectedRunId ? 'bg-bg-4' : ''
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                            run.status === 'IN_PROGRESS'
+                              ? 'bg-primary'
+                              : run.status === 'COMPLETED'
+                                ? 'bg-text-3'
+                                : 'bg-text-4'
+                          }`}
+                        />
+                        <div className="flex flex-1 flex-col">
+                          <span className="typo-label-normal text-text-1 truncate">{run.name}</span>
+                          <span className="typo-caption text-text-3">
+                            {run.stats.totalCases}개 케이스 · {run.stats.progressPercent}% 완료
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <TestStatusChart data={testStatusData} />
         </section>
