@@ -72,10 +72,49 @@ export const getTestCases = async ({
   }
 };
 
-export const getTestCase = async () => {
+export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> => {
   try {
+    const db = getDatabase();
+    const [row] = await db
+      .select()
+      .from(testCases)
+      .where(
+        and(
+          eq(testCases.id, id),
+          eq(testCases.lifecycle_status, 'ACTIVE')
+        )
+      );
+
+    if (!row) {
+      return {
+        success: false,
+        errors: { _testCase: ['테스트 케이스를 찾을 수 없습니다.'] },
+      };
+    }
+
+    const result: TestCase = {
+      id: row.id,
+      projectId: row.project_id ?? '',
+      testSuiteId: row.test_suite_id ?? undefined,
+      displayId: row.display_id ?? 0,
+      caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
+      title: row.name,
+      testType: row.test_type ?? '',
+      tags: row.tags ?? [],
+      preCondition: row.pre_condition ?? '',
+      testSteps: row.steps ?? '',
+      expectedResult: row.expected_result ?? '',
+      sortOrder: row.sort_order ?? 0,
+      resultStatus: row.result_status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      archivedAt: row.archived_at ?? null,
+      lifecycleStatus: row.lifecycle_status,
+    };
+
     return {
       success: true,
+      data: result,
     };
   } catch (error) {
     console.error('Error fetching test case: ', error);
