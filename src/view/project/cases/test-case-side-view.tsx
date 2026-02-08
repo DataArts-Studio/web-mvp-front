@@ -10,7 +10,7 @@ import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 import { testSuitesQueryOptions } from '@/widgets';
 import { DSButton } from '@/shared';
-import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, Play, Tag, X } from 'lucide-react';
+import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, Maximize2, Play, Tag, X } from 'lucide-react';
 
 
 
@@ -78,10 +78,26 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
             <DSButton size="small" variant="ghost" className="px-2" onClick={onClose}>
               <X className="h-4 w-4" />
             </DSButton>
-            <DSButton size="small" variant="ghost" className="flex items-center gap-1 px-2" onClick={handleEdit} disabled={!testCase}>
-              <Edit2 className="h-4 w-4" />
-              <span>수정</span>
-            </DSButton>
+            <div className="flex gap-1">
+              <DSButton
+                size="small"
+                variant="ghost"
+                className="px-2"
+                onClick={() => {
+                  if (testCase) {
+                    router.push(`/projects/${params.slug}/cases/${testCase.id}`);
+                  }
+                }}
+                disabled={!testCase}
+                title="상세 페이지로 이동"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </DSButton>
+              <DSButton size="small" variant="ghost" className="flex items-center gap-1 px-2" onClick={handleEdit} disabled={!testCase}>
+                <Edit2 className="h-4 w-4" />
+                <span>수정</span>
+              </DSButton>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-primary text-xl font-semibold">{testCase?.caseKey || 'TC-0000'}</span>
