@@ -1,8 +1,8 @@
 'use client';
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+import React, { useRef, useState, useMemo, useEffect, lazy, Suspense } from 'react';
 
+import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { AnimatePresence } from 'framer-motion';
 
 import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
@@ -13,10 +13,18 @@ import { Container, Input, MainContainer, LoadingSpinner } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { cn } from '@/shared/utils';
 import { Select } from '@/shared/lib/primitives/select/select';
-import { TestCaseSideView } from '@/view/project/cases/test-case-side-view';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Filter, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
+
+const TestCaseSideView = dynamic(
+  () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
+  { ssr: false }
+);
+const AnimatePresence = dynamic(
+  () => import('framer-motion').then(mod => ({ default: mod.AnimatePresence })),
+  { ssr: false }
+);
 
 // 상태 필터 옵션
 const STATUS_FILTER_OPTIONS = [
