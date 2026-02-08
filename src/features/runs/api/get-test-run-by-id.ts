@@ -147,7 +147,9 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
     const testCaseRunDetails: TestCaseRunDetail[] = (run.testCaseRuns || []).map(tcr => ({
       id: tcr.id,
       testCaseId: tcr.test_case_id || '',
-      code: tcr.testCase?.case_key || '',
+      code: tcr.testCase?.display_id
+        ? `TC-${String(tcr.testCase.display_id).padStart(3, '0')}`
+        : tcr.testCase?.case_key || '',
       title: tcr.testCase?.name || '',
       status: tcr.status,
       comment: tcr.comment,

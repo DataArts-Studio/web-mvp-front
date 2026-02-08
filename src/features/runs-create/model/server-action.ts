@@ -1,7 +1,7 @@
 'use server';
 import { CreateTestRunSchema } from '@/entities/test-run';
-import { getDatabase, testRuns, testRunMilestones, testCaseRuns, milestoneTestCases } from '@/shared/lib/db';
-import { inArray } from 'drizzle-orm';
+import { getDatabase, testRuns, testRunMilestones, testRunSuites, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites } from '@/shared/lib/db';
+import { inArray, and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 
@@ -72,6 +72,59 @@ export const createTestRunAction = async (input: CreateRunInput) => {
 
       if (newMilestoneCaseRuns.length > 0) {
         await tx.insert(testCaseRuns).values(newMilestoneCaseRuns);
+      }
+
+      // 3. Resolve suites linked to milestones and add their individual test cases
+      const milestoneSuiteRows = await tx
+        .select({
+          test_suite_id: milestoneTestSuites.test_suite_id,
+        })
+        .from(milestoneTestSuites)
+        .where(inArray(milestoneTestSuites.milestone_id, milestone_ids));
+
+      const suiteIds = [...new Set(milestoneSuiteRows.map((r) => r.test_suite_id).filter(Boolean))] as string[];
+
+      if (suiteIds.length > 0) {
+        // Link suites to the run
+        const suiteLinks = suiteIds.map((suiteId) => ({
+          test_run_id: run.id,
+          test_suite_id: suiteId,
+        }));
+        await tx.insert(testRunSuites).values(suiteLinks).onConflictDoNothing();
+
+        // Get individual test cases belonging to these suites
+        const suiteCaseRows = await tx
+          .select({
+            id: testCases.id,
+            test_suite_id: testCases.test_suite_id,
+          })
+          .from(testCases)
+          .where(
+            and(
+              inArray(testCases.test_suite_id, suiteIds),
+              eq(testCases.lifecycle_status, 'ACTIVE')
+            )
+          );
+
+        const newSuiteCaseRuns = suiteCaseRows
+          .filter((row) => row.id && row.test_suite_id && !addedCaseIds.has(row.id))
+          .map((row) => {
+            addedCaseIds.add(row.id);
+            return {
+              id: uuidv7(),
+              test_run_id: run.id,
+              test_case_id: row.id,
+              status: 'untested' as const,
+              source_type: 'suite' as const,
+              source_id: row.test_suite_id!,
+              created_at: new Date(),
+              updated_at: new Date(),
+            };
+          });
+
+        if (newSuiteCaseRuns.length > 0) {
+          await tx.insert(testCaseRuns).values(newSuiteCaseRuns);
+        }
       }
 
       return [run];
