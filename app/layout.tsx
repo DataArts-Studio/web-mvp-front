@@ -1,10 +1,27 @@
 import React, { ReactNode } from 'react';
+
+
+
 import type { Metadata } from 'next';
 
-import '@/app-shell/styles/globals.css';
-import { MvpBottomNavbar } from 'src/shared';
-import { GoogleTagManager } from '@next/third-parties/google'
+
+
 import { QueryProvider } from '@/app-shell/providers/query-provider';
+import '@/app-shell/styles/globals.css';
+import { GoogleTagManager } from '@next/third-parties/google';
+import { MvpBottomNavbar } from 'src/shared';
+
+
+
+
+
+
+
+
+
+
+
+
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
@@ -100,7 +117,8 @@ const jsonLd = {
       name: 'Testea',
       applicationCategory: 'DeveloperApplication',
       operatingSystem: 'Web',
-      description: '효율적인 테스트 케이스 관리와 협업을 위한 플랫폼. 테스트 계획, 실행, 결과 추적을 한 곳에서.',
+      description:
+        '효율적인 테스트 케이스 관리와 협업을 위한 플랫폼. 테스트 계획, 실행, 결과 추적을 한 곳에서.',
       url: siteUrl,
       offers: {
         '@type': 'Offer',
@@ -132,6 +150,10 @@ const jsonLd = {
   ],
 };
 
+function GoogleAnalytics(props: { gaId: string }) {
+  return null
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -150,11 +172,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <GoogleTagManager gtmId="GTM-MTQBMVW4"/>
       <body className="antialiased">
         <QueryProvider>{children}</QueryProvider>
         {/* 테스트용 컴포넌트 */}
         <MvpBottomNavbar />
+        <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID!}/>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!}/>
       </body>
     </html>
   );
