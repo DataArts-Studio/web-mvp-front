@@ -1,27 +1,11 @@
 import React, { ReactNode } from 'react';
 
-
-
-import type { Metadata } from 'next';
-
-
+import type { Metadata, Viewport } from 'next';
 
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
 import { GoogleTagManager, GoogleAnalytics } from '@next/third-parties/google';
 import { MvpBottomNavbar } from 'src/shared';
-
-
-
-
-
-
-
-
-
-
-
-
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
@@ -68,12 +52,21 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ko_KR',
     siteName: 'Testea',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Testea - 테스트 관리 플랫폼',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Testea - 테스트 관리 플랫폼',
     description: '효율적인 테스트 케이스 관리와 협업을 위한 플랫폼. 테스트 계획, 실행, 결과 추적을 한 곳에서.',
     creator: '@testea',
+    images: ['/opengraph-image'],
   },
   robots: {
     index: allowIndexing,
@@ -93,7 +86,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   themeColor: '#0BB57F',
   width: 'device-width',
   initialScale: 1,
@@ -172,8 +165,12 @@ export default function RootLayout({
         <QueryProvider>{children}</QueryProvider>
         {/* 테스트용 컴포넌트 */}
         <MvpBottomNavbar />
-        <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID!}/>
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!}/>
+        {process.env.NEXT_PUBLIC_GTM_ID && (
+          <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
+        )}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
       </body>
     </html>
   );
