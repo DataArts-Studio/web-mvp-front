@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
-import { GoogleTagManager } from '@next/third-parties/google';
+import { GoogleTagManager, GoogleAnalytics } from '@next/third-parties/google';
 import { MvpBottomNavbar } from 'src/shared';
 
 
@@ -149,10 +149,6 @@ const jsonLd = {
     },
   ],
 };
-
-function GoogleAnalytics(props: { gaId: string }) {
-  return null
-}
 
 export default function RootLayout({
   children,
