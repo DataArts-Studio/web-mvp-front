@@ -1,10 +1,10 @@
-import React, {ReactNode} from 'react';
+import React, { ReactNode } from 'react';
 import type { Metadata } from 'next';
 
 import '@/app-shell/styles/globals.css';
 import { MvpBottomNavbar } from 'src/shared';
-
-import { QueryProvider } from '../src/app-shell/providers/query-provider';
+import { GoogleTagManager } from '@next/third-parties/google'
+import { QueryProvider } from '@/app-shell/providers/query-provider';
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
@@ -150,6 +150,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
+      <GoogleTagManager gtmId="GTM-MTQBMVW4"/>
       <body className="antialiased">
         <QueryProvider>{children}</QueryProvider>
         {/* 테스트용 컴포넌트 */}
