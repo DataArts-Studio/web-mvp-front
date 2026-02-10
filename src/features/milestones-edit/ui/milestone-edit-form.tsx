@@ -138,10 +138,13 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
           }
 
           // 쿼리 무효화
-          await queryClient.invalidateQueries({
-            queryKey: ['milestone', milestone.id],
-            refetchType: 'all',
-          });
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['milestone', milestone.id], refetchType: 'all' }),
+            queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
+            queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
+            queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+          ]);
 
           onClose?.();
         },

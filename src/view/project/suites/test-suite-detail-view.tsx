@@ -72,14 +72,15 @@ const TestSuiteDetailView = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingCases, setIsAddingCases] = useState(false);
 
-  // 실제 API로 스위트 데이터 조회
+  // 실제 API로 스위트 데이터 조회 (통계 포함)
   const { data: suiteResult, isLoading: isSuiteLoading } = useQuery(testSuiteByIdQueryOptions(suiteId));
 
   // 해당 프로젝트의 테스트 케이스 조회
-  const { data: casesResult, isLoading: isCasesLoading } = useQuery({
+  const projectId = suiteResult?.success ? suiteResult.data?.projectId ?? '' : '';
+  const { data: casesResult } = useQuery({
     queryKey: ['testCases', 'bySuite', suiteId],
-    queryFn: () => getTestCases({ project_id: suiteResult?.success ? suiteResult.data?.projectId ?? '' : '' }),
-    enabled: !!(suiteResult?.success && suiteResult.data?.projectId),
+    queryFn: () => getTestCases({ project_id: projectId }),
+    enabled: !!projectId,
   });
 
   // 로딩 중
@@ -94,18 +95,7 @@ const TestSuiteDetailView = () => {
     );
   }
 
-  // 실제 데이터를 TestSuiteCard 형태로 변환 (추가 필드는 기본값)
-  const rawSuite = suiteResult?.success ? suiteResult.data : undefined;
-  const suite: TestSuiteCard | undefined = rawSuite
-    ? {
-        ...rawSuite,
-        tag: { label: '기본', tone: 'neutral' as const },
-        includedPaths: [],
-        caseCount: 0,
-        executionHistoryCount: 0,
-        recentRuns: [],
-      }
-    : undefined;
+  const suite: TestSuiteCard | undefined = suiteResult?.success ? suiteResult.data : undefined;
 
   // 해당 스위트에 속한 테스트 케이스 필터링
   const allCases = casesResult?.success ? casesResult.data ?? [] : [];
@@ -117,11 +107,6 @@ const TestSuiteDetailView = () => {
       status: tc.resultStatus === 'untested' ? 'untested' : tc.resultStatus === 'pass' ? 'passed' : tc.resultStatus === 'fail' ? 'failed' : 'blocked',
       lastExecutedAt: null,
     }));
-
-  // 케이스 수 업데이트
-  if (suite) {
-    suite.caseCount = testCases.length;
-  }
 
   if (!suite) {
     return (

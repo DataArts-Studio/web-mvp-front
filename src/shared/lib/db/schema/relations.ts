@@ -26,6 +26,7 @@ export const testSuiteRelations = relations(testSuites, ({ one, many }) => ({
 		fields: [testSuites.project_id],
 		references: [projects.id],
 	}),
+	testCases: many(testCases),
 	testRunSuites: many(testRunSuites),
 	suiteTestCases: many(suiteTestCases),
 	milestoneTestSuites: many(milestoneTestSuites),
@@ -36,6 +37,10 @@ export const testCaseRelations = relations(testCases, ({ one, many }) => ({
 	project: one(projects, {
 		fields: [testCases.project_id],
 		references: [projects.id],
+	}),
+	suite: one(testSuites, {
+		fields: [testCases.test_suite_id],
+		references: [testSuites.id],
 	}),
 	testCaseRuns: many(testCaseRuns),
 	suiteTestCases: many(suiteTestCases),
