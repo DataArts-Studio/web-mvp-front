@@ -58,9 +58,9 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   };
 
   const inputClassName =
-    'bg-bg-3 border-line-2 rounded-2 w-full border px-4 py-3 text-text-1 placeholder:text-text-3 focus:border-primary focus:outline-none transition-colors';
+    'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary';
   const textareaClassName =
-    'bg-bg-3 border-line-2 rounded-2 w-full border px-4 py-3 text-text-1 placeholder:text-text-3 focus:border-primary focus:outline-none transition-colors resize-none min-h-[120px]';
+    'w-full rounded-4 border border-line-2 bg-bg-1 px-6 py-4 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary resize-none min-h-[120px]';
   const labelClassName = 'text-text-2 typo-body2-heading flex items-center gap-2';
 
   return (
