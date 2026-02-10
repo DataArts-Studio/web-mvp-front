@@ -144,7 +144,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
             <div className="flex flex-col gap-6">
               <FormField.Root className="flex flex-col gap-2">
                 <FormField.Label className="text-text-1 font-medium">
-                  마일스톤 이름 <span className="text-system-red">*</span>
+                  마일스톤 이름 <span className="text-primary">*</span>
                 </FormField.Label>
                 <FormField.Control
                   placeholder="마일스톤 이름을 입력해 주세요."
@@ -152,7 +152,10 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                   maxLength={50}
                   disabled={isLoading}
                   {...register('title')}
-                  className={errors.title ? 'border-system-red focus:border-system-red' : ''}
+                  className={cn(
+                    'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
+                    errors.title && 'border-system-red focus:border-system-red',
+                  )}
                 />
                 {errors.title && (
                   <span className="text-system-red mt-1 text-sm">{errors.title.message}</span>
@@ -167,7 +170,10 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                   maxLength={500}
                   disabled={isLoading}
                   {...register('description')}
-                  className={errors.description ? 'border-system-red focus:border-system-red' : ''}
+                  className={cn(
+                    'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
+                    errors.description && 'border-system-red focus:border-system-red',
+                  )}
                 />
                 {errors.description && (
                   <span className="text-system-red mt-1 text-sm">{errors.description.message}</span>
