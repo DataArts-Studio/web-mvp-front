@@ -6,7 +6,14 @@ export const useUpdateMilestone = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: UpdateMilestone) => updateMilestone(input),
+    mutationFn: (input: UpdateMilestone) =>
+      updateMilestone({
+        id: input.id,
+        title: input.title,
+        description: input.description,
+        startDate: input.startDate ? new Date(input.startDate) : null,
+        endDate: input.endDate ? new Date(input.endDate) : null,
+      }),
     onSuccess: async (_, variables) => {
       await Promise.all([
         queryClient.invalidateQueries({
