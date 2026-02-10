@@ -159,9 +159,10 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
   return (
     <section
       id="edit-milestone"
-      className="bg-bg-2/20 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-[4px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
     >
-      <div className="bg-bg-2 shadow-4 relative max-h-[90vh] w-[700px] overflow-hidden rounded-xl">
+      <div className="bg-bg-2 shadow-4 relative max-h-[90vh] w-[700px] overflow-hidden rounded-xl" onClick={(e) => e.stopPropagation()}>
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
             <LoadingSpinner size="md" text="마일스톤을 수정하고 있어요" />

@@ -71,7 +71,7 @@ export const TestSuiteSideView = ({
     <>
     {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
     <div
-      className="fixed inset-0 z-40 bg-black/20"
+      className="fixed inset-0 z-40 bg-black/50"
       onClick={onClose}
       aria-hidden="true"
     />
