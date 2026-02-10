@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { CreateMilestone, CreateMilestoneSchema, addTestCasesToMilestone, addTestSuitesToMilestone } from '@/entities/milestone';
 import { getTestCases } from '@/entities/test-case/api';
@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMilestone } from '@/features';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronDown, ChevronUp, FolderOpen, ListChecks, Search } from 'lucide-react';
+import { DateDropdownSelect } from './date-dropdown-select';
 
 interface MilestoneCreateFormProps {
   projectId: string;
@@ -55,6 +56,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<CreateMilestone>({
     resolver: zodResolver(CreateMilestoneSchema),
@@ -62,7 +64,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
       projectId,
       title: '',
       description: '',
-      startDate: null,
+      startDate: new Date(),
       endDate: null,
     },
   });
@@ -171,30 +173,42 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                 )}
               </FormField.Root>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField.Root className="flex flex-col gap-2">
-                  <FormField.Label className="text-text-1 font-medium">시작일</FormField.Label>
-                  <FormField.Control
-                    type="date"
-                    disabled={isLoading}
-                    {...register('startDate', { valueAsDate: true })}
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-text-1 font-medium">시작일</label>
+                  <Controller
+                    name="startDate"
+                    control={control}
+                    render={({ field }) => (
+                      <DateDropdownSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isLoading}
+                      />
+                    )}
                   />
                   {errors.startDate && (
                     <span className="text-system-red mt-1 text-sm">{errors.startDate.message}</span>
                   )}
-                </FormField.Root>
+                </div>
 
-                <FormField.Root className="flex flex-col gap-2">
-                  <FormField.Label className="text-text-1 font-medium">종료일</FormField.Label>
-                  <FormField.Control
-                    type="date"
-                    disabled={isLoading}
-                    {...register('endDate', { valueAsDate: true })}
+                <div className="flex flex-col gap-2">
+                  <label className="text-text-1 font-medium">종료일</label>
+                  <Controller
+                    name="endDate"
+                    control={control}
+                    render={({ field }) => (
+                      <DateDropdownSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isLoading}
+                      />
+                    )}
                   />
                   {errors.endDate && (
                     <span className="text-system-red mt-1 text-sm">{errors.endDate.message}</span>
                   )}
-                </FormField.Root>
+                </div>
               </div>
 
               {/* 테스트 케이스 선택 */}
