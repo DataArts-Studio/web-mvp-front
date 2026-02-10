@@ -3,7 +3,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 
 import { TestSuite } from '@/entities/test-suite';
-import { DSButton, FormField, LoadingSpinner } from '@/shared';
+import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUpdateSuite } from '../hooks';
 import { UpdateTestSuite, UpdateTestSuiteSchema } from '../model';
@@ -61,7 +61,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
           <div className="flex flex-col gap-6">
             <FormField.Root className="flex flex-col gap-2">
               <FormField.Label className="text-text-1 font-medium">
-                스위트 이름 <span className="text-system-red">*</span>
+                스위트 이름 <span className="text-primary">*</span>
               </FormField.Label>
               <FormField.Control
                 placeholder="스위트 이름을 입력해 주세요."
@@ -83,9 +83,11 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
                     message: '특수문자는 사용할 수 없습니다. (-, _, ., 공백만 허용)',
                   },
                 })}
-                className={errors.title ? 'border-system-red focus:border-system-red' : ''}
+                className={cn(
+                  'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
+                  errors.title && 'border-system-red focus:border-system-red',
+                )}
               />
-              {/* 에러 메시지 출력 */}
               {errors.title && (
                 <span className="text-system-red mt-1 text-sm">{errors.title.message}</span>
               )}
@@ -97,6 +99,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
                 type="text"
                 disabled={isPending}
                 {...register('description')}
+                className="h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary"
               />
             </FormField.Root>
           </div>

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 
 import { CreateTestSuite, CreateTestSuiteSchema, createTestSuite } from '@/entities';
 import { useCreateSuite } from '@/features';
-import { DSButton, FormField, LoadingSpinner } from '@/shared';
+import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 interface SuiteCreateFormProps {
@@ -60,8 +60,8 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
         <form id="suite-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-5 overflow-y-auto p-6" noValidate>
           <input type="hidden" {...register('projectId')} />
           <FormField.Root className="flex flex-col gap-2">
-            <FormField.Label className="text-text-2 text-sm font-medium">
-              스위트 이름 <span className="text-system-red">*</span>
+            <FormField.Label className="text-text-1 font-medium">
+              스위트 이름 <span className="text-primary">*</span>
             </FormField.Label>
             <FormField.Control
               placeholder="스위트 이름을 입력해 주세요."
@@ -83,19 +83,23 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
                   message: '특수문자는 사용할 수 없습니다. (-, _, ., 공백만 허용)',
                 },
               })}
-              className={errors.title ? 'border-system-red focus:border-system-red' : ''}
+              className={cn(
+                'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
+                errors.title && 'border-system-red focus:border-system-red',
+              )}
             />
             {errors.title && (
               <span className="text-system-red text-sm">{errors.title.message}</span>
             )}
           </FormField.Root>
           <FormField.Root className="flex flex-col gap-2">
-            <FormField.Label className="text-text-2 text-sm font-medium">설명 (선택)</FormField.Label>
+            <FormField.Label className="text-text-1 font-medium">설명 (선택)</FormField.Label>
             <FormField.Control
               placeholder="이 스위트에 대한 간략한 설명을 입력해주세요."
               type="text"
               disabled={isPending}
               {...register('description')}
+              className="h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary"
             />
           </FormField.Root>
         </form>
