@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { MilestoneWithStats, addTestCasesToMilestone, addTestSuitesToMilestone, removeTestCaseFromMilestone, removeTestSuiteFromMilestone } from '@/entities/milestone';
+import { Milestone, addTestCasesToMilestone, addTestSuitesToMilestone, removeTestCaseFromMilestone, removeTestSuiteFromMilestone } from '@/entities/milestone';
 import { getTestCases } from '@/entities/test-case/api';
 import { getTestSuites } from '@/entities/test-suite/api';
 import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
@@ -13,7 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronDown, ChevronUp, FolderOpen, ListChecks, Search, X } from 'lucide-react';
 
 interface MilestoneEditFormProps {
-  milestone: MilestoneWithStats;
+  milestone: Milestone;
   onClose?: () => void;
 }
 
@@ -29,13 +29,17 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
   const queryClient = useQueryClient();
 
   // 현재 연결된 케이스/스위트 ID
+  const milestoneWithDetails = milestone as Milestone & {
+    testCases?: Array<{ id: string }>;
+    testSuites?: Array<{ id: string }>;
+  };
   const initialCaseIds = useMemo(
-    () => new Set((milestone.testCases || []).map((tc) => tc.id)),
-    [milestone.testCases]
+    () => new Set((milestoneWithDetails.testCases || []).map((tc) => tc.id)),
+    [milestoneWithDetails.testCases]
   );
   const initialSuiteIds = useMemo(
-    () => new Set((milestone.testSuites || []).map((s) => s.id)),
-    [milestone.testSuites]
+    () => new Set((milestoneWithDetails.testSuites || []).map((s) => s.id)),
+    [milestoneWithDetails.testSuites]
   );
 
   const [selectedCaseIds, setSelectedCaseIds] = useState<Set<string>>(initialCaseIds);
