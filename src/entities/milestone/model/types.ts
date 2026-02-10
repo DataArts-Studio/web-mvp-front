@@ -3,10 +3,11 @@ import {
   CreateMilestoneSchema,
   LifecycleStatus,
   MilestoneDtoSchema,
+  MilestoneProgressStatusEnum,
 } from '@/entities';
 import { z } from 'zod';
 
-export type MilestoneProgressStatus = 'planned' | 'inProgress' | 'done';
+export type MilestoneProgressStatus = z.infer<typeof MilestoneProgressStatusEnum>;
 
 export type MilestoneDTO = z.infer<typeof MilestoneDtoSchema>;
 export type CreateMilestoneDTO = z.infer<typeof CreateMilestoneDtoSchema>;

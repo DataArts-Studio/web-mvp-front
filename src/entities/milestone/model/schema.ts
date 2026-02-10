@@ -37,7 +37,3 @@ export const CreateMilestoneSchema = z.object({
   startDate: z.date().nullish(),
   endDate: z.date().nullish(),
 });
-
-export const UpdateMilestoneSchema = CreateMilestoneSchema.extend({
-  progressStatus: MilestoneProgressStatusEnum.optional(),
-})
