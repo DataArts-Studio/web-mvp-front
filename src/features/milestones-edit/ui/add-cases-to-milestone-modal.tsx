@@ -31,6 +31,8 @@ export const AddCasesToMilestoneModal = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['milestone', milestoneId], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' });
       onClose();
     },
   });

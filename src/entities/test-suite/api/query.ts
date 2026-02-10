@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { getTestSuites, getTestSuiteById } from './server-actions'; // Added getTestSuiteById
+import { getTestSuites, getTestSuiteByIdWithStats } from './server-actions';
 
 export const testSuitesQueryOptions = (projectId: string) =>
   queryOptions({
@@ -7,9 +7,6 @@ export const testSuitesQueryOptions = (projectId: string) =>
     queryFn: () => getTestSuites({ projectId }),
   });
 
-// --- New content for missing exports ---
-
-// Helper for query keys (assuming simple structure)
 export const testSuiteQueryKeys = {
   all: ['testSuites'] as const,
   lists: () => [...testSuiteQueryKeys.all, 'list'] as const,
@@ -21,5 +18,5 @@ export const testSuiteQueryKeys = {
 export const testSuiteByIdQueryOptions = (id: string) =>
   queryOptions({
     queryKey: testSuiteQueryKeys.detail(id),
-    queryFn: () => getTestSuiteById(id),
+    queryFn: () => getTestSuiteByIdWithStats(id),
   });

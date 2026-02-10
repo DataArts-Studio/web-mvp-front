@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
-import type { TestSuite, TestSuiteCard } from '@/entities/test-suite';
+import type { TestSuiteCard } from '@/entities/test-suite';
 import { dashboardQueryOptions, SuiteEditForm } from '@/features';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer, LoadingSpinner } from '@/shared';
@@ -32,14 +32,7 @@ export const TestSuitesView = () => {
     ...testSuitesQueryOptions(projectId!),
     enabled: !!projectId,
   });
-  const suites: TestSuiteCard[] = suiteData?.success ? suiteData.data.map((suite: TestSuite): TestSuiteCard => ({
-    ...suite,
-    tag: { label: '기본', tone: 'neutral' },
-    includedPaths: [],
-    caseCount: 0,
-    executionHistoryCount: 0,
-    recentRuns: []
-  })) : [];
+  const suites: TestSuiteCard[] = suiteData?.success ? suiteData.data : [];
 
   // 필터링된 스위트 목록
   const filteredSuites = useMemo(() => {
