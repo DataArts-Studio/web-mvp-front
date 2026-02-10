@@ -7,7 +7,7 @@ import { type Mock, vi } from 'vitest';
 export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
 export type TestCaseResultStatus = 'untested' | 'pass' | 'fail' | 'blocked';
 export type TestRunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
-export type MilestoneProgressStatus = 'planned' | 'in_progress' | 'completed';
+export type MilestoneProgressStatus = 'planned' | 'inProgress' | 'done';
 
 // ============================================================================
 // Mock Return Values
