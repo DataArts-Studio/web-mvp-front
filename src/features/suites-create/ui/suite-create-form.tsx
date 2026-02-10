@@ -39,9 +39,10 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
   return (
     <section
       id="create-suite"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
     >
-      <div className="bg-bg-2 shadow-4 relative flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden rounded-xl">
+      <div className="bg-bg-2 shadow-4 relative flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden rounded-xl" onClick={(e) => e.stopPropagation()}>
         {isPending && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
             <LoadingSpinner size="md" text="테스트 스위트를 생성하고 있어요" />

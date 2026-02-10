@@ -64,8 +64,8 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   const labelClassName = 'text-text-2 typo-body2-heading flex items-center gap-2';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <section className="bg-bg-1 rounded-4 relative flex w-full max-w-[720px] flex-col overflow-hidden shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <section className="bg-bg-1 rounded-4 relative flex w-full max-w-[720px] flex-col overflow-hidden shadow-xl" onClick={(e) => e.stopPropagation()}>
         {isPending && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-4 bg-bg-1/80 backdrop-blur-sm">
             <LoadingSpinner size="md" text="테스트 케이스를 수정하고 있어요" />
