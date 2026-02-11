@@ -10,6 +10,7 @@ import { createProject } from '@/features/projects-create';
 import { DSButton, DsFormField, DsInput, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, Copy, XIcon } from 'lucide-react';
+import { track, PROJECT_CREATE_EVENTS } from '@/shared/lib/analytics';
 
 interface ProjectCreateFormProps {
   onClick?: () => void;
@@ -60,6 +61,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     }
 
     if (isStepValid) {
+      track(PROJECT_CREATE_EVENTS.STEP, { step: step + 1 });
       setStep((prev) => prev + 1);
     }
   };
@@ -71,6 +73,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       const domain = formToDomain(formData);
       const result = await createProject(domain);
       if (result.success) {
+        track(PROJECT_CREATE_EVENTS.COMPLETE, { project_name: formData.projectName });
         setCreatedSlug(result.data.projectName);
         setStep(4);
       } else {
@@ -89,6 +92,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const link = `${origin}/projects/${encodeURIComponent(createdSlug)}`;
     navigator.clipboard.writeText(link).then(() => {
+      track(PROJECT_CREATE_EVENTS.LINK_COPY);
       setCopied(true);
     });
   };
@@ -113,7 +117,12 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       {/* Overlay */}
       <div
         className="fixed inset-0 z-[1000] bg-black/50"
-        onClick={onClick}
+        onClick={() => {
+          if (step < 4) {
+            track(PROJECT_CREATE_EVENTS.ABANDON, { step });
+          }
+          onClick?.();
+        }}
         aria-hidden="true"
       />
 

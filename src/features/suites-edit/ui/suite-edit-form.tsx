@@ -7,6 +7,7 @@ import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUpdateSuite } from '../hooks';
 import { UpdateTestSuite, UpdateTestSuiteSchema } from '../model';
+import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 interface SuiteEditFormProps {
   suite: TestSuite;
@@ -31,6 +32,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
   const onSubmit = async (data: UpdateTestSuite) => {
     mutate(data, {
       onSuccess: () => {
+        track(TESTSUITE_EVENTS.UPDATE, { suite_id: suite.id });
         onClose?.();
       },
     })

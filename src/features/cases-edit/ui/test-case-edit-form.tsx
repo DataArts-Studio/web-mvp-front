@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { useUpdateCase } from '../hooks';
 import { UpdateTestCase, UpdateTestCaseSchema } from '../model';
+import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 
 interface TestCaseEditFormProps {
   testCase: TestCase;
@@ -51,6 +52,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   const onSubmit = (data: UpdateTestCase) => {
     mutate(data, {
       onSuccess: () => {
+        track(TESTCASE_EVENTS.UPDATE, { case_id: testCase.id });
         onSuccess?.();
         onClose();
       },

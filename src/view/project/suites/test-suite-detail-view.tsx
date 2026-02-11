@@ -25,6 +25,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
+import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 const TAG_TONE_CONFIG: Record<string, { style: string }> = {
   neutral: { style: 'bg-slate-500/20 text-slate-300' },
@@ -96,6 +97,12 @@ const TestSuiteDetailView = () => {
   }
 
   const suite: TestSuiteCard | undefined = suiteResult?.success ? suiteResult.data : undefined;
+
+  React.useEffect(() => {
+    if (suite) {
+      track(TESTSUITE_EVENTS.DETAIL_VIEW, { suite_id: suiteId });
+    }
+  }, [suite, suiteId]);
 
   // 해당 스위트에 속한 테스트 케이스 필터링
   const allCases = casesResult?.success ? casesResult.data ?? [] : [];

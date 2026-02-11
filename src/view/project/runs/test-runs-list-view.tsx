@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions } from '@/features/runs';
+import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 
 type RunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 type RunSourceType = 'SUITE' | 'MILESTONE' | 'ADHOC';
@@ -84,6 +85,13 @@ export const TestRunsListView = () => {
   });
 
   const testRuns: ITestRun[] = (fetchedRunsData?.success ? fetchedRunsData.data : []) as ITestRun[];
+
+  // 테스트 실행 목록 View 이벤트
+  useEffect(() => {
+    if (fetchedRunsData?.success) {
+      track(TESTRUN_EVENTS.LIST_VIEW, { project_id: projectId });
+    }
+  }, [fetchedRunsData?.success, projectId]);
 
   // 검색어 및 상태 필터링 적용
   const filteredRuns = testRuns.filter((run) => {
@@ -172,7 +180,7 @@ export const TestRunsListView = () => {
           <DSButton
             variant="solid"
             className="flex items-center gap-2"
-            onClick={() => router.push(`/projects/${projectSlug}/runs/create`)}
+            onClick={() => { track(TESTRUN_EVENTS.CREATE_START, { project_id: projectId }); router.push(`/projects/${projectSlug}/runs/create`); }}
           >
             <Plus className="h-4 w-4" />
             테스트 실행 생성

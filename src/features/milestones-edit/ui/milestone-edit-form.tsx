@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useUpdateMilestone } from '../hooks';
 import { UpdateMilestone, UpdateMilestoneSchema } from '../model';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 import { Check, ChevronDown, ChevronUp, FolderOpen, ListChecks, Search, X } from 'lucide-react';
 
 interface MilestoneEditFormProps {
@@ -117,6 +118,7 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
       // 마일스톤 정보 업데이트
       mutate(data, {
         onSuccess: async () => {
+          track(MILESTONE_EVENTS.UPDATE, { milestone_id: milestone.id });
           // 케이스 변경 처리
           const casesToAdd = Array.from(selectedCaseIds).filter((id) => !initialCaseIds.has(id));
           const casesToRemove = Array.from(initialCaseIds).filter((id) => !selectedCaseIds.has(id));

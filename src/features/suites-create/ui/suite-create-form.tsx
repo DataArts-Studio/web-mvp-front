@@ -6,6 +6,7 @@ import { CreateTestSuite, CreateTestSuiteSchema, createTestSuite } from '@/entit
 import { useCreateSuite } from '@/features';
 import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 interface SuiteCreateFormProps {
   projectId: string;
@@ -31,6 +32,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
   const onSubmit = async (data: CreateTestSuite) => {
     mutate(data, {
       onSuccess: () => {
+        track(TESTSUITE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onClose?.();
       },
     })

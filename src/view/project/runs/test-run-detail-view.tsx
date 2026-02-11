@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import { testRunByIdQueryOptions, updateTestCaseRunStatus, TestCaseRunDetail } from '@/features/runs';
+import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -144,6 +145,13 @@ export const TestRunDetailView = () => {
 
   const testRun = data?.success ? data.data : null;
 
+  // 테스트 실행 상세 View 이벤트
+  useEffect(() => {
+    if (testRun) {
+      track(TESTRUN_EVENTS.DETAIL_VIEW, { run_id: testRunId, project_slug: projectSlug });
+    }
+  }, [testRun, testRunId, projectSlug]);
+
   // Extract unique suites from test case runs
   const availableSuites = useMemo(() => {
     if (!testRun?.testCaseRuns) return [];
@@ -235,6 +243,8 @@ export const TestRunDetailView = () => {
   // Handle status change
   const handleStatusChange = useCallback(async (status: TestCaseRunStatus) => {
     if (!selectedCase) return;
+
+    track(TESTRUN_EVENTS.RESULT_UPDATE, { status, case_id: selectedCase.id });
 
     await updateMutation.mutateAsync({
       testCaseRunId: selectedCase.id,

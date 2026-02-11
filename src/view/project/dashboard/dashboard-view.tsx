@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronDown, ChevronRight, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { type TestStatusData, KPICards, type KPIData } from '@/widgets/project';
+import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
 
 const TestStatusChart = dynamic(
   () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
@@ -77,6 +78,13 @@ export const ProjectDashboardView = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // 대시보드 View 이벤트
+  useEffect(() => {
+    if (dashboardData?.success) {
+      track(DASHBOARD_EVENTS.VIEW, { project_id: slug });
+    }
+  }, [dashboardData?.success, slug]);
 
   // 자동 선택: IN_PROGRESS > NOT_STARTED > 최신 COMPLETED
   useEffect(() => {
@@ -144,6 +152,7 @@ export const ProjectDashboardView = () => {
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
+      track(DASHBOARD_EVENTS.LINK_COPY, { project_id: slug });
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
@@ -275,6 +284,7 @@ export const ProjectDashboardView = () => {
                       <button
                         key={run.id}
                         onClick={() => {
+                          track(DASHBOARD_EVENTS.CHART_INTERACTION, { project_id: slug, run_id: run.id });
                           setSelectedRunId(run.id);
                           setShowRunDropdown(false);
                         }}
@@ -322,7 +332,7 @@ export const ProjectDashboardView = () => {
               <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
             </Link>
             {testCases.length > 0 && (
-              <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => onOpen('case')}>
+              <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); }}>
                 <Plus className="h-4 w-4" />
                 <span>추가</span>
               </DSButton>
@@ -348,7 +358,7 @@ export const ProjectDashboardView = () => {
                 </p>
               </div>
 
-              <DSButton variant="solid" className="flex items-center gap-2" onClick={() => onOpen('case')}>
+              <DSButton variant="solid" className="flex items-center gap-2" onClick={() => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); }}>
                 <Plus className="h-4 w-4" />
                 <span>테스트 케이스 만들기</span>
               </DSButton>
@@ -396,7 +406,7 @@ export const ProjectDashboardView = () => {
               <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
             </Link>
             {testSuites.length > 0 && (
-              <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => onOpen('suite')}>
+              <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => { track(DASHBOARD_EVENTS.TESTSUITE_CREATE_START, { project_id: slug }); onOpen('suite'); }}>
                 <Plus className="h-4 w-4" />
                 <span>추가</span>
               </DSButton>
@@ -419,7 +429,7 @@ export const ProjectDashboardView = () => {
                 </p>
               </div>
 
-              <DSButton variant="solid" className="flex items-center gap-2" onClick={() => onOpen('suite')}>
+              <DSButton variant="solid" className="flex items-center gap-2" onClick={() => { track(DASHBOARD_EVENTS.TESTSUITE_CREATE_START, { project_id: slug }); onOpen('suite'); }}>
                 <Plus className="h-4 w-4" />
                 <span>테스트 스위트 만들기</span>
               </DSButton>

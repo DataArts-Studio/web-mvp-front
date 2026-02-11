@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ProjectSearchModal } from '@/features/project-search';
 import { BetaBanner } from './beta-banner';
 import { useBetaBanner } from './use-beta-banner';
+import { track, NAVIGATION_EVENTS, LANDING_EVENTS } from '@/shared/lib/analytics';
 
 export const GlobalHeader = () => {
   const [isSearchModalOpen, setIsSearchModalOpen] = React.useState(false);
@@ -26,6 +27,7 @@ export const GlobalHeader = () => {
           href="/"
           aria-label="Testea 홈으로 이동"
           className="flex items-center space-x-2 text-xl font-bold text-teal-400"
+          onClick={() => track(NAVIGATION_EVENTS.LOGO_CLICK)}
         >
           <Image src="/logo.svg" alt="Testea" width={120} height={28} />
         </Link>
@@ -36,12 +38,16 @@ export const GlobalHeader = () => {
             href="/docs"
             aria-label="문서 페이지로 이동"
             className="text-body2 text-text-2 transition-colors hover:text-primary"
+            onClick={() => track(NAVIGATION_EVENTS.DOCS_CLICK)}
           >
             Docs
           </Link>
           <button
             type="button"
-            onClick={() => setIsSearchModalOpen(true)}
+            onClick={() => {
+              track(LANDING_EVENTS.PROJECT_SEARCH_OPEN);
+              setIsSearchModalOpen(true);
+            }}
             aria-label="내 프로젝트 검색 모달 열기"
             aria-haspopup="dialog"
             className="text-body2 text-text-2 transition-colors hover:text-primary cursor-pointer"

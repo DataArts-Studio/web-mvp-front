@@ -16,6 +16,7 @@ import { Select } from '@/shared/lib/primitives/select/select';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Filter, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
+import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
@@ -179,6 +180,13 @@ export const TestCasesView = () => {
   const currentStatusLabel = STATUS_FILTER_OPTIONS.find((opt) => opt.value === statusFilter)?.label || '전체';
   const currentSortLabel = SORT_OPTIONS.find((opt) => opt.value === sortOption)?.label || '최근 수정 순';
 
+  // 테스트 케이스 목록 View 이벤트
+  useEffect(() => {
+    if (testCasesData?.success) {
+      track(TESTCASE_EVENTS.LIST_VIEW, { project_id: projectId });
+    }
+  }, [testCasesData?.success, projectId]);
+
   // 필터 변경 시 visibleCount 초기화
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
@@ -320,10 +328,15 @@ export const TestCasesView = () => {
               <ActionToolbar.Search
                 placeholder="테스트 케이스 제목을 입력해 주세요."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value.trim()) {
+                    track(TESTCASE_EVENTS.SEARCH, { keyword: e.target.value.trim() });
+                  }
+                }}
               />
               {/* Status Filter Dropdown */}
-              <Select.Root value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilterValue)} className="relative shrink-0 w-fit">
+              <Select.Root value={statusFilter} onValueChange={(value) => { track(TESTCASE_EVENTS.FILTER_CHANGE, { filter: value }); setStatusFilter(value as StatusFilterValue); }} className="relative shrink-0 w-fit">
                 <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
                   <Filter className="h-4 w-4 shrink-0" />
                   <span>상태: {currentStatusLabel}</span>
@@ -342,7 +355,7 @@ export const TestCasesView = () => {
                 </Select.Content>
               </Select.Root>
               {/* Sort Dropdown */}
-              <Select.Root value={sortOption} onValueChange={(value) => setSortOption(value as SortValue)} className="relative shrink-0 w-fit">
+              <Select.Root value={sortOption} onValueChange={(value) => { track(TESTCASE_EVENTS.SORT_CHANGE, { sort: value }); setSortOption(value as SortValue); }} className="relative shrink-0 w-fit">
                 <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
                   <ArrowUpDown className="h-4 w-4 shrink-0" />
                   <span>정렬: {currentSortLabel}</span>
@@ -361,7 +374,7 @@ export const TestCasesView = () => {
                 </Select.Content>
               </Select.Root>
             </ActionToolbar.Group>
-            <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen('create')} className='flex items-center gap-2'>
+            <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => { track(TESTCASE_EVENTS.CREATE_START, { project_id: projectId }); onOpen('create'); }} className='flex items-center gap-2'>
               <Plus className="h-4 w-4" />
               <span className='leading-none'>테스트 케이스 생성</span>
             </ActionToolbar.Action>
@@ -407,6 +420,7 @@ export const TestCasesView = () => {
               ) : (
                 filteredAndSortedTestCases.slice(0, visibleCount).map((item) => (
                   <TestTable.Row key={item.caseKey} onClick={() => {
+                    track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
                     setSelectedTestCaseId(item.id);
                     onOpen('detail');
                   }}>

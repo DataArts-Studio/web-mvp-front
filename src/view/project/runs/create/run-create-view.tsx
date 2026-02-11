@@ -9,6 +9,7 @@ import { milestonesQueryOptions, getMilestones } from '@/entities/milestone';
 import { Container, DSButton, MainContainer, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import { Checkbox } from '@/shared/ui/checkbox'; // Assuming a checkbox component exists
+import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 
 interface RunFormData {
   runName: string;
@@ -75,6 +76,7 @@ export const RunCreateView = () => {
 
     mutate(input, {
       onSuccess: () => {
+        track(TESTRUN_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         router.push(`/projects/${projectSlug}/runs`);
       },
       onError: (error) => {

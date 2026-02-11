@@ -9,6 +9,7 @@ import { GridBackground } from '@/shared/layout';
 import { LendingHeader } from '@/widgets';
 import { Footer } from '@/widgets/footer';
 import { GlobalHeader, useBetaBanner } from '@/widgets/global-header';
+import { track, LANDING_EVENTS } from '@/shared/lib/analytics';
 
 export const LendingView = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
@@ -42,7 +43,10 @@ export const LendingView = () => {
             <section aria-label="시작하기" className="relative z-10">
               <DSButton
                 type="button"
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => {
+                  track(LANDING_EVENTS.PROJECT_CREATE_START);
+                  setIsCreateModalOpen(true);
+                }}
                 className="flex h-16 w-80 min-w-[11.25rem] items-center justify-center gap-[0.63rem] p-5"
                 aria-label="무료로 프로젝트 생성 시작하기"
               >

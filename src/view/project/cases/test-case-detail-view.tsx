@@ -14,6 +14,7 @@ import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Clock, Edit2, Flag, FolderOpen, Play, Tag, XCircle } from 'lucide-react';
+import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 
 const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   pass: { label: 'Pass', style: 'bg-green-500/20 text-green-300' },
@@ -45,6 +46,12 @@ export const TestCaseDetailView = () => {
   const { data, isLoading, isError } = useQuery(testCaseByIdQueryOptions(caseId));
 
   const testCase = data?.success ? data.data : null;
+
+  React.useEffect(() => {
+    if (testCase) {
+      track(TESTCASE_EVENTS.DETAIL_VIEW, { case_id: caseId });
+    }
+  }, [testCase, caseId]);
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(testCase?.projectId || ''),

@@ -7,6 +7,7 @@ import { useDebounce } from '@/shared/hooks';
 import { searchProjects } from '../api/server-action';
 import { ProjectSearchAutocomplete } from './project-search-autocomplete';
 import type { ProjectSearchResult } from '../model/types';
+import { track, PROJECT_SEARCH_EVENTS } from '@/shared/lib/analytics';
 
 interface ProjectSearchFormProps {
   onSearch: (keyword: string) => Promise<void>;
@@ -137,6 +138,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
     e.preventDefault();
     const trimmed = inputValue.trim();
     if (trimmed.length >= 2) {
+      track(PROJECT_SEARCH_EVENTS.SUBMIT, { keyword: trimmed });
       setShowAutocomplete(false);
       onSearch(trimmed);
     }
