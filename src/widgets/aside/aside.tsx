@@ -7,6 +7,7 @@ import { useParams, usePathname } from 'next/navigation';
 import { Logo } from '@/shared';
 import { AsideMenuItem, createAsideMenus } from '@/widgets/aside/model';
 import { AsideNavItem } from '@/widgets/aside/ui';
+import { track, NAVIGATION_EVENTS } from '@/shared/lib/analytics';
 
 // 경로 매칭 함수: 현재 경로가 메뉴 경로와 일치하는지 확인
 const isPathActive = (currentPath: string, matchPath: string): boolean => {
@@ -67,13 +68,14 @@ export const Aside = () => {
 
             <div className="flex flex-col gap-1">
               {section.items.map((item: AsideMenuItem) => (
-                <AsideNavItem
-                  key={item.label}
-                  label={item.label}
-                  href={item.href}
-                  icon={item.icon}
-                  active={isPathActive(pathname, item.matchPath || '')}
-                />
+                <div key={item.label} onClick={() => track(NAVIGATION_EVENTS.NAV_CLICK, { menu_label: item.label })}>
+                  <AsideNavItem
+                    label={item.label}
+                    href={item.href}
+                    icon={item.icon}
+                    active={isPathActive(pathname, item.matchPath || '')}
+                  />
+                </div>
               ))}
             </div>
           </section>

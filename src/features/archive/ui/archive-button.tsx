@@ -4,6 +4,7 @@ import { useArchive } from '@/features/archive/hooks/use-archive';
 import { ArchiveTargetType } from '@/features/archive/model/types';
 import { DSButton } from '@/shared';
 import { Loader2, Trash2 } from 'lucide-react';
+import { track, TESTCASE_EVENTS, TESTSUITE_EVENTS, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 
 interface ArchiveButtonProps {
   targetType: ArchiveTargetType;
@@ -16,6 +17,15 @@ export const ArchiveButton = ({ targetType, targetId, btnType = 'text', onSucces
   const archive = useArchive({ onSuccess });
 
   const handleClick = () => {
+    const eventMap = {
+      case: TESTCASE_EVENTS.DELETE,
+      suite: TESTSUITE_EVENTS.DELETE,
+      milestone: MILESTONE_EVENTS.DELETE,
+    } as const;
+    const eventName = eventMap[targetType as keyof typeof eventMap];
+    if (eventName) {
+      track(eventName, { target_id: targetId, target_type: targetType });
+    }
     archive.mutate({ targetType, targetId });
   };
 

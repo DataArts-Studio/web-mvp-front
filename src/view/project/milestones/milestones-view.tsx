@@ -11,6 +11,7 @@ import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
+import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 
 // 필터 옵션과 상태값 매핑
 const FILTER_OPTIONS = ['전체', '진행 중', '완료', '예정'] as const;
@@ -73,6 +74,13 @@ export const MilestonesView = () => {
   const handleCloseEdit = () => {
     setEditingMilestone(null);
   };
+  // 마일스톤 목록 View 이벤트
+  React.useEffect(() => {
+    if (milestonesResult?.success) {
+      track(MILESTONE_EVENTS.LIST_VIEW, { project_id: projectId });
+    }
+  }, [milestonesResult?.success, projectId]);
+
   // 로딩 상태
   if (isLoadingProject || isLoadingMilestones) {
     return (

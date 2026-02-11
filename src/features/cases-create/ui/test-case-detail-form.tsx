@@ -10,6 +10,7 @@ import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-reac
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
+import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 
 const CreateTestCaseFormSchema = z.object({
   projectId: z.string().uuid(),
@@ -66,6 +67,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
   const onSubmit = handleSubmit((data) => {
     mutate(data as CreateTestCase, {
       onSuccess: () => {
+        track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onSuccess?.();
         onClose();
       },

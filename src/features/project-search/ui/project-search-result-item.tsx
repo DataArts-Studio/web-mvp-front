@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { DSButton } from '@/shared/ui';
 import type { ProjectSearchResult } from '../model/types';
+import { track, PROJECT_SEARCH_EVENTS } from '@/shared/lib/analytics';
 
 interface ProjectSearchResultItemProps {
   project: ProjectSearchResult;
@@ -21,6 +22,7 @@ export const ProjectSearchResultItem = ({ project, onNavigate }: ProjectSearchRe
   }).format(project.createdAt);
 
   const handleClick = () => {
+    track(PROJECT_SEARCH_EVENTS.RESULT_CLICK, { project_name: project.projectName, slug: project.slug });
     setIsNavigating(true);
     onNavigate?.();
     router.push(`/projects/${encodeURIComponent(project.slug)}/access`);

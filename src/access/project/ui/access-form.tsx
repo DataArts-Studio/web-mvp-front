@@ -6,12 +6,13 @@
  * 디자인 시스템 컴포넌트(DSButton, DsInput, Logo) 사용
  */
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { track, ACCESS_EVENTS } from '@/shared/lib/analytics';
 
 import { cn } from '@/shared/utils';
 import { Logo } from '@/shared/ui/logo';
@@ -52,16 +53,25 @@ export function AccessForm({
     },
   });
 
+  useEffect(() => {
+    if (isExpired) {
+      track(ACCESS_EVENTS.TOKEN_EXPIRED, { project_slug: projectSlug });
+    }
+  }, [isExpired, projectSlug]);
+
   const onSubmit = (data: ProjectAccessFormInput) => {
     setServerError(null);
+    track(ACCESS_EVENTS.ATTEMPT, { project_slug: projectSlug });
 
     startTransition(async () => {
       const result = await verifyProjectAccess(projectSlug, data.password);
 
       if (result.success) {
+        track(ACCESS_EVENTS.SUCCESS, { project_slug: projectSlug });
         router.push(redirectUrl || result.redirectUrl);
         router.refresh();
       } else {
+        track(ACCESS_EVENTS.FAIL, { remaining_attempts: result.remainingAttempts ?? null });
         setServerError(result.error);
         if (result.remainingAttempts !== undefined) {
           setRemainingAttempts(result.remainingAttempts);
@@ -142,7 +152,10 @@ export function AccessForm({
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() => {
+                track(ACCESS_EVENTS.PASSWORD_TOGGLE);
+                setShowPassword(!showPassword);
+              }}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2 transition-colors"
               tabIndex={-1}
             >

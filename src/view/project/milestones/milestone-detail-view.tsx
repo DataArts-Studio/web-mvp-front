@@ -19,6 +19,7 @@ import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Edit2, ListChecks, Play, PlayCircle, Plus, Trash2, XCircle } from 'lucide-react';
 import { getTestSuites } from '@/entities';
+import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 
 
 
@@ -88,6 +89,12 @@ export const MilestoneDetailView = () => {
   const { data, isLoading, isError } = useQuery(milestoneByIdQueryOptions(milestoneId));
   const [isAddingCases, setIsAddingCases] = useState(false);
   const [isAddingSuites, setIsAddingSuites] = useState(false);
+
+  React.useEffect(() => {
+    if (data?.success) {
+      track(MILESTONE_EVENTS.DETAIL_VIEW, { milestone_id: milestoneId });
+    }
+  }, [data?.success, milestoneId]);
 
   // 프로젝트의 테스트 케이스 조회
   const { data: casesResult } = useQuery({

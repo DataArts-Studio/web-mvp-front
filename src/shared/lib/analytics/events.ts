@@ -104,6 +104,76 @@ export const TESTCASE_EVENTS = {
   STEP_REMOVE: 'testcase_step_remove',
 } as const;
 
+// ─── Test Suite ──────────────────────────────────────────────────
+export const TESTSUITE_EVENTS = {
+  /** 목록 데이터 로드 완료 */
+  LIST_VIEW: 'testsuite_list_view',
+  /** 상세 데이터 로드 */
+  DETAIL_VIEW: 'testsuite_detail_view',
+  /** 생성 버튼 클릭 */
+  CREATE_START: 'testsuite_create_start',
+  /** 생성 완료 */
+  CREATE_COMPLETE: 'testsuite_create_complete',
+  /** 수정 완료 */
+  UPDATE: 'testsuite_update',
+  /** 삭제 완료 */
+  DELETE: 'testsuite_delete',
+} as const;
+
+// ─── Test Run ────────────────────────────────────────────────────
+export const TESTRUN_EVENTS = {
+  /** 목록 데이터 로드 완료 */
+  LIST_VIEW: 'testrun_list_view',
+  /** 상세 데이터 로드 */
+  DETAIL_VIEW: 'testrun_detail_view',
+  /** 생성 버튼 클릭 */
+  CREATE_START: 'testrun_create_start',
+  /** 생성 완료 */
+  CREATE_COMPLETE: 'testrun_create_complete',
+  /** 테스트 결과 업데이트 */
+  RESULT_UPDATE: 'testrun_result_update',
+} as const;
+
+// ─── Milestone ───────────────────────────────────────────────────
+export const MILESTONE_EVENTS = {
+  /** 목록 데이터 로드 완료 */
+  LIST_VIEW: 'milestone_list_view',
+  /** 상세 데이터 로드 */
+  DETAIL_VIEW: 'milestone_detail_view',
+  /** 생성 완료 */
+  CREATE_COMPLETE: 'milestone_create_complete',
+  /** 수정 완료 */
+  UPDATE: 'milestone_update',
+  /** 삭제 완료 */
+  DELETE: 'milestone_delete',
+} as const;
+
+// ─── Navigation ──────────────────────────────────────────────────
+export const NAVIGATION_EVENTS = {
+  /** 네비게이션 메뉴 클릭 */
+  NAV_CLICK: 'nav_click',
+  /** 로고 클릭 */
+  LOGO_CLICK: 'logo_click',
+  /** 문서 페이지 이동 */
+  DOCS_CLICK: 'docs_click',
+  /** 하단 네비게이션 클릭 */
+  BOTTOM_NAV_CLICK: 'bottom_nav_click',
+} as const;
+
+// ─── Engagement ──────────────────────────────────────────────────
+export const ENGAGEMENT_EVENTS = {
+  /** CTA 버튼 클릭 */
+  CTA_CLICK: 'cta_click',
+  /** 모달 열림 */
+  MODAL_OPEN: 'modal_open',
+  /** 모달 닫힘 */
+  MODAL_CLOSE: 'modal_close',
+  /** 토스트 알림 표시 */
+  TOAST_SHOW: 'toast_show',
+  /** 에러 발생 */
+  ERROR_OCCUR: 'error_occur',
+} as const;
+
 // ─── 전체 이벤트 합치기 (필요 시) ─────────────────────────────────
 export const GA_EVENTS = {
   LANDING: LANDING_EVENTS,
@@ -112,4 +182,9 @@ export const GA_EVENTS = {
   ACCESS: ACCESS_EVENTS,
   DASHBOARD: DASHBOARD_EVENTS,
   TESTCASE: TESTCASE_EVENTS,
+  TESTSUITE: TESTSUITE_EVENTS,
+  TESTRUN: TESTRUN_EVENTS,
+  MILESTONE: MILESTONE_EVENTS,
+  NAVIGATION: NAVIGATION_EVENTS,
+  ENGAGEMENT: ENGAGEMENT_EVENTS,
 } as const;

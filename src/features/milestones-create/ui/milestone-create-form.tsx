@@ -9,6 +9,7 @@ import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMilestone } from '@/features';
 import { useQuery } from '@tanstack/react-query';
+import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 import { Check, ChevronDown, ChevronUp, FolderOpen, ListChecks, Search } from 'lucide-react';
 import { DateDropdownSelect } from './date-dropdown-select';
 
@@ -107,6 +108,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
           await addTestSuitesToMilestone(milestoneId, Array.from(selectedSuiteIds));
         }
 
+        track(MILESTONE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onClose?.();
       }
     } finally {

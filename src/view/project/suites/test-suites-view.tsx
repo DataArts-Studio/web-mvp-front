@@ -12,6 +12,7 @@ import { Container, MainContainer, LoadingSpinner } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
+import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 const FILTER_OPTIONS = ['전체', '기능별', '시나리오'] as const;
 type FilterOption = typeof FILTER_OPTIONS[number];
@@ -73,6 +74,13 @@ export const TestSuitesView = () => {
     setEditingSuite(null);
   };
 
+  // 테스트 스위트 목록 View 이벤트
+  React.useEffect(() => {
+    if (suiteData?.success) {
+      track(TESTSUITE_EVENTS.LIST_VIEW, { project_id: projectId });
+    }
+  }, [suiteData?.success, projectId]);
+
   // 로딩 상태
   if (isLoadingProject || isLoadingSuites) {
     return (
@@ -126,7 +134,7 @@ export const TestSuitesView = () => {
               onChange={handleFilterChange}
             />
           </ActionToolbar.Group>
-          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen()}>
+          <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => { track(TESTSUITE_EVENTS.CREATE_START, { project_id: projectId }); onOpen(); }}>
             테스트 스위트 생성하기
           </ActionToolbar.Action>
         </ActionToolbar.Root>
