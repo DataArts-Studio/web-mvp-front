@@ -5,9 +5,11 @@ import {
   testRunSuites,
   testCaseRuns,
   testCases,
+  testRuns,
 } from '@/shared/lib/db';
 import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+import { requireProjectAccess } from '@/access/lib/require-access';
 
 type AddSuitesToRunResult =
   | { success: true; addedCount: number }
@@ -22,6 +24,12 @@ export async function addSuitesToRunAction(
   }
 
   const db = getDatabase();
+
+  // 접근 권한 확인
+  const [run] = await db.select({ projectId: testRuns.project_id }).from(testRuns).where(eq(testRuns.id, runId)).limit(1);
+  if (!run?.projectId || !(await requireProjectAccess(run.projectId))) {
+    return { success: false, error: '접근 권한이 없습니다.' };
+  }
 
   try {
     const result = await db.transaction(async (tx) => {

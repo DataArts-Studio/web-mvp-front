@@ -15,6 +15,7 @@ import {
 import type { ActionResult } from '@/shared/types';
 import { and, eq, count, desc, inArray, isNotNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+import { requireProjectAccess } from '@/access/lib/require-access';
 
 type GetTestSuitesParams = {
   projectId: string;
@@ -23,6 +24,11 @@ type GetTestSuitesParams = {
 
 export const createTestSuite = async (input: CreateTestSuite): Promise<ActionResult<TestSuite>> => {
   try {
+    const hasAccess = await requireProjectAccess(input.projectId);
+    if (!hasAccess) {
+      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+    }
+
     const db = getDatabase();
     const dto = toCreateTestSuiteDTO(input);
     const id = uuidv7();
@@ -221,6 +227,12 @@ export const updateTestSuite = async (params: UpdateTestSuiteParams): Promise<Ac
   try {
     const db = getDatabase();
     const { id, ...updateFields } = params;
+
+    // 접근 권한 확인
+    const [existing] = await db.select({ projectId: testSuites.project_id }).from(testSuites).where(eq(testSuites.id, id)).limit(1);
+    if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
+      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+    }
 
     const updateData: Record<string, unknown> = {
       updated_at: new Date(),
@@ -490,6 +502,12 @@ export const getTestSuitesWithStats = async ({
 export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: string }>> => {
   try {
     const db = getDatabase();
+
+    // 접근 권한 확인
+    const [existing] = await db.select({ projectId: testSuites.project_id }).from(testSuites).where(eq(testSuites.id, id)).limit(1);
+    if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
+      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+    }
 
     const [archived] = await db
       .update(testSuites)

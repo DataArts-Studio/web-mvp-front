@@ -68,7 +68,12 @@ export function AccessForm({
 
       if (result.success) {
         track(ACCESS_EVENTS.SUCCESS, { project_slug: projectSlug });
-        router.push(redirectUrl || result.redirectUrl);
+        // Open Redirect 방지: 상대 경로만 허용
+        const safeRedirect =
+          redirectUrl && redirectUrl.startsWith('/') && !redirectUrl.startsWith('//')
+            ? redirectUrl
+            : result.redirectUrl;
+        router.push(safeRedirect);
         router.refresh();
       } else {
         track(ACCESS_EVENTS.FAIL, { remaining_attempts: result.remainingAttempts ?? null });

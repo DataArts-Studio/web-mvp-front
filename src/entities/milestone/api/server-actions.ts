@@ -11,6 +11,7 @@ import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites, testR
 import { ActionResult } from '@/shared/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+import { requireProjectAccess } from '@/access/lib/require-access';
 
 type GetMilestonesParams = {
   projectId: string;
@@ -89,6 +90,11 @@ export const getMilestoneById = async (id: string): Promise<ActionResult<Milesto
  */
 export const createMilestone = async (input: CreateMilestone): Promise<ActionResult<Milestone>> => {
   try {
+    const hasAccess = await requireProjectAccess(input.projectId);
+    if (!hasAccess) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
+
     const db = getDatabase();
     const dto = toCreateMilestoneDTO(input);
     const id = uuidv7();
@@ -135,6 +141,12 @@ export const updateMilestone = async (
   try {
     const db = getDatabase();
     const { id, ...updateFields } = input;
+
+    // 접근 권한 확인
+    const [existing] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, id)).limit(1);
+    if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
 
     // input 데이터를 DTO 형태로 변환하거나 직접 set 절에 구성
     const setData: Record<string, unknown> = {
@@ -195,6 +207,13 @@ export const updateMilestone = async (
 export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: string }>> => {
   try {
     const db = getDatabase();
+
+    // 접근 권한 확인
+    const [existing] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, id)).limit(1);
+    if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
+
     const [archived] = await db
       .update(milestones)
       .set({
@@ -240,6 +259,12 @@ export const addTestCasesToMilestone = async (
 ): Promise<ActionResult<{ count: number }>> => {
   try {
     const db = getDatabase();
+
+    // 접근 권한 확인
+    const [ms] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, milestoneId)).limit(1);
+    if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
 
     const values = testCaseIds.map((testCaseId) => ({
       milestone_id: milestoneId,
@@ -312,6 +337,12 @@ export const removeTestCaseFromMilestone = async (
   try {
     const db = getDatabase();
 
+    // 접근 권한 확인
+    const [ms] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, milestoneId)).limit(1);
+    if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
+
     await db
       .delete(milestoneTestCases)
       .where(
@@ -344,6 +375,12 @@ export const addTestSuitesToMilestone = async (
 ): Promise<ActionResult<{ count: number }>> => {
   try {
     const db = getDatabase();
+
+    // 접근 권한 확인
+    const [ms] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, milestoneId)).limit(1);
+    if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
 
     const values = testSuiteIds.map((testSuiteId) => ({
       milestone_id: milestoneId,
@@ -448,6 +485,12 @@ export const removeTestSuiteFromMilestone = async (
 ): Promise<ActionResult<{ id: string }>> => {
   try {
     const db = getDatabase();
+
+    // 접근 권한 확인
+    const [ms] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, milestoneId)).limit(1);
+    if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
 
     await db
       .delete(milestoneTestSuites)

@@ -4,6 +4,7 @@ import type { ProjectDomain } from '@/entities/project';
 import { getDatabase, projects } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
+import { requireProjectAccess } from '@/access/lib/require-access';
 
 export type ProjectBasicInfo = Pick<
   ProjectDomain,
@@ -80,6 +81,11 @@ export const getProjectById = async (id: string): Promise<ActionResult<ProjectBa
 
 export const archiveProject = async (id: string): Promise<ActionResult<{ id: string }>> => {
   try {
+    const hasAccess = await requireProjectAccess(id);
+    if (!hasAccess) {
+      return { success: false, errors: { _project: ['접근 권한이 없습니다.'] } };
+    }
+
     const db = getDatabase();
     const [archived] = await db
       .update(projects)

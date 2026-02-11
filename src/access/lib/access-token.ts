@@ -47,14 +47,17 @@ async function createSignature(data: string, secret: string): Promise<string> {
 
 /**
  * 토큰 시크릿 키 가져오기
- * 환경 변수에서 가져오거나, 기본값 사용 (개발용)
+ * 환경 변수에서 반드시 설정되어야 함 (모든 환경)
  */
 function getTokenSecret(): string {
   const secret = process.env.ACCESS_TOKEN_SECRET;
-  if (!secret && process.env.NODE_ENV === 'production') {
-    throw new Error('ACCESS_TOKEN_SECRET environment variable is required in production');
+  if (!secret) {
+    throw new Error(
+      'ACCESS_TOKEN_SECRET environment variable is required. ' +
+      'Set it in .env.local for development.'
+    );
   }
-  return secret || 'dev-secret-key-do-not-use-in-production';
+  return secret;
 }
 
 /**
