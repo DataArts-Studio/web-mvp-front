@@ -35,14 +35,22 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
         track(TESTSUITE_EVENTS.UPDATE, { suite_id: suite.id });
         onClose?.();
       },
+      onError: () => {
+        track(TESTSUITE_EVENTS.UPDATE_FAIL, { suite_id: suite.id });
+      },
     })
+  };
+
+  const handleAbandon = () => {
+    track(TESTSUITE_EVENTS.UPDATE_ABANDON, { suite_id: suite.id });
+    onClose?.();
   };
 
   return (
     <section
       id="edit-suite"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
+      onClick={handleAbandon}
     >
       <div className="bg-bg-2 shadow-4 relative w-[600px] overflow-hidden rounded-xl p-8" onClick={(e) => e.stopPropagation()}>
         {isPending && (
@@ -111,7 +119,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
               variant="ghost"
               className="w-full"
               disabled={isPending}
-              onClick={onClose}
+              onClick={handleAbandon}
             >
               취소
             </DSButton>
