@@ -14,7 +14,20 @@ interface ArchiveButtonProps {
 }
 
 export const ArchiveButton = ({ targetType, targetId, btnType = 'text', onSuccess }: ArchiveButtonProps) => {
-  const archive = useArchive({ onSuccess });
+  const archive = useArchive({
+    onSuccess,
+    onError: (_error, variables) => {
+      const failEventMap = {
+        case: TESTCASE_EVENTS.DELETE_FAIL,
+        suite: TESTSUITE_EVENTS.DELETE_FAIL,
+        milestone: MILESTONE_EVENTS.DELETE_FAIL,
+      } as const;
+      const eventName = failEventMap[variables.targetType as keyof typeof failEventMap];
+      if (eventName) {
+        track(eventName, { target_id: variables.targetId, target_type: variables.targetType });
+      }
+    },
+  });
 
   const handleClick = () => {
     const eventMap = {

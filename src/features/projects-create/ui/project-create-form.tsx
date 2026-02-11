@@ -77,10 +77,12 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         setCreatedSlug(result.data.projectName);
         setStep(4);
       } else {
+        track(PROJECT_CREATE_EVENTS.FAIL, { step });
         const errorMessages = Object.values(result.errors).flat().join('\n');
         alert(`생성 실패: ${errorMessages}`);
       }
     } catch (error) {
+      track(PROJECT_CREATE_EVENTS.FAIL, { step, error_type: 'network' });
       console.error('네트워크 에러 발생:', error);
       alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
@@ -173,7 +175,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             <div className="inline-flex flex-col items-start justify-start gap-4 self-stretch">
               <div className="inline-flex items-center justify-between self-stretch">
                 <h2 className="text-2xl">프라이빗 모드로 생성하기</h2>
-                <DSButton type="button" variant="text" className="cursor-pointer" onClick={onClick}>
+                <DSButton type="button" variant="text" className="cursor-pointer" onClick={() => { track(PROJECT_CREATE_EVENTS.ABANDON, { step }); onClick?.(); }}>
                   <XIcon className="h-8 w-8" />
                 </DSButton>
               </div>
@@ -222,7 +224,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               <p>프로젝트를 생성하시겠습니까?</p>
             </div>
             <div className="flex w-full gap-4">
-              <DSButton onClick={onClick} type="button" variant="ghost" className="mt-2 w-full" disabled={isSubmitting}>
+              <DSButton onClick={() => { track(PROJECT_CREATE_EVENTS.ABANDON, { step }); onClick?.(); }} type="button" variant="ghost" className="mt-2 w-full" disabled={isSubmitting}>
                 취소
               </DSButton>
               <DSButton type="submit" variant="solid" className="mt-2 w-full" disabled={isSubmitting}>

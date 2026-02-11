@@ -110,7 +110,11 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
 
         track(MILESTONE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onClose?.();
+      } else {
+        track(MILESTONE_EVENTS.CREATE_FAIL, { project_id: projectId });
       }
+    } catch {
+      track(MILESTONE_EVENTS.CREATE_FAIL, { project_id: projectId });
     } finally {
       setIsSubmitting(false);
     }
@@ -118,11 +122,16 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
 
   const isLoading = isPending || isSubmitting;
 
+  const handleAbandon = () => {
+    track(MILESTONE_EVENTS.CREATE_ABANDON, { project_id: projectId });
+    onClose?.();
+  };
+
   return (
     <section
       id="create-milestone"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
+      onClick={handleAbandon}
     >
       <div className="bg-bg-2 shadow-4 relative max-h-[90vh] w-[700px] overflow-hidden rounded-xl" onClick={(e) => e.stopPropagation()}>
         {isLoading && (
@@ -377,7 +386,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
               variant="ghost"
               className="w-full"
               disabled={isLoading}
-              onClick={onClose}
+              onClick={handleAbandon}
             >
               취소
             </DSButton>

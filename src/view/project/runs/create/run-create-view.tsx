@@ -80,12 +80,14 @@ export const RunCreateView = () => {
         router.push(`/projects/${projectSlug}/runs`);
       },
       onError: (error) => {
+        track(TESTRUN_EVENTS.CREATE_FAIL, { project_id: projectId });
         alert(error.message || '테스트 실행 생성에 실패했습니다.');
       },
     });
   };
 
   const handleCancel = () => {
+    track(TESTRUN_EVENTS.CREATE_ABANDON, { project_id: projectId });
     router.back();
   };
 

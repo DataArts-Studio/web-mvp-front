@@ -23,6 +23,8 @@ export const PROJECT_CREATE_EVENTS = {
   STEP: 'project_create_step',
   /** 프로젝트 생성 완료 */
   COMPLETE: 'project_create_complete',
+  /** 프로젝트 생성 실패 */
+  FAIL: 'project_create_fail',
   /** 중도 이탈 */
   ABANDON: 'project_create_abandon',
   /** 모달 닫힘 */
@@ -84,10 +86,20 @@ export const TESTCASE_EVENTS = {
   CREATE_START: 'testcase_create_start',
   /** 생성 완료 */
   CREATE_COMPLETE: 'testcase_create_complete',
+  /** 생성 실패 */
+  CREATE_FAIL: 'testcase_create_fail',
+  /** 생성 이탈 */
+  CREATE_ABANDON: 'testcase_create_abandon',
   /** 수정 완료 */
   UPDATE: 'testcase_update',
+  /** 수정 실패 */
+  UPDATE_FAIL: 'testcase_update_fail',
+  /** 수정 이탈 */
+  UPDATE_ABANDON: 'testcase_update_abandon',
   /** 삭제 완료 */
   DELETE: 'testcase_delete',
+  /** 삭제 실패 */
+  DELETE_FAIL: 'testcase_delete_fail',
   /** 상태 변경 */
   STATUS_CHANGE: 'testcase_status_change',
   /** 상세 데이터 로드 */
@@ -114,10 +126,20 @@ export const TESTSUITE_EVENTS = {
   CREATE_START: 'testsuite_create_start',
   /** 생성 완료 */
   CREATE_COMPLETE: 'testsuite_create_complete',
+  /** 생성 실패 */
+  CREATE_FAIL: 'testsuite_create_fail',
+  /** 생성 이탈 */
+  CREATE_ABANDON: 'testsuite_create_abandon',
   /** 수정 완료 */
   UPDATE: 'testsuite_update',
+  /** 수정 실패 */
+  UPDATE_FAIL: 'testsuite_update_fail',
+  /** 수정 이탈 */
+  UPDATE_ABANDON: 'testsuite_update_abandon',
   /** 삭제 완료 */
   DELETE: 'testsuite_delete',
+  /** 삭제 실패 */
+  DELETE_FAIL: 'testsuite_delete_fail',
 } as const;
 
 // ─── Test Run ────────────────────────────────────────────────────
@@ -130,6 +152,10 @@ export const TESTRUN_EVENTS = {
   CREATE_START: 'testrun_create_start',
   /** 생성 완료 */
   CREATE_COMPLETE: 'testrun_create_complete',
+  /** 생성 실패 */
+  CREATE_FAIL: 'testrun_create_fail',
+  /** 생성 이탈 */
+  CREATE_ABANDON: 'testrun_create_abandon',
   /** 테스트 결과 업데이트 */
   RESULT_UPDATE: 'testrun_result_update',
 } as const;
@@ -142,10 +168,20 @@ export const MILESTONE_EVENTS = {
   DETAIL_VIEW: 'milestone_detail_view',
   /** 생성 완료 */
   CREATE_COMPLETE: 'milestone_create_complete',
+  /** 생성 실패 */
+  CREATE_FAIL: 'milestone_create_fail',
+  /** 생성 이탈 */
+  CREATE_ABANDON: 'milestone_create_abandon',
   /** 수정 완료 */
   UPDATE: 'milestone_update',
+  /** 수정 실패 */
+  UPDATE_FAIL: 'milestone_update_fail',
+  /** 수정 이탈 */
+  UPDATE_ABANDON: 'milestone_update_abandon',
   /** 삭제 완료 */
   DELETE: 'milestone_delete',
+  /** 삭제 실패 */
+  DELETE_FAIL: 'milestone_delete_fail',
 } as const;
 
 // ─── Navigation ──────────────────────────────────────────────────

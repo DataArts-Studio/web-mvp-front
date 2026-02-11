@@ -71,8 +71,16 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
         onSuccess?.();
         onClose();
       },
+      onError: () => {
+        track(TESTCASE_EVENTS.CREATE_FAIL, { project_id: projectId });
+      },
     });
   });
+
+  const handleAbandon = () => {
+    track(TESTCASE_EVENTS.CREATE_ABANDON, { project_id: projectId });
+    onClose();
+  };
 
   const inputClassName =
     'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary';
@@ -81,7 +89,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
   const labelClassName = 'text-text-2 typo-body2-heading flex items-center gap-2';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handleAbandon}>
       <section className="bg-bg-1 rounded-4 relative flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden shadow-xl" onClick={(e) => e.stopPropagation()}>
         {isPending && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-4 bg-bg-1/80 backdrop-blur-sm">
@@ -96,7 +104,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               테스트 시나리오의 상세 내용을 작성해주세요.
             </p>
           </div>
-          <DSButton variant="ghost" size="small" onClick={onClose} className="p-2">
+          <DSButton variant="ghost" size="small" onClick={handleAbandon} className="p-2">
             <X className="h-5 w-5" />
           </DSButton>
         </header>
@@ -213,7 +221,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
 
         {/* Actions - 스크롤 영역 밖 */}
         <div className="border-line-2 flex shrink-0 justify-end gap-3 border-t px-5 py-4">
-          <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>
+          <DSButton type="button" variant="ghost" onClick={handleAbandon} disabled={isPending}>
             취소
           </DSButton>
           <DSButton type="submit" form="test-case-form" variant="solid" disabled={isPending}>

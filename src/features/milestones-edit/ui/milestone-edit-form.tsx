@@ -154,6 +154,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
           onClose?.();
         },
+        onError: () => {
+          track(MILESTONE_EVENTS.UPDATE_FAIL, { milestone_id: milestone.id });
+        },
       });
     } finally {
       setIsSubmitting(false);
@@ -162,11 +165,16 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
   const isLoading = isPending || isSubmitting;
 
+  const handleAbandon = () => {
+    track(MILESTONE_EVENTS.UPDATE_ABANDON, { milestone_id: milestone.id });
+    onClose?.();
+  };
+
   return (
     <section
       id="edit-milestone"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
+      onClick={handleAbandon}
     >
       <div className="bg-bg-2 shadow-4 relative max-h-[90vh] w-[700px] overflow-hidden rounded-xl" onClick={(e) => e.stopPropagation()}>
         {isLoading && (
@@ -411,7 +419,7 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
               variant="ghost"
               className="w-full"
               disabled={isLoading}
-              onClick={onClose}
+              onClick={handleAbandon}
             >
               취소
             </DSButton>

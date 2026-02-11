@@ -56,7 +56,15 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
         onSuccess?.();
         onClose();
       },
+      onError: () => {
+        track(TESTCASE_EVENTS.UPDATE_FAIL, { case_id: testCase.id });
+      },
     });
+  };
+
+  const handleAbandon = () => {
+    track(TESTCASE_EVENTS.UPDATE_ABANDON, { case_id: testCase.id });
+    onClose();
   };
 
   const inputClassName =
@@ -66,7 +74,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   const labelClassName = 'text-text-2 typo-body2-heading flex items-center gap-2';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handleAbandon}>
       <section className="bg-bg-1 rounded-4 relative flex w-full max-w-[720px] flex-col overflow-hidden shadow-xl" onClick={(e) => e.stopPropagation()}>
         {isPending && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-4 bg-bg-1/80 backdrop-blur-sm">
@@ -81,7 +89,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
               테스트 시나리오의 상세 내용을 수정해주세요.
             </p>
           </div>
-          <DSButton variant="ghost" size="small" onClick={onClose} className="p-2">
+          <DSButton variant="ghost" size="small" onClick={handleAbandon} className="p-2">
             <X className="h-5 w-5" />
           </DSButton>
         </header>
@@ -197,7 +205,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
 
           {/* Actions */}
           <div className="border-line-2 flex justify-end gap-3 border-t pt-6">
-            <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>
+            <DSButton type="button" variant="ghost" onClick={handleAbandon} disabled={isPending}>
               취소
             </DSButton>
             <DSButton type="submit" variant="solid" disabled={isPending}>

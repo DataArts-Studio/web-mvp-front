@@ -35,14 +35,22 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
         track(TESTSUITE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onClose?.();
       },
+      onError: () => {
+        track(TESTSUITE_EVENTS.CREATE_FAIL, { project_id: projectId });
+      },
     })
+  };
+
+  const handleAbandon = () => {
+    track(TESTSUITE_EVENTS.CREATE_ABANDON, { project_id: projectId });
+    onClose?.();
   };
 
   return (
     <section
       id="create-suite"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
+      onClick={handleAbandon}
     >
       <div className="bg-bg-2 shadow-4 relative flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden rounded-xl" onClick={(e) => e.stopPropagation()}>
         {isPending && (
@@ -113,7 +121,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
             variant="ghost"
             className="w-full"
             disabled={isPending}
-            onClick={onClose}
+            onClick={handleAbandon}
           >
             취소
           </DSButton>
