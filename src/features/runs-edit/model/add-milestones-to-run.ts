@@ -5,9 +5,11 @@ import {
   testRunMilestones,
   testCaseRuns,
   milestoneTestCases,
+  testRuns,
 } from '@/shared/lib/db';
 import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+import { requireProjectAccess } from '@/access/lib/require-access';
 
 type AddMilestonesToRunResult =
   | { success: true; addedCount: number }
@@ -22,6 +24,12 @@ export async function addMilestonesToRunAction(
   }
 
   const db = getDatabase();
+
+  // 접근 권한 확인
+  const [run] = await db.select({ projectId: testRuns.project_id }).from(testRuns).where(eq(testRuns.id, runId)).limit(1);
+  if (!run?.projectId || !(await requireProjectAccess(run.projectId))) {
+    return { success: false, error: '접근 권한이 없습니다.' };
+  }
 
   try {
     const result = await db.transaction(async (tx) => {

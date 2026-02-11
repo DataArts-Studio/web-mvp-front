@@ -4,6 +4,7 @@ import { getDatabase, testRuns, testRunMilestones, testRunSuites, testCaseRuns, 
 import { inArray, and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
+import { requireProjectAccess } from '@/access/lib/require-access';
 
 type FlatErrors = {
   formErrors: string[];
@@ -21,6 +22,15 @@ export const createTestRunAction = async (input: CreateRunInput) => {
   }
 
   const { project_id, name, description, milestone_ids } = validation.data;
+
+  // 접근 권한 확인
+  const hasAccess = await requireProjectAccess(project_id);
+  if (!hasAccess) {
+    return {
+      success: false,
+      errors: { formErrors: ['접근 권한이 없습니다.'], fieldErrors: {} } as FlatErrors,
+    };
+  }
 
   const db = getDatabase();
 

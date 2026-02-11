@@ -9,6 +9,7 @@
 
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 import { getDatabase, projects } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
@@ -19,7 +20,14 @@ import { verifyPassword } from '../../lib/password-hash';
 import type { ProjectAccessInfo, VerifyProjectAccessResponse } from '../model/types';
 import { VerifyProjectAccessRequestSchema } from '../model/schema';
 
-// 브루트포스 방지를 위한 인메모리 rate limiting (프로덕션에서는 Redis 권장)
+/**
+ * 브루트포스 방지를 위한 인메모리 rate limiting
+ *
+ * ⚠️ TODO [프로덕션 전 필수]: Redis 기반으로 전환 필요
+ * - 현재 인메모리 Map은 서버 재시작 시 초기화됨
+ * - 멀티 인스턴스 배포 시 인스턴스별로 독립 카운팅되어 무력화됨
+ * - 베타 단계(단일 인스턴스)에서만 유효
+ */
 const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15분
@@ -118,8 +126,10 @@ export async function verifyProjectAccess(
       };
     }
 
-    // 2. Rate limiting 체크
-    const rateLimitKey = `project:${projectName}`;
+    // 2. Rate limiting 체크 (프로젝트 + IP 기반)
+    const headerStore = await headers();
+    const clientIp = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimitKey = `project:${projectName}:ip:${clientIp}`;
     const rateLimit = checkRateLimit(rateLimitKey);
     if (!rateLimit.allowed) {
       return {

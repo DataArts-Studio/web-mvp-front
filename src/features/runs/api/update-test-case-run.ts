@@ -3,6 +3,7 @@
 import { getDatabase, testCaseRuns, testRuns, TestCaseRunStatus, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { eq, and } from 'drizzle-orm';
+import { requireProjectAccess } from '@/access/lib/require-access';
 
 export interface UpdateTestCaseRunInput {
   testCaseRunId: string;
@@ -22,6 +23,23 @@ export async function updateTestCaseRunStatus(
 ): Promise<ActionResult<UpdateTestCaseRunResult>> {
   try {
     const db = getDatabase();
+
+    // 접근 권한 확인: testCaseRun -> testRun -> project_id
+    const [caseRun] = await db
+      .select({ testRunId: testCaseRuns.test_run_id })
+      .from(testCaseRuns)
+      .where(eq(testCaseRuns.id, input.testCaseRunId))
+      .limit(1);
+    if (caseRun?.testRunId) {
+      const [run] = await db
+        .select({ projectId: testRuns.project_id })
+        .from(testRuns)
+        .where(eq(testRuns.id, caseRun.testRunId))
+        .limit(1);
+      if (!run?.projectId || !(await requireProjectAccess(run.projectId))) {
+        return { success: false, errors: { _general: ['접근 권한이 없습니다.'] } };
+      }
+    }
 
     const now = new Date();
 

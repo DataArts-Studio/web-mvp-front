@@ -41,3 +41,4 @@ export { AccessForm } from './project/ui';
 // 라이브러리 (내부 사용, 필요 시 export)
 export { hashPassword, verifyPassword } from './lib/password-hash';
 export { createProjectAccessToken, verifyProjectAccessToken } from './lib/access-token';
+export { requireProjectAccess } from './lib/require-access';
