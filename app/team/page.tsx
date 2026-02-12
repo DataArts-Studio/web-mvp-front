@@ -1,4 +1,4 @@
-import { TeamView } from '@/view';
+import { TeamView } from '@/view/team';
 
 export default function TeamPage() {
   return <TeamView />;

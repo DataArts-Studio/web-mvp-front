@@ -1,8 +1,9 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import type { ReactNode } from 'react';
 import { Suspense } from 'react';
-
 import { DocsView } from '@/view';
+import { DocsMarkdownContent } from '@/view/docs/docs-markdown-content';
 
 type DocTab = 'getting-started' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';
 
@@ -46,9 +47,16 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
 
   const validTab = tab && tab in docFiles ? tab : 'getting-started';
 
+  const renderedContents = Object.fromEntries(
+    Object.entries(contents).map(([key, md]) => [
+      key,
+      <DocsMarkdownContent key={key} content={md} />,
+    ])
+  ) as Record<DocTab, ReactNode>;
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-bg-1" />}>
-      <DocsView contents={contents} initialTab={validTab} />
+      <DocsView renderedContents={renderedContents} initialTab={validTab} />
     </Suspense>
   );
 }

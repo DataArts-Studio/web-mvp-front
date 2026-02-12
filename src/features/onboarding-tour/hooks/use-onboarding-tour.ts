@@ -9,19 +9,15 @@ import { TOUR_STEPS, TOTAL_STEPS } from '../config/tour-steps';
 import { track } from '@/shared/lib/analytics';
 import { ONBOARDING_EVENTS } from '@/shared/lib/analytics';
 
+import 'driver.js/dist/driver.css';
+import '../styles/onboarding.css';
+
 type UseOnboardingTourParams = {
   projectId: string | undefined;
   isDataLoaded: boolean;
 };
 
-let driverModuleLoaded = false;
-
 async function loadDriverModule() {
-  if (!driverModuleLoaded) {
-    await import('driver.js/dist/driver.css');
-    await import('../styles/onboarding.css');
-    driverModuleLoaded = true;
-  }
   const { driver } = await import('driver.js');
   return driver;
 }

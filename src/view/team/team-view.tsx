@@ -4,11 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, Mail, Github, Sparkles, Heart, Coffee, Code2, Server, Palette, MessageCircle } from 'lucide-react';
 
-import { cn } from '@/shared/utils';
 import { Logo } from '@/shared/ui/logo';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { Footer } from '@/widgets/footer';
-import { GlobalHeader, useBetaBanner } from '@/widgets/global-header';
 
 interface TeamMember {
   name: string;
@@ -57,18 +55,9 @@ const values = [
 ];
 
 export function TeamView() {
-  const { isVisible: isBannerVisible } = useBetaBanner();
-
   return (
     <Container className="flex min-h-screen w-full flex-col bg-bg-1 font-sans text-text-1">
-      <GlobalHeader />
-
-      <MainContainer
-        className={cn(
-          'mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pb-24 transition-[padding-top] duration-200',
-          isBannerVisible ? 'pt-26' : 'pt-20'
-        )}
-      >
+      <MainContainer className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pb-24 pt-10">
         {/* 뒤로가기 */}
         <Link
           href="/"
