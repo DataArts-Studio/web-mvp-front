@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import type { ProjectDomain } from '@/entities/project';
 import { getDatabase, projects } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
@@ -39,6 +40,7 @@ export const getProjectByName = async (name: string): Promise<ActionResult<Proje
     };
   } catch (error) {
     console.error('Error fetching project:', error);
+    Sentry.captureException(error, { extra: { action: 'getProjectByName' } });
     return {
       success: false,
       errors: { _project: ['프로젝트를 불러오는 도중 오류가 발생했습니다.'] },
@@ -72,6 +74,7 @@ export const getProjectById = async (id: string): Promise<ActionResult<ProjectBa
     };
   } catch (error) {
     console.error('Error fetching project:', error);
+    Sentry.captureException(error, { extra: { action: 'getProjectById' } });
     return {
       success: false,
       errors: { _project: ['프로젝트를 불러오는 도중 오류가 발생했습니다.'] },
@@ -111,6 +114,7 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
     }
   } catch (error) {
     console.error('Error archiving project:', error);
+    Sentry.captureException(error, { extra: { action: 'archiveProject' } });
     return {
       success: false,
       errors: { _project: ['프로젝트를 삭제하는 도중 오류가 발생했습니다.'] },

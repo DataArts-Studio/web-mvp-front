@@ -7,6 +7,7 @@
  * 브루트포스 공격 방지를 위한 rate limiting 포함.
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
@@ -177,6 +178,7 @@ export async function verifyProjectAccess(
     };
   } catch (error) {
     console.error('프로젝트 접근 검증 실패:', error);
+    Sentry.captureException(error, { extra: { action: 'verifyProjectAccess' } });
     return {
       success: false,
       error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
@@ -198,6 +200,7 @@ export async function revokeProjectAccess(projectName: string): Promise<ActionRe
     };
   } catch (error) {
     console.error('접근 권한 해제 실패:', error);
+    Sentry.captureException(error, { extra: { action: 'revokeProjectAccess' } });
     return {
       success: false,
       errors: { _form: ['접근 권한 해제에 실패했습니다.'] },
@@ -226,6 +229,7 @@ export async function checkProjectExists(projectName: string): Promise<boolean> 
     return project !== null;
   } catch (error) {
     console.error('프로젝트 존재 여부 확인 실패:', error);
+    Sentry.captureException(error, { extra: { action: 'checkProjectExists' } });
     return false;
   }
 }

@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import type { CreateTestSuite, TestSuite, TestSuiteCard, RunStatus } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
 import {
@@ -74,6 +75,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     };
   } catch (error) {
     console.error('Error creating test suite:', error);
+    Sentry.captureException(error, { extra: { action: 'createTestSuite' } });
     return {
       success: false,
       errors: { _testSuite: ['테스트 스위트를 생성하는 도중 오류가 발생했습니다.'] },
@@ -124,6 +126,7 @@ export const getTestSuites = async ({
     };
   } catch (error) {
     console.error('Error fetching test suites:', error);
+    Sentry.captureException(error, { extra: { action: 'getTestSuites' } });
     return {
       success: false,
       errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
@@ -161,6 +164,7 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
     };
   } catch (error) {
     console.error('Error fetching test suite:', error);
+    Sentry.captureException(error, { extra: { action: 'getTestSuiteById' } });
     return {
       success: false,
       errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
@@ -209,6 +213,7 @@ export const getTestSuiteByIdWithStats = async (id: string): Promise<ActionResul
     return { success: true, data: card };
   } catch (error) {
     console.error('Error fetching test suite by id with stats:', error);
+    Sentry.captureException(error, { extra: { action: 'getTestSuiteByIdWithStats' } });
     return {
       success: false,
       errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
@@ -280,6 +285,7 @@ export const updateTestSuite = async (params: UpdateTestSuiteParams): Promise<Ac
     };
   } catch (error) {
     console.error('Error updating test suite:', error);
+    Sentry.captureException(error, { extra: { action: 'updateTestSuite' } });
     return {
       success: false,
       errors: { _testSuite: ['테스트 스위트를 수정하는 도중 오류가 발생했습니다.'] },
@@ -361,6 +367,7 @@ export const getTestSuitesWithStats = async ({
       }
     } catch (e) {
       console.warn('milestoneTestSuites 조회 실패:', e);
+      Sentry.captureMessage('milestoneTestSuites 조회 실패', { level: 'warning', extra: { error: e } });
     }
 
     // 5) 실행 이력 수 집계
@@ -489,6 +496,7 @@ export const getTestSuitesWithStats = async ({
     return { success: true, data: result };
   } catch (error) {
     console.error('Error fetching test suites with stats:', error);
+    Sentry.captureException(error, { extra: { action: 'getTestSuitesWithStats' } });
     return {
       success: false,
       errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
@@ -533,6 +541,7 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
     };
   } catch (error) {
     console.error('Error archiving test suite:', error);
+    Sentry.captureException(error, { extra: { action: 'archiveTestSuite' } });
     return {
       success: false,
       errors: { _testSuite: ['테스트 스위트를 아카이브하는 도중 오류가 발생했습니다.'] },
