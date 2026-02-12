@@ -151,6 +151,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="stylesheet"

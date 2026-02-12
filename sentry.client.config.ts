@@ -7,7 +7,7 @@ Sentry.init({
   tracesSampleRate: process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? 0.2 : 1.0,
 
   replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 1.0,
+  replaysOnErrorSampleRate: 0,
 
   enabled: process.env.NODE_ENV !== 'development',
 });

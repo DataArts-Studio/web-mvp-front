@@ -15,10 +15,11 @@ import { useDisclosure } from '@/shared/hooks';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown, ChevronRight, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, CircleHelp, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { type TestStatusData, KPICards, type KPIData } from '@/widgets/project';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
+import { useOnboardingTour } from '@/features/onboarding-tour';
 
 const TestStatusChart = dynamic(
   () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
@@ -149,6 +150,12 @@ export const ProjectDashboardView = () => {
     ...testStatusData,
   }), [testCases.length, testSuites.length, testStatusData]);
 
+  // 온보딩 투어
+  const { startTour } = useOnboardingTour({
+    projectId,
+    isDataLoaded: !!dashboardData?.success,
+  });
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -191,22 +198,28 @@ export const ProjectDashboardView = () => {
       <Aside />
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         {/* Header */}
-        <header className="border-line-2 col-span-6 flex flex-col gap-1 border-b pb-6">
-          <h1 className="typo-h1-heading text-text-1">대시보드</h1>
-          <p className="typo-body2-normal text-text-2">
-            클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 만들어보세요.
-          </p>
+        <header className="border-line-2 col-span-6 flex items-start justify-between border-b pb-6">
+          <div className="flex flex-col gap-1">
+            <h1 className="typo-h1-heading text-text-1">대시보드</h1>
+            <p className="typo-body2-normal text-text-2">
+              클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 만들어보세요.
+            </p>
+          </div>
+          <DSButton variant="ghost" size="small" className="flex items-center gap-1.5" onClick={startTour} data-tour="guide-tour-btn">
+            <CircleHelp className="h-4 w-4" />
+            <span>가이드 투어</span>
+          </DSButton>
         </header>
 
         {/* KPI 카드 섹션 */}
-        <section className="col-span-6">
+        <section className="col-span-6" data-tour="kpi-cards">
           <KPICards data={kpiData} />
         </section>
 
         {/* 프로젝트 정보 + 최근 활동 카드 */}
         <section className="col-span-6 grid grid-cols-6 gap-5">
           {/* 내 프로젝트 정보 카드 */}
-          <div className="rounded-3 border-line-2 bg-bg-2 col-span-2 flex flex-col gap-4 border p-5">
+          <div className="rounded-3 border-line-2 bg-bg-2 col-span-2 flex flex-col gap-4 border p-5" data-tour="project-info">
             <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
 
             <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
@@ -236,7 +249,7 @@ export const ProjectDashboardView = () => {
           </div>
 
           {/* 최근 활동 카드 */}
-          <div className="rounded-3 border-line-2 bg-bg-2 col-span-4 flex flex-col gap-4 border p-5">
+          <div className="rounded-3 border-line-2 bg-bg-2 col-span-4 flex flex-col gap-4 border p-5" data-tour="recent-activity">
             <span className="typo-body2-heading text-text-3">최근 활동</span>
 
             {recentActivities.length === 0 ? (
@@ -263,7 +276,7 @@ export const ProjectDashboardView = () => {
         </section>
 
         {/* 테스트 현황 차트 섹션 */}
-        <section className="col-span-6 flex flex-col gap-4">
+        <section className="col-span-6 flex flex-col gap-4" data-tour="test-status-chart">
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading text-text-1">테스트 현황</h2>
             {/* 테스트 실행 선택 드롭다운 */}
@@ -324,7 +337,7 @@ export const ProjectDashboardView = () => {
         </section>
 
         {/* 테스트 케이스 섹션 */}
-        <section className="col-span-6 flex flex-col gap-4">
+        <section className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
           <div className="flex items-center justify-between">
             <Link href={`/projects/${slug}/cases`} className="flex items-center gap-2 group">
               <h2 className="typo-h2-heading text-text-1">테스트 케이스</h2>
@@ -398,7 +411,7 @@ export const ProjectDashboardView = () => {
         </section>
 
         {/* 테스트 스위트 섹션 */}
-        <section className="col-span-6 flex flex-col gap-4">
+        <section className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
           <div className="flex items-center justify-between">
             <Link href={`/projects/${slug}/suites`} className="flex items-center gap-2 group">
               <h2 className="typo-h2-heading text-text-1">테스트 스위트</h2>
