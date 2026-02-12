@@ -1,5 +1,12 @@
 /* driver.js 온보딩 투어 커스텀 스타일 */
 
+/* 하이라이트 대상 요소에 흰색 테두리 */
+.driver-active-element {
+  outline: 2px solid #fff !important;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
 .onboarding-popover.driver-popover {
   background-color: var(--color-bg-2);
   color: var(--color-text-1);
