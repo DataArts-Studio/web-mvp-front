@@ -5,11 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import { TestCaseDetailForm } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions, FetchedTestRun } from '@/features/runs';
-import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { useDisclosure } from '@/shared/hooks';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
@@ -28,6 +26,12 @@ const TestStatusChart = dynamic(
 const MilestoneGanttChart = dynamic(
   () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
   { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" /> }
+);
+const TestCaseDetailForm = dynamic(
+  () => import('@/features/cases-create').then(mod => ({ default: mod.TestCaseDetailForm })),
+);
+const SuiteCreateForm = dynamic(
+  () => import('@/features/suites-create').then(mod => ({ default: mod.SuiteCreateForm })),
 );
 
 type ModalType = 'case' | 'suite';
