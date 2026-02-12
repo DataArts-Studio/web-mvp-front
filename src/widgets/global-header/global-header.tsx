@@ -3,10 +3,15 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ProjectSearchModal } from '@/features/project-search';
+import dynamic from 'next/dynamic';
 import { BetaBanner } from './beta-banner';
 import { useBetaBanner } from './use-beta-banner';
 import { track, NAVIGATION_EVENTS, LANDING_EVENTS } from '@/shared/lib/analytics';
+
+const ProjectSearchModal = dynamic(
+  () => import('@/features/project-search/ui/project-search-modal').then(mod => ({ default: mod.ProjectSearchModal })),
+  { ssr: false },
+);
 
 export const GlobalHeader = () => {
   const [isSearchModalOpen, setIsSearchModalOpen] = React.useState(false);
@@ -58,10 +63,12 @@ export const GlobalHeader = () => {
       </header>
 
       {/* Modals */}
-      <ProjectSearchModal
-        isOpen={isSearchModalOpen}
-        onClose={() => setIsSearchModalOpen(false)}
-      />
+      {isSearchModalOpen && (
+        <ProjectSearchModal
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+        />
+      )}
     </>
   );
 };

@@ -2,22 +2,28 @@
 
 import { getDatabase, projects } from '@/shared/lib/db';
 import { and, desc, eq, ilike } from 'drizzle-orm';
-import { SearchKeywordSchema } from '../model/schema';
 import type { ProjectSearchResult, SearchProjectsResponse } from '../model/types';
+
+const KEYWORD_PATTERN = /^[가-힣a-zA-Z0-9\s\-_]+$/;
+
+function validateKeyword(keyword: string): string | null {
+  if (keyword.length < 2) return '최소 2자 이상 입력해주세요';
+  if (keyword.length > 50) return '최대 50자까지 입력 가능합니다';
+  if (!KEYWORD_PATTERN.test(keyword)) return '허용되지 않는 문자가 포함되어 있습니다';
+  return null;
+}
 
 export async function searchProjects(keyword: string): Promise<SearchProjectsResponse> {
   try {
-    const validation = SearchKeywordSchema.safeParse({ keyword: keyword.trim() });
+    const trimmedKeyword = keyword.trim();
+    const validationError = validateKeyword(trimmedKeyword);
 
-    if (!validation.success) {
-      const errorMessage = validation.error.issues[0]?.message ?? '입력값이 올바르지 않습니다';
+    if (validationError) {
       return {
         success: false,
-        error: errorMessage,
+        error: validationError,
       };
     }
-
-    const trimmedKeyword = keyword.trim();
     const db = getDatabase();
 
     const rows = await db

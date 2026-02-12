@@ -1,7 +1,8 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 
-import { LegalView } from '@/view';
+import { LegalView } from '@/view/legal';
+import { LegalMarkdownContent } from '@/view/legal/legal-markdown-content';
 
 interface LegalPageProps {
   searchParams: Promise<{
@@ -23,10 +24,14 @@ export default async function LegalPage({ searchParams }: LegalPageProps) {
     getMarkdownContent('terms.md'),
   ]);
 
+  const renderedContents = {
+    privacy: <LegalMarkdownContent content={privacyContent} />,
+    terms: <LegalMarkdownContent content={termsContent} />,
+  };
+
   return (
     <LegalView
-      privacyContent={privacyContent}
-      termsContent={termsContent}
+      renderedContents={renderedContents}
       initialTab={tab === 'terms' ? 'terms' : 'privacy'}
     />
   );

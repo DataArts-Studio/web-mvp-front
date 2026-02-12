@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { LendingView } from 'src/view';
+import { LendingView } from '@/view/lending';
 
 export const metadata: Metadata = {
   title: 'Testea - 테스트 케이스 작성, 단 5분이면 끝!',
