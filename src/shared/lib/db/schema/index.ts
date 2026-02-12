@@ -9,4 +9,5 @@ export * from './test-run-milestones';
 export * from './suite-test-cases';
 export * from './milestone-test-cases';
 export * from './milestone-test-suites';
+export * from './project-preferences';
 export * from './relations';

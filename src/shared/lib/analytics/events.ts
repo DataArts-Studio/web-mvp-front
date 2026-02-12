@@ -210,6 +210,18 @@ export const ENGAGEMENT_EVENTS = {
   ERROR_OCCUR: 'error_occur',
 } as const;
 
+// ─── Onboarding ─────────────────────────────────────────────────
+export const ONBOARDING_EVENTS = {
+  /** 온보딩 투어 시작 */
+  TOUR_START: 'onboarding_tour_start',
+  /** 온보딩 스텝 조회 */
+  STEP_VIEW: 'onboarding_step_view',
+  /** 온보딩 투어 완료 */
+  TOUR_COMPLETE: 'onboarding_tour_complete',
+  /** 온보딩 투어 건너뛰기 */
+  TOUR_SKIP: 'onboarding_tour_skip',
+} as const;
+
 // ─── 전체 이벤트 합치기 (필요 시) ─────────────────────────────────
 export const GA_EVENTS = {
   LANDING: LANDING_EVENTS,
@@ -223,4 +235,5 @@ export const GA_EVENTS = {
   MILESTONE: MILESTONE_EVENTS,
   NAVIGATION: NAVIGATION_EVENTS,
   ENGAGEMENT: ENGAGEMENT_EVENTS,
+  ONBOARDING: ONBOARDING_EVENTS,
 } as const;

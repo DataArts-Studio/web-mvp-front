@@ -11,6 +11,7 @@ import { testRunMilestones } from './test-run-milestones';
 import { suiteTestCases } from './suite-test-cases';
 import { milestoneTestCases } from './milestone-test-cases';
 import { milestoneTestSuites } from './milestone-test-suites';
+import { projectPreferences } from './project-preferences';
 
 // Project Relations
 export const projectRelations = relations(projects, ({ many }) => ({
@@ -18,6 +19,15 @@ export const projectRelations = relations(projects, ({ many }) => ({
 	testCases: many(testCases),
 	testRuns: many(testRuns),
 	milestones: many(milestones),
+	preferences: many(projectPreferences),
+}));
+
+// Project Preferences Relations
+export const projectPreferencesRelations = relations(projectPreferences, ({ one }) => ({
+	project: one(projects, {
+		fields: [projectPreferences.project_id],
+		references: [projects.id],
+	}),
 }));
 
 // Test Suite Relations
