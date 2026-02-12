@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
 import { getDatabase, testCases } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
@@ -66,6 +67,7 @@ export const getTestCases = async ({
     };
   } catch (error) {
     console.error('Error fetching test cases:', error);
+    Sentry.captureException(error, { extra: { action: 'getTestCases' } });
     return {
       success: false,
       errors: { _testCase: ['테스트케이스를 불러오는 도중 오류가 발생했습니다.'] },
@@ -119,6 +121,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
     };
   } catch (error) {
     console.error('Error fetching test case: ', error);
+    Sentry.captureException(error, { extra: { action: 'getTestCase' } });
     return {
       success: false,
       errors: { _testCase: ['테스트케이스를 불러오는 도중 오류가 발생했습니다.'] },
@@ -174,6 +177,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     };
   } catch (error) {
     console.error('Error creating test case:', error);
+    Sentry.captureException(error, { extra: { action: 'createTestCase' } });
     return {
       success: false,
       errors: { _testCase: ['테스트케이스를 생성하는 도중 오류가 발생했습니다.'] },
@@ -257,6 +261,7 @@ export const updateTestCase = async (
     };
   } catch (error) {
     console.error('Error updating test case:', error);
+    Sentry.captureException(error, { extra: { action: 'updateTestCase' } });
     return {
       success: false,
       errors: { _testCase: ['테스트케이스를 수정하는 도중 오류가 발생했습니다.'] },
@@ -298,6 +303,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
     }
   } catch (error) {
     console.error('Error archiving test case:', error);
+    Sentry.captureException(error, { extra: { action: 'archiveTestCase' } });
     return {
       success: false,
       errors: { _testCase: ['테스트 케이스를 삭제하는 도중 오류가 발생했습니다.'] },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import Image from 'next/image';
 
 interface ErrorProps {
@@ -10,8 +11,7 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
-    // 에러 로깅 서비스에 에러 보고
-    console.error('[Error Page]', error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

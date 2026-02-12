@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import {
   CreateMilestone,
   Milestone,
@@ -45,6 +46,7 @@ export const getMilestones = async ({
     };
   } catch (error) {
     console.error('Error fetching milestones:', error);
+    Sentry.captureException(error, { extra: { action: 'getMilestones' } });
 
     return {
       success: false,
@@ -78,6 +80,7 @@ export const getMilestoneById = async (id: string): Promise<ActionResult<Milesto
     };
   } catch (error) {
     console.error('Error fetching milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'getMilestoneById' } });
     return {
       success: false,
       errors: { _milestone: ['마일스톤을 불러오는 도중 오류가 발생했습니다.'] },
@@ -125,6 +128,7 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
     };
   } catch (error) {
     console.error('Error creating milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'createMilestone' } });
     return {
       success: false,
       errors: { _milestone: ['마일스톤을 생성하는 도중 오류가 발생했습니다.'] },
@@ -194,6 +198,7 @@ export const updateMilestone = async (
     };
   } catch (error) {
     console.error('Error updating milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'updateMilestone' } });
     return {
       success: false,
       errors: { _milestone: ['마일스톤을 수정하는 도중 오류가 발생했습니다.'] },
@@ -238,6 +243,7 @@ export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: s
     };
   } catch (error) {
     console.error('Error archiving milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'archiveMilestone' } });
     return {
       success: false,
       errors: { _milestone: ['마일스톤을 삭제하는 도중 오류가 발생했습니다.'] },
@@ -320,6 +326,7 @@ export const addTestCasesToMilestone = async (
     };
   } catch (error) {
     console.error('Error adding test cases to milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'addTestCasesToMilestone' } });
     return {
       success: false,
       errors: { _milestone: ['테스트 케이스를 마일스톤에 추가하는 도중 오류가 발생했습니다.'] },
@@ -359,6 +366,7 @@ export const removeTestCaseFromMilestone = async (
     };
   } catch (error) {
     console.error('Error removing test case from milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'removeTestCaseFromMilestone' } });
     return {
       success: false,
       errors: { _milestone: ['테스트 케이스를 마일스톤에서 제거하는 도중 오류가 발생했습니다.'] },
@@ -469,6 +477,7 @@ export const addTestSuitesToMilestone = async (
     };
   } catch (error) {
     console.error('Error adding test suites to milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'addTestSuitesToMilestone' } });
     return {
       success: false,
       errors: { _milestone: ['테스트 스위트를 마일스톤에 추가하는 도중 오류가 발생했습니다.'] },
@@ -508,6 +517,7 @@ export const removeTestSuiteFromMilestone = async (
     };
   } catch (error) {
     console.error('Error removing test suite from milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'removeTestSuiteFromMilestone' } });
     return {
       success: false,
       errors: { _milestone: ['테스트 스위트를 마일스톤에서 제거하는 도중 오류가 발생했습니다.'] },

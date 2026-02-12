@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
 
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
@@ -90,6 +91,7 @@ export async function createProject(
     return { success: true, data: result };
   } catch (error) {
     console.error('프로젝트 생성 실패:', error);
+    Sentry.captureException(error, { extra: { action: 'createProject' } });
     if (error instanceof Error) {
       console.error('에러 메시지:', error.message);
       console.error('에러 원인:', (error as any).cause);
@@ -127,6 +129,7 @@ export async function getProjects(): Promise<ActionResult<SerializableProjectDom
     return { success: true, data: result };
   } catch (error) {
     console.error('프로젝트 목록 조회 실패:', error);
+    Sentry.captureException(error, { extra: { action: 'getProjects' } });
     return {
       success: false,
       errors: { _form: ['프로젝트 목록 조회에 실패했습니다.'] },
@@ -152,6 +155,7 @@ export async function checkProjectNameDuplicate(name: string): Promise<ActionRes
     return { success: true, data: !!existing };
   } catch (error) {
     console.error('중복 체크 실패:', error);
+    Sentry.captureException(error, { extra: { action: 'checkProjectNameDuplicate' } });
     return {
       success: false,
       errors: { _form: ['중복 체크 중 오류가 발생했습니다.'] },

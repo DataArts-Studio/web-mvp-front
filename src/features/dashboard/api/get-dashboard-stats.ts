@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features';
 import { getDatabase, projects, suiteTestCases, testCases, testSuites } from '@/shared/lib/db';
 import { and, count, desc, eq, isNull, notInArray } from 'drizzle-orm';
@@ -147,6 +148,7 @@ export const getDashboardStats = async ({
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
+    Sentry.captureException(error, { extra: { action: 'getDashboardStats' } });
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
