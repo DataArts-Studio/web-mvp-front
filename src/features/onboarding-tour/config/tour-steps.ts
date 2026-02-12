@@ -58,7 +58,7 @@ export const TOUR_STEPS: DriveStep[] = [
   {
     element: '[data-tour="guide-tour-btn"]',
     popover: {
-      title: '가이드 투어',
+      title: '온보딩',
       description: '이 버튼을 클릭하면 언제든지 대시보드 설명을 다시 확인할 수 있습니다.',
       side: 'bottom',
       align: 'end',

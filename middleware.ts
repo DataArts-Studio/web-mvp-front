@@ -103,43 +103,43 @@ function isPublicPath(pathname: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  console.log('[Middleware] Running for:', pathname);
+  // console.log('[Middleware] Running for:', pathname);
 
   // 공개 경로는 통과
   if (isPublicPath(pathname)) {
-    console.log('[Middleware] Public path, passing through');
+    // console.log('[Middleware] Public path, passing through');
     return NextResponse.next();
   }
 
   // 보호된 경로가 아니면 통과
   if (!isProtectedPath(pathname)) {
-    console.log('[Middleware] Not protected, passing through');
+    // console.log('[Middleware] Not protected, passing through');
     return NextResponse.next();
   }
 
-  console.log('[Middleware] Protected path detected');
+  // console.log('[Middleware] Protected path detected');
 
   // 프로젝트 slug 추출
   const projectSlug = extractProjectSlug(pathname);
   if (!projectSlug) {
-    console.log('[Middleware] No slug found, passing through');
+    // console.log('[Middleware] No slug found, passing through');
     return NextResponse.next();
   }
 
-  console.log('[Middleware] Project slug:', projectSlug);
+  // console.log('[Middleware] Project slug:', projectSlug);
 
   // 접근 토큰 쿠키 확인
   const cookieName = getAccessTokenCookieName(projectSlug);
   const token = request.cookies.get(cookieName)?.value;
 
-  console.log('[Middleware] Cookie name:', cookieName);
-  console.log('[Middleware] Token exists:', !!token);
+  // console.log('[Middleware] Cookie name:', cookieName);
+  // console.log('[Middleware] Token exists:', !!token);
 
   // 토큰이 없으면 접근 페이지로 리다이렉트
   if (!token) {
     const accessUrl = new URL(`/projects/${encodeURIComponent(projectSlug)}/access`, request.url);
     accessUrl.searchParams.set('redirect', pathname);
-    console.log('[Middleware] No token, redirecting to:', accessUrl.toString());
+    // console.log('[Middleware] No token, redirecting to:', accessUrl.toString());
     return NextResponse.redirect(accessUrl);
   }
 
@@ -150,7 +150,7 @@ export function middleware(request: NextRequest) {
       new URL(`/projects/${encodeURIComponent(projectSlug)}/access?redirect=${encodeURIComponent(pathname)}`, request.url)
     );
     response.cookies.delete(cookieName);
-    console.log('[Middleware] Invalid token, redirecting');
+    // console.log('[Middleware] Invalid token, redirecting');
     return response;
   }
 
@@ -161,7 +161,7 @@ export function middleware(request: NextRequest) {
       new URL(`/projects/${encodeURIComponent(projectSlug)}/access?redirect=${encodeURIComponent(pathname)}&expired=true`, request.url)
     );
     response.cookies.delete(cookieName);
-    console.log('[Middleware] Token expired, redirecting');
+    // console.log('[Middleware] Token expired, redirecting');
     return response;
   }
 
@@ -169,13 +169,13 @@ export function middleware(request: NextRequest) {
   if (payload.projectName !== projectSlug) {
     const accessUrl = new URL(`/projects/${encodeURIComponent(projectSlug)}/access`, request.url);
     accessUrl.searchParams.set('redirect', pathname);
-    console.log('[Middleware] Project mismatch, redirecting');
-    console.log('[Middleware] Token projectName:', payload.projectName);
-    console.log('[Middleware] URL projectSlug:', projectSlug);
+    // console.log('[Middleware] Project mismatch, redirecting');
+    // console.log('[Middleware] Token projectName:', payload.projectName);
+    // console.log('[Middleware] URL projectSlug:', projectSlug);
     return NextResponse.redirect(accessUrl);
   }
 
-  console.log('[Middleware] Token valid, allowing access');
+  // console.log('[Middleware] Token valid, allowing access');
   return NextResponse.next();
 }
 

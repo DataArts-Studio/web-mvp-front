@@ -8,7 +8,7 @@ export const TestSuiteDtoSchema = z.object({
     .max(200, '최대 200 이하'),
   description: z.string().optional(),
   project_id: z.uuidv7(),
-  sort_order: z.number().int(),
+  sort_order: z.int(),
   created_at: z.date(),
   updated_at: z.date(),
   archived_at: z.date().nullable(),
@@ -29,5 +29,5 @@ export const CreateTestSuiteSchema = z.object({
     .max(200, '최대 200 이하'),
   projectId: z.uuidv7(),
   description: z.string().optional(),
-  sortOrder: z.number().int().optional(),
+  sortOrder: z.int().optional(),
 })
