@@ -24,9 +24,6 @@ export async function getProjectStorageBytes(projectId: string): Promise<number>
       SELECT SUM(pg_column_size(trs.*)) AS size FROM test_run_suites trs
         WHERE trs.test_run_id IN (SELECT id FROM test_runs WHERE project_id = ${projectId})
       UNION ALL
-      SELECT SUM(pg_column_size(trm.*)) AS size FROM test_run_milestones trm
-        WHERE trm.test_run_id IN (SELECT id FROM test_runs WHERE project_id = ${projectId})
-      UNION ALL
       SELECT SUM(pg_column_size(stc.*)) AS size FROM suite_test_cases stc
         WHERE stc.suite_id IN (SELECT id FROM test_suites WHERE project_id = ${projectId})
       UNION ALL
