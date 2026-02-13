@@ -2,7 +2,6 @@
 
 import {
   getDatabase,
-  testRunMilestones,
   testCaseRuns,
   milestoneTestCases,
   testRuns,
@@ -11,15 +10,16 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 
-type AddMilestonesToRunResult =
+type SetMilestoneForRunResult =
   | { success: true; addedCount: number }
   | { success: false; error: string };
 
 export async function addMilestonesToRunAction(
   runId: string,
   milestoneIds: string[]
-): Promise<AddMilestonesToRunResult> {
-  if (milestoneIds.length === 0) {
+): Promise<SetMilestoneForRunResult> {
+  const milestoneId = milestoneIds[0];
+  if (!milestoneId) {
     return { success: false, error: '추가할 마일스톤을 선택해주세요.' };
   }
 
@@ -33,21 +33,20 @@ export async function addMilestonesToRunAction(
 
   try {
     const result = await db.transaction(async (tx) => {
-      // 1. Link milestones to the run (ignore duplicates)
-      const milestoneLinks = milestoneIds.map((milestoneId) => ({
-        test_run_id: runId,
-        milestone_id: milestoneId,
-      }));
-      await tx.insert(testRunMilestones).values(milestoneLinks).onConflictDoNothing();
+      // 1. Update milestone_id directly on the test run
+      await tx
+        .update(testRuns)
+        .set({ milestone_id: milestoneId, updated_at: new Date() })
+        .where(eq(testRuns.id, runId));
 
-      // 2. Get test cases belonging to the selected milestones (with milestone_id for source tracking)
+      // 2. Get test cases belonging to the milestone (with milestone_id for source tracking)
       const milestoneCaseRows = await tx
         .select({
           test_case_id: milestoneTestCases.test_case_id,
           milestone_id: milestoneTestCases.milestone_id,
         })
         .from(milestoneTestCases)
-        .where(inArray(milestoneTestCases.milestone_id, milestoneIds));
+        .where(eq(milestoneTestCases.milestone_id, milestoneId));
 
       const caseIdToMilestone = new Map<string, string>();
       for (const row of milestoneCaseRows) {
