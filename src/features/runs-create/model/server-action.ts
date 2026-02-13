@@ -1,4 +1,5 @@
 'use server';
+import * as Sentry from '@sentry/nextjs';
 import { CreateTestRunSchema } from '@/entities/test-run';
 import { getDatabase, testRuns, testRunSuites, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites } from '@/shared/lib/db';
 import { inArray, and, eq } from 'drizzle-orm';
@@ -142,12 +143,12 @@ export const createTestRunAction = async (input: CreateRunInput) => {
 
     return { success: true, testRun: newTestRun };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('[createTestRunAction] DB Error:', errorMessage, error);
+    console.error('[createTestRunAction] DB Error:', error);
+    Sentry.captureException(error, { extra: { action: 'createTestRunAction' } });
     return {
       success: false,
       errors: {
-        formErrors: [`테스트 실행 생성에 실패했습니다: ${errorMessage}`],
+        formErrors: ['테스트 실행 생성에 실패했습니다.'],
         fieldErrors: {},
       } as FlatErrors,
     };

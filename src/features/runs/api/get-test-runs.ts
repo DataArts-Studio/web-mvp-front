@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
@@ -86,10 +87,10 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
     return { success: true, data: formattedRuns };
   } catch (error) {
     console.error('Error fetching test runs:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    Sentry.captureException(error, { extra: { action: 'getTestRunsByProjectId' } });
     return {
       success: false,
-      errors: { _general: [`테스트 실행 목록을 불러오는 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: { _general: ['테스트 실행 목록을 불러오는 중 오류가 발생했습니다.'] },
     };
   }
 }
