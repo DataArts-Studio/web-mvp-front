@@ -20,6 +20,12 @@ type SelectContextValue = {
   listboxId: string;
   triggerRef: React.RefObject<HTMLButtonElement | null>;
   contentRef: React.RefObject<HTMLDivElement | null>;
+  // 키보드 네비게이션
+  activeIndex: number;
+  setActiveIndex: React.Dispatch<React.SetStateAction<number>>;
+  itemValues: string[];
+  registerItem: (value: string) => void;
+  unregisterItem: (value: string) => void;
 };
 
 const SelectContext = React.createContext<SelectContextValue | null>(null);
@@ -61,6 +67,28 @@ const SelectRoot = ({
   const contentRef = React.useRef<HTMLDivElement>(null);
   const triggerId = React.useId();
   const listboxId = React.useId();
+
+  // 키보드 네비게이션 상태
+  const [activeIndex, setActiveIndex] = React.useState(-1);
+  const [itemValues, setItemValues] = React.useState<string[]>([]);
+
+  const registerItem = React.useCallback((itemValue: string) => {
+    setItemValues((prev) => (prev.includes(itemValue) ? prev : [...prev, itemValue]));
+  }, []);
+
+  const unregisterItem = React.useCallback((itemValue: string) => {
+    setItemValues((prev) => prev.filter((v) => v !== itemValue));
+  }, []);
+
+  // 열릴 때 선택된 항목이나 첫 번째 항목으로 activeIndex 초기화
+  React.useEffect(() => {
+    if (open && itemValues.length > 0) {
+      const selectedIndex = itemValues.indexOf(isControlled ? value ?? '' : uncontrolledValue ?? '');
+      setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    } else if (!open) {
+      setActiveIndex(-1);
+    }
+  }, [open, itemValues, value, uncontrolledValue, isControlled]);
 
   const currentValue = isControlled ? value : uncontrolledValue;
 
@@ -118,8 +146,13 @@ const SelectRoot = ({
       listboxId,
       triggerRef,
       contentRef,
+      activeIndex,
+      setActiveIndex,
+      itemValues,
+      registerItem,
+      unregisterItem,
     }),
-    [open, disabled, currentValue, setValue, toggleOpen, close, triggerId, listboxId]
+    [open, disabled, currentValue, setValue, toggleOpen, close, triggerId, listboxId, activeIndex, itemValues, registerItem, unregisterItem]
   );
 
   return (
@@ -142,19 +175,53 @@ interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const SelectTrigger = ({ asChild, children, className, ref, ...props }: SelectTriggerProps) => {
-  const { open, disabled, toggleOpen, triggerId, listboxId, triggerRef } = useSelectContext();
+  const { open, disabled, toggleOpen, triggerId, listboxId, triggerRef, activeIndex, setActiveIndex, itemValues, setValue } = useSelectContext();
   const handleRef = mergeRefs(triggerRef, ref);
   const Comp = asChild ? Slot : 'button';
 
+  const activeItemId = activeIndex >= 0 && itemValues[activeIndex] ? `${listboxId}-item-${activeIndex}` : undefined;
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (disabled) return;
-    // 엔터, 스페이스, 화살표 위아래로 메뉴열기
-    if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
-      e.preventDefault();
-      toggleOpen();
+
+    // 열려있을 때 화살표 키로 탐색
+    if (open) {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setActiveIndex((prev) => (prev < itemValues.length - 1 ? prev + 1 : 0));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setActiveIndex((prev) => (prev > 0 ? prev - 1 : itemValues.length - 1));
+          break;
+        case 'Home':
+          e.preventDefault();
+          setActiveIndex(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          setActiveIndex(itemValues.length - 1);
+          break;
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          if (activeIndex >= 0 && itemValues[activeIndex]) {
+            setValue(itemValues[activeIndex]);
+          }
+          break;
+        default:
+          break;
+      }
+    } else {
+      // 닫혀있을 때 엔터, 스페이스, 화살표로 열기
+      if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+        e.preventDefault();
+        toggleOpen();
+      }
     }
 
-    props.onKeyDown?.(e as any);
+    props.onKeyDown?.(e as React.KeyboardEvent<HTMLButtonElement>);
   };
 
   return (
@@ -169,6 +236,7 @@ const SelectTrigger = ({ asChild, children, className, ref, ...props }: SelectTr
       aria-haspopup="listbox"
       aria-expanded={open}
       aria-disabled={disabled}
+      aria-activedescendant={open ? activeItemId : undefined}
       disabled={disabled}
       // style - DataAttributes
       data-state={open ? 'open' : 'closed'}
@@ -242,8 +310,17 @@ const SelectItem = ({
   className,
   ...props
 }: SelectItemProps) => {
-  const { value: selectedValue, setValue } = useSelectContext();
+  const { value: selectedValue, setValue, registerItem, unregisterItem, activeIndex, itemValues, listboxId } = useSelectContext();
   const isSelected = selectedValue === value;
+  const itemIndex = itemValues.indexOf(value);
+  const isActive = itemIndex === activeIndex;
+  const itemId = `${listboxId}-item-${itemIndex}`;
+
+  // 아이템 등록/해제
+  React.useEffect(() => {
+    registerItem(value);
+    return () => unregisterItem(value);
+  }, [value, registerItem, unregisterItem]);
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (disabled) return;
@@ -254,12 +331,14 @@ const SelectItem = ({
   return (
     <div
       ref={ref}
+      id={itemId}
       role="option"
       tabIndex={-1}
       aria-selected={isSelected}
       aria-disabled={disabled}
       data-state={isSelected ? 'checked' : 'unchecked'}
       data-disabled={disabled ? '' : undefined}
+      data-highlighted={isActive ? '' : undefined}
       data-value={value}
       onClick={handleClick}
       style={{ userSelect: 'none', cursor: 'default' }}

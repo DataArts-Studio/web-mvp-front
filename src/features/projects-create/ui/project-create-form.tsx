@@ -1,16 +1,18 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProject } from '@/features/projects-create';
-import { DSButton, DsFormField, DsInput } from '@/shared';
-import { GlassBackground } from '@/shared/layout';
+import { DSButton, DsCheckbox, DsFormField, DsInput, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle, Copy, XIcon } from 'lucide-react';
+import { CheckCircle, ClipboardCheck, Copy, FolderOpen, XIcon } from 'lucide-react';
+import { track, PROJECT_CREATE_EVENTS } from '@/shared/lib/analytics';
+import { toast } from 'sonner';
 
 interface ProjectCreateFormProps {
   onClick?: () => void;
@@ -19,11 +21,15 @@ interface ProjectCreateFormProps {
 export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
   const [copied, setCopied] = useState(false);
+  const [createdSlug, setCreatedSlug] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
+    control,
     handleSubmit,
     getValues,
     trigger,
+    setError,
     formState: { errors },
   } = useForm<ProjectForm>({
     mode: 'onChange',
@@ -34,38 +40,68 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     let isStepValid = false;
 
     if (step === 1) {
-      isStepValid = await trigger('projectName');
+      const [nameValid, ageValid, termsValid] = await Promise.all([
+        trigger('projectName'),
+        trigger('ageConfirmed'),
+        trigger('termsAgreed'),
+      ]);
+      isStepValid = nameValid && ageValid && termsValid;
     } else if (step === 2) {
-      isStepValid = await trigger(['identifier', 'identifierConfirm']);
+      // 1. 첫 번째 필드(identifier) 유효성 검사
+      const identifierValid = await trigger('identifier');
+      if (!identifierValid) {
+        isStepValid = false;
+      } else {
+        // 2. 첫 번째 필드 통과 시, 두 번째 필드와 일치 여부만 검사
+        const values = getValues();
+        if (values.identifier !== values.identifierConfirm) {
+          setError('identifierConfirm', {
+            type: 'manual',
+            message: '식별번호가 일치하지 않습니다.',
+          });
+          isStepValid = false;
+        } else {
+          isStepValid = true;
+        }
+      }
     } else {
       isStepValid = true;
     }
 
     if (isStepValid) {
+      track(PROJECT_CREATE_EVENTS.STEP, { step: step + 1 });
       setStep((prev) => prev + 1);
     }
   };
   const handlePrev = () => setStep((prev) => prev - 1);
 
   const onSubmit = async (formData: ProjectForm) => {
+    setIsSubmitting(true);
     try {
       const domain = formToDomain(formData);
       const result = await createProject(domain);
       if (result.success) {
-        alert(`프로젝트 생성 완료!\n` + JSON.stringify(result.data, null, 2));
+        track(PROJECT_CREATE_EVENTS.COMPLETE, { project_name: formData.projectName });
+        setCreatedSlug(result.data.projectName);
+        setStep(4);
       } else {
+        track(PROJECT_CREATE_EVENTS.FAIL, { step });
         const errorMessages = Object.values(result.errors).flat().join('\n');
-        alert(`생성 실패: ${errorMessages}`);
+        toast.error(`생성 실패: ${errorMessages}`);
       }
     } catch (error) {
-      console.error('네트워크 에러 발생:', error);
+      track(PROJECT_CREATE_EVENTS.FAIL, { step, error_type: 'network' });
+      toast.error('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleCopyLink = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const link = `${origin}/projects/${projectName}`;
+    const link = `${origin}/projects/${encodeURIComponent(createdSlug)}`;
     navigator.clipboard.writeText(link).then(() => {
+      track(PROJECT_CREATE_EVENTS.LINK_COPY);
       setCopied(true);
     });
   };
@@ -86,13 +122,29 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   }, [copied]);
 
   return (
-    <section
-      id="create-project"
-      className="absolute top-1/2 left-[calc(50%+0.5px)] z-50 box-border flex w-[46.25rem] translate-x-[-50%] translate-y-[-50%] flex-col content-stretch items-center gap-10 overflow-clip rounded-[36px] border border-[rgba(11,181,127,0.1)] bg-[rgba(255,255,255,0.02)] px-32 py-16 backdrop-blur-[20px] backdrop-filter"
-    >
-      <GlassBackground />
-      {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
-      <form
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 z-[1000] bg-black/50"
+        onClick={() => {
+          if (step < 4) {
+            track(PROJECT_CREATE_EVENTS.ABANDON, { step });
+          }
+          onClick?.();
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Modal Content */}
+      <section
+        id="create-project"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-project-title"
+        className="fixed top-1/2 left-1/2 z-[1001] box-border flex w-[36rem] -translate-x-1/2 -translate-y-1/2 flex-col content-stretch items-center gap-10 overflow-clip rounded-3xl border border-line-2 bg-bg-1 px-10 py-12"
+      >
+        {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
+        <form
         aria-label="project-create-form"
         onSubmit={handleSubmit(onSubmit)}
         className="relative z-10 flex w-full shrink-0 flex-col content-stretch items-center gap-[32px]"
@@ -101,7 +153,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
           <div className="flex flex-col items-center justify-center gap-4">
             {/* Step1: 프로젝트 이름 입력 */}
             <div className="flex flex-col items-center justify-center gap-4 space-x-2 text-xl font-bold text-teal-400">
-              <Image src="/logo.svg" alt="Testea Logo" width={120} height={120} />
+              <Image src="/logo.svg" alt="Testea Logo" width={120} height={28} />
               <h2 className="text-primary">테스트 케이스 작성, 단 5분이면 끝!</h2>
               <p className="mt-2 text-base text-neutral-400">
                 클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 생성하고 관리해보세요.
@@ -117,8 +169,54 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                   placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
                 />
               </DsFormField.Control>
-              <DsFormField.Message />
             </DsFormField.Root>
+            <div className="flex w-full flex-col gap-2">
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <Controller
+                  name="termsAgreed"
+                  control={control}
+                  render={({ field }) => (
+                    <DsCheckbox
+                      checked={field.value === true}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      className="mt-0.5 shrink-0"
+                    />
+                  )}
+                />
+                <span className="text-sm text-text-2">
+                  <Link href="/legal?tab=terms" target="_blank" className="underline text-primary">이용약관</Link> 및 <Link href="/legal?tab=privacy" target="_blank" className="underline text-primary">개인정보 처리방침</Link>에 동의합니다.
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <Controller
+                  name="ageConfirmed"
+                  control={control}
+                  render={({ field }) => (
+                    <DsCheckbox
+                      checked={field.value === true}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      className="mt-0.5 shrink-0"
+                    />
+                  )}
+                />
+                <span className="text-sm text-text-2">
+                  만 14세 이상임을 확인합니다.
+                </span>
+              </label>
+            </div>
+            {(errors.projectName || errors.termsAgreed || errors.ageConfirmed) && (
+              <div className="flex w-full flex-col gap-1">
+                {errors.projectName && (
+                  <p className="text-sm text-system-red">{errors.projectName.message}</p>
+                )}
+                {errors.termsAgreed && (
+                  <p className="text-sm text-system-red">{errors.termsAgreed.message}</p>
+                )}
+                {errors.ageConfirmed && (
+                  <p className="text-sm text-system-red">{errors.ageConfirmed.message}</p>
+                )}
+              </div>
+            )}
             <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
               프로젝트 생성 시작
             </DSButton>
@@ -130,7 +228,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             <div className="inline-flex flex-col items-start justify-start gap-4 self-stretch">
               <div className="inline-flex items-center justify-between self-stretch">
                 <h2 className="text-2xl">프라이빗 모드로 생성하기</h2>
-                <DSButton type="button" variant="text" className="cursor-pointer" onClick={onClick}>
+                <DSButton type="button" variant="text" className="cursor-pointer" onClick={() => { track(PROJECT_CREATE_EVENTS.ABANDON, { step }); onClick?.(); }}>
                   <XIcon className="h-8 w-8" />
                 </DSButton>
               </div>
@@ -138,7 +236,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                 프라이빗 모드란? 식별번호가 필요한 프로젝트를 의미합니다.
               </p>
             </div>
-            <DsFormField.Root error={errors.identifier}>
+            <DsFormField.Root error={errors.identifier || errors.identifierConfirm}>
               <DsFormField.Label srOnly>프로젝트 식별번호 (Identifier/Password)</DsFormField.Label>
               <DsFormField.Control asChild>
                 <DsInput
@@ -148,9 +246,8 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                   placeholder="식별번호를 입력하세요"
                 />
               </DsFormField.Control>
-              <DsFormField.Message />
             </DsFormField.Root>
-            <DsFormField.Root error={errors.identifierConfirm}>
+            <DsFormField.Root error={errors.identifier || errors.identifierConfirm}>
               <DsFormField.Label srOnly>식별번호 재확인</DsFormField.Label>
               <DsFormField.Control asChild>
                 <DsInput
@@ -169,16 +266,33 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         )}
         {/* Step3: 프로젝트 생성 정보 확인 */}
         {step === 3 && (
-          <div className="flex w-full flex-col items-start gap-4">
-            <div className="w-full text-center">
-              <p>{projectName}</p>
-              <p>프로젝트를 생성하시겠습니까?</p>
+          <div className="relative flex w-full flex-col items-center gap-6">
+            {isSubmitting && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-1/80 backdrop-blur-sm">
+                <LoadingSpinner size="md" text="프로젝트를 생성하고 있어요" />
+              </div>
+            )}
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
+              <FolderOpen className="h-7 w-7 text-primary" />
             </div>
-            <div className="flex w-full gap-4">
-              <DSButton onClick={onClick} type="button" variant="ghost" className="mt-2 w-full">
+            <div className="flex flex-col items-center gap-2">
+              <h2 className="text-xl font-bold text-text-1">프로젝트를 생성하시겠습니까?</h2>
+              <p className="text-sm text-text-3">아래 정보로 새 프로젝트가 생성됩니다.</p>
+            </div>
+            <div className="flex w-full items-center gap-3 rounded-xl border border-line-2 bg-bg-2 px-5 py-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-bg-3">
+                <FolderOpen className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-text-3">프로젝트 이름</p>
+                <p className="truncate text-base font-semibold text-text-1">{projectName}</p>
+              </div>
+            </div>
+            <div className="flex w-full gap-3">
+              <DSButton onClick={() => { track(PROJECT_CREATE_EVENTS.ABANDON, { step }); onClick?.(); }} type="button" variant="ghost" className="w-full" disabled={isSubmitting}>
                 취소
               </DSButton>
-              <DSButton type="submit" variant="solid" className="mt-2 w-full" onClick={handleNext}>
+              <DSButton type="submit" variant="solid" className="w-full" disabled={isSubmitting}>
                 생성하기
               </DSButton>
             </div>
@@ -186,26 +300,26 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         )}
         {/* Step4: URL 제공 및 CTA 버튼 */}
         {step === 4 && (
-          <div className="flex w-full flex-col items-start gap-4">
-            <div className="flex w-full flex-col items-center gap-2">
-              <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-teal-500/20 text-teal-400">
-                <CheckCircle className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-bold text-white">프로젝트 생성 완료!</h2>
-              <p className="text-neutral-400">아래 링크를 통해 접속할 수 있습니다.</p>
+          <div className="flex w-full flex-col items-center gap-6">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
+              <CheckCircle className="h-7 w-7 text-primary" />
             </div>
-            <div className="flex w-full items-center gap-2">
-              <p className="w-full">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/project/{projectName}
+            <div className="flex flex-col items-center gap-2">
+              <h2 className="text-xl font-bold text-text-1">프로젝트 생성 완료!</h2>
+              <p className="text-sm text-text-3">프로젝트가 성공적으로 생성되었습니다.</p>
+            </div>
+            <div className="flex w-full items-center gap-2 rounded-xl border border-line-2 bg-bg-2 px-4 py-3">
+              <p className="min-w-0 flex-1 truncate text-sm font-medium text-text-2">
+                {createdSlug}
               </p>
-              <DSButton type="button" variant="ghost" onClick={handleCopyLink}>
-                {copied ? '링크 복사 완료!' : <Copy className="h-4 w-4" />}
+              <DSButton type="button" variant="ghost" size="small" onClick={handleCopyLink} className="shrink-0 gap-1.5">
+                {copied ? <><ClipboardCheck className="h-4 w-4" /> 복사 완료</> : <><Copy className="h-4 w-4" /> 링크 복사</>}
               </DSButton>
             </div>
             <DSButton
-              variant="ghost"
-              className="mt-2 w-full"
-              onClick={() => handleRedirectTo(`/projects/${projectName}`)}
+              variant="solid"
+              className="w-full"
+              onClick={() => handleRedirectTo(`/projects/${encodeURIComponent(createdSlug)}`)}
             >
               시작하기
             </DSButton>
@@ -218,5 +332,6 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         </DSButton>
       )}
     </section>
+    </>
   );
 };

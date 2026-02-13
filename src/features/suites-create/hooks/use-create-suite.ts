@@ -7,7 +7,13 @@ export const useCreateSuite = () => {
   return useMutation({
     mutationFn: (input: CreateTestSuite) => createTestSuite(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['testSuite'] });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['testSuites'],
+          refetchType: 'all',
+        }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ]).catch(() => {});
     },
   });
 };

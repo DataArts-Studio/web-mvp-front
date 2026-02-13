@@ -1,51 +1,65 @@
 'use client';
+
 import React from 'react';
-import { ProjectCreateForm } from '@/features';
-import { Logo } from '@/shared';
+import { ProjectCreateForm, BetaNoticePopup } from '@/features';
+import { LoadingSpinner, Logo } from '@/shared';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
 import { GridBackground } from '@/shared/layout';
 import { LendingHeader } from '@/widgets';
 import { Footer } from '@/widgets/footer';
-import { GlobalHeader } from '@/widgets/global-header';
+import { GlobalHeader, useBetaBanner } from '@/widgets/global-header';
+import { track, LANDING_EVENTS } from '@/shared/lib/analytics';
 
 export const LendingView = () => {
-  const [isOpened, setIsOpened] = React.useState(false);
-  const handleOpen = () => {
-    setIsOpened((prev) => !prev);
-    console.log(`클릭: handleOpen실행 -> setIsOpened 실행 ${isOpened}`);
-  };
-  // flex flex-1 flex-grow flex-col items-center justify-start
+  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
+  const { isVisible: isBannerVisible } = useBetaBanner();
+
   return (
     <GridBackground.Root>
-      <GridBackground.Grid/>
-      <GridBackground.Gradient/>
-      <GridBackground.CircleDecoration/>
-      <GridBackground.ArrowDecoration/>
+      <GridBackground.Grid />
+      <GridBackground.Gradient />
+      <GridBackground.CircleDecoration />
+      <GridBackground.ArrowDecoration />
       {/* Contents */}
-      <Container id='container' className="w-full text-text1 bg-bg-1 flex min-h-screen items-start justify-start flex-1 font-sans">
+      <Container
+        id="container"
+        role="document"
+        aria-label="Testea 랜딩 페이지"
+        className="flex min-h-screen w-full flex-col bg-bg-1 font-sans text-text1"
+      >
         {/* Header */}
         <GlobalHeader />
         {/* Main Content */}
-        <MainContainer className="w-full min-h-screen mx-auto max-w-6xl grid grid-cols-10 gap-3 items-center px-4 text-center">
+        <MainContainer
+          aria-label="메인 콘텐츠"
+          className={`mx-auto flex flex-1 w-full max-w-6xl items-center px-4 transition-[padding-top] duration-200 ${isBannerVisible ? 'pt-10' : 'pt-4'}`}
+        >
           {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
-          <div className="col-start-2 mx-auto flex flex-col items-start gap-9">
-            <Logo className="h-12 w-48" />
+          <div className="flex w-full flex-col items-start gap-9 pl-8">
             <LendingHeader />
             {/* CTA Section */}
-            <section className="relative z-10 flex items-center gap-[0.63rem]">
-              <DSButton variant="ghost" type="button" onClick={() => alert("준비중 입니다.")} className='flex w-80 h-16 min-w-[11.25rem] p-5 justify-center items-center gap-[0.63rem]'>
-                자세히 알아보기
-              </DSButton>
-              <DSButton type="button" onClick={handleOpen} className='flex w-80 h-16 min-w-[11.25rem] p-5 justify-center items-center gap-[0.63rem]'>
+            <section aria-label="시작하기" className="relative z-10">
+              <DSButton
+                type="button"
+                onClick={() => {
+                  track(LANDING_EVENTS.PROJECT_CREATE_START);
+                  setIsCreateModalOpen(true);
+                }}
+                className="flex h-16 w-80 min-w-[11.25rem] items-center justify-center gap-[0.63rem] p-5"
+                aria-label="무료로 프로젝트 생성 시작하기"
+              >
                 무료로 시작하기
               </DSButton>
             </section>
           </div>
-          {isOpened && <ProjectCreateForm onClick={handleOpen} />}
+          {isCreateModalOpen && (
+            <ProjectCreateForm onClick={() => setIsCreateModalOpen(false)} />
+          )}
         </MainContainer>
         <Footer />
       </Container>
+      <BetaNoticePopup />
     </GridBackground.Root>
   );
 };

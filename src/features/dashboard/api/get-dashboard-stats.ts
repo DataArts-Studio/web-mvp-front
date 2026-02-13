@@ -1,37 +1,30 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features';
-import { getDatabase, projects, testCases, testSuite } from '@/shared/lib/db';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { getDatabase, projects, suiteTestCases, testCases, testSuites } from '@/shared/lib/db';
+import { and, count, desc, eq, isNull, notInArray } from 'drizzle-orm';
 import { ActionResult } from '@/shared/types';
 
-
-
-
-
-
-
-
-
 type GetDashboardStatsParams = {
-  projectName: string;
+  slug: string;
 };
 
 export const getDashboardStats = async ({
-  projectName,
+  slug,
 }: GetDashboardStatsParams): Promise<ActionResult<DashboardStats>> => {
   try {
     const db = getDatabase();
-    console.log('[Dashboard] projectName:', projectName);
 
-    // 프로젝트 정보 조회 (name으로 검색)
+    // URL 인코딩된 slug를 디코딩
+    const decodedSlug = decodeURIComponent(slug);
+
+    // 프로젝트 정보 조회 (디코딩된 slug로 검색)
     const [projectRow] = await db
       .select()
       .from(projects)
-      .where(eq(projects.name, projectName))
+      .where(eq(projects.name, decodedSlug))
       .limit(1);
-
-    console.log('[Dashboard] projectRow:', projectRow);
 
     if (!projectRow) {
       return {
@@ -43,10 +36,9 @@ export const getDashboardStats = async ({
     const projectInfo: ProjectInfo = {
       id: projectRow.id,
       name: projectRow.name,
-      identifier: projectRow.identifier,
       description: projectRow.description ?? '',
       ownerName: projectRow.owner_name ?? '',
-      created_at: projectRow.created_at,
+      created_at: projectRow.created_at.toISOString(),
     };
 
     // 테스트 케이스 통계 - projectRow.id 사용
@@ -55,15 +47,20 @@ export const getDashboardStats = async ({
       .from(testCases)
       .where(eq(testCases.project_id, projectRow.id));
 
-    console.log('[Dashboard] testCaseCountResult:', testCaseCountResult);
-
     // 스위트 미지정 케이스 수
-    const [unassignedCountResult] = await db
-      .select({ count: count() })
-      .from(testCases)
-      .where(and(eq(testCases.project_id, projectRow.id), isNull(testCases.test_suite_id)));
+    const assignedTestCasesSubquery = db
+        .select({ id: suiteTestCases.test_case_id })
+        .from(suiteTestCases);
 
-    console.log('[Dashboard] unassignedCountResult:', unassignedCountResult);
+    const [unassignedCountResult] = await db
+        .select({ count: count() })
+        .from(testCases)
+        .where(
+            and(
+                eq(testCases.project_id, projectRow.id),
+                notInArray(testCases.id, assignedTestCasesSubquery)
+            )
+        );
 
     const testCaseStats: TestCaseStats = {
       total: testCaseCountResult?.count ?? 0,
@@ -73,22 +70,20 @@ export const getDashboardStats = async ({
     // 테스트 스위트 목록 - 단순 조회 (케이스 수는 별도 계산)
     const suiteRows = await db
       .select({
-        id: testSuite.id,
-        name: testSuite.name,
-        description: testSuite.description,
+        id: testSuites.id,
+        name: testSuites.name,
+        description: testSuites.description,
       })
-      .from(testSuite)
-      .where(eq(testSuite.project_id, projectRow.id));
-
-    console.log('[Dashboard] suiteRows:', suiteRows);
+      .from(testSuites)
+      .where(eq(testSuites.project_id, projectRow.id));
 
     // 각 스위트별 케이스 수 계산
-    const testSuites: TestSuiteSummary[] = await Promise.all(
+    const testSuitesResult: TestSuiteSummary[] = await Promise.all(
       suiteRows.map(async (row) => {
         const [caseCountResult] = await db
           .select({ count: count() })
-          .from(testCases)
-          .where(eq(testCases.test_suite_id, row.id));
+          .from(suiteTestCases)
+          .where(eq(suiteTestCases.suite_id, row.id));
 
         return {
           id: row.id,
@@ -98,8 +93,6 @@ export const getDashboardStats = async ({
         };
       })
     );
-
-    console.log('[Dashboard] testSuites:', testSuites);
 
     // 최근 테스트 케이스 - projectRow.id 사용
     const recentTestCases = await db
@@ -113,21 +106,17 @@ export const getDashboardStats = async ({
       .orderBy(desc(testCases.created_at))
       .limit(5);
 
-    console.log('[Dashboard] recentTestCases:', recentTestCases);
-
     // 최근 스위트 - projectRow.id 사용
     const recentSuites = await db
       .select({
-        id: testSuite.id,
-        title: testSuite.name,
-        created_at: testSuite.created_at,
+        id: testSuites.id,
+        title: testSuites.name,
+        created_at: testSuites.created_at,
       })
-      .from(testSuite)
-      .where(eq(testSuite.project_id, projectRow.id))
-      .orderBy(desc(testSuite.created_at))
+      .from(testSuites)
+      .where(eq(testSuites.project_id, projectRow.id))
+      .orderBy(desc(testSuites.created_at))
       .limit(5);
-
-    console.log('[Dashboard] recentSuites:', recentSuites);
 
     // 최근 활동 합치기 및 정렬
     const recentActivities: RecentActivity[] = [
@@ -135,16 +124,16 @@ export const getDashboardStats = async ({
         id: tc.id,
         type: 'test_case_created' as const,
         title: tc.title,
-        created_at: tc.created_at,
+        created_at: tc.created_at.toISOString(),
       })),
       ...recentSuites.map((s) => ({
         id: s.id,
         type: 'test_suite_created' as const,
         title: s.title,
-        created_at: s.created_at,
+        created_at: s.created_at.toISOString(),
       })),
     ]
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
 
     return {
@@ -152,16 +141,15 @@ export const getDashboardStats = async ({
       data: {
         project: projectInfo,
         testCases: testCaseStats,
-        testSuites,
+        testSuites: testSuitesResult,
         recentActivities,
       },
     };
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    Sentry.captureException(error, { extra: { action: 'getDashboardStats' } });
     return {
       success: false,
-      errors: { _dashboard: [`대시보드 데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: { _dashboard: ['대시보드 데이터를 불러오는 중 오류가 발생했습니다.'] },
     };
   }
 };

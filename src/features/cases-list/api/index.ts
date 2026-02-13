@@ -1,1 +1,1 @@
-export { testCaseQueryKeys, testCasesQueryOptions } from './query';
+export { testCaseQueryKeys, testCasesQueryOptions, testCaseByIdQueryOptions } from './query';

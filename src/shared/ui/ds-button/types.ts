@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { ButtonProps } from '@/shared';
-import { buttonVariants } from '@/shared/ui/ds-button/button.variable';
+import { type ButtonProps } from '@/shared/lib/primitives/button';
+import { buttonVariants } from './button.variable';
 import { type VariantProps } from 'class-variance-authority';
 
 // ------------------------------------------------------------------

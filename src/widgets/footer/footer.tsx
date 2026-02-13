@@ -8,15 +8,38 @@ const currentYear = new Date().getFullYear();
 
 export const Footer = () => {
   return (
-    <footer className="fixed right-0 bottom-0 left-0 border-t border-neutral-800 py-4 text-center text-xs text-neutral-500">
-      {copyright} |
-      <Link href="#" className="ml-2 hover:text-teal-400">
-        Privacy
-      </Link>{' '}
-      |
-      <Link href="#" className="ml-2 hover:text-teal-400">
-        Terms
-      </Link>
+    <footer
+      role="contentinfo"
+      aria-label="사이트 정보"
+      className="w-full border-t border-neutral-800 bg-bg-1 py-4 text-center text-xs text-neutral-500"
+    >
+      <span aria-label="저작권 정보">{copyright}</span>
+      <span aria-hidden="true" className="mx-2"> | </span>
+      <nav aria-label="사이트 링크" className="inline">
+        <Link
+          href="/legal?tab=privacy"
+          aria-label="개인정보 처리방침"
+          className="hover:text-teal-400"
+        >
+          개인정보 처리방침
+        </Link>
+        <span aria-hidden="true" className="mx-2"> | </span>
+        <Link
+          href="/legal?tab=terms"
+          aria-label="이용약관"
+          className="hover:text-teal-400"
+        >
+          이용약관
+        </Link>
+        <span aria-hidden="true" className="mx-2"> | </span>
+        <Link
+          href="/team"
+          aria-label="팀 소개"
+          className="hover:text-teal-400"
+        >
+          팀 테스티아
+        </Link>
+      </nav>
     </footer>
   );
 };

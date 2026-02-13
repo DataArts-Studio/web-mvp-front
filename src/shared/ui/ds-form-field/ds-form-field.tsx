@@ -1,6 +1,11 @@
 import React, { ComponentProps, ReactNode } from 'react';
 
-import { FormField, FormFieldError, cn, useFormField } from '@/shared';
+import {
+  FormField,
+  useFormField,
+  type FormFieldError,
+} from '@/shared/lib/primitives/form-field';
+import { cn } from '@/shared/utils';
 import { CircleAlert } from 'lucide-react';
 
 interface DsFormFieldProps extends ComponentProps<typeof FormField.Root> {
@@ -56,7 +61,7 @@ const DsFormFieldMessage = ({ children }: ComponentProps<typeof FormField.Messag
   const { invalid } = useFormField();
   if (!invalid) return null;
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 text-system-red">
       <CircleAlert className={cn('w-4 h-4')}/>
       <FormField.Message>{children}</FormField.Message>
     </div>

@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMockMilestoneRow,
+  mockDb,
   mockGetDatabase,
   resetMockDb,
   setMockUpdateReturn,
 } from '@/shared/test/__mocks__/db';
 
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase(),
+  getDatabase: mockGetDatabase,
   milestones: { id: 'id', name: 'name' },
 }));
 
@@ -44,5 +45,20 @@ describe('updateMilestone', () => {
     if (!result.success) {
       expect(result.errors._milestone).toContain('마일스톤 수정에 실패했습니다.');
     }
+  });
+
+  it('DB 에러 발생 시 에러 메시지를 반환한다', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockDb.update.mockImplementationOnce(() => {
+      throw new Error('DB Error');
+    });
+
+    const result = await updateMilestone('any-id', { title: 'New Name' });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors._milestone).toContain('마일스톤을 수정하는 도중 오류가 발생했습니다.');
+    }
+    consoleErrorSpy.mockRestore();
   });
 });

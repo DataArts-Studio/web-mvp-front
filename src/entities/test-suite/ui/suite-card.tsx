@@ -3,16 +3,14 @@ import React, { useMemo } from 'react';
 import { TestSuiteCard } from '@/entities/test-suite';
 import { AlertCircle, FileText, FolderTree, Layers, PlayCircle } from 'lucide-react';
 
+import { Edit } from 'lucide-react';
+import { DSButton } from '@/shared';
+import { formatDate } from '@/shared/utils/date-format';
+
 interface SuiteCardProps {
   suite: TestSuiteCard;
+  onEdit: () => void;
 }
-
-const formatDate = (d: Date) => {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
 
 const tagToneText = (tone: TestSuiteCard['tag']['tone']) => {
   switch (tone) {
@@ -29,7 +27,7 @@ const tagToneText = (tone: TestSuiteCard['tag']['tone']) => {
   }
 };
 
-export const SuiteCard = ({ suite }: SuiteCardProps) => {
+export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
   const titleId = React.useId();
   const descId = React.useId();
 
@@ -93,9 +91,15 @@ export const SuiteCard = ({ suite }: SuiteCardProps) => {
     suite.executionHistoryCount,
   ]);
 
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onEdit();
+  };
+
   return (
     <div
-      className="cursor-pointer bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between"
+      className="bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between"
       aria-labelledby={titleId}
       aria-describedby={descId}
     >
@@ -111,6 +115,9 @@ export const SuiteCard = ({ suite }: SuiteCardProps) => {
           >
             {suite.tag.label}
           </span>
+          <DSButton variant="ghost" size="icon" onClick={handleEditClick}>
+            <Edit className="h-4 w-4" />
+          </DSButton>
         </div>
         <p id={descId} className="typo-body2-normal text-text-2">
           {descriptionText}

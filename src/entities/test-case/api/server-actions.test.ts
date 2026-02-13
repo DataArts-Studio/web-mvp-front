@@ -10,7 +10,7 @@ const mockDb = { select: mockSelect };
 
 vi.mock('@/shared/lib/db', () => ({
   getDatabase: vi.fn(() => mockDb),
-  testCase: { project_id: 'project_id' },
+  testCases: { project_id: 'project_id', lifecycle_status: 'lifecycle_status' },
 }));
 
 import { getTestCases } from './server-actions';
@@ -34,9 +34,11 @@ describe('getTestCases', () => {
         steps: '1. 로그인 페이지 접속\n2. 아이디/비밀번호 입력',
         expected_result: '로그인 성공',
         sort_order: 1,
+        result_status: 'untested',
         created_at: new Date('2024-01-01'),
         updated_at: new Date('2024-01-02'),
-        deleted_at: null,
+        archived_at: null,
+        lifecycle_status: 'ACTIVE',
       },
     ];
 
@@ -50,7 +52,6 @@ describe('getTestCases', () => {
       expect(result.data[0]).toEqual({
         id: 'tc-1',
         projectId: 'proj-1',
-        testSuiteId: 'suite-1',
         caseKey: 'TC-001',
         title: '로그인 테스트',
         testType: 'functional',
@@ -59,9 +60,11 @@ describe('getTestCases', () => {
         testSteps: '1. 로그인 페이지 접속\n2. 아이디/비밀번호 입력',
         expectedResult: '로그인 성공',
         sortOrder: 1,
+        resultStatus: 'untested',
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-02'),
-        deletedAt: null,
+        archivedAt: null,
+        lifecycleStatus: 'ACTIVE',
       });
     }
 
@@ -96,7 +99,7 @@ describe('getTestCases', () => {
     const mockRows = [
       {
         id: 'tc-2',
-        project_id: null,
+        project_id: 'proj-1',
         test_suite_id: null,
         case_key: null,
         name: '테스트',
@@ -106,9 +109,11 @@ describe('getTestCases', () => {
         steps: null,
         expected_result: null,
         sort_order: null,
+        result_status: 'untested',
         created_at: new Date(),
         updated_at: new Date(),
-        deleted_at: null,
+        archived_at: null,
+        lifecycle_status: 'ACTIVE',
       },
     ];
 
@@ -118,8 +123,7 @@ describe('getTestCases', () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data[0].projectId).toBe('');
-      expect(result.data[0].testSuiteId).toBe('');
+      expect(result.data[0].projectId).toBe('proj-1');
       expect(result.data[0].caseKey).toBe('');
       expect(result.data[0].testType).toBe('');
       expect(result.data[0].tags).toEqual([]);

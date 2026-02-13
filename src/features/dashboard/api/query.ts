@@ -1,15 +1,33 @@
 import { getDashboardStats } from '@/features';
 import { queryOptions } from '@tanstack/react-query';
+import { getDashboardMilestones } from './get-dashboard-milestones';
+import { getStorageInfo } from './get-storage-info';
 
 
 export const dashboardQueryKeys = {
   all: ['dashboard'] as const,
-  stats: (projectName: string) => [...dashboardQueryKeys.all, 'stats', projectName] as const,
+  stats: (slug: string) => [...dashboardQueryKeys.all, 'stats', slug] as const,
+  milestones: (projectId: string, testRunId?: string) => [...dashboardQueryKeys.all, 'milestones', projectId, testRunId ?? 'all'] as const,
+  storageInfo: (projectId: string) => [...dashboardQueryKeys.all, 'storageInfo', projectId] as const,
 };
 
-export const dashboardStatsQueryOptions = (projectName: string) =>
-  queryOptions({
-    queryKey: dashboardQueryKeys.stats(projectName),
-    queryFn: () => getDashboardStats({ projectName }),
-    staleTime: 1000 * 60 * 5,
-  });
+export const dashboardQueryOptions = {
+  stats: (slug: string) =>
+    queryOptions({
+      queryKey: dashboardQueryKeys.stats(slug),
+      queryFn: () => getDashboardStats({ slug }),
+      staleTime: 1000 * 60 * 5,
+    }),
+  milestones: (projectId: string, testRunId?: string) =>
+    queryOptions({
+      queryKey: dashboardQueryKeys.milestones(projectId, testRunId),
+      queryFn: () => getDashboardMilestones(projectId, testRunId),
+      staleTime: 1000 * 60 * 5,
+    }),
+  storageInfo: (projectId: string) =>
+    queryOptions({
+      queryKey: dashboardQueryKeys.storageInfo(projectId),
+      queryFn: () => getStorageInfo(projectId),
+      staleTime: 1000 * 60 * 5,
+    }),
+};

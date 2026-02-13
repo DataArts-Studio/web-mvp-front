@@ -7,6 +7,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
   loading?: boolean;
   pressed?: boolean;
+  ariaLabel?: string;
   children?: React.ReactNode;
   ref?: React.Ref<HTMLButtonElement>;
 }
@@ -18,6 +19,7 @@ const Button = ({
   pressed,
   type,
   disabled,
+  ariaLabel,
   children,
   ref,
   ...rest
@@ -30,8 +32,10 @@ const Button = ({
       ref={ref}
       type={asChild ? undefined : (type ?? 'button')}
       disabled={asChild ? undefined : isDisabled}
+      aria-disabled={isDisabled || undefined}
       aria-busy={loading || undefined}
       aria-pressed={pressed || undefined}
+      aria-label={ariaLabel || undefined}
       className={className}
       {...rest}
     >

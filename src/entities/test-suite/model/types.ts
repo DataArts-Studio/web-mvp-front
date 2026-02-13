@@ -1,9 +1,5 @@
 import { z } from 'zod';
-
-import { CreateTestSuiteDtoSchema, CreateTestSuiteSchema, TestSuiteDtoSchema } from './schema';
-export type TestSuiteDTO = z.infer<typeof TestSuiteDtoSchema>;
-export type CreateTestSuiteDTO = z.infer<typeof CreateTestSuiteDtoSchema>;
-export type CreateTestSuite = z.infer<typeof CreateTestSuiteSchema>;
+import type { LifecycleStatus } from '../../test-case/model/types';
 
 export type TestSuite = {
   id: string;
@@ -13,7 +9,8 @@ export type TestSuite = {
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
+  archivedAt: Date | null;
+  lifecycleStatus: LifecycleStatus;
 };
 
 export type SuiteTagTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';

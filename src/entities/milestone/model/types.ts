@@ -1,11 +1,17 @@
+import {
+  CreateMilestoneDtoSchema,
+  CreateMilestoneSchema,
+  LifecycleStatus,
+  MilestoneDtoSchema,
+  MilestoneProgressStatusEnum,
+} from '@/entities';
 import { z } from 'zod';
 
-import { CreateMilestoneDtoSchema, CreateMilestoneSchema, MilestoneDtoSchema, UpdateMilestoneSchema } from './schema';
+export type MilestoneProgressStatus = z.infer<typeof MilestoneProgressStatusEnum>;
 
 export type MilestoneDTO = z.infer<typeof MilestoneDtoSchema>;
 export type CreateMilestoneDTO = z.infer<typeof CreateMilestoneDtoSchema>;
 export type CreateMilestone = z.infer<typeof CreateMilestoneSchema>;
-export type UpdateMilestone = z.infer<typeof UpdateMilestoneSchema>;
 
 export type Milestone = {
   id: string;
@@ -14,10 +20,11 @@ export type Milestone = {
   description?: string;
   startDate: Date | null;
   endDate: Date | null;
-  status: string;
+  progressStatus: MilestoneProgressStatus;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
+  archivedAt: Date | null;
+  lifecycleStatus: LifecycleStatus;
 };
 
 export type MilestoneStats = {
@@ -27,4 +34,9 @@ export type MilestoneStats = {
   runCount: number;
 };
 
-export type MilestoneWithStats = Milestone & MilestoneStats;
+export type MilestoneWithStats = Milestone &
+  MilestoneStats & {
+    testCases?: Array<{ id: string; caseKey: string; title: string; lastStatus: string | null }>;
+    testSuites?: Array<{ id: string; title: string; description: string | null }>;
+    testRuns?: Array<any>;
+  };

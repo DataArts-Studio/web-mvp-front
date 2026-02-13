@@ -8,8 +8,8 @@ import {
 
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase(),
-  testSuite: { id: 'id', project_id: 'project_id', name: 'name' },
+  getDatabase: mockGetDatabase,
+  testSuites: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));
 
 import { deleteTestSuite } from './server-actions';
@@ -27,7 +27,7 @@ describe('deleteTestSuite', () => {
     it('테스트 스위트를 soft delete 한다', async () => {
       const mockRow = createMockTestSuiteRow({
         id: 'suite-123',
-        deleted_at: new Date(),
+        archived_at: new Date(),
       });
       setMockUpdateReturn(mockRow);
 
@@ -36,7 +36,7 @@ describe('deleteTestSuite', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.id).toBe('suite-123');
-        expect(result.message).toBe('테스트 스위트를 삭제하였습니다.');
+        expect(result.message).toBe('테스트 스위트를 아카이브하였습니다.');
       }
     });
 
@@ -74,7 +74,7 @@ describe('deleteTestSuite', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain('테스트 스위트를 삭제하는 도중 오류가 발생했습니다.');
+        expect(result.errors._testSuite).toContain('테스트 스위트를 아카이브하는 도중 오류가 발생했습니다.');
       }
     });
   });

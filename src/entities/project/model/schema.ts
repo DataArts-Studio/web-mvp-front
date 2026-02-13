@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-
-
+export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
 
 
 
@@ -20,14 +19,16 @@ export const ProjectDtoSchema = z.object({
   owner_name: z.string().nullable(),
   created_at: z.date(),
   updated_at: z.date(),
-  deleted_at: z.date().nullable(),
+  archived_at: z.date().nullable(),
+  lifecycle_status: LifecycleStatusEnum.default('ACTIVE'),
 });
 
 export const CreateProjectDtoSchema = ProjectDtoSchema.omit({
   id: true,
   created_at: true,
   updated_at: true,
-  deleted_at: true,
+  archived_at: true,
+  lifecycle_status: true,
 });
 
 export const ProjectDomainSchema = z.object({
@@ -44,21 +45,26 @@ export const ProjectDomainSchema = z.object({
   ownerName: z.string().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  deletedAt: z.date().nullable(),
+  archivedAt: z.date().nullable(),
+  lifecycleStatus: LifecycleStatusEnum.default('ACTIVE'),
 });
 
 export const CreateProjectDomainSchema = ProjectDomainSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-  deletedAt: true,
+  archivedAt: true,
+  lifecycleStatus: true,
 });
 
 export const ProjectFormSchema = CreateProjectDomainSchema.extend({
-  identifierConfirm: z
-    .string()
-    .min(8, '식별번호는 최소 8자리 이상이어야 합니다.')
-    .max(16, '식별번호는 최대 16자리 이하여야 합니다.'),
+  identifierConfirm: z.string(),
+  ageConfirmed: z.literal(true, {
+    error: '만 14세 이상만 서비스를 이용할 수 있습니다.',
+  }),
+  termsAgreed: z.literal(true, {
+    error: '이용약관에 동의해주세요.',
+  }),
 }).refine((data) => data.identifier === data.identifierConfirm, {
   message: '식별번호가 일치하지 않습니다.',
   path: ['identifierConfirm'],

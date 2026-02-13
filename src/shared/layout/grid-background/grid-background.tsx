@@ -68,6 +68,7 @@ const GridBackgroundGrid = ({
 const GridBackgroundGradient = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
+      aria-hidden="true"
       className={cn(
         'pointer-events-none absolute inset-0 bg-gradient-to-br from-[#0BB57F]/5 via-transparent to-transparent',
         className
@@ -90,12 +91,14 @@ const BaseDecoration = ({
   src,
   width,
   height,
-  alt = "Decoration",
+  alt = "",
   imageClassName,
   ...props
 }: BaseDecorationProps) => {
   return (
     <div
+      aria-hidden="true"
+      role="presentation"
       className={cn("pointer-events-none absolute select-none", className)}
       {...props}
     >
@@ -104,6 +107,7 @@ const BaseDecoration = ({
         width={width}
         height={height}
         alt={alt}
+        aria-hidden="true"
         className={cn("absolute top-0 left-0", imageClassName)}
       />
     </div>
@@ -120,8 +124,8 @@ const GridBackgroundArrowDecoration = ({ className, ...props }: React.HTMLAttrib
       src="/backgrounds/arrow.svg"
       width={37.5}
       height={37.5}
-      alt="Arrow Decoration"
-      className={cn("top-[460px] left-[calc(80%-153px)] z-10 h-[50px] w-[50px]", className)}
+      alt=""
+      className={cn("top-1/2 left-[calc(80%-153px)] z-10 h-[50px] w-[50px] -translate-y-1/2", className)}
       imageClassName="z-10"
       {...props}
     />
@@ -132,13 +136,14 @@ const GridBackgroundArrowDecoration = ({ className, ...props }: React.HTMLAttrib
  * [Preset] CircleDecoration
  * BaseDecoration을 사용하여 미리 정의된 원형 장식입니다.
  */
-const GridBackgroundCircleDecoration = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {  return (
+const GridBackgroundCircleDecoration = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+  return (
     <BaseDecoration
       src="/backgrounds/circular.svg"
       width={1137.1}
       height={972.6}
-      alt="Circular Decoration"
-      className={cn("top-[84px] left-[calc(60%+5px)] z-0 h-[972px] w-[972px] opacity-30", className)}
+      alt=""
+      className={cn("top-1/2 left-[calc(60%+5px)] z-0 h-[972px] w-[972px] -translate-y-1/2 opacity-30", className)}
       imageClassName="z-10"
       {...props}
     />

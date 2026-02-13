@@ -1,10 +1,9 @@
 export type ProjectInfo = {
   id: string;
   name: string;
-  identifier: string;
   description: string;
   ownerName: string;
-  created_at: Date;
+  created_at: string; // ISO string (Server Action 직렬화 호환)
 };
 
 export type TestCaseStats = {
@@ -28,7 +27,7 @@ export type RecentActivity = {
   id: string;
   type: 'test_case_created' | 'test_suite_created' | 'test_run_completed';
   title: string;
-  created_at: Date;
+  created_at: string; // ISO string (Server Action 직렬화 호환)
 };
 
 export type DashboardStats = {

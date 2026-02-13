@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LifecycleStatusEnum } from '../../project/model/schema';
 
 export const TestSuiteDtoSchema = z.object({
   id: z.uuidv7({ error: 'uuidv7 test error' }),
@@ -8,16 +9,18 @@ export const TestSuiteDtoSchema = z.object({
   description: z.string().optional(),
   project_id: z.uuidv7(),
   sort_order: z.int(),
-  create_at: z.date(),
-  update_at: z.date(),
-  delete_at: z.date().nullable(),
+  created_at: z.date(),
+  updated_at: z.date(),
+  archived_at: z.date().nullable(),
+  lifecycle_status: LifecycleStatusEnum.default('ACTIVE'),
 });
 
 export const CreateTestSuiteDtoSchema = TestSuiteDtoSchema.omit({
   id: true,
-  create_at: true,
-  update_at: true,
-  delete_at: true,
+  created_at: true,
+  updated_at: true,
+  archived_at: true,
+  lifecycle_status: true,
 });
 
 export const CreateTestSuiteSchema = z.object({

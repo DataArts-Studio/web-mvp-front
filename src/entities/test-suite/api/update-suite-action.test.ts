@@ -8,8 +8,8 @@ import {
 
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase(),
-  testSuite: { id: 'id', project_id: 'project_id', name: 'name' },
+  getDatabase: mockGetDatabase,
+  testSuites: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));
 
 import { updateTestSuite } from './server-actions';
@@ -131,7 +131,8 @@ describe('updateTestSuite', () => {
           sortOrder: 15,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-03-01'),
-          deletedAt: null,
+          archivedAt: null,
+          lifecycleStatus: 'ACTIVE',
         });
       }
     });

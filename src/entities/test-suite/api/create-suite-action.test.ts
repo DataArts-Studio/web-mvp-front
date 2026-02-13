@@ -1,16 +1,21 @@
+import { createMockCreateTestSuiteInput, createMockTestSuiteRow, mockGetDatabase, resetMockDb, setMockInsertReturn } from '@/shared/test/__mocks__/db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  createMockCreateTestSuiteInput,
-  createMockTestSuiteRow,
-  mockGetDatabase,
-  resetMockDb,
-  setMockInsertReturn,
-} from '@/shared/test/__mocks__/db';
+
+
+
+import { createTestSuite } from './server-actions';
+
+
+
+
+
+
+
 
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase(),
-  testSuite: { id: 'id', project_id: 'project_id', name: 'name' },
+  getDatabase: mockGetDatabase,
+  testSuites: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));
 
 // uuid 모킹
@@ -18,7 +23,7 @@ vi.mock('uuid', () => ({
   v7: () => '01234567-89ab-cdef-0123-456789abcdef',
 }));
 
-import { createTestSuite } from './server-actions';
+
 
 describe('createTestSuite', () => {
   beforeEach(() => {
@@ -47,7 +52,8 @@ describe('createTestSuite', () => {
           sortOrder: mockRow.sort_order,
           createdAt: mockRow.created_at,
           updatedAt: mockRow.updated_at,
-          deletedAt: mockRow.deleted_at,
+          archivedAt: mockRow.archived_at,
+          lifecycleStatus: mockRow.lifecycle_status,
         });
         expect(result.message).toBe('테스트 스위트를 생성하였습니다.');
       }

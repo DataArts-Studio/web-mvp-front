@@ -7,8 +7,8 @@ import {
 } from '@/shared/test/__mocks__/db';
 
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => mockGetDatabase(),
-  milestones: { id: 'id', deleted_at: 'deleted_at' },
+  getDatabase: mockGetDatabase,
+  milestones: { id: 'id', archived_at: 'archived_at', lifecycle_status: 'lifecycle_status' },
 }));
 
 import { deleteMilestone } from './server-actions';
@@ -23,7 +23,7 @@ describe('deleteMilestone', () => {
   });
 
   it('마일스톤을 삭제(Soft Delete)하면 삭제된 ID를 반환한다', async () => {
-    const mockRow = createMockMilestoneRow({ deleted_at: new Date() });
+    const mockRow = createMockMilestoneRow({ archived_at: new Date() });
     setMockUpdateReturn(mockRow);
 
     const result = await deleteMilestone(mockRow.id);
@@ -31,7 +31,7 @@ describe('deleteMilestone', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe(mockRow.id);
-      expect(result.message).toBe('마일스톤이 삭제되었습니다.');
+      expect(result.message).toBe('마일스톤이 성공적으로 삭제되었습니다.');
     }
   });
 
@@ -42,7 +42,7 @@ describe('deleteMilestone', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._milestone).toContain('마일스톤 삭제에 실패했습니다.');
+      expect(result.errors._milestone).toContain('마일스톤 아카이브에 실패했습니다.');
     }
   });
 });

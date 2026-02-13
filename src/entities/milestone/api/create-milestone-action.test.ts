@@ -5,8 +5,8 @@ import { createMilestone } from './server-actions';
 
 // DB 모듈 모킹
 vi.mock('@/shared/lib/db', () => ({
-  getDatabase: () => (mockGetDatabase as any)(),
-  milestones: { id: 'id', project_id: 'project_id', name: 'name' },
+  getDatabase: mockGetDatabase,
+  milestones: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));
 
 // uuid 모킹
@@ -45,12 +45,13 @@ describe('createMilestone', () => {
           projectId: mockRow.project_id,
           title: mockRow.name,
           description: mockRow.description,
-          startDate: mockRow.start_date,
-          endDate: mockRow.end_date,
-          status: mockRow.status,
+          startDate: new Date(mockRow.start_date!),
+          endDate: new Date(mockRow.end_date!),
+          progressStatus: mockRow.progress_status,
           createdAt: mockRow.created_at,
           updatedAt: mockRow.updated_at,
-          deletedAt: mockRow.deleted_at,
+          archivedAt: mockRow.archived_at,
+          lifecycleStatus: mockRow.lifecycle_status,
         });
         expect(result.message).toBe('마일스톤을 생성하였습니다.');
       }
