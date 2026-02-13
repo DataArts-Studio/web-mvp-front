@@ -19,7 +19,7 @@ export const useCreateCase = () => {
           refetchType: 'all',
         }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      ]);
+      ]).catch(() => {});
     },
   });
 };

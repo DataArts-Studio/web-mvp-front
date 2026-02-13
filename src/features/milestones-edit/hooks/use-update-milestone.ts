@@ -25,7 +25,7 @@ export const useUpdateMilestone = () => {
           refetchType: 'all',
         }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      ]);
+      ]).catch(() => {});
     },
   });
 };
