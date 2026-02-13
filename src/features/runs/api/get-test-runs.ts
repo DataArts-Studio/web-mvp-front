@@ -35,11 +35,7 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
             testSuite: true,
           },
         },
-        testRunMilestones: {
-          with: {
-            milestone: true,
-          },
-        },
+        milestone: true,
         testCaseRuns: true,
       },
       orderBy: (testRuns, { desc }) => [desc(testRuns.updated_at)],
@@ -52,9 +48,9 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
       if (run.testRunSuites && run.testRunSuites.length > 0) {
         sourceType = 'SUITE';
         sourceName = run.testRunSuites.map(s => s.testSuite?.name || '').join(', ');
-      } else if (run.testRunMilestones && run.testRunMilestones.length > 0) {
+      } else if (run.milestone) {
         sourceType = 'MILESTONE';
-        sourceName = run.testRunMilestones.map(m => m.milestone?.name || '').join(', ');
+        sourceName = run.milestone.name || '';
       }
 
       // Calculate stats from testCaseRuns
