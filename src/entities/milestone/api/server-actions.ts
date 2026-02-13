@@ -8,7 +8,7 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
-import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites, testRunMilestones, testCaseRuns, testCases, testRunSuites } from '@/shared/lib/db';
+import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites, testRuns, testCaseRuns, testCases, testRunSuites } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -288,19 +288,17 @@ export const addTestCasesToMilestone = async (
 
     // Sync: add new cases to existing test runs linked to this milestone
     const linkedRuns = await db
-      .select({ test_run_id: testRunMilestones.test_run_id })
-      .from(testRunMilestones)
-      .where(eq(testRunMilestones.milestone_id, milestoneId));
+      .select({ id: testRuns.id })
+      .from(testRuns)
+      .where(eq(testRuns.milestone_id, milestoneId));
 
     for (const run of linkedRuns) {
-      if (!run.test_run_id) continue;
-
       const existingRows = await db
         .select({ test_case_id: testCaseRuns.test_case_id })
         .from(testCaseRuns)
         .where(
           and(
-            eq(testCaseRuns.test_run_id, run.test_run_id),
+            eq(testCaseRuns.test_run_id, run.id),
             inArray(testCaseRuns.test_case_id, testCaseIds)
           )
         );
@@ -311,7 +309,7 @@ export const addTestCasesToMilestone = async (
         await db.insert(testCaseRuns).values(
           newIds.map((caseId) => ({
             id: uuidv7(),
-            test_run_id: run.test_run_id!,
+            test_run_id: run.id,
             test_case_id: caseId,
             status: 'untested' as const,
             source_type: 'milestone' as const,
@@ -406,9 +404,9 @@ export const addTestSuitesToMilestone = async (
 
     // Sync: resolve suite cases and add to existing test runs linked to this milestone
     const linkedRuns = await db
-      .select({ test_run_id: testRunMilestones.test_run_id })
-      .from(testRunMilestones)
-      .where(eq(testRunMilestones.milestone_id, milestoneId));
+      .select({ id: testRuns.id })
+      .from(testRuns)
+      .where(eq(testRuns.milestone_id, milestoneId));
 
     if (linkedRuns.length > 0) {
       // Get individual test cases from the added suites
@@ -432,13 +430,11 @@ export const addTestSuitesToMilestone = async (
         const caseIds = Array.from(caseIdToSuite.keys());
 
         for (const run of linkedRuns) {
-          if (!run.test_run_id) continue;
-
           // Link suites to the run
           await db
             .insert(testRunSuites)
             .values(testSuiteIds.map((suiteId) => ({
-              test_run_id: run.test_run_id!,
+              test_run_id: run.id,
               test_suite_id: suiteId,
             })))
             .onConflictDoNothing();
@@ -449,7 +445,7 @@ export const addTestSuitesToMilestone = async (
             .from(testCaseRuns)
             .where(
               and(
-                eq(testCaseRuns.test_run_id, run.test_run_id),
+                eq(testCaseRuns.test_run_id, run.id),
                 inArray(testCaseRuns.test_case_id, caseIds)
               )
             );
@@ -460,7 +456,7 @@ export const addTestSuitesToMilestone = async (
             await db.insert(testCaseRuns).values(
               newCaseIds.map((caseId) => ({
                 id: uuidv7(),
-                test_run_id: run.test_run_id!,
+                test_run_id: run.id,
                 test_case_id: caseId,
                 status: 'untested' as const,
                 source_type: 'suite' as const,
