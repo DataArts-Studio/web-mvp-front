@@ -18,14 +18,20 @@ export const metadata: Metadata = {
     default: 'Testea - 테스트 관리 플랫폼',
     template: '%s | Testea',
   },
-  description: '효율적인 테스트 케이스 관리와 협업을 위한 플랫폼. 테스트 계획, 실행, 결과 추적을 한 곳에서.',
+  description: '무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
   keywords: [
     '테스트 관리',
+    '테스트 도구',
+    '테스트 툴',
+    'QA 도구',
+    'QA 툴',
     'QA',
     '테스트 케이스',
+    '테스트 케이스 관리',
     '품질 관리',
     'test management',
-    'QA 도구',
+    'QA tool',
+    'test tool',
     '테스트 자동화',
     '소프트웨어 테스트',
     '테스트 플랫폼',
@@ -48,7 +54,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Testea - 테스트 관리 플랫폼',
-    description: '효율적인 테스트 케이스 관리와 협업을 위한 플랫폼. 테스트 계획, 실행, 결과 추적을 한 곳에서.',
+    description: '무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
     url: siteUrl,
     type: 'website',
     locale: 'ko_KR',
@@ -65,7 +71,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Testea - 테스트 관리 플랫폼',
-    description: '효율적인 테스트 케이스 관리와 협업을 위한 플랫폼. 테스트 계획, 실행, 결과 추적을 한 곳에서.',
+    description: '무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
     creator: '@testea',
     images: ['/opengraph-image'],
   },
@@ -102,7 +108,7 @@ const jsonLd = {
       '@id': `${siteUrl}/#website`,
       url: siteUrl,
       name: 'Testea',
-      description: '효율적인 테스트 케이스 관리와 협업을 위한 플랫폼',
+      description: '무료 테스트 관리 도구 · QA 툴',
       inLanguage: 'ko-KR',
     },
     {
@@ -112,7 +118,7 @@ const jsonLd = {
       applicationCategory: 'DeveloperApplication',
       operatingSystem: 'Web',
       description:
-        '효율적인 테스트 케이스 관리와 협업을 위한 플랫폼. 테스트 계획, 실행, 결과 추적을 한 곳에서.',
+        '무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
       url: siteUrl,
       offers: {
         '@type': 'Offer',
