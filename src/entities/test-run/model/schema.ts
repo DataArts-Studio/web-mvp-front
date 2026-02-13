@@ -20,5 +20,5 @@ export const CreateTestRunSchema = z.object({
   project_id: z.string().uuid({ message: "유효한 프로젝트 ID를 제공해야 합니다." }),
   name: z.string().min(1, '실행 이름을 입력해주세요.'),
   description: z.string().optional(),
-  milestone_ids: z.array(z.string().uuid()).min(1, '최소 하나의 마일스톤을 선택해주세요.'),
+  milestone_id: z.string().uuid({ message: '마일스톤을 선택해주세요.' }),
 });
