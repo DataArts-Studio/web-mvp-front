@@ -63,11 +63,7 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
             testSuite: true,
           },
         },
-        testRunMilestones: {
-          with: {
-            milestone: true,
-          },
-        },
+        milestone: true,
       },
     });
 
@@ -83,7 +79,7 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
     const sources: SourceInfo[] = [];
 
     const hasSuites = run.testRunSuites && run.testRunSuites.length > 0;
-    const hasMilestones = run.testRunMilestones && run.testRunMilestones.length > 0;
+    const hasMilestone = !!run.milestone;
 
     if (hasSuites) {
       for (const s of run.testRunSuites!) {
@@ -94,13 +90,9 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       }
     }
 
-    if (hasMilestones) {
-      for (const m of run.testRunMilestones!) {
-        if (m.milestone) {
-          sourceIdToName.set(m.milestone.id, m.milestone.name);
-          sources.push({ id: m.milestone.id, name: m.milestone.name, type: 'milestone' });
-        }
-      }
+    if (hasMilestone) {
+      sourceIdToName.set(run.milestone!.id, run.milestone!.name);
+      sources.push({ id: run.milestone!.id, name: run.milestone!.name, type: 'milestone' });
     }
 
     // Determine source type and name for header display
@@ -115,11 +107,10 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       }
     }
 
-    if (hasMilestones) {
+    if (hasMilestone) {
       sourceType = hasSuites ? 'SUITE' : 'MILESTONE';
-      const milestoneNames = run.testRunMilestones!.map(m => m.milestone?.name || '').filter(Boolean);
-      if (milestoneNames.length > 0) {
-        sourceNameParts.push(`마일스톤: ${milestoneNames.join(', ')}`);
+      if (run.milestone!.name) {
+        sourceNameParts.push(`마일스톤: ${run.milestone!.name}`);
       }
     }
 
