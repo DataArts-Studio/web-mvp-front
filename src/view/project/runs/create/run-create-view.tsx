@@ -5,10 +5,9 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useCreateRun, type CreateRunInput } from '@/features/runs-create';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { milestonesQueryOptions, getMilestones } from '@/entities/milestone';
+import { milestonesQueryOptions } from '@/entities/milestone';
 import { Container, DSButton, MainContainer, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
-import { Checkbox } from '@/shared/ui/checkbox'; // Assuming a checkbox component exists
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 
 interface RunFormData {
@@ -24,7 +23,7 @@ export const RunCreateView = () => {
   const preselectedMilestoneId = searchParams.get('milestoneId');
   const { mutate, isPending } = useCreateRun();
 
-  const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>(preselectedMilestoneId ? [preselectedMilestoneId] : []);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(preselectedMilestoneId);
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(projectSlug)
@@ -48,22 +47,14 @@ export const RunCreateView = () => {
     },
   });
 
-  const handleMilestoneSelect = (milestoneId: string) => {
-    setSelectedMilestoneIds(prev =>
-      prev.includes(milestoneId) ? prev.filter(id => id !== milestoneId) : [...prev, milestoneId]
-    );
-  };
-
-  const hasSelection = selectedMilestoneIds.length > 0;
-
   const onSubmit = (data: RunFormData) => {
     if (!projectId) {
       alert('프로젝트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 
-    if (!hasSelection) {
-      alert('최소 하나의 마일스톤을 선택해주세요.');
+    if (!selectedMilestoneId) {
+      alert('마일스톤을 선택해주세요.');
       return;
     }
 
@@ -71,7 +62,7 @@ export const RunCreateView = () => {
       project_id: projectId,
       name: data.runName,
       description: data.description || undefined,
-      milestone_ids: selectedMilestoneIds,
+      milestone_id: selectedMilestoneId,
     };
 
     mutate(input, {
@@ -160,16 +151,26 @@ export const RunCreateView = () => {
               <h3 className="typo-h3-heading border-b border-line-2 pb-2">마일스톤 선택 <span className="text-system-red">*</span></h3>
               <div className="grid grid-cols-3 gap-3">
                 {milestones.map((milestone) => (
-                  <div key={milestone.id} className="flex items-center gap-2 rounded-2 bg-bg-2 p-3">
-                    <Checkbox
+                  <label
+                    key={milestone.id}
+                    htmlFor={`milestone-${milestone.id}`}
+                    className={`flex cursor-pointer items-center gap-3 rounded-2 border p-3 transition-colors ${
+                      selectedMilestoneId === milestone.id
+                        ? 'border-primary bg-primary/10'
+                        : 'border-line-2 bg-bg-2 hover:border-line-3'
+                    }`}
+                  >
+                    <input
+                      type="radio"
                       id={`milestone-${milestone.id}`}
-                      checked={selectedMilestoneIds.includes(milestone.id)}
-                      onCheckedChange={() => handleMilestoneSelect(milestone.id)}
+                      name="milestone"
+                      value={milestone.id}
+                      checked={selectedMilestoneId === milestone.id}
+                      onChange={() => setSelectedMilestoneId(milestone.id)}
+                      className="accent-primary h-4 w-4 shrink-0"
                     />
-                    <label htmlFor={`milestone-${milestone.id}`} className="flex-1 cursor-pointer typo-body2-normal">
-                      {milestone.title}
-                    </label>
-                  </div>
+                    <span className="typo-body2-normal flex-1">{milestone.title}</span>
+                  </label>
                 ))}
               </div>
               {milestones.length === 0 && <p className="typo-body2-normal text-text-3">선택할 마일스톤이 없습니다.</p>}
@@ -179,7 +180,7 @@ export const RunCreateView = () => {
               <DSButton type="button" variant="ghost" className="px-5 py-2.5" disabled={isPending} onClick={handleCancel}>
                 취소
               </DSButton>
-              <DSButton type="submit" variant="solid" className="px-5 py-2.5" disabled={isPending || !hasSelection}>
+              <DSButton type="submit" variant="solid" className="px-5 py-2.5" disabled={isPending || !selectedMilestoneId}>
                 {isPending ? '생성 중...' : '실행 생성하기'}
               </DSButton>
             </div>
