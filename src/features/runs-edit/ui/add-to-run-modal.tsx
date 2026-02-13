@@ -4,14 +4,14 @@ import React, { useState, useMemo } from 'react';
 import type { TestSuite } from '@/entities/test-suite';
 import type { Milestone } from '@/entities/milestone';
 import type { TestCase } from '@/entities/test-case';
-import { DSButton, DsCheckbox, LoadingSpinner, cn } from '@/shared';
+import { SelectionModal, cn } from '@/shared';
 import { useSelectionSet } from '@/shared/hooks';
 import {
   useAddSuitesToRun,
   useAddMilestonesToRun,
   useAddCasesToRun,
 } from '../hooks/use-add-to-run';
-import { ListChecks, Search, X, FileText, ListTodo, Clock } from 'lucide-react';
+import { FileText, ListTodo, Clock } from 'lucide-react';
 
 type TabType = 'case' | 'suite' | 'milestone';
 
@@ -20,6 +20,12 @@ const TABS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'suite', label: '스위트', icon: <ListTodo className="h-4 w-4" /> },
   { key: 'milestone', label: '마일스톤', icon: <Clock className="h-4 w-4" /> },
 ];
+
+const TAB_CONFIG: Record<TabType, { placeholder: string; loadingText: string; emptyText: string; submitUnit: string }> = {
+  case: { placeholder: '케이스 이름, 키, 태그로 검색...', loadingText: '케이스를 추가하고 있어요', emptyText: '추가할 수 있는 테스트 케이스가 없습니다.', submitUnit: '케이스' },
+  suite: { placeholder: '스위트 이름으로 검색...', loadingText: '스위트를 추가하고 있어요', emptyText: '추가할 수 있는 스위트가 없습니다.', submitUnit: '스위트' },
+  milestone: { placeholder: '마일스톤 이름으로 검색...', loadingText: '마일스톤을 추가하고 있어요', emptyText: '추가할 수 있는 마일스톤이 없습니다.', submitUnit: '마일스톤' },
+};
 
 interface AddToRunModalProps {
   runId: string;
@@ -45,15 +51,14 @@ export const AddToRunModal = ({
   const addCases = useAddCasesToRun(runId);
 
   const isPending = addSuites.isPending || addMilestones.isPending || addCases.isPending;
+  const config = TAB_CONFIG[activeTab];
 
-  // Reset selection & search when tab changes
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     selection.clear();
     setSearchQuery('');
   };
 
-  // Filtered items per tab
   const filteredCases = useMemo(() => {
     const search = searchQuery.toLowerCase().trim();
     if (!search) return availableCases;
@@ -100,196 +105,88 @@ export const AddToRunModal = ({
     else addMilestones.mutate(ids, { onSuccess });
   };
 
-  const searchPlaceholder =
-    activeTab === 'case'
-      ? '케이스 이름, 키, 태그로 검색...'
-      : activeTab === 'suite'
-        ? '스위트 이름으로 검색...'
-        : '마일스톤 이름으로 검색...';
-
-  const loadingText =
-    activeTab === 'case'
-      ? '케이스를 추가하고 있어요'
-      : activeTab === 'suite'
-        ? '스위트를 추가하고 있어요'
-        : '마일스톤을 추가하고 있어요';
-
-  const emptyText =
-    activeTab === 'case'
-      ? '추가할 수 있는 테스트 케이스가 없습니다.'
-      : activeTab === 'suite'
-        ? '추가할 수 있는 스위트가 없습니다.'
-        : '추가할 수 있는 마일스톤이 없습니다.';
-
-  const submitLabel =
-    activeTab === 'case'
-      ? `${selection.count}개 케이스 추가`
-      : activeTab === 'suite'
-        ? `${selection.count}개 스위트 추가`
-        : `${selection.count}개 마일스톤 추가`;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <section className="bg-bg-1 rounded-4 relative flex max-h-[80vh] w-full max-w-[600px] flex-col overflow-hidden shadow-xl" onClick={(e) => e.stopPropagation()}>
-        {isPending && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-4 bg-bg-1/80 backdrop-blur-sm">
-            <LoadingSpinner size="md" text={loadingText} />
-          </div>
-        )}
+    <SelectionModal.Root onClose={onClose} isPending={isPending}>
+      <SelectionModal.Loading text={config.loadingText} />
+      <SelectionModal.Header title="테스트 추가하기" subtitle="실행에 추가할 항목을 선택하세요." />
 
-        {/* Header */}
-        <header className="border-line-2 flex items-center justify-between border-b px-6 py-4">
-          <div>
-            <h2 className="text-text-1 text-lg font-bold">테스트 추가하기</h2>
-            <p className="text-text-3 mt-1 text-sm">
-              실행에 추가할 항목을 선택하세요.
-            </p>
-          </div>
-          <DSButton variant="ghost" size="small" onClick={onClose} className="p-2">
-            <X className="h-5 w-5" />
-          </DSButton>
-        </header>
+      {/* Tabs */}
+      <div className="border-line-2 flex border-b px-6">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => handleTabChange(tab.key)}
+            className={cn(
+              'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
+              activeTab === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-3 hover:text-text-1'
+            )}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Tabs */}
-        <div className="border-line-2 flex border-b px-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
-              className={cn(
-                'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
-                activeTab === tab.key
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-text-3 hover:text-text-1'
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Search */}
-        <div className="border-line-2 border-b px-6 py-3">
-          <div className="bg-bg-2 border-line-2 flex items-center gap-2 rounded-lg border px-3 py-2">
-            <Search className="text-text-3 h-4 w-4" />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-text-1 placeholder:text-text-3 w-full bg-transparent text-sm outline-none"
+      <SelectionModal.Search value={searchQuery} onChange={setSearchQuery} placeholder={config.placeholder} />
+      <SelectionModal.Body>
+        {currentItems.length === 0 ? (
+          <SelectionModal.Empty text={allItems.length === 0 ? config.emptyText : '검색 결과가 없습니다.'} />
+        ) : (
+          <>
+            <SelectionModal.SelectAll
+              checked={selection.isAllSelected(currentItems)}
+              onCheckedChange={() => selection.toggleAll(currentItems)}
+              selectedCount={selection.count}
+              totalCount={currentItems.length}
             />
-          </div>
-        </div>
-
-        {/* List */}
-        <div className="flex-1 overflow-y-auto">
-          {currentItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-12">
-              <ListChecks className="text-text-3 h-8 w-8" />
-              <p className="text-text-3 text-sm">
-                {allItems.length === 0 ? emptyText : '검색 결과가 없습니다.'}
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Select All */}
-              <div className="border-line-2 bg-bg-2 sticky top-0 flex items-center gap-3 border-b px-6 py-2">
-                <DsCheckbox
-                  checked={selection.isAllSelected(currentItems)}
-                  onCheckedChange={() => selection.toggleAll(currentItems)}
-                  className="h-5 w-5 border-line-2 bg-bg-3"
-                />
-                <span className="text-text-2 text-sm">
-                  전체 선택 ({selection.count}/{currentItems.length})
-                </span>
-              </div>
-
-              {/* Items */}
-              <div className="divide-line-2 divide-y">
-                {activeTab === 'case' &&
-                  filteredCases.map((tc) => (
-                    <div
-                      key={tc.id}
-                      onClick={() => selection.toggle(tc.id)}
-                      className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
-                    >
-                      <DsCheckbox checked={selection.has(tc.id)} className="h-5 w-5 shrink-0 border-line-2 bg-bg-3" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-primary shrink-0 font-mono text-sm">{tc.caseKey}</span>
-                          <span className="text-text-1 truncate">{tc.title}</span>
-                        </div>
-                        {tc.tags && tc.tags.length > 0 && (
-                          <div className="mt-1 flex gap-1">
-                            {tc.tags.slice(0, 3).map((tag) => (
-                              <span key={tag} className="bg-bg-3 text-text-3 rounded px-1.5 py-0.5 text-xs">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+            <SelectionModal.ItemList>
+              {activeTab === 'case' &&
+                filteredCases.map((tc) => (
+                  <SelectionModal.Item key={tc.id} checked={selection.has(tc.id)} onToggle={() => selection.toggle(tc.id)}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-primary shrink-0 font-mono text-sm">{tc.caseKey}</span>
+                      <span className="text-text-1 truncate">{tc.title}</span>
                     </div>
-                  ))}
-
-                {activeTab === 'suite' &&
-                  filteredSuites.map((suite) => (
-                    <div
-                      key={suite.id}
-                      onClick={() => selection.toggle(suite.id)}
-                      className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
-                    >
-                      <DsCheckbox checked={selection.has(suite.id)} className="h-5 w-5 shrink-0 border-line-2 bg-bg-3" />
-                      <div className="min-w-0 flex-1">
-                        <span className="text-text-1 truncate">{suite.title}</span>
-                        {suite.description && (
-                          <p className="text-text-3 mt-0.5 truncate text-xs">{suite.description}</p>
-                        )}
+                    {tc.tags && tc.tags.length > 0 && (
+                      <div className="mt-1 flex gap-1">
+                        {tc.tags.slice(0, 3).map((tag) => (
+                          <span key={tag} className="bg-bg-3 text-text-3 rounded px-1.5 py-0.5 text-xs">{tag}</span>
+                        ))}
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </SelectionModal.Item>
+                ))}
 
-                {activeTab === 'milestone' &&
-                  filteredMilestones.map((milestone) => (
-                    <div
-                      key={milestone.id}
-                      onClick={() => selection.toggle(milestone.id)}
-                      className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
-                    >
-                      <DsCheckbox checked={selection.has(milestone.id)} className="h-5 w-5 shrink-0 border-line-2 bg-bg-3" />
-                      <div className="min-w-0 flex-1">
-                        <span className="text-text-1 truncate">{milestone.title}</span>
-                        {milestone.description && (
-                          <p className="text-text-3 mt-0.5 truncate text-xs">{milestone.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </>
-          )}
-        </div>
+              {activeTab === 'suite' &&
+                filteredSuites.map((suite) => (
+                  <SelectionModal.Item key={suite.id} checked={selection.has(suite.id)} onToggle={() => selection.toggle(suite.id)}>
+                    <span className="text-text-1 truncate">{suite.title}</span>
+                    {suite.description && (
+                      <p className="text-text-3 mt-0.5 truncate text-xs">{suite.description}</p>
+                    )}
+                  </SelectionModal.Item>
+                ))}
 
-        {/* Footer */}
-        <div className="border-line-2 flex items-center justify-between border-t px-6 py-4">
-          <span className="text-text-3 text-sm">{selection.count}개 선택됨</span>
-          <div className="flex gap-3">
-            <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>
-              취소
-            </DSButton>
-            <DSButton
-              type="button"
-              variant="solid"
-              onClick={handleSubmit}
-              disabled={isPending || selection.count === 0}
-            >
-              {isPending ? '추가 중...' : submitLabel}
-            </DSButton>
-          </div>
-        </div>
-      </section>
-    </div>
+              {activeTab === 'milestone' &&
+                filteredMilestones.map((milestone) => (
+                  <SelectionModal.Item key={milestone.id} checked={selection.has(milestone.id)} onToggle={() => selection.toggle(milestone.id)}>
+                    <span className="text-text-1 truncate">{milestone.title}</span>
+                    {milestone.description && (
+                      <p className="text-text-3 mt-0.5 truncate text-xs">{milestone.description}</p>
+                    )}
+                  </SelectionModal.Item>
+                ))}
+            </SelectionModal.ItemList>
+          </>
+        )}
+      </SelectionModal.Body>
+      <SelectionModal.Footer
+        selectedCount={selection.count}
+        submitLabel={`${selection.count}개 ${config.submitUnit} 추가`}
+        onSubmit={handleSubmit}
+      />
+    </SelectionModal.Root>
   );
 };
