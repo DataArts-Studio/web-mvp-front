@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { projects, LifecycleStatus } from './projects';
+import { milestones } from './milestones';
 
 export const testRunStatusEnum = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as const;
 export type TestRunStatus = (typeof testRunStatusEnum)[number];
@@ -7,6 +8,7 @@ export type TestRunStatus = (typeof testRunStatusEnum)[number];
 export const testRuns = pgTable('test_runs', {
   id: uuid('id').primaryKey().defaultRandom(),
   project_id: uuid('project_id').references(() => projects.id),
+  milestone_id: uuid('milestone_id').references(() => milestones.id, { onDelete: 'set null' }),
   name: varchar('name').notNull(),
   description: text('description'),
   status: varchar('status').$type<TestRunStatus>().default('NOT_STARTED').notNull(),

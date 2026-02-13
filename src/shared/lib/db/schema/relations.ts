@@ -7,7 +7,6 @@ import { testRuns } from './test-runs';
 import { milestones } from './milestones';
 import { testCaseRuns } from './test-case-runs';
 import { testRunSuites } from './test-run-suites';
-import { testRunMilestones } from './test-run-milestones';
 import { suiteTestCases } from './suite-test-cases';
 import { milestoneTestCases } from './milestone-test-cases';
 import { milestoneTestSuites } from './milestone-test-suites';
@@ -63,9 +62,12 @@ export const testRunRelations = relations(testRuns, ({ one, many }) => ({
 		fields: [testRuns.project_id],
 		references: [projects.id],
 	}),
+	milestone: one(milestones, {
+		fields: [testRuns.milestone_id],
+		references: [milestones.id],
+	}),
 	testCaseRuns: many(testCaseRuns),
 	testRunSuites: many(testRunSuites),
-	testRunMilestones: many(testRunMilestones),
 }));
 
 // Milestone Relations
@@ -74,7 +76,7 @@ export const milestoneRelations = relations(milestones, ({ one, many }) => ({
 		fields: [milestones.project_id],
 		references: [projects.id],
 	}),
-	testRunMilestones: many(testRunMilestones),
+	testRuns: many(testRuns),
 	milestoneTestCases: many(milestoneTestCases),
 	milestoneTestSuites: many(milestoneTestSuites),
 }));
@@ -100,18 +102,6 @@ export const testRunSuitesRelations = relations(testRunSuites, ({ one }) => ({
 	testSuite: one(testSuites, {
 		fields: [testRunSuites.test_suite_id],
 		references: [testSuites.id],
-	}),
-}));
-
-// Test Run Milestones Relations (Join Table)
-export const testRunMilestonesRelations = relations(testRunMilestones, ({ one }) => ({
-	testRun: one(testRuns, {
-		fields: [testRunMilestones.test_run_id],
-		references: [testRuns.id],
-	}),
-	milestone: one(milestones, {
-		fields: [testRunMilestones.milestone_id],
-		references: [milestones.id],
 	}),
 }));
 

@@ -22,9 +22,8 @@ vi.mock('@/shared/lib/db', () => ({
   testCases: { project_id: 'project_id', id: 'id', display_id: 'display_id', lifecycle_status: 'lifecycle_status' },
   testSuites: { project_id: 'project_id', id: 'id', name: 'name', lifecycle_status: 'lifecycle_status' },
   milestones: { project_id: 'project_id', id: 'id', name: 'name', lifecycle_status: 'lifecycle_status' },
-  testRuns: { id: 'id', project_id: 'project_id', name: 'name', status: 'status' },
+  testRuns: { id: 'id', project_id: 'project_id', name: 'name', status: 'status', milestone_id: 'milestone_id' },
   testRunSuites: { test_run_id: 'test_run_id', test_suite_id: 'test_suite_id' },
-  testRunMilestones: { test_run_id: 'test_run_id', milestone_id: 'milestone_id' },
   testCaseRuns: {},
   milestoneTestCases: {},
   milestoneTestSuites: {},
@@ -222,7 +221,7 @@ describe('createTestRunAction - storage limit', () => {
     const result = await createTestRunAction({
       project_id: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Test Run',
-      milestone_ids: ['770e8400-e29b-41d4-a716-446655440001'],
+      milestone_id: '770e8400-e29b-41d4-a716-446655440001',
     });
 
     expect(result.success).toBe(false);
