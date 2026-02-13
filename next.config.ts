@@ -17,7 +17,7 @@ const securityHeaders = [
       "font-src 'self' cdn.jsdelivr.net",
       "worker-src 'self' blob:",
       "connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io *.vercel.live",
-      "frame-src *.vercel.live",
+      "frame-src vercel.live *.vercel.live",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
