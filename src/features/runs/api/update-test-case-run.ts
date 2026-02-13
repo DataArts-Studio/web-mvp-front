@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testRuns, TestCaseRunStatus, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { eq, and } from 'drizzle-orm';
@@ -77,10 +78,10 @@ export async function updateTestCaseRunStatus(
     };
   } catch (error) {
     console.error('Error updating test case run:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    Sentry.captureException(error, { extra: { action: 'updateTestCaseRunStatus' } });
     return {
       success: false,
-      errors: { _general: [`상태 업데이트 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: { _general: ['상태 업데이트 중 오류가 발생했습니다.'] },
     };
   }
 }

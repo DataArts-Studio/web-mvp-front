@@ -148,10 +148,9 @@ export const getDashboardStats = async ({
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     Sentry.captureException(error, { extra: { action: 'getDashboardStats' } });
-    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _dashboard: [`대시보드 데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: { _dashboard: ['대시보드 데이터를 불러오는 중 오류가 발생했습니다.'] },
     };
   }
 };
