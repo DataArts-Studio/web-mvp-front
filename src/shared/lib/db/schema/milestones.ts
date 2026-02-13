@@ -6,7 +6,7 @@ export type MilestoneProgressStatus = (typeof milestoneProgressStatusEnum)[numbe
 
 export const milestones = pgTable('milestones', (t) => ({
   id: t.uuid('id').primaryKey(),
-  project_id: t.uuid('project_id').references(() => projects.id),
+  project_id: t.uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   name: t.varchar('name', { length: 255 }).notNull(),
   description: t.text('description'),
   start_date: t.timestamp('start_date', { mode: 'string' }),
