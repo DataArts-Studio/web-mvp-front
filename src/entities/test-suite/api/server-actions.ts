@@ -17,6 +17,7 @@ import type { ActionResult } from '@/shared/types';
 import { and, eq, count, desc, inArray, isNotNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { checkStorageLimit } from '@/shared/lib/db';
 
 type GetTestSuitesParams = {
   projectId: string;
@@ -29,6 +30,9 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     if (!hasAccess) {
       return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
     }
+
+    const storageError = await checkStorageLimit(input.projectId);
+    if (storageError) return storageError;
 
     const db = getDatabase();
     const dto = toCreateTestSuiteDTO(input);

@@ -1,12 +1,14 @@
 import { getDashboardStats } from '@/features';
 import { queryOptions } from '@tanstack/react-query';
 import { getDashboardMilestones } from './get-dashboard-milestones';
+import { getStorageInfo } from './get-storage-info';
 
 
 export const dashboardQueryKeys = {
   all: ['dashboard'] as const,
   stats: (slug: string) => [...dashboardQueryKeys.all, 'stats', slug] as const,
   milestones: (projectId: string, testRunId?: string) => [...dashboardQueryKeys.all, 'milestones', projectId, testRunId ?? 'all'] as const,
+  storageInfo: (projectId: string) => [...dashboardQueryKeys.all, 'storageInfo', projectId] as const,
 };
 
 export const dashboardQueryOptions = {
@@ -20,6 +22,12 @@ export const dashboardQueryOptions = {
     queryOptions({
       queryKey: dashboardQueryKeys.milestones(projectId, testRunId),
       queryFn: () => getDashboardMilestones(projectId, testRunId),
+      staleTime: 1000 * 60 * 5,
+    }),
+  storageInfo: (projectId: string) =>
+    queryOptions({
+      queryKey: dashboardQueryKeys.storageInfo(projectId),
+      queryFn: () => getStorageInfo(projectId),
       staleTime: 1000 * 60 * 5,
     }),
 };

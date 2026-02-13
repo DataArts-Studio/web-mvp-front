@@ -34,6 +34,6 @@ export const toProjectDto = (domain: CreateProjectDomain): CreateProjectDTO => {
 };
 
 export const formToDomain = (formData: ProjectForm): CreateProjectDomain => {
-  const { identifierConfirm, ...rest } = formData;
+  const { identifierConfirm, ageConfirmed, termsAgreed, ...rest } = formData;
   return rest;
 };

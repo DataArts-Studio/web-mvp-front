@@ -59,6 +59,12 @@ export const CreateProjectDomainSchema = ProjectDomainSchema.omit({
 
 export const ProjectFormSchema = CreateProjectDomainSchema.extend({
   identifierConfirm: z.string(),
+  ageConfirmed: z.literal(true, {
+    error: '만 14세 이상만 서비스를 이용할 수 있습니다.',
+  }),
+  termsAgreed: z.literal(true, {
+    error: '이용약관에 동의해주세요.',
+  }),
 }).refine((data) => data.identifier === data.identifierConfirm, {
   message: '식별번호가 일치하지 않습니다.',
   path: ['identifierConfirm'],

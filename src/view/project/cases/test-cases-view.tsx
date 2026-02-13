@@ -15,8 +15,9 @@ import { cn } from '@/shared/utils';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Filter, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, Download, Filter, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
+import { exportTestCasesToCSV } from '@/features/cases-export';
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
@@ -374,6 +375,14 @@ export const TestCasesView = () => {
                 </Select.Content>
               </Select.Root>
             </ActionToolbar.Group>
+            <ActionToolbar.Action size="small" type="button" variant="outline" onClick={() => {
+              track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count: filteredAndSortedTestCases.length });
+              const projectName = dashboardData?.success ? dashboardData.data.project.name : 'project';
+              exportTestCasesToCSV(filteredAndSortedTestCases, projectName);
+            }} className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              <span className="leading-none">내보내기</span>
+            </ActionToolbar.Action>
             <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => { track(TESTCASE_EVENTS.CREATE_START, { project_id: projectId }); onOpen('create'); }} className='flex items-center gap-2'>
               <Plus className="h-4 w-4" />
               <span className='leading-none'>테스트 케이스 생성</span>
