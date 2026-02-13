@@ -7,7 +7,7 @@ export type TestRunStatus = (typeof testRunStatusEnum)[number];
 
 export const testRuns = pgTable('test_runs', {
   id: uuid('id').primaryKey().defaultRandom(),
-  project_id: uuid('project_id').references(() => projects.id),
+  project_id: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   milestone_id: uuid('milestone_id').references(() => milestones.id, { onDelete: 'set null' }),
   name: varchar('name').notNull(),
   description: text('description'),

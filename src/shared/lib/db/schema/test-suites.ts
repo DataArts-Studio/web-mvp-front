@@ -3,7 +3,7 @@ import { projects, LifecycleStatus } from './projects';
 
 export const testSuites = pgTable('test_suites', {
   id: uuid('id').primaryKey(),
-  project_id: uuid('project_id').references(() => projects.id),
+  project_id: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   name: varchar('name').notNull(),
   description: varchar('description'),
   sort_order: integer('sort_order'),
