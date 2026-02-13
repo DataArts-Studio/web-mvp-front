@@ -32,9 +32,7 @@ export default async function ProjectAccessPage({
   const slug = decodeURIComponent(rawSlug);
 
   // 프로젝트 존재 여부 확인
-  console.log('[Access Page] 프로젝트 존재 여부 확인:', slug);
   const projectExists = await checkProjectExists(slug);
-  console.log('[Access Page] 프로젝트 존재 여부 결과:', projectExists);
   if (!projectExists) {
     notFound();
   }
