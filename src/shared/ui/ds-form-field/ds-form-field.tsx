@@ -61,7 +61,7 @@ const DsFormFieldMessage = ({ children }: ComponentProps<typeof FormField.Messag
   const { invalid } = useFormField();
   if (!invalid) return null;
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 text-system-red">
       <CircleAlert className={cn('w-4 h-4')}/>
       <FormField.Message>{children}</FormField.Message>
     </div>

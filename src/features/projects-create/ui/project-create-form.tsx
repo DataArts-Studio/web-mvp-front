@@ -207,13 +207,13 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
             {(errors.projectName || errors.termsAgreed || errors.ageConfirmed) && (
               <div className="flex w-full flex-col gap-1">
                 {errors.projectName && (
-                  <p className="text-sm text-red-400">{errors.projectName.message}</p>
+                  <p className="text-sm text-system-red">{errors.projectName.message}</p>
                 )}
                 {errors.termsAgreed && (
-                  <p className="text-sm text-red-400">{errors.termsAgreed.message}</p>
+                  <p className="text-sm text-system-red">{errors.termsAgreed.message}</p>
                 )}
                 {errors.ageConfirmed && (
-                  <p className="text-sm text-red-400">{errors.ageConfirmed.message}</p>
+                  <p className="text-sm text-system-red">{errors.ageConfirmed.message}</p>
                 )}
               </div>
             )}
