@@ -12,9 +12,10 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googletagmanager.com",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net",
       "img-src 'self' data: blob:",
-      "font-src 'self'",
+      "font-src 'self' cdn.jsdelivr.net",
+      "worker-src 'self' blob:",
       "connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io",
       "frame-src 'none'",
       "object-src 'none'",

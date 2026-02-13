@@ -3,7 +3,8 @@ import { join } from 'path';
 import type { ReactNode } from 'react';
 import { Suspense } from 'react';
 import { DocsView } from '@/view';
-import { DocsMarkdownContent } from '@/view/docs/docs-markdown-content';
+import { DocsMarkdownContent, slugify } from '@/view/docs/docs-markdown-content';
+import type { DocHeading } from '@/view/docs/docs-view';
 
 type DocTab = 'getting-started' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';
 
@@ -31,6 +32,19 @@ async function getMarkdownContent(filename: string): Promise<string> {
   }
 }
 
+function extractHeadings(markdown: string): DocHeading[] {
+  const headingRegex = /^(#{2,3})\s+(.+)$/gm;
+  const headings: DocHeading[] = [];
+  let match;
+  while ((match = headingRegex.exec(markdown)) !== null) {
+    const level = match[1].length as 2 | 3;
+    const text = match[2].trim();
+    const id = slugify(text);
+    headings.push({ id, text, level });
+  }
+  return headings;
+}
+
 async function getAllContents(): Promise<Record<DocTab, string>> {
   const entries = await Promise.all(
     Object.entries(docFiles).map(async ([key, filename]) => {
@@ -54,9 +68,13 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
     ])
   ) as Record<DocTab, ReactNode>;
 
+  const headings = Object.fromEntries(
+    Object.entries(contents).map(([key, md]) => [key, extractHeadings(md)])
+  ) as Record<DocTab, DocHeading[]>;
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-bg-1" />}>
-      <DocsView renderedContents={renderedContents} initialTab={validTab} />
+      <DocsView renderedContents={renderedContents} headings={headings} initialTab={validTab} />
     </Suspense>
   );
 }
