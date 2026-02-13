@@ -33,14 +33,13 @@ export function DocsView({ renderedContents, headings, initialTab = 'getting-sta
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as DocTab | null;
-  const [activeTab, setActiveTab] = useState<DocTab>(tabParam || initialTab);
+  const activeTab: DocTab = tabParam || initialTab;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const content = renderedContents[activeTab] || renderedContents['getting-started'];
   const currentHeadings = headings[activeTab] || [];
 
   const handleTabChange = (tab: DocTab) => {
-    setActiveTab(tab);
     setIsSidebarOpen(false);
     router.push(`/docs?tab=${tab}`, { scroll: false });
   };

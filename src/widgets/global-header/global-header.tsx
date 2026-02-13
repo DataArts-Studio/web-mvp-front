@@ -40,7 +40,7 @@ export const GlobalHeader = () => {
         {/* Navigation */}
         <nav aria-label="메인 네비게이션" className="flex items-center gap-6">
           <Link
-            href="/docs"
+            href="/docs?tab=getting-started"
             aria-label="문서 페이지로 이동"
             className="text-body2 text-text-2 transition-colors hover:text-primary"
             onClick={() => track(NAVIGATION_EVENTS.DOCS_CLICK)}

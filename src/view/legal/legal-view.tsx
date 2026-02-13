@@ -29,14 +29,13 @@ export function LegalView({ renderedContents, headings, initialTab = 'privacy' }
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as TabType | null;
-  const [activeTab, setActiveTab] = useState<TabType>(tabParam || initialTab);
+  const activeTab: TabType = tabParam || initialTab;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const content = renderedContents[activeTab];
   const currentHeadings = headings[activeTab] || [];
 
   const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
     setIsSidebarOpen(false);
     router.push(`/legal?tab=${tab}`, { scroll: false });
   };
