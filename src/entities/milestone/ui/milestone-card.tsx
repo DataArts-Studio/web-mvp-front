@@ -3,6 +3,7 @@ import React from 'react';
 import { MilestoneWithStats } from '@/entities/milestone';
 import { Calendar, Edit, Play, Check, RotateCcw } from 'lucide-react';
 import { cn, DSButton } from '@/shared';
+import { formatDate } from '@/shared/utils/date-format';
 
 interface MilestoneCardProps {
   milestone: MilestoneWithStats;
@@ -71,12 +72,6 @@ const QUICK_ACTION_CONFIG: Record<
     icon: RotateCcw,
     buttonStyle: 'bg-slate-500 hover:bg-slate-600 text-white',
   },
-};
-
-const formatDate = (date: Date | string | null) => {
-  if (!date) return '-';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toISOString().split('T')[0];
 };
 
 export const MilestoneCard = ({ milestone, onEdit, onStatusChange }: MilestoneCardProps) => {

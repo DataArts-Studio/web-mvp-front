@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
+import { useOutsideClick, useToggleSet } from '@/shared/hooks';
 import { Aside } from '@/widgets';
 import { testRunByIdQueryOptions, updateTestCaseRunStatus, TestCaseRunDetail } from '@/features/runs';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
@@ -97,7 +98,7 @@ export const TestRunDetailView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [suiteFilter, setSuiteFilter] = useState<string>('all');
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const collapsedGroups = useToggleSet();
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -109,32 +110,10 @@ export const TestRunDetailView = () => {
 
   const { data, isLoading, isError } = useQuery(testRunByIdQueryOptions(testRunId));
 
-  // Close status dropdown on click outside
-  useEffect(() => {
-    if (!showStatusDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
-        setShowStatusDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showStatusDropdown]);
-
-  // Close filter dropdowns on click outside
-  useEffect(() => {
-    if (!showStatusFilterDropdown && !showSuiteFilterDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (statusFilterRef.current && !statusFilterRef.current.contains(e.target as Node)) {
-        setShowStatusFilterDropdown(false);
-      }
-      if (suiteFilterRef.current && !suiteFilterRef.current.contains(e.target as Node)) {
-        setShowSuiteFilterDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showStatusFilterDropdown, showSuiteFilterDropdown]);
+  // Close dropdowns on click outside
+  useOutsideClick(statusDropdownRef, () => setShowStatusDropdown(false), showStatusDropdown);
+  useOutsideClick(statusFilterRef, () => setShowStatusFilterDropdown(false), showStatusFilterDropdown);
+  useOutsideClick(suiteFilterRef, () => setShowSuiteFilterDropdown(false), showSuiteFilterDropdown);
 
   const updateMutation = useMutation({
     mutationFn: updateTestCaseRunStatus,
@@ -209,18 +188,6 @@ export const TestRunDetailView = () => {
 
     return sorted;
   }, [testRun, filteredCases]);
-
-  const toggleGroupCollapse = (groupKey: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupKey)) {
-        next.delete(groupKey);
-      } else {
-        next.add(groupKey);
-      }
-      return next;
-    });
-  };
 
   // Get selected case
   const selectedCase = useMemo(() => {
@@ -566,8 +533,8 @@ export const TestRunDetailView = () => {
                       <div
                         role="button"
                         tabIndex={0}
-                        onClick={() => toggleGroupCollapse(group.groupKey)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroupCollapse(group.groupKey); } }}
+                        onClick={() => collapsedGroups.toggle(group.groupKey)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); collapsedGroups.toggle(group.groupKey); } }}
                         className="bg-bg-3/50 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
                       >
                         <ChevronDown

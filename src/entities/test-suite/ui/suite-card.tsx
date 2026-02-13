@@ -5,18 +5,12 @@ import { AlertCircle, FileText, FolderTree, Layers, PlayCircle } from 'lucide-re
 
 import { Edit } from 'lucide-react';
 import { DSButton } from '@/shared';
+import { formatDate } from '@/shared/utils/date-format';
 
 interface SuiteCardProps {
   suite: TestSuiteCard;
   onEdit: () => void;
 }
-
-const formatDate = (d: Date) => {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
 
 const tagToneText = (tone: TestSuiteCard['tag']['tone']) => {
   switch (tone) {

@@ -2,6 +2,7 @@ import React from 'react';
 
 import type { TestCaseCardType } from '@/entities/test-case';
 import { MoreHorizontal } from 'lucide-react';
+import { formatDate } from '@/shared/utils/date-format';
 
 interface TestCaseCardProps {
   testCase: TestCaseCardType;
@@ -13,8 +14,6 @@ const STATUS_CONFIG = {
   failed: { label: 'Fail', className: 'bg-system-red/10 text-system-red' },
   blocked: { label: 'Blocked', className: 'bg-bg-4 text-text-3 line-through' },
 } as const;
-
-const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
 export const TestCaseCard = ({ testCase }: TestCaseCardProps) => {
   const cfg = STATUS_CONFIG[testCase.status];

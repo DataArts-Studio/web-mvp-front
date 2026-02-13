@@ -2,6 +2,7 @@ import React from 'react';
 
 import { TestSuiteCard } from '@/entities/test-suite';
 import { DSButton, cn } from '@/shared';
+import { formatDate } from '@/shared/utils/date-format';
 import {
   CheckCircle,
   Edit2,
@@ -52,10 +53,6 @@ const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = 
     icon: <ListChecks className="h-4 w-4" />,
     color: 'text-slate-400',
   },
-};
-
-const formatDate = (date: Date) => {
-  return date.toISOString().split('T')[0];
 };
 
 export const TestSuiteSideView = ({

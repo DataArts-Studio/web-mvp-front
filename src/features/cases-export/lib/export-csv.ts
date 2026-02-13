@@ -1,15 +1,11 @@
 import type { TestCaseCardType } from '@/entities/test-case';
+import { formatDateKR } from '@/shared/utils/date-format';
 
 function escapeCsvField(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
-}
-
-function formatDate(date: Date | null | undefined): string {
-  if (!date) return '';
-  return new Date(date).toLocaleDateString('ko-KR');
 }
 
 const CSV_HEADERS = [
@@ -37,8 +33,8 @@ export function exportTestCasesToCSV(testCases: TestCaseCardType[], projectName:
     tc.expectedResult || '',
     tc.resultStatus || '',
     tc.suiteTitle || '',
-    formatDate(tc.createdAt),
-    formatDate(tc.updatedAt),
+    formatDateKR(tc.createdAt, ''),
+    formatDateKR(tc.updatedAt, ''),
   ]);
 
   const csvContent = [

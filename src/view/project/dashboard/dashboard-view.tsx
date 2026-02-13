@@ -9,7 +9,7 @@ import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions, FetchedTestRun } from '@/features/runs';
 import { Container, MainContainer } from '@/shared/lib/primitives';
-import { useDisclosure } from '@/shared/hooks';
+import { useDisclosure, useOutsideClick } from '@/shared/hooks';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
@@ -17,6 +17,7 @@ import { Check, ChevronDown, ChevronRight, CircleHelp, Clock, FileText, FolderOp
 import dynamic from 'next/dynamic';
 import { type TestStatusData, KPICards, type KPIData } from '@/widgets/project';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
+import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
 import { useOnboardingTour } from '@/features/onboarding-tour';
 
 const TestStatusChart = dynamic(
@@ -79,15 +80,7 @@ export const ProjectDashboardView = () => {
   const runDropdownRef = useRef<HTMLDivElement>(null);
 
   // 드롭다운 외부 클릭 닫기
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (runDropdownRef.current && !runDropdownRef.current.contains(e.target as Node)) {
-        setShowRunDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useOutsideClick(runDropdownRef, () => setShowRunDropdown(false));
 
   // 대시보드 View 이벤트
   useEffect(() => {
@@ -247,7 +240,7 @@ export const ProjectDashboardView = () => {
                   </button>
                 </div>
                 <span className="typo-caption text-text-3">
-                  {new Date(project.created_at).toLocaleDateString('ko-KR')} 생성됨
+                  {formatDateKR(project.created_at)} 생성됨
                 </span>
               </div>
             </div>
@@ -305,17 +298,7 @@ export const ProjectDashboardView = () => {
                       {item.title}
                     </span>
                     <span className="typo-caption text-text-3">
-                      {(() => {
-                        const diff = Date.now() - new Date(item.created_at).getTime();
-                        const minutes = Math.floor(diff / 60000);
-                        if (minutes < 1) return '방금 전';
-                        if (minutes < 60) return `${minutes}분 전`;
-                        const hours = Math.floor(minutes / 60);
-                        if (hours < 24) return `${hours}시간 전`;
-                        const days = Math.floor(hours / 24);
-                        if (days < 30) return `${days}일 전`;
-                        return new Date(item.created_at).toLocaleDateString('ko-KR');
-                      })()}
+                      {formatRelativeTime(item.created_at)}
                     </span>
                   </li>
                 ))}
@@ -442,7 +425,7 @@ export const ProjectDashboardView = () => {
                     <span className="typo-body2-heading text-text-1 truncate">{testCase.title}</span>
                   </div>
                   <span className="typo-caption text-text-3 shrink-0">
-                    {new Date(testCase.createdAt).toLocaleDateString('ko-KR')}
+                    {formatDateKR(testCase.createdAt)}
                   </span>
                 </Link>
               ))}

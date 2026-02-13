@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Edit2, ListChecks, Play, PlayCircle, Plus, Trash2, XCircle } from 'lucide-react';
 import { getTestSuites } from '@/entities';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
+import { formatDateTime } from '@/shared/utils/date-format';
 
 
 
@@ -64,19 +65,6 @@ const RUN_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   NOT_STARTED: { label: 'Not Started', style: 'bg-slate-500/20 text-slate-300' },
   IN_PROGRESS: { label: 'In Progress', style: 'bg-blue-500/20 text-blue-300' },
   COMPLETED: { label: 'Completed', style: 'bg-green-500/20 text-green-300' },
-};
-
-const formatDateTime = (date: Date | string | null | undefined) => {
-  if (!date) return '-';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '-';
-  return d.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 };
 
 export const MilestoneDetailView = () => {

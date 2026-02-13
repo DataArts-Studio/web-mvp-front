@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { DsInput, DSButton } from '@/shared/ui';
-import { useDebounce } from '@/shared/hooks';
+import { useDebounce, useOutsideClick } from '@/shared/hooks';
 import { searchProjects } from '../api/server-action';
 import { ProjectSearchAutocomplete } from './project-search-autocomplete';
 import type { ProjectSearchResult } from '../model/types';
@@ -66,16 +66,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
   }, [suggestions]);
 
   // Handle click outside to close autocomplete
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowAutocomplete(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useOutsideClick(containerRef, () => setShowAutocomplete(false));
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
