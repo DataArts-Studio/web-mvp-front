@@ -7,6 +7,7 @@ import type { ActionResult } from '@/shared/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { checkStorageLimit } from '@/shared/lib/db';
 
 
 
@@ -136,6 +137,9 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
       return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
     }
 
+    const storageError = await checkStorageLimit(input.projectId);
+    if (storageError) return storageError;
+
     const db = getDatabase();
     const dto = toCreateTestCaseDTO(input);
     const id = uuidv7();
@@ -209,6 +213,9 @@ export const updateTestCase = async (
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
       return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
     }
+
+    const storageError = await checkStorageLimit(existing.projectId);
+    if (storageError) return storageError;
 
     const updateData: Record<string, unknown> = {
       updated_at: new Date(),
