@@ -13,7 +13,7 @@ import { useDisclosure, useOutsideClick } from '@/shared/hooks';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown, ChevronRight, CircleHelp, Clock, FileText, FolderOpen, Plus, Settings, Share2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, CircleHelp, Clock, FileText, FolderOpen, Play, Plus, Settings, Share2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { type TestStatusData, KPICards, type KPIData } from '@/widgets/project';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
@@ -101,7 +101,7 @@ export const ProjectDashboardView = () => {
 
   const selectedRun = testRuns.find((r) => r.id === selectedRunId);
 
-  // 차트 데이터: 선택된 실행이 있으면 실행 기준, 없으면 전체 케이스 기준 (폴백)
+  // 차트 데이터: 선택된 실행이 있을 때만 표시
   const testStatusData: TestStatusData = React.useMemo(() => {
     if (selectedRun) {
       return {
@@ -111,19 +111,8 @@ export const ProjectDashboardView = () => {
         untested: selectedRun.stats.untested,
       };
     }
-    // 폴백: 전체 테스트 케이스의 resultStatus 집계
-    return testCases.reduce(
-      (acc, tc) => {
-        const status = tc.resultStatus;
-        if (status === 'pass') acc.pass++;
-        else if (status === 'fail') acc.fail++;
-        else if (status === 'blocked') acc.blocked++;
-        else acc.untested++;
-        return acc;
-      },
-      { pass: 0, fail: 0, blocked: 0, untested: 0 }
-    );
-  }, [selectedRun, testCases]);
+    return { pass: 0, fail: 0, blocked: 0, untested: 0 };
+  }, [selectedRun]);
 
   // 마일스톤 Gantt용 테스트 실행 선택 (차트와 독립)
   const [milestoneRunId, setMilestoneRunId] = useState<string | null>(null);
@@ -359,13 +348,34 @@ export const ProjectDashboardView = () => {
               </div>
             )}
           </div>
-          <TestStatusChart data={testStatusData} />
-          <MilestoneGanttChart
-              milestones={dashboardMilestones}
-              testRuns={testRuns}
-              selectedRunId={milestoneRunId}
-              onRunChange={setMilestoneRunId}
-            />
+          {testRuns.length === 0 ? (
+            <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
+              <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
+                <Play className="h-6 w-6" strokeWidth={1.5} />
+              </div>
+              <div className="flex flex-col items-center gap-1 text-center">
+                <h3 className="typo-h3-heading text-text-1">첫 번째 테스트를 실행해보세요!</h3>
+                <p className="typo-body2-normal text-text-3">
+                  테스트를 실행하면 결과 차트와 마일스톤 진행 현황을 확인할 수 있어요.
+                </p>
+              </div>
+              <Link href={`/projects/${slug}/runs/create`}>
+                <DSButton variant="solid" className="flex items-center gap-2">
+                  <span>테스트 실행 하기</span>
+                </DSButton>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <TestStatusChart data={testStatusData} />
+              <MilestoneGanttChart
+                milestones={dashboardMilestones}
+                testRuns={testRuns}
+                selectedRunId={milestoneRunId}
+                onRunChange={setMilestoneRunId}
+              />
+            </>
+          )}
         </section>
 
         {/* 테스트 케이스 섹션 */}
