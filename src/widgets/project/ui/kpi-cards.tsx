@@ -20,12 +20,22 @@ type KPICardProps = {
   label: string;
   value: number | string;
   icon: React.ReactNode;
+  decorativeIcon: React.ReactNode;
   variant?: 'default' | 'success' | 'danger' | 'warning' | 'muted';
   suffix?: string;
   isEmpty?: boolean;
+  isHighlighted?: boolean;
 };
 
-const KPICard = ({ label, value, icon, variant = 'default', suffix, isEmpty }: KPICardProps) => {
+const KPICard = ({
+  label,
+  value,
+  decorativeIcon,
+  variant = 'default',
+  suffix,
+  isEmpty,
+  isHighlighted,
+}: KPICardProps) => {
   const variantStyles = {
     default: 'text-text-1',
     success: 'text-primary',
@@ -34,29 +44,30 @@ const KPICard = ({ label, value, icon, variant = 'default', suffix, isEmpty }: K
     muted: 'text-text-3',
   };
 
-  const iconBgStyles = {
-    default: 'bg-bg-3 text-text-3',
-    success: 'bg-primary/10 text-primary',
-    danger: 'bg-system-red/10 text-system-red',
-    warning: 'bg-[#F5A623]/10 text-[#F5A623]',
-    muted: 'bg-bg-3 text-text-3',
-  };
+  const bgClass = isHighlighted
+    ? 'bg-gradient-to-b from-[#007351] to-[rgba(0,115,81,0.2)]'
+    : 'bg-bg-2';
+
+  const labelClass = isHighlighted ? 'text-white/70' : 'text-text-3';
+  const valueClass = isHighlighted ? 'text-white' : variantStyles[variant];
 
   return (
-    <div className={`rounded-3 border-line-2 bg-bg-2 border p-4 flex flex-col gap-3 ${isEmpty ? 'opacity-60' : ''}`}>
-      <div className="flex items-center justify-between">
-        <span className="typo-caption text-text-3">{label}</span>
-        <div className={`rounded-2 p-2 ${iconBgStyles[variant]}`}>
-          {icon}
-        </div>
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className={`typo-h1-heading ${variantStyles[variant]}`}>
-          {value}
-        </span>
+    <div
+      className={`relative h-[205px] overflow-hidden rounded-3 p-5 flex flex-col flex-1 ${bgClass} ${isEmpty ? 'opacity-60' : ''}`}
+    >
+      <span className={`typo-caption-normal ${labelClass}`}>{label}</span>
+      <div className="mt-2 flex items-baseline gap-1">
+        <span className={`typo-title-heading ${valueClass}`}>{value}</span>
         {suffix && (
-          <span className="typo-body2-normal text-text-3">{suffix}</span>
+          <span className={`typo-title-heading ${isHighlighted ? 'text-white/70' : 'text-text-3'}`}>
+            {suffix}
+          </span>
         )}
+      </div>
+      <div
+        className={`absolute bottom-[-20px] left-[-10px] ${isHighlighted ? 'text-white/[0.15]' : 'text-text-1/[0.07]'}`}
+      >
+        {decorativeIcon}
       </div>
     </div>
   );
@@ -83,52 +94,63 @@ export const KPICards = ({ data }: KPICardsProps) => {
   };
 
   return (
-    <div className="grid grid-cols-5 gap-4">
-      {/* Total Cases */}
-      <KPICard
-        label="Total Cases"
-        value={data.totalCases}
-        icon={<FileText className="h-4 w-4" />}
-        variant={hasData ? 'default' : 'muted'}
-        isEmpty={!hasData}
-      />
+    <div className="flex flex-col gap-4">
+      <p className="typo-body2-normal text-text-3">
+        전체 <strong className="text-text-1">{total}건</strong>의 테스트 케이스가 있어요.
+      </p>
+      <div className="flex gap-2">
+        {/* Total Cases */}
+        <KPICard
+          label="Total Cases"
+          value={data.totalCases}
+          icon={<FileText className="h-4 w-4" />}
+          decorativeIcon={<FileText className="h-[135px] w-[135px]" strokeWidth={1} />}
+          variant={hasData ? 'default' : 'muted'}
+          isEmpty={!hasData}
+          isHighlighted
+        />
 
-      {/* Test Suites */}
-      <KPICard
-        label="Test Suites"
-        value={data.testSuites}
-        icon={<FolderOpen className="h-4 w-4" />}
-        variant={data.testSuites > 0 ? 'default' : 'muted'}
-        isEmpty={data.testSuites === 0}
-      />
+        {/* Test Suites */}
+        <KPICard
+          label="Test Suites"
+          value={data.testSuites}
+          icon={<FolderOpen className="h-4 w-4" />}
+          decorativeIcon={<FolderOpen className="h-[140px] w-[140px]" strokeWidth={1} />}
+          variant={data.testSuites > 0 ? 'default' : 'muted'}
+          isEmpty={data.testSuites === 0}
+        />
 
-      {/* Pass Rate */}
-      <KPICard
-        label="Pass Rate"
-        value={passRate !== null ? passRate : '-'}
-        suffix={passRate !== null ? '%' : undefined}
-        icon={<CheckCircle className="h-4 w-4" />}
-        variant={getPassRateVariant()}
-        isEmpty={passRate === null}
-      />
+        {/* Pass Rate */}
+        <KPICard
+          label="Pass Rate"
+          value={passRate !== null ? passRate : '-'}
+          suffix={passRate !== null ? '%' : undefined}
+          icon={<CheckCircle className="h-4 w-4" />}
+          decorativeIcon={<CheckCircle className="h-[145px] w-[145px]" strokeWidth={1} />}
+          variant={getPassRateVariant()}
+          isEmpty={passRate === null}
+        />
 
-      {/* Critical (Fail + Blocked) */}
-      <KPICard
-        label="Critical"
-        value={critical}
-        icon={<AlertTriangle className="h-4 w-4" />}
-        variant={!hasData ? 'muted' : critical > 0 ? 'danger' : 'success'}
-        isEmpty={!hasData}
-      />
+        {/* Critical (Fail + Blocked) */}
+        <KPICard
+          label="Critical"
+          value={critical}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          decorativeIcon={<AlertTriangle className="h-[150px] w-[150px]" strokeWidth={1} />}
+          variant={!hasData ? 'muted' : critical > 0 ? 'danger' : 'success'}
+          isEmpty={!hasData}
+        />
 
-      {/* Untested */}
-      <KPICard
-        label="Untested"
-        value={data.untested}
-        icon={<Clock className="h-4 w-4" />}
-        variant={!hasData ? 'muted' : data.untested > 0 ? 'warning' : 'success'}
-        isEmpty={!hasData}
-      />
+        {/* Untested */}
+        <KPICard
+          label="Untested"
+          value={data.untested}
+          icon={<Clock className="h-4 w-4" />}
+          decorativeIcon={<Clock className="h-[160px] w-[160px]" strokeWidth={1} />}
+          variant={!hasData ? 'muted' : data.untested > 0 ? 'warning' : 'success'}
+          isEmpty={!hasData}
+        />
+      </div>
     </div>
   );
 };

@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import type { DashboardMilestone } from '@/features/dashboard';
 import type { FetchedTestRun } from '@/features/runs';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type MilestoneGanttChartProps = {
   milestones: DashboardMilestone[];
@@ -15,6 +15,7 @@ type MilestoneGanttChartProps = {
 const LABEL_W = 180;
 const RIGHT_W = 140;
 const FIXED_W = LABEL_W + RIGHT_W;
+const VISIBLE_WEEK_COUNT = 6;
 
 /** 주어진 날짜가 속한 주의 월요일을 반환 */
 const getWeekStart = (date: Date): Date => {
@@ -35,10 +36,10 @@ export const MilestoneGanttChart = ({
   selectedRunId,
   onRunChange,
 }: MilestoneGanttChartProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [collapsedMilestones, setCollapsedMilestones] = useState<Set<string>>(new Set());
+  const [weekOffset, setWeekOffset] = useState(0);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -62,7 +63,7 @@ export const MilestoneGanttChart = ({
   const selectedRun = testRuns.find((r) => r.id === selectedRunId);
 
   // 타임라인 범위 및 주차 계산
-  const { weeks, timelineStart, totalMs } = useMemo(() => {
+  const { weeks, timelineStart } = useMemo(() => {
     const now = new Date();
     let minDate = now;
     let maxDate = now;
@@ -102,12 +103,34 @@ export const MilestoneGanttChart = ({
     return { weeks, timelineStart: start, timelineEnd: finalEnd, totalMs };
   }, [milestones]);
 
-  // 오늘 위치 (차트 영역 내 비율 0~1)
+  // weekOffset이 범위를 벗어나지 않도록 보정
+  useEffect(() => {
+    if (weekOffset > 0 && weekOffset + VISIBLE_WEEK_COUNT > weeks.length) {
+      setWeekOffset(Math.max(0, weeks.length - VISIBLE_WEEK_COUNT));
+    }
+  }, [weeks.length, weekOffset]);
+
+  // 보이는 주차 (페이지네이션)
+  const visibleWeeks = weeks.slice(weekOffset, weekOffset + VISIBLE_WEEK_COUNT);
+  const canGoNext = weekOffset + VISIBLE_WEEK_COUNT < weeks.length;
+  const canGoPrev = weekOffset > 0;
+  const hasPagination = weeks.length > VISIBLE_WEEK_COUNT;
+
+  // 보이는 타임라인 범위
+  const visibleTimelineStart = visibleWeeks.length > 0 ? visibleWeeks[0].start : timelineStart;
+  const visibleTimelineEnd =
+    visibleWeeks.length > 0
+      ? new Date(visibleWeeks[visibleWeeks.length - 1].start.getTime() + WEEK_MS)
+      : new Date(timelineStart.getTime() + VISIBLE_WEEK_COUNT * WEEK_MS);
+  const visibleTotalMs = diffMs(visibleTimelineEnd, visibleTimelineStart);
+
+  // 오늘 위치 (visible 차트 영역 내 비율)
   const todayRatio = useMemo(() => {
     const now = new Date();
-    const r = diffMs(now, timelineStart) / totalMs;
-    return Math.max(0, Math.min(1, r));
-  }, [timelineStart, totalMs]);
+    return diffMs(now, visibleTimelineStart) / visibleTotalMs;
+  }, [visibleTimelineStart, visibleTotalMs]);
+
+  const showTodayLine = todayRatio >= 0 && todayRatio <= 1;
 
   if (milestones.length === 0 && testRuns.length === 0) {
     return null;
@@ -117,40 +140,58 @@ export const MilestoneGanttChart = ({
     if (!startDate || !endDate) return null;
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const leftPct = (diffMs(start, timelineStart) / totalMs) * 100;
-    const widthPct = (diffMs(end, start) / totalMs) * 100;
+    const leftPct = (diffMs(start, visibleTimelineStart) / visibleTotalMs) * 100;
+    const widthPct = (diffMs(end, start) / visibleTotalMs) * 100;
     return {
-      left: `${Math.max(0, leftPct)}%`,
+      left: `${leftPct}%`,
       width: `${Math.max(1, widthPct)}%`,
     };
   };
-
-  const minChartWidth = weeks.length * 140;
 
   // Gantt 행 렌더링 함수
   const renderBar = (
     label: string,
     barStyle: { left: string; width: string } | null,
     progressPct: number,
-    isChild: boolean
+    isChild: boolean,
+    collapseProps?: {
+      hasSuites: boolean;
+      isCollapsed: boolean;
+      onToggle: () => void;
+    }
   ) => (
     <div className="flex items-center">
       {/* Label */}
-      <div style={{ width: LABEL_W }} className="shrink-0 pr-4">
+      <div style={{ width: LABEL_W }} className="shrink-0 pr-2 flex items-center">
         <span
-          className={`block truncate ${
+          className={`block truncate flex-1 min-w-0 ${
             isChild ? 'typo-caption text-text-3 pl-4' : 'typo-label-normal text-text-1'
           }`}
         >
           {isChild ? `ㄴ ${label}` : label}
         </span>
+        {collapseProps?.hasSuites && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              collapseProps.onToggle();
+            }}
+            className="shrink-0 p-0.5 rounded-1 hover:bg-bg-3 text-text-3 cursor-pointer"
+          >
+            {collapseProps.isCollapsed ? (
+              <ChevronRight className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Bar area */}
-      <div className="relative flex-1" style={{ height: isChild ? '28px' : '32px' }}>
+      <div className="relative flex-1 overflow-hidden" style={{ height: isChild ? '28px' : '32px' }}>
         {/* Grid lines */}
         <div className="absolute inset-0 flex">
-          {weeks.map((_, i) => (
+          {visibleWeeks.map((_, i) => (
             <div key={i} className="border-line-2/30 flex-1 border-r last:border-r-0" />
           ))}
         </div>
@@ -243,14 +284,10 @@ export const MilestoneGanttChart = ({
           </div>
         )}
 
-        {/* Scrollable chart area */}
-        <div ref={scrollRef} className="overflow-x-auto">
-          <div className="relative" style={{ minWidth: `${minChartWidth}px` }}>
-            {/*
-              Global today vector line (▼ + 수직선)
-              LABEL_W px 부터 시작하는 차트 영역 내에서 todayRatio 위치에 배치.
-              CSS calc: left = LABEL_W + (100% - FIXED_W) * todayRatio
-            */}
+        {/* Chart area */}
+        <div className="relative">
+          {/* Today line (visible 범위 안에 있을 때만) */}
+          {showTodayLine && (
             <div
               className="pointer-events-none absolute z-20 flex flex-col items-center"
               style={{
@@ -265,68 +302,89 @@ export const MilestoneGanttChart = ({
               {/* 수직선 */}
               <div className="bg-text-4/60 w-px flex-1" />
             </div>
+          )}
 
-            {/* Week headers */}
-            <div className="border-line-2 mb-4 flex border-b pb-2">
-              <div style={{ width: LABEL_W }} className="shrink-0" />
-              <div className="relative flex flex-1">
-                {weeks.map((week, i) => (
-                  <div
-                    key={i}
-                    className="typo-caption text-text-3 flex-1 text-center uppercase"
+          {/* Week headers */}
+          <div className="border-line-2 mb-4 flex items-center border-b pb-2">
+            <div style={{ width: LABEL_W }} className="shrink-0" />
+            <div className="relative flex flex-1">
+              {visibleWeeks.map((week, i) => (
+                <div
+                  key={i}
+                  className="typo-caption text-text-3 flex-1 text-center uppercase"
+                >
+                  {week.label}
+                </div>
+              ))}
+            </div>
+            <div style={{ width: RIGHT_W }} className="shrink-0 flex items-center justify-end gap-1">
+              {hasPagination && (
+                <>
+                  <button
+                    onClick={() => setWeekOffset((prev) => Math.max(0, prev - VISIBLE_WEEK_COUNT))}
+                    disabled={!canGoPrev}
+                    className={`rounded-full p-1 transition-colors ${
+                      canGoPrev
+                        ? 'hover:bg-bg-3 text-text-3 cursor-pointer'
+                        : 'text-text-4/30 cursor-default'
+                    }`}
                   >
-                    {week.label}
-                  </div>
-                ))}
-              </div>
-              <div style={{ width: RIGHT_W }} className="shrink-0" />
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setWeekOffset((prev) => Math.min(prev + VISIBLE_WEEK_COUNT, weeks.length - VISIBLE_WEEK_COUNT))}
+                    disabled={!canGoNext}
+                    className={`rounded-full p-1 transition-colors ${
+                      canGoNext
+                        ? 'hover:bg-bg-3 text-text-3 cursor-pointer'
+                        : 'text-text-4/30 cursor-default'
+                    }`}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </>
+              )}
             </div>
+          </div>
 
-            {/* Milestone rows */}
-            <div className="flex flex-col gap-2">
-              {milestones.map((m) => {
-                const barStyle = getBarStyle(m.startDate, m.endDate);
-                const isCollapsed = collapsedMilestones.has(m.id);
-                const hasSuites = m.suites.length > 0;
+          {/* Milestone rows */}
+          <div className="flex flex-col gap-2">
+            {milestones.map((m) => {
+              const barStyle = getBarStyle(m.startDate, m.endDate);
+              const isCollapsed = collapsedMilestones.has(m.id);
+              const hasSuites = m.suites.length > 0;
 
-                return (
-                  <div key={m.id}>
-                    {/* Parent milestone row */}
-                    <div
-                      className={`${hasSuites ? 'cursor-pointer' : ''}`}
-                      onClick={() => hasSuites && toggleCollapse(m.id)}
-                    >
-                      {renderBar(m.name, barStyle, m.stats.progressPercent, false)}
+              return (
+                <div key={m.id}>
+                  {/* Parent milestone row */}
+                  <div>
+                    {renderBar(m.name, barStyle, m.stats.progressPercent, false, {
+                      hasSuites,
+                      isCollapsed,
+                      onToggle: () => toggleCollapse(m.id),
+                    })}
+                  </div>
+
+                  {/* Child suite rows */}
+                  {hasSuites && !isCollapsed && (
+                    <div className="mt-1 flex flex-col gap-1">
+                      {m.suites.map((suite) => (
+                        <div key={suite.id}>
+                          {renderBar(
+                            suite.name,
+                            barStyle,
+                            suite.stats.progressPercent,
+                            true
+                          )}
+                        </div>
+                      ))}
                     </div>
-
-                    {/* Child suite rows */}
-                    {hasSuites && !isCollapsed && (
-                      <div className="mt-1 flex flex-col gap-1">
-                        {m.suites.map((suite) => (
-                          <div key={suite.id}>
-                            {renderBar(
-                              suite.name,
-                              barStyle,
-                              suite.stats.progressPercent,
-                              true
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
-
-        {/* Scroll hint */}
-        {weeks.length > 6 && (
-          <div className="from-bg-2 pointer-events-none absolute right-0 top-0 flex h-full w-12 items-center justify-end bg-gradient-to-l to-transparent">
-            <ChevronRight className="text-text-3 h-5 w-5" />
-          </div>
-        )}
       </div>
     </div>
   );
