@@ -118,7 +118,7 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
             </div>
           </div>
           <p className="typo-body2-normal text-text-3">
-            테스트 케이스를 생성해보세요
+            테스트를 실행하면 결과가 여기에 표시됩니다
           </p>
         </div>
       </div>
