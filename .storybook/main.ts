@@ -35,6 +35,22 @@ const config: StorybookConfig = {
     if (!config.resolve.alias) config.resolve.alias = {};
     config.resolve.alias['server-only'] = path.resolve(__dirname, 'mocks/server-only.js');
 
+    // Node.js 전용 모듈을 빈 모듈로 대체 (postgres 등 서버 코드가 번들에 포함될 때)
+    if (!config.resolve.fallback) config.resolve.fallback = {};
+    Object.assign(config.resolve.fallback, {
+      net: false,
+      tls: false,
+      fs: false,
+      dns: false,
+      child_process: false,
+      perf_hooks: false,
+      crypto: false,
+      os: false,
+      path: false,
+      stream: false,
+      'pg-native': false,
+    });
+
     return config;
   },
 
