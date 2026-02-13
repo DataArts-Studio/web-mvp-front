@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 
 import type { TestSuite } from '@/entities/test-suite';
 import { addTestSuitesToMilestone } from '@/entities/milestone/api';
-import { DSButton, LoadingSpinner, cn } from '@/shared';
+import { DSButton, DsCheckbox, LoadingSpinner } from '@/shared';
 import { useSelectionSet } from '@/shared/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, FolderOpen, Search, X } from 'lucide-react';
+import { FolderOpen, Search, X } from 'lucide-react';
 
 interface AddSuitesToMilestoneModalProps {
   milestoneId: string;
@@ -102,18 +102,11 @@ export const AddSuitesToMilestoneModal = ({
             <>
               {/* Select All */}
               <div className="border-line-2 bg-bg-2 sticky top-0 flex items-center gap-3 border-b px-6 py-2">
-                <button
-                  type="button"
-                  onClick={() => selection.toggleAll(filteredSuites)}
-                  className={cn(
-                    'flex h-5 w-5 items-center justify-center rounded border transition-colors',
-                    selection.isAllSelected(filteredSuites)
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-line-2 bg-bg-3'
-                  )}
-                >
-                  {selection.isAllSelected(filteredSuites) && <Check className="h-3 w-3" />}
-                </button>
+                <DsCheckbox
+                  checked={selection.isAllSelected(filteredSuites)}
+                  onCheckedChange={() => selection.toggleAll(filteredSuites)}
+                  className="h-5 w-5 border-line-2 bg-bg-3"
+                />
                 <span className="text-text-2 text-sm">
                   전체 선택 ({selection.count}/{filteredSuites.length})
                 </span>
@@ -127,17 +120,10 @@ export const AddSuitesToMilestoneModal = ({
                     onClick={() => selection.toggle(suite.id)}
                     className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                   >
-                    <button
-                      type="button"
-                      className={cn(
-                        'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
-                        selection.has(suite.id)
-                          ? 'border-primary bg-primary text-white'
-                          : 'border-line-2 bg-bg-3'
-                      )}
-                    >
-                      {selection.has(suite.id) && <Check className="h-3 w-3" />}
-                    </button>
+                    <DsCheckbox
+                      checked={selection.has(suite.id)}
+                      className="h-5 w-5 shrink-0 border-line-2 bg-bg-3"
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <FolderOpen className="text-primary h-4 w-4 shrink-0" />

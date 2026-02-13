@@ -4,14 +4,14 @@ import React, { useState, useMemo } from 'react';
 import type { TestSuite } from '@/entities/test-suite';
 import type { Milestone } from '@/entities/milestone';
 import type { TestCase } from '@/entities/test-case';
-import { DSButton, LoadingSpinner, cn } from '@/shared';
+import { DSButton, DsCheckbox, LoadingSpinner, cn } from '@/shared';
 import { useSelectionSet } from '@/shared/hooks';
 import {
   useAddSuitesToRun,
   useAddMilestonesToRun,
   useAddCasesToRun,
 } from '../hooks/use-add-to-run';
-import { Check, ListChecks, Search, X, FileText, ListTodo, Clock } from 'lucide-react';
+import { ListChecks, Search, X, FileText, ListTodo, Clock } from 'lucide-react';
 
 type TabType = 'case' | 'suite' | 'milestone';
 
@@ -196,18 +196,11 @@ export const AddToRunModal = ({
             <>
               {/* Select All */}
               <div className="border-line-2 bg-bg-2 sticky top-0 flex items-center gap-3 border-b px-6 py-2">
-                <button
-                  type="button"
-                  onClick={() => selection.toggleAll(currentItems)}
-                  className={cn(
-                    'flex h-5 w-5 items-center justify-center rounded border transition-colors',
-                    selection.isAllSelected(currentItems)
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-line-2 bg-bg-3'
-                  )}
-                >
-                  {selection.isAllSelected(currentItems) && <Check className="h-3 w-3" />}
-                </button>
+                <DsCheckbox
+                  checked={selection.isAllSelected(currentItems)}
+                  onCheckedChange={() => selection.toggleAll(currentItems)}
+                  className="h-5 w-5 border-line-2 bg-bg-3"
+                />
                 <span className="text-text-2 text-sm">
                   전체 선택 ({selection.count}/{currentItems.length})
                 </span>
@@ -222,7 +215,7 @@ export const AddToRunModal = ({
                       onClick={() => selection.toggle(tc.id)}
                       className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                     >
-                      <CheckboxButton checked={selection.has(tc.id)} />
+                      <DsCheckbox checked={selection.has(tc.id)} className="h-5 w-5 shrink-0 border-line-2 bg-bg-3" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-primary shrink-0 font-mono text-sm">{tc.caseKey}</span>
@@ -248,7 +241,7 @@ export const AddToRunModal = ({
                       onClick={() => selection.toggle(suite.id)}
                       className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                     >
-                      <CheckboxButton checked={selection.has(suite.id)} />
+                      <DsCheckbox checked={selection.has(suite.id)} className="h-5 w-5 shrink-0 border-line-2 bg-bg-3" />
                       <div className="min-w-0 flex-1">
                         <span className="text-text-1 truncate">{suite.title}</span>
                         {suite.description && (
@@ -265,7 +258,7 @@ export const AddToRunModal = ({
                       onClick={() => selection.toggle(milestone.id)}
                       className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                     >
-                      <CheckboxButton checked={selection.has(milestone.id)} />
+                      <DsCheckbox checked={selection.has(milestone.id)} className="h-5 w-5 shrink-0 border-line-2 bg-bg-3" />
                       <div className="min-w-0 flex-1">
                         <span className="text-text-1 truncate">{milestone.title}</span>
                         {milestone.description && (
@@ -300,15 +293,3 @@ export const AddToRunModal = ({
     </div>
   );
 };
-
-const CheckboxButton = ({ checked }: { checked: boolean }) => (
-  <button
-    type="button"
-    className={cn(
-      'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
-      checked ? 'border-primary bg-primary text-white' : 'border-line-2 bg-bg-3'
-    )}
-  >
-    {checked && <Check className="h-3 w-3" />}
-  </button>
-);
