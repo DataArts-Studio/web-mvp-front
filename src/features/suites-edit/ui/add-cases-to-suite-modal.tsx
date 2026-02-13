@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import type { TestCase } from '@/entities/test-case';
 import { updateTestCase } from '@/entities/test-case/api';
 import { DSButton, LoadingSpinner, cn } from '@/shared';
+import { useSelectionSet } from '@/shared/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, ListChecks, Search, X } from 'lucide-react';
 
@@ -20,7 +21,7 @@ export const AddCasesToSuiteModal = ({
   availableCases,
   onClose,
 }: AddCasesToSuiteModalProps) => {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selection = useSelectionSet();
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
@@ -48,27 +49,9 @@ export const AddCasesToSuiteModal = ({
     );
   });
 
-  const toggleSelect = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
-    setSelectedIds(newSet);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === filteredCases.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredCases.map((tc) => tc.id)));
-    }
-  };
-
   const handleSubmit = () => {
-    if (selectedIds.size === 0) return;
-    mutate(Array.from(selectedIds));
+    if (selection.count === 0) return;
+    mutate(selection.toArray());
   };
 
   return (
@@ -124,18 +107,18 @@ export const AddCasesToSuiteModal = ({
               <div className="border-line-2 bg-bg-2 sticky top-0 flex items-center gap-3 border-b px-6 py-2">
                 <button
                   type="button"
-                  onClick={toggleSelectAll}
+                  onClick={() => selection.toggleAll(filteredCases)}
                   className={cn(
                     'flex h-5 w-5 items-center justify-center rounded border transition-colors',
-                    selectedIds.size === filteredCases.length
+                    selection.isAllSelected(filteredCases)
                       ? 'border-primary bg-primary text-white'
                       : 'border-line-2 bg-bg-3'
                   )}
                 >
-                  {selectedIds.size === filteredCases.length && <Check className="h-3 w-3" />}
+                  {selection.isAllSelected(filteredCases) && <Check className="h-3 w-3" />}
                 </button>
                 <span className="text-text-2 text-sm">
-                  전체 선택 ({selectedIds.size}/{filteredCases.length})
+                  전체 선택 ({selection.count}/{filteredCases.length})
                 </span>
               </div>
 
@@ -144,19 +127,19 @@ export const AddCasesToSuiteModal = ({
                 {filteredCases.map((tc) => (
                   <div
                     key={tc.id}
-                    onClick={() => toggleSelect(tc.id)}
+                    onClick={() => selection.toggle(tc.id)}
                     className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                   >
                     <button
                       type="button"
                       className={cn(
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
-                        selectedIds.has(tc.id)
+                        selection.has(tc.id)
                           ? 'border-primary bg-primary text-white'
                           : 'border-line-2 bg-bg-3'
                       )}
                     >
-                      {selectedIds.has(tc.id) && <Check className="h-3 w-3" />}
+                      {selection.has(tc.id) && <Check className="h-3 w-3" />}
                     </button>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -186,7 +169,7 @@ export const AddCasesToSuiteModal = ({
         {/* Footer */}
         <div className="border-line-2 flex items-center justify-between border-t px-6 py-4">
           <span className="text-text-3 text-sm">
-            {selectedIds.size}개 선택됨
+            {selection.count}개 선택됨
           </span>
           <div className="flex gap-3">
             <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>
@@ -196,9 +179,9 @@ export const AddCasesToSuiteModal = ({
               type="button"
               variant="solid"
               onClick={handleSubmit}
-              disabled={isPending || selectedIds.size === 0}
+              disabled={isPending || selection.count === 0}
             >
-              {isPending ? '추가 중...' : `${selectedIds.size}개 케이스 추가`}
+              {isPending ? '추가 중...' : `${selection.count}개 케이스 추가`}
             </DSButton>
           </div>
         </div>

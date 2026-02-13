@@ -5,6 +5,7 @@ import type { TestSuite } from '@/entities/test-suite';
 import type { Milestone } from '@/entities/milestone';
 import type { TestCase } from '@/entities/test-case';
 import { DSButton, LoadingSpinner, cn } from '@/shared';
+import { useSelectionSet } from '@/shared/hooks';
 import {
   useAddSuitesToRun,
   useAddMilestonesToRun,
@@ -36,7 +37,7 @@ export const AddToRunModal = ({
   onClose,
 }: AddToRunModalProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('case');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selection = useSelectionSet();
   const [searchQuery, setSearchQuery] = useState('');
 
   const addSuites = useAddSuitesToRun(runId);
@@ -48,7 +49,7 @@ export const AddToRunModal = ({
   // Reset selection & search when tab changes
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    setSelectedIds(new Set());
+    selection.clear();
     setSearchQuery('');
   };
 
@@ -87,24 +88,9 @@ export const AddToRunModal = ({
   const currentItems = activeTab === 'case' ? filteredCases : activeTab === 'suite' ? filteredSuites : filteredMilestones;
   const allItems = activeTab === 'case' ? availableCases : activeTab === 'suite' ? availableSuites : availableMilestones;
 
-  const toggleSelect = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedIds(newSet);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === currentItems.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(currentItems.map((item) => item.id)));
-    }
-  };
-
   const handleSubmit = () => {
-    if (selectedIds.size === 0) return;
-    const ids = Array.from(selectedIds);
+    if (selection.count === 0) return;
+    const ids = selection.toArray();
     const onSuccess = (result: { success: boolean }) => {
       if (result.success) onClose();
     };
@@ -137,10 +123,10 @@ export const AddToRunModal = ({
 
   const submitLabel =
     activeTab === 'case'
-      ? `${selectedIds.size}개 케이스 추가`
+      ? `${selection.count}개 케이스 추가`
       : activeTab === 'suite'
-        ? `${selectedIds.size}개 스위트 추가`
-        : `${selectedIds.size}개 마일스톤 추가`;
+        ? `${selection.count}개 스위트 추가`
+        : `${selection.count}개 마일스톤 추가`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
@@ -212,18 +198,18 @@ export const AddToRunModal = ({
               <div className="border-line-2 bg-bg-2 sticky top-0 flex items-center gap-3 border-b px-6 py-2">
                 <button
                   type="button"
-                  onClick={toggleSelectAll}
+                  onClick={() => selection.toggleAll(currentItems)}
                   className={cn(
                     'flex h-5 w-5 items-center justify-center rounded border transition-colors',
-                    selectedIds.size === currentItems.length
+                    selection.isAllSelected(currentItems)
                       ? 'border-primary bg-primary text-white'
                       : 'border-line-2 bg-bg-3'
                   )}
                 >
-                  {selectedIds.size === currentItems.length && <Check className="h-3 w-3" />}
+                  {selection.isAllSelected(currentItems) && <Check className="h-3 w-3" />}
                 </button>
                 <span className="text-text-2 text-sm">
-                  전체 선택 ({selectedIds.size}/{currentItems.length})
+                  전체 선택 ({selection.count}/{currentItems.length})
                 </span>
               </div>
 
@@ -233,10 +219,10 @@ export const AddToRunModal = ({
                   filteredCases.map((tc) => (
                     <div
                       key={tc.id}
-                      onClick={() => toggleSelect(tc.id)}
+                      onClick={() => selection.toggle(tc.id)}
                       className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                     >
-                      <CheckboxButton checked={selectedIds.has(tc.id)} />
+                      <CheckboxButton checked={selection.has(tc.id)} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-primary shrink-0 font-mono text-sm">{tc.caseKey}</span>
@@ -259,10 +245,10 @@ export const AddToRunModal = ({
                   filteredSuites.map((suite) => (
                     <div
                       key={suite.id}
-                      onClick={() => toggleSelect(suite.id)}
+                      onClick={() => selection.toggle(suite.id)}
                       className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                     >
-                      <CheckboxButton checked={selectedIds.has(suite.id)} />
+                      <CheckboxButton checked={selection.has(suite.id)} />
                       <div className="min-w-0 flex-1">
                         <span className="text-text-1 truncate">{suite.title}</span>
                         {suite.description && (
@@ -276,10 +262,10 @@ export const AddToRunModal = ({
                   filteredMilestones.map((milestone) => (
                     <div
                       key={milestone.id}
-                      onClick={() => toggleSelect(milestone.id)}
+                      onClick={() => selection.toggle(milestone.id)}
                       className="hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors"
                     >
-                      <CheckboxButton checked={selectedIds.has(milestone.id)} />
+                      <CheckboxButton checked={selection.has(milestone.id)} />
                       <div className="min-w-0 flex-1">
                         <span className="text-text-1 truncate">{milestone.title}</span>
                         {milestone.description && (
@@ -295,7 +281,7 @@ export const AddToRunModal = ({
 
         {/* Footer */}
         <div className="border-line-2 flex items-center justify-between border-t px-6 py-4">
-          <span className="text-text-3 text-sm">{selectedIds.size}개 선택됨</span>
+          <span className="text-text-3 text-sm">{selection.count}개 선택됨</span>
           <div className="flex gap-3">
             <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>
               취소
@@ -304,7 +290,7 @@ export const AddToRunModal = ({
               type="button"
               variant="solid"
               onClick={handleSubmit}
-              disabled={isPending || selectedIds.size === 0}
+              disabled={isPending || selection.count === 0}
             >
               {isPending ? '추가 중...' : submitLabel}
             </DSButton>

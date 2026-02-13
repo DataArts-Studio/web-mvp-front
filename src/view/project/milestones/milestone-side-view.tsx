@@ -8,6 +8,7 @@ import { MilestoneWithStats } from '@/entities/milestone';
 import { DSButton } from '@/shared';
 import { Calendar, CheckCircle, Edit2, ExternalLink, ListChecks, PlayCircle, Trash2, X } from 'lucide-react';
 import { cn } from '@/shared';
+import { formatDate } from '@/shared/utils/date-format';
 
 interface MilestoneSideViewProps {
   milestone: MilestoneWithStats;
@@ -29,11 +30,6 @@ const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
     label: '예정',
     style: 'bg-slate-500/20 text-slate-300',
   },
-};
-
-const formatDate = (date: Date | null) => {
-  if (!date) return '-';
-  return date.toISOString().split('T')[0];
 };
 
 export const MilestoneSideView = ({

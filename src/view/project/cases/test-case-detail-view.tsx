@@ -15,25 +15,13 @@ import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Clock, Edit2, Flag, FolderOpen, Play, Tag, XCircle } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
+import { formatDateTime } from '@/shared/utils/date-format';
 
 const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   pass: { label: 'Pass', style: 'bg-green-500/20 text-green-300' },
   fail: { label: 'Fail', style: 'bg-red-500/20 text-red-300' },
   blocked: { label: 'Blocked', style: 'bg-amber-500/20 text-amber-300' },
   untested: { label: 'Untested', style: 'bg-slate-500/20 text-slate-300' },
-};
-
-const formatDateTime = (date: Date | string | null | undefined) => {
-  if (!date) return '-';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '-';
-  return d.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 };
 
 export const TestCaseDetailView = () => {

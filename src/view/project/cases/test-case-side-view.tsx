@@ -10,6 +10,7 @@ import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 import { testSuitesQueryOptions } from '@/widgets';
 import { DSButton } from '@/shared';
+import { formatDateKR } from '@/shared/utils/date-format';
 import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, Maximize2, Play, Tag, X } from 'lucide-react';
 
 
@@ -114,7 +115,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
             </div>
             <div className="text-text-3 flex items-center gap-1 text-sm">
               <Calendar className="h-4 w-4" />
-              <span>{testCase?.createdAt ? new Date(testCase.createdAt).toLocaleDateString('ko-KR') : '-'}</span>
+              <span>{formatDateKR(testCase?.createdAt)}</span>
             </div>
           </div>
         </header>

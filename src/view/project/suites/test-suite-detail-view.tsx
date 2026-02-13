@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
+import { formatDate, formatDateTime } from '@/shared/utils/date-format';
 
 const TAG_TONE_CONFIG: Record<string, { style: string }> = {
   neutral: { style: 'bg-slate-500/20 text-slate-300' },
@@ -48,22 +49,6 @@ const TEST_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   failed: { label: 'Failed', style: 'bg-red-500/20 text-red-300' },
   blocked: { label: 'Blocked', style: 'bg-amber-500/20 text-amber-300' },
   untested: { label: 'Untested', style: 'bg-slate-500/20 text-slate-300' },
-};
-
-const formatDate = (date: Date | null | undefined) => {
-  if (!date) return '-';
-  return date.toISOString().split('T')[0];
-};
-
-const formatDateTime = (date: Date | null | undefined) => {
-  if (!date) return '-';
-  return date.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 };
 
 const TestSuiteDetailView = () => {

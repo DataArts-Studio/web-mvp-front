@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { Container, MainContainer, LoadingSpinner } from '@/shared';
+import { useOutsideClick } from '@/shared/hooks';
 import { Aside } from '@/widgets';
 import {
   Search,
@@ -59,19 +60,8 @@ export const TestRunsListView = () => {
   const statusDropdownRef = useRef<HTMLDivElement>(null);
 
   // 외부 클릭 시 드롭다운 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
-        setIsSortDropdownOpen(false);
-      }
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
-        setIsStatusDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useOutsideClick(sortDropdownRef, () => setIsSortDropdownOpen(false));
+  useOutsideClick(statusDropdownRef, () => setIsStatusDropdownOpen(false));
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(projectSlug)

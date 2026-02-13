@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { useOutsideClick, useToggleSet } from '@/shared/hooks';
 import type { DashboardMilestone } from '@/features/dashboard';
 import type { FetchedTestRun } from '@/features/runs';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -38,27 +39,10 @@ export const MilestoneGanttChart = ({
 }: MilestoneGanttChartProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [collapsedMilestones, setCollapsedMilestones] = useState<Set<string>>(new Set());
+  const collapsedMilestones = useToggleSet();
   const [weekOffset, setWeekOffset] = useState(0);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const toggleCollapse = (id: string) => {
-    setCollapsedMilestones((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  useOutsideClick(dropdownRef, () => setShowDropdown(false));
 
   const selectedRun = testRuns.find((r) => r.id === selectedRunId);
 
@@ -361,7 +345,7 @@ export const MilestoneGanttChart = ({
                     {renderBar(m.name, barStyle, m.stats.progressPercent, false, {
                       hasSuites,
                       isCollapsed,
-                      onToggle: () => toggleCollapse(m.id),
+                      onToggle: () => collapsedMilestones.toggle(m.id),
                     })}
                   </div>
 
