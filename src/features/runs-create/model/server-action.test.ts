@@ -36,10 +36,6 @@ vi.mock('@/shared/lib/db', () => ({
     test_run_id: 'test_run_id',
     test_suite_id: 'test_suite_id',
   },
-  testRunMilestones: {
-    test_run_id: 'test_run_id',
-    milestone_id: 'milestone_id',
-  },
 }));
 
 import { createTestRunAction } from './server-action';
@@ -141,34 +137,31 @@ describe('createTestRunAction', () => {
       expect(mockTxInsert).toHaveBeenCalledTimes(2);
     });
 
-    it('milestone_ids가 제공되면 마일스톤을 연결한다', async () => {
-      const inputWithMilestones = {
+    it('milestone_id가 제공되면 마일스톤을 연결한다', async () => {
+      const inputWithMilestone = {
         ...validInput,
-        milestone_ids: [
-          '770e8400-e29b-41d4-a716-446655440001',
-          '770e8400-e29b-41d4-a716-446655440002',
-        ],
+        milestone_id: '770e8400-e29b-41d4-a716-446655440001',
       };
 
-      const result = await createTestRunAction(inputWithMilestones);
+      const result = await createTestRunAction(inputWithMilestone);
 
       expect(result.success).toBe(true);
-      // insert가 2번 호출됨 (testRuns + testRunMilestones)
-      expect(mockTxInsert).toHaveBeenCalledTimes(2);
+      // insert가 1번 호출됨 (testRuns에 milestone_id 포함)
+      expect(mockTxInsert).toHaveBeenCalledTimes(1);
     });
 
-    it('suite_ids와 milestone_ids 모두 제공되면 둘 다 연결한다', async () => {
+    it('suite_ids와 milestone_id 모두 제공되면 둘 다 연결한다', async () => {
       const inputWithBoth = {
         ...validInput,
         suite_ids: ['660e8400-e29b-41d4-a716-446655440001'],
-        milestone_ids: ['770e8400-e29b-41d4-a716-446655440001'],
+        milestone_id: '770e8400-e29b-41d4-a716-446655440001',
       };
 
       const result = await createTestRunAction(inputWithBoth);
 
       expect(result.success).toBe(true);
-      // insert가 3번 호출됨 (testRuns + testRunSuites + testRunMilestones)
-      expect(mockTxInsert).toHaveBeenCalledTimes(3);
+      // insert가 2번 호출됨 (testRuns + testRunSuites, milestone_id는 testRuns에 포함)
+      expect(mockTxInsert).toHaveBeenCalledTimes(2);
     });
 
     it('description이 없어도 생성에 성공한다', async () => {

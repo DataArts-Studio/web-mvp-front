@@ -1,6 +1,6 @@
 'use server';
 import { CreateTestRunSchema } from '@/entities/test-run';
-import { getDatabase, testRuns, testRunMilestones, testRunSuites, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites } from '@/shared/lib/db';
+import { getDatabase, testRuns, testRunSuites, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites } from '@/shared/lib/db';
 import { inArray, and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
@@ -22,7 +22,7 @@ export const createTestRunAction = async (input: CreateRunInput) => {
     return { success: false, errors: validation.error.flatten() as FlatErrors };
   }
 
-  const { project_id, name, description, milestone_ids } = validation.data;
+  const { project_id, name, description, milestone_id } = validation.data;
 
   // 접근 권한 확인
   const hasAccess = await requireProjectAccess(project_id);
@@ -40,25 +40,21 @@ export const createTestRunAction = async (input: CreateRunInput) => {
 
   try {
     const [newTestRun] = await db.transaction(async (tx) => {
-      // 1. Create the main test run entry
+      // 1. Create the main test run entry with milestone_id
       const [run] = await tx
         .insert(testRuns)
         .values({
           project_id,
           name,
           description,
+          milestone_id,
         })
         .returning();
 
-      // Track added case IDs to prevent duplicates across milestones
+      // Track added case IDs to prevent duplicates
       const addedCaseIds = new Set<string>();
 
-      // 2. Link milestones and create test case runs
-      const milestoneLinks = milestone_ids.map((milestoneId) => ({
-        test_run_id: run.id,
-        milestone_id: milestoneId,
-      }));
-      await tx.insert(testRunMilestones).values(milestoneLinks);
+      // 2. Resolve test cases from milestone
 
       const milestoneCaseRows = await tx
         .select({
@@ -66,7 +62,7 @@ export const createTestRunAction = async (input: CreateRunInput) => {
           milestone_id: milestoneTestCases.milestone_id,
         })
         .from(milestoneTestCases)
-        .where(inArray(milestoneTestCases.milestone_id, milestone_ids));
+        .where(eq(milestoneTestCases.milestone_id, milestone_id));
 
       const newMilestoneCaseRuns = milestoneCaseRows
         .filter((row) => row.test_case_id && row.milestone_id && !addedCaseIds.has(row.test_case_id))
@@ -94,7 +90,7 @@ export const createTestRunAction = async (input: CreateRunInput) => {
           test_suite_id: milestoneTestSuites.test_suite_id,
         })
         .from(milestoneTestSuites)
-        .where(inArray(milestoneTestSuites.milestone_id, milestone_ids));
+        .where(eq(milestoneTestSuites.milestone_id, milestone_id));
 
       const suiteIds = [...new Set(milestoneSuiteRows.map((r) => r.test_suite_id).filter(Boolean))] as string[];
 
