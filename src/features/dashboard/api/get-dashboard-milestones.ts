@@ -3,7 +3,7 @@
 import {
   getDatabase,
   milestones,
-  testRunMilestones,
+  testRuns,
   testCaseRuns,
   milestoneTestSuites,
   testSuites,
@@ -74,9 +74,9 @@ export async function getDashboardMilestones(
     if (testRunId) {
       // 선택된 테스트 실행에 연결된 마일스톤만
       const linked = await db
-        .select({ milestone_id: testRunMilestones.milestone_id })
-        .from(testRunMilestones)
-        .where(eq(testRunMilestones.test_run_id, testRunId));
+        .select({ milestone_id: testRuns.milestone_id })
+        .from(testRuns)
+        .where(eq(testRuns.id, testRunId));
       milestoneIds = linked
         .map((r) => r.milestone_id)
         .filter(Boolean) as string[];
@@ -140,12 +140,12 @@ export async function getDashboardMilestones(
             .where(eq(testCaseRuns.test_run_id, testRunId));
         } else {
           // 마일스톤에 연결된 모든 실행에서
-          const runIds = await db
-            .select({ test_run_id: testRunMilestones.test_run_id })
-            .from(testRunMilestones)
-            .where(eq(testRunMilestones.milestone_id, m.id));
+          const runRows = await db
+            .select({ id: testRuns.id })
+            .from(testRuns)
+            .where(eq(testRuns.milestone_id, m.id));
 
-          const ids = runIds.map((r) => r.test_run_id).filter(Boolean) as string[];
+          const ids = runRows.map((r) => r.id);
           if (ids.length === 0) {
             return {
               id: m.id,
