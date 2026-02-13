@@ -4,13 +4,13 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, BookOpen, TestTube, FolderKanban, Play, Flag, Menu, X } from 'lucide-react';
+import { ChevronLeft, BookOpen, LayoutDashboard, TestTube, FolderKanban, Play, Flag, Menu, X } from 'lucide-react';
 
 import { cn } from '@/shared/utils';
 import { Logo } from '@/shared/ui/logo';
 import { Footer } from '@/widgets/footer';
 
-type DocTab = 'getting-started' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';
+type DocTab = 'getting-started' | 'dashboard' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';
 
 export type DocHeading = { id: string; text: string; level: 2 | 3 };
 
@@ -22,6 +22,7 @@ interface DocsViewProps {
 
 const docTabs: { id: DocTab; label: string; icon: React.ReactNode }[] = [
   { id: 'getting-started', label: '시작하기', icon: <BookOpen className="h-4 w-4" /> },
+  { id: 'dashboard', label: '대시보드', icon: <LayoutDashboard className="h-4 w-4" /> },
   { id: 'test-cases', label: '테스트 케이스', icon: <TestTube className="h-4 w-4" /> },
   { id: 'test-suites', label: '테스트 스위트', icon: <FolderKanban className="h-4 w-4" /> },
   { id: 'test-runs', label: '테스트 실행', icon: <Play className="h-4 w-4" /> },

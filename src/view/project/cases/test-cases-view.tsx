@@ -15,7 +15,7 @@ import { cn } from '@/shared/utils';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Download, Filter, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, Download, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 
@@ -27,17 +27,6 @@ const AnimatePresence = dynamic(
   () => import('framer-motion').then(mod => ({ default: mod.AnimatePresence })),
   { ssr: false }
 );
-
-// 상태 필터 옵션
-const STATUS_FILTER_OPTIONS = [
-  { value: 'all', label: '전체' },
-  { value: 'pass', label: 'Pass' },
-  { value: 'fail', label: 'Fail' },
-  { value: 'blocked', label: 'Blocked' },
-  { value: 'untested', label: 'Untested' },
-] as const;
-
-type StatusFilterValue = (typeof STATUS_FILTER_OPTIONS)[number]['value'];
 
 // 정렬 옵션
 const SORT_OPTIONS = [
@@ -53,8 +42,7 @@ type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 
 const TABLE_HEADERS = [
   { id: 'id', label: 'ID', colSpan: 'col-span-2' },
-  { id: 'title', label: '제목', colSpan: 'col-span-4' },
-  { id: 'status', label: '상태', colSpan: 'col-span-2', textAlign: 'text-center' },
+  { id: 'title', label: '제목', colSpan: 'col-span-6' },
   { id: 'updatedAt', label: '최종 수정', colSpan: 'col-span-3', textAlign: 'text-center' },
   { id: 'actions', label: '메뉴', colSpan: 'col-span-1', textAlign: 'text-right' },
 ] as const;
@@ -70,7 +58,6 @@ export const TestCasesView = () => {
 
   // 검색 및 필터 상태
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
   const [sortOption, setSortOption] = useState<SortValue>('updatedAt-desc');
   const [selectedSuiteId, setSelectedSuiteId] = useState<string>('all');
 
@@ -111,8 +98,6 @@ export const TestCasesView = () => {
     ? testCasesData.data.map((item) => ({
         ...item,
         suiteTitle: item.testSuiteId ? (suiteMap.get(item.testSuiteId) || '') : '',
-        status: 'untested' as const,
-        lastExecutedAt: null,
       }))
     : [];
 
@@ -153,11 +138,6 @@ export const TestCasesView = () => {
       );
     }
 
-    // 상태 필터링
-    if (statusFilter !== 'all') {
-      result = result.filter((tc) => tc.resultStatus === statusFilter);
-    }
-
     // 정렬
     const [sortField, sortOrder] = sortOption.split('-') as [string, 'asc' | 'desc'];
     result.sort((a, b) => {
@@ -175,10 +155,9 @@ export const TestCasesView = () => {
     });
 
     return result;
-  }, [testCases, searchQuery, statusFilter, sortOption, selectedSuiteId]);
+  }, [testCases, searchQuery, sortOption, selectedSuiteId]);
 
   // 현재 필터 라벨 가져오기
-  const currentStatusLabel = STATUS_FILTER_OPTIONS.find((opt) => opt.value === statusFilter)?.label || '전체';
   const currentSortLabel = SORT_OPTIONS.find((opt) => opt.value === sortOption)?.label || '최근 수정 순';
 
   // 테스트 케이스 목록 View 이벤트
@@ -191,7 +170,7 @@ export const TestCasesView = () => {
   // 필터 변경 시 visibleCount 초기화
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [searchQuery, statusFilter, sortOption, selectedSuiteId]);
+  }, [searchQuery, sortOption, selectedSuiteId]);
 
   // 로딩 상태
   if (isLoadingProject || isLoadingCases) {
@@ -336,25 +315,6 @@ export const TestCasesView = () => {
                   }
                 }}
               />
-              {/* Status Filter Dropdown */}
-              <Select.Root value={statusFilter} onValueChange={(value) => { track(TESTCASE_EVENTS.FILTER_CHANGE, { filter: value }); setStatusFilter(value as StatusFilterValue); }} className="relative shrink-0 w-fit">
-                <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
-                  <Filter className="h-4 w-4 shrink-0" />
-                  <span>상태: {currentStatusLabel}</span>
-                  <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
-                </Select.Trigger>
-                <Select.Content className="absolute top-full left-0 min-w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
-                  {STATUS_FILTER_OPTIONS.map((option) => (
-                    <Select.Item
-                      key={option.value}
-                      value={option.value}
-                      className="typo-body2-normal px-3 py-2 text-text-2 hover:bg-bg-3 hover:text-text-1 cursor-pointer data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary whitespace-nowrap"
-                    >
-                      {option.label}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
               {/* Sort Dropdown */}
               <Select.Root value={sortOption} onValueChange={(value) => { track(TESTCASE_EVENTS.SORT_CHANGE, { sort: value }); setSortOption(value as SortValue); }} className="relative shrink-0 w-fit">
                 <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
@@ -418,7 +378,6 @@ export const TestCasesView = () => {
                   <button
                     onClick={() => {
                       setSearchQuery('');
-                      setStatusFilter('all');
                       setSelectedSuiteId('all');
                     }}
                     className="typo-body2-normal text-primary hover:underline"

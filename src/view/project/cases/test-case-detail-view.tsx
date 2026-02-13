@@ -10,19 +10,12 @@ import { TestCaseEditForm } from '@/features/cases-edit';
 import { testSuitesQueryOptions } from '@/widgets';
 import { Container, MainContainer } from '@/shared/lib';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
-import { cn } from '@/shared/utils';
+
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Clock, Edit2, Flag, FolderOpen, Play, Tag, XCircle } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { formatDateTime } from '@/shared/utils/date-format';
-
-const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
-  pass: { label: 'Pass', style: 'bg-green-500/20 text-green-300' },
-  fail: { label: 'Fail', style: 'bg-red-500/20 text-red-300' },
-  blocked: { label: 'Blocked', style: 'bg-amber-500/20 text-amber-300' },
-  untested: { label: 'Untested', style: 'bg-slate-500/20 text-slate-300' },
-};
 
 export const TestCaseDetailView = () => {
   const params = useParams();
@@ -80,8 +73,6 @@ export const TestCaseDetailView = () => {
     );
   }
 
-  const statusInfo = STATUS_CONFIG[testCase.resultStatus || 'untested'] || STATUS_CONFIG.untested;
-
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       <Aside />
@@ -101,9 +92,6 @@ export const TestCaseDetailView = () => {
               <div className="flex items-center gap-3">
                 <span className="text-primary text-xl font-semibold">{testCase.caseKey}</span>
                 <h1 className="typo-title-heading">{testCase.title}</h1>
-                <span className={cn('rounded-full px-3 py-1 text-sm font-medium', statusInfo.style)}>
-                  {statusInfo.label}
-                </span>
               </div>
             </div>
 

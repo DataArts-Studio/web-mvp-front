@@ -158,7 +158,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
         {/* 테스트 정보 */}
         <div className="flex gap-2">
           <div className="bg-bg-2 border-line-2 rounded-4 flex-1 border p-4">
-            <h3 className="text-text-3 mb-1">테스트 상태</h3>
+            <h3 className="text-text-3 mb-1">테스트 유형</h3>
             <p>{testCase?.testType || '-'}</p>
           </div>
           <div className="bg-bg-2 border-line-2 rounded-4 flex-1 border p-4">

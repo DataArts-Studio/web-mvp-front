@@ -76,7 +76,7 @@ export const toCreateTestCaseDTO = (domain: CreateTestCase): CreateTestCaseDTO =
     project_id: domain.projectId,
     test_suite_id: domain.testSuiteId || null,
     name: domain.title,
-    test_type: domain.testType || 'Untested',
+    test_type: domain.testType || '',
     tags: domain.tags ?? [],
     pre_condition: domain.preCondition ?? '',
     steps: domain.testSteps ?? '',

@@ -43,10 +43,6 @@ export type CreateTestCase = {
   sortOrder?: number;
 };
 
-export type TestCaseExecutionStatus = 'untested' | 'passed' | 'failed' | 'blocked';
-
 export type TestCaseCardType = TestCase & {
   suiteTitle: string;
-  status: TestCaseExecutionStatus;
-  lastExecutedAt: Date | null;
 };

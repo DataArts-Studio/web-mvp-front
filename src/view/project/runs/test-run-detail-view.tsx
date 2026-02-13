@@ -4,12 +4,24 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 
 import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
 import { useOutsideClick, useToggleSet } from '@/shared/hooks';
 import { Aside } from '@/widgets';
-import { testRunByIdQueryOptions, updateTestCaseRunStatus, TestCaseRunDetail } from '@/features/runs';
+import { type TestStatusData } from '@/widgets/project';
+import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, TestCaseRunDetail } from '@/features/runs';
+import { dashboardQueryOptions } from '@/features/dashboard';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
+
+const TestStatusChart = dynamic(
+  () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
+  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[400px] animate-pulse" /> }
+);
+const MilestoneGanttChart = dynamic(
+  () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
+  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" /> }
+);
 import {
   ArrowLeft,
   CheckCircle2,
@@ -110,6 +122,27 @@ export const TestRunDetailView = () => {
 
   const { data, isLoading, isError } = useQuery(testRunByIdQueryOptions(testRunId));
 
+  // projectId 조회 (차트용)
+  const { data: dashboardData } = useQuery({
+    ...dashboardQueryOptions.stats(projectSlug),
+    enabled: !!projectSlug,
+  });
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
+
+  // 전체 테스트 실행 목록 (간트차트용)
+  const { data: testRunsData } = useQuery({
+    ...testRunsQueryOptions(projectId!),
+    enabled: !!projectId,
+  });
+  const allTestRuns = testRunsData?.success ? testRunsData.data : [];
+
+  // 마일스톤 데이터 (간트차트용 - 현재 실행 기준)
+  const { data: milestonesData } = useQuery({
+    ...dashboardQueryOptions.milestones(projectId!, testRunId),
+    enabled: !!projectId,
+  });
+  const dashboardMilestones = milestonesData?.success ? milestonesData.data : [];
+
   // Close dropdowns on click outside
   useOutsideClick(statusDropdownRef, () => setShowStatusDropdown(false), showStatusDropdown);
   useOutsideClick(statusFilterRef, () => setShowStatusFilterDropdown(false), showStatusFilterDropdown);
@@ -123,6 +156,17 @@ export const TestRunDetailView = () => {
   });
 
   const testRun = data?.success ? data.data : null;
+
+  // 차트 데이터
+  const testStatusData: TestStatusData = useMemo(() => {
+    if (!testRun) return { pass: 0, fail: 0, blocked: 0, untested: 0 };
+    return {
+      pass: testRun.stats.pass,
+      fail: testRun.stats.fail,
+      blocked: testRun.stats.blocked,
+      untested: testRun.stats.untested,
+    };
+  }, [testRun]);
 
   // 테스트 실행 상세 View 이벤트
   useEffect(() => {
@@ -367,6 +411,18 @@ export const TestRunDetailView = () => {
             </button>
           </div>
         </header>
+
+        {/* Test Status Charts */}
+        <div className="border-line-2 flex flex-col gap-4 border-b px-6 py-4">
+          <TestStatusChart data={testStatusData} />
+          <MilestoneGanttChart
+            milestones={dashboardMilestones}
+            testRuns={allTestRuns}
+            selectedRunId={testRunId}
+            onRunChange={() => {}}
+            hideRunSelector
+          />
+        </div>
 
         {/* Main Content */}
         <div className="flex flex-1 overflow-hidden">

@@ -6,7 +6,7 @@ import { DocsView } from '@/view';
 import { DocsMarkdownContent, slugify } from '@/view/docs/docs-markdown-content';
 import type { DocHeading } from '@/view/docs/docs-view';
 
-type DocTab = 'getting-started' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';
+type DocTab = 'getting-started' | 'dashboard' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';
 
 interface DocsPageProps {
   searchParams: Promise<{
@@ -16,6 +16,7 @@ interface DocsPageProps {
 
 const docFiles: Record<DocTab, string> = {
   'getting-started': 'getting-started.md',
+  'dashboard': 'dashboard.md',
   'test-cases': 'test-cases.md',
   'test-suites': 'test-suites.md',
   'test-runs': 'test-runs.md',
