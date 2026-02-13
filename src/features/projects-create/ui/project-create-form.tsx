@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProject } from '@/features/projects-create';
-import { DSButton, DsFormField, DsInput, LoadingSpinner } from '@/shared';
+import { DSButton, DsCheckbox, DsFormField, DsInput, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, Copy, XIcon } from 'lucide-react';
 import { track, PROJECT_CREATE_EVENTS } from '@/shared/lib/analytics';
@@ -23,6 +24,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
+    control,
     handleSubmit,
     getValues,
     trigger,
@@ -37,7 +39,12 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     let isStepValid = false;
 
     if (step === 1) {
-      isStepValid = await trigger('projectName');
+      const [nameValid, ageValid, termsValid] = await Promise.all([
+        trigger('projectName'),
+        trigger('ageConfirmed'),
+        trigger('termsAgreed'),
+      ]);
+      isStepValid = nameValid && ageValid && termsValid;
     } else if (step === 2) {
       // 1. 첫 번째 필드(identifier) 유효성 검사
       const identifierValid = await trigger('identifier');
@@ -134,7 +141,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-project-title"
-        className="fixed top-1/2 left-1/2 z-[1001] box-border flex w-[46.25rem] -translate-x-1/2 -translate-y-1/2 flex-col content-stretch items-center gap-10 overflow-clip rounded-[36px] border border-line-2 bg-bg-1 px-32 py-16"
+        className="fixed top-1/2 left-1/2 z-[1001] box-border flex w-[49.25rem] -translate-x-1/2 -translate-y-1/2 flex-col content-stretch items-center gap-10 overflow-clip rounded-[36px] border border-line-2 bg-bg-1 px-32 py-16"
       >
         {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
         <form
@@ -162,8 +169,54 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                   placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
                 />
               </DsFormField.Control>
-              <DsFormField.Message />
             </DsFormField.Root>
+            <div className="flex w-full flex-col gap-2">
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <Controller
+                  name="termsAgreed"
+                  control={control}
+                  render={({ field }) => (
+                    <DsCheckbox
+                      checked={field.value === true}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      className="mt-0.5 shrink-0"
+                    />
+                  )}
+                />
+                <span className="text-sm text-text-2">
+                  <Link href="/legal?tab=terms" target="_blank" className="underline text-primary">이용약관</Link> 및 <Link href="/legal?tab=privacy" target="_blank" className="underline text-primary">개인정보 처리방침</Link>에 동의합니다.
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <Controller
+                  name="ageConfirmed"
+                  control={control}
+                  render={({ field }) => (
+                    <DsCheckbox
+                      checked={field.value === true}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      className="mt-0.5 shrink-0"
+                    />
+                  )}
+                />
+                <span className="text-sm text-text-2">
+                  만 14세 이상임을 확인합니다.
+                </span>
+              </label>
+            </div>
+            {(errors.projectName || errors.termsAgreed || errors.ageConfirmed) && (
+              <div className="flex w-full flex-col gap-1">
+                {errors.projectName && (
+                  <p className="text-sm text-red-400">{errors.projectName.message}</p>
+                )}
+                {errors.termsAgreed && (
+                  <p className="text-sm text-red-400">{errors.termsAgreed.message}</p>
+                )}
+                {errors.ageConfirmed && (
+                  <p className="text-sm text-red-400">{errors.ageConfirmed.message}</p>
+                )}
+              </div>
+            )}
             <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
               프로젝트 생성 시작
             </DSButton>

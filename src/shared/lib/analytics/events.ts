@@ -114,6 +114,8 @@ export const TESTCASE_EVENTS = {
   STEP_ADD: 'testcase_step_add',
   /** 스텝 삭제 */
   STEP_REMOVE: 'testcase_step_remove',
+  /** CSV 내보내기 */
+  EXPORT: 'testcase_export',
 } as const;
 
 // ─── Test Suite ──────────────────────────────────────────────────

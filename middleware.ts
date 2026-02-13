@@ -87,7 +87,7 @@ function isProtectedPath(pathname: string): boolean {
  * 공개 경로인지 확인
  */
 function isPublicPath(pathname: string): boolean {
-  const publicPaths = ['/', '/docs', '/landing', '/projects', '/dev'];
+  const publicPaths = ['/', '/docs', '/landing', '/projects'];
 
   if (publicPaths.includes(pathname)) {
     return true;
@@ -100,10 +100,26 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
+/**
+ * 프로덕션 환경에서 차단해야 하는 개발/테스트 경로인지 확인
+ */
+function isBlockedInProduction(pathname: string): boolean {
+  const blockedPaths = ['/dev', '/sentry-example-page', '/api/sentry-example-api'];
+
+  return blockedPaths.some(
+    (blocked) => pathname === blocked || pathname.startsWith(blocked + '/')
+  );
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // console.log('[Middleware] Running for:', pathname);
+
+  // 프로덕션 환경에서 개발/테스트 경로 차단
+  if (process.env.NODE_ENV === 'production' && isBlockedInProduction(pathname)) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
 
   // 공개 경로는 통과
   if (isPublicPath(pathname)) {

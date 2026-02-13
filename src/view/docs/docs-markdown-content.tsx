@@ -1,6 +1,28 @@
+import { Children, isValidElement } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ-]/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function getTextContent(children: React.ReactNode): string {
+  return Children.toArray(children)
+    .map((child) => {
+      if (typeof child === 'string') return child;
+      if (isValidElement<{ children?: React.ReactNode }>(child) && child.props.children) {
+        return getTextContent(child.props.children);
+      }
+      return '';
+    })
+    .join('');
+}
 
 interface DocsMarkdownContentProps {
   content: string;
@@ -16,12 +38,22 @@ export function DocsMarkdownContent({ content }: DocsMarkdownContentProps) {
             {children}
           </h1>
         ),
-        h2: ({ children }) => (
-          <h2 className="mb-4 mt-8 typo-h2-heading text-text-1">{children}</h2>
-        ),
-        h3: ({ children }) => (
-          <h3 className="mb-3 mt-6 typo-h3-heading text-text-1">{children}</h3>
-        ),
+        h2: ({ children }) => {
+          const id = slugify(getTextContent(children));
+          return (
+            <h2 id={id} className="mb-4 mt-8 scroll-mt-12 typo-h2-heading text-text-1">
+              {children}
+            </h2>
+          );
+        },
+        h3: ({ children }) => {
+          const id = slugify(getTextContent(children));
+          return (
+            <h3 id={id} className="mb-3 mt-6 scroll-mt-12 typo-h3-heading text-text-1">
+              {children}
+            </h3>
+          );
+        },
         p: ({ children }) => (
           <p className="mb-4 typo-body2-normal text-text-2 leading-relaxed">{children}</p>
         ),

@@ -310,3 +310,33 @@
 @utility animate-bounce-dot {
   animation: bounce-dot 1.2s ease-in-out infinite;
 }
+
+/* ========================================= */
+/* Custom Scrollbar */
+/* ========================================= */
+@layer base {
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-bg-4) transparent;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-bg-4);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-line-3);
+  }
+}

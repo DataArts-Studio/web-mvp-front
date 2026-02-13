@@ -13,6 +13,7 @@ import { ActionResult } from '@/shared/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { checkStorageLimit } from '@/shared/lib/db';
 
 type GetMilestonesParams = {
   projectId: string;
@@ -97,6 +98,9 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
     if (!hasAccess) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
+
+    const storageError = await checkStorageLimit(input.projectId);
+    if (storageError) return storageError;
 
     const db = getDatabase();
     const dto = toCreateMilestoneDTO(input);

@@ -45,7 +45,7 @@ export const GlobalHeader = () => {
             className="text-body2 text-text-2 transition-colors hover:text-primary"
             onClick={() => track(NAVIGATION_EVENTS.DOCS_CLICK)}
           >
-            Docs
+            이용 가이드
           </Link>
           <button
             type="button"

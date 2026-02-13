@@ -5,6 +5,7 @@ import { inArray, and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { checkStorageLimit } from '@/shared/lib/db';
 
 type FlatErrors = {
   formErrors: string[];
@@ -31,6 +32,9 @@ export const createTestRunAction = async (input: CreateRunInput) => {
       errors: { formErrors: ['접근 권한이 없습니다.'], fieldErrors: {} } as FlatErrors,
     };
   }
+
+  const storageError = await checkStorageLimit(project_id);
+  if (storageError) return storageError;
 
   const db = getDatabase();
 

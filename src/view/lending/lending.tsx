@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ProjectCreateForm } from '@/features';
+import { ProjectCreateForm, BetaNoticePopup } from '@/features';
 import { LoadingSpinner, Logo } from '@/shared';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
@@ -60,6 +60,7 @@ export const LendingView = () => {
         </MainContainer>
         <Footer />
       </Container>
+      <BetaNoticePopup />
     </GridBackground.Root>
   );
 };
