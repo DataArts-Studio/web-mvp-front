@@ -52,6 +52,11 @@ export const ProjectDashboardView = () => {
 
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
+  const { data: storageData } = useQuery({
+    ...dashboardQueryOptions.storageInfo(projectId!),
+    enabled: !!projectId,
+  });
+
   const { data: testCasesData } = useQuery({
     ...testCasesQueryOptions(projectId!),
     enabled: !!projectId,
@@ -243,6 +248,38 @@ export const ProjectDashboardView = () => {
                 {new Date(project.created_at).toLocaleDateString('ko-KR')} 생성됨
               </span>
             </div>
+
+            {/* 저장 용량 프로그레스 바 */}
+            {storageData?.success && (() => {
+              const { usedBytes, maxBytes, usedPercent } = storageData.data;
+              const formatBytes = (bytes: number) => {
+                if (bytes < 1024) return `${bytes}B`;
+                if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+                return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+              };
+              const barColor = usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-primary';
+              const textColor = usedPercent >= 95 ? 'text-red-500' : usedPercent >= 80 ? 'text-amber-500' : 'text-primary';
+
+              return (
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="typo-caption text-text-3">저장 용량</span>
+                    <span className={`typo-caption font-medium ${textColor}`}>
+                      {formatBytes(usedBytes)} / {formatBytes(maxBytes)}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-bg-3">
+                    <div
+                      className={`h-full rounded-full transition-all ${barColor}`}
+                      style={{ width: `${Math.min(usedPercent, 100)}%` }}
+                    />
+                  </div>
+                  <span className={`typo-caption text-right ${textColor}`}>
+                    {usedPercent}%
+                  </span>
+                </div>
+              );
+            })()}
 
             <div className="flex justify-end">
               <DSButton variant="text" className="text-text-2 flex items-center gap-2">
