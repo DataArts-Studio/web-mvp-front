@@ -8,6 +8,7 @@ import { Logo } from '@/shared';
 import { AsideMenuItem, createAsideMenus } from '@/widgets/aside/model';
 import { AsideNavItem } from '@/widgets/aside/ui';
 import { track, NAVIGATION_EVENTS } from '@/shared/lib/analytics';
+import { toast } from 'sonner';
 
 // 경로 매칭 함수: 현재 경로가 메뉴 경로와 일치하는지 확인
 const isPathActive = (currentPath: string, matchPath: string): boolean => {
@@ -25,7 +26,7 @@ const isPathActive = (currentPath: string, matchPath: string): boolean => {
 
 const handleAwaitBottom = (e: React.MouseEvent<HTMLDivElement>) => {
   e.preventDefault();
-  alert('해당 기능은 준비중 입니다.');
+  toast.info('해당 기능은 준비중 입니다.');
 }
 
 export const Aside = () => {

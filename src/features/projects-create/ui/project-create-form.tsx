@@ -12,6 +12,7 @@ import { DSButton, DsCheckbox, DsFormField, DsInput, LoadingSpinner } from '@/sh
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, ClipboardCheck, Copy, FolderOpen, XIcon } from 'lucide-react';
 import { track, PROJECT_CREATE_EVENTS } from '@/shared/lib/analytics';
+import { toast } from 'sonner';
 
 interface ProjectCreateFormProps {
   onClick?: () => void;
@@ -86,11 +87,11 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       } else {
         track(PROJECT_CREATE_EVENTS.FAIL, { step });
         const errorMessages = Object.values(result.errors).flat().join('\n');
-        alert(`생성 실패: ${errorMessages}`);
+        toast.error(`생성 실패: ${errorMessages}`);
       }
     } catch (error) {
       track(PROJECT_CREATE_EVENTS.FAIL, { step, error_type: 'network' });
-      alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+      toast.error('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
