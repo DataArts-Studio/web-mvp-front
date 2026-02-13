@@ -36,7 +36,6 @@ export const getDashboardStats = async ({
     const projectInfo: ProjectInfo = {
       id: projectRow.id,
       name: projectRow.name,
-      identifier: projectRow.identifier,
       description: projectRow.description ?? '',
       ownerName: projectRow.owner_name ?? '',
       created_at: projectRow.created_at.toISOString(),

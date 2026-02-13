@@ -69,7 +69,6 @@ describe('getProjectByName', () => {
     if (result.success) {
       expect(result.data.id).toBe('proj-123');
       expect(result.data.projectName).toBe('Test Project');
-      expect(result.data.identifier).toBe('TP');
       expect(result.data.description).toBe('테스트 설명');
       expect(result.data.ownerName).toBe('홍길동');
     }
@@ -146,7 +145,6 @@ describe('getProjectById', () => {
     if (result.success) {
       expect(result.data.id).toBe('proj-456');
       expect(result.data.projectName).toBe('Another Project');
-      expect(result.data.identifier).toBe('AP');
       expect(result.data.description).toBe('다른 프로젝트');
       expect(result.data.ownerName).toBe('김철수');
     }

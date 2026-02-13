@@ -1,7 +1,6 @@
 export type ProjectInfo = {
   id: string;
   name: string;
-  identifier: string;
   description: string;
   ownerName: string;
   created_at: string; // ISO string (Server Action 직렬화 호환)

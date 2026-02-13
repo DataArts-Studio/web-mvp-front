@@ -9,7 +9,7 @@ import { requireProjectAccess } from '@/access/lib/require-access';
 
 export type ProjectBasicInfo = Pick<
   ProjectDomain,
-  'id' | 'projectName' | 'identifier' | 'description' | 'ownerName'
+  'id' | 'projectName' | 'description' | 'ownerName'
 >;
 
 export const getProjectByName = async (name: string): Promise<ActionResult<ProjectBasicInfo>> => {
@@ -29,7 +29,6 @@ export const getProjectByName = async (name: string): Promise<ActionResult<Proje
     const result: ProjectBasicInfo = {
       id: row.id,
       projectName: row.name,
-      identifier: row.identifier,
       description: row.description ?? undefined,
       ownerName: row.owner_name ?? undefined,
     };
@@ -63,7 +62,6 @@ export const getProjectById = async (id: string): Promise<ActionResult<ProjectBa
     const result: ProjectBasicInfo = {
       id: row.id,
       projectName: row.name,
-      identifier: row.identifier,
       description: row.description ?? undefined,
       ownerName: row.owner_name ?? undefined,
     };
