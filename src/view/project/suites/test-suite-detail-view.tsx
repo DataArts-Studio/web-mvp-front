@@ -84,6 +84,14 @@ const TestSuiteDetailView = () => {
     enabled: !!projectId,
   });
 
+  const suite: TestSuiteCard | undefined = suiteResult?.success ? suiteResult.data : undefined;
+
+  React.useEffect(() => {
+    if (suite) {
+      track(TESTSUITE_EVENTS.DETAIL_VIEW, { suite_id: suiteId });
+    }
+  }, [suite, suiteId]);
+
   // 로딩 중
   if (isSuiteLoading) {
     return (
@@ -95,14 +103,6 @@ const TestSuiteDetailView = () => {
       </Container>
     );
   }
-
-  const suite: TestSuiteCard | undefined = suiteResult?.success ? suiteResult.data : undefined;
-
-  React.useEffect(() => {
-    if (suite) {
-      track(TESTSUITE_EVENTS.DETAIL_VIEW, { suite_id: suiteId });
-    }
-  }, [suite, suiteId]);
 
   // 해당 스위트에 속한 테스트 케이스 필터링
   const allCases = casesResult?.success ? casesResult.data ?? [] : [];
