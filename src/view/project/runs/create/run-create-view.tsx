@@ -9,6 +9,7 @@ import { milestonesQueryOptions } from '@/entities/milestone';
 import { Container, DSButton, MainContainer, LoadingSpinner } from '@/shared';
 import { Aside } from '@/widgets';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
+import { toast } from 'sonner';
 
 interface RunFormData {
   runName: string;
@@ -49,12 +50,12 @@ export const RunCreateView = () => {
 
   const onSubmit = (data: RunFormData) => {
     if (!projectId) {
-      alert('프로젝트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      toast.warning('프로젝트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 
     if (!selectedMilestoneId) {
-      alert('마일스톤을 선택해주세요.');
+      toast.warning('마일스톤을 선택해주세요.');
       return;
     }
 
@@ -72,7 +73,7 @@ export const RunCreateView = () => {
       },
       onError: (error) => {
         track(TESTRUN_EVENTS.CREATE_FAIL, { project_id: projectId });
-        alert(error.message || '테스트 실행 생성에 실패했습니다.');
+        toast.error(error.message || '테스트 실행 생성에 실패했습니다.');
       },
     });
   };

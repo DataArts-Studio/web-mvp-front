@@ -1,5 +1,6 @@
 import type { TestCaseCardType } from '@/entities/test-case';
 import { formatDateKR } from '@/shared/utils/date-format';
+import { toast } from 'sonner';
 
 function escapeCsvField(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
@@ -23,37 +24,48 @@ const CSV_HEADERS = [
 ] as const;
 
 export function exportTestCasesToCSV(testCases: TestCaseCardType[], projectName: string): void {
-  const rows = testCases.map((tc) => [
-    tc.caseKey,
-    tc.title,
-    tc.testType || '',
-    (tc.tags || []).join(', '),
-    tc.preCondition || '',
-    tc.testSteps || '',
-    tc.expectedResult || '',
-    tc.resultStatus || '',
-    tc.suiteTitle || '',
-    formatDateKR(tc.createdAt, ''),
-    formatDateKR(tc.updatedAt, ''),
-  ]);
+  if (!testCases.length) {
+    toast.warning('내보낼 테스트 케이스가 없습니다.');
+    return;
+  }
 
-  const csvContent = [
-    CSV_HEADERS.map(escapeCsvField).join(','),
-    ...rows.map((row) => row.map(escapeCsvField).join(',')),
-  ].join('\n');
+  try {
+    const rows = testCases.map((tc) => [
+      tc.caseKey,
+      tc.title,
+      tc.testType || '',
+      (tc.tags || []).join(', '),
+      tc.preCondition || '',
+      tc.testSteps || '',
+      tc.expectedResult || '',
+      tc.resultStatus || '',
+      tc.suiteTitle || '',
+      formatDateKR(tc.createdAt, ''),
+      formatDateKR(tc.updatedAt, ''),
+    ]);
 
-  // BOM for Korean Excel compatibility
-  const BOM = '\uFEFF';
-  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const csvContent = [
+      CSV_HEADERS.map(escapeCsvField).join(','),
+      ...rows.map((row) => row.map(escapeCsvField).join(',')),
+    ].join('\n');
 
-  const url = URL.createObjectURL(blob);
-  const date = new Date().toISOString().slice(0, 10);
-  const fileName = `${projectName}_test-cases_${date}.csv`;
+    // BOM for Korean Excel compatibility
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
 
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  link.click();
+    const url = URL.createObjectURL(blob);
+    const date = new Date().toISOString().slice(0, 10);
+    const fileName = `${projectName}_test-cases_${date}.csv`;
 
-  URL.revokeObjectURL(url);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+    toast.success(`${testCases.length}건의 테스트 케이스를 CSV로 내보냈습니다.`);
+  } catch {
+    toast.error('CSV 내보내기에 실패했습니다. 다시 시도해주세요.');
+  }
 }

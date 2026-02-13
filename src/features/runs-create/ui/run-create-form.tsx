@@ -3,6 +3,7 @@ import React from 'react';
 
 import { DSButton, FormField } from '@/shared';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 interface IFormInput {
   name: string;
 }
@@ -10,7 +11,7 @@ interface IFormInput {
 export const RunCreateForm = () => {
   const { register, handleSubmit } = useForm<IFormInput>();
   const onSubmit = async (data: IFormInput) => {
-    alert('생성 클릭\n' + JSON.stringify(data, null, 2));
+    toast.info('생성 클릭\n' + JSON.stringify(data, null, 2));
   };
   return (
     <section
@@ -27,7 +28,7 @@ export const RunCreateForm = () => {
           <FormField.Control placeholder="테스트 스위트 이름 입력" type='text' {...register('name', {required: true})}/>
         </FormField.Root>
         <div className='flex gap-2'>
-          <DSButton type="button" variant="ghost" className="mt-2 w-full" onClick={()=> alert('취소 클릭')}>
+          <DSButton type="button" variant="ghost" className="mt-2 w-full" onClick={()=> toast.info('취소 클릭')}>
             취소
           </DSButton>
           <DSButton type="submit" variant="solid" className="mt-2 w-full">
