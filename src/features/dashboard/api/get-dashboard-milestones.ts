@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import {
   getDatabase,
   milestones,
@@ -205,7 +206,7 @@ export async function getDashboardMilestones(
 
     return { success: true, data: result };
   } catch (error) {
-    console.error('Error fetching dashboard milestones:', error);
+    Sentry.captureException(error, { extra: { action: 'getDashboardMilestones' } });
     return {
       success: false,
       errors: {

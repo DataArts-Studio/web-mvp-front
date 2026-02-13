@@ -146,7 +146,6 @@ export const getDashboardStats = async ({
       },
     };
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
     Sentry.captureException(error, { extra: { action: 'getDashboardStats' } });
     return {
       success: false,

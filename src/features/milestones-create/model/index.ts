@@ -1,1 +1,1 @@
-export { createMilestoneAction, createMilestoneMock } from './server-action';
+export { createMilestoneAction } from './server-action';

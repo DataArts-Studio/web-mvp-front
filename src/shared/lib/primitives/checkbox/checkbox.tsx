@@ -60,12 +60,6 @@ const CheckboxRoot = ({
     }
   }, [state]);
 
-  /*const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextChecked = e.target.checked;
-    if (!isControlled) setInternalChecked(nextChecked);
-    onCheckedChange?.(nextChecked);
-  };*/
-
   // 클릭 핸들러: 버튼 클릭 시 상태 토글
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled) return;

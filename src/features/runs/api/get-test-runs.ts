@@ -86,7 +86,6 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
 
     return { success: true, data: formattedRuns };
   } catch (error) {
-    console.error('Error fetching test runs:', error);
     Sentry.captureException(error, { extra: { action: 'getTestRunsByProjectId' } });
     return {
       success: false,

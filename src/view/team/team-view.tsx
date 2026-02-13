@@ -139,28 +139,6 @@ export function TeamView() {
           </div>
         </section>
 
-        {/* 팀 멤버 */}
-        {/*<section className="mb-16">
-          <h2 className="typo-h2-heading text-text-1 mb-6 text-center">
-            팀 멤버
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {teamMembers.map((member) => (
-              <div
-                key={member.name}
-                className="rounded-3 border border-line-2 bg-bg-2 p-6 text-center hover:bg-bg-3 transition-colors"
-              >
-                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <member.icon className="h-6 w-6" />
-                </div>
-                <h3 className="typo-body1-heading text-text-1">{member.name}</h3>
-                <p className="typo-caption text-primary mb-2">{member.role}</p>
-                <p className="typo-body2-normal text-text-3">{member.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>*/}
-
         {/* 연락처 */}
         <section>
           <div className="rounded-4 border border-line-2 bg-gradient-to-br from-primary/5 to-primary/10 p-8 text-center">
@@ -178,15 +156,6 @@ export function TeamView() {
                 <Mail className="h-4 w-4" />
                 이메일 보내기
               </a>
-              {/*<Link
-                href="https://github.com/testea"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-2 border border-line-2 bg-bg-2 px-4 py-2 typo-body2-heading text-text-2 hover:border-primary hover:text-primary transition-colors"
-              >
-                <Github className="h-4 w-4" />
-                GitHub
-              </Link>*/}
             </div>
           </div>
         </section>

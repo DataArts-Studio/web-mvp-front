@@ -154,7 +154,6 @@ export const ProjectDashboardView = () => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
-      console.error('링크 복사 실패:', err);
     }
   };
 

@@ -19,7 +19,6 @@ export const createTestRunAction = async (input: CreateRunInput) => {
   const validation = CreateTestRunSchema.safeParse(input);
 
   if (!validation.success) {
-    console.error('[createTestRunAction] Validation failed:', validation.error.flatten());
     return { success: false, errors: validation.error.flatten() as FlatErrors };
   }
 
@@ -143,7 +142,6 @@ export const createTestRunAction = async (input: CreateRunInput) => {
 
     return { success: true, testRun: newTestRun };
   } catch (error) {
-    console.error('[createTestRunAction] DB Error:', error);
     Sentry.captureException(error, { extra: { action: 'createTestRunAction' } });
     return {
       success: false,

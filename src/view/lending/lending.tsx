@@ -37,7 +37,6 @@ export const LendingView = () => {
         >
           {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
           <div className="flex w-full flex-col items-start gap-9 pl-8">
-            {/*<Logo className="h-12 w-48" />*/}
             <LendingHeader />
             {/* CTA Section */}
             <section aria-label="시작하기" className="relative z-10">

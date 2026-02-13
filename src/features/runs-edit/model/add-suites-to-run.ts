@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import {
   getDatabase,
   testRunSuites,
@@ -98,7 +99,7 @@ export async function addSuitesToRunAction(
 
     return { success: true, addedCount: result };
   } catch (error) {
-    console.error('[addSuitesToRunAction] Error:', error);
+    Sentry.captureException(error, { extra: { action: 'addSuitesToRunAction' } });
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: `스위트 추가에 실패했습니다: ${message}` };
   }

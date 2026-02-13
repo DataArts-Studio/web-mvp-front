@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@/shared/lib/db';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 import type { ProjectSearchResult, SearchProjectsResponse } from '../model/types';
@@ -57,7 +58,7 @@ export async function searchProjects(keyword: string): Promise<SearchProjectsRes
       message: results.length > 0 ? `${results.length}건의 프로젝트를 찾았습니다` : undefined,
     };
   } catch (error) {
-    console.error('Error searching projects:', error);
+    Sentry.captureException(error, { extra: { action: 'searchProjects' } });
     return {
       success: false,
       error: '검색 중 오류가 발생했습니다. 다시 시도해주세요',

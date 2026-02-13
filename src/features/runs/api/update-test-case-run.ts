@@ -77,7 +77,6 @@ export async function updateTestCaseRunStatus(
       },
     };
   } catch (error) {
-    console.error('Error updating test case run:', error);
     Sentry.captureException(error, { extra: { action: 'updateTestCaseRunStatus' } });
     return {
       success: false,

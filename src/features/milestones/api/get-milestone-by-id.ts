@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { getDatabase, milestones } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
@@ -132,7 +133,7 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
 
     return { success: true, data: result };
   } catch (error) {
-    console.error('Error fetching milestone:', error);
+    Sentry.captureException(error, { extra: { action: 'getMilestoneById' } });
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,

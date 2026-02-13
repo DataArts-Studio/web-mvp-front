@@ -90,7 +90,6 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       }
     } catch (error) {
       track(PROJECT_CREATE_EVENTS.FAIL, { step, error_type: 'network' });
-      console.error('네트워크 에러 발생:', error);
       alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
