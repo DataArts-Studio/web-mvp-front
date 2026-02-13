@@ -225,31 +225,34 @@ export const ProjectDashboardView = () => {
           <KPICards data={kpiData} />
         </section>
 
-        {/* 프로젝트 정보 + 최근 활동 카드 */}
+        {/* 프로젝트 정보 + 저장 용량 + 최근 활동 카드 */}
         <section className="col-span-6 grid grid-cols-6 gap-5">
-          {/* 내 프로젝트 정보 카드 */}
-          <div className="rounded-3 border-line-2 bg-bg-2 col-span-2 flex flex-col gap-4 border p-5" data-tour="project-info">
-            <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
+          {/* 왼쪽: 프로젝트 정보 + 저장 용량 (세로 배치) */}
+          <div className="col-span-2 flex flex-col gap-5">
+            {/* 내 프로젝트 정보 카드 */}
+            <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="project-info">
+              <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
 
-            <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
-              <div className="flex items-center gap-2">
-                <span className="typo-body2-heading text-primary truncate max-w-[200px]">
-                  {project.name}
+              <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="typo-body2-heading text-primary truncate max-w-[200px]">
+                    {project.name}
+                  </span>
+                  <button
+                    onClick={handleCopyLink}
+                    className="text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                    title="링크 복사"
+                  >
+                    {isCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+                  </button>
+                </div>
+                <span className="typo-caption text-text-3">
+                  {new Date(project.created_at).toLocaleDateString('ko-KR')} 생성됨
                 </span>
-                <button
-                  onClick={handleCopyLink}
-                  className="text-primary hover:text-primary/80 transition-colors cursor-pointer"
-                  title="링크 복사"
-                >
-                  {isCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-                </button>
               </div>
-              <span className="typo-caption text-text-3">
-                {new Date(project.created_at).toLocaleDateString('ko-KR')} 생성됨
-              </span>
             </div>
 
-            {/* 저장 용량 프로그레스 바 */}
+            {/* 저장 용량 카드 */}
             {storageData?.success && (() => {
               const { usedBytes, maxBytes, usedPercent } = storageData.data;
               const formatBytes = (bytes: number) => {
@@ -261,32 +264,27 @@ export const ProjectDashboardView = () => {
               const textColor = usedPercent >= 95 ? 'text-red-500' : usedPercent >= 80 ? 'text-amber-500' : 'text-primary';
 
               return (
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="typo-caption text-text-3">저장 용량</span>
-                    <span className={`typo-caption font-medium ${textColor}`}>
-                      {formatBytes(usedBytes)} / {formatBytes(maxBytes)}
-                    </span>
+                <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="storage-info">
+                  <span className="typo-body2-heading text-text-3">저장 용량</span>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className={`typo-caption font-medium ${textColor}`}>
+                        {formatBytes(usedBytes)} / {formatBytes(maxBytes)}
+                      </span>
+                      <span className={`typo-caption ${textColor}`}>
+                        {usedPercent}%
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-bg-3">
+                      <div
+                        className={`h-full rounded-full transition-all ${barColor}`}
+                        style={{ width: `${Math.min(usedPercent, 100)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-bg-3">
-                    <div
-                      className={`h-full rounded-full transition-all ${barColor}`}
-                      style={{ width: `${Math.min(usedPercent, 100)}%` }}
-                    />
-                  </div>
-                  <span className={`typo-caption text-right ${textColor}`}>
-                    {usedPercent}%
-                  </span>
                 </div>
               );
             })()}
-
-            <div className="flex justify-end">
-              <DSButton variant="text" className="text-text-2 flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span>환경설정</span>
-              </DSButton>
-            </div>
           </div>
 
           {/* 최근 활동 카드 */}
@@ -300,14 +298,24 @@ export const ProjectDashboardView = () => {
               </div>
             ) : (
               <ul className="flex flex-col gap-2">
-                {recentActivities.slice(0, 5).map((item) => (
+                {recentActivities.slice(0, 7).map((item) => (
                   <li key={item.id} className="flex items-center gap-2">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     <span className="typo-body2-normal text-text-1 flex-1 truncate">
                       {item.title}
                     </span>
                     <span className="typo-caption text-text-3">
-                      {item.created_at}일 전
+                      {(() => {
+                        const diff = Date.now() - new Date(item.created_at).getTime();
+                        const minutes = Math.floor(diff / 60000);
+                        if (minutes < 1) return '방금 전';
+                        if (minutes < 60) return `${minutes}분 전`;
+                        const hours = Math.floor(minutes / 60);
+                        if (hours < 24) return `${hours}시간 전`;
+                        const days = Math.floor(hours / 24);
+                        if (days < 30) return `${days}일 전`;
+                        return new Date(item.created_at).toLocaleDateString('ko-KR');
+                      })()}
                     </span>
                   </li>
                 ))}
