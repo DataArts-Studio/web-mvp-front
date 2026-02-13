@@ -6,3 +6,4 @@ export * from './mvp-bottom-navbar';
 export * from './sh-pie-chart';
 export * from './checkbox';
 export * from './loading-spinner';
+export * from './selection-modal';
