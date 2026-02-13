@@ -11,7 +11,7 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googletagmanager.com *.vercel.live",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googletagmanager.com vercel.live *.vercel.live static.cloudflareinsights.com",
       "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net",
       "img-src 'self' data: blob: *.vercel.live",
       "font-src 'self' cdn.jsdelivr.net",
