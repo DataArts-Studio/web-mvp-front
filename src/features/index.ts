@@ -9,3 +9,4 @@ export * from '@/features/milestones-edit';
 export * from '@/features/cases-list';
 export * from '@/features/runs';
 export * from '@/features/onboarding-tour';
+export * from '@/features/beta-notice';
