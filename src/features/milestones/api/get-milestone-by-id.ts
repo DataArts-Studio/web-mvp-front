@@ -12,15 +12,11 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
     const dbMilestone = await db.query.milestones.findFirst({
       where: eq(milestones.id, milestoneId),
       with: {
-        testRunMilestones: {
+        testRuns: {
           with: {
-            testRun: {
+            testCaseRuns: {
               with: {
-                testCaseRuns: {
-                  with: {
-                    testCase: true,
-                  },
-                },
+                testCase: true,
               },
             },
           },
@@ -58,7 +54,7 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
       };
     }
 
-    const relatedTestRuns = dbMilestone.testRunMilestones?.map(trm => trm.testRun).filter(Boolean) || [];
+    const relatedTestRuns = dbMilestone.testRuns || [];
     const testCaseMap = new Map<string, { id: string; caseKey: string; title: string; lastStatus: string | null }>();
 
     // milestone_test_cases 테이블에서 직접 연결된 테스트 케이스 가져오기
