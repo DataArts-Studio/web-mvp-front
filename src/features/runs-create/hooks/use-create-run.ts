@@ -24,7 +24,7 @@ export const useCreateRun = () => {
           refetchType: 'all',
         }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      ]);
+      ]).catch(() => {});
     },
   });
 };

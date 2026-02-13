@@ -13,7 +13,7 @@ export const useCreateSuite = () => {
           refetchType: 'all',
         }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      ]);
+      ]).catch(() => {});
     },
   });
 };

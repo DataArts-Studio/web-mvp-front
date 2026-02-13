@@ -18,7 +18,7 @@ export const useUpdateCase = () => {
           refetchType: 'all',
         }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      ]);
+      ]).catch(() => {});
     },
   });
 };

@@ -49,7 +49,7 @@ export const useArchive = (options?: UseArchiveOptions) => {
         queryClient.invalidateQueries({ queryKey: queryKeys }),
         queryClient.invalidateQueries({ queryKey: [queryKeys[0], variables.targetId] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      ]);
+      ]).catch(() => {});
 
       options?.onSuccess?.(data, variables);
     },
