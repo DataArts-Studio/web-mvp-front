@@ -177,7 +177,6 @@ export async function verifyProjectAccess(
       redirectUrl: `/projects/${project.name}`,
     };
   } catch (error) {
-    console.error('프로젝트 접근 검증 실패:', error);
     Sentry.captureException(error, { extra: { action: 'verifyProjectAccess' } });
     return {
       success: false,
@@ -199,7 +198,6 @@ export async function revokeProjectAccess(projectName: string): Promise<ActionRe
       message: '프로젝트 접근 권한이 해제되었습니다.',
     };
   } catch (error) {
-    console.error('접근 권한 해제 실패:', error);
     Sentry.captureException(error, { extra: { action: 'revokeProjectAccess' } });
     return {
       success: false,
@@ -228,7 +226,6 @@ export async function checkProjectExists(projectName: string): Promise<boolean> 
     const project = await getProjectAccessInfo(projectName);
     return project !== null;
   } catch (error) {
-    console.error('프로젝트 존재 여부 확인 실패:', error);
     Sentry.captureException(error, { extra: { action: 'checkProjectExists' } });
     return false;
   }

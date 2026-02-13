@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { eq, inArray } from 'drizzle-orm';
@@ -184,7 +185,7 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
 
     return { success: true, data: result };
   } catch (error) {
-    console.error('Error fetching test run:', error);
+    Sentry.captureException(error, { extra: { action: 'getTestRunById' } });
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,

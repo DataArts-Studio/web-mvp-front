@@ -6,6 +6,7 @@ import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
 import { GoogleTagManager } from '@next/third-parties/google';
 import { MvpBottomNavbar } from 'src/shared';
+import { Toaster } from 'sonner';
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
@@ -164,6 +165,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <QueryProvider>{children}</QueryProvider>
+        <Toaster position="top-right" richColors closeButton />
         {/* 테스트용 컴포넌트 */}
         <MvpBottomNavbar />
         {process.env.NEXT_PUBLIC_GTM_ID && (

@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testRuns } from '@/shared/lib/db';
 import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -61,7 +62,7 @@ export async function addCasesToRunAction(
 
     return { success: true, addedCount: result };
   } catch (error) {
-    console.error('[addCasesToRunAction] Error:', error);
+    Sentry.captureException(error, { extra: { action: 'addCasesToRunAction' } });
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: `케이스 추가에 실패했습니다: ${message}` };
   }

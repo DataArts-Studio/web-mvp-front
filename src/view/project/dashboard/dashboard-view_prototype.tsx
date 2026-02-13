@@ -124,41 +124,6 @@ export const ProjectDashboardView = () => {
           </ul>
         </section>
 
-        {/* ASIDE */}
-        {/*<aside className="flex flex-col gap-6">
-            <section id='action-section' className="bg-bg-2 shadow-1 rounded-md p-6">
-              <h2 className="text-label-heading text-text-3 mb-3 tracking-wide uppercase">
-                Actions
-              </h2>
-              <ul className="text-body2-normal space-y-2">
-                <li>
-                  <button className="text-text-1 hover:text-primary w-full text-left">
-                    + Add Test Run
-                  </button>
-                </li>
-                <li>
-                  <button className="text-text-1 hover:text-primary w-full text-left">
-                    + Add Test Case
-                  </button>
-                </li>
-                <li>
-                  <button className="text-text-1 hover:text-primary w-full text-left">
-                    + Add Milestone
-                  </button>
-                </li>
-              </ul>
-            </section>
-
-            <section id='todo-section' className="bg-bg-2 shadow-1 rounded-md p-6">
-              <h2 className="text-label-heading text-text-3 mb-3 tracking-wide uppercase">Todos</h2>
-              <ul className="text-label-normal text-text-2 space-y-2">
-                <li>• 브라우저 호환성 테스트 케이스 작성</li>
-                <li>• 결제 모듈 회귀 테스트 실행</li>
-                <li>• Release 1.0 마일스톤 범위 재확인</li>
-              </ul>
-            </section>
-          </aside>*/}
-        {/*<div className="grid w-full gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]"></div>*/}
       </MainContainer>
     </Container>
   );

@@ -67,7 +67,6 @@ export const getTestCases = async ({
       data: result,
     };
   } catch (error) {
-    console.error('Error fetching test cases:', error);
     Sentry.captureException(error, { extra: { action: 'getTestCases' } });
     return {
       success: false,
@@ -121,7 +120,6 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
       data: result,
     };
   } catch (error) {
-    console.error('Error fetching test case: ', error);
     Sentry.captureException(error, { extra: { action: 'getTestCase' } });
     return {
       success: false,
@@ -180,7 +178,6 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
       message: '테스트 케이스를 생성하였습니다.',
     };
   } catch (error) {
-    console.error('Error creating test case:', error);
     Sentry.captureException(error, { extra: { action: 'createTestCase' } });
     return {
       success: false,
@@ -267,7 +264,6 @@ export const updateTestCase = async (
       message: '테스트케이스를 수정하였습니다.',
     };
   } catch (error) {
-    console.error('Error updating test case:', error);
     Sentry.captureException(error, { extra: { action: 'updateTestCase' } });
     return {
       success: false,
@@ -309,7 +305,6 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
       message: '테스트케이스가 성공적으로 삭제되었습니다.',
     }
   } catch (error) {
-    console.error('Error archiving test case:', error);
     Sentry.captureException(error, { extra: { action: 'archiveTestCase' } });
     return {
       success: false,

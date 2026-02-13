@@ -38,7 +38,6 @@ export const getProjectByName = async (name: string): Promise<ActionResult<Proje
       data: result,
     };
   } catch (error) {
-    console.error('Error fetching project:', error);
     Sentry.captureException(error, { extra: { action: 'getProjectByName' } });
     return {
       success: false,
@@ -71,7 +70,6 @@ export const getProjectById = async (id: string): Promise<ActionResult<ProjectBa
       data: result,
     };
   } catch (error) {
-    console.error('Error fetching project:', error);
     Sentry.captureException(error, { extra: { action: 'getProjectById' } });
     return {
       success: false,
@@ -111,7 +109,6 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
       message: '프로젝트가 성공적으로 삭제되었습니다.',
     }
   } catch (error) {
-    console.error('Error archiving project:', error);
     Sentry.captureException(error, { extra: { action: 'archiveProject' } });
     return {
       success: false,

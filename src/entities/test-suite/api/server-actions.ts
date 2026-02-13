@@ -78,7 +78,6 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
       message: '테스트 스위트를 생성하였습니다.',
     };
   } catch (error) {
-    console.error('Error creating test suite:', error);
     Sentry.captureException(error, { extra: { action: 'createTestSuite' } });
     return {
       success: false,
@@ -129,7 +128,6 @@ export const getTestSuites = async ({
       data: result,
     };
   } catch (error) {
-    console.error('Error fetching test suites:', error);
     Sentry.captureException(error, { extra: { action: 'getTestSuites' } });
     return {
       success: false,
@@ -167,7 +165,6 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
       data: result,
     };
   } catch (error) {
-    console.error('Error fetching test suite:', error);
     Sentry.captureException(error, { extra: { action: 'getTestSuiteById' } });
     return {
       success: false,
@@ -216,7 +213,6 @@ export const getTestSuiteByIdWithStats = async (id: string): Promise<ActionResul
 
     return { success: true, data: card };
   } catch (error) {
-    console.error('Error fetching test suite by id with stats:', error);
     Sentry.captureException(error, { extra: { action: 'getTestSuiteByIdWithStats' } });
     return {
       success: false,
@@ -288,7 +284,6 @@ export const updateTestSuite = async (params: UpdateTestSuiteParams): Promise<Ac
       message: '테스트 스위트를 수정하였습니다.',
     };
   } catch (error) {
-    console.error('Error updating test suite:', error);
     Sentry.captureException(error, { extra: { action: 'updateTestSuite' } });
     return {
       success: false,
@@ -499,7 +494,6 @@ export const getTestSuitesWithStats = async ({
 
     return { success: true, data: result };
   } catch (error) {
-    console.error('Error fetching test suites with stats:', error);
     Sentry.captureException(error, { extra: { action: 'getTestSuitesWithStats' } });
     return {
       success: false,
@@ -544,7 +538,6 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       message: '테스트 스위트를 아카이브하였습니다.',
     };
   } catch (error) {
-    console.error('Error archiving test suite:', error);
     Sentry.captureException(error, { extra: { action: 'archiveTestSuite' } });
     return {
       success: false,

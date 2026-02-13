@@ -39,7 +39,6 @@ export const getOnboardingStatus = async (
     const value = row.value as { completed: boolean; completedAt?: string; lastStep?: number };
     return { success: true, data: value };
   } catch (error) {
-    console.error('Error fetching onboarding status:', error);
     Sentry.captureException(error, { extra: { action: 'getOnboardingStatus' } });
     return {
       success: false,
@@ -93,7 +92,6 @@ export const completeOnboardingTour = async (
       message: '온보딩 투어가 완료되었습니다.',
     };
   } catch (error) {
-    console.error('Error completing onboarding tour:', error);
     Sentry.captureException(error, { extra: { action: 'completeOnboardingTour' } });
     return {
       success: false,

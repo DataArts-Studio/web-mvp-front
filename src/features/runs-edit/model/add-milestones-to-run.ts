@@ -1,5 +1,6 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
 import {
   getDatabase,
   testCaseRuns,
@@ -92,7 +93,7 @@ export async function addMilestonesToRunAction(
 
     return { success: true, addedCount: result };
   } catch (error) {
-    console.error('[addMilestonesToRunAction] Error:', error);
+    Sentry.captureException(error, { extra: { action: 'addMilestonesToRunAction' } });
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: `마일스톤 추가에 실패했습니다: ${message}` };
   }

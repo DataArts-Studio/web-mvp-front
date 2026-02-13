@@ -46,7 +46,6 @@ export const getMilestones = async ({
       data: result,
     };
   } catch (error) {
-    console.error('Error fetching milestones:', error);
     Sentry.captureException(error, { extra: { action: 'getMilestones' } });
 
     return {
@@ -80,7 +79,6 @@ export const getMilestoneById = async (id: string): Promise<ActionResult<Milesto
       data: toMilestone(row as MilestoneDTO),
     };
   } catch (error) {
-    console.error('Error fetching milestone:', error);
     Sentry.captureException(error, { extra: { action: 'getMilestoneById' } });
     return {
       success: false,
@@ -131,7 +129,6 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
       message: '마일스톤을 생성하였습니다.',
     };
   } catch (error) {
-    console.error('Error creating milestone:', error);
     Sentry.captureException(error, { extra: { action: 'createMilestone' } });
     return {
       success: false,
@@ -201,7 +198,6 @@ export const updateMilestone = async (
       message: '마일스톤이 수정되었습니다.',
     };
   } catch (error) {
-    console.error('Error updating milestone:', error);
     Sentry.captureException(error, { extra: { action: 'updateMilestone' } });
     return {
       success: false,
@@ -246,7 +242,6 @@ export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: s
       message: '마일스톤이 성공적으로 삭제되었습니다.',
     };
   } catch (error) {
-    console.error('Error archiving milestone:', error);
     Sentry.captureException(error, { extra: { action: 'archiveMilestone' } });
     return {
       success: false,
@@ -327,7 +322,6 @@ export const addTestCasesToMilestone = async (
       message: `${testCaseIds.length}개의 테스트 케이스가 마일스톤에 추가되었습니다.`,
     };
   } catch (error) {
-    console.error('Error adding test cases to milestone:', error);
     Sentry.captureException(error, { extra: { action: 'addTestCasesToMilestone' } });
     return {
       success: false,
@@ -367,7 +361,6 @@ export const removeTestCaseFromMilestone = async (
       message: '테스트 케이스가 마일스톤에서 제거되었습니다.',
     };
   } catch (error) {
-    console.error('Error removing test case from milestone:', error);
     Sentry.captureException(error, { extra: { action: 'removeTestCaseFromMilestone' } });
     return {
       success: false,
@@ -476,7 +469,6 @@ export const addTestSuitesToMilestone = async (
       message: `${testSuiteIds.length}개의 테스트 스위트가 마일스톤에 추가되었습니다.`,
     };
   } catch (error) {
-    console.error('Error adding test suites to milestone:', error);
     Sentry.captureException(error, { extra: { action: 'addTestSuitesToMilestone' } });
     return {
       success: false,
@@ -516,7 +508,6 @@ export const removeTestSuiteFromMilestone = async (
       message: '테스트 스위트가 마일스톤에서 제거되었습니다.',
     };
   } catch (error) {
-    console.error('Error removing test suite from milestone:', error);
     Sentry.captureException(error, { extra: { action: 'removeTestSuiteFromMilestone' } });
     return {
       success: false,

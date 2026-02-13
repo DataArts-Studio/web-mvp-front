@@ -120,7 +120,6 @@ export async function getProjects(): Promise<ActionResult<SerializableProjectDom
 
     return { success: true, data: result };
   } catch (error) {
-    console.error('프로젝트 목록 조회 실패:', error);
     Sentry.captureException(error, { extra: { action: 'getProjects' } });
     return {
       success: false,
@@ -146,7 +145,6 @@ export async function checkProjectNameDuplicate(name: string): Promise<ActionRes
 
     return { success: true, data: !!existing };
   } catch (error) {
-    console.error('중복 체크 실패:', error);
     Sentry.captureException(error, { extra: { action: 'checkProjectNameDuplicate' } });
     return {
       success: false,
