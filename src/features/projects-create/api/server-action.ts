@@ -79,23 +79,15 @@ export async function createProject(
     };
 
     // 프로젝트 생성 후 자동으로 접근 토큰 발급 (생성자는 바로 접근 가능)
-    console.log('[createProject] 프로젝트 생성 완료:', inserted.name, inserted.id);
     const token = await createProjectAccessToken(inserted.id, inserted.name);
-    console.log('[createProject] 토큰 생성 완료');
     await setAccessTokenCookie(inserted.name, token);
-    console.log('[createProject] 쿠키 설정 완료:', inserted.name);
 
     revalidatePath('/projects');
     revalidatePath('/');
 
     return { success: true, data: result };
   } catch (error) {
-    console.error('프로젝트 생성 실패:', error);
     Sentry.captureException(error, { extra: { action: 'createProject' } });
-    if (error instanceof Error) {
-      console.error('에러 메시지:', error.message);
-      console.error('에러 원인:', (error as any).cause);
-    }
     return {
       success: false,
       errors: { _form: ['프로젝트 생성 중 오류가 발생했습니다.'] },
