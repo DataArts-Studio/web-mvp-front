@@ -17,7 +17,7 @@ export const AsideNavItem = ({ label, href, icon: Icon, active }: NavItemProps) 
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
         active
-          ? 'bg-primary text-bg-1'
+          ? 'bg-primary text-text-1'
           : 'text-text-2 hover:bg-bg-3 hover:text-text-1'
       )}
     >

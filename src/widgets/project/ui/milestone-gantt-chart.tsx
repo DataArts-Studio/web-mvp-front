@@ -11,6 +11,7 @@ type MilestoneGanttChartProps = {
   testRuns: FetchedTestRun[];
   selectedRunId: string | null;
   onRunChange: (runId: string | null) => void;
+  hideRunSelector?: boolean;
 };
 
 const LABEL_W = 180;
@@ -36,6 +37,7 @@ export const MilestoneGanttChart = ({
   testRuns,
   selectedRunId,
   onRunChange,
+  hideRunSelector = false,
 }: MilestoneGanttChartProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -221,7 +223,7 @@ export const MilestoneGanttChart = ({
 
       <div className="relative">
         {/* Test run dropdown */}
-        {testRuns.length > 0 && (
+        {!hideRunSelector && testRuns.length > 0 && (
           <div className="mb-5 flex items-center" ref={dropdownRef}>
             <div className="relative">
               <button

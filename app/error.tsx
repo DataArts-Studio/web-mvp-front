@@ -38,7 +38,7 @@ export default function Error({ error, reset }: ErrorProps) {
             <button
               type="button"
               onClick={reset}
-              className="inline-flex w-fit cursor-pointer items-center justify-center rounded-4 bg-primary px-6 py-3 text-body2 font-semibold text-bg-1 transition-colors hover:bg-primary/90"
+              className="inline-flex w-fit cursor-pointer items-center justify-center rounded-4 bg-primary px-6 py-3 text-body2 font-semibold text-text-1 transition-colors hover:bg-primary/90"
             >
               다시 시도
             </button>
