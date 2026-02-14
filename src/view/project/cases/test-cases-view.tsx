@@ -335,7 +335,7 @@ export const TestCasesView = () => {
                 </Select.Content>
               </Select.Root>
             </ActionToolbar.Group>
-            <ActionToolbar.Action size="small" type="button" variant="outline" onClick={() => {
+            <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
               track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count: filteredAndSortedTestCases.length });
               const projectName = dashboardData?.success ? dashboardData.data.project.name : 'project';
               exportTestCasesToCSV(filteredAndSortedTestCases, projectName);
