@@ -1,10 +1,12 @@
 'use client';
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import type { CreateTestCase } from '@/entities/test-case';
+import { TEST_TYPE_OPTIONS } from '@/entities/test-case';
+import { projectTagsQueryOptions } from '@/entities/test-case/api';
 import { useCreateCase } from '@/features/cases-create/hooks';
-import { DSButton, DsFormField, DsInput, LoadingSpinner, cn } from '@/shared';
+import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, LoadingSpinner } from '@/shared';
 import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { testSuitesQueryOptions } from '@/widgets';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +19,7 @@ const CreateTestCaseFormSchema = z.object({
   testSuiteId: z.string().uuid().nullable().optional(),
   title: z.string().min(1, '테스트 케이스 제목을 입력해주세요.'),
   testType: z.string().optional(),
-  tags: z.string().optional(),
+  tags: z.array(z.string().max(30)).max(10).default([]),
   preCondition: z.string().optional(),
   testSteps: z.string().optional(),
   expectedResult: z.string().optional(),
@@ -40,12 +42,16 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
   });
   const suites = suitesData?.success ? suitesData.data : [];
 
+  const { data: tagsData } = useQuery(projectTagsQueryOptions(projectId));
+  const projectTags = tagsData?.success ? tagsData.data : [];
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
     setValue,
+    control,
   } = useForm<CreateTestCaseForm>({
     resolver: zodResolver(CreateTestCaseFormSchema),
     defaultValues: {
@@ -53,7 +59,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
       testSuiteId: null,
       title: '',
       testType: '',
-      tags: '',
+      tags: [],
       preCondition: '',
       testSteps: '',
       expectedResult: '',
@@ -61,35 +67,12 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
   });
 
   const selectedSuiteId = watch('testSuiteId');
-  const tagsValue = watch('tags');
-  const tagList = tagsValue?.split(',').map((t) => t.trim()).filter(Boolean) ?? [];
-
-  const [tagInput, setTagInput] = React.useState('');
-
-  const addTags = (input: string) => {
-    const newTags = input.split(',').map((t) => t.trim()).filter(Boolean);
-    if (newTags.length === 0) return;
-    const merged = [...new Set([...tagList, ...newTags])];
-    setValue('tags', merged.join(', '));
-    setTagInput('');
-  };
-
-  const removeTag = (target: string) => {
-    setValue('tags', tagList.filter((t) => t !== target).join(', '));
-  };
-
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addTags(tagInput);
-    }
-  };
 
   const onSubmit = handleSubmit((data) => {
     const payload: CreateTestCase = {
       ...data,
       testSuiteId: data.testSuiteId || undefined,
-      tags: data.tags ? data.tags.split(',').map((tag) => tag.trim()).filter(Boolean) : undefined,
+      tags: data.tags.length > 0 ? data.tags : undefined,
     };
     mutate(payload, {
       onSuccess: () => {
@@ -175,20 +158,16 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
                 <FolderOpen className="h-4 w-4" />
                 소속 스위트
               </DsFormField.Label>
-              <select
+              <DsSelect
+                className='w-full'
                 value={selectedSuiteId || ''}
-                onChange={(e) => setValue('testSuiteId', e.target.value || null)}
-                className={cn(
-                  'h-[56px] w-full cursor-pointer rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
-                )}
-              >
-                <option value="">스위트 없음</option>
-                {suites.map((suite) => (
-                  <option key={suite.id} value={suite.id}>
-                    {suite.title}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setValue('testSuiteId', v || null)}
+                options={[
+                  { value: '', label: '스위트 없음' },
+                  ...suites.map((suite) => ({ value: suite.id, label: suite.title })),
+                ]}
+                placeholder="스위트를 선택하세요"
+              />
               <span className="text-text-3 typo-caption-normal">테스트 케이스가 속할 스위트를 선택하세요.</span>
             </DsFormField.Root>
 
@@ -198,12 +177,22 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
                 <TestTube2 className="h-4 w-4" />
                 테스트 유형
               </DsFormField.Label>
-              <DsFormField.Control asChild>
-                <DsInput
-                  {...register('testType')}
-                  placeholder="예: 기능 테스트, UI 테스트, API 테스트"
-                />
-              </DsFormField.Control>
+              <Controller
+                name="testType"
+                control={control}
+                render={({ field }) => (
+                  <DsSelect
+                    className="w-full"
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    options={[
+                      { value: '', label: '선택 안 함' },
+                      ...TEST_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+                    ]}
+                    placeholder="테스트 유형을 선택하세요"
+                  />
+                )}
+              />
             </DsFormField.Root>
           </fieldset>
 
@@ -221,36 +210,22 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
                 <Tag className="h-4 w-4" />
                 태그
               </DsFormField.Label>
-              <DsFormField.Control asChild>
-                <DsInput
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  placeholder="태그 입력 후 Enter (예: smoke)"
-                />
-              </DsFormField.Control>
+              <Controller
+                name="tags"
+                control={control}
+                render={({ field }) => (
+                  <TagChipInput
+                    className="w-full"
+                    value={field.value}
+                    onChange={field.onChange}
+                    suggestions={projectTags}
+                    placeholder="태그 입력 후 Enter (예: smoke)"
+                  />
+                )}
+              />
               <span className="text-text-3 typo-caption-normal">
                 Enter로 태그를 추가하고, 쉼표(,)로 여러 태그를 한 번에 입력할 수 있습니다.
               </span>
-              {tagList.length > 0 && (
-                <ul className="flex flex-wrap gap-2">
-                  {tagList.map((tag) => (
-                    <li
-                      key={tag}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-line-2 bg-bg-3 py-1 pl-3 pr-1.5"
-                    >
-                      <span className="typo-caption-normal text-text-2">{tag}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="flex h-4 w-4 items-center justify-center rounded-full text-text-3 transition-colors hover:bg-bg-4 hover:text-text-1"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </DsFormField.Root>
           </fieldset>
 

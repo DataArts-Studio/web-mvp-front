@@ -8,12 +8,7 @@ export const UpdateTestCaseSchema = z.object({
     .max(200, '테스트 케이스 이름은 200자를 넘을 수 없습니다.'),
   testSuiteId: z.string().uuid().nullable().optional(),
   testType: z.string().optional(),
-  tags: z.union([
-    z.array(z.string()),
-    z.string().transform((val) =>
-      val ? val.split(',').map((tag) => tag.trim()).filter(Boolean) : []
-    ),
-  ]).optional(),
+  tags: z.array(z.string().max(30)).max(10).default([]),
   preCondition: z.string().optional(),
   testSteps: z.string().optional(),
   expectedResult: z.string().optional(),
