@@ -1,31 +1,29 @@
 'use client';
 import React from 'react';
+import { useForm } from 'react-hook-form';
 
 import type { CreateTestCase } from '@/entities/test-case';
 import { useCreateCase } from '@/features/cases-create/hooks';
+import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
+import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { testSuitesQueryOptions } from '@/widgets';
-import { cn, DSButton, FormField, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
+import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-react';
 import { z } from 'zod';
-import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 
 const CreateTestCaseFormSchema = z.object({
   projectId: z.string().uuid(),
   testSuiteId: z.string().uuid().nullable().optional(),
   title: z.string().min(1, '테스트 케이스 제목을 입력해주세요.'),
   testType: z.string().optional(),
-  tags: z.string().optional().transform((val) =>
-    val ? val.split(',').map((tag) => tag.trim()).filter(Boolean) : []
-  ),
+  tags: z.string().optional(),
   preCondition: z.string().optional(),
   testSteps: z.string().optional(),
   expectedResult: z.string().optional(),
 });
 
-type CreateTestCaseForm = z.input<typeof CreateTestCaseFormSchema>;
+type CreateTestCaseForm = z.infer<typeof CreateTestCaseFormSchema>;
 
 interface TestCaseDetailFormProps {
   projectId: string;
@@ -65,7 +63,12 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
   const selectedSuiteId = watch('testSuiteId');
 
   const onSubmit = handleSubmit((data) => {
-    mutate(data as CreateTestCase, {
+    const payload: CreateTestCase = {
+      ...data,
+      testSuiteId: data.testSuiteId || undefined,
+      tags: data.tags ? data.tags.split(',').map((tag) => tag.trim()).filter(Boolean) : undefined,
+    };
+    mutate(payload, {
       onSuccess: () => {
         track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onSuccess?.();
@@ -89,10 +92,16 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
   const labelClassName = 'text-text-2 typo-body2-heading flex items-center gap-2';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handleAbandon}>
-      <section className="bg-bg-1 rounded-4 relative flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={handleAbandon}
+    >
+      <section
+        className="bg-bg-1 rounded-4 relative flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {isPending && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-4 bg-bg-1/80 backdrop-blur-sm">
+          <div className="rounded-4 bg-bg-1/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
             <LoadingSpinner size="md" text="테스트 케이스를 생성하고 있어요" />
           </div>
         )}
@@ -110,7 +119,12 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
         </header>
 
         {/* Form */}
-        <form id="test-case-form" onSubmit={onSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto p-5" noValidate>
+        <form
+          id="test-case-form"
+          onSubmit={onSubmit}
+          className="flex flex-1 flex-col gap-5 overflow-y-auto p-5"
+          noValidate
+        >
           <input type="hidden" {...register('projectId')} />
           {/* 제목 (필수) */}
           <FormField.Root error={errors.title} className="flex flex-col gap-2">
@@ -173,7 +187,9 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               placeholder="쉼표로 구분하여 입력 (예: smoke, critical-path, regression)"
               className={inputClassName}
             />
-            <span className="text-text-3 text-xs">쉼표(,)로 구분하여 여러 태그를 입력할 수 있습니다.</span>
+            <span className="text-text-3 text-xs">
+              쉼표(,)로 구분하여 여러 태그를 입력할 수 있습니다.
+            </span>
           </FormField.Root>
 
           {/* 사전 조건 */}
