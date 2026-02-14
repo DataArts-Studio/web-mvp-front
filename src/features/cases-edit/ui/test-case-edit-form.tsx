@@ -1,8 +1,7 @@
 'use client';
 import React from 'react';
 
-import { TestCase } from '@/entities/test-case';
-import { TEST_TYPE_OPTIONS } from '@/entities/test-case';
+import { TestCase, TEST_TYPE_OPTIONS } from '@/entities/test-case';
 import { projectTagsQueryOptions } from '@/entities/test-case/api';
 import { testSuitesQueryOptions } from '@/widgets';
 import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, LoadingSpinner } from '@/shared';
@@ -45,7 +44,9 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
       id: testCase.id,
       title: testCase.title,
       testSuiteId: testCase.testSuiteId || null,
-      testType: testCase.testType,
+      testType: testCase.testType && TEST_TYPE_OPTIONS.some((o) => o.value === testCase.testType)
+        ? testCase.testType
+        : testCase.testType ? 'other' : '',
       tags: testCase.tags ?? [],
       preCondition: testCase.preCondition,
       testSteps: testCase.testSteps,

@@ -24,7 +24,8 @@ export const TagChip = ({ label, onRemove, disabled, shake }: TagChipProps) => {
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-4 w-4 items-center justify-center rounded-full text-text-3 transition-colors hover:bg-bg-4 hover:text-text-1"
+          aria-label={`${label} 삭제`}
+          className="flex h-4 w-4 items-center justify-center rounded-full text-text-3 transition-colors hover:bg-bg-4 hover:text-system-red"
         >
           <X className="h-3 w-3" />
         </button>

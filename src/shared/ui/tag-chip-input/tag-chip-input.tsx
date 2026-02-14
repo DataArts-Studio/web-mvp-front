@@ -109,6 +109,13 @@ export const TagChipInput = ({
     } else if (e.key === ',' ) {
       e.preventDefault();
       addMultipleTags(inputValue);
+    } else if (e.key === 'Tab' && filteredSuggestions.length > 0) {
+      e.preventDefault();
+      const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
+      addTag(filteredSuggestions[idx]);
+      setInputValue('');
+      setShowAutocomplete(false);
+      setHighlightedIndex(-1);
     } else if (e.key === 'Backspace' && inputValue === '' && value.length > 0) {
       removeTag(value.length - 1);
     } else if (e.key === 'ArrowDown') {
@@ -195,6 +202,9 @@ export const TagChipInput = ({
           ))}
         </ul>
       )}
+      <span className="sr-only" aria-live="polite">
+        {value.length > 0 ? `태그 ${value.length}개: ${value.join(', ')}` : '태그 없음'}
+      </span>
     </div>
   );
 };

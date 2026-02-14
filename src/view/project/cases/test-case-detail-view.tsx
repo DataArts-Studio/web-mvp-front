@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
+import { getTestTypeLabel } from '@/entities/test-case';
 import { testCaseByIdQueryOptions } from '@/features';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
@@ -117,7 +118,7 @@ export const TestCaseDetailView = () => {
           </div>
           <div className="text-text-3 flex items-center gap-1.5 text-sm">
             <Flag className="h-4 w-4" strokeWidth={1.5} />
-            <span>{testCase.testType || '-'}</span>
+            <span>{testCase.testType ? getTestTypeLabel(testCase.testType) : '-'}</span>
           </div>
           <div className="text-text-3 flex items-center gap-1.5 text-sm">
             <Calendar className="h-4 w-4" strokeWidth={1.5} />
