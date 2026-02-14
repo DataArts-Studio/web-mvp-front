@@ -192,6 +192,15 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
             </span>
           </FormField.Root>
 
+          <div>
+            <ul>
+              <li className='flex items-center gap-2'>
+                <p>smoke</p>
+                <DSButton size='small' variant='ghost' className='w-3 h-6'>X</DSButton>
+              </li>
+            </ul>
+          </div>
+
           {/* 사전 조건 */}
           <FormField.Root className="flex flex-col gap-2">
             <FormField.Label className={labelClassName}>

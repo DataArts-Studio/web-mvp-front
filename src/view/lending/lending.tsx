@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { ProjectCreateForm, BetaNoticePopup } from '@/features';
 import { LoadingSpinner, Logo } from '@/shared';
 import { Container, MainContainer } from '@/shared/lib/primitives';
@@ -39,7 +40,13 @@ export const LendingView = () => {
           <div className="flex w-full flex-col items-start gap-9 pl-8">
             <LendingHeader />
             {/* CTA Section */}
-            <section aria-label="시작하기" className="relative z-10">
+            <motion.section
+              aria-label="시작하기"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="relative z-10"
+            >
               <DSButton
                 type="button"
                 onClick={() => {
@@ -51,7 +58,7 @@ export const LendingView = () => {
               >
                 무료로 시작하기
               </DSButton>
-            </section>
+            </motion.section>
           </div>
           {isCreateModalOpen && (
             <ProjectCreateForm onClick={() => setIsCreateModalOpen(false)} />
