@@ -116,6 +116,14 @@ export const TESTCASE_EVENTS = {
   STEP_REMOVE: 'testcase_step_remove',
   /** CSV 내보내기 */
   EXPORT: 'testcase_export',
+  /** 버전 이력 조회 */
+  VERSION_VIEW: 'testcase_version_view',
+  /** 버전 상세 조회 */
+  VERSION_DETAIL_VIEW: 'testcase_version_detail_view',
+  /** 버전 비교 */
+  VERSION_COMPARE: 'testcase_version_compare',
+  /** 버전 롤백 */
+  VERSION_ROLLBACK: 'testcase_version_rollback',
 } as const;
 
 // ─── Test Suite ──────────────────────────────────────────────────

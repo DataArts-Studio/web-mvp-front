@@ -10,8 +10,9 @@ import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 import { testSuitesQueryOptions } from '@/widgets';
 import { DSButton } from '@/shared';
-import { formatDateKR } from '@/shared/utils/date-format';
-import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, Maximize2, Play, Tag, X } from 'lucide-react';
+import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
+import { useVersionsList } from '@/features/version-timeline';
+import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, History, Maximize2, Play, Tag, X } from 'lucide-react';
 
 
 
@@ -41,6 +42,11 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
   });
   const suites = suitesData?.success ? suitesData.data : [];
   const currentSuite = suites.find(s => s.id === testCase?.testSuiteId);
+
+  const { data: versionsData } = useVersionsList(testCase?.id || '');
+  const versions = versionsData?.success ? versionsData.data.versions : [];
+  const latestVersion = versions[0];
+  const versionCount = versionsData?.success ? versionsData.data.total : 0;
 
   const handleRunTest = () => {
     router.push(`/projects/${params.slug}/runs/create`);
@@ -108,7 +114,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
             </span>
           </div>
           <h2 className="text-xl">{testCase?.title || '테스트 케이스'}</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
             <div className="text-text-3 flex items-center gap-1 text-sm">
               <FolderOpen className="h-4 w-4" />
               <span>{currentSuite?.title || '스위트 없음'}</span>
@@ -117,6 +123,17 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
               <Calendar className="h-4 w-4" />
               <span>{formatDateKR(testCase?.createdAt)}</span>
             </div>
+            {latestVersion && (
+              <div className="text-text-3 flex items-center gap-1 text-sm">
+                <History className="h-4 w-4" />
+                <span>최근 수정: {formatRelativeTime(latestVersion.createdAt)}</span>
+                {versionCount > 0 && (
+                  <span className="bg-primary/10 text-primary ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                    v{latestVersion.versionNumber}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </header>
         {/* 태그 */}

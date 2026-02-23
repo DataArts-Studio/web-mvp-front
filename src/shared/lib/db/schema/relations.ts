@@ -11,6 +11,7 @@ import { suiteTestCases } from './suite-test-cases';
 import { milestoneTestCases } from './milestone-test-cases';
 import { milestoneTestSuites } from './milestone-test-suites';
 import { projectPreferences } from './project-preferences';
+import { testCaseVersions } from './test-case-versions';
 
 // Project Relations
 export const projectRelations = relations(projects, ({ many }) => ({
@@ -54,6 +55,15 @@ export const testCaseRelations = relations(testCases, ({ one, many }) => ({
 	testCaseRuns: many(testCaseRuns),
 	suiteTestCases: many(suiteTestCases),
 	milestoneTestCases: many(milestoneTestCases),
+	versions: many(testCaseVersions),
+}));
+
+// Test Case Version Relations
+export const testCaseVersionRelations = relations(testCaseVersions, ({ one }) => ({
+	testCase: one(testCases, {
+		fields: [testCaseVersions.test_case_id],
+		references: [testCases.id],
+	}),
 }));
 
 // Test Run Relations

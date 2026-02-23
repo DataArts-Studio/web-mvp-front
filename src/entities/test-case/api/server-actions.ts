@@ -8,6 +8,8 @@ import { and, eq, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/db';
+import { createVersionSnapshot } from '@/entities/test-case-version/api/actions';
+import { detectChangedFields, generateChangeSummary } from '@/entities/test-case-version/model/diff-utils';
 
 
 
@@ -170,6 +172,26 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
       };
     }
 
+    // 버전 v1 스냅샷 자동 생성
+    try {
+      await createVersionSnapshot(
+        id,
+        {
+          name: inserted.name,
+          test_type: inserted.test_type,
+          tags: inserted.tags,
+          pre_condition: inserted.pre_condition,
+          steps: inserted.steps,
+          expected_result: inserted.expected_result,
+        },
+        'create',
+        [],
+        '테스트 케이스 생성'
+      );
+    } catch (snapshotError) {
+      Sentry.captureException(snapshotError, { extra: { action: 'createTestCase:versionSnapshot' } });
+    }
+
     const result: TestCase = toTestCase(inserted as TestCaseDTO);
 
     return {
@@ -205,13 +227,13 @@ export const updateTestCase = async (
     const db = getDatabase();
     const { id, ...updateFields } = params;
 
-    // 접근 권한 확인: 대상 리소스의 프로젝트 ID 조회 후 검증
-    const [existing] = await db.select({ projectId: testCases.project_id }).from(testCases).where(eq(testCases.id, id)).limit(1);
-    if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
+    // 접근 권한 확인: 전체 row 조회 (버전 스냅샷용)
+    const [existing] = await db.select().from(testCases).where(eq(testCases.id, id)).limit(1);
+    if (!existing?.project_id || !(await requireProjectAccess(existing.project_id))) {
       return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
     }
 
-    const storageError = await checkStorageLimit(existing.projectId);
+    const storageError = await checkStorageLimit(existing.project_id);
     if (storageError) return storageError;
 
     const updateData: Record<string, unknown> = {
@@ -254,6 +276,33 @@ export const updateTestCase = async (
         success: false,
         errors: { _testCase: ['테스트케이스를 찾을 수 없습니다.'] },
       };
+    }
+
+    // 버전 스냅샷 자동 생성
+    try {
+      const oldSnapshot = {
+        name: existing.name,
+        test_type: existing.test_type,
+        tags: existing.tags,
+        pre_condition: existing.pre_condition,
+        steps: existing.steps,
+        expected_result: existing.expected_result,
+      };
+      const newSnapshot = {
+        name: updated.name,
+        test_type: updated.test_type,
+        tags: updated.tags,
+        pre_condition: updated.pre_condition,
+        steps: updated.steps,
+        expected_result: updated.expected_result,
+      };
+      const changedFields = detectChangedFields(oldSnapshot, newSnapshot);
+      if (changedFields.length > 0) {
+        const changeSummary = generateChangeSummary(changedFields, 'edit');
+        await createVersionSnapshot(id, newSnapshot, 'edit', changedFields, changeSummary);
+      }
+    } catch (snapshotError) {
+      Sentry.captureException(snapshotError, { extra: { action: 'updateTestCase:versionSnapshot' } });
     }
 
     const result: TestCase = toTestCase(updated as TestCaseDTO);
