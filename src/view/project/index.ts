@@ -5,3 +5,4 @@ export { TestSuitesView } from '@/view/project/suites';
 export { TestRunsListView, TestRunDetailView } from '@/view/project/runs';
 export { MilestonesView, MilestoneDetailView } from '@/view/project/milestones';
 export { TemplatesView } from '@/view/project/templates';
+export { SettingsView } from '@/view/project/settings';
