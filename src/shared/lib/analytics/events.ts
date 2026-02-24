@@ -116,6 +116,12 @@ export const TESTCASE_EVENTS = {
   STEP_REMOVE: 'testcase_step_remove',
   /** CSV 내보내기 */
   EXPORT: 'testcase_export',
+  /** CSV/Excel 가져오기 시작 */
+  IMPORT_START: 'testcase_import_start',
+  /** 가져오기 완료 */
+  IMPORT_COMPLETE: 'testcase_import_complete',
+  /** 가져오기 실패 */
+  IMPORT_FAIL: 'testcase_import_fail',
   /** 버전 이력 조회 */
   VERSION_VIEW: 'testcase_version_view',
   /** 버전 상세 조회 */

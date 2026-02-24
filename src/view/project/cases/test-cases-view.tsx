@@ -15,9 +15,10 @@ import { cn } from '@/shared/utils';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Download, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, Download, Upload, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
+import { ImportWizardModal } from '@/features/import-cases';
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
@@ -47,7 +48,7 @@ const TABLE_HEADERS = [
   { id: 'actions', label: '메뉴', colSpan: 'col-span-1', textAlign: 'text-right' },
 ] as const;
 
-type ModalType = 'create' | 'detail';
+type ModalType = 'create' | 'detail' | 'import';
 
 export const TestCasesView = () => {
   const params = useParams();
@@ -336,6 +337,13 @@ export const TestCasesView = () => {
               </Select.Root>
             </ActionToolbar.Group>
             <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
+              track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
+              onOpen('import');
+            }} className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              <span className="leading-none">가져오기</span>
+            </ActionToolbar.Action>
+            <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
               track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count: filteredAndSortedTestCases.length });
               const projectName = dashboardData?.success ? dashboardData.data.project.name : 'project';
               exportTestCasesToCSV(filteredAndSortedTestCases, projectName);
@@ -411,6 +419,7 @@ export const TestCasesView = () => {
         </div>
       </MainContainer>
       {isActiveType('create') && <TestCaseDetailForm projectId={projectId!} onClose={onClose} />}
+      {isActiveType('import') && <ImportWizardModal projectId={projectId!} onClose={onClose} />}
       <AnimatePresence>
         {isActiveType('detail') && selectedTestCaseId && (
           <TestCaseSideView
