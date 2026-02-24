@@ -15,6 +15,8 @@ import { testCases } from '@/shared/lib/db';
 export const getTemplatesByProjectId = async (
   projectId: string
 ): Promise<ActionResult<TestCaseTemplate[]>> => {
+  let customTemplates: TestCaseTemplate[] = [];
+
   try {
     const db = getDatabase();
     const rows = await db
@@ -27,20 +29,16 @@ export const getTemplatesByProjectId = async (
         )
       );
 
-    const customTemplates = rows.map((row) => toTestCaseTemplate(row as TestCaseTemplateDTO));
-    const allTemplates = [...BUILTIN_TEMPLATES, ...customTemplates];
-
-    return {
-      success: true,
-      data: allTemplates,
-    };
+    customTemplates = rows.map((row) => toTestCaseTemplate(row as TestCaseTemplateDTO));
   } catch (error) {
+    // DB 테이블이 아직 없거나 쿼리 실패 시에도 빌트인 템플릿은 반환
     Sentry.captureException(error, { extra: { action: 'getTemplatesByProjectId' } });
-    return {
-      success: false,
-      errors: { _template: ['템플릿을 불러오는 도중 오류가 발생했습니다.'] },
-    };
   }
+
+  return {
+    success: true,
+    data: [...BUILTIN_TEMPLATES, ...customTemplates],
+  };
 };
 
 export const getTemplateById = async (
