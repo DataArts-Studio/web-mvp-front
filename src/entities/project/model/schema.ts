@@ -69,3 +69,24 @@ export const ProjectFormSchema = CreateProjectDomainSchema.extend({
   message: '식별번호가 일치하지 않습니다.',
   path: ['identifierConfirm'],
 });
+
+export const ProjectSettingsFormSchema = z.object({
+  name: z
+    .string()
+    .min(1, '프로젝트 이름은 최소 1글자 이상이어야 합니다.')
+    .max(50, '프로젝트 이름은 50자를 넘을 수 없습니다.'),
+  description: z.string().max(255, '설명은 255자를 넘을 수 없습니다.').optional(),
+  ownerName: z.string().max(50, '소유자 이름은 50자를 넘을 수 없습니다.').optional(),
+});
+
+export const ChangeIdentifierFormSchema = z.object({
+  currentPassword: z.string().min(1, '현재 비밀번호를 입력하세요.'),
+  newPassword: z
+    .string()
+    .min(8, '새 비밀번호는 최소 8자리 이상이어야 합니다.')
+    .max(16, '새 비밀번호는 최대 16자리 이하여야 합니다.'),
+  confirmPassword: z.string().min(1, '비밀번호 확인을 입력하세요.'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: '새 비밀번호가 일치하지 않습니다.',
+  path: ['confirmPassword'],
+});
