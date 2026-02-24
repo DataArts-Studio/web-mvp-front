@@ -1,21 +1,21 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import type { CreateTestCase } from '@/entities/test-case';
 import { TEST_TYPE_OPTIONS } from '@/entities/test-case';
 import { projectTagsQueryOptions } from '@/entities/test-case/api';
-import type { TestCaseTemplate } from '@/entities/test-case-template';
-import { incrementTemplateUsage } from '@/entities/test-case-template/api';
+// import type { TestCaseTemplate } from '@/entities/test-case-template'; // 템플릿 기능 펜딩
+// import { incrementTemplateUsage } from '@/entities/test-case-template/api'; // 템플릿 기능 펜딩
 import { useCreateCase } from '@/features/cases-create/hooks';
-import { TemplateLibrary } from '@/features/templates-library';
+// import { TemplateLibrary } from '@/features/templates-library'; // 템플릿 기능 펜딩
 import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, LoadingSpinner } from '@/shared';
-import { TESTCASE_EVENTS, TEMPLATE_EVENTS, track } from '@/shared/lib/analytics';
+import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { testSuitesQueryOptions } from '@/widgets';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, FolderOpen, LayoutTemplate, ListChecks, Tag, TestTube2, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-react';
+// import { toast } from 'sonner'; // 템플릿 기능 펜딩으로 미사용
 import { z } from 'zod';
 
 const CreateTestCaseFormSchema = z.object({
@@ -38,7 +38,7 @@ interface TestCaseDetailFormProps {
 }
 
 export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDetailFormProps) => {
-  const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
+  // const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false); // 템플릿 기능 펜딩
   const { mutate, isPending } = useCreateCase();
 
   const { data: suitesData } = useQuery({
@@ -96,20 +96,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
     onClose();
   };
 
-  const handleApplyTemplate = (template: TestCaseTemplate) => {
-    if (template.testType) setValue('testType', template.testType);
-    if (template.defaultTags.length > 0) setValue('tags', template.defaultTags);
-    if (template.preCondition) setValue('preCondition', template.preCondition);
-    if (template.testSteps) setValue('testSteps', template.testSteps);
-    if (template.expectedResult) setValue('expectedResult', template.expectedResult);
-
-    setIsTemplateLibraryOpen(false);
-    toast.success('템플릿이 적용되었습니다.');
-    track(TEMPLATE_EVENTS.APPLY, { project_id: projectId, template_id: template.id, template_name: template.name });
-
-    // fire-and-forget
-    incrementTemplateUsage(template.id).catch(() => {});
-  };
+  // 템플릿 기능 펜딩 - handleApplyTemplate 제거
 
   const textareaClassName =
     'w-full rounded-4 border border-line-2 bg-bg-1 px-6 py-4 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary resize-none min-h-[120px]';
@@ -150,19 +137,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
         >
           <input type="hidden" {...register('projectId')} />
 
-          {/* ── 템플릿에서 시작하기 ── */}
-          <DSButton
-            type="button"
-            variant="ghost"
-            className="flex items-center gap-2 self-start"
-            onClick={() => {
-              track(TEMPLATE_EVENTS.LIBRARY_OPEN, { project_id: projectId });
-              setIsTemplateLibraryOpen(true);
-            }}
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            템플릿에서 시작하기
-          </DSButton>
+          {/* 템플릿 기능 펜딩 */}
 
           {/* ── 기본 정보 ── */}
           <fieldset className="flex flex-col gap-5">
@@ -326,13 +301,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
         </div>
       </section>
 
-      {isTemplateLibraryOpen && (
-        <TemplateLibrary
-          projectId={projectId}
-          onApply={handleApplyTemplate}
-          onClose={() => setIsTemplateLibraryOpen(false)}
-        />
-      )}
+      {/* 템플릿 기능 펜딩 */}
     </div>
   );
 };

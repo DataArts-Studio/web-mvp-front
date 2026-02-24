@@ -23,21 +23,22 @@ export const BetaBanner = ({ isVisible, onDismiss }: BetaBannerProps) => {
     <div
       role="region"
       aria-label="베타 버전 안내"
-      className="fixed top-0 right-0 left-0 z-20 flex h-10 items-center justify-center gap-3 border-b border-line-2 bg-bg-3 px-4"
+      className="fixed top-0 right-0 left-0 z-20 flex h-10 items-center justify-center gap-2 border-b border-line-2 bg-bg-3 px-3 sm:gap-3 sm:px-4"
     >
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-2 bg-primary/20 px-2 py-0.5 text-caption font-medium text-primary">
+      <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+        <span className="inline-flex shrink-0 items-center rounded-2 bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary sm:px-2 sm:text-caption">
           Beta
         </span>
-        <p className="text-label text-text-2">
-          현재 베타 버전입니다. 서비스 이용 중 불편한 점이나 개선 의견이 있으시면{' '}
+        <p className="truncate text-[11px] text-text-2 sm:text-label sm:truncate-none">
+          <span className="sm:hidden">베타 버전입니다. </span>
+          <span className="hidden sm:inline">현재 베타 버전입니다. 서비스 이용 중 불편한 점이나 개선 의견이 있으시면 </span>
           <a
             href="mailto:gettestea@gmail.com"
             className="text-primary underline underline-offset-2 hover:text-primary/80"
           >
             피드백
           </a>
-          을 보내주세요.
+          <span className="hidden sm:inline">을 보내주세요.</span>
         </p>
       </div>
       <button

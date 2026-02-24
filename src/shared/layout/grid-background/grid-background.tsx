@@ -127,7 +127,7 @@ const GridBackgroundArrowDecoration = ({ className, ...props }: React.HTMLAttrib
       initial={{ opacity: 0, x: -20, y: 20 }}
       animate={{ opacity: 1, x: 0, y: 0 }}
       transition={{ delay: 0.5, duration: 0.5 }}
-      className={cn("pointer-events-none absolute select-none top-1/2 left-[calc(80%-153px)] z-10 h-[50px] w-[50px] -translate-y-1/2", className)}
+      className={cn("pointer-events-none absolute select-none top-1/2 left-[calc(80%-153px)] z-10 h-[50px] w-[50px] -translate-y-1/2 hidden md:block", className)}
       {...props}
     >
       <Image
@@ -154,7 +154,7 @@ const GridBackgroundCircleDecoration = ({ className, ...props }: React.HTMLAttri
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 0.3, scale: 1 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className={cn("pointer-events-none absolute select-none top-1/2 left-[calc(60%+5px)] z-0 h-[972px] w-[972px] -translate-y-1/2", className)}
+      className={cn("pointer-events-none absolute select-none top-1/2 z-0 -translate-y-1/2 left-[50%] h-[400px] w-[400px] sm:left-[calc(60%+5px)] sm:h-[600px] sm:w-[600px] md:h-[972px] md:w-[972px]", className)}
       {...props}
     >
       <Image

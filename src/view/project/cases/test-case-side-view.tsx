@@ -8,12 +8,12 @@ import { motion } from 'framer-motion';
 import { TestCase } from '@/entities/test-case';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
-import { SaveAsTemplateModal } from '@/features/templates-save-from-case';
+// import { SaveAsTemplateModal } from '@/features/templates-save-from-case'; // 템플릿 기능 펜딩
 import { testSuitesQueryOptions } from '@/widgets';
 import { DSButton } from '@/shared';
 import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
 import { useVersionsList } from '@/features/version-timeline';
-import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, History, LayoutTemplate, Maximize2, Play, Tag, X } from 'lucide-react';
+import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, History, Maximize2, Play, Tag, X } from 'lucide-react';
 
 
 
@@ -36,7 +36,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
+  // const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false); // 템플릿 기능 펜딩
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(testCase?.projectId || ''),
@@ -198,15 +198,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
             <Copy className="h-4 w-4" />
             Copy
           </DSButton>
-          <DSButton
-            variant="ghost"
-            className="flex items-center gap-2"
-            onClick={() => setIsSaveAsTemplateOpen(true)}
-            disabled={!testCase}
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            템플릿 저장
-          </DSButton>
+          {/* 템플릿 기능 펜딩 */}
           {testCase && <ArchiveButton targetType='case' targetId={testCase.id} btnType='icon' onSuccess={onClose}/>}
         </div>
       </div>
@@ -218,12 +210,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
         onSuccess={handleEditClose}
       />
     )}
-    {isSaveAsTemplateOpen && testCase && (
-      <SaveAsTemplateModal
-        caseId={testCase.id}
-        onClose={() => setIsSaveAsTemplateOpen(false)}
-      />
-    )}
+    {/* 템플릿 기능 펜딩 */}
     </>
   );
 };

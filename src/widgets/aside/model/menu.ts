@@ -1,4 +1,4 @@
-import { FileText, Flag, FolderOpen, HelpCircle, LayoutTemplate, Play, Settings } from 'lucide-react';
+import { FileText, Flag, FolderOpen, HelpCircle, Play, Settings } from 'lucide-react';
 
 // 동적 경로를 위한 함수
 export const createAsideMenus = (projectSlug: string) => {
@@ -13,7 +13,6 @@ export const createAsideMenus = (projectSlug: string) => {
           { label: '테스트 스위트', href: `${basePath}/suites`, icon: FolderOpen, matchPath: `${basePath}/suites` },
           { label: '마일스톤', href: `${basePath}/milestones`, icon: Flag, matchPath: `${basePath}/milestones` },
           { label: '테스트 실행', href: `${basePath}/runs`, icon: Play, matchPath: `${basePath}/runs` },
-          { label: '템플릿', href: `${basePath}/templates`, icon: LayoutTemplate, matchPath: `${basePath}/templates` },
         ],
       },
     ],
