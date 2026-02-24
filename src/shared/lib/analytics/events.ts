@@ -126,6 +126,24 @@ export const TESTCASE_EVENTS = {
   VERSION_ROLLBACK: 'testcase_version_rollback',
 } as const;
 
+// ─── Template ───────────────────────────────────────────────
+export const TEMPLATE_EVENTS = {
+  /** 템플릿 라이브러리 열기 */
+  LIBRARY_OPEN: 'template_library_open',
+  /** 템플릿 적용 */
+  APPLY: 'template_apply',
+  /** 템플릿 생성 완료 */
+  CREATE_COMPLETE: 'template_create_complete',
+  /** 템플릿 생성 실패 */
+  CREATE_FAIL: 'template_create_fail',
+  /** 케이스에서 템플릿 저장 */
+  SAVE_FROM_CASE: 'template_save_from_case',
+  /** 템플릿 수정 */
+  UPDATE: 'template_update',
+  /** 템플릿 삭제 */
+  DELETE: 'template_delete',
+} as const;
+
 // ─── Test Suite ──────────────────────────────────────────────────
 export const TESTSUITE_EVENTS = {
   /** 목록 데이터 로드 완료 */
@@ -240,6 +258,7 @@ export const GA_EVENTS = {
   ACCESS: ACCESS_EVENTS,
   DASHBOARD: DASHBOARD_EVENTS,
   TESTCASE: TESTCASE_EVENTS,
+  TEMPLATE: TEMPLATE_EVENTS,
   TESTSUITE: TESTSUITE_EVENTS,
   TESTRUN: TESTRUN_EVENTS,
   MILESTONE: MILESTONE_EVENTS,

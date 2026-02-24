@@ -1,115 +1,73 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
-import type { CreateTestCase } from '@/entities/test-case';
+import type { CreateTestCaseTemplate } from '@/entities/test-case-template';
 import { TEST_TYPE_OPTIONS } from '@/entities/test-case';
-import { projectTagsQueryOptions } from '@/entities/test-case/api';
-import type { TestCaseTemplate } from '@/entities/test-case-template';
-import { incrementTemplateUsage } from '@/entities/test-case-template/api';
-import { useCreateCase } from '@/features/cases-create/hooks';
-import { TemplateLibrary } from '@/features/templates-library';
+import { useCreateTemplate } from '../hooks';
 import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, LoadingSpinner } from '@/shared';
-import { TESTCASE_EVENTS, TEMPLATE_EVENTS, track } from '@/shared/lib/analytics';
-import { testSuitesQueryOptions } from '@/widgets';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
-import { FileText, FolderOpen, LayoutTemplate, ListChecks, Tag, TestTube2, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { FileText, ListChecks, Tag, TestTube2, X } from 'lucide-react';
 import { z } from 'zod';
+import { toast } from 'sonner';
 
-const CreateTestCaseFormSchema = z.object({
+const CreateTemplateFormSchema = z.object({
   projectId: z.string().uuid(),
-  testSuiteId: z.string().uuid().nullable().optional(),
-  title: z.string().min(1, '테스트 케이스 제목을 입력해주세요.'),
+  name: z.string().min(1, '템플릿 이름을 입력해주세요.').max(50, '템플릿 이름은 50자를 넘을 수 없습니다.'),
+  description: z.string().max(200, '설명은 200자를 넘을 수 없습니다.').optional(),
   testType: z.string().optional(),
-  tags: z.array(z.string().max(30)).max(10).default([]),
+  defaultTags: z.array(z.string().max(30)).max(10).default([]),
   preCondition: z.string().optional(),
   testSteps: z.string().optional(),
   expectedResult: z.string().optional(),
 });
 
-type CreateTestCaseForm = z.infer<typeof CreateTestCaseFormSchema>;
+type CreateTemplateForm = z.infer<typeof CreateTemplateFormSchema>;
 
-interface TestCaseDetailFormProps {
+interface TemplateCreateModalProps {
   projectId: string;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDetailFormProps) => {
-  const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
-  const { mutate, isPending } = useCreateCase();
-
-  const { data: suitesData } = useQuery({
-    ...testSuitesQueryOptions(projectId),
-    enabled: !!projectId,
-  });
-  const suites = suitesData?.success ? suitesData.data : [];
-
-  const { data: tagsData } = useQuery(projectTagsQueryOptions(projectId));
-  const projectTags = tagsData?.success ? tagsData.data : [];
+export const TemplateCreateModal = ({ projectId, onClose, onSuccess }: TemplateCreateModalProps) => {
+  const { mutate, isPending } = useCreateTemplate();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
-    setValue,
     control,
-  } = useForm<CreateTestCaseForm>({
-    resolver: zodResolver(CreateTestCaseFormSchema),
+  } = useForm<CreateTemplateForm>({
+    resolver: zodResolver(CreateTemplateFormSchema),
     defaultValues: {
-      projectId: projectId,
-      testSuiteId: null,
-      title: '',
+      projectId,
+      name: '',
+      description: '',
       testType: '',
-      tags: [],
+      defaultTags: [],
       preCondition: '',
       testSteps: '',
       expectedResult: '',
     },
   });
 
-  const selectedSuiteId = watch('testSuiteId');
-
   const onSubmit = handleSubmit((data) => {
-    const payload: CreateTestCase = {
+    const payload: CreateTestCaseTemplate = {
       ...data,
-      testSuiteId: data.testSuiteId || undefined,
-      tags: data.tags.length > 0 ? data.tags : undefined,
+      defaultTags: data.defaultTags.length > 0 ? data.defaultTags : undefined,
     };
     mutate(payload, {
       onSuccess: () => {
-        track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
+        toast.success('템플릿이 생성되었습니다.');
         onSuccess?.();
         onClose();
       },
       onError: () => {
-        track(TESTCASE_EVENTS.CREATE_FAIL, { project_id: projectId });
+        toast.error('템플릿 생성에 실패했습니다.');
       },
     });
   });
-
-  const handleAbandon = () => {
-    track(TESTCASE_EVENTS.CREATE_ABANDON, { project_id: projectId });
-    onClose();
-  };
-
-  const handleApplyTemplate = (template: TestCaseTemplate) => {
-    if (template.testType) setValue('testType', template.testType);
-    if (template.defaultTags.length > 0) setValue('tags', template.defaultTags);
-    if (template.preCondition) setValue('preCondition', template.preCondition);
-    if (template.testSteps) setValue('testSteps', template.testSteps);
-    if (template.expectedResult) setValue('expectedResult', template.expectedResult);
-
-    setIsTemplateLibraryOpen(false);
-    toast.success('템플릿이 적용되었습니다.');
-    track(TEMPLATE_EVENTS.APPLY, { project_id: projectId, template_id: template.id, template_name: template.name });
-
-    // fire-and-forget
-    incrementTemplateUsage(template.id).catch(() => {});
-  };
 
   const textareaClassName =
     'w-full rounded-4 border border-line-2 bg-bg-1 px-6 py-4 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary resize-none min-h-[120px]';
@@ -117,7 +75,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={handleAbandon}
+      onClick={onClose}
     >
       <section
         className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden shadow-4"
@@ -125,87 +83,64 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
       >
         {isPending && (
           <div className="rounded-5 bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
-            <LoadingSpinner size="md" text="테스트 케이스를 생성하고 있어요" />
+            <LoadingSpinner size="md" text="템플릿을 생성하고 있어요" />
           </div>
         )}
-        {/* Header */}
         <header className="border-line-2 flex shrink-0 items-center justify-between border-b px-6 py-5">
           <div>
-            <h2 className="text-text-1 typo-h2-heading">테스트 케이스 생성</h2>
+            <h2 className="text-text-1 typo-h2-heading">새 템플릿 생성</h2>
             <p className="text-text-3 typo-caption-normal mt-0.5">
-              테스트 시나리오의 상세 내용을 작성해주세요.
+              반복 사용할 테스트 케이스 구조를 템플릿으로 저장하세요.
             </p>
           </div>
-          <DSButton variant="ghost" size="small" onClick={handleAbandon} className="p-2">
+          <DSButton variant="ghost" size="small" onClick={onClose} className="p-2">
             <X className="h-5 w-5" />
           </DSButton>
         </header>
 
-        {/* Form */}
         <form
-          id="test-case-form"
+          id="template-create-form"
           onSubmit={onSubmit}
           className="flex flex-1 flex-col gap-6 overflow-y-auto p-6"
           noValidate
         >
           <input type="hidden" {...register('projectId')} />
 
-          {/* ── 템플릿에서 시작하기 ── */}
-          <DSButton
-            type="button"
-            variant="ghost"
-            className="flex items-center gap-2 self-start"
-            onClick={() => {
-              track(TEMPLATE_EVENTS.LIBRARY_OPEN, { project_id: projectId });
-              setIsTemplateLibraryOpen(true);
-            }}
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            템플릿에서 시작하기
-          </DSButton>
-
-          {/* ── 기본 정보 ── */}
           <fieldset className="flex flex-col gap-5">
             <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
               기본 정보
             </legend>
 
-            {/* 제목 (필수) */}
-            <DsFormField.Root error={errors.title}>
+            <DsFormField.Root error={errors.name}>
               <DsFormField.Label className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                테스트 케이스 제목 <span className="text-system-red">*</span>
+                템플릿 이름 <span className="text-system-red">*</span>
               </DsFormField.Label>
               <DsFormField.Control asChild>
                 <DsInput
-                  {...register('title')}
-                  variant={errors.title ? 'error' : 'default'}
-                  placeholder="예: 회원가입 - 이메일 형식이 잘못된 경우"
+                  {...register('name')}
+                  variant={errors.name ? 'error' : 'default'}
+                  placeholder="예: 로그인 기능 테스트 템플릿"
                 />
               </DsFormField.Control>
               <DsFormField.Message />
             </DsFormField.Root>
 
-            {/* 소속 스위트 */}
-            <DsFormField.Root>
+            <DsFormField.Root error={errors.description}>
               <DsFormField.Label className="flex items-center gap-2">
-                <FolderOpen className="h-4 w-4" />
-                소속 스위트
+                <FileText className="h-4 w-4" />
+                설명
               </DsFormField.Label>
-              <DsSelect
-                className='w-full'
-                value={selectedSuiteId || ''}
-                onChange={(v) => setValue('testSuiteId', v || null)}
-                options={[
-                  { value: '', label: '스위트 없음' },
-                  ...suites.map((suite) => ({ value: suite.id, label: suite.title })),
-                ]}
-                placeholder="스위트를 선택하세요"
-              />
-              <span className="text-text-3 typo-caption-normal">테스트 케이스가 속할 스위트를 선택하세요.</span>
+              <DsFormField.Control asChild>
+                <DsInput
+                  {...register('description')}
+                  variant={errors.description ? 'error' : 'default'}
+                  placeholder="템플릿에 대한 간단한 설명을 입력하세요."
+                />
+              </DsFormField.Control>
+              <DsFormField.Message />
             </DsFormField.Root>
 
-            {/* 테스트 유형 */}
             <DsFormField.Root>
               <DsFormField.Label className="flex items-center gap-2">
                 <TestTube2 className="h-4 w-4" />
@@ -232,46 +167,37 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
 
           <div className="border-t border-line-2" />
 
-          {/* ── 분류 ── */}
           <fieldset className="flex flex-col gap-5">
             <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
-              분류
+              기본 태그
             </legend>
-
-            {/* 태그 */}
             <DsFormField.Root>
               <DsFormField.Label className="flex items-center gap-2">
                 <Tag className="h-4 w-4" />
                 태그
               </DsFormField.Label>
               <Controller
-                name="tags"
+                name="defaultTags"
                 control={control}
                 render={({ field }) => (
                   <TagChipInput
                     className="w-full"
                     value={field.value}
                     onChange={field.onChange}
-                    suggestions={projectTags}
-                    placeholder="태그 입력 후 Enter (예: smoke)"
+                    placeholder="태그 입력 후 Enter"
                   />
                 )}
               />
-              <span className="text-text-3 typo-caption-normal">
-                Enter로 태그를 추가하고, 쉼표(,)로 여러 태그를 한 번에 입력할 수 있습니다.
-              </span>
             </DsFormField.Root>
           </fieldset>
 
           <div className="border-t border-line-2" />
 
-          {/* ── 테스트 시나리오 ── */}
           <fieldset className="flex flex-col gap-5">
             <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
-              테스트 시나리오
+              기본 내용
             </legend>
 
-            {/* 사전 조건 */}
             <DsFormField.Root>
               <DsFormField.Label className="flex items-center gap-2">
                 <ListChecks className="h-4 w-4" />
@@ -285,7 +211,6 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               />
             </DsFormField.Root>
 
-            {/* 테스트 단계 */}
             <DsFormField.Root>
               <DsFormField.Label className="flex items-center gap-2">
                 <ListChecks className="h-4 w-4" />
@@ -293,13 +218,12 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
               </DsFormField.Label>
               <textarea
                 {...register('testSteps')}
-                placeholder="1. 첫 번째 단계&#10;2. 두 번째 단계&#10;3. 세 번째 단계"
+                placeholder="1. 첫 번째 단계&#10;2. 두 번째 단계"
                 className={textareaClassName}
                 rows={3}
               />
             </DsFormField.Root>
 
-            {/* 기대 결과 */}
             <DsFormField.Root>
               <DsFormField.Label className="flex items-center gap-2">
                 <ListChecks className="h-4 w-4" />
@@ -315,24 +239,15 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
           </fieldset>
         </form>
 
-        {/* Actions - 스크롤 영역 밖 */}
         <div className="border-line-2 flex shrink-0 justify-end gap-3 border-t px-6 py-4">
-          <DSButton type="button" variant="ghost" onClick={handleAbandon} disabled={isPending}>
+          <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>
             취소
           </DSButton>
-          <DSButton type="submit" form="test-case-form" variant="solid" disabled={isPending}>
-            {isPending ? '생성 중...' : '테스트 케이스 생성'}
+          <DSButton type="submit" form="template-create-form" variant="solid" disabled={isPending}>
+            {isPending ? '생성 중...' : '템플릿 생성'}
           </DSButton>
         </div>
       </section>
-
-      {isTemplateLibraryOpen && (
-        <TemplateLibrary
-          projectId={projectId}
-          onApply={handleApplyTemplate}
-          onClose={() => setIsTemplateLibraryOpen(false)}
-        />
-      )}
     </div>
   );
 };
