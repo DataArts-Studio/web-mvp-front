@@ -61,30 +61,26 @@ async function parseCsv(file: File): Promise<ParseResult> {
 }
 
 async function parseExcel(file: File): Promise<ParseResult> {
-  const XLSX = await import('xlsx');
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: 'array' });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) {
+  const { default: readXlsxFile } = await import('read-excel-file');
+  const rows = await readXlsxFile(file);
+
+  if (rows.length < 2) {
     throw new FileValidationError('가져올 데이터가 없습니다.');
   }
 
-  const sheet = workbook.Sheets[sheetName];
-  const json = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
-    defval: '',
-    raw: false,
+  const headers = rows[0].map((cell) => String(cell ?? ''));
+  const dataRows = rows.slice(1).map((row) => {
+    const record: Record<string, string> = {};
+    headers.forEach((header, i) => {
+      record[header] = String(row[i] ?? '');
+    });
+    return record;
   });
-
-  if (json.length === 0) {
-    throw new FileValidationError('가져올 데이터가 없습니다.');
-  }
-
-  const headers = Object.keys(json[0]);
 
   return {
     headers,
-    rows: json,
-    totalRows: json.length,
+    rows: dataRows,
+    totalRows: dataRows.length,
     detectedFormat: detectFormat(headers),
   };
 }
