@@ -223,7 +223,7 @@ export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: s
       .update(milestones)
       .set({
         archived_at: new Date(),
-        lifecycle_status: 'ARCHIVED',
+        lifecycle_status: 'DELETED',
         updated_at: new Date(),
       })
       .where(eq(milestones.id, id))
@@ -232,14 +232,14 @@ export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: s
     if (!archived) {
       return {
         success: false,
-        errors: { _milestone: ['마일스톤 아카이브에 실패했습니다.'] },
+        errors: { _milestone: ['마일스톤을 찾을 수 없습니다.'] },
       };
     }
 
     return {
       success: true,
       data: { id: archived.id },
-      message: '마일스톤이 성공적으로 삭제되었습니다.',
+      message: '마일스톤이 휴지통으로 이동되었습니다.',
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveMilestone' } });

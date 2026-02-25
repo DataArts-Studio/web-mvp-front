@@ -92,7 +92,7 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
       .update(projects)
       .set({
         archived_at: new Date(),
-        lifecycle_status: 'ARCHIVED',
+        lifecycle_status: 'DELETED',
         updated_at: new Date(),
       })
       .where(eq(projects.id, id))
@@ -108,7 +108,7 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
     return {
       success: true,
       data: { id: archived.id },
-      message: '프로젝트가 성공적으로 삭제되었습니다.',
+      message: '프로젝트가 휴지통으로 이동되었습니다.',
     }
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveProject' } });
