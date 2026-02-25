@@ -18,6 +18,7 @@ import type { ActionResult } from '@/shared/types';
 import { createProjectAccessToken } from '../../lib/access-token';
 import { setAccessTokenCookie, deleteAccessTokenCookie } from '../../lib/cookies';
 import { verifyPassword } from '../../lib/password-hash';
+import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 import type { ProjectAccessInfo, VerifyProjectAccessResponse } from '../model/types';
 import { VerifyProjectAccessRequestSchema } from '../model/schema';
 
@@ -115,9 +116,21 @@ async function getProjectAccessInfo(projectName: string): Promise<ProjectAccessI
  */
 export async function verifyProjectAccess(
   projectName: string,
-  password: string
+  password: string,
+  turnstileToken?: string,
 ): Promise<VerifyProjectAccessResponse> {
   try {
+    // 0. Turnstile 봇 검증
+    if (turnstileToken) {
+      const isHuman = await verifyTurnstileToken(turnstileToken);
+      if (!isHuman) {
+        return {
+          success: false,
+          error: '보안 검증에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.',
+        };
+      }
+    }
+
     // 1. 입력 검증
     const validation = VerifyProjectAccessRequestSchema.safeParse({ projectName, password });
     if (!validation.success) {
