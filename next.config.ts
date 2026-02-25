@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
@@ -13,10 +15,10 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googletagmanager.com vercel.live *.vercel.live static.cloudflareinsights.com",
       "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net",
-      "img-src 'self' data: blob: *.vercel.live",
+      `img-src 'self' data: blob: *.vercel.live ${supabaseUrl}`,
       "font-src 'self' cdn.jsdelivr.net",
       "worker-src 'self' blob:",
-      "connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io *.vercel.live",
+      `connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io *.vercel.live ${supabaseUrl}`,
       "frame-src vercel.live *.vercel.live",
       "object-src 'none'",
       "base-uri 'self'",
@@ -33,6 +35,9 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ['recharts', 'framer-motion', 'lucide-react', '@supabase/supabase-js'],
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   productionBrowserSourceMaps: false,
   async headers() {

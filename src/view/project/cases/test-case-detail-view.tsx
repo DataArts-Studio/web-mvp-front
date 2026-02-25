@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Clock, Edit2, Flag, FolderOpen, History, Play, Tag, XCircle } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { formatDateTime } from '@/shared/utils/date-format';
+import { AttachmentSection } from '@/features/attachments';
 
 type DetailTab = 'details' | 'versions';
 
@@ -202,6 +203,9 @@ export const TestCaseDetailView = () => {
                 <p className="text-text-2 whitespace-pre-wrap">{testCase.expectedResult || '예상 결과가 없습니다.'}</p>
               </div>
             </section>
+
+            {/* 첨부파일 */}
+            <AttachmentSection testCaseId={testCase.id} projectId={testCase.projectId} />
 
             {/* 액션 버튼 */}
             <section className="col-span-6">

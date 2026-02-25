@@ -34,6 +34,8 @@ export async function getProjectStorageBytes(projectId: string): Promise<number>
         WHERE mts.milestone_id IN (SELECT id FROM milestones WHERE project_id = ${projectId})
       UNION ALL
       SELECT SUM(pg_column_size(pp.*)) AS size FROM project_preferences pp WHERE pp.project_id = ${projectId}
+      UNION ALL
+      SELECT COALESCE(SUM(tca.file_size), 0) AS size FROM test_case_attachments tca WHERE tca.project_id = ${projectId}
     ) sub
   `);
 

@@ -12,4 +12,5 @@ export * from './milestone-test-cases';
 export * from './milestone-test-suites';
 export * from './project-preferences';
 export * from './audit-logs';
+export * from './test-case-attachments';
 export * from './relations';

@@ -218,6 +218,20 @@ export const MILESTONE_EVENTS = {
   DELETE_FAIL: 'milestone_delete_fail',
 } as const;
 
+// ─── Attachment ─────────────────────────────────────────────────
+export const ATTACHMENT_EVENTS = {
+  /** 첨부파일 업로드 */
+  UPLOAD: 'attachment_upload',
+  /** 첨부파일 업로드 실패 */
+  UPLOAD_FAIL: 'attachment_upload_fail',
+  /** 첨부파일 삭제 */
+  DELETE: 'attachment_delete',
+  /** 첨부파일 다운로드 */
+  DOWNLOAD: 'attachment_download',
+  /** 첨부파일 미리보기 */
+  PREVIEW: 'attachment_preview',
+} as const;
+
 // ─── Trash ──────────────────────────────────────────────────────
 export const TRASH_EVENTS = {
   /** 휴지통 페이지 조회 */
@@ -280,6 +294,7 @@ export const GA_EVENTS = {
   TESTSUITE: TESTSUITE_EVENTS,
   TESTRUN: TESTRUN_EVENTS,
   MILESTONE: MILESTONE_EVENTS,
+  ATTACHMENT: ATTACHMENT_EVENTS,
   TRASH: TRASH_EVENTS,
   NAVIGATION: NAVIGATION_EVENTS,
   ENGAGEMENT: ENGAGEMENT_EVENTS,
