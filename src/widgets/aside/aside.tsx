@@ -85,15 +85,25 @@ export const Aside = () => {
 
       {/* 사이드바 하단 */}
       <div className="mt-auto border-t border-bg-4 px-4 py-4">
-        <div className="flex flex-col gap-1" onClick={handleAwaitBottom}>
+        <div className="flex flex-col gap-1">
           {menus.bottom.map((item: AsideMenuItem) => (
-            <AsideNavItem
+            <div
               key={item.label}
-              label={item.label}
-              href={item.href}
-              icon={item.icon}
-              active={isPathActive(pathname, item.matchPath || '')}
-            />
+              onClick={(e) => {
+                if (item.href === '#') {
+                  handleAwaitBottom(e);
+                } else {
+                  track(NAVIGATION_EVENTS.NAV_CLICK, { menu_label: item.label });
+                }
+              }}
+            >
+              <AsideNavItem
+                label={item.label}
+                href={item.href}
+                icon={item.icon}
+                active={isPathActive(pathname, item.matchPath || '')}
+              />
+            </div>
           ))}
         </div>
       </div>

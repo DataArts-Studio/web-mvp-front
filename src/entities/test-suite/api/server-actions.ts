@@ -515,12 +515,14 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
     }
 
+    const now = new Date();
+
     const [archived] = await db
       .update(testSuites)
       .set({
-        archived_at: new Date(),
-        lifecycle_status: 'ARCHIVED',
-        updated_at: new Date(),
+        archived_at: now,
+        lifecycle_status: 'DELETED',
+        updated_at: now,
       })
       .where(eq(testSuites.id, id))
       .returning();
@@ -532,16 +534,31 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       };
     }
 
+    // cascade: 하위 TC도 함께 휴지통으로 이동
+    await db
+      .update(testCases)
+      .set({
+        archived_at: now,
+        lifecycle_status: 'DELETED',
+        updated_at: now,
+      })
+      .where(
+        and(
+          eq(testCases.test_suite_id, id),
+          eq(testCases.lifecycle_status, 'ACTIVE'),
+        )
+      );
+
     return {
       success: true,
       data: { id: archived.id },
-      message: '테스트 스위트를 아카이브하였습니다.',
+      message: '테스트 스위트가 휴지통으로 이동되었습니다.',
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveTestSuite' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 아카이브하는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: ['테스트 스위트를 삭제하는 도중 오류가 발생했습니다.'] },
     };
   }
 };

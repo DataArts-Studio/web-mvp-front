@@ -61,7 +61,7 @@ async function parseCsv(file: File): Promise<ParseResult> {
 }
 
 async function parseExcel(file: File): Promise<ParseResult> {
-  const { default: readXlsxFile } = await import('read-excel-file');
+  const { default: readXlsxFile } = await import('read-excel-file/browser');
   const rows = await readXlsxFile(file);
 
   if (rows.length < 2) {

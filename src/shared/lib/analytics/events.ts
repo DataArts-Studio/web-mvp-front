@@ -218,6 +218,18 @@ export const MILESTONE_EVENTS = {
   DELETE_FAIL: 'milestone_delete_fail',
 } as const;
 
+// ─── Trash ──────────────────────────────────────────────────────
+export const TRASH_EVENTS = {
+  /** 휴지통 페이지 조회 */
+  VIEW: 'trash_view',
+  /** 항목 복원 */
+  RESTORE: 'trash_restore',
+  /** 영구 삭제 */
+  PERMANENT_DELETE: 'trash_permanent_delete',
+  /** 휴지통 비우기 */
+  EMPTY: 'trash_empty',
+} as const;
+
 // ─── Navigation ──────────────────────────────────────────────────
 export const NAVIGATION_EVENTS = {
   /** 네비게이션 메뉴 클릭 */
@@ -268,6 +280,7 @@ export const GA_EVENTS = {
   TESTSUITE: TESTSUITE_EVENTS,
   TESTRUN: TESTRUN_EVENTS,
   MILESTONE: MILESTONE_EVENTS,
+  TRASH: TRASH_EVENTS,
   NAVIGATION: NAVIGATION_EVENTS,
   ENGAGEMENT: ENGAGEMENT_EVENTS,
   ONBOARDING: ONBOARDING_EVENTS,
