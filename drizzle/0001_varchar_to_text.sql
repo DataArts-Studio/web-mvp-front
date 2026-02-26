@@ -19,24 +19,13 @@ ALTER TABLE "test_suites" ALTER COLUMN "name" SET DATA TYPE text;
 ALTER TABLE "test_suites" ALTER COLUMN "description" SET DATA TYPE text;
 
 -- ============================================================
--- 3. test_case_versions: name
--- ============================================================
-ALTER TABLE "test_case_versions" ALTER COLUMN "name" SET DATA TYPE text;
-ALTER TABLE "test_case_versions" ALTER COLUMN "test_type" SET DATA TYPE varchar(50);
-
--- ============================================================
--- 4. test_runs: name, status
+-- 3. test_runs: name, status
 -- ============================================================
 ALTER TABLE "test_runs" ALTER COLUMN "name" SET DATA TYPE text;
 ALTER TABLE "test_runs" ALTER COLUMN "status" SET DATA TYPE varchar(20);
 
 -- ============================================================
--- 5. test_case_runs: status, source_type
+-- 4. test_case_runs: status, source_type
 -- ============================================================
 ALTER TABLE "test_case_runs" ALTER COLUMN "status" SET DATA TYPE varchar(20);
 ALTER TABLE "test_case_runs" ALTER COLUMN "source_type" SET DATA TYPE varchar(20);
-
--- ============================================================
--- 6. test_case_templates: test_type
--- ============================================================
-ALTER TABLE "test_case_templates" ALTER COLUMN "test_type" SET DATA TYPE varchar(50);
