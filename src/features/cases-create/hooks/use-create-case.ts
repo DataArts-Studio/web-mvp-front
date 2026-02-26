@@ -7,7 +7,15 @@ export const useCreateCase = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateTestCase) => createTestCase(input),
+    mutationFn: async (input: CreateTestCase) => {
+      const result = await createTestCase(input);
+      if (!result.success) {
+        const message = Object.values(result.errors ?? {}).flat().join(', ')
+          || '테스트케이스를 생성하는 도중 오류가 발생했습니다.';
+        throw new Error(message);
+      }
+      return result;
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({

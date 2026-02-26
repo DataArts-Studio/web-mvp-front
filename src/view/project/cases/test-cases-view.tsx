@@ -19,6 +19,7 @@ import { ChevronDown, Download, Upload, FolderOpen, FolderClosed, Inbox, Plus, A
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { ImportWizardModal } from '@/features/import-cases';
+import { toast } from 'sonner';
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
@@ -201,11 +202,15 @@ export const TestCasesView = () => {
     const title = inputRef.current?.value.trim();
     if (!title || isPending) return;
 
+    const suiteId = selectedSuiteId !== 'all' && selectedSuiteId !== '__uncategorized__' ? selectedSuiteId : undefined;
     mutate(
-      { title, projectId: projectId! },
+      { title, projectId: projectId!, ...(suiteId ? { testSuiteId: suiteId } : {}) },
       {
         onSuccess: () => {
           if (inputRef.current) inputRef.current.value = '';
+        },
+        onError: (error) => {
+          toast.error(error.message || '테스트 케이스 생성에 실패했습니다.');
         },
       },
     );
@@ -418,7 +423,17 @@ export const TestCasesView = () => {
           </section>
         </div>
       </MainContainer>
-      {isActiveType('create') && <TestCaseDetailForm projectId={projectId!} onClose={onClose} />}
+      {isActiveType('create') && (
+        <TestCaseDetailForm
+          projectId={projectId!}
+          onClose={onClose}
+          defaultSuiteId={
+            selectedSuiteId !== 'all' && selectedSuiteId !== '__uncategorized__'
+              ? selectedSuiteId
+              : undefined
+          }
+        />
+      )}
       {isActiveType('import') && <ImportWizardModal projectId={projectId!} onClose={onClose} />}
       <AnimatePresence>
         {isActiveType('detail') && selectedTestCaseId && (

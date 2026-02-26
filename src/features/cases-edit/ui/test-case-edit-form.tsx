@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useUpdateCase } from '../hooks';
 import { UpdateTestCase, UpdateTestCaseSchema } from '../model';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
+import { toast } from 'sonner';
 
 interface TestCaseEditFormProps {
   testCase: TestCase;
@@ -63,8 +64,9 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
         onSuccess?.();
         onClose();
       },
-      onError: () => {
+      onError: (error) => {
         track(TESTCASE_EVENTS.UPDATE_FAIL, { case_id: testCase.id });
+        toast.error(error.message || '테스트 케이스 수정에 실패했습니다.');
       },
     });
   };

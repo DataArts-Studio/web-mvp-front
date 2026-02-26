@@ -15,7 +15,7 @@ import { testSuitesQueryOptions } from '@/widgets';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-react';
-// import { toast } from 'sonner'; // 템플릿 기능 펜딩으로 미사용
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 const CreateTestCaseFormSchema = z.object({
@@ -35,9 +35,10 @@ interface TestCaseDetailFormProps {
   projectId: string;
   onClose: () => void;
   onSuccess?: () => void;
+  defaultSuiteId?: string;
 }
 
-export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDetailFormProps) => {
+export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuiteId }: TestCaseDetailFormProps) => {
   // const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false); // 템플릿 기능 펜딩
   const { mutate, isPending } = useCreateCase();
 
@@ -61,7 +62,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
     resolver: zodResolver(CreateTestCaseFormSchema),
     defaultValues: {
       projectId: projectId,
-      testSuiteId: null,
+      testSuiteId: defaultSuiteId ?? null,
       title: '',
       testType: '',
       tags: [],
@@ -85,8 +86,9 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess }: TestCaseDe
         onSuccess?.();
         onClose();
       },
-      onError: () => {
+      onError: (error) => {
         track(TESTCASE_EVENTS.CREATE_FAIL, { project_id: projectId });
+        toast.error(error.message || '테스트 케이스 생성에 실패했습니다.');
       },
     });
   });
