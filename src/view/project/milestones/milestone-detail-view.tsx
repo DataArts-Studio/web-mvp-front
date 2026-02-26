@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 
-
-
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { AnimatePresence } from 'framer-motion';
 
 
 
@@ -17,13 +17,15 @@ import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Calendar, Edit2, ListChecks, Play, PlayCircle, Plus, Trash2, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronRight, Edit2, FolderOpen, ListChecks, Play, PlayCircle, Plus, Trash2, XCircle } from 'lucide-react';
 import { getTestSuites } from '@/entities';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 import { formatDateTime } from '@/shared/utils/date-format';
 
-
-
+const TestCaseSideView = dynamic(
+  () => import('@/view/project/cases/test-case-side-view').then((mod) => ({ default: mod.TestCaseSideView })),
+  { ssr: false }
+);
 
 
 
@@ -77,6 +79,7 @@ export const MilestoneDetailView = () => {
   const { data, isLoading, isError } = useQuery(milestoneByIdQueryOptions(milestoneId));
   const [isAddingCases, setIsAddingCases] = useState(false);
   const [isAddingSuites, setIsAddingSuites] = useState(false);
+  const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (data?.success) {
@@ -279,9 +282,11 @@ export const MilestoneDetailView = () => {
                   TEST_STATUS_CONFIG[testCase.lastStatus || 'untested'] ||
                   TEST_STATUS_CONFIG.untested;
                 return (
-                  <div
+                  <button
                     key={testCase.id}
-                    className="hover:bg-bg-3 flex items-center justify-between px-4 py-3 transition-colors"
+                    type="button"
+                    className="hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 text-left transition-colors"
+                    onClick={() => setSelectedTestCaseId(testCase.id)}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-primary font-mono text-sm">{testCase.caseKey}</span>
@@ -295,7 +300,7 @@ export const MilestoneDetailView = () => {
                     >
                       {statusConfig.label}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -339,19 +344,30 @@ export const MilestoneDetailView = () => {
             </div>
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
-              {testSuites.map((suite) => (
-                <div
-                  key={suite.id}
-                  className="hover:bg-bg-3 flex items-center justify-between px-4 py-3 transition-colors"
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="text-text-1">{suite.title}</span>
-                    {suite.description && (
-                      <span className="text-text-3 text-sm">{suite.description}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
+              {testSuites.map((suite) => {
+                const suiteCaseCount = testCases.filter((tc) => tc.id && allCases.some((ac) => ac.id === tc.id && ac.testSuiteId === suite.id)).length;
+                return (
+                  <Link
+                    key={suite.id}
+                    href={`/projects/${projectSlug}/suites/${suite.id}`}
+                    className="hover:bg-bg-3 flex items-center justify-between px-4 py-3 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FolderOpen className="text-text-3 h-4 w-4 shrink-0" />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-text-1">{suite.title}</span>
+                        {suite.description && (
+                          <span className="text-text-3 text-sm">{suite.description}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-text-3 text-sm">{suiteCaseCount}개 케이스</span>
+                      <ChevronRight className="text-text-3 h-4 w-4" />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </section>
@@ -412,6 +428,14 @@ export const MilestoneDetailView = () => {
             onClose={() => setIsAddingSuites(false)}
           />
         )}
+        <AnimatePresence>
+          {selectedTestCaseId && (
+            <TestCaseSideView
+              testCase={allCases.find((tc) => tc.id === selectedTestCaseId)}
+              onClose={() => setSelectedTestCaseId(null)}
+            />
+          )}
+        </AnimatePresence>
       </MainContainer>
     </Container>
   );

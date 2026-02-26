@@ -48,6 +48,7 @@ export const getTestCases = async ({
       id: row.id,
       projectId: row.project_id ?? '',
       testSuiteId: row.test_suite_id ?? undefined,
+      sectionId: row.section_id ?? null,
       displayId: row.display_id ?? 0,
       caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
       title: row.name,
@@ -212,6 +213,7 @@ type UpdateTestCaseParams = {
   id: string;
   title?: string;
   testSuiteId?: string | null;
+  sectionId?: string | null;
   testType?: string;
   tags?: string[];
   preCondition?: string;
@@ -245,6 +247,9 @@ export const updateTestCase = async (
     }
     if (updateFields.testSuiteId !== undefined) {
       updateData.test_suite_id = updateFields.testSuiteId;
+    }
+    if (updateFields.sectionId !== undefined) {
+      updateData.section_id = updateFields.sectionId;
     }
     if (updateFields.testType !== undefined) {
       updateData.test_type = updateFields.testType;

@@ -1,5 +1,6 @@
 export * from './projects';
 export * from './test-suites';
+export * from './test-suite-sections';
 export * from './test-cases';
 export * from './test-case-templates';
 export * from './test-case-versions';

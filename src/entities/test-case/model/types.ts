@@ -14,6 +14,7 @@ export type TestCase = {
   id: string;
   projectId: string;
   testSuiteId?: string;
+  sectionId?: string | null;
   displayId: number;
   caseKey: string;
   title: string;
@@ -34,6 +35,7 @@ export type CreateTestCase = {
   projectId: string;
   title: string;
   testSuiteId?: string;
+  sectionId?: string | null;
   caseKey?: string;
   testType?: string;
   tags?: string[];

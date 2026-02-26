@@ -1,6 +1,7 @@
 import { integer, pgTable, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core';
 import { projects, LifecycleStatus } from './projects';
 import { testSuites } from './test-suites';
+import { testSuiteSections } from './test-suite-sections';
 
 export const testCaseResultStatusEnum = ['untested', 'pass', 'fail', 'blocked'] as const;
 export type TestCaseResultStatus = (typeof testCaseResultStatusEnum)[number];
@@ -9,6 +10,7 @@ export const testCases = pgTable('test_cases', (t) => ({
   id: t.uuid('id').primaryKey(),
   project_id: t.uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   test_suite_id: t.uuid('test_suite_id').references(() => testSuites.id, { onDelete: 'set null' }),
+  section_id: t.uuid('section_id').references(() => testSuiteSections.id, { onDelete: 'set null' }),
   name: t.varchar('name').notNull(),
   steps: t.text('steps'),
   test_type: t.varchar('test_type'),
