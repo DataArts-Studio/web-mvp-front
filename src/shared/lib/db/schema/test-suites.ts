@@ -1,11 +1,11 @@
-import { integer, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { projects, LifecycleStatus } from './projects';
 
 export const testSuites = pgTable('test_suites', {
   id: uuid('id').primaryKey(),
   project_id: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
-  name: varchar('name').notNull(),
-  description: varchar('description'),
+  name: text('name').notNull(),
+  description: text('description'),
   sort_order: integer('sort_order'),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
