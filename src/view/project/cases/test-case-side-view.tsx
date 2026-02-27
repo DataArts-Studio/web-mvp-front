@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 
-import { TestCase } from '@/entities/test-case';
+import { TestCase, parseSteps } from '@/entities/test-case';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 // import { SaveAsTemplateModal } from '@/features/templates-save-from-case'; // 템플릿 기능 펜딩
@@ -156,22 +156,15 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">전제 조건</h3>
-            <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-              <p className="whitespace-pre-wrap">{testCase?.preCondition || '전제 조건이 없습니다.'}</p>
-            </div>
+            <SideStepsList steps={testCase?.preCondition} emptyText="전제 조건이 없습니다." />
           </div>
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">테스트 단계</h3>
-            <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-              <p className="whitespace-pre-wrap">{testCase?.testSteps || '테스트 단계가 없습니다.'}</p>
-            </div>
+            <SideStepsList steps={testCase?.testSteps} emptyText="테스트 단계가 없습니다." />
           </div>
-
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">예상 결과</h3>
-            <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-              <p className="whitespace-pre-wrap">{testCase?.expectedResult || '예상 결과가 없습니다.'}</p>
-            </div>
+            <SideStepsList steps={testCase?.expectedResult} emptyText="예상 결과가 없습니다." />
           </div>
         </div>
         {/* 테스트 정보 */}
@@ -214,3 +207,39 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
     </>
   );
 };
+
+function SideStepsList({ steps, emptyText = '항목이 없습니다.' }: { steps?: string; emptyText?: string }) {
+  if (!steps?.trim()) {
+    return (
+      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+        <p className="whitespace-pre-wrap">{emptyText}</p>
+      </div>
+    );
+  }
+
+  const parsed = parseSteps(steps);
+  const hasContent = parsed.some((s) => s.trim());
+
+  if (!hasContent) {
+    return (
+      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+        <p className="whitespace-pre-wrap">{emptyText}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
+      <ol className="divide-y divide-line-2">
+        {parsed.map((step, i) => (
+          <li key={i} className="flex items-start gap-3 px-4 py-2.5">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+              {i + 1}
+            </span>
+            <p className="text-sm text-text-1 whitespace-pre-wrap">{step || '-'}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}

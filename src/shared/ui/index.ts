@@ -9,3 +9,4 @@ export * from './checkbox';
 export * from './loading-spinner';
 export * from './selection-modal';
 export * from './tag-chip-input';
+export * from './step-box-editor';

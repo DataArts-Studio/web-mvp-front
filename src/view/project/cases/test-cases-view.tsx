@@ -219,9 +219,9 @@ export const TestCasesView = () => {
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       <Aside />
-      <MainContainer className="flex min-h-screen w-full flex-1">
-        {/* 스위트 트리 사이드바 */}
-        <nav className="border-line-2 bg-bg-1 flex w-60 shrink-0 flex-col border-r">
+      <MainContainer className="flex min-h-screen w-full flex-1 overflow-hidden">
+        {/* 스위트 트리 사이드바 — 고정, 독립 스크롤 */}
+        <nav className="border-line-2 bg-bg-1 flex h-screen w-60 shrink-0 flex-col border-r sticky top-0">
           <div className="border-line-2 border-b px-4 py-3">
             <h3 className="typo-body2-heading text-text-2">스위트</h3>
           </div>
@@ -288,8 +288,8 @@ export const TestCasesView = () => {
           </div>
         </nav>
 
-        {/* 메인 콘텐츠 */}
-        <div className="mx-auto grid w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+        {/* 메인 콘텐츠 — 독립 스크롤 */}
+        <div className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 overflow-y-auto px-10 py-8">
           {/* Header */}
           <header className="border-line-2 col-span-6 flex flex-col gap-1 border-b pb-6">
             <h2 className="typo-h1-heading text-text-1">
