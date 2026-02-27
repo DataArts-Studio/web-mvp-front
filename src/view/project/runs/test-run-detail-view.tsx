@@ -13,6 +13,7 @@ import { type TestStatusData } from '@/widgets/project';
 import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, TestCaseRunDetail } from '@/features/runs';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
+import { ShareButton } from '@/features/runs-share/ui/share-button';
 
 const TestStatusChart = dynamic(
   () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
@@ -402,6 +403,11 @@ export const TestRunDetailView = () => {
               </div>
               <span className="text-text-2 text-sm font-medium">{testRun.stats.progressPercent}%</span>
             </div>
+            <ShareButton
+              testRunId={testRunId}
+              shareToken={testRun.shareToken}
+              shareExpiresAt={testRun.shareExpiresAt}
+            />
             <button
               onClick={() => setShowShortcuts(true)}
               className="text-text-3 hover:text-text-1 flex items-center gap-1 text-sm transition-colors"

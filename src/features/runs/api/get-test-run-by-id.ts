@@ -37,6 +37,8 @@ export interface TestRunDetail {
   updatedAt: Date;
   testCaseRuns: TestCaseRunDetail[];
   sources: SourceInfo[];
+  shareToken: string | null;
+  shareExpiresAt: Date | null;
   stats: {
     total: number;
     untested: number;
@@ -173,6 +175,8 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       updatedAt: run.updated_at,
       testCaseRuns: testCaseRunDetails,
       sources,
+      shareToken: run.share_token ?? null,
+      shareExpiresAt: run.share_expires_at ?? null,
       stats: {
         total,
         untested,
