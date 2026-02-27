@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { getTestTypeLabel } from '@/entities/test-case';
+import { getTestTypeLabel, parseSteps } from '@/entities/test-case';
 import { testCaseByIdQueryOptions } from '@/features';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
@@ -183,25 +183,19 @@ export const TestCaseDetailView = () => {
             {/* 전제 조건 */}
             <section className="col-span-6 flex flex-col gap-2">
               <h2 className="typo-h2-heading">전제 조건</h2>
-              <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-                <p className="text-text-2 whitespace-pre-wrap">{testCase.preCondition || '전제 조건이 없습니다.'}</p>
-              </div>
+              <StepsList steps={testCase.preCondition} emptyText="전제 조건이 없습니다." />
             </section>
 
             {/* 테스트 단계 */}
             <section className="col-span-6 flex flex-col gap-2">
               <h2 className="typo-h2-heading">테스트 단계</h2>
-              <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-                <p className="text-text-2 whitespace-pre-wrap">{testCase.testSteps || '테스트 단계가 없습니다.'}</p>
-              </div>
+              <StepsList steps={testCase.testSteps} emptyText="테스트 단계가 없습니다." />
             </section>
 
             {/* 예상 결과 */}
             <section className="col-span-6 flex flex-col gap-2">
               <h2 className="typo-h2-heading">예상 결과</h2>
-              <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-                <p className="text-text-2 whitespace-pre-wrap">{testCase.expectedResult || '예상 결과가 없습니다.'}</p>
-              </div>
+              <StepsList steps={testCase.expectedResult} emptyText="예상 결과가 없습니다." />
             </section>
 
             {/* 첨부파일 */}
@@ -231,3 +225,31 @@ export const TestCaseDetailView = () => {
     </Container>
   );
 };
+
+function StepsList({ steps, emptyText = '항목이 없습니다.' }: { steps: string; emptyText?: string }) {
+  const parsed = parseSteps(steps);
+  const hasContent = parsed.some((s) => s.trim());
+
+  if (!hasContent) {
+    return (
+      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+        <p className="text-text-2">{emptyText}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
+      <ol className="divide-y divide-line-2">
+        {parsed.map((step, i) => (
+          <li key={i} className="flex items-start gap-3 px-4 py-3">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+              {i + 1}
+            </span>
+            <p className="text-sm text-text-1 whitespace-pre-wrap">{step || '-'}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}

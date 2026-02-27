@@ -1,10 +1,10 @@
 'use client';
 import React from 'react';
 
-import { TestCase, TEST_TYPE_OPTIONS } from '@/entities/test-case';
+import { TestCase, TEST_TYPE_OPTIONS, parseSteps, serializeSteps } from '@/entities/test-case';
 import { projectTagsQueryOptions } from '@/entities/test-case/api';
 import { testSuitesQueryOptions } from '@/widgets';
-import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, LoadingSpinner } from '@/shared';
+import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, LoadingSpinner, StepBoxEditor } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
@@ -82,7 +82,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handleAbandon}>
       <section
-        className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden shadow-4"
+        className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[900px] flex-col overflow-hidden shadow-4"
         onClick={(e) => e.stopPropagation()}
       >
         {isPending && (
@@ -196,7 +196,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
                 control={control}
                 render={({ field }) => (
                   <TagChipInput
-                    value={field.value}
+                    value={field.value ?? []}
                     onChange={field.onChange}
                     suggestions={projectTags}
                     placeholder="태그 입력 후 Enter (예: smoke)"
@@ -223,11 +223,19 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
                 <ListChecks className="h-4 w-4" />
                 사전 조건 (Preconditions)
               </DsFormField.Label>
-              <textarea
-                {...register('preCondition')}
-                placeholder="테스트 실행 전 충족되어야 하는 조건을 작성해주세요."
-                className={textareaClassName}
-                rows={2}
+              <Controller
+                name="preCondition"
+                control={control}
+                render={({ field }) => (
+                  <StepBoxEditor
+                    className="w-full"
+                    value={parseSteps(field.value ?? '')}
+                    onChange={(steps) => field.onChange(serializeSteps(steps))}
+                    disabled={isPending}
+                    addLabel="조건 추가"
+                    placeholder="충족되어야 하는 조건을 입력하세요"
+                  />
+                )}
               />
             </DsFormField.Root>
 
@@ -237,11 +245,16 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
                 <ListChecks className="h-4 w-4" />
                 테스트 단계 (Test Steps)
               </DsFormField.Label>
-              <textarea
-                {...register('testSteps')}
-                placeholder="1. 첫 번째 단계&#10;2. 두 번째 단계&#10;3. 세 번째 단계"
-                className={textareaClassName}
-                rows={3}
+              <Controller
+                name="testSteps"
+                control={control}
+                render={({ field }) => (
+                  <StepBoxEditor
+                    value={parseSteps(field.value ?? '')}
+                    onChange={(steps) => field.onChange(serializeSteps(steps))}
+                    disabled={isPending}
+                  />
+                )}
               />
             </DsFormField.Root>
 
@@ -251,11 +264,18 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
                 <ListChecks className="h-4 w-4" />
                 기대 결과 (Expected Results)
               </DsFormField.Label>
-              <textarea
-                {...register('expectedResult')}
-                placeholder="각 테스트 단계 수행 후 예상되는 결과를 작성해주세요."
-                className={textareaClassName}
-                rows={3}
+              <Controller
+                name="expectedResult"
+                control={control}
+                render={({ field }) => (
+                  <StepBoxEditor
+                    value={parseSteps(field.value ?? '')}
+                    onChange={(steps) => field.onChange(serializeSteps(steps))}
+                    disabled={isPending}
+                    addLabel="결과 추가"
+                    placeholder="예상되는 결과를 입력하세요"
+                  />
+                )}
               />
             </DsFormField.Root>
           </fieldset>
