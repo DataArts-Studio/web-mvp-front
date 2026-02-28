@@ -1,4 +1,4 @@
-import { getTestCase, getTestCases } from '@/entities';
+import { getTestCase, getTestCasesList } from '@/entities';
 import { QUERY_STALE_TIME_DEFAULT } from '@/shared/constants/query';
 import { queryOptions } from '@tanstack/react-query';
 
@@ -11,7 +11,7 @@ export const testCaseQueryKeys = {
 export const testCasesQueryOptions = (projectId: string) =>
   queryOptions({
     queryKey: testCaseQueryKeys.list(projectId),
-    queryFn: () => getTestCases({ project_id: projectId }),
+    queryFn: () => getTestCasesList({ project_id: projectId }),
     staleTime: QUERY_STALE_TIME_DEFAULT,
   });
 

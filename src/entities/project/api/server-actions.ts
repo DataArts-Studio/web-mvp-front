@@ -14,6 +14,26 @@ export type ProjectBasicInfo = Pick<
   'id' | 'projectName' | 'description' | 'ownerName'
 >;
 
+export const getProjectIdBySlug = async (slug: string): Promise<ActionResult<{ id: string }>> => {
+  try {
+    const db = getDatabase();
+    const decodedSlug = decodeURIComponent(slug);
+    const [row] = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(eq(projects.name, decodedSlug))
+      .limit(1);
+
+    if (!row) {
+      return { success: false, errors: { _project: ['프로젝트를 찾을 수 없습니다.'] } };
+    }
+    return { success: true, data: { id: row.id } };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'getProjectIdBySlug' } });
+    return { success: false, errors: { _project: ['프로젝트를 불러오는 도중 오류가 발생했습니다.'] } };
+  }
+};
+
 export const getProjectByName = async (name: string): Promise<ActionResult<ProjectBasicInfo>> => {
   try {
     const db = getDatabase();

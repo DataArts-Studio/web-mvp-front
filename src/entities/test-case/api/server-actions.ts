@@ -2,6 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
+import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import { getDatabase, testCases } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
 import { and, eq, sql } from 'drizzle-orm';
@@ -78,6 +79,65 @@ export const getTestCases = async ({
   }
 };
 
+/** 목록 조회용: steps, pre_condition, expected_result 제외하여 페이로드 경량화 */
+export const getTestCasesList = async ({
+  project_id,
+}: getTestCasesParams): Promise<ActionResult<TestCaseListItem[]>> => {
+  try {
+    const db = getDatabase();
+    const rows = await db
+      .select({
+        id: testCases.id,
+        project_id: testCases.project_id,
+        test_suite_id: testCases.test_suite_id,
+        section_id: testCases.section_id,
+        display_id: testCases.display_id,
+        name: testCases.name,
+        test_type: testCases.test_type,
+        tags: testCases.tags,
+        sort_order: testCases.sort_order,
+        result_status: testCases.result_status,
+        created_at: testCases.created_at,
+        updated_at: testCases.updated_at,
+        archived_at: testCases.archived_at,
+        lifecycle_status: testCases.lifecycle_status,
+      })
+      .from(testCases)
+      .where(
+        and(
+          eq(testCases.project_id, project_id),
+          eq(testCases.lifecycle_status, 'ACTIVE')
+        )
+      );
+
+    const result: TestCaseListItem[] = rows.map((row) => ({
+      id: row.id,
+      projectId: row.project_id ?? '',
+      testSuiteId: row.test_suite_id ?? undefined,
+      sectionId: row.section_id ?? null,
+      displayId: row.display_id ?? 0,
+      caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
+      title: row.name,
+      testType: row.test_type ?? '',
+      tags: row.tags ?? [],
+      sortOrder: row.sort_order ?? 0,
+      resultStatus: row.result_status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      archivedAt: row.archived_at ?? null,
+      lifecycleStatus: row.lifecycle_status,
+    }));
+
+    return { success: true, data: result };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'getTestCasesList' } });
+    return {
+      success: false,
+      errors: { _testCase: ['테스트케이스를 불러오는 도중 오류가 발생했습니다.'] },
+    };
+  }
+};
+
 export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> => {
   try {
     const db = getDatabase();
@@ -133,17 +193,19 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
 
 export const createTestCase = async (input: CreateTestCase): Promise<ActionResult<TestCase>> => {
   try {
-    const hasAccess = await requireProjectAccess(input.projectId);
+    const [hasAccess, storageError] = await Promise.all([
+      requireProjectAccess(input.projectId),
+      checkStorageLimit(input.projectId),
+    ]);
     if (!hasAccess) {
       return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
     }
-
-    const storageError = await checkStorageLimit(input.projectId);
     if (storageError) return storageError;
 
     const db = getDatabase();
     const dto = toCreateTestCaseDTO(input);
     const id = uuidv7();
+    const now = new Date();
 
     const [maxResult] = await db
       .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
@@ -159,8 +221,8 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
         display_id: nextDisplayId,
         case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
         result_status: 'untested',
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: now,
+        updated_at: now,
         archived_at: null,
         lifecycle_status: 'ACTIVE',
       })

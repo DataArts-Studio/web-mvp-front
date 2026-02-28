@@ -3,34 +3,21 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
-import { and, eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 export const getProjectTags = async (projectId: string): Promise<ActionResult<string[]>> => {
   try {
     const db = getDatabase();
-    const rows = await db
-      .select({
-        tag: sql<string>`unnest(${testCases.tags})`,
-      })
-      .from(testCases)
-      .where(
-        and(
-          eq(testCases.project_id, projectId),
-          eq(testCases.lifecycle_status, 'ACTIVE')
-        )
-      );
 
-    const tagCounts = new Map<string, number>();
-    for (const row of rows) {
-      if (row.tag) {
-        const count = tagCounts.get(row.tag) ?? 0;
-        tagCounts.set(row.tag, count + 1);
-      }
-    }
+    // DB 레벨에서 중복 제거 + 빈도 정렬 (JS 후처리 제거)
+    const rows = await db.execute(sql`
+      SELECT unnest(${testCases.tags}) AS tag, COUNT(*) AS freq
+      FROM test_cases
+      WHERE project_id = ${projectId} AND lifecycle_status = 'ACTIVE'
+      GROUP BY tag ORDER BY freq DESC
+    `) as unknown as Array<{ tag: string; freq: number }>;
 
-    const sortedTags = [...tagCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([tag]) => tag);
+    const sortedTags = rows.map((r) => r.tag).filter(Boolean);
 
     return { success: true, data: sortedTags };
   } catch (error) {

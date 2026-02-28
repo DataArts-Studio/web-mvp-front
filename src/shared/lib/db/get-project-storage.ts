@@ -1,11 +1,20 @@
 import { sql } from 'drizzle-orm';
 import { getDatabase } from './drizzle';
 
+const storageCache = new Map<string, { bytes: number; ts: number }>();
+const CACHE_TTL_MS = 60_000;
+
 /**
  * 프로젝트에 속한 모든 테이블의 데이터 크기를 합산하여 바이트 단위로 반환합니다.
  * PostgreSQL의 pg_column_size()를 사용합니다.
+ * 60초 TTL 인메모리 캐시 적용.
  */
 export async function getProjectStorageBytes(projectId: string): Promise<number> {
+  const cached = storageCache.get(projectId);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return cached.bytes;
+  }
+
   const db = getDatabase();
 
   const result = await db.execute(sql`
@@ -40,5 +49,9 @@ export async function getProjectStorageBytes(projectId: string): Promise<number>
   `);
 
   const row = result[0] as { total: string | number } | undefined;
-  return Number(row?.total ?? 0);
+  const bytes = Number(row?.total ?? 0);
+
+  storageCache.set(projectId, { bytes, ts: Date.now() });
+
+  return bytes;
 }
