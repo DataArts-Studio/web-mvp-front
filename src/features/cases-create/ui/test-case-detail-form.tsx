@@ -9,7 +9,7 @@ import { projectTagsQueryOptions } from '@/entities/test-case/api';
 // import { incrementTemplateUsage } from '@/entities/test-case-template/api'; // 템플릿 기능 펜딩
 import { useCreateCase } from '@/features/cases-create/hooks';
 // import { TemplateLibrary } from '@/features/templates-library'; // 템플릿 기능 펜딩
-import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, LoadingSpinner, StepBoxEditor } from '@/shared';
+import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, StepBoxEditor } from '@/shared';
 import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { testSuitesQueryOptions } from '@/widgets';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,7 +40,7 @@ interface TestCaseDetailFormProps {
 
 export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuiteId }: TestCaseDetailFormProps) => {
   // const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false); // 템플릿 기능 펜딩
-  const { mutate, isPending } = useCreateCase();
+  const { mutate } = useCreateCase();
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(projectId),
@@ -80,12 +80,13 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
       testSuiteId: data.testSuiteId || undefined,
       tags: data.tags.length > 0 ? data.tags : undefined,
     };
+
+    // optimistic update로 즉시 반영 → 폼 바로 닫기
+    track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
+    onSuccess?.();
+    onClose();
+
     mutate(payload, {
-      onSuccess: () => {
-        track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
-        onSuccess?.();
-        onClose();
-      },
       onError: (error) => {
         track(TESTCASE_EVENTS.CREATE_FAIL, { project_id: projectId });
         toast.error(error.message || '테스트 케이스 생성에 실패했습니다.');
@@ -112,11 +113,6 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
         className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[900px] flex-col overflow-hidden shadow-4"
         onClick={(e) => e.stopPropagation()}
       >
-        {isPending && (
-          <div className="rounded-5 bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
-            <LoadingSpinner size="md" text="테스트 케이스를 생성하고 있어요" />
-          </div>
-        )}
         {/* Header */}
         <header className="border-line-2 flex shrink-0 items-center justify-between border-b px-6 py-5">
           <div>
@@ -261,7 +257,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
                   <StepBoxEditor
                     value={parseSteps(field.value ?? '')}
                     onChange={(steps) => field.onChange(serializeSteps(steps))}
-                    disabled={isPending}
+
                     addLabel="조건 추가"
                     placeholder="충족되어야 하는 조건을 입력하세요"
                   />
@@ -282,7 +278,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
                   <StepBoxEditor
                     value={parseSteps(field.value ?? '')}
                     onChange={(steps) => field.onChange(serializeSteps(steps))}
-                    disabled={isPending}
+
                   />
                 )}
               />
@@ -301,7 +297,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
                   <StepBoxEditor
                     value={parseSteps(field.value ?? '')}
                     onChange={(steps) => field.onChange(serializeSteps(steps))}
-                    disabled={isPending}
+
                     addLabel="결과 추가"
                     placeholder="예상되는 결과를 입력하세요"
                   />
@@ -313,11 +309,11 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
 
         {/* Actions - 스크롤 영역 밖 */}
         <div className="border-line-2 flex shrink-0 justify-end gap-3 border-t px-6 py-4">
-          <DSButton type="button" variant="ghost" onClick={handleAbandon} disabled={isPending}>
+          <DSButton type="button" variant="ghost" onClick={handleAbandon}>
             취소
           </DSButton>
-          <DSButton type="submit" form="test-case-form" variant="solid" disabled={isPending}>
-            {isPending ? '생성 중...' : '테스트 케이스 생성'}
+          <DSButton type="submit" form="test-case-form" variant="solid">
+            테스트 케이스 생성
           </DSButton>
         </div>
       </section>

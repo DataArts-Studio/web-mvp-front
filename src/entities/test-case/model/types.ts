@@ -45,6 +45,9 @@ export type CreateTestCase = {
   sortOrder?: number;
 };
 
-export type TestCaseCardType = TestCase & {
+/** 목록 조회용 경량 타입 (steps, pre_condition, expected_result 제외) */
+export type TestCaseListItem = Omit<TestCase, 'preCondition' | 'testSteps' | 'expectedResult'>;
+
+export type TestCaseCardType = TestCaseListItem & {
   suiteTitle: string;
 };

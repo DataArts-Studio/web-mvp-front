@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 
 import { TestCase, parseSteps } from '@/entities/test-case';
+import type { TestCaseListItem } from '@/entities/test-case/model/types';
+import { testCaseByIdQueryOptions } from '@/features/cases-list';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 // import { SaveAsTemplateModal } from '@/features/templates-save-from-case'; // 템플릿 기능 펜딩
@@ -28,11 +30,21 @@ import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, History, Maximize2, Pla
 
 
 interface TestCaseSideViewProps {
-  testCase?: TestCase;
+  testCase?: TestCaseListItem;
   onClose: () => void;
 }
 
-export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) => {
+export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideViewProps) => {
+  // 목록 데이터에서 빠진 상세 필드(steps, preCondition, expectedResult)를 별도 조회
+  const { data: detailData } = useQuery({
+    ...testCaseByIdQueryOptions(listItem?.id ?? ''),
+    enabled: !!listItem?.id,
+  });
+  const testCase = detailData?.success
+    ? detailData.data
+    : listItem
+      ? { ...listItem, preCondition: '', testSteps: '', expectedResult: '' } as TestCase
+      : undefined;
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);

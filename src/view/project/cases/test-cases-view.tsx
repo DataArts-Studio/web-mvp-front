@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
 import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
+import { projectIdQueryOptions } from '@/entities/project';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
@@ -55,7 +56,7 @@ export const TestCasesView = () => {
   const params = useParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
-  const { mutate, isPending } = useCreateCase();
+  const { mutate } = useCreateCase();
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
 
   // 검색 및 필터 상태
@@ -67,11 +68,16 @@ export const TestCasesView = () => {
   const [visibleCount, setVisibleCount] = useState(30);
   const PAGE_SIZE = 30;
 
-  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
-    dashboardQueryOptions.stats(params.slug as string),
-  );
+  const slug = params.slug as string;
 
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
+  // slug → projectId를 단일 SELECT로 빠르게 획득 (워터폴 제거)
+  const { data: projectIdData } = useQuery(projectIdQueryOptions(slug));
+  const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
+
+  // dashboard, testCases, testSuites 모두 동시 시작 (워터폴 제거)
+  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
+    dashboardQueryOptions.stats(slug),
+  );
 
   const { data: testCasesData, isLoading: isLoadingCases } = useQuery({
     ...testCasesQueryOptions(projectId!),
@@ -200,15 +206,15 @@ export const TestCasesView = () => {
 
   const handleCreateTestCase = () => {
     const title = inputRef.current?.value.trim();
-    if (!title || isPending) return;
+    if (!title) return;
+
+    // optimistic update로 즉시 반영되므로 입력 즉시 초기화
+    if (inputRef.current) inputRef.current.value = '';
 
     const suiteId = selectedSuiteId !== 'all' && selectedSuiteId !== '__uncategorized__' ? selectedSuiteId : undefined;
     mutate(
       { title, projectId: projectId!, ...(suiteId ? { testSuiteId: suiteId } : {}) },
       {
-        onSuccess: () => {
-          if (inputRef.current) inputRef.current.value = '';
-        },
         onError: (error) => {
           toast.error(error.message || '테스트 케이스 생성에 실패했습니다.');
         },
@@ -376,7 +382,6 @@ export const TestCasesView = () => {
                     type="text"
                     placeholder="새로운 테스트 케이스 이름을 입력하고 Enter를 누르세요..."
                     className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent focus:outline-none"
-                    disabled={isPending}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         handleCreateTestCase();

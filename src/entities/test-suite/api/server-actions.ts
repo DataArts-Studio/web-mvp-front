@@ -316,25 +316,64 @@ export const getTestSuitesWithStats = async ({
 
     const suiteIds = suiteRows.map((s) => s.id);
 
-    // 2) 케이스 수 집계
-    const caseCountRows = await db
-      .select({ suiteId: testCases.test_suite_id, cnt: count() })
-      .from(testCases)
-      .where(and(eq(testCases.lifecycle_status, 'ACTIVE'), inArray(testCases.test_suite_id, suiteIds)))
-      .groupBy(testCases.test_suite_id);
+    // Q2~Q6: suiteIds 이후 독립적인 5개 쿼리를 병렬 실행
+    const milestoneQueryFn = async () => {
+      try {
+        return await db
+          .select({
+            suiteId: milestoneTestSuites.test_suite_id,
+            milestoneId: milestones.id,
+            milestoneName: milestones.name,
+            progressStatus: milestones.progress_status,
+          })
+          .from(milestoneTestSuites)
+          .innerJoin(milestones, eq(milestoneTestSuites.milestone_id, milestones.id))
+          .where(inArray(milestoneTestSuites.test_suite_id, suiteIds));
+      } catch (e) {
+        console.warn('milestoneTestSuites 조회 실패:', e);
+        Sentry.captureMessage('milestoneTestSuites 조회 실패', { level: 'warning', extra: { error: e } });
+        return [];
+      }
+    };
+
+    const [caseCountRows, testTypeRows, msRows, runCountRows, recentRunRows] = await Promise.all([
+      // Q2: 케이스 수 집계
+      db.select({ suiteId: testCases.test_suite_id, cnt: count() })
+        .from(testCases)
+        .where(and(eq(testCases.lifecycle_status, 'ACTIVE'), inArray(testCases.test_suite_id, suiteIds)))
+        .groupBy(testCases.test_suite_id),
+      // Q3: 케이스 test_type 목록 (포함 경로용)
+      db.select({ suiteId: testCases.test_suite_id, testType: testCases.test_type })
+        .from(testCases)
+        .where(
+          and(
+            eq(testCases.lifecycle_status, 'ACTIVE'),
+            inArray(testCases.test_suite_id, suiteIds),
+            isNotNull(testCases.test_type),
+          )
+        ),
+      // Q4: 연결된 마일스톤
+      milestoneQueryFn(),
+      // Q5: 실행 이력 수 집계
+      db.select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
+        .from(testRunSuites)
+        .where(inArray(testRunSuites.test_suite_id, suiteIds))
+        .groupBy(testRunSuites.test_suite_id),
+      // Q6: 최근 실행 (스위트별 최신 run)
+      db.select({
+          suiteId: testRunSuites.test_suite_id,
+          runId: testRuns.id,
+          runStatus: testRuns.status,
+          runCreatedAt: testRuns.created_at,
+        })
+        .from(testRunSuites)
+        .innerJoin(testRuns, eq(testRunSuites.test_run_id, testRuns.id))
+        .where(inArray(testRunSuites.test_suite_id, suiteIds))
+        .orderBy(desc(testRuns.created_at)),
+    ]);
+
     const caseCountMap = new Map(caseCountRows.map((r) => [r.suiteId, Number(r.cnt)]));
 
-    // 3) 케이스 test_type 목록 (포함 경로용)
-    const testTypeRows = await db
-      .select({ suiteId: testCases.test_suite_id, testType: testCases.test_type })
-      .from(testCases)
-      .where(
-        and(
-          eq(testCases.lifecycle_status, 'ACTIVE'),
-          inArray(testCases.test_suite_id, suiteIds),
-          isNotNull(testCases.test_type),
-        )
-      );
     const testTypeMap = new Map<string, Set<string>>();
     for (const r of testTypeRows) {
       if (!r.suiteId || !r.testType) continue;
@@ -342,53 +381,18 @@ export const getTestSuitesWithStats = async ({
       testTypeMap.get(r.suiteId)!.add(r.testType);
     }
 
-    // 4) 연결된 마일스톤 (첫 번째만)
-    let milestoneMap = new Map<string, { id: string; title: string; versionLabel: string }>();
-    try {
-      const msRows = await db
-        .select({
-          suiteId: milestoneTestSuites.test_suite_id,
-          milestoneId: milestones.id,
-          milestoneName: milestones.name,
-          progressStatus: milestones.progress_status,
-        })
-        .from(milestoneTestSuites)
-        .innerJoin(milestones, eq(milestoneTestSuites.milestone_id, milestones.id))
-        .where(inArray(milestoneTestSuites.test_suite_id, suiteIds));
-      for (const r of msRows) {
-        if (r.suiteId && !milestoneMap.has(r.suiteId)) {
-          milestoneMap.set(r.suiteId, {
-            id: r.milestoneId,
-            title: r.milestoneName,
-            versionLabel: r.progressStatus ?? '',
-          });
-        }
+    const milestoneMap = new Map<string, { id: string; title: string; versionLabel: string }>();
+    for (const r of msRows) {
+      if (r.suiteId && !milestoneMap.has(r.suiteId)) {
+        milestoneMap.set(r.suiteId, {
+          id: r.milestoneId,
+          title: r.milestoneName,
+          versionLabel: r.progressStatus ?? '',
+        });
       }
-    } catch (e) {
-      console.warn('milestoneTestSuites 조회 실패:', e);
-      Sentry.captureMessage('milestoneTestSuites 조회 실패', { level: 'warning', extra: { error: e } });
     }
 
-    // 5) 실행 이력 수 집계
-    const runCountRows = await db
-      .select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
-      .from(testRunSuites)
-      .where(inArray(testRunSuites.test_suite_id, suiteIds))
-      .groupBy(testRunSuites.test_suite_id);
     const runCountMap = new Map(runCountRows.map((r) => [r.suiteId, Number(r.cnt)]));
-
-    // 6) 최근 실행 (스위트별 최신 5개 run)
-    const recentRunRows = await db
-      .select({
-        suiteId: testRunSuites.test_suite_id,
-        runId: testRuns.id,
-        runStatus: testRuns.status,
-        runCreatedAt: testRuns.created_at,
-      })
-      .from(testRunSuites)
-      .innerJoin(testRuns, eq(testRunSuites.test_run_id, testRuns.id))
-      .where(inArray(testRunSuites.test_suite_id, suiteIds))
-      .orderBy(desc(testRuns.created_at));
 
     // 스위트별 run 그룹핑
     const runsPerSuite = new Map<string, Array<{ runId: string; status: string; createdAt: Date }>>();
