@@ -3,16 +3,16 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns, projects } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';
 
 export interface SharedReportData {
   runName: string;
   projectName: string;
   status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  expiresAt: Date;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
   stats: {
     total: number;
     pass: number;
@@ -25,7 +25,7 @@ export interface SharedReportData {
 
 export async function generateShareLink(
   testRunId: string
-): Promise<ActionResult<{ token: string; expiresAt: Date }>> {
+): Promise<ActionResult<{ token: string; expiresAt: string }>> {
   try {
     const db = getDatabase();
 
@@ -52,19 +52,21 @@ export async function generateShareLink(
       })
       .where(eq(testRuns.id, testRunId));
 
-    return { success: true, data: { token, expiresAt } };
+    return { success: true, data: { token, expiresAt: expiresAt.toISOString() } };
   } catch (error) {
+    console.error('[generateShareLink] error:', error);
     Sentry.captureException(error, { extra: { action: 'generateShareLink' } });
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _general: ['공유 링크 생성 중 오류가 발생했습니다.'] },
+      errors: { _general: [`공유 링크 생성 중 오류가 발생했습니다: ${errorMessage}`] },
     };
   }
 }
 
 export async function revokeShareLink(
   testRunId: string
-): Promise<ActionResult<void>> {
+): Promise<ActionResult<{ revoked: boolean }>> {
   try {
     const db = getDatabase();
 
@@ -87,12 +89,14 @@ export async function revokeShareLink(
       })
       .where(eq(testRuns.id, testRunId));
 
-    return { success: true, data: undefined };
+    return { success: true, data: { revoked: true } };
   } catch (error) {
+    console.error('[revokeShareLink] error:', error);
     Sentry.captureException(error, { extra: { action: 'revokeShareLink' } });
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _general: ['공유 해제 중 오류가 발생했습니다.'] },
+      errors: { _general: [`공유 해제 중 오류가 발생했습니다: ${errorMessage}`] },
     };
   }
 }
@@ -117,7 +121,7 @@ export async function getSharedReport(
       };
     }
 
-    if (!run.share_expires_at || run.share_expires_at < new Date()) {
+    if (!run.share_expires_at || new Date(run.share_expires_at) < new Date()) {
       return {
         success: false,
         errors: { _general: ['공유 링크가 만료되었습니다.'] },
@@ -151,9 +155,9 @@ export async function getSharedReport(
         runName: run.name,
         projectName,
         status: run.status,
-        createdAt: run.created_at,
-        updatedAt: run.updated_at,
-        expiresAt: run.share_expires_at,
+        createdAt: new Date(run.created_at).toISOString(),
+        updatedAt: new Date(run.updated_at).toISOString(),
+        expiresAt: new Date(run.share_expires_at).toISOString(),
         stats: {
           total,
           pass,
@@ -165,10 +169,12 @@ export async function getSharedReport(
       },
     };
   } catch (error) {
+    console.error('[getSharedReport] error:', error);
     Sentry.captureException(error, { extra: { action: 'getSharedReport' } });
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _general: ['리포트를 불러오는 중 오류가 발생했습니다.'] },
+      errors: { _general: [`리포트를 불러오는 중 오류가 발생했습니다: ${errorMessage}`] },
     };
   }
 }

@@ -11,23 +11,26 @@ import { generateShareLink, revokeShareLink } from '../api/share-actions';
 interface ShareModalProps {
   testRunId: string;
   shareToken: string | null;
-  shareExpiresAt: Date | null;
+  shareExpiresAt: string | Date | null;
   onClose: () => void;
 }
 
 type ShareState = 'none' | 'active' | 'expired';
 
-function getShareState(token: string | null, expiresAt: Date | null): ShareState {
+function getShareState(token: string | null, expiresAt: string | Date | null): ShareState {
   if (!token) return 'none';
-  if (!expiresAt || new Date(expiresAt) < new Date()) return 'expired';
+  if (!expiresAt) return 'expired';
+  const expDate = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+  if (expDate < new Date()) return 'expired';
   return 'active';
 }
 
 function getShareUrl(token: string): string {
+  if (typeof window === 'undefined') return '';
   return `${window.location.origin}/share/runs/${token}`;
 }
 
-function formatDate(date: Date): string {
+function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -38,7 +41,7 @@ function formatDate(date: Date): string {
 export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: ShareModalProps) => {
   const queryClient = useQueryClient();
   const [currentToken, setCurrentToken] = useState(shareToken);
-  const [currentExpiresAt, setCurrentExpiresAt] = useState(shareExpiresAt);
+  const [currentExpiresAt, setCurrentExpiresAt] = useState<string | Date | null>(shareExpiresAt);
 
   const shareState = getShareState(currentToken, currentExpiresAt);
 
@@ -54,6 +57,10 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
         toast.error(result.errors._general?.[0] || '공유 링크 생성에 실패했습니다.');
       }
     },
+    onError: (error) => {
+      console.error('[ShareModal] generateShareLink error:', error);
+      toast.error('공유 링크 생성 중 오류가 발생했습니다.');
+    },
   });
 
   const revokeMutation = useMutation({
@@ -67,6 +74,10 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
       } else {
         toast.error(result.errors._general?.[0] || '공유 해제에 실패했습니다.');
       }
+    },
+    onError: (error) => {
+      console.error('[ShareModal] revokeShareLink error:', error);
+      toast.error('공유 해제 중 오류가 발생했습니다.');
     },
   });
 
@@ -170,7 +181,7 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
           )}
 
           {/* State: Expired */}
-          {shareState === 'expired' && (
+          {shareState === 'expired' && currentToken && (
             <div className="flex flex-col items-center gap-4 py-4">
               <div className="bg-amber-500/10 flex h-12 w-12 items-center justify-center rounded-full">
                 <Link2 className="h-6 w-6 text-amber-400" />

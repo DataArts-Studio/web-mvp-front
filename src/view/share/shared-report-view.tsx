@@ -20,7 +20,7 @@ const RUN_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
   COMPLETED: { label: 'Completed', style: 'bg-green-500/20 text-green-300' },
 };
 
-function formatDate(date: Date): string {
+function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
