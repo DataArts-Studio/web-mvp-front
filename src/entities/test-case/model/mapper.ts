@@ -17,6 +17,7 @@ export const toTestCase = (dto: TestCaseDTO): TestCase => {
     id: dto.id,
     projectId: dto.project_id,
     testSuiteId: dto.test_suite_id || undefined,
+    sectionId: dto.section_id ?? null,
     displayId: dto.display_id,
     caseKey: `TC-${String(dto.display_id).padStart(3, '0')}`,
     title: dto.name,
@@ -54,6 +55,7 @@ export const toTestCaseDto = (domain: TestCase): TestCaseDTO => {
     id: domain.id,
     project_id: domain.projectId,
     test_suite_id: domain.testSuiteId,
+    section_id: domain.sectionId ?? null,
     display_id: domain.displayId,
     case_key: domain.caseKey,
     name: domain.title,
@@ -75,6 +77,7 @@ export const toCreateTestCaseDTO = (domain: CreateTestCase): CreateTestCaseDTO =
   return {
     project_id: domain.projectId,
     test_suite_id: domain.testSuiteId || null,
+    section_id: domain.sectionId ?? null,
     name: domain.title,
     test_type: domain.testType || '',
     tags: domain.tags ?? [],

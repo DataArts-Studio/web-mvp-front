@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import Image from 'next/image';
@@ -10,8 +10,10 @@ import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProject } from '@/features/projects-create';
 import { DSButton, DsCheckbox, DsFormField, DsInput, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { CheckCircle, ClipboardCheck, Copy, FolderOpen, XIcon } from 'lucide-react';
 import { track, PROJECT_CREATE_EVENTS } from '@/shared/lib/analytics';
+import { ENV } from '@/shared/constants';
 import { toast } from 'sonner';
 
 interface ProjectCreateFormProps {
@@ -23,6 +25,9 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [copied, setCopied] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileRef = useRef<TurnstileInstance>(null);
+  const siteKey = ENV.CLIENT.TURNSTILE_SITE_KEY;
   const {
     register,
     control,
@@ -76,10 +81,15 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const handlePrev = () => setStep((prev) => prev - 1);
 
   const onSubmit = async (formData: ProjectForm) => {
+    if (siteKey && !turnstileToken) {
+      toast.error('보안 검증을 완료해주세요.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const domain = formToDomain(formData);
-      const result = await createProject(domain);
+      const result = await createProject(domain, turnstileToken);
       if (result.success) {
         track(PROJECT_CREATE_EVENTS.COMPLETE, { project_name: formData.projectName });
         setCreatedSlug(result.data.projectName);
@@ -288,11 +298,21 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
                 <p className="truncate text-base font-semibold text-text-1">{projectName}</p>
               </div>
             </div>
+            {siteKey && (
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={siteKey}
+                onSuccess={setTurnstileToken}
+                onError={() => setTurnstileToken('')}
+                onExpire={() => setTurnstileToken('')}
+                options={{ theme: 'dark', size: 'flexible' }}
+              />
+            )}
             <div className="flex w-full gap-3">
               <DSButton onClick={() => { track(PROJECT_CREATE_EVENTS.ABANDON, { step }); onClick?.(); }} type="button" variant="ghost" className="w-full" disabled={isSubmitting}>
                 취소
               </DSButton>
-              <DSButton type="submit" variant="solid" className="w-full" disabled={isSubmitting}>
+              <DSButton type="submit" variant="solid" className="w-full" disabled={isSubmitting || (!!siteKey && !turnstileToken)}>
                 생성하기
               </DSButton>
             </div>

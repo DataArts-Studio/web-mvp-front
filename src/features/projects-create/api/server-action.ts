@@ -13,6 +13,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { hashPassword } from '@/access/lib/password-hash';
 import { createProjectAccessToken } from '@/access/lib/access-token';
 import { setAccessTokenCookie } from '@/access/lib/cookies';
+import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 
 // ============================================================================
 // Helpers
@@ -38,9 +39,21 @@ type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' |
  * - identifier는 해싱하여 저장
  */
 export async function createProject(
-  input: CreateProjectDomain
+  input: CreateProjectDomain,
+  turnstileToken?: string,
 ): Promise<ActionResult<SerializableProjectDomain>> {
   try {
+    // Turnstile 봇 검증
+    if (turnstileToken) {
+      const isHuman = await verifyTurnstileToken(turnstileToken);
+      if (!isHuman) {
+        return {
+          success: false,
+          errors: { _form: ['보안 검증에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.'] },
+        };
+      }
+    }
+
     const db = getDatabase();
     const dto = toProjectDto(input);
     const hashedIdentifier = await hashPassword(dto.identifier);

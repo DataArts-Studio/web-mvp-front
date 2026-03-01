@@ -5,13 +5,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 
-import { TestCase } from '@/entities/test-case';
+import { TestCase, parseSteps } from '@/entities/test-case';
+import type { TestCaseListItem } from '@/entities/test-case/model/types';
+import { testCaseByIdQueryOptions } from '@/features/cases-list';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
+// import { SaveAsTemplateModal } from '@/features/templates-save-from-case'; // 템플릿 기능 펜딩
 import { testSuitesQueryOptions } from '@/widgets';
 import { DSButton } from '@/shared';
-import { formatDateKR } from '@/shared/utils/date-format';
-import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, Maximize2, Play, Tag, X } from 'lucide-react';
+import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
+import { useVersionsList } from '@/features/version-timeline';
+import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, History, Maximize2, Play, Tag, X } from 'lucide-react';
 
 
 
@@ -26,14 +30,25 @@ import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, Maximize2, Play, Tag, X
 
 
 interface TestCaseSideViewProps {
-  testCase?: TestCase;
+  testCase?: TestCaseListItem;
   onClose: () => void;
 }
 
-export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) => {
+export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideViewProps) => {
+  // 목록 데이터에서 빠진 상세 필드(steps, preCondition, expectedResult)를 별도 조회
+  const { data: detailData } = useQuery({
+    ...testCaseByIdQueryOptions(listItem?.id ?? ''),
+    enabled: !!listItem?.id,
+  });
+  const testCase = detailData?.success
+    ? detailData.data
+    : listItem
+      ? { ...listItem, preCondition: '', testSteps: '', expectedResult: '' } as TestCase
+      : undefined;
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  // const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false); // 템플릿 기능 펜딩
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(testCase?.projectId || ''),
@@ -41,6 +56,11 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
   });
   const suites = suitesData?.success ? suitesData.data : [];
   const currentSuite = suites.find(s => s.id === testCase?.testSuiteId);
+
+  const { data: versionsData } = useVersionsList(testCase?.id || '');
+  const versions = versionsData?.success ? versionsData.data.versions : [];
+  const latestVersion = versions[0];
+  const versionCount = versionsData?.success ? versionsData.data.total : 0;
 
   const handleRunTest = () => {
     router.push(`/projects/${params.slug}/runs/create`);
@@ -108,7 +128,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
             </span>
           </div>
           <h2 className="text-xl">{testCase?.title || '테스트 케이스'}</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
             <div className="text-text-3 flex items-center gap-1 text-sm">
               <FolderOpen className="h-4 w-4" />
               <span>{currentSuite?.title || '스위트 없음'}</span>
@@ -117,6 +137,17 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
               <Calendar className="h-4 w-4" />
               <span>{formatDateKR(testCase?.createdAt)}</span>
             </div>
+            {latestVersion && (
+              <div className="text-text-3 flex items-center gap-1 text-sm">
+                <History className="h-4 w-4" />
+                <span>최근 수정: {formatRelativeTime(latestVersion.createdAt)}</span>
+                {versionCount > 0 && (
+                  <span className="bg-primary/10 text-primary ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium">
+                    v{latestVersion.versionNumber}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </header>
         {/* 태그 */}
@@ -137,22 +168,15 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">전제 조건</h3>
-            <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-              <p className="whitespace-pre-wrap">{testCase?.preCondition || '전제 조건이 없습니다.'}</p>
-            </div>
+            <SideStepsList steps={testCase?.preCondition} emptyText="전제 조건이 없습니다." />
           </div>
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">테스트 단계</h3>
-            <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-              <p className="whitespace-pre-wrap">{testCase?.testSteps || '테스트 단계가 없습니다.'}</p>
-            </div>
+            <SideStepsList steps={testCase?.testSteps} emptyText="테스트 단계가 없습니다." />
           </div>
-
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">예상 결과</h3>
-            <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-              <p className="whitespace-pre-wrap">{testCase?.expectedResult || '예상 결과가 없습니다.'}</p>
-            </div>
+            <SideStepsList steps={testCase?.expectedResult} emptyText="예상 결과가 없습니다." />
           </div>
         </div>
         {/* 테스트 정보 */}
@@ -179,6 +203,7 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
             <Copy className="h-4 w-4" />
             Copy
           </DSButton>
+          {/* 템플릿 기능 펜딩 */}
           {testCase && <ArchiveButton targetType='case' targetId={testCase.id} btnType='icon' onSuccess={onClose}/>}
         </div>
       </div>
@@ -190,6 +215,43 @@ export const TestCaseSideView = ({ testCase, onClose }: TestCaseSideViewProps) =
         onSuccess={handleEditClose}
       />
     )}
+    {/* 템플릿 기능 펜딩 */}
     </>
   );
 };
+
+function SideStepsList({ steps, emptyText = '항목이 없습니다.' }: { steps?: string; emptyText?: string }) {
+  if (!steps?.trim()) {
+    return (
+      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+        <p className="whitespace-pre-wrap">{emptyText}</p>
+      </div>
+    );
+  }
+
+  const parsed = parseSteps(steps);
+  const hasContent = parsed.some((s) => s.trim());
+
+  if (!hasContent) {
+    return (
+      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+        <p className="whitespace-pre-wrap">{emptyText}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
+      <ol className="divide-y divide-line-2">
+        {parsed.map((step, i) => (
+          <li key={i} className="flex items-start gap-3 px-4 py-2.5">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+              {i + 1}
+            </span>
+            <p className="text-sm text-text-1 whitespace-pre-wrap">{step || '-'}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}

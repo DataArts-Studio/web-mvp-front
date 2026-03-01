@@ -2,12 +2,15 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
+import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import { getDatabase, testCases, testRunSuites, testCaseRuns, testRuns, milestoneTestSuites } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
 import { and, eq, sql, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/db';
+import { createVersionSnapshot } from '@/entities/test-case-version/api/actions';
+import { detectChangedFields, generateChangeSummary } from '@/entities/test-case-version/model/diff-utils';
 
 
 
@@ -46,6 +49,7 @@ export const getTestCases = async ({
       id: row.id,
       projectId: row.project_id ?? '',
       testSuiteId: row.test_suite_id ?? undefined,
+      sectionId: row.section_id ?? null,
       displayId: row.display_id ?? 0,
       caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
       title: row.name,
@@ -68,6 +72,65 @@ export const getTestCases = async ({
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getTestCases' } });
+    return {
+      success: false,
+      errors: { _testCase: ['테스트케이스를 불러오는 도중 오류가 발생했습니다.'] },
+    };
+  }
+};
+
+/** 목록 조회용: steps, pre_condition, expected_result 제외하여 페이로드 경량화 */
+export const getTestCasesList = async ({
+  project_id,
+}: getTestCasesParams): Promise<ActionResult<TestCaseListItem[]>> => {
+  try {
+    const db = getDatabase();
+    const rows = await db
+      .select({
+        id: testCases.id,
+        project_id: testCases.project_id,
+        test_suite_id: testCases.test_suite_id,
+        section_id: testCases.section_id,
+        display_id: testCases.display_id,
+        name: testCases.name,
+        test_type: testCases.test_type,
+        tags: testCases.tags,
+        sort_order: testCases.sort_order,
+        result_status: testCases.result_status,
+        created_at: testCases.created_at,
+        updated_at: testCases.updated_at,
+        archived_at: testCases.archived_at,
+        lifecycle_status: testCases.lifecycle_status,
+      })
+      .from(testCases)
+      .where(
+        and(
+          eq(testCases.project_id, project_id),
+          eq(testCases.lifecycle_status, 'ACTIVE')
+        )
+      );
+
+    const result: TestCaseListItem[] = rows.map((row) => ({
+      id: row.id,
+      projectId: row.project_id ?? '',
+      testSuiteId: row.test_suite_id ?? undefined,
+      sectionId: row.section_id ?? null,
+      displayId: row.display_id ?? 0,
+      caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
+      title: row.name,
+      testType: row.test_type ?? '',
+      tags: row.tags ?? [],
+      sortOrder: row.sort_order ?? 0,
+      resultStatus: row.result_status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      archivedAt: row.archived_at ?? null,
+      lifecycleStatus: row.lifecycle_status,
+    }));
+
+    return { success: true, data: result };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'getTestCasesList' } });
     return {
       success: false,
       errors: { _testCase: ['테스트케이스를 불러오는 도중 오류가 발생했습니다.'] },
@@ -130,17 +193,19 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
 
 export const createTestCase = async (input: CreateTestCase): Promise<ActionResult<TestCase>> => {
   try {
-    const hasAccess = await requireProjectAccess(input.projectId);
+    const [hasAccess, storageError] = await Promise.all([
+      requireProjectAccess(input.projectId),
+      checkStorageLimit(input.projectId),
+    ]);
     if (!hasAccess) {
       return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
     }
-
-    const storageError = await checkStorageLimit(input.projectId);
     if (storageError) return storageError;
 
     const db = getDatabase();
     const dto = toCreateTestCaseDTO(input);
     const id = uuidv7();
+    const now = new Date();
 
     const [maxResult] = await db
       .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
@@ -156,8 +221,8 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
         display_id: nextDisplayId,
         case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
         result_status: 'untested',
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: now,
+        updated_at: now,
         archived_at: null,
         lifecycle_status: 'ACTIVE',
       })
@@ -168,6 +233,26 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
         success: false,
         errors: { _testCase: ['테스트케이스를 생성하는 도중 오류가 발생했습니다.'] },
       };
+    }
+
+    // 버전 v1 스냅샷 자동 생성
+    try {
+      await createVersionSnapshot(
+        id,
+        {
+          name: inserted.name,
+          test_type: inserted.test_type,
+          tags: inserted.tags,
+          pre_condition: inserted.pre_condition,
+          steps: inserted.steps,
+          expected_result: inserted.expected_result,
+        },
+        'create',
+        [],
+        '테스트 케이스 생성'
+      );
+    } catch (snapshotError) {
+      Sentry.captureException(snapshotError, { extra: { action: 'createTestCase:versionSnapshot' } });
     }
 
     // 스위트에 바로 생성한 경우 연결된 테스트 실행에 동기화
@@ -294,6 +379,7 @@ type UpdateTestCaseParams = {
   id: string;
   title?: string;
   testSuiteId?: string | null;
+  sectionId?: string | null;
   testType?: string;
   tags?: string[];
   preCondition?: string;
@@ -309,13 +395,13 @@ export const updateTestCase = async (
     const db = getDatabase();
     const { id, ...updateFields } = params;
 
-    // 접근 권한 확인: 대상 리소스의 프로젝트 ID 조회 후 검증
-    const [existing] = await db.select({ projectId: testCases.project_id }).from(testCases).where(eq(testCases.id, id)).limit(1);
-    if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
+    // 접근 권한 확인: 전체 row 조회 (버전 스냅샷용)
+    const [existing] = await db.select().from(testCases).where(eq(testCases.id, id)).limit(1);
+    if (!existing?.project_id || !(await requireProjectAccess(existing.project_id))) {
       return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
     }
 
-    const storageError = await checkStorageLimit(existing.projectId);
+    const storageError = await checkStorageLimit(existing.project_id);
     if (storageError) return storageError;
 
     const updateData: Record<string, unknown> = {
@@ -327,6 +413,9 @@ export const updateTestCase = async (
     }
     if (updateFields.testSuiteId !== undefined) {
       updateData.test_suite_id = updateFields.testSuiteId;
+    }
+    if (updateFields.sectionId !== undefined) {
+      updateData.section_id = updateFields.sectionId;
     }
     if (updateFields.testType !== undefined) {
       updateData.test_type = updateFields.testType;
@@ -358,6 +447,33 @@ export const updateTestCase = async (
         success: false,
         errors: { _testCase: ['테스트케이스를 찾을 수 없습니다.'] },
       };
+    }
+
+    // 버전 스냅샷 자동 생성
+    try {
+      const oldSnapshot = {
+        name: existing.name,
+        test_type: existing.test_type,
+        tags: existing.tags,
+        pre_condition: existing.pre_condition,
+        steps: existing.steps,
+        expected_result: existing.expected_result,
+      };
+      const newSnapshot = {
+        name: updated.name,
+        test_type: updated.test_type,
+        tags: updated.tags,
+        pre_condition: updated.pre_condition,
+        steps: updated.steps,
+        expected_result: updated.expected_result,
+      };
+      const changedFields = detectChangedFields(oldSnapshot, newSnapshot);
+      if (changedFields.length > 0) {
+        const changeSummary = generateChangeSummary(changedFields, 'edit');
+        await createVersionSnapshot(id, newSnapshot, 'edit', changedFields, changeSummary);
+      }
+    } catch (snapshotError) {
+      Sentry.captureException(snapshotError, { extra: { action: 'updateTestCase:versionSnapshot' } });
     }
 
     // 스위트 변경 시 연결된 테스트 실행에 케이스 동기화
@@ -399,7 +515,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
       .update(testCases)
       .set({
         archived_at: new Date(),
-        lifecycle_status: 'ARCHIVED',
+        lifecycle_status: 'DELETED',
         updated_at: new Date(),
       })
       .where(eq(testCases.id, id))
@@ -415,7 +531,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
     return {
       success: true,
       data: { id: archived.id },
-      message: '테스트케이스가 성공적으로 삭제되었습니다.',
+      message: '테스트케이스가 휴지통으로 이동되었습니다.',
     }
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveTestCase' } });

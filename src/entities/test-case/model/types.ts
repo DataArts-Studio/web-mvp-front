@@ -14,6 +14,7 @@ export type TestCase = {
   id: string;
   projectId: string;
   testSuiteId?: string;
+  sectionId?: string | null;
   displayId: number;
   caseKey: string;
   title: string;
@@ -34,6 +35,7 @@ export type CreateTestCase = {
   projectId: string;
   title: string;
   testSuiteId?: string;
+  sectionId?: string | null;
   caseKey?: string;
   testType?: string;
   tags?: string[];
@@ -43,6 +45,9 @@ export type CreateTestCase = {
   sortOrder?: number;
 };
 
-export type TestCaseCardType = TestCase & {
+/** 목록 조회용 경량 타입 (steps, pre_condition, expected_result 제외) */
+export type TestCaseListItem = Omit<TestCase, 'preCondition' | 'testSteps' | 'expectedResult'>;
+
+export type TestCaseCardType = TestCaseListItem & {
   suiteTitle: string;
 };

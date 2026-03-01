@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
 import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
+import { projectIdQueryOptions } from '@/entities/project';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
@@ -15,9 +16,11 @@ import { cn } from '@/shared/utils';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { ActionToolbar, Aside, TestTable } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Download, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, Download, Upload, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
+import { ImportWizardModal } from '@/features/import-cases';
+import { toast } from 'sonner';
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
@@ -47,13 +50,13 @@ const TABLE_HEADERS = [
   { id: 'actions', label: '메뉴', colSpan: 'col-span-1', textAlign: 'text-right' },
 ] as const;
 
-type ModalType = 'create' | 'detail';
+type ModalType = 'create' | 'detail' | 'import';
 
 export const TestCasesView = () => {
   const params = useParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
-  const { mutate, isPending } = useCreateCase();
+  const { mutate } = useCreateCase();
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
 
   // 검색 및 필터 상태
@@ -65,11 +68,16 @@ export const TestCasesView = () => {
   const [visibleCount, setVisibleCount] = useState(30);
   const PAGE_SIZE = 30;
 
-  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
-    dashboardQueryOptions.stats(params.slug as string),
-  );
+  const slug = params.slug as string;
 
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
+  // slug → projectId를 단일 SELECT로 빠르게 획득 (워터폴 제거)
+  const { data: projectIdData } = useQuery(projectIdQueryOptions(slug));
+  const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
+
+  // dashboard, testCases, testSuites 모두 동시 시작 (워터폴 제거)
+  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
+    dashboardQueryOptions.stats(slug),
+  );
 
   const { data: testCasesData, isLoading: isLoadingCases } = useQuery({
     ...testCasesQueryOptions(projectId!),
@@ -198,13 +206,17 @@ export const TestCasesView = () => {
 
   const handleCreateTestCase = () => {
     const title = inputRef.current?.value.trim();
-    if (!title || isPending) return;
+    if (!title) return;
 
+    // optimistic update로 즉시 반영되므로 입력 즉시 초기화
+    if (inputRef.current) inputRef.current.value = '';
+
+    const suiteId = selectedSuiteId !== 'all' && selectedSuiteId !== '__uncategorized__' ? selectedSuiteId : undefined;
     mutate(
-      { title, projectId: projectId! },
+      { title, projectId: projectId!, ...(suiteId ? { testSuiteId: suiteId } : {}) },
       {
-        onSuccess: () => {
-          if (inputRef.current) inputRef.current.value = '';
+        onError: (error) => {
+          toast.error(error.message || '테스트 케이스 생성에 실패했습니다.');
         },
       },
     );
@@ -213,9 +225,9 @@ export const TestCasesView = () => {
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
       <Aside />
-      <MainContainer className="flex min-h-screen w-full flex-1">
-        {/* 스위트 트리 사이드바 */}
-        <nav className="border-line-2 bg-bg-1 flex w-60 shrink-0 flex-col border-r">
+      <MainContainer className="flex min-h-screen w-full flex-1 overflow-hidden">
+        {/* 스위트 트리 사이드바 — 고정, 독립 스크롤 */}
+        <nav className="border-line-2 bg-bg-1 flex h-screen w-60 shrink-0 flex-col border-r sticky top-0">
           <div className="border-line-2 border-b px-4 py-3">
             <h3 className="typo-body2-heading text-text-2">스위트</h3>
           </div>
@@ -282,8 +294,8 @@ export const TestCasesView = () => {
           </div>
         </nav>
 
-        {/* 메인 콘텐츠 */}
-        <div className="mx-auto grid w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+        {/* 메인 콘텐츠 — 독립 스크롤 */}
+        <div className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 overflow-y-auto px-10 py-8">
           {/* Header */}
           <header className="border-line-2 col-span-6 flex flex-col gap-1 border-b pb-6">
             <h2 className="typo-h1-heading text-text-1">
@@ -335,7 +347,14 @@ export const TestCasesView = () => {
                 </Select.Content>
               </Select.Root>
             </ActionToolbar.Group>
-            <ActionToolbar.Action size="small" type="button" variant="outline" onClick={() => {
+            <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
+              track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
+              onOpen('import');
+            }} className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              <span className="leading-none">가져오기</span>
+            </ActionToolbar.Action>
+            <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
               track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count: filteredAndSortedTestCases.length });
               const projectName = dashboardData?.success ? dashboardData.data.project.name : 'project';
               exportTestCasesToCSV(filteredAndSortedTestCases, projectName);
@@ -363,7 +382,6 @@ export const TestCasesView = () => {
                     type="text"
                     placeholder="새로운 테스트 케이스 이름을 입력하고 Enter를 누르세요..."
                     className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent focus:outline-none"
-                    disabled={isPending}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         handleCreateTestCase();
@@ -410,7 +428,18 @@ export const TestCasesView = () => {
           </section>
         </div>
       </MainContainer>
-      {isActiveType('create') && <TestCaseDetailForm projectId={projectId!} onClose={onClose} />}
+      {isActiveType('create') && (
+        <TestCaseDetailForm
+          projectId={projectId!}
+          onClose={onClose}
+          defaultSuiteId={
+            selectedSuiteId !== 'all' && selectedSuiteId !== '__uncategorized__'
+              ? selectedSuiteId
+              : undefined
+          }
+        />
+      )}
+      {isActiveType('import') && <ImportWizardModal projectId={projectId!} onClose={onClose} />}
       <AnimatePresence>
         {isActiveType('detail') && selectedTestCaseId && (
           <TestCaseSideView

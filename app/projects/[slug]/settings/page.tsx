@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Metadata } from 'next';
+import { SettingsView } from '@/view/project';
 
 export const metadata: Metadata = {
   title: '프로젝트 설정',
@@ -7,11 +8,7 @@ export const metadata: Metadata = {
 };
 
 const Page = () => {
-  return (
-    <div>
-
-    </div>
-  );
+  return <SettingsView />;
 };
 
 export default Page;
