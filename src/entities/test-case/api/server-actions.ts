@@ -2,7 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
-import { getDatabase, testCases, testRunSuites, testCaseRuns } from '@/shared/lib/db';
+import { getDatabase, testCases, testRunSuites, testCaseRuns, testRuns, milestoneTestSuites } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
 import { and, eq, sql, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -197,19 +197,68 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
 
 /**
  * 케이스가 스위트에 추가될 때, 해당 스위트가 연결된 테스트 실행들에 케이스를 동기화합니다.
+ * 1) test_run_suites 직접 링크
+ * 2) 마일스톤 체인: suite → milestone_test_suites → milestone → test_runs
  */
 async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
   const db = getDatabase();
 
-  // 이 스위트가 연결된 모든 테스트 실행 조회
-  const linkedRuns = await db
+  // 1. test_run_suites 직접 링크로 연결된 런
+  const directRuns = await db
     .select({ test_run_id: testRunSuites.test_run_id })
     .from(testRunSuites)
     .where(eq(testRunSuites.test_suite_id, suiteId));
 
-  if (linkedRuns.length === 0) return;
+  // 2. 마일스톤 체인으로 연결된 런
+  const msRows = await db
+    .select({ milestone_id: milestoneTestSuites.milestone_id })
+    .from(milestoneTestSuites)
+    .where(eq(milestoneTestSuites.test_suite_id, suiteId));
 
-  const runIds = linkedRuns.map((r) => r.test_run_id).filter(Boolean) as string[];
+  const milestoneIds = msRows.map((r) => r.milestone_id).filter(Boolean) as string[];
+
+  let milestoneRuns: { id: string }[] = [];
+  if (milestoneIds.length > 0) {
+    milestoneRuns = await db
+      .select({ id: testRuns.id })
+      .from(testRuns)
+      .where(inArray(testRuns.milestone_id, milestoneIds));
+  }
+
+  // 합치고 중복 제거
+  const allRunIds = new Set<string>();
+  for (const r of directRuns) {
+    if (r.test_run_id) allRunIds.add(r.test_run_id);
+  }
+  for (const r of milestoneRuns) {
+    allRunIds.add(r.id);
+  }
+
+  if (allRunIds.size === 0) return;
+
+  const runIds = Array.from(allRunIds);
+
+  // 마일스톤 체인으로 찾은 런에 test_run_suites 엔트리가 없으면 생성
+  const existingRunSuites = await db
+    .select({ test_run_id: testRunSuites.test_run_id })
+    .from(testRunSuites)
+    .where(
+      and(
+        inArray(testRunSuites.test_run_id, runIds),
+        eq(testRunSuites.test_suite_id, suiteId)
+      )
+    );
+  const existingRunSuiteIds = new Set(existingRunSuites.map((r) => r.test_run_id));
+  const missingRunSuiteIds = runIds.filter((id) => !existingRunSuiteIds.has(id));
+
+  if (missingRunSuiteIds.length > 0) {
+    await db.insert(testRunSuites).values(
+      missingRunSuiteIds.map((runId) => ({
+        test_run_id: runId,
+        test_suite_id: suiteId,
+      }))
+    ).onConflictDoNothing();
+  }
 
   // 이미 등록된 케이스런 확인 (중복 방지)
   const existingRows = await db
