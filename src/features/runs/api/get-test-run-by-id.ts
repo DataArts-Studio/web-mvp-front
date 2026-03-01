@@ -1,9 +1,10 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
+import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, testRunSuites, milestoneTestSuites, milestoneTestCases, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
 
 export interface TestCaseRunDetail {
   id: string;
@@ -47,9 +48,125 @@ export interface TestRunDetail {
   };
 }
 
+/**
+ * Read-repair: 테스트 실행 조회 시 마일스톤에 연결된 스위트/케이스 중
+ * 누락된 test_run_suites, test_case_runs를 자동으로 백필합니다.
+ */
+async function repairTestRun(db: ReturnType<typeof getDatabase>, runId: string, milestoneId: string) {
+  // 1. 마일스톤에 연결된 모든 스위트
+  const msSuites = await db
+    .select({ test_suite_id: milestoneTestSuites.test_suite_id })
+    .from(milestoneTestSuites)
+    .where(eq(milestoneTestSuites.milestone_id, milestoneId));
+
+  const suiteIds = msSuites.map((s) => s.test_suite_id).filter(Boolean) as string[];
+
+  if (suiteIds.length > 0) {
+    // 2. test_run_suites 누락분 생성
+    const existingRunSuites = await db
+      .select({ test_suite_id: testRunSuites.test_suite_id })
+      .from(testRunSuites)
+      .where(eq(testRunSuites.test_run_id, runId));
+
+    const existingSuiteIds = new Set(existingRunSuites.map((s) => s.test_suite_id));
+    const missingSuiteIds = suiteIds.filter((id) => !existingSuiteIds.has(id));
+
+    if (missingSuiteIds.length > 0) {
+      await db.insert(testRunSuites).values(
+        missingSuiteIds.map((suiteId) => ({ test_run_id: runId, test_suite_id: suiteId }))
+      ).onConflictDoNothing();
+    }
+
+    // 3. 스위트 케이스 중 누락된 test_case_runs 생성
+    const suiteCaseRows = await db
+      .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
+      .from(testCases)
+      .where(and(inArray(testCases.test_suite_id, suiteIds), eq(testCases.lifecycle_status, 'ACTIVE')));
+
+    if (suiteCaseRows.length > 0) {
+      const caseIds = suiteCaseRows.map((r) => r.id).filter(Boolean) as string[];
+
+      const existingCaseRuns = await db
+        .select({ test_case_id: testCaseRuns.test_case_id })
+        .from(testCaseRuns)
+        .where(and(eq(testCaseRuns.test_run_id, runId), inArray(testCaseRuns.test_case_id, caseIds)));
+
+      const existingCaseIds = new Set(existingCaseRuns.map((r) => r.test_case_id));
+      const missingCases = suiteCaseRows.filter((r) => r.id && !existingCaseIds.has(r.id));
+
+      if (missingCases.length > 0) {
+        await db.insert(testCaseRuns).values(
+          missingCases.map((c) => ({
+            id: uuidv7(),
+            test_run_id: runId,
+            test_case_id: c.id,
+            status: 'untested' as const,
+            source_type: 'suite' as const,
+            source_id: c.test_suite_id,
+            created_at: new Date(),
+            updated_at: new Date(),
+          }))
+        );
+      }
+    }
+  }
+
+  // 4. 마일스톤 직접 연결 케이스 누락분 생성
+  const msCases = await db
+    .select({ test_case_id: milestoneTestCases.test_case_id })
+    .from(milestoneTestCases)
+    .where(eq(milestoneTestCases.milestone_id, milestoneId));
+
+  const msCaseIds = msCases.map((c) => c.test_case_id).filter(Boolean) as string[];
+
+  if (msCaseIds.length > 0) {
+    const existingMsCaseRuns = await db
+      .select({ test_case_id: testCaseRuns.test_case_id })
+      .from(testCaseRuns)
+      .where(and(eq(testCaseRuns.test_run_id, runId), inArray(testCaseRuns.test_case_id, msCaseIds)));
+
+    const existingMsCaseIds = new Set(existingMsCaseRuns.map((r) => r.test_case_id));
+    const missingMsCaseIds = msCaseIds.filter((id) => !existingMsCaseIds.has(id));
+
+    if (missingMsCaseIds.length > 0) {
+      await db.insert(testCaseRuns).values(
+        missingMsCaseIds.map((caseId) => ({
+          id: uuidv7(),
+          test_run_id: runId,
+          test_case_id: caseId,
+          status: 'untested' as const,
+          source_type: 'milestone' as const,
+          source_id: milestoneId,
+          created_at: new Date(),
+          updated_at: new Date(),
+        }))
+      );
+    }
+  }
+}
+
 export async function getTestRunById(testRunId: string): Promise<ActionResult<TestRunDetail>> {
   try {
     const db = getDatabase();
+
+    // Read-repair: 마일스톤 기반 테스트 실행의 누락 케이스 자동 백필
+    const [runMeta] = await db
+      .select({ id: testRuns.id, milestone_id: testRuns.milestone_id })
+      .from(testRuns)
+      .where(eq(testRuns.id, testRunId));
+
+    if (!runMeta) {
+      return { success: false, errors: { _general: ['테스트 실행을 찾을 수 없습니다.'] } };
+    }
+
+    if (runMeta.milestone_id) {
+      try {
+        await repairTestRun(db, testRunId, runMeta.milestone_id);
+      } catch (repairError) {
+        // repair 실패해도 조회는 계속 진행
+        console.error('repairTestRun failed:', repairError);
+      }
+    }
 
     const run = await db.query.testRuns.findFirst({
       where: eq(testRuns.id, testRunId),
