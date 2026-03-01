@@ -116,38 +116,6 @@ export const TESTCASE_EVENTS = {
   STEP_REMOVE: 'testcase_step_remove',
   /** CSV 내보내기 */
   EXPORT: 'testcase_export',
-  /** CSV/Excel 가져오기 시작 */
-  IMPORT_START: 'testcase_import_start',
-  /** 가져오기 완료 */
-  IMPORT_COMPLETE: 'testcase_import_complete',
-  /** 가져오기 실패 */
-  IMPORT_FAIL: 'testcase_import_fail',
-  /** 버전 이력 조회 */
-  VERSION_VIEW: 'testcase_version_view',
-  /** 버전 상세 조회 */
-  VERSION_DETAIL_VIEW: 'testcase_version_detail_view',
-  /** 버전 비교 */
-  VERSION_COMPARE: 'testcase_version_compare',
-  /** 버전 롤백 */
-  VERSION_ROLLBACK: 'testcase_version_rollback',
-} as const;
-
-// ─── Template ───────────────────────────────────────────────
-export const TEMPLATE_EVENTS = {
-  /** 템플릿 라이브러리 열기 */
-  LIBRARY_OPEN: 'template_library_open',
-  /** 템플릿 적용 */
-  APPLY: 'template_apply',
-  /** 템플릿 생성 완료 */
-  CREATE_COMPLETE: 'template_create_complete',
-  /** 템플릿 생성 실패 */
-  CREATE_FAIL: 'template_create_fail',
-  /** 케이스에서 템플릿 저장 */
-  SAVE_FROM_CASE: 'template_save_from_case',
-  /** 템플릿 수정 */
-  UPDATE: 'template_update',
-  /** 템플릿 삭제 */
-  DELETE: 'template_delete',
 } as const;
 
 // ─── Test Suite ──────────────────────────────────────────────────
@@ -218,32 +186,6 @@ export const MILESTONE_EVENTS = {
   DELETE_FAIL: 'milestone_delete_fail',
 } as const;
 
-// ─── Attachment ─────────────────────────────────────────────────
-export const ATTACHMENT_EVENTS = {
-  /** 첨부파일 업로드 */
-  UPLOAD: 'attachment_upload',
-  /** 첨부파일 업로드 실패 */
-  UPLOAD_FAIL: 'attachment_upload_fail',
-  /** 첨부파일 삭제 */
-  DELETE: 'attachment_delete',
-  /** 첨부파일 다운로드 */
-  DOWNLOAD: 'attachment_download',
-  /** 첨부파일 미리보기 */
-  PREVIEW: 'attachment_preview',
-} as const;
-
-// ─── Trash ──────────────────────────────────────────────────────
-export const TRASH_EVENTS = {
-  /** 휴지통 페이지 조회 */
-  VIEW: 'trash_view',
-  /** 항목 복원 */
-  RESTORE: 'trash_restore',
-  /** 영구 삭제 */
-  PERMANENT_DELETE: 'trash_permanent_delete',
-  /** 휴지통 비우기 */
-  EMPTY: 'trash_empty',
-} as const;
-
 // ─── Navigation ──────────────────────────────────────────────────
 export const NAVIGATION_EVENTS = {
   /** 네비게이션 메뉴 클릭 */
@@ -290,12 +232,9 @@ export const GA_EVENTS = {
   ACCESS: ACCESS_EVENTS,
   DASHBOARD: DASHBOARD_EVENTS,
   TESTCASE: TESTCASE_EVENTS,
-  TEMPLATE: TEMPLATE_EVENTS,
   TESTSUITE: TESTSUITE_EVENTS,
   TESTRUN: TESTRUN_EVENTS,
   MILESTONE: MILESTONE_EVENTS,
-  ATTACHMENT: ATTACHMENT_EVENTS,
-  TRASH: TRASH_EVENTS,
   NAVIGATION: NAVIGATION_EVENTS,
   ENGAGEMENT: ENGAGEMENT_EVENTS,
   ONBOARDING: ONBOARDING_EVENTS,

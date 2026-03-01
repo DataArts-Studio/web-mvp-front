@@ -1,3 +1,3 @@
-export { getProjectByName, getProjectById, getProjectIdBySlug, updateProject, changeProjectIdentifier, deleteProject } from './server-actions';
+export { getProjectByName, getProjectById } from './server-actions';
 export type { ProjectBasicInfo } from './server-actions';
-export { projectQueryKeys, projectIdQueryOptions, projectByNameQueryOptions, projectByIdQueryOptions } from './query';
+export { projectQueryKeys, projectByNameQueryOptions, projectByIdQueryOptions } from './query';

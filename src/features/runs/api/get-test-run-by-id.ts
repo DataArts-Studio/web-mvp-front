@@ -38,8 +38,6 @@ export interface TestRunDetail {
   updatedAt: Date;
   testCaseRuns: TestCaseRunDetail[];
   sources: SourceInfo[];
-  shareToken: string | null;
-  shareExpiresAt: Date | null;
   stats: {
     total: number;
     untested: number;
@@ -165,6 +163,7 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       try {
         await repairTestRun(db, testRunId, runMeta.milestone_id);
       } catch (repairError) {
+        // repair 실패해도 조회는 계속 진행
         console.error('repairTestRun failed:', repairError);
       }
     }
@@ -291,8 +290,6 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       updatedAt: run.updated_at,
       testCaseRuns: testCaseRunDetails,
       sources,
-      shareToken: run.share_token ?? null,
-      shareExpiresAt: run.share_expires_at ?? null,
       stats: {
         total,
         untested,

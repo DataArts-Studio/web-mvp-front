@@ -1,7 +1,6 @@
 import React from 'react';
 
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 
 import { cn } from '@/shared';
 
@@ -121,24 +120,15 @@ const BaseDecoration = ({
  */
 const GridBackgroundArrowDecoration = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
   return (
-    <motion.div
-      aria-hidden="true"
-      role="presentation"
-      initial={{ opacity: 0, x: -20, y: 20 }}
-      animate={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ delay: 0.5, duration: 0.5 }}
-      className={cn("pointer-events-none absolute select-none top-1/2 left-[calc(80%-153px)] z-10 h-[50px] w-[50px] -translate-y-1/2 hidden md:block", className)}
+    <BaseDecoration
+      src="/backgrounds/arrow.svg"
+      width={37.5}
+      height={37.5}
+      alt=""
+      className={cn("top-1/2 left-[calc(80%-153px)] z-10 h-[50px] w-[50px] -translate-y-1/2", className)}
+      imageClassName="z-10"
       {...props}
-    >
-      <Image
-        src="/backgrounds/arrow.svg"
-        width={37.5}
-        height={37.5}
-        alt=""
-        aria-hidden="true"
-        className="absolute top-0 left-0 z-10"
-      />
-    </motion.div>
+    />
   );
 };
 
@@ -148,24 +138,15 @@ const GridBackgroundArrowDecoration = ({ className, ...props }: React.HTMLAttrib
  */
 const GridBackgroundCircleDecoration = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
   return (
-    <motion.div
-      aria-hidden="true"
-      role="presentation"
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 0.3, scale: 1 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-      className={cn("pointer-events-none absolute select-none top-1/2 z-0 -translate-y-1/2 left-[50%] h-[400px] w-[400px] sm:left-[calc(60%+5px)] sm:h-[600px] sm:w-[600px] md:h-[972px] md:w-[972px]", className)}
+    <BaseDecoration
+      src="/backgrounds/circular.svg"
+      width={1137.1}
+      height={972.6}
+      alt=""
+      className={cn("top-1/2 left-[calc(60%+5px)] z-0 h-[972px] w-[972px] -translate-y-1/2 opacity-30", className)}
+      imageClassName="z-10"
       {...props}
-    >
-      <Image
-        src="/backgrounds/circular.svg"
-        width={1137.1}
-        height={972.6}
-        alt=""
-        aria-hidden="true"
-        className="absolute top-0 left-0 z-10"
-      />
-    </motion.div>
+    />
   );
 };
 

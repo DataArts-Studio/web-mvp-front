@@ -1,9 +1,6 @@
 export * from './projects';
 export * from './test-suites';
-export * from './test-suite-sections';
 export * from './test-cases';
-export * from './test-case-templates';
-export * from './test-case-versions';
 export * from './test-runs';
 export * from './milestones';
 export * from './test-case-runs';
@@ -12,6 +9,4 @@ export * from './suite-test-cases';
 export * from './milestone-test-cases';
 export * from './milestone-test-suites';
 export * from './project-preferences';
-export * from './audit-logs';
-export * from './test-case-attachments';
 export * from './relations';

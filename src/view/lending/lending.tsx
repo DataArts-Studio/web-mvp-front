@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { ProjectCreateForm, BetaNoticePopup } from '@/features';
+import { LoadingSpinner, Logo } from '@/shared';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
 import { GridBackground } from '@/shared/layout';
@@ -36,28 +36,22 @@ export const LendingView = () => {
           className={`mx-auto flex flex-1 w-full max-w-6xl items-center px-4 transition-[padding-top] duration-200 ${isBannerVisible ? 'pt-10' : 'pt-4'}`}
         >
           {/* 메인 헤드라인 + 서브타이틀 / 슬로건 */}
-          <div className="flex w-full flex-col items-start gap-6 pl-0 sm:gap-8 sm:pl-4 md:gap-9 md:pl-8">
+          <div className="flex w-full flex-col items-start gap-9 pl-8">
             <LendingHeader />
             {/* CTA Section */}
-            <motion.section
-              aria-label="시작하기"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="relative z-10 w-full sm:w-auto"
-            >
+            <section aria-label="시작하기" className="relative z-10">
               <DSButton
                 type="button"
                 onClick={() => {
                   track(LANDING_EVENTS.PROJECT_CREATE_START);
                   setIsCreateModalOpen(true);
                 }}
-                className="flex h-12 w-full items-center justify-center gap-[0.63rem] p-4 sm:h-14 sm:w-64 md:h-16 md:w-80 md:p-5"
+                className="flex h-16 w-80 min-w-[11.25rem] items-center justify-center gap-[0.63rem] p-5"
                 aria-label="무료로 프로젝트 생성 시작하기"
               >
                 무료로 시작하기
               </DSButton>
-            </motion.section>
+            </section>
           </div>
           {isCreateModalOpen && (
             <ProjectCreateForm onClick={() => setIsCreateModalOpen(false)} />

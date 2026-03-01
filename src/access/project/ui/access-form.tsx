@@ -6,17 +6,15 @@
  * 디자인 시스템 컴포넌트(DSButton, DsInput, Logo) 사용
  */
 
-import { useState, useTransition, useEffect, useRef } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
-import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { track, ACCESS_EVENTS } from '@/shared/lib/analytics';
 
 import { cn } from '@/shared/utils';
-import { ENV } from '@/shared/constants';
 import { Logo } from '@/shared/ui/logo';
 import { DSButton } from '@/shared/ui/ds-button';
 
@@ -43,9 +41,6 @@ export function AccessForm({
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const turnstileRef = useRef<TurnstileInstance>(null);
-  const siteKey = ENV.CLIENT.TURNSTILE_SITE_KEY;
 
   const {
     register,
@@ -66,19 +61,14 @@ export function AccessForm({
 
   const onSubmit = (data: ProjectAccessFormInput) => {
     setServerError(null);
-
-    if (siteKey && !turnstileToken) {
-      setServerError('보안 검증을 완료해주세요.');
-      return;
-    }
-
     track(ACCESS_EVENTS.ATTEMPT, { project_slug: projectSlug });
 
     startTransition(async () => {
-      const result = await verifyProjectAccess(projectSlug, data.password, turnstileToken);
+      const result = await verifyProjectAccess(projectSlug, data.password);
 
       if (result.success) {
         track(ACCESS_EVENTS.SUCCESS, { project_slug: projectSlug });
+        // Open Redirect 방지: 상대 경로만 허용
         const safeRedirect =
           redirectUrl && redirectUrl.startsWith('/') && !redirectUrl.startsWith('//')
             ? redirectUrl
@@ -91,9 +81,6 @@ export function AccessForm({
         if (result.remainingAttempts !== undefined) {
           setRemainingAttempts(result.remainingAttempts);
         }
-        // 실패 시 Turnstile 리셋
-        turnstileRef.current?.reset();
-        setTurnstileToken('');
       }
     });
   };
@@ -191,20 +178,9 @@ export function AccessForm({
           )}
         </div>
 
-        {siteKey && (
-          <Turnstile
-            ref={turnstileRef}
-            siteKey={siteKey}
-            onSuccess={setTurnstileToken}
-            onError={() => setTurnstileToken('')}
-            onExpire={() => setTurnstileToken('')}
-            options={{ theme: 'dark', size: 'flexible' }}
-          />
-        )}
-
         <DSButton
           type="submit"
-          disabled={isPending || (!!siteKey && !turnstileToken)}
+          disabled={isPending}
           variant="solid"
           size="large"
           className="w-full"
