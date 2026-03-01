@@ -7,3 +7,6 @@ export * from './sh-pie-chart';
 export * from './checkbox';
 export * from './loading-spinner';
 export * from './selection-modal';
+export * from './ds-select';
+export * from './step-box-editor';
+export * from './tag-chip-input';
