@@ -402,6 +402,17 @@ export const addTestSuitesToMilestone = async (
       .where(eq(testRuns.milestone_id, milestoneId));
 
     if (linkedRuns.length > 0) {
+      // Always link suites to runs (even if suites are empty)
+      for (const run of linkedRuns) {
+        await db
+          .insert(testRunSuites)
+          .values(testSuiteIds.map((suiteId) => ({
+            test_run_id: run.id,
+            test_suite_id: suiteId,
+          })))
+          .onConflictDoNothing();
+      }
+
       // Get individual test cases from the added suites
       const suiteCaseRows = await db
         .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
@@ -423,15 +434,6 @@ export const addTestSuitesToMilestone = async (
         const caseIds = Array.from(caseIdToSuite.keys());
 
         for (const run of linkedRuns) {
-          // Link suites to the run
-          await db
-            .insert(testRunSuites)
-            .values(testSuiteIds.map((suiteId) => ({
-              test_run_id: run.id,
-              test_suite_id: suiteId,
-            })))
-            .onConflictDoNothing();
-
           // Find which cases already exist in this run
           const existingRows = await db
             .select({ test_case_id: testCaseRuns.test_case_id })

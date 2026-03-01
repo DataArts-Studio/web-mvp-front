@@ -88,11 +88,11 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
 
 export const getTestSuites = async ({
   projectId,
-  limits = { offset: 0, limit: 10 },
+  limits = { offset: 0, limit: Infinity },
 }: GetTestSuitesParams): Promise<ActionResult<TestSuite[]>> => {
   try {
     const db = getDatabase();
-    const rows = await db
+    let query = db
       .select()
       .from(testSuites)
       .where(
@@ -101,8 +101,13 @@ export const getTestSuites = async ({
           eq(testSuites.lifecycle_status, 'ACTIVE')
         )
       )
-      .limit(limits.limit)
-      .offset(limits.offset);
+      .$dynamic();
+
+    if (Number.isFinite(limits.limit)) {
+      query = query.limit(limits.limit).offset(limits.offset);
+    }
+
+    const rows = await query;
 
     if (!rows) {
       return {
@@ -297,18 +302,23 @@ export const updateTestSuite = async (params: UpdateTestSuiteParams): Promise<Ac
  */
 export const getTestSuitesWithStats = async ({
   projectId,
-  limits = { offset: 0, limit: 50 },
+  limits = { offset: 0, limit: Infinity },
 }: GetTestSuitesParams): Promise<ActionResult<TestSuiteCard[]>> => {
   try {
     const db = getDatabase();
 
     // 1) 기본 스위트 목록
-    const suiteRows = await db
+    let suiteQuery = db
       .select()
       .from(testSuites)
       .where(and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'ACTIVE')))
-      .limit(limits.limit)
-      .offset(limits.offset);
+      .$dynamic();
+
+    if (Number.isFinite(limits.limit)) {
+      suiteQuery = suiteQuery.limit(limits.limit).offset(limits.offset);
+    }
+
+    const suiteRows = await suiteQuery;
 
     if (suiteRows.length === 0) {
       return { success: true, data: [] };
