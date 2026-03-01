@@ -2,9 +2,9 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
-import { getDatabase, testCases } from '@/shared/lib/db';
+import { getDatabase, testCases, testRunSuites, testCaseRuns } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, sql, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/db';
@@ -170,6 +170,15 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
       };
     }
 
+    // 스위트에 바로 생성한 경우 연결된 테스트 실행에 동기화
+    if (inserted.test_suite_id) {
+      try {
+        await syncCaseToLinkedRuns(id, inserted.test_suite_id);
+      } catch (syncError) {
+        Sentry.captureException(syncError, { extra: { action: 'createTestCase:syncToRuns' } });
+      }
+    }
+
     const result: TestCase = toTestCase(inserted as TestCaseDTO);
 
     return {
@@ -185,6 +194,52 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     };
   }
 };
+
+/**
+ * 케이스가 스위트에 추가될 때, 해당 스위트가 연결된 테스트 실행들에 케이스를 동기화합니다.
+ */
+async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
+  const db = getDatabase();
+
+  // 이 스위트가 연결된 모든 테스트 실행 조회
+  const linkedRuns = await db
+    .select({ test_run_id: testRunSuites.test_run_id })
+    .from(testRunSuites)
+    .where(eq(testRunSuites.test_suite_id, suiteId));
+
+  if (linkedRuns.length === 0) return;
+
+  const runIds = linkedRuns.map((r) => r.test_run_id).filter(Boolean) as string[];
+
+  // 이미 등록된 케이스런 확인 (중복 방지)
+  const existingRows = await db
+    .select({ test_run_id: testCaseRuns.test_run_id })
+    .from(testCaseRuns)
+    .where(
+      and(
+        inArray(testCaseRuns.test_run_id, runIds),
+        eq(testCaseRuns.test_case_id, caseId)
+      )
+    );
+
+  const existingRunIds = new Set(existingRows.map((r) => r.test_run_id));
+  const newRunIds = runIds.filter((id) => !existingRunIds.has(id));
+
+  if (newRunIds.length === 0) return;
+
+  await db.insert(testCaseRuns).values(
+    newRunIds.map((runId) => ({
+      id: uuidv7(),
+      test_run_id: runId,
+      test_case_id: caseId,
+      status: 'untested' as const,
+      source_type: 'suite' as const,
+      source_id: suiteId,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }))
+  );
+}
 
 type UpdateTestCaseParams = {
   id: string;
@@ -254,6 +309,15 @@ export const updateTestCase = async (
         success: false,
         errors: { _testCase: ['테스트케이스를 찾을 수 없습니다.'] },
       };
+    }
+
+    // 스위트 변경 시 연결된 테스트 실행에 케이스 동기화
+    if (updateFields.testSuiteId) {
+      try {
+        await syncCaseToLinkedRuns(id, updateFields.testSuiteId);
+      } catch (syncError) {
+        Sentry.captureException(syncError, { extra: { action: 'updateTestCase:syncToRuns' } });
+      }
     }
 
     const result: TestCase = toTestCase(updated as TestCaseDTO);
