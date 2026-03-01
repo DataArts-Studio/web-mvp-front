@@ -36,7 +36,7 @@ interface TestCaseSideViewProps {
 
 export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideViewProps) => {
   // 목록 데이터에서 빠진 상세 필드(steps, preCondition, expectedResult)를 별도 조회
-  const { data: detailData } = useQuery({
+  const { data: detailData, isLoading: isDetailLoading } = useQuery({
     ...testCaseByIdQueryOptions(listItem?.id ?? ''),
     enabled: !!listItem?.id,
   });
@@ -45,6 +45,8 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
     : listItem
       ? { ...listItem, preCondition: '', testSteps: '', expectedResult: '' } as TestCase
       : undefined;
+  // 상세 데이터 로딩 중인지 여부 (fallback 빈 데이터와 실제 빈 데이터를 구분)
+  const isStepsLoading = !!listItem?.id && isDetailLoading;
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -114,7 +116,7 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
               >
                 <Maximize2 className="h-4 w-4" />
               </DSButton>
-              <DSButton size="small" variant="ghost" className="flex items-center gap-1 px-2" onClick={handleEdit} disabled={!testCase}>
+              <DSButton size="small" variant="ghost" className="flex items-center gap-1 px-2" onClick={handleEdit} disabled={!testCase || isStepsLoading}>
                 <Edit2 className="h-4 w-4" />
                 <span>수정</span>
               </DSButton>
@@ -168,15 +170,15 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">전제 조건</h3>
-            <SideStepsList steps={testCase?.preCondition} emptyText="전제 조건이 없습니다." />
+            <SideStepsList steps={testCase?.preCondition} emptyText="전제 조건이 없습니다." isLoading={isStepsLoading} />
           </div>
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">테스트 단계</h3>
-            <SideStepsList steps={testCase?.testSteps} emptyText="테스트 단계가 없습니다." />
+            <SideStepsList steps={testCase?.testSteps} emptyText="테스트 단계가 없습니다." isLoading={isStepsLoading} />
           </div>
           <div className="flex flex-col gap-2">
             <h3 className="text-text-3 text-lg font-semibold">예상 결과</h3>
-            <SideStepsList steps={testCase?.expectedResult} emptyText="예상 결과가 없습니다." />
+            <SideStepsList steps={testCase?.expectedResult} emptyText="예상 결과가 없습니다." isLoading={isStepsLoading} />
           </div>
         </div>
         {/* 테스트 정보 */}
@@ -208,9 +210,9 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
         </div>
       </div>
     </motion.section>
-    {isEditOpen && testCase && (
+    {isEditOpen && detailData?.success && (
       <TestCaseEditForm
-        testCase={testCase}
+        testCase={detailData.data}
         onClose={handleEditClose}
         onSuccess={handleEditClose}
       />
@@ -220,7 +222,18 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
   );
 };
 
-function SideStepsList({ steps, emptyText = '항목이 없습니다.' }: { steps?: string; emptyText?: string }) {
+function SideStepsList({ steps, emptyText = '항목이 없습니다.', isLoading = false }: { steps?: string; emptyText?: string; isLoading?: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+        <div className="flex flex-col gap-2">
+          <div className="bg-bg-3 h-4 w-3/4 animate-pulse rounded" />
+          <div className="bg-bg-3 h-4 w-1/2 animate-pulse rounded" />
+        </div>
+      </div>
+    );
+  }
+
   if (!steps?.trim()) {
     return (
       <div className="bg-bg-2 border-line-2 rounded-4 border p-4">

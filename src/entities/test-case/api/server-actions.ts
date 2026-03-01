@@ -162,6 +162,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
       id: row.id,
       projectId: row.project_id ?? '',
       testSuiteId: row.test_suite_id ?? undefined,
+      sectionId: row.section_id ?? null,
       displayId: row.display_id ?? 0,
       caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
       title: row.name,
