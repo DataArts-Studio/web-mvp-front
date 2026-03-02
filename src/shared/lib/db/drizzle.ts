@@ -80,7 +80,8 @@ const createClient = () => {
   const client = postgres(databaseUrl, {
     max: isProd ? 5 : 1,
     idle_timeout: isProd ? 60 : 20,
-    ssl: 'require'
+    ssl: 'require',
+    prepare: false,
   });
 
   _client = client;
