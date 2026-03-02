@@ -146,7 +146,8 @@ export const getDashboardStats = async ({
       },
     };
   } catch (error) {
-    Sentry.captureException(error, { extra: { action: 'getDashboardStats' } });
+    console.error('[getDashboardStats] Error:', error);
+    Sentry.captureException(error, { extra: { action: 'getDashboardStats', slug } });
     return {
       success: false,
       errors: { _dashboard: ['대시보드 데이터를 불러오는 중 오류가 발생했습니다.'] },

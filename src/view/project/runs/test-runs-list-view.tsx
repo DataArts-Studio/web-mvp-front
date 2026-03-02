@@ -13,7 +13,9 @@ import {
   ListTodo,
   ArrowUpDown,
   X,
-  Plus
+  Plus,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { DSButton } from '@/shared/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -69,12 +71,13 @@ export const TestRunsListView = () => {
 
   const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
-  const { data: fetchedRunsData, isLoading: isLoadingRuns } = useQuery({
+  const { data: fetchedRunsData, isLoading: isLoadingRuns, refetch: refetchRuns } = useQuery({
     ...testRunsQueryOptions(projectId!),
     enabled: !!projectId,
   });
 
   const testRuns: ITestRun[] = (fetchedRunsData?.success ? fetchedRunsData.data : []) as ITestRun[];
+  const hasError = (dashboardData && !dashboardData.success) || (fetchedRunsData && !fetchedRunsData.success);
 
   // 테스트 실행 목록 View 이벤트
   useEffect(() => {
@@ -368,6 +371,27 @@ export const TestRunsListView = () => {
             );
           })}
 
+          {/* 에러 발생 시 */}
+          {hasError && testRuns.length === 0 && (
+            <div className="flex h-60 flex-col items-center justify-center gap-2 py-10 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-system-red/10 text-system-red">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <p className="typo-body1-heading text-text-2">데이터를 불러오지 못했습니다.</p>
+              <p className="typo-caption-normal text-text-3">
+                일시적인 오류가 발생했습니다. 다시 시도해주세요.
+              </p>
+              <DSButton
+                variant="ghost"
+                className="mt-2 flex items-center gap-2"
+                onClick={() => refetchRuns()}
+              >
+                <RefreshCw className="h-4 w-4" />
+                다시 시도
+              </DSButton>
+            </div>
+          )}
+
           {/* 검색/필터 결과가 없을 때 */}
           {testRuns.length > 0 && sortedRuns.length === 0 && (
             <div className="flex h-60 flex-col items-center justify-center gap-2 py-10 text-center">
@@ -392,7 +416,7 @@ export const TestRunsListView = () => {
           )}
 
           {/* 테스트 실행이 하나도 없을 때 */}
-          {testRuns.length === 0 && (
+          {!hasError && testRuns.length === 0 && (
             <div className="flex h-60 flex-col items-center justify-center gap-2 py-10 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-3 text-text-3">
                 <ListTodo className="h-6 w-6" />

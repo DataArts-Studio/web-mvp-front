@@ -123,7 +123,8 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
 
     return { success: true, data: formattedRuns };
   } catch (error) {
-    Sentry.captureException(error, { extra: { action: 'getTestRunsByProjectId' } });
+    console.error('[getTestRunsByProjectId] Error:', error);
+    Sentry.captureException(error, { extra: { action: 'getTestRunsByProjectId', projectId } });
     return {
       success: false,
       errors: { _general: ['테스트 실행 목록을 불러오는 중 오류가 발생했습니다.'] },
