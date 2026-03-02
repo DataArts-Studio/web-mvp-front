@@ -1,52 +1,20 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, milestones } from '@/shared/lib/db';
+import { getDatabase, milestones, testRuns, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites, testSuites } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
-import { Milestone, MilestoneStats, MilestoneWithStats } from '@/entities/milestone';
+import { eq, inArray } from 'drizzle-orm';
+import { MilestoneStats, MilestoneWithStats } from '@/entities/milestone';
 
 export async function getMilestoneById(milestoneId: string): Promise<ActionResult<MilestoneWithStats>> {
   try {
     const db = getDatabase();
 
-    const dbMilestone = await db.query.milestones.findFirst({
-      where: eq(milestones.id, milestoneId),
-      with: {
-        testRuns: {
-          with: {
-            testCaseRuns: {
-              with: {
-                testCase: true,
-              },
-            },
-          },
-        },
-        milestoneTestCases: {
-          with: {
-            testCase: true,
-          },
-        },
-      },
-    });
-
-    // milestoneTestSuites 별도 조회 (테이블/관계 문제 시 빈 배열 반환)
-    let milestoneTestSuitesData: Array<{ testSuite: { id: string; name: string; description: string | null } | null }> = [];
-    try {
-      const suiteResult = await db.query.milestones.findFirst({
-        where: eq(milestones.id, milestoneId),
-        with: {
-          milestoneTestSuites: {
-            with: {
-              testSuite: true,
-            },
-          },
-        },
-      });
-      milestoneTestSuitesData = suiteResult?.milestoneTestSuites || [];
-    } catch (e) {
-      console.warn('milestoneTestSuites 조회 실패:', e);
-    }
+    // 1. 마일스톤 기본 정보
+    const [dbMilestone] = await db
+      .select()
+      .from(milestones)
+      .where(eq(milestones.id, milestoneId));
 
     if (!dbMilestone) {
       return {
@@ -55,13 +23,61 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
       };
     }
 
-    const relatedTestRuns = dbMilestone.testRuns || [];
+    // 2. 테스트 실행 목록
+    const relatedTestRuns = await db
+      .select()
+      .from(testRuns)
+      .where(eq(testRuns.milestone_id, milestoneId));
+
+    // 3. 테스트 케이스 실행 결과 (테스트 실행이 있을 때만)
+    const testRunIds = relatedTestRuns.map(r => r.id);
+    const allTestCaseRuns = testRunIds.length > 0
+      ? await db
+          .select()
+          .from(testCaseRuns)
+          .where(inArray(testCaseRuns.test_run_id, testRunIds))
+      : [];
+
+    // 4. 테스트 케이스 실행에서 참조하는 테스트 케이스
+    const tcrTestCaseIds = [...new Set(allTestCaseRuns.map(tcr => tcr.test_case_id).filter(Boolean))] as string[];
+    const tcrTestCases = tcrTestCaseIds.length > 0
+      ? await db.select().from(testCases).where(inArray(testCases.id, tcrTestCaseIds))
+      : [];
+    const tcrTestCaseMap = new Map(tcrTestCases.map(tc => [tc.id, tc]));
+
+    // 5. 마일스톤에 직접 연결된 테스트 케이스
+    const mtcRows = await db
+      .select()
+      .from(milestoneTestCases)
+      .where(eq(milestoneTestCases.milestone_id, milestoneId));
+
+    const mtcTestCaseIds = mtcRows.map(mtc => mtc.test_case_id).filter(Boolean) as string[];
+    const directTestCases = mtcTestCaseIds.length > 0
+      ? await db.select().from(testCases).where(inArray(testCases.id, mtcTestCaseIds))
+      : [];
+
+    // 6. 마일스톤에 연결된 테스트 스위트
+    let testSuitesList: Array<{ id: string; title: string; description: string | null }> = [];
+    try {
+      const mtsRows = await db
+        .select()
+        .from(milestoneTestSuites)
+        .where(eq(milestoneTestSuites.milestone_id, milestoneId));
+
+      const suiteIds = mtsRows.map(mts => mts.test_suite_id).filter(Boolean) as string[];
+      if (suiteIds.length > 0) {
+        const suites = await db.select().from(testSuites).where(inArray(testSuites.id, suiteIds));
+        testSuitesList = suites.map(s => ({ id: s.id, title: s.name, description: s.description ?? null }));
+      }
+    } catch (e) {
+      console.warn('milestoneTestSuites 조회 실패:', e);
+    }
+
+    // 테스트 케이스 맵 구성
     const testCaseMap = new Map<string, { id: string; caseKey: string; title: string; lastStatus: string | null }>();
 
-    // milestone_test_cases 테이블에서 직접 연결된 테스트 케이스 가져오기
-    const directTestCases = dbMilestone.milestoneTestCases?.map(mtc => mtc.testCase).filter(Boolean) || [];
     for (const tc of directTestCases) {
-      if (tc && !testCaseMap.has(tc.id)) {
+      if (!testCaseMap.has(tc.id)) {
         testCaseMap.set(tc.id, {
           id: tc.id,
           caseKey: tc.case_key ?? '',
@@ -72,34 +88,20 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
     }
 
     // 테스트 실행에서 상태 업데이트
-    for (const run of relatedTestRuns) {
-      if (run?.testCaseRuns) {
-        for (const tcr of run.testCaseRuns) {
-          if (tcr.testCase) {
-            const existing = testCaseMap.get(tcr.testCase.id);
-            if (existing) {
-              existing.lastStatus = tcr.status;
-            }
-          }
+    for (const tcr of allTestCaseRuns) {
+      if (tcr.test_case_id) {
+        const existing = testCaseMap.get(tcr.test_case_id);
+        if (existing) {
+          existing.lastStatus = tcr.status;
         }
       }
     }
 
-    const testCases = Array.from(testCaseMap.values());
-    const totalCases = testCases.length;
-    const completedCases = testCases.filter(tc => tc.lastStatus && tc.lastStatus !== 'untested').length;
+    const testCasesResult = Array.from(testCaseMap.values());
+    const totalCases = testCasesResult.length;
+    const completedCases = testCasesResult.filter(tc => tc.lastStatus && tc.lastStatus !== 'untested').length;
     const progressRate = totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0;
     const runCount = relatedTestRuns.length;
-
-    // 연결된 테스트 스위트 가져오기
-    const testSuites = milestoneTestSuitesData
-      .map(mts => mts.testSuite)
-      .filter(Boolean)
-      .map(suite => ({
-        id: suite!.id,
-        title: suite!.name,
-        description: suite!.description ?? null,
-      }));
 
     const stats: MilestoneStats = {
       totalCases,
@@ -121,13 +123,13 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
       archivedAt: dbMilestone.archived_at,
       lifecycleStatus: dbMilestone.lifecycle_status,
       ...stats,
-      testCases,
-      testSuites,
+      testCases: testCasesResult,
+      testSuites: testSuitesList,
       testRuns: relatedTestRuns.map(run => ({
-        id: run?.id,
-        name: run?.name,
-        status: run?.status,
-        updatedAt: run?.updated_at,
+        id: run.id,
+        name: run.name,
+        status: run.status,
+        updatedAt: run.updated_at,
       })),
     };
 

@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, testRunSuites, milestoneTestSuites, milestoneTestCases, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
+import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, testRunSuites, milestones, milestoneTestSuites, milestoneTestCases, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -149,128 +149,121 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
   try {
     const db = getDatabase();
 
-    // Read-repair: 마일스톤 기반 테스트 실행의 누락 케이스 자동 백필
-    const [runMeta] = await db
-      .select({ id: testRuns.id, milestone_id: testRuns.milestone_id })
+    // 1. 테스트 실행 기본 정보
+    const [run] = await db
+      .select()
       .from(testRuns)
       .where(eq(testRuns.id, testRunId));
 
-    if (!runMeta) {
+    if (!run) {
       return { success: false, errors: { _general: ['테스트 실행을 찾을 수 없습니다.'] } };
     }
 
-    if (runMeta.milestone_id) {
+    // Read-repair: 마일스톤 기반 테스트 실행의 누락 케이스 자동 백필
+    if (run.milestone_id) {
       try {
-        await repairTestRun(db, testRunId, runMeta.milestone_id);
+        await repairTestRun(db, testRunId, run.milestone_id);
       } catch (repairError) {
-        // repair 실패해도 조회는 계속 진행
         console.error('repairTestRun failed:', repairError);
       }
     }
 
-    const run = await db.query.testRuns.findFirst({
-      where: eq(testRuns.id, testRunId),
-      with: {
-        testCaseRuns: {
-          with: {
-            testCase: true,
-          },
-        },
-        testRunSuites: {
-          with: {
-            testSuite: true,
-          },
-        },
-        milestone: true,
-      },
-    });
+    // 2. 테스트 케이스 실행 결과
+    const caseRuns = await db
+      .select()
+      .from(testCaseRuns)
+      .where(eq(testCaseRuns.test_run_id, testRunId));
 
-    if (!run) {
-      return {
-        success: false,
-        errors: { _general: ['테스트 실행을 찾을 수 없습니다.'] },
-      };
+    // 3. 테스트 케이스 정보
+    const caseIds = [...new Set(caseRuns.map(cr => cr.test_case_id).filter(Boolean))] as string[];
+    const cases = caseIds.length > 0
+      ? await db.select().from(testCases).where(inArray(testCases.id, caseIds))
+      : [];
+    const caseMap = new Map(cases.map(c => [c.id, c]));
+
+    // 4. 테스트 실행-스위트 연결
+    const runSuiteRows = await db
+      .select()
+      .from(testRunSuites)
+      .where(eq(testRunSuites.test_run_id, testRunId));
+
+    const suiteIds = [...new Set(runSuiteRows.map(rs => rs.test_suite_id).filter(Boolean))] as string[];
+    const suiteRows = suiteIds.length > 0
+      ? await db.select({ id: testSuites.id, name: testSuites.name }).from(testSuites).where(inArray(testSuites.id, suiteIds))
+      : [];
+    const suiteMap = new Map(suiteRows.map(s => [s.id, s.name]));
+
+    // 5. 마일스톤 정보
+    let milestoneInfo: { id: string; name: string } | null = null;
+    if (run.milestone_id) {
+      const [m] = await db
+        .select({ id: milestones.id, name: milestones.name })
+        .from(milestones)
+        .where(eq(milestones.id, run.milestone_id));
+      if (m) milestoneInfo = m;
     }
 
-    // Build source ID to name map
+    // 6. 테스트 케이스의 스위트 이름 조회
+    const allSuiteIds = [...new Set(cases.map(c => c.test_suite_id).filter(Boolean))] as string[];
+    const extraSuiteIds = allSuiteIds.filter(id => !suiteMap.has(id));
+    if (extraSuiteIds.length > 0) {
+      const extraSuites = await db.select({ id: testSuites.id, name: testSuites.name }).from(testSuites).where(inArray(testSuites.id, extraSuiteIds));
+      for (const s of extraSuites) suiteMap.set(s.id, s.name);
+    }
+
+    // Source 정보 구성
     const sourceIdToName = new Map<string, string>();
     const sources: SourceInfo[] = [];
-
-    const hasSuites = run.testRunSuites && run.testRunSuites.length > 0;
-    const hasMilestone = !!run.milestone;
+    const hasSuites = runSuiteRows.length > 0;
+    const hasMilestone = !!milestoneInfo;
 
     if (hasSuites) {
-      for (const s of run.testRunSuites!) {
-        if (s.testSuite) {
-          sourceIdToName.set(s.testSuite.id, s.testSuite.name);
-          sources.push({ id: s.testSuite.id, name: s.testSuite.name, type: 'suite' });
-        }
+      for (const s of suiteRows) {
+        sourceIdToName.set(s.id, s.name);
+        sources.push({ id: s.id, name: s.name, type: 'suite' });
       }
     }
-
     if (hasMilestone) {
-      sourceIdToName.set(run.milestone!.id, run.milestone!.name);
-      sources.push({ id: run.milestone!.id, name: run.milestone!.name, type: 'milestone' });
+      sourceIdToName.set(milestoneInfo!.id, milestoneInfo!.name);
+      sources.push({ id: milestoneInfo!.id, name: milestoneInfo!.name, type: 'milestone' });
     }
 
-    // Determine source type and name for header display
     let sourceType: TestRunDetail['sourceType'] = 'ADHOC';
     const sourceNameParts: string[] = [];
 
     if (hasSuites) {
       sourceType = 'SUITE';
-      const suiteNames = run.testRunSuites!.map(s => s.testSuite?.name || '').filter(Boolean);
-      if (suiteNames.length > 0) {
-        sourceNameParts.push(`스위트: ${suiteNames.join(', ')}`);
-      }
+      const suiteNames = suiteRows.map(s => s.name).filter(Boolean);
+      if (suiteNames.length > 0) sourceNameParts.push(`스위트: ${suiteNames.join(', ')}`);
     }
-
     if (hasMilestone) {
       sourceType = hasSuites ? 'SUITE' : 'MILESTONE';
-      if (run.milestone!.name) {
-        sourceNameParts.push(`마일스톤: ${run.milestone!.name}`);
-      }
+      sourceNameParts.push(`마일스톤: ${milestoneInfo!.name}`);
     }
-
     const sourceName = sourceNameParts.length > 0 ? sourceNameParts.join(' | ') : '직접 선택한 케이스';
 
-    // Collect unique test_suite_ids from test cases to fetch suite names
-    const suiteIdSet = new Set<string>();
-    for (const tcr of run.testCaseRuns || []) {
-      if (tcr.testCase?.test_suite_id) {
-        suiteIdSet.add(tcr.testCase.test_suite_id);
-      }
-    }
-    const suiteIdToName = new Map<string, string>();
-    if (suiteIdSet.size > 0) {
-      const suiteRows = await db
-        .select({ id: testSuites.id, name: testSuites.name })
-        .from(testSuites)
-        .where(inArray(testSuites.id, Array.from(suiteIdSet)));
-      for (const row of suiteRows) {
-        suiteIdToName.set(row.id, row.name);
-      }
-    }
+    // 테스트 케이스 실행 상세
+    const testCaseRunDetails: TestCaseRunDetail[] = caseRuns.map(tcr => {
+      const tc = tcr.test_case_id ? caseMap.get(tcr.test_case_id) : undefined;
+      return {
+        id: tcr.id,
+        testCaseId: tcr.test_case_id || '',
+        code: tc?.display_id
+          ? `TC-${String(tc.display_id).padStart(3, '0')}`
+          : tc?.case_key || '',
+        title: tc?.name || '',
+        status: tcr.status,
+        comment: tcr.comment,
+        executedAt: tcr.executed_at,
+        sourceType: (tcr.source_type as TestCaseRunSourceType) || 'adhoc',
+        sourceId: tcr.source_id || null,
+        sourceName: tcr.source_id ? (sourceIdToName.get(tcr.source_id) || null) : null,
+        testSuiteId: tc?.test_suite_id || null,
+        testSuiteName: tc?.test_suite_id ? (suiteMap.get(tc.test_suite_id) || null) : null,
+      };
+    });
 
-    // Map test case runs with source information
-    const testCaseRunDetails: TestCaseRunDetail[] = (run.testCaseRuns || []).map(tcr => ({
-      id: tcr.id,
-      testCaseId: tcr.test_case_id || '',
-      code: tcr.testCase?.display_id
-        ? `TC-${String(tcr.testCase.display_id).padStart(3, '0')}`
-        : tcr.testCase?.case_key || '',
-      title: tcr.testCase?.name || '',
-      status: tcr.status,
-      comment: tcr.comment,
-      executedAt: tcr.executed_at,
-      sourceType: (tcr.source_type as TestCaseRunSourceType) || 'adhoc',
-      sourceId: tcr.source_id || null,
-      sourceName: tcr.source_id ? (sourceIdToName.get(tcr.source_id) || null) : null,
-      testSuiteId: tcr.testCase?.test_suite_id || null,
-      testSuiteName: tcr.testCase?.test_suite_id ? (suiteIdToName.get(tcr.testCase.test_suite_id) || null) : null,
-    }));
-
-    // Calculate stats
+    // Stats
     const total = testCaseRunDetails.length;
     const untested = testCaseRunDetails.filter(tc => tc.status === 'untested').length;
     const pass = testCaseRunDetails.filter(tc => tc.status === 'pass').length;
@@ -290,14 +283,7 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       updatedAt: run.updated_at,
       testCaseRuns: testCaseRunDetails,
       sources,
-      stats: {
-        total,
-        untested,
-        pass,
-        fail,
-        blocked,
-        progressPercent,
-      },
+      stats: { total, untested, pass, fail, blocked, progressPercent },
     };
 
     return { success: true, data: result };
