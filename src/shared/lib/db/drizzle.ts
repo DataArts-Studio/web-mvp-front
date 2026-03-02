@@ -7,61 +7,12 @@ import * as relations from './schema/relations';
 
 const schema = { ...tables, ...relations };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 export type Database = ReturnType<typeof drizzle<typeof schema>>;
 
 const globalForDb = globalThis as unknown as {
   __TESTEA_DB__?: Database;
   __TESTEA_SQL__?: Sql;
-};;
+};
 
 let _db: Database | undefined = globalForDb.__TESTEA_DB__;
 let _client: Sql | undefined = globalForDb.__TESTEA_SQL__;
@@ -78,8 +29,9 @@ const createClient = () => {
   const isProd = SERVER_ENV.NODE_ENV === 'production';
 
   const client = postgres(databaseUrl, {
-    max: isProd ? 5 : 1,
-    idle_timeout: isProd ? 60 : 20,
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 10,
     ssl: 'require',
     prepare: false,
   });
