@@ -9,7 +9,7 @@ import { projectTagsQueryOptions } from '@/entities/test-case/api';
 // import { incrementTemplateUsage } from '@/entities/test-case-template/api'; // 템플릿 기능 펜딩
 import { useCreateCase } from '@/features/cases-create/hooks';
 // import { TemplateLibrary } from '@/features/templates-library'; // 템플릿 기능 펜딩
-import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, StepBoxEditor } from '@/shared';
+import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, StepSectionEditor } from '@/shared';
 import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { testSuitesQueryOptions } from '@/widgets';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -254,12 +254,12 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
                 name="preCondition"
                 control={control}
                 render={({ field }) => (
-                  <StepBoxEditor
+                  <StepSectionEditor
                     value={parseSteps(field.value ?? '')}
                     onChange={(steps) => field.onChange(serializeSteps(steps))}
-
                     addLabel="조건 추가"
                     placeholder="충족되어야 하는 조건을 입력하세요"
+                    textareaClassName={textareaClassName}
                   />
                 )}
               />
@@ -275,10 +275,10 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
                 name="testSteps"
                 control={control}
                 render={({ field }) => (
-                  <StepBoxEditor
+                  <StepSectionEditor
                     value={parseSteps(field.value ?? '')}
                     onChange={(steps) => field.onChange(serializeSteps(steps))}
-
+                    textareaClassName={textareaClassName}
                   />
                 )}
               />
@@ -294,12 +294,12 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
                 name="expectedResult"
                 control={control}
                 render={({ field }) => (
-                  <StepBoxEditor
+                  <StepSectionEditor
                     value={parseSteps(field.value ?? '')}
                     onChange={(steps) => field.onChange(serializeSteps(steps))}
-
                     addLabel="결과 추가"
                     placeholder="예상되는 결과를 입력하세요"
+                    textareaClassName={textareaClassName}
                   />
                 )}
               />

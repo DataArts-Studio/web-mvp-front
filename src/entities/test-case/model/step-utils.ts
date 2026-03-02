@@ -24,3 +24,12 @@ export function serializeSteps(steps: string[]): string {
   if (steps.every((s) => !s.trim())) return '';
   return JSON.stringify(steps);
 }
+
+export function stepsToText(steps: string[]): string {
+  return steps.join('\n');
+}
+
+export function textToSteps(text: string): string[] {
+  const lines = text.split('\n');
+  return lines.length > 0 ? lines : [''];
+}
