@@ -1,4 +1,4 @@
-/* Pretendard font is loaded via <link> in layout.tsx for better performance */
+/* Pretendard font is loaded via next/font/local in layout.tsx for optimal performance */
 
 /* Tailwind CSS */
 /* https://tailwindcss.com/ */
@@ -14,7 +14,7 @@
   /* ========================================= */
   /* 폰트 정의 */
   /* ========================================= */
-  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --font-sans: var(--font-pretendard), "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
 
   /* ========================================= */
   /* 텍스트 사이즈 (Font Size) 정의 */

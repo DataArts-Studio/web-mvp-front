@@ -20,6 +20,7 @@ import {
 import { DSButton } from '@/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
+import { projectIdQueryOptions } from '@/entities/project';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions } from '@/features/runs';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
@@ -65,11 +66,13 @@ export const TestRunsListView = () => {
   useOutsideClick(sortDropdownRef, () => setIsSortDropdownOpen(false));
   useOutsideClick(statusDropdownRef, () => setIsStatusDropdownOpen(false));
 
+  // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
+  const { data: projectIdData } = useQuery(projectIdQueryOptions(projectSlug));
+  const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
+
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
     dashboardQueryOptions.stats(projectSlug)
   );
-
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
   const { data: fetchedRunsData, isLoading: isLoadingRuns, refetch: refetchRuns } = useQuery({
     ...testRunsQueryOptions(projectId!),

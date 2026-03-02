@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 
 import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
 import type { TestSuiteCard } from '@/entities/test-suite';
+import { projectIdQueryOptions } from '@/entities/project';
 import { dashboardQueryOptions, SuiteEditForm } from '@/features';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { Container, MainContainer, LoadingSpinner } from '@/shared';
@@ -26,8 +27,11 @@ export const TestSuitesView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterOption>('전체');
 
+  // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
+  const { data: projectIdData } = useQuery(projectIdQueryOptions(params.slug as string));
+  const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
+
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
   const { data: suiteData, isLoading: isLoadingSuites } = useQuery({
     ...testSuitesQueryOptions(projectId!),
