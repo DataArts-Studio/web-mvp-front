@@ -6,13 +6,15 @@
  * 디자인 시스템 컴포넌트(DSButton, DsInput, Logo) 사용
  */
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useRef, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { track, ACCESS_EVENTS } from '@/shared/lib/analytics';
+import { ENV } from '@/shared/constants';
 
 import { cn } from '@/shared/utils';
 import { Logo } from '@/shared/ui/logo';
@@ -41,6 +43,9 @@ export function AccessForm({
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileRef = useRef<TurnstileInstance>(null);
+  const siteKey = ENV.CLIENT.TURNSTILE_SITE_KEY;
 
   const {
     register,
@@ -64,7 +69,7 @@ export function AccessForm({
     track(ACCESS_EVENTS.ATTEMPT, { project_slug: projectSlug });
 
     startTransition(async () => {
-      const result = await verifyProjectAccess(projectSlug, data.password);
+      const result = await verifyProjectAccess(projectSlug, data.password, turnstileToken || undefined);
 
       if (result.success) {
         track(ACCESS_EVENTS.SUCCESS, { project_slug: projectSlug });
@@ -81,6 +86,9 @@ export function AccessForm({
         if (result.remainingAttempts !== undefined) {
           setRemainingAttempts(result.remainingAttempts);
         }
+        // 실패 시 Turnstile 리셋
+        turnstileRef.current?.reset();
+        setTurnstileToken('');
       }
     });
   };
@@ -178,9 +186,20 @@ export function AccessForm({
           )}
         </div>
 
+        {siteKey && (
+          <Turnstile
+            ref={turnstileRef}
+            siteKey={siteKey}
+            onSuccess={setTurnstileToken}
+            onError={() => setTurnstileToken('')}
+            onExpire={() => setTurnstileToken('')}
+            options={{ theme: 'dark', size: 'flexible' }}
+          />
+        )}
+
         <DSButton
           type="submit"
-          disabled={isPending}
+          disabled={isPending || (!!siteKey && !turnstileToken)}
           variant="solid"
           size="large"
           className="w-full"
