@@ -1,12 +1,20 @@
 import React, { ReactNode } from 'react';
 
 import type { Metadata, Viewport } from 'next';
+import localFont from 'next/font/local';
 
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
 import { GoogleTagManager } from '@next/third-parties/google';
 import { MvpBottomNavbar } from 'src/shared';
 import { Toaster } from 'sonner';
+
+const pretendard = localFont({
+  src: '../public/fonts/PretendardVariable.woff2',
+  display: 'swap',
+  weight: '45 920',
+  variable: '--font-pretendard',
+});
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
@@ -156,14 +164,8 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" className={pretendard.variable}>
       <head>
-        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css"
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

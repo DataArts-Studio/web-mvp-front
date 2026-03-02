@@ -1,14 +1,20 @@
 'use client';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Logo } from '@/shared';
 import { AsideMenuItem, createAsideMenus } from '@/widgets/aside/model';
 import { AsideNavItem } from '@/widgets/aside/ui';
 import { track, NAVIGATION_EVENTS } from '@/shared/lib/analytics';
 import { toast } from 'sonner';
+import { dashboardQueryKeys } from '@/features/dashboard';
+import { testCasesQueryOptions } from '@/features/cases-list';
+import { testRunsQueryOptions } from '@/features/runs';
+import { testSuitesQueryOptions } from '@/entities/test-suite';
+import { milestonesQueryOptions } from '@/entities/milestone';
 
 // 경로 매칭 함수: 현재 경로가 메뉴 경로와 일치하는지 확인
 const isPathActive = (currentPath: string, matchPath: string): boolean => {
@@ -29,9 +35,18 @@ const handleAwaitBottom = (e: React.MouseEvent<HTMLDivElement>) => {
   toast.info('해당 기능은 준비중 입니다.');
 }
 
+// 메뉴 라벨 → prefetch할 쿼리 옵션 매핑
+const PREFETCH_MAP: Record<string, (projectId: string) => Parameters<typeof import('@tanstack/react-query').QueryClient['prefetchQuery']>[0]> = {
+  '테스트 케이스': (pid) => testCasesQueryOptions(pid),
+  '테스트 스위트': (pid) => testSuitesQueryOptions(pid),
+  '마일스톤': (pid) => milestonesQueryOptions(pid),
+  '테스트 실행': (pid) => testRunsQueryOptions(pid),
+};
+
 export const Aside = () => {
   const params = useParams();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const projectSlug = params.slug as string;
 
   // 동적 메뉴 생성
@@ -39,6 +54,21 @@ export const Aside = () => {
     if (!projectSlug) return null;
     return createAsideMenus(projectSlug);
   }, [projectSlug]);
+
+  // 호버 시 해당 페이지 데이터 prefetch
+  const handlePrefetch = useCallback((label: string) => {
+    const optionsFn = PREFETCH_MAP[label];
+    if (!optionsFn) return;
+
+    // 캐시에서 projectId를 가져옴 (이미 현재 프로젝트 페이지에 있으므로 캐시에 존재)
+    const statsData = queryClient.getQueryData<{ success: boolean; data: { project: { id: string } } }>(
+      dashboardQueryKeys.stats(projectSlug),
+    );
+    const projectId = statsData?.success ? statsData.data.project.id : undefined;
+    if (!projectId) return;
+
+    queryClient.prefetchQuery(optionsFn(projectId));
+  }, [queryClient, projectSlug]);
 
   if (!menus) {
     return null;
@@ -75,6 +105,7 @@ export const Aside = () => {
                     href={item.href}
                     icon={item.icon}
                     active={isPathActive(pathname, item.matchPath || '')}
+                    onMouseEnter={() => handlePrefetch(item.label)}
                   />
                 </div>
               ))}

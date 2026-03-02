@@ -8,12 +8,14 @@ type NavItemProps = {
   href: string;
   icon: React.ElementType;
   active?: boolean;
+  onMouseEnter?: () => void;
 };
 
-export const AsideNavItem = ({ label, href, icon: Icon, active }: NavItemProps) => {
+export const AsideNavItem = ({ label, href, icon: Icon, active, onMouseEnter }: NavItemProps) => {
   return (
     <Link
       href={href}
+      onMouseEnter={onMouseEnter}
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
         active

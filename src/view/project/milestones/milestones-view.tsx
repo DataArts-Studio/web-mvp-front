@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { MilestoneCard, MilestoneWithStats, Milestone } from '@/entities/milestone';
+import { projectIdQueryOptions } from '@/entities/project';
 import { MilestoneCreateForm, MilestoneEditForm, dashboardQueryOptions, milestonesQueryOptions } from '@/features';
 import { Container, MainContainer, LoadingSpinner } from '@/shared';
 import { useDisclosure } from '@/shared/hooks';
@@ -33,8 +34,11 @@ export const MilestonesView = () => {
   const [statusFilter, setStatusFilter] = useState<FilterOption>('전체');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
+  const { data: projectIdData } = useQuery(projectIdQueryOptions(params.slug as string));
+  const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
+
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
   const { data: milestonesResult, isLoading: isLoadingMilestones } = useQuery({
     ...milestonesQueryOptions(projectId!),
     enabled: !!projectId,

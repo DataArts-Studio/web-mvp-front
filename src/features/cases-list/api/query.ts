@@ -1,4 +1,4 @@
-import { getTestCase, getTestCasesList } from '@/entities';
+import { getTestCase, getTestCasesList } from '@/entities/test-case/api/server-actions';
 import { QUERY_STALE_TIME_DEFAULT } from '@/shared/constants/query';
 import { queryOptions } from '@tanstack/react-query';
 

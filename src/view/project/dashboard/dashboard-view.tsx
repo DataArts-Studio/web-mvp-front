@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
+import { projectIdQueryOptions } from '@/entities/project';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions, FetchedTestRun } from '@/features/runs';
@@ -43,6 +44,10 @@ export const ProjectDashboardView = () => {
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const [isCopied, setIsCopied] = useState(false);
 
+  // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
+  const { data: projectIdData } = useQuery(projectIdQueryOptions(slug));
+  const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
+
   const {
     data: dashboardData,
     isLoading,
@@ -50,8 +55,6 @@ export const ProjectDashboardView = () => {
     ...dashboardQueryOptions.stats(slug),
     enabled: !!slug,
   });
-
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
   const { data: storageData } = useQuery({
     ...dashboardQueryOptions.storageInfo(projectId!),
