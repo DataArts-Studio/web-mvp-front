@@ -73,7 +73,7 @@ const KPICard = ({
   );
 };
 
-export const KPICards = ({ data }: KPICardsProps) => {
+export const KPICards = React.memo(({ data }: KPICardsProps) => {
   const total = data.totalCases;
   const hasData = total > 0;
 
@@ -153,4 +153,6 @@ export const KPICards = ({ data }: KPICardsProps) => {
       </div>
     </div>
   );
-};
+});
+
+KPICards.displayName = 'KPICards';

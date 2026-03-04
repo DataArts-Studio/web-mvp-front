@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import React, { useState } from 'react';
 
 const STATUS_COLORS = {
   pass: '#0BB57F',
@@ -29,76 +28,36 @@ type TestStatusChartProps = {
   criticalFailCount?: number;
 };
 
-const CustomTooltip = ({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{
-    name: string;
-    value: number;
-    payload: { percentage: number };
-  }>;
-}) => {
-  if (active && payload && payload.length) {
-    const data = payload[0];
-    return (
-      <div className="rounded-2 border-line-2 bg-bg-3 border px-3 py-2 shadow-lg">
-        <p className="typo-body2-heading text-text-1">{data.name}</p>
-        <p className="typo-caption text-text-2">
-          {data.value}개 ({data.payload.percentage.toFixed(1)}%)
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
+const RADIUS = 90;
+const STROKE_WIDTH = 32;
+const VIEW_SIZE = (RADIUS + STROKE_WIDTH / 2) * 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const GAP_DEGREES = 2;
 
 export const TestStatusChart = ({ data }: TestStatusChartProps) => {
   const total = data.pass + data.fail + data.blocked + data.untested;
   const completed = data.pass + data.fail + data.blocked;
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const chartData = [
-    {
-      name: STATUS_LABELS.pass,
-      value: data.pass,
-      key: 'pass',
-      percentage: total > 0 ? (data.pass / total) * 100 : 0,
-    },
-    {
-      name: STATUS_LABELS.fail,
-      value: data.fail,
-      key: 'fail',
-      percentage: total > 0 ? (data.fail / total) * 100 : 0,
-    },
-    {
-      name: STATUS_LABELS.blocked,
-      value: data.blocked,
-      key: 'blocked',
-      percentage: total > 0 ? (data.blocked / total) * 100 : 0,
-    },
-    {
-      name: STATUS_LABELS.untested,
-      value: data.untested,
-      key: 'untested',
-      percentage: total > 0 ? (data.untested / total) * 100 : 0,
-    },
-  ].filter((item) => item.value > 0);
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+
+  const segments = (
+    ['pass', 'fail', 'blocked', 'untested'] as const
+  )
+    .map((key) => ({
+      key,
+      value: data[key],
+      color: STATUS_COLORS[key],
+      label: STATUS_LABELS[key],
+      percentage: total > 0 ? (data[key] / total) * 100 : 0,
+    }))
+    .filter((s) => s.value > 0);
 
   const legendItems = [
     { key: 'pass' as const, label: STATUS_LABELS.pass, value: data.pass },
     { key: 'fail' as const, label: STATUS_LABELS.fail, value: data.fail },
-    {
-      key: 'blocked' as const,
-      label: STATUS_LABELS.blocked,
-      value: data.blocked,
-    },
-    {
-      key: 'untested' as const,
-      label: STATUS_LABELS.untested,
-      value: data.untested,
-    },
+    { key: 'blocked' as const, label: STATUS_LABELS.blocked, value: data.blocked },
+    { key: 'untested' as const, label: STATUS_LABELS.untested, value: data.untested },
   ];
 
   // Empty state
@@ -125,6 +84,28 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
     );
   }
 
+  // 각 세그먼트의 gap을 고려한 stroke-dasharray/offset 계산
+  const totalGapDegrees = segments.length * GAP_DEGREES;
+  const availableDegrees = 360 - totalGapDegrees;
+  let cumulativeOffset = 0;
+
+  const arcs = segments.map((seg) => {
+    const segDegrees = (seg.value / total) * availableDegrees;
+    const segLength = (segDegrees / 360) * CIRCUMFERENCE;
+    const offset = (cumulativeOffset / 360) * CIRCUMFERENCE;
+    const gapOffset = (segments.indexOf(seg) * GAP_DEGREES / 360) * CIRCUMFERENCE;
+
+    cumulativeOffset += segDegrees;
+
+    return {
+      ...seg,
+      dashArray: `${segLength} ${CIRCUMFERENCE - segLength}`,
+      dashOffset: -(offset + gapOffset),
+    };
+  });
+
+  const hoveredSeg = arcs.find((a) => a.key === hoveredKey);
+
   return (
     <div className="bg-bg-2 relative overflow-hidden rounded-[16px] p-6">
       {/* Green glow effect at bottom */}
@@ -138,35 +119,42 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
       </div>
 
       <div className="relative flex items-stretch gap-10">
-        {/* Left section: Chart + Completion rate (60%) */}
+        {/* Left section: Chart + Completion rate (70%) */}
         <div className="flex basis-[70%] flex-col">
           {/* Pie chart */}
           <div className="relative aspect-square w-full max-w-[420px] self-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="90%"
-                  paddingAngle={2}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {chartData.map((entry) => (
-                    <Cell
-                      key={entry.key}
-                      fill={
-                        STATUS_COLORS[
-                          entry.key as keyof typeof STATUS_COLORS
-                        ]
-                      }
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
+            <svg
+              viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
+              className="w-full h-full -rotate-90"
+            >
+              {arcs.map((arc) => (
+                <circle
+                  key={arc.key}
+                  cx={VIEW_SIZE / 2}
+                  cy={VIEW_SIZE / 2}
+                  r={RADIUS}
+                  fill="none"
+                  stroke={arc.color}
+                  strokeWidth={STROKE_WIDTH}
+                  strokeDasharray={arc.dashArray}
+                  strokeDashoffset={arc.dashOffset}
+                  strokeLinecap="butt"
+                  className="transition-opacity duration-150"
+                  style={{ opacity: hoveredKey && hoveredKey !== arc.key ? 0.4 : 1 }}
+                  onMouseEnter={() => setHoveredKey(arc.key)}
+                  onMouseLeave={() => setHoveredKey(null)}
+                />
+              ))}
+            </svg>
+            {/* Tooltip */}
+            {hoveredSeg && (
+              <div className="rounded-2 border-line-2 bg-bg-3 border px-3 py-2 shadow-lg absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                <p className="typo-body2-heading text-text-1">{hoveredSeg.label}</p>
+                <p className="typo-caption text-text-2">
+                  {hoveredSeg.value}개 ({hoveredSeg.percentage.toFixed(1)}%)
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Completion rate text */}
@@ -178,7 +166,7 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
           </div>
         </div>
 
-        {/* Right section: Legend (40%) */}
+        {/* Right section: Legend (30%) */}
         <div className="rounded-5 flex basis-[30%] flex-col justify-center gap-5 bg-[rgba(255,255,255,0.02)] p-6 backdrop-blur-[20px]">
           {legendItems.map((item) => {
             const percentage =

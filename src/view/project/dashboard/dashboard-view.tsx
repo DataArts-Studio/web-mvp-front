@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,20 +8,16 @@ import { useParams } from 'next/navigation';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions } from '@/features/runs';
-import { useDisclosure, useOutsideClick } from '@/shared/hooks';
+import { useDisclosure } from '@/shared/hooks';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown, ChevronRight, Clock, FileText, FolderOpen, Play, Plus, Share2 } from 'lucide-react';
+import { Check, ChevronRight, Clock, FileText, FolderOpen, Play, Plus, Share2 } from 'lucide-react';
+import { TestRunDropdown } from './test-run-dropdown';
 import dynamic from 'next/dynamic';
 import { KPICards, type KPIData } from '@/widgets/project/ui/kpi-cards';
-import type { TestStatusData } from '@/widgets/project/ui/test-status-chart';
+import { TestStatusChart, type TestStatusData } from '@/widgets/project/ui/test-status-chart';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
 import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
-
-const TestStatusChart = dynamic(
-  () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
-  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[400px] animate-pulse" /> }
-);
 const MilestoneGanttChart = dynamic(
   () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
   { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" /> }
@@ -35,11 +31,29 @@ const SuiteCreateForm = dynamic(
 
 type ModalType = 'case' | 'suite';
 
-export const ProjectDashboardContent = () => {
+type ProjectDashboardContentProps = {
+  projectId?: string;
+};
+
+export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectDashboardContentProps) => {
   const params = useParams();
   const slug = params.slug as string;
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const [isCopied, setIsCopied] = useState(false);
+
+  // MilestoneGanttChart 뷰포트 진입 시 로드
+  const ganttSentinelRef = useRef<HTMLDivElement>(null);
+  const [isGanttVisible, setIsGanttVisible] = useState(false);
+  useEffect(() => {
+    const el = ganttSentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setIsGanttVisible(true); observer.disconnect(); } },
+      { rootMargin: '200px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const {
     data: dashboardData,
@@ -49,8 +63,8 @@ export const ProjectDashboardContent = () => {
     enabled: !!slug,
   });
 
-  // dashboardData에서 projectId 추출 (별도 쿼리 제거 → 워터폴 해소)
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
+  // 서버에서 전달된 projectId 우선 사용, 없으면 dashboardData에서 추출
+  const projectId = serverProjectId ?? (dashboardData?.success ? dashboardData.data.project.id : undefined);
 
   const { data: storageData } = useQuery({
     ...dashboardQueryOptions.storageInfo(projectId!),
@@ -75,11 +89,6 @@ export const ProjectDashboardContent = () => {
 
   // 테스트 실행 선택 상태
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
-  const [showRunDropdown, setShowRunDropdown] = useState(false);
-  const runDropdownRef = useRef<HTMLDivElement>(null);
-
-  // 드롭다운 외부 클릭 닫기
-  useOutsideClick(runDropdownRef, () => setShowRunDropdown(false));
 
   // 대시보드 View 이벤트
   useEffect(() => {
@@ -271,52 +280,13 @@ export const ProjectDashboardContent = () => {
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading text-text-1">테스트 현황</h2>
             {/* 테스트 실행 선택 드롭다운 */}
-            {testRuns.length > 0 && (
-              <div className="relative" ref={runDropdownRef}>
-                <button
-                  onClick={() => setShowRunDropdown((prev) => !prev)}
-                  className="border-primary/40 text-text-1 rounded-4 flex items-center gap-2 border bg-transparent px-3 py-1.5 transition-colors hover:border-primary cursor-pointer"
-                >
-                  <span className="typo-label-normal max-w-[200px] truncate">
-                    {selectedRun?.name || '테스트 실행 선택'}
-                  </span>
-                  <ChevronDown className={`text-text-3 h-4 w-4 transition-transform ${showRunDropdown ? 'rotate-180' : ''}`} />
-                </button>
-                {showRunDropdown && (
-                  <div className="bg-bg-3 border-line-2 rounded-4 shadow-3 absolute right-0 top-full z-20 mt-1 min-w-[240px] border py-1">
-                    {testRuns.map((run) => (
-                      <button
-                        key={run.id}
-                        onClick={() => {
-                          track(DASHBOARD_EVENTS.CHART_INTERACTION, { project_id: slug, run_id: run.id });
-                          setSelectedRunId(run.id);
-                          setShowRunDropdown(false);
-                        }}
-                        className={`flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-bg-4 ${
-                          run.id === selectedRunId ? 'bg-bg-4' : ''
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                            run.status === 'IN_PROGRESS'
-                              ? 'bg-primary'
-                              : run.status === 'COMPLETED'
-                                ? 'bg-text-3'
-                                : 'bg-text-4'
-                          }`}
-                        />
-                        <div className="flex flex-1 flex-col">
-                          <span className="typo-label-normal text-text-1 truncate">{run.name}</span>
-                          <span className="typo-caption text-text-3">
-                            {run.stats.totalCases}개 케이스 · {run.stats.progressPercent}% 완료
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            <TestRunDropdown
+              testRuns={testRuns}
+              selectedRunId={selectedRunId}
+              onSelect={setSelectedRunId}
+              slug={slug}
+              selectedRunName={selectedRun?.name}
+            />
           </div>
           {testRuns.length === 0 ? (
             <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
@@ -338,12 +308,18 @@ export const ProjectDashboardContent = () => {
           ) : (
             <>
               <TestStatusChart data={testStatusData} />
-              <MilestoneGanttChart
-                milestones={dashboardMilestones}
-                testRuns={testRuns}
-                selectedRunId={milestoneRunId}
-                onRunChange={setMilestoneRunId}
-              />
+              <div ref={ganttSentinelRef}>
+                {isGanttVisible ? (
+                  <MilestoneGanttChart
+                    milestones={dashboardMilestones}
+                    testRuns={testRuns}
+                    selectedRunId={milestoneRunId}
+                    onRunChange={setMilestoneRunId}
+                  />
+                ) : (
+                  <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" />
+                )}
+              </div>
             </>
           )}
         </section>
@@ -372,6 +348,8 @@ export const ProjectDashboardContent = () => {
                 width={200}
                 height={255}
                 alt="테스트 케이스 없음"
+                loading="lazy"
+                priority={false}
               />
 
               <div className="flex flex-col items-center gap-2 text-center">

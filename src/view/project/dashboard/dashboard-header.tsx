@@ -1,4 +1,6 @@
-import { OnboardingButton } from './onboarding-button';
+import dynamic from 'next/dynamic';
+
+const OnboardingButton = dynamic(() => import('./onboarding-button').then(mod => ({ default: mod.OnboardingButton })));
 
 export const DashboardHeader = () => {
   return (
