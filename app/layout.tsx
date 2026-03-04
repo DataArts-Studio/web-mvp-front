@@ -4,7 +4,7 @@ import type { Metadata, Viewport } from 'next';
 
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
-import { GoogleTagManager } from '@next/third-parties/google';
+import Script from 'next/script';
 import { MvpBottomNavbarLazy } from '@/shared/ui/mvp-bottom-navbar/mvp-bottom-navbar-lazy';
 import { Toaster } from 'sonner';
 
@@ -156,7 +156,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="ko">
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
@@ -189,13 +189,26 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased" suppressHydrationWarning>
+      <body className="antialiased">
         <QueryProvider>{children}</QueryProvider>
         <Toaster position="top-right" richColors closeButton />
         {/* 테스트용 컴포넌트 */}
         <MvpBottomNavbarLazy />
         {process.env.NEXT_PUBLIC_GTM_ID && (
-          <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
+          <>
+            <Script
+              id="gtm-init"
+              strategy="lazyOnload"
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});`,
+              }}
+            />
+            <Script
+              id="gtm-script"
+              src={`https://www.googletagmanager.com/gtm.js?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
+              strategy="lazyOnload"
+            />
+          </>
         )}
       </body>
     </html>
