@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import { ProjectDashboardView } from '@/view';
+import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { testCasesQueryOptions } from '@/features/cases-list/api/query';
 import { testRunsQueryOptions } from '@/features/runs/api/query';
@@ -24,6 +25,7 @@ export default async function ProjectDashboardRoute({
 
     if (projectId) {
       await Promise.all([
+        queryClient.prefetchQuery(projectIdQueryOptions(slug)),
         queryClient.prefetchQuery(testCasesQueryOptions(projectId)),
         queryClient.prefetchQuery(testRunsQueryOptions(projectId)),
         queryClient.prefetchQuery(dashboardQueryOptions.storageInfo(projectId)),
