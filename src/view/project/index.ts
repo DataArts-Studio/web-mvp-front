@@ -1,5 +1,5 @@
 export { LendingView } from '@/view/lending';
-export { ProjectDashboardView } from '@/view/project/dashboard';
+export { ProjectDashboardContent, DashboardHeader } from '@/view/project/dashboard';
 export { TestCasesView, TestCaseDetailView } from '@/view/project/cases';
 export { TestSuitesView } from '@/view/project/suites';
 export { TestRunsListView, TestRunDetailView } from '@/view/project/runs';

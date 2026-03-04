@@ -7,18 +7,16 @@ import { useParams } from 'next/navigation';
 
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { testRunsQueryOptions, FetchedTestRun } from '@/features/runs';
-import { Container, MainContainer } from '@/shared/lib/primitives';
+import { testRunsQueryOptions } from '@/features/runs';
 import { useDisclosure, useOutsideClick } from '@/shared/hooks';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
-import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown, ChevronRight, CircleHelp, Clock, FileText, FolderOpen, Play, Plus, Settings, Share2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Clock, FileText, FolderOpen, Play, Plus, Share2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { type TestStatusData, KPICards, type KPIData } from '@/widgets/project';
+import { KPICards, type KPIData } from '@/widgets/project/ui/kpi-cards';
+import type { TestStatusData } from '@/widgets/project/ui/test-status-chart';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
 import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
-import { useOnboardingTour } from '@/features/onboarding-tour';
 
 const TestStatusChart = dynamic(
   () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
@@ -37,7 +35,7 @@ const SuiteCreateForm = dynamic(
 
 type ModalType = 'case' | 'suite';
 
-export const ProjectDashboardView = () => {
+export const ProjectDashboardContent = () => {
   const params = useParams();
   const slug = params.slug as string;
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
@@ -142,12 +140,6 @@ export const ProjectDashboardView = () => {
     ...testStatusData,
   }), [testCases.length, testSuites.length, testStatusData]);
 
-  // 온보딩 투어
-  const { startTour } = useOnboardingTour({
-    projectId,
-    isDataLoaded: !!dashboardData?.success,
-  });
-
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -161,47 +153,25 @@ export const ProjectDashboardView = () => {
   // 로딩 상태
   if (isLoading) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <div className="col-span-6 flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
   // 에러 상태
   if (!dashboardData?.success) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-        </MainContainer>
-      </Container>
+      <div className="col-span-6 flex flex-1 items-center justify-center">
+        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+      </div>
     );
   }
 
   const { project, recentActivities } = dashboardData.data;
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
-        {/* Header */}
-        <header className="border-line-2 col-span-6 flex items-start justify-between border-b pb-6">
-          <div className="flex flex-col gap-1">
-            <h1 className="typo-h1-heading text-text-1">대시보드</h1>
-            <p className="typo-body2-normal text-text-2">
-              클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 만들어보세요.
-            </p>
-          </div>
-          <DSButton variant="ghost" size="small" className="flex items-center gap-1.5" onClick={startTour} data-tour="guide-tour-btn">
-            <CircleHelp className="h-4 w-4" />
-            <span>온보딩</span>
-          </DSButton>
-        </header>
-
+    <>
         {/* KPI 카드 섹션 */}
         <section className="col-span-6" data-tour="kpi-cards">
           <KPICards data={kpiData} />
@@ -526,7 +496,6 @@ export const ProjectDashboardView = () => {
             </div>
           )}
         </section>
-      </MainContainer>
 
       {/* Modals */}
       {isActiveType('case') && projectId && (
@@ -535,6 +504,6 @@ export const ProjectDashboardView = () => {
       {isActiveType('suite') && projectId && (
         <SuiteCreateForm projectId={projectId} onClose={onClose} />
       )}
-    </Container>
+    </>
   );
 };

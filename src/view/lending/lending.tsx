@@ -6,7 +6,7 @@ import { LoadingSpinner, Logo } from '@/shared';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
 import { GridBackground } from '@/shared/layout';
-import { LendingHeader } from '@/widgets';
+import { LendingHeader } from '@/widgets/lending';
 import { Footer } from '@/widgets/footer';
 import { GlobalHeader, useBetaBanner } from '@/widgets/global-header';
 import { track, LANDING_EVENTS } from '@/shared/lib/analytics';

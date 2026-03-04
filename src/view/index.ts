@@ -1,7 +1,7 @@
 export { DocsView } from '@/view/docs';
 export { LendingView } from '@/view/lending';
 export { LegalView } from '@/view/legal';
-export { ProjectDashboardView } from '@/view/project/dashboard';
+export { ProjectDashboardContent, DashboardHeader } from '@/view/project/dashboard';
 export { TestCasesView, TestCaseDetailView } from '@/view/project/cases';
 export { TestSuitesView } from '@/view/project/suites';
 export { TestRunsListView, TestRunDetailView } from '@/view/project/runs';

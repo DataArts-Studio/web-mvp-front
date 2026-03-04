@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
@@ -224,7 +224,6 @@ export const TestCasesView = () => {
 
   return (
     <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
       <MainContainer className="flex min-h-screen w-full flex-1 overflow-hidden">
         {/* 스위트 트리 사이드바 — 고정, 독립 스크롤 */}
         <nav className="border-line-2 bg-bg-1 flex h-screen w-60 shrink-0 flex-col border-r sticky top-0">

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { ProjectDashboardView } from '@/view';
+import { ProjectDashboardContent, DashboardHeader } from '@/view/project/dashboard';
+import { MainContainer } from '@/shared/lib/primitives';
 import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { testCasesQueryOptions } from '@/features/cases-list/api/query';
@@ -36,8 +37,11 @@ export default async function ProjectDashboardRoute({
   }
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <ProjectDashboardView />
-    </HydrationBoundary>
+    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+      <DashboardHeader />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <ProjectDashboardContent />
+      </HydrationBoundary>
+    </MainContainer>
   );
 }
