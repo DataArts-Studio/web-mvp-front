@@ -2,9 +2,12 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { CreateTestSuite, CreateTestSuiteSchema, createTestSuite } from '@/entities';
-import { useCreateSuite } from '@/features';
-import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
+import { CreateTestSuiteSchema, createTestSuite } from '@/entities/test-suite';
+import type { CreateTestSuite } from '@/entities/test-suite';
+import { useCreateSuite } from '@/features/suites-create';
+import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { FormField } from '@/shared/lib/primitives';
+import { cn } from '@/shared/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 

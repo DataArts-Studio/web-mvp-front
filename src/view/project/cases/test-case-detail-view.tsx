@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { getTestTypeLabel, parseSteps } from '@/entities/test-case';
-import { testCaseByIdQueryOptions } from '@/features';
+import { testCaseByIdQueryOptions } from '@/features/cases-list';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 import { VersionHistoryTab } from '@/features/version-timeline';

@@ -12,7 +12,8 @@ import {
 } from '@/features/trash';
 import type { TrashItem, TrashItemType } from '@/features/trash';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { Container, MainContainer, DSButton, LoadingSpinner } from '@/shared';
+import { Container, MainContainer } from '@/shared/lib/primitives';
+import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Dialog } from '@/shared/lib/primitives';
 import { Aside } from '@/widgets';
 import {

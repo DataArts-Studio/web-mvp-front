@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { ProjectCreateForm, BetaNoticePopup } from '@/features';
-import { LoadingSpinner, Logo } from '@/shared';
+import { ProjectCreateForm } from '@/features/projects-create';
+import { BetaNoticePopup } from '@/features/beta-notice';
+import { LoadingSpinner } from '@/shared/ui';
+import { Logo } from '@/shared/ui/logo';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { DSButton } from '@/shared/ui';
 import { GridBackground } from '@/shared/layout';

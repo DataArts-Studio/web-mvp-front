@@ -6,7 +6,9 @@ import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 
-import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
+import { Container, MainContainer } from '@/shared/lib/primitives';
+import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { cn } from '@/shared/utils';
 import { useOutsideClick, useToggleSet } from '@/shared/hooks';
 import { Aside } from '@/widgets';
 import { type TestStatusData } from '@/widgets/project';

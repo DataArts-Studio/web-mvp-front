@@ -5,12 +5,9 @@ import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { AnimatePresence } from 'framer-motion';
-
-
-
 import { getTestCases } from '@/entities/test-case/api';
-import { AddCasesToMilestoneModal, AddSuitesToMilestoneModal, MilestoneEditForm, milestoneByIdQueryOptions } from '@/features';
+import { milestoneByIdQueryOptions } from '@/features/milestones';
+import { MilestoneEditForm, AddCasesToMilestoneModal, AddSuitesToMilestoneModal } from '@/features/milestones-edit';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { Container, MainContainer } from '@/shared/lib';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
@@ -18,9 +15,14 @@ import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, ChevronRight, Edit2, FolderOpen, ListChecks, Play, PlayCircle, Plus, Trash2, XCircle } from 'lucide-react';
-import { getTestSuites } from '@/entities';
+import { getTestSuites } from '@/entities/test-suite';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 import { formatDateTime } from '@/shared/utils/date-format';
+
+const AnimatePresence = dynamic(
+  () => import('framer-motion').then((mod) => ({ default: mod.AnimatePresence })),
+  { ssr: false }
+);
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then((mod) => ({ default: mod.TestCaseSideView })),

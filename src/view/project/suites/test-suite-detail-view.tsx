@@ -5,7 +5,6 @@ import React, { useState, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { testSuiteByIdQueryOptions } from '@/entities/test-suite/api/query';
@@ -14,8 +13,10 @@ import { suiteSectionsQueryOptions, createSection, updateSection, deleteSection 
 import type { TestSuiteSection } from '@/entities/test-suite-section';
 import type { TestSuiteCard } from '@/entities/test-suite';
 import type { TestCase, TestCaseCardType } from '@/entities/test-case';
-import { SuiteEditForm, AddCasesToSuiteModal } from '@/features';
-import { Container, DSButton, MainContainer, cn, LoadingSpinner } from '@/shared';
+import { SuiteEditForm, AddCasesToSuiteModal } from '@/features/suites-edit';
+import { Container, MainContainer } from '@/shared/lib/primitives';
+import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
 import {
   ArrowLeft,
@@ -35,6 +36,11 @@ import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 import { formatDate, formatDateTime } from '@/shared/utils/date-format';
 import { toast } from 'sonner';
+
+const AnimatePresence = dynamic(
+  () => import('framer-motion').then((mod) => ({ default: mod.AnimatePresence })),
+  { ssr: false }
+);
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then((mod) => ({ default: mod.TestCaseSideView })),

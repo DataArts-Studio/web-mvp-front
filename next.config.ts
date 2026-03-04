@@ -38,6 +38,8 @@ const nextConfig: NextConfig = {
       'recharts', 'framer-motion', 'lucide-react', '@supabase/supabase-js',
       '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities',
       'zod', 'react-hook-form', '@tanstack/react-query',
+      '@hookform/resolvers', 'sonner', 'drizzle-orm',
+      'date-fns', 'papaparse', 'react-markdown',
     ],
     serverActions: {
       bodySizeLimit: '10mb',

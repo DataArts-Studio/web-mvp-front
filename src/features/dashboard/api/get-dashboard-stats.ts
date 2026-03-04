@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features';
+import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features/dashboard';
 import { getDatabase, projects, suiteTestCases, testCases, testSuites } from '@/shared/lib/db';
 import { and, count, desc, eq, isNull, notInArray } from 'drizzle-orm';
 import { ActionResult } from '@/shared/types';

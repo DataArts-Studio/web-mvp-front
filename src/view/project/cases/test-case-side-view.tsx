@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-
 import { TestCase, parseSteps } from '@/entities/test-case';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import { testCaseByIdQueryOptions } from '@/features/cases-list';
@@ -12,7 +10,7 @@ import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 // import { SaveAsTemplateModal } from '@/features/templates-save-from-case'; // 템플릿 기능 펜딩
 import { testSuitesQueryOptions } from '@/widgets';
-import { DSButton } from '@/shared';
+import { DSButton } from '@/shared/ui';
 import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
 import { useVersionsList } from '@/features/version-timeline';
 import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, History, Maximize2, Play, Tag, X } from 'lucide-react';
@@ -79,21 +77,14 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
   return (
     <>
     {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
-    <motion.div
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-static-element-interactions */}
+    <div
       className="fixed inset-0 z-40 bg-black/50"
       onClick={onClose}
       aria-hidden="true"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
     />
-    <motion.section
+    <section
       className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] overflow-y-auto border-l p-4"
-      initial={{ x: '100%' }}
-      animate={{ x: 0 }}
-      exit={{ x: '100%' }}
-      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
     >
       <div className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
@@ -209,7 +200,7 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
           {testCase && <ArchiveButton targetType='case' targetId={testCase.id} btnType='icon' onSuccess={onClose}/>}
         </div>
       </div>
-    </motion.section>
+    </section>
     {isEditOpen && detailData?.success && (
       <TestCaseEditForm
         testCase={detailData.data}

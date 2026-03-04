@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { Container, MainContainer, LoadingSpinner } from '@/shared';
+import { Container, MainContainer } from '@/shared/lib/primitives';
+import { LoadingSpinner } from '@/shared/ui';
 import { useOutsideClick } from '@/shared/hooks';
 import { Aside } from '@/widgets';
 import {

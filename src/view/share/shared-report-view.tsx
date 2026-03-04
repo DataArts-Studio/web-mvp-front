@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, XCircle, Circle, Clock, BarChart3 } from 'lucide-react';
-import { LoadingSpinner } from '@/shared';
+import { LoadingSpinner } from '@/shared/ui';
 import { sharedReportQueryOptions } from '@/features/runs-share';
 import type { TestStatusData } from '@/widgets/project';
 

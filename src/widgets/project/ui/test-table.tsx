@@ -2,7 +2,8 @@ import React, { ComponentProps, ReactNode } from 'react';
 
 
 
-import { Button, cn } from '@/shared';
+import { Button } from '@/shared/lib/primitives';
+import { cn } from '@/shared/utils';
 
 
 

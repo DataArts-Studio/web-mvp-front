@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { MilestoneWithStats } from '@/entities/milestone';
-import { DSButton } from '@/shared';
+import { DSButton } from '@/shared/ui';
 import { Calendar, CheckCircle, Edit2, ExternalLink, ListChecks, PlayCircle, Trash2, X } from 'lucide-react';
-import { cn } from '@/shared';
+import { cn } from '@/shared/utils';
 import { formatDate } from '@/shared/utils/date-format';
 
 interface MilestoneSideViewProps {

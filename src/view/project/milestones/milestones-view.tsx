@@ -6,8 +6,11 @@ import { useParams } from 'next/navigation';
 
 import { MilestoneCard, MilestoneWithStats, Milestone } from '@/entities/milestone';
 import { projectIdQueryOptions } from '@/entities/project';
-import { MilestoneCreateForm, MilestoneEditForm, dashboardQueryOptions, milestonesQueryOptions } from '@/features';
-import { Container, MainContainer, LoadingSpinner } from '@/shared';
+import { MilestoneCreateForm, milestonesQueryOptions } from '@/features/milestones-create';
+import { MilestoneEditForm } from '@/features/milestones-edit';
+import { dashboardQueryOptions } from '@/features/dashboard';
+import { Container, MainContainer } from '@/shared/lib/primitives';
+import { LoadingSpinner } from '@/shared/ui';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';

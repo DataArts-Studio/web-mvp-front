@@ -1,7 +1,8 @@
 import React from 'react';
 
 import { TestSuiteCard } from '@/entities/test-suite';
-import { DSButton, cn } from '@/shared';
+import { DSButton } from '@/shared/ui';
+import { cn } from '@/shared/utils';
 import { formatDate } from '@/shared/utils/date-format';
 import {
   CheckCircle,

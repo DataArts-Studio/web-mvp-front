@@ -6,7 +6,7 @@ import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
 import Script from 'next/script';
 import { MvpBottomNavbarLazy } from '@/shared/ui/mvp-bottom-navbar/mvp-bottom-navbar-lazy';
-import { Toaster } from 'sonner';
+import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
@@ -191,7 +191,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <QueryProvider>{children}</QueryProvider>
-        <Toaster position="top-right" richColors closeButton />
+        <LazyToaster />
         {/* 테스트용 컴포넌트 */}
         <MvpBottomNavbarLazy />
         {process.env.NEXT_PUBLIC_GTM_ID && (
