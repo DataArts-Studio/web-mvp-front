@@ -160,6 +160,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="preload"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          as="style"
+        />
+        <link
+          rel="preload"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2"
           as="font"
           type="font/woff2"
@@ -171,7 +176,6 @@ export default function RootLayout({
           media="print"
           data-font-css
         />
-        <script dangerouslySetInnerHTML={{ __html: `document.querySelector('[data-font-css]').addEventListener('load',function(){this.media='all'})` }} />
         <noscript>
           <link
             rel="stylesheet"
@@ -188,6 +192,13 @@ export default function RootLayout({
         <LazyToaster />
         {/* 테스트용 컴포넌트 */}
         <MvpBottomNavbarLazy />
+        <Script
+          id="font-swap"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `var f=document.querySelector('[data-font-css]');if(f){if(f.sheet){f.media='all'}else{f.addEventListener('load',function(){this.media='all'})}}`,
+          }}
+        />
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <>
             <Script
