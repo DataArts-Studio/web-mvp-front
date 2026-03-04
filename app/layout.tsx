@@ -2,7 +2,6 @@ import React, { ReactNode } from 'react';
 
 import type { Metadata, Viewport } from 'next';
 
-import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
 import Script from 'next/script';
 import { MvpBottomNavbarLazy } from '@/shared/ui/mvp-bottom-navbar/mvp-bottom-navbar-lazy';
@@ -174,23 +173,14 @@ export default function RootLayout({
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-          media="print"
-          data-font="pretendard"
         />
-        <script dangerouslySetInnerHTML={{ __html: `document.querySelector('link[data-font="pretendard"]').onload=function(){this.media='all'}` }} />
-        <noscript>
-          <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-          />
-        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="antialiased">
-        <QueryProvider>{children}</QueryProvider>
+        {children}
         <LazyToaster />
         {/* 테스트용 컴포넌트 */}
         <MvpBottomNavbarLazy />

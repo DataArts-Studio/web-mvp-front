@@ -1,27 +1,39 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 
 const STORAGE_KEY = 'beta-banner-dismissed-v1';
 
-export const useBetaBanner = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+let listeners: Array<() => void> = [];
 
-  useEffect(() => {
-    setIsMounted(true);
-    const isDismissed = sessionStorage.getItem(STORAGE_KEY);
-    setIsVisible(!isDismissed);
+function getSnapshot(): boolean {
+  return !sessionStorage.getItem(STORAGE_KEY);
+}
+
+function getServerSnapshot(): boolean {
+  return false;
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners = [...listeners, listener];
+  return () => {
+    listeners = listeners.filter(l => l !== listener);
+  };
+}
+
+function emitChange() {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+export const useBetaBanner = () => {
+  const isVisible = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const dismiss = useCallback(() => {
+    sessionStorage.setItem(STORAGE_KEY, 'true');
+    emitChange();
   }, []);
 
-  const dismiss = () => {
-    sessionStorage.setItem(STORAGE_KEY, 'true');
-    setIsVisible(false);
-  };
-
-  return {
-    isVisible: isMounted && isVisible,
-    isMounted,
-    dismiss,
-  };
+  return { isVisible, dismiss };
 };
