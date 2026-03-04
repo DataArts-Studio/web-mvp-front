@@ -1,5 +1,11 @@
-export * from '@/view/docs';
-export * from '@/view/lending';
-export * from '@/view/legal';
-export * from '@/view/project';
-export * from '@/view/team';
+export { DocsView } from '@/view/docs';
+export { LendingView } from '@/view/lending';
+export { LegalView } from '@/view/legal';
+export { ProjectDashboardView } from '@/view/project/dashboard';
+export { TestCasesView, TestCaseDetailView } from '@/view/project/cases';
+export { TestSuitesView } from '@/view/project/suites';
+export { TestRunsListView, TestRunDetailView } from '@/view/project/runs';
+export { MilestonesView, MilestoneDetailView } from '@/view/project/milestones';
+export { SettingsView } from '@/view/project/settings';
+export { TrashView } from '@/view/project/trash';
+export { TeamView } from '@/view/team';

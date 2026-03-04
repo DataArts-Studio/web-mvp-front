@@ -1,1 +1,1 @@
-export * from './use-update-suite';
+export { useUpdateSuite } from './use-update-suite';

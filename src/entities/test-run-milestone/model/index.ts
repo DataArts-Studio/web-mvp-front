@@ -1,1 +1,1 @@
-export * from './schema';
+export { TestRunMilestoneSchema } from './schema';

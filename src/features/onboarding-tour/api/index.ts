@@ -1,2 +1,2 @@
-export * from './server-actions';
-export * from './query';
+export { getOnboardingStatus, completeOnboardingTour } from './server-actions';
+export { onboardingQueryKeys, onboardingQueryOptions } from './query';

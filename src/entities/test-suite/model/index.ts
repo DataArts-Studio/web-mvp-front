@@ -1,3 +1,2 @@
-export * from './schema';
-export * from './types';
-export * from './suite.mock';
+export { TestSuiteDtoSchema, CreateTestSuiteDtoSchema, CreateTestSuiteSchema } from './schema';
+export type { TestSuite, SuiteTagTone, RunStatus, TestSuiteCard } from './types';

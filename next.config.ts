@@ -34,7 +34,11 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   experimental: {
-    optimizePackageImports: ['recharts', 'framer-motion', 'lucide-react', '@supabase/supabase-js'],
+    optimizePackageImports: [
+      'recharts', 'framer-motion', 'lucide-react', '@supabase/supabase-js',
+      '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities',
+      'zod', 'react-hook-form', '@tanstack/react-query',
+    ],
     serverActions: {
       bodySizeLimit: '10mb',
     },

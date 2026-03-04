@@ -1,1 +1,1 @@
-export * from './model';
+export { TestRunSuiteSchema } from './model';

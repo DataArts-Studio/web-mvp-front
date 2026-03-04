@@ -1,1 +1,1 @@
-export * from './use-create-milestone'
+export { useCreateMilestone } from './use-create-milestone';
