@@ -1,13 +1,2 @@
-import * as Sentry from '@sentry/nextjs';
-
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment: process.env.NEXT_PUBLIC_VERCEL_ENV || 'development',
-
-  tracesSampleRate: process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? 0.2 : 1.0,
-
-  integrations: (defaults) =>
-    defaults.filter((integration) => integration.name !== 'Replay'),
-
-  enabled: process.env.NODE_ENV !== 'development' && !!process.env.NEXT_PUBLIC_SENTRY_DSN,
-});
+// Sentry 클라이언트 설정은 instrumentation-client.ts로 통합됨
+// 이 파일은 @sentry/nextjs 웹팩 플러그인 호환을 위해 유지
