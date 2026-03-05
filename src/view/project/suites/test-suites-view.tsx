@@ -11,7 +11,6 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import { SuiteEditForm } from '@/features/suites-edit';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { MainContainer } from '@/shared/lib/primitives';
-import { LoadingSpinner } from '@/shared/ui';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
@@ -87,11 +86,50 @@ export const TestSuitesView = () => {
     }
   }, [suiteData?.success, projectId]);
 
-  // 로딩 상태
+  // 로딩 상태 — 스켈레톤 UI
   if (isLoadingProject || isLoadingSuites) {
     return (
-      <MainContainer className="flex flex-1 items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+        {/* Header skeleton */}
+        <header className="col-span-6 flex flex-col gap-2">
+          <div className="h-8 w-64 animate-pulse rounded bg-bg-3" />
+          <div className="h-5 w-96 animate-pulse rounded bg-bg-3" />
+        </header>
+        {/* Toolbar skeleton */}
+        <div className="col-span-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="h-10 flex-1 max-w-md animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+            <div className="h-10 w-28 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+          </div>
+          <div className="h-9 w-44 animate-pulse rounded-2 bg-bg-3" />
+        </div>
+        {/* Suite card skeletons */}
+        <section className="col-span-6 flex flex-col gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
+              {/* Left: title + tag + description */}
+              <div className="flex w-full flex-col gap-2 md:w-[40%]">
+                <div className="flex items-center gap-3">
+                  <div className="h-6 w-40 animate-pulse rounded bg-bg-3" />
+                  <div className="h-6 w-16 animate-pulse rounded-full bg-bg-3" />
+                </div>
+                <div className="h-4 w-full animate-pulse rounded bg-bg-3" />
+              </div>
+              {/* Middle: path, cases, milestone */}
+              <div className="flex w-full flex-col gap-2 md:w-[30%]">
+                <div className="h-4 w-36 animate-pulse rounded bg-bg-3" />
+                <div className="h-4 w-32 animate-pulse rounded bg-bg-3" />
+                <div className="h-4 w-40 animate-pulse rounded bg-bg-3" />
+              </div>
+              {/* Right: run info */}
+              <div className="flex w-full flex-col gap-1 md:w-[30%] md:items-end">
+                <div className="h-4 w-32 animate-pulse rounded bg-bg-3" />
+                <div className="h-4 w-36 animate-pulse rounded bg-bg-3" />
+                <div className="h-4 w-28 animate-pulse rounded bg-bg-3" />
+              </div>
+            </div>
+          ))}
+        </section>
       </MainContainer>
     );
   }

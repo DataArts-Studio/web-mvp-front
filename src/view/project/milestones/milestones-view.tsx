@@ -10,7 +10,6 @@ import { MilestoneCreateForm, milestonesQueryOptions } from '@/features/mileston
 import { MilestoneEditForm } from '@/features/milestones-edit';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { MainContainer } from '@/shared/lib/primitives';
-import { LoadingSpinner } from '@/shared/ui';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
@@ -88,11 +87,60 @@ export const MilestonesView = () => {
     }
   }, [milestonesResult?.success, projectId]);
 
-  // 로딩 상태
+  // 로딩 상태 — 스켈레톤 UI
   if (isLoadingProject || isLoadingMilestones) {
     return (
-      <MainContainer className="flex flex-1 items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+        {/* Header skeleton */}
+        <header className="col-span-6 flex flex-col gap-2">
+          <div className="h-8 w-72 animate-pulse rounded bg-bg-3" />
+          <div className="h-5 w-[420px] animate-pulse rounded bg-bg-3" />
+        </header>
+        {/* Toolbar skeleton */}
+        <div className="col-span-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="h-10 flex-1 max-w-md animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+            <div className="h-10 w-28 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+          </div>
+          <div className="h-9 w-40 animate-pulse rounded-2 bg-bg-3" />
+        </div>
+        {/* Milestone card skeletons */}
+        <section className="col-span-6 flex flex-col gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-5 border-l-4 border-l-bg-3 px-6 py-5 md:flex-row md:items-center md:justify-between">
+              {/* Left: title + badge + description + date */}
+              <div className="flex w-full flex-col gap-2.5 md:w-[35%]">
+                <div className="flex items-center gap-3">
+                  <div className="h-6 w-36 animate-pulse rounded bg-bg-3" />
+                  <div className="h-6 w-14 animate-pulse rounded-full bg-bg-3" />
+                </div>
+                <div className="h-4 w-full animate-pulse rounded bg-bg-3" />
+                <div className="h-4 w-44 animate-pulse rounded bg-bg-3" />
+              </div>
+              {/* Middle: progress bar */}
+              <div className="flex w-full flex-col gap-2 md:w-[30%]">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-10 animate-pulse rounded bg-bg-3" />
+                  <div className="h-6 w-12 animate-pulse rounded bg-bg-3" />
+                </div>
+                <div className="h-2.5 w-full animate-pulse rounded-full bg-bg-3" />
+                <div className="flex justify-between">
+                  <div className="h-3 w-24 animate-pulse rounded bg-bg-3" />
+                  <div className="h-3 w-16 animate-pulse rounded bg-bg-3" />
+                </div>
+              </div>
+              {/* Right: stat cards */}
+              <div className="flex w-full items-center gap-2 md:w-auto md:justify-end">
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <div key={j} className="bg-bg-3/50 flex flex-col items-center rounded-xl px-4 py-2 gap-1">
+                    <div className="h-5 w-6 animate-pulse rounded bg-bg-3" />
+                    <div className="h-3 w-8 animate-pulse rounded bg-bg-3" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
       </MainContainer>
     );
   }

@@ -26,9 +26,11 @@ const isPathActive = (currentPath: string, matchPath: string): boolean => {
   return currentPath.startsWith(matchPath);
 };
 
-const handleAwaitBottom = (e: React.MouseEvent<HTMLDivElement>) => {
-  e.preventDefault();
-  toast.info('해당 기능은 준비중 입니다.');
+const handleAwaitItem = (e: React.MouseEvent, href: string) => {
+  if (href === '#') {
+    e.preventDefault();
+    toast.info('해당 기능은 준비중 입니다.');
+  }
 }
 
 // 메뉴 라벨 → prefetch할 쿼리 옵션을 동적으로 로드
@@ -125,15 +127,16 @@ export const Aside = () => {
 
       {/* 사이드바 하단 */}
       <div className="mt-auto border-t border-bg-4 px-4 py-4">
-        <div className="flex flex-col gap-1" onClick={handleAwaitBottom}>
+        <div className="flex flex-col gap-1">
           {menus.bottom.map((item: AsideMenuItem) => (
-            <AsideNavItem
-              key={item.label}
-              label={item.label}
-              href={item.href}
-              icon={item.icon}
-              active={isPathActive(pathname, item.matchPath || '')}
-            />
+            <div key={item.label} onClick={(e) => handleAwaitItem(e, item.href)}>
+              <AsideNavItem
+                label={item.label}
+                href={item.href}
+                icon={item.icon}
+                active={isPathActive(pathname, item.matchPath || '')}
+              />
+            </div>
           ))}
         </div>
       </div>

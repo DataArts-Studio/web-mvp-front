@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { MainContainer } from '@/shared/lib/primitives';
-import { LoadingSpinner } from '@/shared/ui';
 import { useOutsideClick } from '@/shared/hooks';
 import {
   Search,
@@ -150,10 +149,64 @@ export const TestRunsListView = () => {
     }
   };
 
+  // 로딩 상태 — 스켈레톤 UI
   if (isLoadingProject || (projectId && isLoadingRuns)) {
     return (
-      <MainContainer className="flex flex-1 items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">
+        {/* Header skeleton */}
+        <header className="col-span-6 flex items-start justify-between border-b border-line-2 pb-6">
+          <div className="flex flex-col gap-1">
+            <div className="h-8 w-48 animate-pulse rounded bg-bg-3" />
+            <div className="h-5 w-80 animate-pulse rounded bg-bg-3" />
+          </div>
+          <div className="h-10 w-40 animate-pulse rounded-2 bg-bg-3" />
+        </header>
+        {/* Filter skeleton */}
+        <section className="col-span-6 flex items-center justify-between gap-4">
+          <div className="flex flex-1 items-center gap-3">
+            <div className="h-10 w-full max-w-md animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-32 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+            <div className="h-10 w-36 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+          </div>
+        </section>
+        {/* Table skeleton */}
+        <section className="col-span-6 flex flex-col overflow-hidden rounded-4 border border-line-2 bg-bg-2 shadow-1">
+          {/* Table header */}
+          <div className="grid grid-cols-12 gap-4 border-b border-line-2 bg-bg-3 px-6 py-3">
+            <div className="col-span-5 h-3 w-24 animate-pulse rounded bg-bg-4" />
+            <div className="col-span-3 h-3 w-28 animate-pulse rounded bg-bg-4" />
+            <div className="col-span-2 flex justify-center"><div className="h-3 w-10 animate-pulse rounded bg-bg-4" /></div>
+            <div className="col-span-2 flex justify-end"><div className="h-3 w-24 animate-pulse rounded bg-bg-4" /></div>
+          </div>
+          {/* Table rows */}
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="grid grid-cols-12 items-center gap-4 border-b border-line-2 px-6 py-5 last:border-b-0">
+              <div className="col-span-5 flex flex-col gap-1.5">
+                <div className="h-5 w-48 animate-pulse rounded bg-bg-3" />
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-16 animate-pulse rounded-1 bg-bg-3" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-bg-3" />
+                </div>
+              </div>
+              <div className="col-span-3 flex flex-col gap-2 pr-4">
+                <div className="flex justify-between">
+                  <div className="h-3 w-8 animate-pulse rounded bg-bg-3" />
+                  <div className="h-3 w-12 animate-pulse rounded bg-bg-3" />
+                </div>
+                <div className="h-2 w-full animate-pulse rounded-full bg-bg-3" />
+              </div>
+              <div className="col-span-2 flex justify-center">
+                <div className="h-6 w-20 animate-pulse rounded-1 bg-bg-3" />
+              </div>
+              <div className="col-span-2 flex flex-col items-end gap-1">
+                <div className="h-4 w-20 animate-pulse rounded bg-bg-3" />
+                <div className="h-3 w-12 animate-pulse rounded bg-bg-3" />
+              </div>
+            </div>
+          ))}
+        </section>
       </MainContainer>
     );
   }
