@@ -116,7 +116,7 @@ export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
             {suite.tag.label}
           </span>
           <DSButton variant="ghost" size="icon" onClick={handleEditClick}>
-            <Edit className="h-4 w-4" />
+            <Edit className="h-3 w-3" />
           </DSButton>
         </div>
         <p id={descId} className="typo-body2-normal text-text-2">
