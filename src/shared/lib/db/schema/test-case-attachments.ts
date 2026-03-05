@@ -10,5 +10,6 @@ export const testCaseAttachments = pgTable('test_case_attachments', (t) => ({
   file_size: t.integer('file_size').notNull(),
   file_type: t.varchar('file_type', { length: 100 }),
   storage_path: t.text('storage_path').notNull(),
+  archived_at: t.timestamp('archived_at'),
   created_at: t.timestamp('created_at').defaultNow().notNull(),
 }));

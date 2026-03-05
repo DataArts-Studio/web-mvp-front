@@ -9,7 +9,7 @@ import {
   auditLogs,
 } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, lt, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { TrashItem, TrashItemType } from '../model/types';
@@ -136,10 +136,11 @@ export const getTrashedItems = async (
     if (auditEntries.length > 0) {
       await writeAuditLogs(db, auditEntries);
 
-      // 실제 삭제
+      // PURGED 마킹 (소프트 딜리트)
+      const purgedAt = new Date();
       await Promise.all([
         expiredCases.length > 0 &&
-          db.delete(testCases).where(
+          db.update(testCases).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
             and(
               eq(testCases.project_id, projectId),
               eq(testCases.lifecycle_status, 'DELETED'),
@@ -147,7 +148,7 @@ export const getTrashedItems = async (
             ),
           ),
         expiredSuites.length > 0 &&
-          db.delete(testSuites).where(
+          db.update(testSuites).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
             and(
               eq(testSuites.project_id, projectId),
               eq(testSuites.lifecycle_status, 'DELETED'),
@@ -155,7 +156,7 @@ export const getTrashedItems = async (
             ),
           ),
         expiredMilestones.length > 0 &&
-          db.delete(milestones).where(
+          db.update(milestones).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
             and(
               eq(milestones.project_id, projectId),
               eq(milestones.lifecycle_status, 'DELETED'),
@@ -363,7 +364,7 @@ export const permanentDeleteItem = async (
             snapshot: row,
             deletedAt: row.archived_at,
           }]);
-          await db.delete(testCases).where(eq(testCases.id, targetId));
+          await db.update(testCases).set({ lifecycle_status: 'PURGED', updated_at: new Date() }).where(eq(testCases.id, targetId));
         }
         break;
       }
@@ -408,11 +409,12 @@ export const permanentDeleteItem = async (
           await writeAuditLogs(db, entries);
         }
 
-        // 하위 TC 먼저 삭제 → 스위트 삭제
-        await db.delete(testCases).where(
+        // 하위 TC + 스위트 PURGED 마킹
+        const purgedAt = new Date();
+        await db.update(testCases).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
           and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED')),
         );
-        await db.delete(testSuites).where(
+        await db.update(testSuites).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
           and(eq(testSuites.id, targetId), eq(testSuites.lifecycle_status, 'DELETED')),
         );
         break;
@@ -432,7 +434,7 @@ export const permanentDeleteItem = async (
             snapshot: row,
             deletedAt: row.archived_at,
           }]);
-          await db.delete(milestones).where(eq(milestones.id, targetId));
+          await db.update(milestones).set({ lifecycle_status: 'PURGED', updated_at: new Date() }).where(eq(milestones.id, targetId));
         }
         break;
       }
@@ -519,18 +521,19 @@ export const emptyTrash = async (
       await writeAuditLogs(db, entries);
     }
 
-    // 실제 삭제
+    // PURGED 마킹 (소프트 딜리트)
+    const purgedAt = new Date();
     await Promise.all([
       allCases.length > 0 &&
-        db.delete(testCases).where(
+        db.update(testCases).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
           and(eq(testCases.project_id, projectId), eq(testCases.lifecycle_status, 'DELETED')),
         ),
       allSuites.length > 0 &&
-        db.delete(testSuites).where(
+        db.update(testSuites).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
           and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'DELETED')),
         ),
       allMilestones.length > 0 &&
-        db.delete(milestones).where(
+        db.update(milestones).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
           and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED')),
         ),
     ]);

@@ -2,6 +2,6 @@
 
 import { z } from 'zod';
 
-export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
-export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED', 'PURGED']);
+export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED' | 'PURGED';
 export type TestCaseResultStatus = 'untested' | 'pass' | 'fail' | 'blocked';
