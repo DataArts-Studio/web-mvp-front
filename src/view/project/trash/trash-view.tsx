@@ -12,10 +12,9 @@ import {
 } from '@/features/trash';
 import type { TrashItem, TrashItemType } from '@/features/trash';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { Container, MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@/shared/lib/primitives';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { Dialog } from '@/shared/lib/primitives';
-import { Aside } from '@/widgets';
 import {
   Trash2,
   RotateCcw,
@@ -277,29 +276,22 @@ export const TrashView = () => {
 
   if (isLoadingProject || isLoadingTrash) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </MainContainer>
     );
   }
 
   if (!dashboardData?.success) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+      </MainContainer>
     );
   }
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
+    <>
       <MainContainer className="flex min-h-screen w-full flex-1">
         <div className="mx-auto grid w-full max-w-[1000px] flex-1 content-start gap-y-6 px-10 py-8">
           {/* Header */}
@@ -576,6 +568,6 @@ export const TrashView = () => {
           </Dialog.Portal>
         </Dialog.Root>
       )}
-    </Container>
+    </>
   );
 };
