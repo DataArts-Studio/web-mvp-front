@@ -10,7 +10,6 @@ import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { testRunsQueryOptions } from '@/features/runs/api/query';
 import { useDisclosure } from '@/shared/hooks/use-disclosure';
 import { DSButton } from '@/shared/ui/ds-button';
-import { LoadingSpinner } from '@/shared/ui/loading-spinner';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronRight, Clock, FileText, FolderOpen, Play, Plus, Share2 } from 'lucide-react';
 import { TestRunDropdown } from './test-run-dropdown';
@@ -58,6 +57,10 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const [isCopied, setIsCopied] = useState(false);
 
+  // 클라이언트 hydration 완료 전까지 전체 페이지 스켈레톤 표시
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+
   const gantt = useInViewOnce();
   const casesSection = useInViewOnce();
   const suitesSection = useInViewOnce();
@@ -78,7 +81,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
     enabled: !!projectId,
   });
 
-  const { data: testCasesData } = useQuery({
+  const { data: testCasesData, isLoading: isTestCasesLoading } = useQuery({
     ...testCasesQueryOptions(projectId!),
     enabled: !!projectId,
   });
@@ -87,7 +90,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
   const testSuites = dashboardData?.success ? dashboardData.data.testSuites : [];
 
   // 테스트 실행 목록 조회
-  const { data: testRunsData } = useQuery({
+  const { data: testRunsData, isLoading: isTestRunsLoading } = useQuery({
     ...testRunsQueryOptions(projectId!),
     enabled: !!projectId,
   });
@@ -166,17 +169,11 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
     }
   };
 
-  // 로딩 상태
-  if (isLoading) {
-    return (
-      <div className="col-span-6 flex flex-1 items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+  // 전체 페이지 스켈레톤: hydration 미완료 또는 어떤 데이터든 로딩 중이면 전체 스켈레톤
+  const showSkeleton = !hydrated || isLoading || !testRunsData || !testCasesData;
 
   // 에러 상태
-  if (!dashboardData?.success) {
+  if (hydrated && !isLoading && !dashboardData?.success) {
     return (
       <div className="col-span-6 flex flex-1 items-center justify-center">
         <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
@@ -184,17 +181,56 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
     );
   }
 
-  const { project, recentActivities } = dashboardData.data;
+  const project = dashboardData?.success ? dashboardData.data.project : undefined;
+  const recentActivities = dashboardData?.success ? dashboardData.data.recentActivities : [];
 
   return (
     <>
         {/* KPI 카드 섹션 */}
         <section className="col-span-6" data-tour="kpi-cards">
-          <KPICards data={kpiData} />
+          {showSkeleton ? (
+            <div className="grid grid-cols-5 gap-4 animate-pulse">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="bg-bg-2 rounded-3 border border-line-2 p-5 flex flex-col gap-2">
+                  <div className="bg-bg-3 h-4 w-20 rounded" />
+                  <div className="bg-bg-3 h-8 w-16 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <KPICards data={kpiData} />
+          )}
         </section>
 
         {/* 프로젝트 정보 + 저장 용량 + 최근 활동 카드 */}
         <section className="col-span-6 grid grid-cols-6 gap-5">
+          {showSkeleton ? (
+            <>
+              <div className="col-span-2 flex flex-col gap-5 animate-pulse">
+                <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5">
+                  <div className="bg-bg-3 h-4 w-28 rounded" />
+                  <div className="rounded-2 bg-bg-3 h-20" />
+                </div>
+                <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5">
+                  <div className="bg-bg-3 h-4 w-20 rounded" />
+                  <div className="bg-bg-3 h-2 w-full rounded-full" />
+                </div>
+              </div>
+              <div className="rounded-3 border-line-2 bg-bg-2 col-span-4 flex flex-col gap-4 border p-5 animate-pulse">
+                <div className="bg-bg-3 h-4 w-20 rounded" />
+                <div className="flex flex-col gap-2">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="bg-bg-3 h-1.5 w-1.5 rounded-full" />
+                      <div className="bg-bg-3 h-4 flex-1 rounded" />
+                      <div className="bg-bg-3 h-3 w-12 rounded" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+          <>
           {/* 왼쪽: 프로젝트 정보 + 저장 용량 (세로 배치) */}
           <div className="col-span-2 flex flex-col gap-5">
             {/* 내 프로젝트 정보 카드 */}
@@ -204,7 +240,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
               <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
                 <div className="flex items-center gap-2">
                   <span className="typo-body2-heading text-primary truncate max-w-[200px]">
-                    {project.name}
+                    {project?.name}
                   </span>
                   <button
                     onClick={handleCopyLink}
@@ -215,7 +251,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
                   </button>
                 </div>
                 <span className="typo-caption text-text-3">
-                  {formatDateKR(project.created_at)} 생성됨
+                  {project && formatDateKR(project.created_at)} 생성됨
                 </span>
               </div>
             </div>
@@ -280,6 +316,8 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
               </ul>
             )}
           </div>
+          </>
+          )}
         </section>
 
         {/* 테스트 현황 차트 섹션 */}
@@ -295,7 +333,27 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
               selectedRunName={selectedRun?.name}
             />
           </div>
-          {testRuns.length === 0 ? (
+          {showSkeleton ? (
+            <div className="bg-bg-2 rounded-[16px] p-6 animate-pulse">
+              <div className="flex items-stretch gap-10">
+                <div className="flex basis-[70%] flex-col items-center gap-4">
+                  <div className="bg-bg-3 rounded-full h-[280px] w-[280px]" />
+                  <div className="bg-bg-3 h-10 w-40 rounded self-start" />
+                </div>
+                <div className="flex basis-[30%] flex-col justify-center gap-5 p-6">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="bg-bg-3 h-9 w-9 rounded-[16px] shrink-0" />
+                      <div className="flex flex-col gap-1 flex-1">
+                        <div className="bg-bg-3 h-4 w-24 rounded" />
+                        <div className="bg-bg-3 h-3 w-16 rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : testRuns.length === 0 ? (
             <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
               <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
                 <Play className="h-6 w-6" strokeWidth={1.5} />
@@ -333,7 +391,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
 
         {/* 테스트 케이스 섹션 — 뷰포트 진입 시 렌더 */}
         <section ref={casesSection.ref} className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
-          {casesSection.visible ? (
+          {(casesSection.visible && !showSkeleton) ? (
             <>
               <div className="flex items-center justify-between">
                 <Link href={`/projects/${slug}/cases`} className="flex items-center gap-2 group">
@@ -405,13 +463,32 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
               )}
             </>
           ) : (
-            <div className="h-[200px]" />
+            <div className="flex flex-col gap-4 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="bg-bg-3 h-6 w-32 rounded" />
+                  <div className="bg-bg-3 h-5 w-8 rounded" />
+                </div>
+              </div>
+              <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-5 py-4">
+                    <div className="bg-bg-3 h-10 w-10 rounded-[8px] shrink-0" />
+                    <div className="flex flex-col gap-1 flex-1">
+                      <div className="bg-bg-3 h-3 w-16 rounded" />
+                      <div className="bg-bg-3 h-4 w-48 rounded" />
+                    </div>
+                    <div className="bg-bg-3 h-3 w-20 rounded shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </section>
 
         {/* 테스트 스위트 섹션 — 뷰포트 진입 시 렌더 */}
         <section ref={suitesSection.ref} className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
-          {suitesSection.visible ? (
+          {(suitesSection.visible && !showSkeleton) ? (
             <>
               <div className="flex items-center justify-between">
                 <Link href={`/projects/${slug}/suites`} className="flex items-center gap-2 group">
@@ -482,7 +559,26 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
               )}
             </>
           ) : (
-            <div className="h-[200px]" />
+            <div className="flex flex-col gap-4 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="bg-bg-3 h-6 w-32 rounded" />
+                  <div className="bg-bg-3 h-5 w-8 rounded" />
+                </div>
+              </div>
+              <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-5 py-4">
+                    <div className="bg-bg-3 h-10 w-10 rounded-[8px] shrink-0" />
+                    <div className="flex flex-col gap-1 flex-1">
+                      <div className="bg-bg-3 h-4 w-40 rounded" />
+                      <div className="bg-bg-3 h-3 w-24 rounded" />
+                    </div>
+                    <div className="bg-bg-3 h-6 w-20 rounded shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </section>
 

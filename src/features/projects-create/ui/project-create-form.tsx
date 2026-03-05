@@ -27,7 +27,8 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
   const turnstileRef = useRef<TurnstileInstance>(null);
-  const siteKey = ENV.CLIENT.TURNSTILE_SITE_KEY;
+  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const siteKey = isLocalhost ? '' : ENV.CLIENT.TURNSTILE_SITE_KEY;
   const {
     register,
     control,
