@@ -43,12 +43,6 @@ const SORT_OPTIONS = [
 
 type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 
-const TABLE_HEADERS = [
-  { id: 'id', label: 'ID', colSpan: 'col-span-2' },
-  { id: 'title', label: '제목', colSpan: 'col-span-6' },
-  { id: 'updatedAt', label: '최종 수정', colSpan: 'col-span-3', textAlign: 'text-center' },
-  { id: 'actions', label: '메뉴', colSpan: 'col-span-1', textAlign: 'text-right' },
-] as const;
 
 const PAGE_SIZE = 15;
 
@@ -187,28 +181,25 @@ export const TestCasesView = () => {
               <div className="h-9 w-40 animate-pulse rounded-2 bg-bg-3" />
             </div>
           </div>
-          <section className="rounded-4 border-line-2 bg-bg-2 col-span-6 overflow-hidden border">
-            <div className="grid grid-cols-12 gap-4 border-b border-line-2 px-6 py-3">
-              <div className="col-span-2 h-4 w-8 animate-pulse rounded bg-bg-3" />
-              <div className="col-span-6 h-4 w-12 animate-pulse rounded bg-bg-3" />
-              <div className="col-span-3 flex justify-center"><div className="h-4 w-16 animate-pulse rounded bg-bg-3" /></div>
-              <div className="col-span-1 flex justify-end"><div className="h-4 w-10 animate-pulse rounded bg-bg-3" /></div>
-            </div>
-            <div className="grid grid-cols-12 gap-4 border-b border-line-2 bg-primary/5 px-6 py-3">
-              <div className="col-span-12 flex items-center gap-3">
-                <div className="rounded-1 bg-primary/20 h-6 w-6 animate-pulse rounded" />
-                <div className="h-5 flex-1 animate-pulse rounded bg-bg-3" />
-              </div>
+          <section className="rounded-3 border-line-2 bg-bg-2 col-span-6 border">
+            <div className="flex items-center gap-3 border-b border-line-2 bg-primary/5 px-4 py-2.5">
+              <div className="rounded-1 bg-primary/20 h-6 w-6 animate-pulse rounded" />
+              <div className="h-5 flex-1 animate-pulse rounded bg-bg-3" />
             </div>
             {Array.from({ length: 15 }).map((_, i) => (
-              <div key={i} className="grid grid-cols-12 gap-4 border-b border-line-2 px-6 py-4">
-                <div className="col-span-2"><div className="h-4 w-16 animate-pulse rounded bg-bg-3" /></div>
-                <div className="col-span-6 flex flex-col gap-1.5">
-                  <div className="h-4 animate-pulse rounded bg-bg-3" style={{ width: `${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}%` }} />
-                  <div className="h-3 w-20 animate-pulse rounded bg-bg-3" />
+              <div key={i} className="flex items-stretch gap-0 border-b border-line-2 px-4 py-3">
+                <div className="w-[3px] shrink-0 rounded-full bg-bg-3 animate-pulse" />
+                <div className="flex flex-1 flex-col gap-1.5 pl-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-12 animate-pulse rounded bg-bg-3" />
+                    <div className="h-4 animate-pulse rounded bg-bg-3" style={{ width: `${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}%` }} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-16 animate-pulse rounded-full bg-bg-3" />
+                    <div className="h-5 w-20 animate-pulse rounded-full bg-bg-3" />
+                    <div className="ml-auto h-3 w-12 animate-pulse rounded bg-bg-3" />
+                  </div>
                 </div>
-                <div className="col-span-3 flex justify-center"><div className="h-4 w-24 animate-pulse rounded bg-bg-3" /></div>
-                <div className="col-span-1 flex justify-end"><div className="h-4 w-4 animate-pulse rounded bg-bg-3" /></div>
               </div>
             ))}
           </section>
@@ -388,66 +379,72 @@ export const TestCasesView = () => {
 
           {/* Test Case List Container */}
           <section className={cn(
-            "rounded-4 border-line-2 bg-bg-2 shadow-1 col-span-6 border transition-opacity",
+            "rounded-3 border-line-2 bg-bg-2 shadow-1 col-span-6 border transition-opacity",
             isFetching && testCasesData ? 'opacity-60' : 'opacity-100'
           )}>
-            <TestTable.Root>
-              <TestTable.Header headers={TABLE_HEADERS} />
-              <TestTable.Row className="group border-line-2 bg-primary/5 hover:bg-primary/10 grid grid-cols-12 gap-4 border-b px-6 py-3 transition-colors">
-                <div className="col-span-12 flex items-center gap-3">
-                  <div className="rounded-1 bg-primary/20 text-primary flex h-6 w-6 items-center justify-center">
-                    <Plus className="h-4 w-4" />
-                  </div>
-                  <Input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="새로운 테스트 케이스 이름을 입력하고 Enter를 누르세요..."
-                    className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent focus:outline-none"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleCreateTestCase();
-                      }
+            {/* Quick-create row */}
+            <div className="flex items-center gap-3 border-b border-line-2 bg-primary/5 px-4 py-3 transition-colors hover:bg-primary/10">
+              <div className="rounded-1 bg-primary/20 text-primary flex h-6 w-6 shrink-0 items-center justify-center">
+                <Plus className="h-4 w-4" />
+              </div>
+              <Input
+                ref={inputRef}
+                type="text"
+                placeholder="새로운 테스트 케이스 이름을 입력하고 Enter를 누르세요..."
+                className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent focus:outline-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateTestCase();
+                  }
+                }}
+              />
+            </div>
+
+            {/* List */}
+            {testCaseItems.length === 0 && pagination && pagination.totalItems === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-12">
+                <p className="typo-body2-normal text-text-3">
+                  {debouncedSearch || selectedSuiteId !== 'all' ? '검색 결과가 없습니다.' : '테스트 케이스가 없습니다.'}
+                </p>
+                {(debouncedSearch || selectedSuiteId !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedSuiteId('all');
                     }}
-                  />
-                </div>
-              </TestTable.Row>
-              {testCaseItems.length === 0 && pagination && pagination.totalItems === 0 ? (
-                <div className="col-span-12 flex flex-col items-center justify-center gap-2 py-12">
-                  <p className="typo-body2-normal text-text-3">
-                    {debouncedSearch || selectedSuiteId !== 'all' ? '검색 결과가 없습니다.' : '테스트 케이스가 없습니다.'}
-                  </p>
-                  {(debouncedSearch || selectedSuiteId !== 'all') && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSelectedSuiteId('all');
-                      }}
-                      className="typo-body2-normal text-primary hover:underline"
-                    >
-                      필터 초기화
-                    </button>
-                  )}
-                </div>
-              ) : (
-                testCaseItems.map((item) => (
-                  <TestTable.Row key={item.caseKey} onClick={() => {
-                    track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
-                    setSelectedTestCaseId(item.id);
-                    onOpen('detail');
-                  }}>
+                    className="typo-body2-normal text-primary hover:underline"
+                  >
+                    필터 초기화
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="divide-y divide-line-2">
+                {testCaseItems.map((item) => (
+                  <div
+                    key={item.caseKey}
+                    className="group flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors hover:bg-bg-3"
+                    onClick={() => {
+                      track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
+                      setSelectedTestCaseId(item.id);
+                      onOpen('detail');
+                    }}
+                  >
                     <TestCaseCard testCase={item} />
-                  </TestTable.Row>
-                ))
-              )}
-              {pagination && (
-                <TestTable.Pagination
-                  page={pagination.page}
-                  totalPages={pagination.totalPages}
-                  totalItems={pagination.totalItems}
-                  onPageChange={handlePageChange}
-                />
-              )}
-            </TestTable.Root>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {pagination && (
+              <TestTable.Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                onPageChange={handlePageChange}
+              />
+            )}
           </section>
         </div>
       </MainContainer>
