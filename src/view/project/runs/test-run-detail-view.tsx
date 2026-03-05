@@ -6,11 +6,10 @@ import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 
-import { Container, MainContainer } from '@/shared/lib/primitives';
-import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { MainContainer } from '@/shared/lib/primitives';
+import { DSButton } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { useOutsideClick, useToggleSet } from '@/shared/hooks';
-import { Aside } from '@/widgets';
 import { type TestStatusData } from '@/widgets/project';
 import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, TestCaseRunDetail } from '@/features/runs';
 import { dashboardQueryOptions } from '@/features/dashboard';
@@ -326,31 +325,68 @@ export const TestRunDetailView = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedCaseId, filteredCases, handleStatusChange]);
 
+  // 로딩 상태 — 스켈레톤 UI
   if (isLoading) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 flex-col min-h-screen">
+        {/* Header skeleton */}
+        <div className="border-line-2 flex items-center justify-between border-b px-6 py-4">
+          <div className="flex items-center gap-4">
+            <div className="h-4 w-4 animate-pulse rounded bg-bg-3" />
+            <div className="flex flex-col gap-1">
+              <div className="h-6 w-48 animate-pulse rounded bg-bg-3" />
+              <div className="h-4 w-32 animate-pulse rounded bg-bg-3" />
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-5 w-12 animate-pulse rounded bg-bg-3" />
+              ))}
+            </div>
+            <div className="h-2 w-32 animate-pulse rounded-full bg-bg-3" />
+          </div>
+        </div>
+        {/* Content skeleton */}
+        <div className="flex flex-1 overflow-hidden">
+          <div className="border-line-2 flex w-[60%] flex-col border-r">
+            <div className="border-line-2 flex flex-col gap-3 border-b p-4">
+              <div className="h-10 w-full animate-pulse rounded-lg border border-line-2 bg-bg-2" />
+              <div className="flex gap-2">
+                <div className="h-10 flex-1 animate-pulse rounded-lg border border-line-2 bg-bg-2" />
+                <div className="h-10 flex-1 animate-pulse rounded-lg border border-line-2 bg-bg-2" />
+              </div>
+            </div>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="border-line-2 flex items-center gap-3 border-b py-3 pl-8 pr-4">
+                <div className="h-4 w-4 animate-pulse rounded-full bg-bg-3 shrink-0" />
+                <div className="flex-1 flex flex-col gap-1">
+                  <div className="h-3 w-16 animate-pulse rounded bg-bg-3" />
+                  <div className="h-4 w-48 animate-pulse rounded bg-bg-3" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex w-[40%] flex-col items-center justify-center">
+            <div className="h-12 w-12 animate-pulse rounded bg-bg-3 mb-4" />
+            <div className="h-5 w-48 animate-pulse rounded bg-bg-3" />
+          </div>
+        </div>
+      </MainContainer>
     );
   }
 
   if (isError || !testRun) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <XCircle className="h-12 w-12 text-red-400" />
-            <p className="text-text-1 font-semibold">테스트 실행을 불러올 수 없습니다.</p>
-            <Link href={`/projects/${projectSlug}/runs`} className="text-primary hover:underline">
-              목록으로 돌아가기
-            </Link>
-          </div>
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <XCircle className="h-12 w-12 text-red-400" />
+          <p className="text-text-1 font-semibold">테스트 실행을 불러올 수 없습니다.</p>
+          <Link href={`/projects/${projectSlug}/runs`} className="text-primary hover:underline">
+            목록으로 돌아가기
+          </Link>
+        </div>
+      </MainContainer>
     );
   }
 
@@ -358,10 +394,7 @@ export const TestRunDetailView = () => {
   const sourceInfo = SOURCE_TYPE_CONFIG[testRun.sourceType] || SOURCE_TYPE_CONFIG.ADHOC;
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
-
-      <div className="flex flex-1 flex-col">
+    <MainContainer className="flex flex-1 flex-col min-h-screen">
         {/* Header */}
         <header className="border-line-2 flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-4">
@@ -814,7 +847,6 @@ export const TestRunDetailView = () => {
             )}
           </div>
         </div>
-      </div>
 
       {/* Keyboard Shortcuts Modal */}
       {showShortcuts && (
@@ -868,6 +900,6 @@ export const TestRunDetailView = () => {
         </div>
       )}
 
-    </Container>
+    </MainContainer>
   );
 };

@@ -9,10 +9,9 @@ import { getTestCases } from '@/entities/test-case/api';
 import { milestoneByIdQueryOptions } from '@/features/milestones';
 import { MilestoneEditForm, AddCasesToMilestoneModal, AddSuitesToMilestoneModal } from '@/features/milestones-edit';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
-import { Container, MainContainer } from '@/shared/lib';
-import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { MainContainer } from '@/shared/lib';
+import { DSButton } from '@/shared/ui';
 import { cn } from '@/shared/utils';
-import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, ChevronRight, Edit2, FolderOpen, ListChecks, Play, PlayCircle, Plus, Trash2, XCircle } from 'lucide-react';
 import { getTestSuites } from '@/entities/test-suite';
@@ -113,29 +112,72 @@ export const MilestoneDetailView = () => {
 
   if (isLoading) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
+        {/* Header skeleton */}
+        <header className="col-span-6 flex flex-col gap-4">
+          <div className="h-4 w-32 animate-pulse rounded bg-bg-3" />
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-64 animate-pulse rounded bg-bg-3" />
+                <div className="h-7 w-16 animate-pulse rounded-full bg-bg-3" />
+              </div>
+              <div className="h-4 w-48 animate-pulse rounded bg-bg-3" />
+            </div>
+            <div className="flex gap-2">
+              <div className="h-9 w-16 animate-pulse rounded bg-bg-3" />
+              <div className="h-9 w-16 animate-pulse rounded bg-bg-3" />
+            </div>
+          </div>
+        </header>
+        {/* Description skeleton */}
+        <section className="col-span-6">
+          <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+            <div className="h-5 w-full animate-pulse rounded bg-bg-3" />
+          </div>
+        </section>
+        {/* Stats skeleton */}
+        <section className="col-span-6 grid grid-cols-4 gap-4">
+          <div className="bg-bg-2 border-line-2 rounded-4 col-span-2 border p-4">
+            <div className="h-20 animate-pulse rounded bg-bg-3" />
+          </div>
+          <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+            <div className="h-12 animate-pulse rounded bg-bg-3" />
+          </div>
+          <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+            <div className="h-12 animate-pulse rounded bg-bg-3" />
+          </div>
+        </section>
+        {/* Test cases skeleton */}
+        <section className="col-span-6 flex flex-col gap-4">
+          <div className="h-6 w-48 animate-pulse rounded bg-bg-3" />
+          <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-4 w-16 animate-pulse rounded bg-bg-3" />
+                  <div className="h-4 w-48 animate-pulse rounded bg-bg-3" />
+                </div>
+                <div className="h-5 w-16 animate-pulse rounded-full bg-bg-3" />
+              </div>
+            ))}
+          </div>
+        </section>
+      </MainContainer>
     );
   }
 
   if (isError || !data?.success) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <XCircle className="h-12 w-12 text-red-400" />
-            <p className="text-text-1 font-semibold">마일스톤을 불러올 수 없습니다.</p>
-            <Link href={`/projects/${projectSlug}/milestones`} className="text-primary hover:underline">
-              목록으로 돌아가기
-            </Link>
-          </div>
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <XCircle className="h-12 w-12 text-red-400" />
+          <p className="text-text-1 font-semibold">마일스톤을 불러올 수 없습니다.</p>
+          <Link href={`/projects/${projectSlug}/milestones`} className="text-primary hover:underline">
+            목록으로 돌아가기
+          </Link>
+        </div>
+      </MainContainer>
     );
   }
 
@@ -151,9 +193,7 @@ export const MilestoneDetailView = () => {
   const testRuns = milestone.testRuns ?? [];
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
+    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
         {/* 뒤로가기 + 헤더 */}
         <header className="col-span-6 flex flex-col gap-4">
           <Link
@@ -439,6 +479,5 @@ export const MilestoneDetailView = () => {
           )}
         </AnimatePresence>
       </MainContainer>
-    </Container>
   );
 };
