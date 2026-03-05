@@ -86,7 +86,8 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
     enabled: !!projectId,
   });
 
-  const testCases = testCasesData?.success ? testCasesData.data : [];
+  const testCases = testCasesData?.success ? testCasesData.data.items : [];
+  const totalCasesCount = testCasesData?.success ? testCasesData.data.pagination.totalItems : 0;
   const testSuites = dashboardData?.success ? dashboardData.data.testSuites : [];
 
   // 테스트 실행 목록 조회
@@ -154,10 +155,10 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
 
   // KPI 데이터 계산
   const kpiData: KPIData = React.useMemo(() => ({
-    totalCases: testCases.length,
+    totalCases: totalCasesCount,
     testSuites: testSuites.length,
     ...testStatusData,
-  }), [testCases.length, testSuites.length, testStatusData]);
+  }), [totalCasesCount, testSuites.length, testStatusData]);
 
   const handleCopyLink = async () => {
     try {
@@ -396,10 +397,10 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
               <div className="flex items-center justify-between">
                 <Link href={`/projects/${slug}/cases`} className="flex items-center gap-2 group">
                   <h2 className="typo-h2-heading text-text-1">테스트 케이스</h2>
-                  <span className="typo-body2-normal text-text-3">({testCases.length})</span>
+                  <span className="typo-body2-normal text-text-3">({totalCasesCount})</span>
                   <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
                 </Link>
-                {testCases.length > 0 && (
+                {totalCasesCount > 0 && (
                   <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); }}>
                     <Plus className="h-4 w-4" />
                     <span>추가</span>
@@ -407,7 +408,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
                 )}
               </div>
 
-              {testCases.length === 0 ? (
+              {totalCasesCount === 0 ? (
                 <div className="rounded-3 border-line-2 bg-bg-2 border-2 border-dashed flex flex-col items-center justify-center gap-6 py-16">
                   <Image
                     src="/teacup/tea-cup-not-found.svg"
@@ -450,12 +451,12 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
                       </span>
                     </Link>
                   ))}
-                  {testCases.length > 5 && (
+                  {totalCasesCount > 5 && (
                     <Link
                       href={`/projects/${slug}/cases`}
                       className="flex items-center justify-center gap-2 px-5 py-3 text-primary hover:bg-bg-3 transition-colors"
                     >
-                      <span className="typo-body2-heading">전체 보기 ({testCases.length}개)</span>
+                      <span className="typo-body2-heading">전체 보기 ({totalCasesCount}개)</span>
                       <ChevronRight className="h-4 w-4" />
                     </Link>
                   )}

@@ -1,22 +1,19 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import { TestCasesView } from '@/view';
 import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { testCasesQueryOptions } from '@/features/cases-list/api/query';
 import { testSuitesQueryOptions } from '@/entities/test-suite/api/query';
+import { CasesSkeleton } from './cases-skeleton';
 
 export const metadata: Metadata = {
   title: '테스트 케이스',
   description: '프로젝트의 테스트 케이스를 조회하고 관리합니다.',
 };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+async function CasesData({ slug }: { slug: string }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
 
   try {
@@ -28,7 +25,7 @@ export default async function Page({
 
     if (projectId) {
       await Promise.all([
-        queryClient.prefetchQuery(testCasesQueryOptions(projectId)),
+        queryClient.prefetchQuery(testCasesQueryOptions(projectId, { page: 1, size: 15, sort: 'updatedAt-desc' })),
         queryClient.prefetchQuery(testSuitesQueryOptions(projectId)),
       ]);
     }
@@ -40,5 +37,19 @@ export default async function Page({
     <HydrationBoundary state={dehydrate(queryClient)}>
       <TestCasesView />
     </HydrationBoundary>
+  );
+}
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  return (
+    <Suspense fallback={<CasesSkeleton />}>
+      <CasesData slug={slug} />
+    </Suspense>
   );
 }

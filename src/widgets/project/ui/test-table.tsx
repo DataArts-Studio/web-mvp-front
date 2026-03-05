@@ -78,12 +78,72 @@ const TestTableItem = ({ children }: ComponentProps<'div'>) => {
   )
 };
 
-const TestTablePagination = () => {
+interface TestTablePaginationProps {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  maxVisible?: number;
+}
+
+const TestTablePagination = ({
+  page,
+  totalPages,
+  totalItems,
+  onPageChange,
+  maxVisible = 10,
+}: TestTablePaginationProps) => {
+  if (totalPages <= 1) return null;
+
+  // 표시할 페이지 번호 범위 계산
+  const half = Math.floor(maxVisible / 2);
+  let start = Math.max(1, page - half);
+  let end = start + maxVisible - 1;
+  if (end > totalPages) {
+    end = totalPages;
+    start = Math.max(1, end - maxVisible + 1);
+  }
+
+  const pages: number[] = [];
+  for (let i = start; i <= end; i++) pages.push(i);
+
   return (
-    <div className="flex items-center justify-center p-4">
-      <Button className="typo-caption-normal text-text-3 hover:text-text-1 transition-colors">
-        더 보기
-      </Button>
+    <div className="flex items-center justify-between px-6 py-3">
+      <span className="typo-caption-normal text-text-3">총 {totalItems}건</span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+        >
+          &lt;
+        </button>
+        {pages.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            className={cn(
+              'typo-caption-normal rounded-1 flex h-8 min-w-8 items-center justify-center px-1.5 transition-colors',
+              p === page
+                ? 'bg-primary text-white font-medium'
+                : 'text-text-2 hover:bg-bg-3'
+            )}
+          >
+            {p}
+          </button>
+        ))}
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+          className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+        >
+          &gt;
+        </button>
+      </div>
+      <div className="w-16" />
     </div>
   );
 };

@@ -44,7 +44,7 @@ export default async function ProjectAccessPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-1 px-4">
+    <div className="flex min-h-screen w-full items-center justify-center bg-bg-1 px-4">
       <Suspense
         fallback={
           <div className="h-96 w-full max-w-md animate-pulse rounded-5 bg-bg-3" />
