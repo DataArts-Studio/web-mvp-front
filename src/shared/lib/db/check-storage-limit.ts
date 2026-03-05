@@ -1,8 +1,6 @@
 import { LIMITS } from '@/shared/constants/core';
-import type { ActionResult } from '@/shared/types';
+import type { ActionFailure } from '@/shared/types';
 import { getProjectStorageBytes } from './get-project-storage';
-
-type ActionFailure = { success: false; errors: Record<string, string[]>; message?: string };
 
 /**
  * 프로젝트의 저장 용량이 제한을 초과하는지 확인합니다.
