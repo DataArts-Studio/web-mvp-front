@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { MainContainer } from '@/shared/lib/primitives';
+import { Dialog } from '@/shared/lib/primitives/dialog/dialog';
 import { useOutsideClick } from '@/shared/hooks';
 import {
   Search,
@@ -14,15 +15,17 @@ import {
   X,
   Plus,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { DSButton, RUN_STATUS_CONFIG, Skeleton, EmptyState, Pagination } from '@/shared/ui';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { projectIdQueryOptions } from '@/entities/project';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { testRunsQueryOptions } from '@/features/runs';
+import { testRunsQueryOptions, deleteTestRun } from '@/features/runs';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
+import { toast } from 'sonner';
 
 const PAGE_SIZE = 10;
 type RunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
@@ -64,6 +67,10 @@ export const TestRunsListView = () => {
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
+  // 삭제 확인 다이얼로그 상태
+  const [deleteTarget, setDeleteTarget] = useState<ITestRun | null>(null);
+  const queryClient = useQueryClient();
+
   // 드롭다운 외부 클릭 감지를 위한 ref
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
@@ -87,6 +94,23 @@ export const TestRunsListView = () => {
 
   const testRuns: ITestRun[] = (fetchedRunsData?.success ? fetchedRunsData.data : []) as ITestRun[];
   const hasError = (dashboardData && !dashboardData.success) || (fetchedRunsData && !fetchedRunsData.success);
+
+  const deleteMutation = useMutation({
+    mutationFn: (testRunId: string) => deleteTestRun(testRunId),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success('테스트 실행이 삭제되었습니다.');
+        queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
+      } else {
+        toast.error(Object.values(result.errors).flat().join(', '));
+      }
+      setDeleteTarget(null);
+    },
+    onError: () => {
+      toast.error('삭제 중 오류가 발생했습니다.');
+      setDeleteTarget(null);
+    },
+  });
 
   // 테스트 실행 목록 View 이벤트
   useEffect(() => {
@@ -207,6 +231,7 @@ export const TestRunsListView = () => {
   }
 
   return (
+    <>
     <MainContainer className="grid h-screen w-full flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden py-8 max-w-[1200px] mx-auto px-10">
         <header className="col-span-6 flex items-start justify-between border-b border-line-2 pb-6">
           <div className="flex flex-col gap-1">
@@ -350,11 +375,12 @@ export const TestRunsListView = () => {
               </span>
             </div>
           )}
-          <div className="grid grid-cols-12 gap-4 border-b border-line-2 bg-bg-3 px-6 py-3">
-            <div className="col-span-5 typo-caption-heading text-text-3 uppercase">실행 이름 / 기준</div>
-            <div className="col-span-3 typo-caption-heading text-text-3 uppercase">진행률 (완료/전체)</div>
-            <div className="col-span-2 text-center typo-caption-heading text-text-3 uppercase">상태</div>
-            <div className="col-span-2 text-right typo-caption-heading text-text-3 uppercase">마지막 업데이트</div>
+          <div className="grid grid-cols-[5fr_3fr_2fr_2fr_auto] gap-4 border-b border-line-2 bg-bg-3 px-6 py-3">
+            <div className="typo-caption-heading text-text-3 uppercase">실행 이름 / 기준</div>
+            <div className="typo-caption-heading text-text-3 uppercase">진행률 (완료/전체)</div>
+            <div className="text-center typo-caption-heading text-text-3 uppercase">상태</div>
+            <div className="text-right typo-caption-heading text-text-3 uppercase">마지막 업데이트</div>
+            <div className="w-9" />
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -365,9 +391,9 @@ export const TestRunsListView = () => {
               <div
                 key={run.id}
                 onClick={() => router.push(`/projects/${projectSlug}/runs/${run.id}`)}
-                className="group grid cursor-pointer grid-cols-12 items-center gap-4 border-b border-line-2 px-6 py-5 transition-colors hover:bg-bg-3 last:border-b-0"
+                className="group grid cursor-pointer grid-cols-[5fr_3fr_2fr_2fr_auto] items-center gap-4 border-b border-line-2 px-6 py-5 transition-colors hover:bg-bg-3 last:border-b-0"
               >
-                <div className="col-span-5 flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5">
                   <span className="typo-body1-heading text-text-1 group-hover:text-primary transition-colors">
                     {run.name}
                   </span>
@@ -382,7 +408,7 @@ export const TestRunsListView = () => {
                   </div>
                 </div>
 
-                <div className="col-span-3 flex flex-col gap-2 pr-4">
+                <div className="flex flex-col gap-2 pr-4">
                   <div className="flex justify-between text-xs">
                     <span className="font-medium text-text-1">{progressPercent}%</span>
                     <span className="text-text-3">{completedCases} / {totalCases}</span>
@@ -413,7 +439,7 @@ export const TestRunsListView = () => {
                   })()}
                 </div>
 
-                <div className="col-span-2 flex justify-center">
+                <div className="flex justify-center">
                   <span className={`typo-caption-heading inline-flex items-center rounded-1 px-2.5 py-1 ${RUN_STATUS_CONFIG[run.status]?.style ?? 'bg-bg-4 text-text-3'}`}>
                     {run.status === 'COMPLETED' && <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
                     {run.status === 'IN_PROGRESS' && <PlayCircle className="mr-1.5 h-3.5 w-3.5" />}
@@ -421,7 +447,7 @@ export const TestRunsListView = () => {
                   </span>
                 </div>
 
-                <div className="col-span-2 text-right">
+                <div className="text-right">
                   <span className="typo-caption-normal text-text-3">
                     {new Date(run.updatedAt).toLocaleDateString()}
                   </span>
@@ -429,6 +455,14 @@ export const TestRunsListView = () => {
                     {new Date(run.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
+
+                <button
+                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(run); }}
+                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2 text-text-4 opacity-0 transition-all hover:bg-system-red/10 hover:text-system-red group-hover:opacity-100"
+                  title="삭제"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             );
           })}
@@ -498,5 +532,36 @@ export const TestRunsListView = () => {
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="mt-auto border-t border-line-2" />
         </section>
       </MainContainer>
+
+      {/* 삭제 확인 다이얼로그 */}
+      {deleteTarget && (
+        <Dialog.Root defaultOpen onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+          <Dialog.Portal>
+            <Dialog.Overlay />
+            <Dialog.Content className="bg-bg-1 rounded-8 w-full max-w-md p-6 shadow-xl">
+              <Dialog.Title className="text-lg font-semibold text-text-1">
+                테스트 실행을 삭제하시겠습니까?
+              </Dialog.Title>
+              <Dialog.Description className="text-text-3 mt-3 text-sm">
+                <strong className="text-text-1">&quot;{deleteTarget.name}&quot;</strong>과(와) 관련된 모든 테스트 케이스 실행 결과가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+              </Dialog.Description>
+              <div className="mt-6 flex justify-end gap-3">
+                <DSButton variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>
+                  취소
+                </DSButton>
+                <DSButton
+                  variant="solid"
+                  className="bg-system-red hover:bg-system-red/90"
+                  onClick={() => deleteMutation.mutate(deleteTarget.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? '삭제 중...' : '삭제'}
+                </DSButton>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      )}
+    </>
   );
 };
