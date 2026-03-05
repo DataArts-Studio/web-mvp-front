@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, testRunSuites, milestones, milestoneTestSuites, milestoneTestCases, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import type { TestCaseRunDetail, SourceInfo, TestRunDetail } from '@/entities/test-run';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 /**
@@ -21,13 +21,14 @@ async function repairTestRun(db: ReturnType<typeof getDatabase>, runId: string, 
   const suiteIds = msSuites.map((s) => s.test_suite_id).filter(Boolean) as string[];
 
   if (suiteIds.length > 0) {
-    // 2. test_run_suites 누락분 생성
+    // 2. test_run_suites 누락분 생성 (제외된 스위트는 복원하지 않음)
     const existingRunSuites = await db
-      .select({ test_suite_id: testRunSuites.test_suite_id })
+      .select({ test_suite_id: testRunSuites.test_suite_id, excluded_at: testRunSuites.excluded_at })
       .from(testRunSuites)
       .where(eq(testRunSuites.test_run_id, runId));
 
     const existingSuiteIds = new Set(existingRunSuites.map((s) => s.test_suite_id));
+    const excludedSuiteIds = new Set(existingRunSuites.filter((s) => s.excluded_at).map((s) => s.test_suite_id));
     const missingSuiteIds = suiteIds.filter((id) => !existingSuiteIds.has(id));
 
     if (missingSuiteIds.length > 0) {
@@ -36,11 +37,14 @@ async function repairTestRun(db: ReturnType<typeof getDatabase>, runId: string, 
       ).onConflictDoNothing();
     }
 
-    // 3. 스위트 케이스 중 누락된 test_case_runs 생성
-    const suiteCaseRows = await db
-      .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
-      .from(testCases)
-      .where(and(inArray(testCases.test_suite_id, suiteIds), eq(testCases.lifecycle_status, 'ACTIVE')));
+    // 3. 스위트 케이스 중 누락된 test_case_runs 생성 (제외된 스위트 건너뜀)
+    const activeSuiteIds = suiteIds.filter((id) => !excludedSuiteIds.has(id));
+    const suiteCaseRows = activeSuiteIds.length > 0
+      ? await db
+          .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
+          .from(testCases)
+          .where(and(inArray(testCases.test_suite_id, activeSuiteIds), eq(testCases.lifecycle_status, 'ACTIVE')))
+      : [];
 
     if (suiteCaseRows.length > 0) {
       const caseIds = suiteCaseRows.map((r) => r.id).filter(Boolean) as string[];
@@ -127,11 +131,11 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       }
     }
 
-    // 2. 테스트 케이스 실행 결과
+    // 2. 테스트 케이스 실행 결과 (논리 삭제 제외)
     const caseRuns = await db
       .select()
       .from(testCaseRuns)
-      .where(eq(testCaseRuns.test_run_id, testRunId));
+      .where(and(eq(testCaseRuns.test_run_id, testRunId), isNull(testCaseRuns.excluded_at)));
 
     // 3. 테스트 케이스 정보
     const caseIds = [...new Set(caseRuns.map(cr => cr.test_case_id).filter(Boolean))] as string[];
@@ -140,11 +144,11 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       : [];
     const caseMap = new Map(cases.map(c => [c.id, c]));
 
-    // 4. 테스트 실행-스위트 연결
+    // 4. 테스트 실행-스위트 연결 (논리 삭제 제외)
     const runSuiteRows = await db
       .select()
       .from(testRunSuites)
-      .where(eq(testRunSuites.test_run_id, testRunId));
+      .where(and(eq(testRunSuites.test_run_id, testRunId), isNull(testRunSuites.excluded_at)));
 
     const suiteIds = [...new Set(runSuiteRows.map(rs => rs.test_suite_id).filter(Boolean))] as string[];
     const suiteRows = suiteIds.length > 0

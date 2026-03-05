@@ -12,6 +12,7 @@ import {
   MessageSquare,
   FolderOpen,
   Filter,
+  X,
 } from 'lucide-react';
 
 import { STATUS_CONFIG, type StatusFilter, type GroupedCases } from './run-detail-constants';
@@ -36,6 +37,7 @@ interface RunCaseListPanelProps {
   setShowSuiteFilterDropdown: (show: boolean) => void;
   statusFilterRef: React.RefObject<HTMLDivElement | null>;
   suiteFilterRef: React.RefObject<HTMLDivElement | null>;
+  onRemoveSuite?: (suiteId: string, suiteName: string) => void;
 }
 
 export const RunCaseListPanel = ({
@@ -58,6 +60,7 @@ export const RunCaseListPanel = ({
   setShowSuiteFilterDropdown,
   statusFilterRef,
   suiteFilterRef,
+  onRemoveSuite,
 }: RunCaseListPanelProps) => {
   return (
     <div className="border-line-2 flex w-[60%] flex-col border-r">
@@ -224,7 +227,7 @@ export const RunCaseListPanel = ({
                   tabIndex={0}
                   onClick={() => collapsedGroups.toggle(group.groupKey)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); collapsedGroups.toggle(group.groupKey); } }}
-                  className="bg-bg-3/50 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
+                  className="group/header bg-bg-3/50 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
                 >
                   <ChevronDown
                     className={cn(
@@ -250,6 +253,15 @@ export const RunCaseListPanel = ({
                       {group.cases.length}
                     </span>
                   </div>
+                  {onRemoveSuite && group.suiteId && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRemoveSuite(group.suiteId!, group.suiteName); }}
+                      className="ml-1 flex h-5 w-5 items-center justify-center rounded text-text-4 opacity-0 transition-all hover:bg-system-red/10 hover:text-system-red group-hover/header:opacity-100"
+                      title={`${group.suiteName} 스위트 제거`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Test Case Items */}

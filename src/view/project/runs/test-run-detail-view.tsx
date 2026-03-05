@@ -7,15 +7,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 
 import { MainContainer } from '@/shared/lib/primitives';
+import { Dialog } from '@/shared/lib/primitives/dialog/dialog';
+import { DSButton } from '@/shared/ui';
 import { RUN_STATUS_CONFIG } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { useOutsideClick, useToggleSet } from '@/shared/hooks';
 import { type TestStatusData } from '@/widgets/project';
-import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus } from '@/features/runs';
+import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun } from '@/features/runs';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 import { ShareButton } from '@/features/runs-share/ui/share-button';
 import { ArrowLeft, XCircle, Keyboard } from 'lucide-react';
+import { toast } from 'sonner';
 
 import {
   STATUS_CONFIG, SOURCE_TYPE_CONFIG,
@@ -45,6 +48,7 @@ export const TestRunDetailView = () => {
   const collapsedGroups = useToggleSet();
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [removeSuiteTarget, setRemoveSuiteTarget] = useState<{ id: string; name: string } | null>(null);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
@@ -84,6 +88,25 @@ export const TestRunDetailView = () => {
     mutationFn: updateTestCaseRunStatus,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+    },
+  });
+
+  const removeSuiteMutation = useMutation({
+    mutationFn: ({ suiteId }: { suiteId: string }) =>
+      removeSuiteFromRun({ testRunId, suiteId }),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(`스위트가 제거되었습니다. (${result.data.excluded}건 제외)`);
+        queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+        if (projectId) queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
+      } else {
+        toast.error(Object.values(result.errors).flat().join(', '));
+      }
+      setRemoveSuiteTarget(null);
+    },
+    onError: () => {
+      toast.error('스위트 제거 중 오류가 발생했습니다.');
+      setRemoveSuiteTarget(null);
     },
   });
 
@@ -372,6 +395,7 @@ export const TestRunDetailView = () => {
             setShowSuiteFilterDropdown={setShowSuiteFilterDropdown}
             statusFilterRef={statusFilterRef}
             suiteFilterRef={suiteFilterRef}
+            onRemoveSuite={(suiteId, suiteName) => setRemoveSuiteTarget({ id: suiteId, name: suiteName })}
           />
 
           <RunCaseDetailPanel
@@ -393,6 +417,35 @@ export const TestRunDetailView = () => {
         open={showShortcuts}
         onClose={() => setShowShortcuts(false)}
       />
+
+      {removeSuiteTarget && (
+        <Dialog.Root defaultOpen onOpenChange={(open) => { if (!open) setRemoveSuiteTarget(null); }}>
+          <Dialog.Portal>
+            <Dialog.Overlay />
+            <Dialog.Content className="bg-bg-1 rounded-8 w-full max-w-md p-6 shadow-xl">
+              <Dialog.Title className="text-lg font-semibold text-text-1">
+                스위트를 제거하시겠습니까?
+              </Dialog.Title>
+              <Dialog.Description className="text-text-3 mt-3 text-sm">
+                <strong className="text-text-1">&quot;{removeSuiteTarget.name}&quot;</strong> 스위트와 해당 스위트에서 추가된 모든 테스트 케이스 실행 결과가 이 테스트 실행에서 제거됩니다.
+              </Dialog.Description>
+              <div className="mt-6 flex justify-end gap-3">
+                <DSButton variant="ghost" onClick={() => setRemoveSuiteTarget(null)} disabled={removeSuiteMutation.isPending}>
+                  취소
+                </DSButton>
+                <DSButton
+                  variant="solid"
+                  className="bg-system-red hover:bg-system-red/90"
+                  onClick={() => removeSuiteMutation.mutate({ suiteId: removeSuiteTarget.id })}
+                  disabled={removeSuiteMutation.isPending}
+                >
+                  {removeSuiteMutation.isPending ? '제거 중...' : '제거'}
+                </DSButton>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      )}
 
     </MainContainer>
   );

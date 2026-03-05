@@ -9,19 +9,20 @@ export async function deleteTestRun(testRunId: string): Promise<ActionResult<{ i
   try {
     const db = getDatabase();
 
-    const [deleted] = await db
-      .delete(testRuns)
+    const [archived] = await db
+      .update(testRuns)
+      .set({ lifecycle_status: 'ARCHIVED', archived_at: new Date() })
       .where(eq(testRuns.id, testRunId))
       .returning({ id: testRuns.id });
 
-    if (!deleted) {
+    if (!archived) {
       return {
         success: false,
         errors: { _general: ['삭제할 테스트 실행을 찾을 수 없습니다.'] },
       };
     }
 
-    return { success: true, data: { id: deleted.id } };
+    return { success: true, data: { id: archived.id } };
   } catch (error) {
     console.error('[deleteTestRun] Error:', error);
     Sentry.captureException(error, { extra: { action: 'deleteTestRun', testRunId } });
