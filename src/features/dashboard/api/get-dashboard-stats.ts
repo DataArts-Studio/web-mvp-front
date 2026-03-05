@@ -2,8 +2,8 @@
 
 import * as Sentry from '@sentry/nextjs';
 import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features/dashboard';
-import { getDatabase, projects, suiteTestCases, testCases, testSuites } from '@/shared/lib/db';
-import { and, count, desc, eq, isNull, notInArray } from 'drizzle-orm';
+import { getDatabase, projects, testCases, testSuites } from '@/shared/lib/db';
+import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { ActionResult } from '@/shared/types';
 
 type GetDashboardStatsParams = {
@@ -41,24 +41,26 @@ export const getDashboardStats = async ({
       created_at: projectRow.created_at.toISOString(),
     };
 
-    // 테스트 케이스 통계 - projectRow.id 사용
+    // 테스트 케이스 통계 - projectRow.id 사용 (ACTIVE만)
     const [testCaseCountResult] = await db
       .select({ count: count() })
       .from(testCases)
-      .where(eq(testCases.project_id, projectRow.id));
+      .where(
+        and(
+          eq(testCases.project_id, projectRow.id),
+          eq(testCases.lifecycle_status, 'ACTIVE')
+        )
+      );
 
-    // 스위트 미지정 케이스 수
-    const assignedTestCasesSubquery = db
-        .select({ id: suiteTestCases.test_case_id })
-        .from(suiteTestCases);
-
+    // 스위트 미지정 케이스 수 (test_suite_id가 NULL인 ACTIVE 케이스)
     const [unassignedCountResult] = await db
         .select({ count: count() })
         .from(testCases)
         .where(
             and(
                 eq(testCases.project_id, projectRow.id),
-                notInArray(testCases.id, assignedTestCasesSubquery)
+                eq(testCases.lifecycle_status, 'ACTIVE'),
+                isNull(testCases.test_suite_id)
             )
         );
 
@@ -77,13 +79,18 @@ export const getDashboardStats = async ({
       .from(testSuites)
       .where(eq(testSuites.project_id, projectRow.id));
 
-    // 각 스위트별 케이스 수 계산
+    // 각 스위트별 케이스 수 계산 (test_cases.test_suite_id 기준, ACTIVE만)
     const testSuitesResult: TestSuiteSummary[] = await Promise.all(
       suiteRows.map(async (row) => {
         const [caseCountResult] = await db
           .select({ count: count() })
-          .from(suiteTestCases)
-          .where(eq(suiteTestCases.suite_id, row.id));
+          .from(testCases)
+          .where(
+            and(
+              eq(testCases.test_suite_id, row.id),
+              eq(testCases.lifecycle_status, 'ACTIVE')
+            )
+          );
 
         return {
           id: row.id,
@@ -94,7 +101,7 @@ export const getDashboardStats = async ({
       })
     );
 
-    // 최근 테스트 케이스 - projectRow.id 사용
+    // 최근 테스트 케이스 - projectRow.id 사용 (ACTIVE만)
     const recentTestCases = await db
       .select({
         id: testCases.id,
@@ -102,7 +109,12 @@ export const getDashboardStats = async ({
         created_at: testCases.created_at,
       })
       .from(testCases)
-      .where(eq(testCases.project_id, projectRow.id))
+      .where(
+        and(
+          eq(testCases.project_id, projectRow.id),
+          eq(testCases.lifecycle_status, 'ACTIVE')
+        )
+      )
       .orderBy(desc(testCases.created_at))
       .limit(5);
 

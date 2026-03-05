@@ -136,12 +136,12 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
 
   const dashboardMilestones = milestonesData?.success ? milestonesData.data : [];
 
-  // KPI 데이터 계산
+  // KPI 데이터 계산 - 실행 선택 시 실행 기준 totalCases 사용
   const kpiData: KPIData = useMemo(() => ({
-    totalCases: totalCasesCount,
+    totalCases: selectedRun ? selectedRun.stats.totalCases : totalCasesCount,
     testSuites: testSuites.length,
     ...testStatusData,
-  }), [totalCasesCount, testSuites.length, testStatusData]);
+  }), [selectedRun, totalCasesCount, testSuites.length, testStatusData]);
 
   const handleCopyLink = async () => {
     try {
@@ -175,7 +175,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
     <>
         {/* KPI 카드 섹션 */}
         <section className="col-span-6" data-tour="kpi-cards">
-          {showSkeleton ? <KPISkeleton /> : <KPICards data={kpiData} />}
+          {showSkeleton ? <KPISkeleton /> : <KPICards data={kpiData} projectTotalCases={totalCasesCount} />}
         </section>
 
         {/* 프로젝트 정보 + 저장 용량 + 최근 활동 카드 */}

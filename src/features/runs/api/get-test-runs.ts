@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns, testCaseRuns, testRunSuites, testSuites, milestones, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import type { FetchedTestRun } from '@/entities/test-run';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 export async function getTestRunsByProjectId(projectId: string): Promise<ActionResult<FetchedTestRun[]>> {
   try {
@@ -35,10 +35,12 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
       : [];
     const suiteMap = new Map(suiteRows.map(s => [s.id, s.name]));
 
-    // 4. 마일스톤 이름 조회
+    // 4. 마일스톤 이름 조회 (ACTIVE만)
     const milestoneIds = [...new Set(runs.map(r => r.milestone_id).filter(Boolean))] as string[];
     const milestoneRows = milestoneIds.length > 0
-      ? await db.select({ id: milestones.id, name: milestones.name }).from(milestones).where(inArray(milestones.id, milestoneIds))
+      ? await db.select({ id: milestones.id, name: milestones.name }).from(milestones).where(
+          and(inArray(milestones.id, milestoneIds), eq(milestones.lifecycle_status, 'ACTIVE'))
+        )
       : [];
     const milestoneMap = new Map(milestoneRows.map(m => [m.id, m.name]));
 
