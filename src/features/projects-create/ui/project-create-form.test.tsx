@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectDomain } from '@/entities';
-import type { ActionResult } from '@/features';
+import type { ActionResult } from '@/shared/types';
 
 // Next.js router mock
 const mockReplace = vi.fn();

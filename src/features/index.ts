@@ -5,7 +5,7 @@ export type { DashboardMilestoneSuite, DashboardMilestone, StorageInfo, ProjectI
 // projects-create
 export { createProject, getProjects, checkProjectNameDuplicate, hashIdentifier, ProjectCreateForm } from '@/features/projects-create';
 export { createProjectMock, getProjectsMock, checkProjectNameDuplicateMock, resetMockDatabase, getMockDatabase } from '@/features/projects-create';
-export type { ActionResult } from '@/features/projects-create';
+export type { ActionResult } from '@/shared/types';
 
 // project-search
 export type { SearchKeyword, ProjectSearchResult, SearchProjectsResponse, SearchModalStatus, SearchModalState } from '@/features/project-search';
@@ -32,7 +32,7 @@ export type { UpdateMilestone } from '@/features/milestones-edit';
 export { testCaseQueryKeys, testCasesQueryOptions, testCaseByIdQueryOptions } from '@/features/cases-list';
 
 // runs
-export type { FetchedTestRun, TestCaseRunDetail, SourceInfo, TestRunDetail, UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/features/runs';
+export type { FetchedTestRun, TestCaseRunDetail, SourceInfo, TestRunDetail, UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
 export { getTestRunsByProjectId, getTestRunById, updateTestCaseRunStatus, testRunsQueryOptions, testRunByIdQueryOptions } from '@/features/runs';
 
 // onboarding-tour
