@@ -129,6 +129,11 @@
     @apply bg-bg-1 text-text-1 antialiased;
   }
 
+  /* 클릭 가능한 요소에 pointer cursor 기본 적용 */
+  button, [role="button"], a, summary, select, [type="checkbox"], [type="radio"] {
+    cursor: pointer;
+  }
+
   /* [tailwind ver] modern css reset 2025 */
   /* 모바일 터치 하이라이트 제거 */
   * {
