@@ -30,7 +30,7 @@ type TestStatusChartProps = {
 
 const RADIUS = 106;
 const VIEW_SIZE = RADIUS * 2;
-const GAP_DEGREES = 2;
+const GAP_DEGREES = 0;
 
 export const TestStatusChart = ({ data }: TestStatusChartProps) => {
   const total = data.pass + data.fail + data.blocked + data.untested;
@@ -132,17 +132,29 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
               viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
               className="w-full h-full"
             >
-              {arcs.map((arc) => (
-                <path
-                  key={arc.key}
-                  d={arc.path}
-                  fill={arc.color}
+              {arcs.length === 1 ? (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={RADIUS}
+                  fill={arcs[0].color}
                   className="transition-opacity duration-150"
-                  style={{ opacity: hoveredKey && hoveredKey !== arc.key ? 0.4 : 1 }}
-                  onMouseEnter={() => setHoveredKey(arc.key)}
+                  onMouseEnter={() => setHoveredKey(arcs[0].key)}
                   onMouseLeave={() => setHoveredKey(null)}
                 />
-              ))}
+              ) : (
+                arcs.map((arc) => (
+                  <path
+                    key={arc.key}
+                    d={arc.path}
+                    fill={arc.color}
+                    className="transition-opacity duration-150"
+                    style={{ opacity: hoveredKey && hoveredKey !== arc.key ? 0.4 : 1 }}
+                    onMouseEnter={() => setHoveredKey(arc.key)}
+                    onMouseLeave={() => setHoveredKey(null)}
+                  />
+                ))
+              )}
             </svg>
             {/* Tooltip */}
             {hoveredSeg && (
