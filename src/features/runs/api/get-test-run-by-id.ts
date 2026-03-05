@@ -19,6 +19,9 @@ export interface TestCaseRunDetail {
   sourceName: string | null;
   testSuiteId: string | null;
   testSuiteName: string | null;
+  preCondition: string | null;
+  steps: string | null;
+  expectedResult: string | null;
 }
 
 export interface SourceInfo {
@@ -260,6 +263,9 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
         sourceName: tcr.source_id ? (sourceIdToName.get(tcr.source_id) || null) : null,
         testSuiteId: tc?.test_suite_id || null,
         testSuiteName: tc?.test_suite_id ? (suiteMap.get(tc.test_suite_id) || null) : null,
+        preCondition: tc?.pre_condition || null,
+        steps: tc?.steps || null,
+        expectedResult: tc?.expected_result || null,
       };
     });
 

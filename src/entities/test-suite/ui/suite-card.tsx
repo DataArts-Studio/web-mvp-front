@@ -71,7 +71,7 @@ export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
     return [
       `테스트 스위트 ${suite.title}`,
       `태그 ${suite.tag.label}`,
-      `태그 중요도 ${tagToneText}`,
+      `태그 중요도 ${tagToneText(suite.tag.tone)}`,
       `포함 경로 ${primaryPath}`,
       `테스트 케이스 ${suite.caseCount}개`,
       `마일스톤 ${milestoneText}`,
@@ -82,7 +82,7 @@ export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
   }, [
     suite.title,
     suite.tag.label,
-    tagToneText,
+    suite.tag.tone,
     primaryPath,
     suite.caseCount,
     milestoneText,

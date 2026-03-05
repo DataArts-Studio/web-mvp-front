@@ -348,7 +348,7 @@ export const TestRunDetailView = () => {
           </div>
         </div>
         {/* Content skeleton */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="sticky top-0 flex h-screen overflow-hidden">
           <div className="border-line-2 flex w-[60%] flex-col border-r">
             <div className="border-line-2 flex flex-col gap-3 border-b p-4">
               <div className="h-10 w-full animate-pulse rounded-lg border border-line-2 bg-bg-2" />
@@ -465,8 +465,8 @@ export const TestRunDetailView = () => {
           />
         </div>
 
-        {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden">
+        {/* Main Content - sticky panels */}
+        <div className="sticky top-0 flex h-screen overflow-hidden">
           {/* Left Panel - Test Case List */}
           <div className="border-line-2 flex w-[60%] flex-col border-r">
             {/* Search & Filter */}
@@ -694,7 +694,7 @@ export const TestRunDetailView = () => {
           </div>
 
           {/* Right Panel - Test Case Detail */}
-          <div className="flex w-[40%] flex-col overflow-hidden">
+          <div className="flex w-[40%] flex-col overflow-y-auto">
             {selectedCase ? (
               <>
                 {/* Case Header */}
@@ -776,8 +776,39 @@ export const TestRunDetailView = () => {
                   </div>
                 </div>
 
+                {/* Test Case Details */}
+                <div className="border-line-2 flex flex-col gap-4 border-b p-6">
+                  {selectedCase.preCondition && (
+                    <div>
+                      <h3 className="text-text-2 mb-2 text-sm font-medium">사전조건</h3>
+                      <div className="bg-bg-2 rounded-lg p-3">
+                        <p className="text-text-1 whitespace-pre-wrap text-sm">{selectedCase.preCondition}</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedCase.steps && (
+                    <div>
+                      <h3 className="text-text-2 mb-2 text-sm font-medium">테스트 스텝</h3>
+                      <div className="bg-bg-2 rounded-lg p-3">
+                        <p className="text-text-1 whitespace-pre-wrap text-sm">{selectedCase.steps}</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedCase.expectedResult && (
+                    <div>
+                      <h3 className="text-text-2 mb-2 text-sm font-medium">기대 결과</h3>
+                      <div className="bg-bg-2 rounded-lg p-3">
+                        <p className="text-text-1 whitespace-pre-wrap text-sm">{selectedCase.expectedResult}</p>
+                      </div>
+                    </div>
+                  )}
+                  {!selectedCase.preCondition && !selectedCase.steps && !selectedCase.expectedResult && (
+                    <p className="text-text-3 text-sm">사전조건, 테스트 스텝, 기대 결과가 등록되지 않았습니다.</p>
+                  )}
+                </div>
+
                 {/* Comment Section */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 p-6">
                   <h3 className="text-text-2 mb-3 text-sm font-medium">코멘트</h3>
                   <textarea
                     value={comment}
