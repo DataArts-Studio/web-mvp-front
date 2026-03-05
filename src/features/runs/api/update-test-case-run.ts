@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testRuns, TestCaseRunStatus, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
 import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';
 
 export async function updateTestCaseRunStatus(
@@ -74,10 +74,11 @@ export async function updateTestCaseRunStatus(
 }
 
 async function updateTestRunStatus(db: ReturnType<typeof getDatabase>, testRunId: string) {
-  // Get all test case runs for this test run
-  const caseRuns = await db.query.testCaseRuns.findMany({
-    where: eq(testCaseRuns.test_run_id, testRunId),
-  });
+  // Get all test case runs for this test run (논리 삭제 제외)
+  const caseRuns = await db
+    .select()
+    .from(testCaseRuns)
+    .where(and(eq(testCaseRuns.test_run_id, testRunId), isNull(testCaseRuns.excluded_at)));
 
   if (caseRuns.length === 0) return;
 
