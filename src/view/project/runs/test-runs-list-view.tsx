@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { MainContainer } from '@/shared/lib/primitives';
 import { useOutsideClick } from '@/shared/hooks';
 import {
@@ -16,7 +16,7 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react';
-import { DSButton } from '@/shared/ui';
+import { DSButton, RUN_STATUS_CONFIG, Skeleton, EmptyState } from '@/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { projectIdQueryOptions } from '@/entities/project';
@@ -24,6 +24,7 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import { testRunsQueryOptions } from '@/features/runs';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 
+const PAGE_SIZE = 10;
 type RunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 type RunSourceType = 'SUITE' | 'MILESTONE' | 'ADHOC';
 type StatusFilter = 'ALL' | RunStatus;
@@ -53,6 +54,8 @@ export const TestRunsListView = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   // 정렬 옵션
   const [sortOption, setSortOption] = useState<'UPDATED' | 'NAME'>('UPDATED');
+  // 페이지네이션
+  const [currentPage, setCurrentPage] = useState(1);
   // 드롭다운 열림 상태
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -108,6 +111,14 @@ export const TestRunsListView = () => {
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
+  // 페이지네이션 계산
+  const totalItems = sortedRuns.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+  const paginatedRuns = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return sortedRuns.slice(start, start + PAGE_SIZE);
+  }, [sortedRuns, currentPage]);
+
   // 상태 필터 라벨
   const getStatusFilterLabel = (filter: StatusFilter) => {
     switch (filter) {
@@ -119,27 +130,7 @@ export const TestRunsListView = () => {
   };
 
   // 검색어 초기화
-  const clearSearch = () => setSearchTerm('');
-
-  const getStatusBadgeStyle = (status: RunStatus) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'bg-primary/10 text-primary';
-      case 'IN_PROGRESS':
-        return 'bg-system-blue/10 text-system-blue';
-      case 'NOT_STARTED':
-      default:
-        return 'bg-bg-4 text-text-3';
-    }
-  };
-
-  const getStatusLabel = (status: RunStatus) => {
-    switch (status) {
-      case 'COMPLETED': return 'Completed';
-      case 'IN_PROGRESS': return 'In Progress';
-      case 'NOT_STARTED': return 'Not Started';
-    }
-  };
+  const clearSearch = () => { setSearchTerm(''); setCurrentPage(1); };
 
   const getSourceIcon = (type: RunSourceType) => {
     switch(type) {
@@ -156,53 +147,53 @@ export const TestRunsListView = () => {
         {/* Header skeleton */}
         <header className="col-span-6 flex items-start justify-between border-b border-line-2 pb-6">
           <div className="flex flex-col gap-1">
-            <div className="h-8 w-48 animate-pulse rounded bg-bg-3" />
-            <div className="h-5 w-80 animate-pulse rounded bg-bg-3" />
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-5 w-80" />
           </div>
-          <div className="h-10 w-40 animate-pulse rounded-2 bg-bg-3" />
+          <Skeleton className="h-10 w-40 rounded-2" />
         </header>
         {/* Filter skeleton */}
         <section className="col-span-6 flex items-center justify-between gap-4">
           <div className="flex flex-1 items-center gap-3">
-            <div className="h-10 w-full max-w-md animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+            <Skeleton className="h-10 w-full max-w-md rounded-2 border border-line-2 bg-bg-2" />
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-10 w-32 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
-            <div className="h-10 w-36 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+            <Skeleton className="h-10 w-32 rounded-2 border border-line-2 bg-bg-2" />
+            <Skeleton className="h-10 w-36 rounded-2 border border-line-2 bg-bg-2" />
           </div>
         </section>
         {/* Table skeleton */}
         <section className="col-span-6 flex flex-col overflow-hidden rounded-4 border border-line-2 bg-bg-2 shadow-1">
           {/* Table header */}
           <div className="grid grid-cols-12 gap-4 border-b border-line-2 bg-bg-3 px-6 py-3">
-            <div className="col-span-5 h-3 w-24 animate-pulse rounded bg-bg-4" />
-            <div className="col-span-3 h-3 w-28 animate-pulse rounded bg-bg-4" />
-            <div className="col-span-2 flex justify-center"><div className="h-3 w-10 animate-pulse rounded bg-bg-4" /></div>
-            <div className="col-span-2 flex justify-end"><div className="h-3 w-24 animate-pulse rounded bg-bg-4" /></div>
+            <Skeleton className="col-span-5 h-3 w-24" />
+            <Skeleton className="col-span-3 h-3 w-28" />
+            <div className="col-span-2 flex justify-center"><Skeleton className="h-3 w-10" /></div>
+            <div className="col-span-2 flex justify-end"><Skeleton className="h-3 w-24" /></div>
           </div>
           {/* Table rows */}
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="grid grid-cols-12 items-center gap-4 border-b border-line-2 px-6 py-5 last:border-b-0">
               <div className="col-span-5 flex flex-col gap-1.5">
-                <div className="h-5 w-48 animate-pulse rounded bg-bg-3" />
+                <Skeleton className="h-5 w-48" />
                 <div className="flex items-center gap-2">
-                  <div className="h-5 w-16 animate-pulse rounded-1 bg-bg-3" />
-                  <div className="h-4 w-24 animate-pulse rounded bg-bg-3" />
+                  <Skeleton className="h-5 w-16 rounded-1" />
+                  <Skeleton className="h-4 w-24" />
                 </div>
               </div>
               <div className="col-span-3 flex flex-col gap-2 pr-4">
                 <div className="flex justify-between">
-                  <div className="h-3 w-8 animate-pulse rounded bg-bg-3" />
-                  <div className="h-3 w-12 animate-pulse rounded bg-bg-3" />
+                  <Skeleton className="h-3 w-8" />
+                  <Skeleton className="h-3 w-12" />
                 </div>
-                <div className="h-2 w-full animate-pulse rounded-full bg-bg-3" />
+                <Skeleton className="h-2 w-full rounded-full" />
               </div>
               <div className="col-span-2 flex justify-center">
-                <div className="h-6 w-20 animate-pulse rounded-1 bg-bg-3" />
+                <Skeleton className="h-6 w-20 rounded-1" />
               </div>
               <div className="col-span-2 flex flex-col items-end gap-1">
-                <div className="h-4 w-20 animate-pulse rounded bg-bg-3" />
-                <div className="h-3 w-12 animate-pulse rounded bg-bg-3" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-3 w-12" />
               </div>
             </div>
           ))}
@@ -212,7 +203,7 @@ export const TestRunsListView = () => {
   }
 
   return (
-    <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">
+    <MainContainer className="grid h-screen w-full flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden py-8 max-w-[1200px] mx-auto px-10">
         <header className="col-span-6 flex items-start justify-between border-b border-line-2 pb-6">
           <div className="flex flex-col gap-1">
             <h2 className="typo-h1-heading text-text-1">테스트 실행 목록</h2>
@@ -240,7 +231,7 @@ export const TestRunsListView = () => {
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 placeholder="실행 이름 검색..."
                 className="typo-body2-normal w-full rounded-2 border border-line-2 bg-bg-2 py-2 pl-10 pr-10 text-text-1 placeholder:text-text-4 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
@@ -282,6 +273,7 @@ export const TestRunsListView = () => {
                       onClick={() => {
                         setStatusFilter(status);
                         setIsStatusDropdownOpen(false);
+                        setCurrentPage(1);
                       }}
                       className={`typo-body2-normal flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-bg-3 ${
                         statusFilter === status ? 'bg-bg-3 text-primary' : 'text-text-2'
@@ -343,18 +335,17 @@ export const TestRunsListView = () => {
           </div>
         </section>
 
-        {/* 검색 결과 요약 */}
-        {(searchTerm || statusFilter !== 'ALL') && (
-          <div className="col-span-6 flex items-center gap-2 text-text-3">
-            <span className="typo-body2-normal">
-              {sortedRuns.length}개 결과
-              {searchTerm && <span className="ml-1">· 검색어: &quot;{searchTerm}&quot;</span>}
-              {statusFilter !== 'ALL' && <span className="ml-1">· 상태: {getStatusFilterLabel(statusFilter)}</span>}
-            </span>
-          </div>
-        )}
-
-        <section className="col-span-6 flex flex-col overflow-hidden rounded-4 border border-line-2 bg-bg-2 shadow-1">
+        <section className="col-span-6 flex min-h-0 flex-col overflow-hidden rounded-4 border border-line-2 bg-bg-2 shadow-1">
+          {/* 검색 결과 요약 */}
+          {(searchTerm || statusFilter !== 'ALL') && (
+            <div className="flex items-center gap-2 border-b border-line-2 px-6 py-2 text-text-3">
+              <span className="typo-body2-normal">
+                {sortedRuns.length}개 결과
+                {searchTerm && <span className="ml-1">· 검색어: &quot;{searchTerm}&quot;</span>}
+                {statusFilter !== 'ALL' && <span className="ml-1">· 상태: {getStatusFilterLabel(statusFilter)}</span>}
+              </span>
+            </div>
+          )}
           <div className="grid grid-cols-12 gap-4 border-b border-line-2 bg-bg-3 px-6 py-3">
             <div className="col-span-5 typo-caption-heading text-text-3 uppercase">실행 이름 / 기준</div>
             <div className="col-span-3 typo-caption-heading text-text-3 uppercase">진행률 (완료/전체)</div>
@@ -362,7 +353,8 @@ export const TestRunsListView = () => {
             <div className="col-span-2 text-right typo-caption-heading text-text-3 uppercase">마지막 업데이트</div>
           </div>
 
-          {sortedRuns.map((run) => {
+          <div className="flex-1 overflow-y-auto">
+          {paginatedRuns.map((run) => {
             const { totalCases, completedCases, progressPercent } = run.stats;
 
             return (
@@ -402,10 +394,10 @@ export const TestRunsListView = () => {
                 </div>
 
                 <div className="col-span-2 flex justify-center">
-                  <span className={`typo-caption-heading inline-flex items-center rounded-1 px-2.5 py-1 ${getStatusBadgeStyle(run.status)}`}>
+                  <span className={`typo-caption-heading inline-flex items-center rounded-1 px-2.5 py-1 ${RUN_STATUS_CONFIG[run.status]?.style ?? 'bg-bg-4 text-text-3'}`}>
                     {run.status === 'COMPLETED' && <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
                     {run.status === 'IN_PROGRESS' && <PlayCircle className="mr-1.5 h-3.5 w-3.5" />}
-                    {getStatusLabel(run.status)}
+                    {RUN_STATUS_CONFIG[run.status]?.label ?? run.status}
                   </span>
                 </div>
 
@@ -423,66 +415,102 @@ export const TestRunsListView = () => {
 
           {/* 에러 발생 시 */}
           {hasError && testRuns.length === 0 && (
-            <div className="flex h-60 flex-col items-center justify-center gap-2 py-10 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-system-red/10 text-system-red">
-                <AlertCircle className="h-6 w-6" />
-              </div>
-              <p className="typo-body1-heading text-text-2">데이터를 불러오지 못했습니다.</p>
-              <p className="typo-caption-normal text-text-3">
-                일시적인 오류가 발생했습니다. 다시 시도해주세요.
-              </p>
-              <DSButton
-                variant="ghost"
-                className="mt-2 flex items-center gap-2"
-                onClick={() => refetchRuns()}
-              >
-                <RefreshCw className="h-4 w-4" />
-                다시 시도
-              </DSButton>
-            </div>
+            <EmptyState
+              icon={<AlertCircle className="h-6 w-6" />}
+              title="데이터를 불러오지 못했습니다."
+              description="일시적인 오류가 발생했습니다. 다시 시도해주세요."
+              action={
+                <DSButton
+                  variant="ghost"
+                  className="mt-2 flex items-center gap-2"
+                  onClick={() => refetchRuns()}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  다시 시도
+                </DSButton>
+              }
+              className="h-60"
+            />
           )}
 
           {/* 검색/필터 결과가 없을 때 */}
           {testRuns.length > 0 && sortedRuns.length === 0 && (
-            <div className="flex h-60 flex-col items-center justify-center gap-2 py-10 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-3 text-text-3">
-                <Search className="h-6 w-6" />
-              </div>
-              <p className="typo-body1-heading text-text-2">검색 결과가 없습니다.</p>
-              <p className="typo-caption-normal text-text-3">
-                {searchTerm && `"${searchTerm}"에 대한 결과가 없습니다. `}
-                {statusFilter !== 'ALL' && `상태: ${getStatusFilterLabel(statusFilter)}`}
-              </p>
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('ALL');
-                }}
-                className="mt-2 typo-body2-heading text-primary hover:underline"
-              >
-                필터 초기화
-              </button>
-            </div>
+            <EmptyState
+              icon={<Search className="h-6 w-6" />}
+              title="검색 결과가 없습니다."
+              description={`${searchTerm ? `"${searchTerm}"에 대한 결과가 없습니다. ` : ''}${statusFilter !== 'ALL' ? `상태: ${getStatusFilterLabel(statusFilter)}` : ''}`}
+              action={
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('ALL');
+                    setCurrentPage(1);
+                  }}
+                  className="mt-2 typo-body2-heading text-primary hover:underline"
+                >
+                  필터 초기화
+                </button>
+              }
+              className="h-60"
+            />
           )}
 
           {/* 테스트 실행이 하나도 없을 때 */}
           {!hasError && testRuns.length === 0 && (
-            <div className="flex h-60 flex-col items-center justify-center gap-2 py-10 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-3 text-text-3">
-                <ListTodo className="h-6 w-6" />
-              </div>
-              <p className="typo-body1-heading text-text-2">생성된 테스트 실행이 없습니다.</p>
-              <p className="typo-caption-normal text-text-3">새로운 테스트 실행을 생성하여 결과를 기록해보세요.</p>
-              <DSButton
-                variant="ghost"
-                className="mt-2 flex items-center gap-2"
-                onClick={() => router.push(`/projects/${projectSlug}/runs/create`)}
-              >
-                <Plus className="h-4 w-4" />
-                테스트 실행 생성
-              </DSButton>
-            </div>
+            <EmptyState
+              icon={<ListTodo className="h-6 w-6" />}
+              title="생성된 테스트 실행이 없습니다."
+              description="새로운 테스트 실행을 생성하여 결과를 기록해보세요."
+              action={
+                <DSButton
+                  variant="ghost"
+                  className="mt-2 flex items-center gap-2"
+                  onClick={() => router.push(`/projects/${projectSlug}/runs/create`)}
+                >
+                  <Plus className="h-4 w-4" />
+                  테스트 실행 생성
+                </DSButton>
+              }
+              className="h-60"
+            />
           )}
+          </div>
+          <div className="mt-auto flex items-center justify-center border-t border-line-2 px-6 py-3">
+            <div className="flex items-center">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+                className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                &lt;
+              </button>
+              <div className="flex items-center justify-center gap-1" style={{ width: 'calc(2rem * 10 + 0.25rem * 9)' }}>
+                {Array.from({ length: totalPages || 1 }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
+                      p === currentPage
+                        ? 'bg-bg-4 text-text-1 font-bold'
+                        : 'text-text-2 hover:bg-bg-3'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={currentPage >= (totalPages || 1)}
+                onClick={() => setCurrentPage(currentPage + 1)}
+                className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                &gt;
+              </button>
+            </div>
+          </div>
         </section>
       </MainContainer>
   );

@@ -2,39 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, Mail, Github, Sparkles, Heart, Coffee, Code2, Server, Palette, MessageCircle } from 'lucide-react';
+import { ChevronLeft, Mail, Sparkles, Heart, Coffee, MessageCircle } from 'lucide-react';
 
-import { Logo } from '@/shared/ui/logo';
 import { Container, MainContainer } from '@/shared/lib/primitives';
 import { Footer } from '@/widgets/footer';
-
-interface TeamMember {
-  name: string;
-  role: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const teamMembers: TeamMember[] = [
-  {
-    name: '팀원 A',
-    role: 'Frontend Developer',
-    description: '사용자 경험을 최우선으로 생각하며, 깔끔한 코드를 사랑합니다.',
-    icon: Code2,
-  },
-  {
-    name: '팀원 B',
-    role: 'Backend Developer',
-    description: '안정적인 서비스를 위해 늘 고민합니다.',
-    icon: Server,
-  },
-  {
-    name: '팀원 C',
-    role: 'Product Designer',
-    description: '사용자의 마음을 읽는 디자인을 추구합니다.',
-    icon: Palette,
-  },
-];
 
 const values = [
   {

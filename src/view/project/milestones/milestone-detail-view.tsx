@@ -10,10 +10,10 @@ import { milestoneByIdQueryOptions } from '@/features/milestones';
 import { MilestoneEditForm, AddCasesToMilestoneModal, AddSuitesToMilestoneModal } from '@/features/milestones-edit';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { MainContainer } from '@/shared/lib';
-import { DSButton } from '@/shared/ui';
-import { cn } from '@/shared/utils';
+import { DSButton, StatusBadge, MILESTONE_STATUS_CONFIG, TEST_RESULT_STATUS_CONFIG, RUN_STATUS_CONFIG, EmptyState, Skeleton, SkeletonCircle } from '@/shared/ui';
+
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Calendar, ChevronRight, Edit2, FolderOpen, ListChecks, Play, PlayCircle, Plus, Trash2, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronRight, Edit2, FolderOpen, ListChecks, Play, PlayCircle, Plus, XCircle } from 'lucide-react';
 import { getTestSuites } from '@/entities/test-suite';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 import { formatDateTime } from '@/shared/utils/date-format';
@@ -29,46 +29,6 @@ const TestCaseSideView = dynamic(
 );
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
-  inProgress: {
-    label: '진행 중',
-    style: 'bg-amber-500/20 text-amber-300',
-  },
-  done: {
-    label: '완료',
-    style: 'bg-green-500/20 text-green-300',
-  },
-  planned: {
-    label: '예정',
-    style: 'bg-slate-500/20 text-slate-300',
-  },
-};
-
-const TEST_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
-  pass: { label: 'Pass', style: 'bg-green-500/20 text-green-300' },
-  fail: { label: 'Fail', style: 'bg-red-500/20 text-red-300' },
-  blocked: { label: 'Blocked', style: 'bg-amber-500/20 text-amber-300' },
-  untested: { label: 'Untested', style: 'bg-slate-500/20 text-slate-300' },
-};
-
-const RUN_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
-  NOT_STARTED: { label: 'Not Started', style: 'bg-slate-500/20 text-slate-300' },
-  IN_PROGRESS: { label: 'In Progress', style: 'bg-blue-500/20 text-blue-300' },
-  COMPLETED: { label: 'Completed', style: 'bg-green-500/20 text-green-300' },
-};
 
 export const MilestoneDetailView = () => {
   const params = useParams();
@@ -115,50 +75,50 @@ export const MilestoneDetailView = () => {
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
         {/* Header skeleton */}
         <header className="col-span-6 flex flex-col gap-4">
-          <div className="h-4 w-32 animate-pulse rounded bg-bg-3" />
+          <Skeleton className="h-4 w-32" />
           <div className="flex items-start justify-between">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-64 animate-pulse rounded bg-bg-3" />
-                <div className="h-7 w-16 animate-pulse rounded-full bg-bg-3" />
+                <Skeleton className="h-8 w-64" />
+                <SkeletonCircle className="h-7 w-16" />
               </div>
-              <div className="h-4 w-48 animate-pulse rounded bg-bg-3" />
+              <Skeleton className="h-4 w-48" />
             </div>
             <div className="flex gap-2">
-              <div className="h-9 w-16 animate-pulse rounded bg-bg-3" />
-              <div className="h-9 w-16 animate-pulse rounded bg-bg-3" />
+              <Skeleton className="h-9 w-16" />
+              <Skeleton className="h-9 w-16" />
             </div>
           </div>
         </header>
         {/* Description skeleton */}
         <section className="col-span-6">
           <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-            <div className="h-5 w-full animate-pulse rounded bg-bg-3" />
+            <Skeleton className="h-5 w-full" />
           </div>
         </section>
         {/* Stats skeleton */}
         <section className="col-span-6 grid grid-cols-4 gap-4">
           <div className="bg-bg-2 border-line-2 rounded-4 col-span-2 border p-4">
-            <div className="h-20 animate-pulse rounded bg-bg-3" />
+            <Skeleton className="h-20" />
           </div>
           <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-            <div className="h-12 animate-pulse rounded bg-bg-3" />
+            <Skeleton className="h-12" />
           </div>
           <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-            <div className="h-12 animate-pulse rounded bg-bg-3" />
+            <Skeleton className="h-12" />
           </div>
         </section>
         {/* Test cases skeleton */}
         <section className="col-span-6 flex flex-col gap-4">
-          <div className="h-6 w-48 animate-pulse rounded bg-bg-3" />
+          <Skeleton className="h-6 w-48" />
           <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-4 w-16 animate-pulse rounded bg-bg-3" />
-                  <div className="h-4 w-48 animate-pulse rounded bg-bg-3" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-48" />
                 </div>
-                <div className="h-5 w-16 animate-pulse rounded-full bg-bg-3" />
+                <SkeletonCircle className="h-5 w-16" />
               </div>
             ))}
           </div>
@@ -182,7 +142,7 @@ export const MilestoneDetailView = () => {
   }
 
   const milestone = data.data;
-  const statusInfo = STATUS_CONFIG[milestone.progressStatus] || {
+  const statusInfo = MILESTONE_STATUS_CONFIG[milestone.progressStatus] || {
     label: milestone.progressStatus,
     style: 'bg-gray-500/20 text-gray-300',
   };
@@ -208,9 +168,7 @@ export const MilestoneDetailView = () => {
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
                 <h1 className="typo-title-heading">{milestone.title}</h1>
-                <span className={cn('rounded-full px-3 py-1 text-sm font-medium', statusInfo.style)}>
-                  {statusInfo.label}
-                </span>
+                <StatusBadge config={statusInfo} className="px-3 py-1 text-sm" />
               </div>
               <div className="text-text-3 flex items-center gap-1.5 text-sm">
                 <Calendar className="h-4 w-4" strokeWidth={1.5} />
@@ -300,29 +258,29 @@ export const MilestoneDetailView = () => {
           </div>
 
           {testCases.length === 0 ? (
-            <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
-              <ListChecks className="text-text-3 h-8 w-8" />
-              <div className="text-center">
-                <p className="text-text-1 font-semibold">포함된 테스트 케이스가 없습니다.</p>
-                <p className="text-text-3 text-sm">
-                  테스트 케이스를 추가하여 마일스톤 범위를 정의하세요.
-                </p>
-              </div>
-              <DSButton
-                variant="ghost"
-                className="flex items-center gap-1"
-                onClick={() => setIsAddingCases(true)}
-              >
-                <Plus className="h-4 w-4" />
-                테스트 케이스 추가
-              </DSButton>
+            <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
+              <EmptyState
+                icon={<ListChecks className="h-8 w-8" />}
+                title="포함된 테스트 케이스가 없습니다."
+                description="테스트 케이스를 추가하여 마일스톤 범위를 정의하세요."
+                action={
+                  <DSButton
+                    variant="ghost"
+                    className="flex items-center gap-1"
+                    onClick={() => setIsAddingCases(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    테스트 케이스 추가
+                  </DSButton>
+                }
+              />
             </div>
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
               {testCases.map((testCase) => {
                 const statusConfig =
-                  TEST_STATUS_CONFIG[testCase.lastStatus || 'untested'] ||
-                  TEST_STATUS_CONFIG.untested;
+                  TEST_RESULT_STATUS_CONFIG[testCase.lastStatus || 'untested'] ||
+                  TEST_RESULT_STATUS_CONFIG.untested;
                 return (
                   <button
                     key={testCase.id}
@@ -334,14 +292,7 @@ export const MilestoneDetailView = () => {
                       <span className="text-primary font-mono text-sm">{testCase.caseKey}</span>
                       <span className="text-text-1">{testCase.title}</span>
                     </div>
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.5 text-xs font-medium',
-                        statusConfig.style
-                      )}
-                    >
-                      {statusConfig.label}
-                    </span>
+                    <StatusBadge config={statusConfig} />
                   </button>
                 );
               })}
@@ -367,22 +318,22 @@ export const MilestoneDetailView = () => {
           </div>
 
           {testSuites.length === 0 ? (
-            <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
-              <ListChecks className="text-text-3 h-8 w-8" />
-              <div className="text-center">
-                <p className="text-text-1 font-semibold">포함된 테스트 스위트가 없습니다.</p>
-                <p className="text-text-3 text-sm">
-                  테스트 스위트를 추가하여 마일스톤 범위를 정의하세요.
-                </p>
-              </div>
-              <DSButton
-                variant="ghost"
-                className="flex items-center gap-1"
-                onClick={() => setIsAddingSuites(true)}
-              >
-                <Plus className="h-4 w-4" />
-                테스트 스위트 추가
-              </DSButton>
+            <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
+              <EmptyState
+                icon={<ListChecks className="h-8 w-8" />}
+                title="포함된 테스트 스위트가 없습니다."
+                description="테스트 스위트를 추가하여 마일스톤 범위를 정의하세요."
+                action={
+                  <DSButton
+                    variant="ghost"
+                    className="flex items-center gap-1"
+                    onClick={() => setIsAddingSuites(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    테스트 스위트 추가
+                  </DSButton>
+                }
+              />
             </div>
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
@@ -418,12 +369,12 @@ export const MilestoneDetailView = () => {
         <section className="col-span-6 flex flex-col gap-4">
           <h2 className="typo-h2-heading">테스트 실행 이력</h2>
           {testRuns.length === 0 ? (
-            <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
-              <PlayCircle className="text-text-3 h-8 w-8" />
-              <div className="text-center">
-                <p className="text-text-1 font-semibold">테스트 실행 이력이 없습니다.</p>
-                <p className="text-text-3 text-sm">마일스톤 기반 테스트 실행을 생성하세요.</p>
-              </div>
+            <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
+              <EmptyState
+                icon={<PlayCircle className="h-8 w-8" />}
+                title="테스트 실행 이력이 없습니다."
+                description="마일스톤 기반 테스트 실행을 생성하세요."
+              />
             </div>
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
@@ -437,14 +388,7 @@ export const MilestoneDetailView = () => {
                   >
                     <span className="text-text-1">{run.name}</span>
                     <div className="flex items-center gap-3">
-                      <span
-                        className={cn(
-                          'rounded-full px-2 py-0.5 text-xs font-medium',
-                          runStatusConfig.style
-                        )}
-                      >
-                        {runStatusConfig.label}
-                      </span>
+                      <StatusBadge config={runStatusConfig} />
                       <span className="text-text-3 text-sm">{formatDateTime(run.updatedAt)}</span>
                     </div>
                   </Link>

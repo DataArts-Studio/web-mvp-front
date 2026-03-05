@@ -1,21 +1,18 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 
-import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
 import type { TestCaseTemplate } from '@/entities/test-case-template';
-import { isBuiltinTemplate } from '@/entities/test-case-template';
 import { templatesQueryOptions } from '@/entities/test-case-template/api';
 import { getTestTypeLabel } from '@/entities/test-case';
 import { TemplateCreateModal } from '@/features/templates-create';
 import { TemplateEditModal, useDeleteTemplate } from '@/features/templates-edit';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { Container, MainContainer } from '@/shared/lib/primitives';
-import { DSButton, LoadingSpinner } from '@/shared/ui';
-import { useDisclosure } from '@/shared/hooks';
+import { Aside } from '@/widgets';
+import { DSButton, EmptyState, LoadingSpinner } from '@/shared/ui';
 import { cn } from '@/shared/utils';
-import { ActionToolbar, Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { Edit2, Eye, Inbox, LayoutTemplate, ListChecks, MoreVertical, Plus, Search, Tag, TestTube2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -42,7 +39,7 @@ export const TemplatesView = () => {
     enabled: !!projectId,
   });
 
-  const templates = templatesData?.success ? templatesData.data : [];
+  const templates = useMemo(() => templatesData?.success ? templatesData.data : [], [templatesData]);
 
   const { mutate: deleteMutate } = useDeleteTemplate();
 
@@ -173,23 +170,24 @@ export const TemplatesView = () => {
             {/* Left: Card grid */}
             <div className="flex-1">
               {filteredTemplates.length === 0 ? (
-                <div className="rounded-4 border border-line-2 bg-bg-2 flex flex-col items-center justify-center gap-3 py-16">
-                  <Inbox className="h-10 w-10 text-text-3" />
-                  <p className="text-text-3 text-sm">
-                    {searchQuery ? '검색 결과가 없습니다.' : '템플릿이 없습니다.'}
-                  </p>
-                  {!searchQuery && activeTab !== 'builtin' && (
-                    <DSButton
-                      variant="ghost"
-                      size="small"
-                      onClick={() => setIsCreateOpen(true)}
-                      className="flex items-center gap-1"
-                    >
-                      <Plus className="h-4 w-4" />
-                      새 템플릿 만들기
-                    </DSButton>
-                  )}
-                </div>
+                <EmptyState
+                  icon={<Inbox className="h-10 w-10" />}
+                  title={searchQuery ? '검색 결과가 없습니다.' : '템플릿이 없습니다.'}
+                  action={
+                    !searchQuery && activeTab !== 'builtin' ? (
+                      <DSButton
+                        variant="ghost"
+                        size="small"
+                        onClick={() => setIsCreateOpen(true)}
+                        className="flex items-center gap-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        새 템플릿 만들기
+                      </DSButton>
+                    ) : undefined
+                  }
+                  className="rounded-4 border border-line-2 bg-bg-2 py-16"
+                />
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   {filteredTemplates.map((template) => {

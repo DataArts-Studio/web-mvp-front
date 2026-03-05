@@ -77,8 +77,10 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
   return (
     <>
     {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
-    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-static-element-interactions */}
     <div
+      role="button"
+      tabIndex={-1}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
       className="fixed inset-0 z-40 bg-black/50"
       onClick={onClose}
       aria-hidden="true"

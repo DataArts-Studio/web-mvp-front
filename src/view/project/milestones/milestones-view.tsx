@@ -15,10 +15,12 @@ import { ActionToolbar } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
+import { Skeleton } from '@/shared/ui';
 
 // 필터 옵션과 상태값 매핑
 const FILTER_OPTIONS = ['전체', '진행 중', '완료', '예정'] as const;
 type FilterOption = (typeof FILTER_OPTIONS)[number];
+const PAGE_SIZE = 10;
 
 const FILTER_TO_STATUS: Record<FilterOption, string | null> = {
   '전체': null,
@@ -35,6 +37,7 @@ export const MilestonesView = () => {
   // 필터링 상태
   const [statusFilter, setStatusFilter] = useState<FilterOption>('전체');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
   const { data: projectIdData } = useQuery(projectIdQueryOptions(params.slug as string));
@@ -45,7 +48,7 @@ export const MilestonesView = () => {
     ...milestonesQueryOptions(projectId!),
     enabled: !!projectId,
   });
-  const milestonesData = milestonesResult?.success ? milestonesResult.data : [];
+  const milestonesData = useMemo(() => milestonesResult?.success ? milestonesResult.data : [], [milestonesResult]);
 
   // 필터링된 마일스톤 데이터
   const filteredMilestones = useMemo(() => {
@@ -63,14 +66,24 @@ export const MilestonesView = () => {
     });
   }, [milestonesData, statusFilter, searchQuery]);
 
+  // 페이지네이션 계산
+  const totalItems = filteredMilestones.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+  const paginatedMilestones = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredMilestones.slice(start, start + PAGE_SIZE);
+  }, [filteredMilestones, currentPage]);
+
   // 필터 변경 핸들러
   const handleFilterChange = (value: string) => {
     setStatusFilter(value as FilterOption);
+    setCurrentPage(1);
   };
 
   // 검색어 변경 핸들러
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    setCurrentPage(1);
   };
 
   const handleEdit = (milestone: Milestone) => {
@@ -91,50 +104,44 @@ export const MilestonesView = () => {
   if (isLoadingProject || isLoadingMilestones) {
     return (
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
-        {/* Header skeleton */}
         <header className="col-span-6 flex flex-col gap-2">
-          <div className="h-8 w-72 animate-pulse rounded bg-bg-3" />
-          <div className="h-5 w-[420px] animate-pulse rounded bg-bg-3" />
+          <Skeleton className="h-8 w-72" />
+          <Skeleton className="h-5 w-[420px]" />
         </header>
-        {/* Toolbar skeleton */}
         <div className="col-span-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1">
-            <div className="h-10 flex-1 max-w-md animate-pulse rounded-2 border border-line-2 bg-bg-2" />
-            <div className="h-10 w-28 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+            <Skeleton className="h-10 flex-1 max-w-md rounded-2 border border-line-2 bg-bg-2" />
+            <Skeleton className="h-10 w-28 rounded-2 border border-line-2 bg-bg-2" />
           </div>
-          <div className="h-9 w-40 animate-pulse rounded-2 bg-bg-3" />
+          <Skeleton className="h-9 w-40 rounded-2" />
         </div>
-        {/* Milestone card skeletons */}
         <section className="col-span-6 flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="bg-bg-2 shadow-1 rounded-3 flex w-full flex-col gap-5 border-l-4 border-l-bg-3 px-6 py-5 md:flex-row md:items-center md:justify-between">
-              {/* Left: title + badge + description + date */}
               <div className="flex w-full flex-col gap-2.5 md:w-[35%]">
                 <div className="flex items-center gap-3">
-                  <div className="h-6 w-36 animate-pulse rounded bg-bg-3" />
-                  <div className="h-6 w-14 animate-pulse rounded-full bg-bg-3" />
+                  <Skeleton className="h-6 w-36" />
+                  <Skeleton className="h-6 w-14 rounded-full" />
                 </div>
-                <div className="h-4 w-full animate-pulse rounded bg-bg-3" />
-                <div className="h-4 w-44 animate-pulse rounded bg-bg-3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-44" />
               </div>
-              {/* Middle: progress bar */}
               <div className="flex w-full flex-col gap-2 md:w-[30%]">
                 <div className="flex items-center justify-between">
-                  <div className="h-3 w-10 animate-pulse rounded bg-bg-3" />
-                  <div className="h-6 w-12 animate-pulse rounded bg-bg-3" />
+                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="h-6 w-12" />
                 </div>
-                <div className="h-2.5 w-full animate-pulse rounded-full bg-bg-3" />
+                <Skeleton className="h-2.5 w-full rounded-full" />
                 <div className="flex justify-between">
-                  <div className="h-3 w-24 animate-pulse rounded bg-bg-3" />
-                  <div className="h-3 w-16 animate-pulse rounded bg-bg-3" />
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-16" />
                 </div>
               </div>
-              {/* Right: stat cards */}
               <div className="flex w-full items-center gap-2 md:w-auto md:justify-end">
                 {Array.from({ length: 3 }).map((_, j) => (
                   <div key={j} className="bg-bg-3/50 flex flex-col items-center rounded-xl px-4 py-2 gap-1">
-                    <div className="h-5 w-6 animate-pulse rounded bg-bg-3" />
-                    <div className="h-3 w-8 animate-pulse rounded bg-bg-3" />
+                    <Skeleton className="h-5 w-6" />
+                    <Skeleton className="h-3 w-8" />
                   </div>
                 ))}
               </div>
@@ -155,7 +162,7 @@ export const MilestonesView = () => {
   }
 
   return (
-    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+    <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden px-10 py-8">
         <header className="col-span-6 flex w-full items-start justify-between gap-6">
           <div className="flex flex-col gap-2">
             <h1 className="typo-title-heading">마일스톤 & 테스트 진행 현황</h1>
@@ -182,80 +189,118 @@ export const MilestonesView = () => {
           </ActionToolbar.Action>
         </ActionToolbar.Root>
         {/* 마일스톤 리스트 */}
-        <section aria-label="마일스톤 목록" className="col-span-6 flex flex-col gap-3">
-          {/* 필터 결과 카운트 */}
-          {milestonesData.length > 0 && (
-            <div className="flex items-center justify-between">
-              <p className="typo-body2-normal text-text-3">
-                {statusFilter === '전체' && !searchQuery
-                  ? `총 ${milestonesData.length}개의 마일스톤`
-                  : `${filteredMilestones.length}개의 결과`}
-              </p>
-              {(statusFilter !== '전체' || searchQuery) && (
+        <section aria-label="마일스톤 목록" className="col-span-6 flex min-h-0 flex-col">
+          <div className="flex-1 overflow-y-auto flex flex-col gap-3">
+            {/* 필터 결과 카운트 */}
+            {milestonesData.length > 0 && (
+              <div className="flex items-center justify-between">
+                <p className="typo-body2-normal text-text-3">
+                  {statusFilter === '전체' && !searchQuery
+                    ? `총 ${milestonesData.length}개의 마일스톤`
+                    : `${filteredMilestones.length}개의 결과`}
+                </p>
+                {(statusFilter !== '전체' || searchQuery) && (
+                  <button
+                    onClick={() => {
+                      setStatusFilter('전체');
+                      setSearchQuery('');
+                      setCurrentPage(1);
+                    }}
+                    className="typo-label-normal text-text-3 hover:text-primary transition-colors"
+                  >
+                    필터 초기화
+                  </button>
+                )}
+              </div>
+            )}
+
+            {milestonesData.length === 0 ? (
+              <div className="rounded-3 border-line-2 bg-bg-2/50 col-span-6 flex min-h-[200px] flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
+                <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
+                  <FolderOpen className="h-6 w-6" strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="typo-h3-heading text-text-1">등록된 마일스톤이 없습니다.</p>
+                  <p className="typo-body2-normal text-text-3">
+                    새로운 마일스톤을 생성하여 테스트 관리를 시작해보세요.
+                  </p>
+                </div>
+              </div>
+            ) : filteredMilestones.length === 0 ? (
+              <div className="rounded-3 border-line-2 bg-bg-2/50 col-span-6 flex min-h-[200px] flex-col items-center justify-center gap-4 border-2 border-dashed py-16 text-center">
+                <div className="flex flex-col gap-1">
+                  <p className="typo-h3-heading text-text-1">검색 결과가 없습니다.</p>
+                  <p className="typo-body2-normal text-text-3">
+                    다른 검색어나 필터를 시도해보세요.
+                  </p>
+                </div>
                 <button
                   onClick={() => {
                     setStatusFilter('전체');
                     setSearchQuery('');
+                    setCurrentPage(1);
                   }}
-                  className="typo-label-normal text-text-3 hover:text-primary transition-colors"
+                  className="typo-body2-normal text-primary hover:underline"
                 >
                   필터 초기화
                 </button>
-              )}
-            </div>
-          )}
-
-          {milestonesData.length === 0 ? (
-            // 원본 데이터가 없는 경우
-            <div className="rounded-3 border-line-2 bg-bg-2/50 col-span-6 flex min-h-[200px] flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
-              <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
-                <FolderOpen className="h-6 w-6" strokeWidth={1.5} />
               </div>
-              <div className="flex flex-col gap-1">
-                <p className="typo-h3-heading text-text-1">등록된 마일스톤이 없습니다.</p>
-                <p className="typo-body2-normal text-text-3">
-                  새로운 마일스톤을 생성하여 테스트 관리를 시작해보세요.
-                </p>
-              </div>
-            </div>
-          ) : filteredMilestones.length === 0 ? (
-            // 필터 결과가 없는 경우
-            <div className="rounded-3 border-line-2 bg-bg-2/50 col-span-6 flex min-h-[200px] flex-col items-center justify-center gap-4 border-2 border-dashed py-16 text-center">
-              <div className="flex flex-col gap-1">
-                <p className="typo-h3-heading text-text-1">검색 결과가 없습니다.</p>
-                <p className="typo-body2-normal text-text-3">
-                  다른 검색어나 필터를 시도해보세요.
-                </p>
+            ) : (
+              paginatedMilestones.map((milestone: Milestone) => {
+                const milestoneWithStats: MilestoneWithStats = {
+                  ...milestone,
+                  totalCases: 0,
+                  completedCases: 0,
+                  progressRate: 0,
+                  runCount: 0,
+                };
+                return (
+                  <Link
+                    key={milestone.id}
+                    href={`/projects/${params.slug}/milestones/${milestone.id}`}
+                  >
+                    <MilestoneCard milestone={milestoneWithStats} onEdit={() => handleEdit(milestone)} />
+                  </Link>
+                );
+              })
+            )}
+          </div>
+          <div className="flex items-center justify-center px-6 py-3">
+            <div className="flex items-center">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+                className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                &lt;
+              </button>
+              <div className="flex items-center justify-center gap-1" style={{ width: 'calc(2rem * 10 + 0.25rem * 9)' }}>
+                {Array.from({ length: totalPages || 1 }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
+                      p === currentPage
+                        ? 'bg-bg-4 text-text-1 font-bold'
+                        : 'text-text-2 hover:bg-bg-3'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
               </div>
               <button
-                onClick={() => {
-                  setStatusFilter('전체');
-                  setSearchQuery('');
-                }}
-                className="typo-body2-normal text-primary hover:underline"
+                type="button"
+                disabled={currentPage >= (totalPages || 1)}
+                onClick={() => setCurrentPage(currentPage + 1)}
+                className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
               >
-                필터 초기화
+                &gt;
               </button>
             </div>
-          ) : (
-            filteredMilestones.map((milestone: Milestone) => {
-              const milestoneWithStats: MilestoneWithStats = {
-                ...milestone,
-                totalCases: 0,
-                completedCases: 0,
-                progressRate: 0,
-                runCount: 0,
-              };
-              return (
-                <Link
-                  key={milestone.id}
-                  href={`/projects/${params.slug}/milestones/${milestone.id}`}
-                >
-                  <MilestoneCard milestone={milestoneWithStats} onEdit={() => handleEdit(milestone)} />
-                </Link>
-              );
-            })
-          )}
+          </div>
         </section>
         {isOpen && projectId && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
         {editingMilestone && <MilestoneEditForm milestone={editingMilestone} onClose={handleCloseEdit} />}

@@ -23,7 +23,7 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import { useUpdateProject, useChangeIdentifier, useDeleteProject } from '@/features/project-settings';
 import { MainContainer } from '@/shared/lib/primitives';
 import { Dialog } from '@/shared/lib/primitives';
-import { DSButton, DsFormField, DsInput } from '@/shared/ui';
+import { DSButton, DsFormField, DsInput, Skeleton, SkeletonCircle } from '@/shared/ui';
 import { formatDateKR } from '@/shared/utils/date-format';
 
 // ─── Shared UI Primitives ────────────────────────────────────────────────────
@@ -89,28 +89,28 @@ export const SettingsView = () => {
         {/* Header skeleton */}
         <header className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 animate-pulse rounded-full bg-bg-3" />
-            <div className="h-8 w-40 animate-pulse rounded bg-bg-3" />
+            <SkeletonCircle className="h-9 w-9" />
+            <Skeleton className="h-8 w-40" />
           </div>
-          <div className="ml-12 h-5 w-64 animate-pulse rounded bg-bg-3" />
+          <Skeleton className="ml-12 h-5 w-64" />
         </header>
         {/* Section skeletons */}
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="rounded-5 border border-line-2 bg-bg-2 flex flex-col">
             <div className="p-6 pb-5 flex items-start gap-4">
-              <div className="h-10 w-10 animate-pulse rounded-full bg-bg-3" />
+              <SkeletonCircle className="h-10 w-10" />
               <div className="flex flex-col gap-1">
-                <div className="h-6 w-28 animate-pulse rounded bg-bg-3" />
-                <div className="h-4 w-52 animate-pulse rounded bg-bg-3" />
+                <Skeleton className="h-6 w-28" />
+                <Skeleton className="h-4 w-52" />
               </div>
             </div>
             <div className="border-t border-line-2" />
             <div className="flex flex-col gap-0 divide-y divide-line-2">
               {Array.from({ length: 2 }).map((_, j) => (
                 <div key={j} className="flex items-center gap-4 px-6 py-5">
-                  <div className="h-4 w-28 animate-pulse rounded bg-bg-3 shrink-0" />
-                  <div className="h-10 flex-1 animate-pulse rounded-2 border border-line-2 bg-bg-1" />
-                  <div className="h-8 w-14 animate-pulse rounded bg-bg-3 shrink-0" />
+                  <Skeleton className="h-4 w-28 shrink-0" />
+                  <Skeleton className="h-10 flex-1 rounded-2 border border-line-2 bg-bg-1" />
+                  <Skeleton className="h-8 w-14 shrink-0" />
                 </div>
               ))}
             </div>
@@ -227,7 +227,7 @@ const GeneralSettingsSection = ({
     });
   };
 
-  const SaveButton = ({ field }: { field: keyof ProjectSettingsForm }) => (
+  const renderSaveButton = (field: keyof ProjectSettingsForm) => (
     <DSButton
       variant="ghost"
       size="small"
@@ -275,7 +275,7 @@ const GeneralSettingsSection = ({
             </DsFormField.Control>
             <DsFormField.Message>{errors.name?.message}</DsFormField.Message>
           </DsFormField.Root>
-          <SaveButton field="name" />
+          {renderSaveButton("name")}
         </div>
 
         {/* 설명 */}
@@ -292,7 +292,7 @@ const GeneralSettingsSection = ({
             </DsFormField.Control>
             <DsFormField.Message>{errors.description?.message}</DsFormField.Message>
           </DsFormField.Root>
-          <SaveButton field="description" />
+          {renderSaveButton("description")}
         </div>
 
         {/* 소유자 이름 */}
@@ -309,7 +309,7 @@ const GeneralSettingsSection = ({
             </DsFormField.Control>
             <DsFormField.Message>{errors.ownerName?.message}</DsFormField.Message>
           </DsFormField.Root>
-          <SaveButton field="ownerName" />
+          {renderSaveButton("ownerName")}
         </div>
       </div>
     </section>

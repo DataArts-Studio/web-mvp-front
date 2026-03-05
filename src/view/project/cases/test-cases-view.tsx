@@ -21,6 +21,7 @@ import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { ImportWizardModal } from '@/features/import-cases';
 import { toast } from 'sonner';
+import { Skeleton } from '@/shared/ui';
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
@@ -65,18 +66,25 @@ export const TestCasesView = () => {
 
   const slug = params.slug as string;
 
-  // 검색어 debounce
+  // 검색어 debounce — 변경 시 1페이지로 초기화
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 필터/검색/정렬 변경 시 1페이지로 초기화
-  useEffect(() => {
+  // 스위트/정렬 변경 시 1페이지로 초기화하는 래퍼
+  const handleSuiteChange = useCallback((id: string) => {
+    setSelectedSuiteId(id);
     setCurrentPage(1);
-  }, [debouncedSearch, sortOption, selectedSuiteId]);
+  }, []);
+  const handleSortChange = useCallback((value: string) => {
+    track(TESTCASE_EVENTS.SORT_CHANGE, { sort: value });
+    setSortOption(value as SortValue);
+    setCurrentPage(1);
+  }, []);
 
   // slug → projectId를 단일 SELECT로 빠르게 획득 (워터폴 제거)
   const { data: projectIdData } = useQuery(projectIdQueryOptions(slug));
@@ -149,55 +157,53 @@ export const TestCasesView = () => {
     const SKELETON_WIDTHS = [70, 55, 85, 60, 75, 50, 90, 65, 80, 45, 70, 60, 85, 55, 75];
     return (
       <MainContainer className="flex min-h-screen w-full flex-1 overflow-hidden">
-        {/* Suite sidebar skeleton */}
         <nav className="border-line-2 bg-bg-1 flex h-screen w-60 shrink-0 flex-col border-r">
           <div className="border-line-2 border-b px-4 py-3">
-            <div className="h-5 w-12 animate-pulse rounded bg-bg-3" />
+            <Skeleton className="h-5 w-12" />
           </div>
           <div className="flex-1 overflow-y-auto py-1">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex items-center gap-2 px-4 py-2">
-                <div className="h-4 w-4 animate-pulse rounded bg-bg-3 shrink-0" />
-                <div className="h-4 flex-1 animate-pulse rounded bg-bg-3" />
-                <div className="h-3 w-5 animate-pulse rounded bg-bg-3" />
+                <Skeleton className="h-4 w-4 shrink-0" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-3 w-5" />
               </div>
             ))}
           </div>
         </nav>
-        {/* Main content skeleton */}
         <div className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 overflow-y-auto px-10 py-8">
           <header className="border-line-2 col-span-6 flex flex-col gap-2 border-b pb-6">
-            <div className="h-8 w-56 animate-pulse rounded bg-bg-3" />
-            <div className="h-5 w-80 animate-pulse rounded bg-bg-3" />
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-5 w-80" />
           </header>
           <div className="col-span-6 flex items-center justify-between gap-4">
             <div className="flex w-full max-w-3xl items-center gap-3">
-              <div className="h-10 flex-1 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
-              <div className="h-10 w-44 animate-pulse rounded-2 border border-line-2 bg-bg-2 shrink-0" />
+              <Skeleton className="h-10 flex-1 rounded-2 border border-line-2 bg-bg-2" />
+              <Skeleton className="h-10 w-44 shrink-0 rounded-2 border border-line-2 bg-bg-2" />
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <div className="h-9 w-24 animate-pulse rounded bg-bg-3" />
-              <div className="h-9 w-24 animate-pulse rounded bg-bg-3" />
-              <div className="h-9 w-40 animate-pulse rounded-2 bg-bg-3" />
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-9 w-40 rounded-2" />
             </div>
           </div>
           <section className="rounded-3 border-line-2 bg-bg-2 col-span-6 border">
             <div className="flex items-center gap-3 border-b border-line-2 bg-primary/5 px-4 py-2.5">
-              <div className="rounded-1 bg-primary/20 h-6 w-6 animate-pulse rounded" />
-              <div className="h-5 flex-1 animate-pulse rounded bg-bg-3" />
+              <Skeleton className="rounded-1 h-6 w-6 bg-primary/20" />
+              <Skeleton className="h-5 flex-1" />
             </div>
             {Array.from({ length: 15 }).map((_, i) => (
               <div key={i} className="flex items-stretch gap-0 border-b border-line-2 px-4 py-3">
-                <div className="w-[3px] shrink-0 rounded-full bg-bg-3 animate-pulse" />
+                <Skeleton className="w-[3px] shrink-0 rounded-full" />
                 <div className="flex flex-1 flex-col gap-1.5 pl-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-12 animate-pulse rounded bg-bg-3" />
-                    <div className="h-4 animate-pulse rounded bg-bg-3" style={{ width: `${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}%` }} />
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-4" style={{ width: `${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}%` }} />
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-5 w-16 animate-pulse rounded-full bg-bg-3" />
-                    <div className="h-5 w-20 animate-pulse rounded-full bg-bg-3" />
-                    <div className="ml-auto h-3 w-12 animate-pulse rounded bg-bg-3" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="ml-auto h-3 w-12" />
                   </div>
                 </div>
               </div>
@@ -247,7 +253,7 @@ export const TestCasesView = () => {
             {/* 전체 */}
             <button
               type="button"
-              onClick={() => setSelectedSuiteId('all')}
+              onClick={() => handleSuiteChange('all')}
               className={cn(
                 'flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors',
                 selectedSuiteId === 'all'
@@ -267,7 +273,7 @@ export const TestCasesView = () => {
                 <button
                   key={suite.id}
                   type="button"
-                  onClick={() => setSelectedSuiteId(suite.id)}
+                  onClick={() => handleSuiteChange(suite.id)}
                   className={cn(
                     'flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors',
                     isSelected
@@ -287,7 +293,7 @@ export const TestCasesView = () => {
             {/* 미분류 */}
             <button
               type="button"
-              onClick={() => setSelectedSuiteId('__uncategorized__')}
+              onClick={() => handleSuiteChange('__uncategorized__')}
               className={cn(
                 'flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors',
                 selectedSuiteId === '__uncategorized__'
@@ -337,7 +343,7 @@ export const TestCasesView = () => {
                 }}
               />
               {/* Sort Dropdown */}
-              <Select.Root value={sortOption} onValueChange={(value) => { track(TESTCASE_EVENTS.SORT_CHANGE, { sort: value }); setSortOption(value as SortValue); }} className="relative shrink-0 w-fit">
+              <Select.Root value={sortOption} onValueChange={handleSortChange} className="relative shrink-0 w-fit">
                 <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
                   <ArrowUpDown className="h-4 w-4 shrink-0" />
                   <span>정렬: {currentSortLabel}</span>
@@ -410,7 +416,7 @@ export const TestCasesView = () => {
                   <button
                     onClick={() => {
                       setSearchQuery('');
-                      setSelectedSuiteId('all');
+                      handleSuiteChange('all');
                     }}
                     className="typo-body2-normal text-primary hover:underline"
                   >

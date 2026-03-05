@@ -118,9 +118,9 @@ export const ProjectDashboardView = () => {
             <button className="text-label-normal text-text-4 hover:text-text-2">History</button>
           </header>
           <ul className="text-label-normal text-text-2 space-y-2">
-            <li>• Test Run "Run 1" updated by admin — 5분 전</li>
-            <li>• Test Case "Login with invalid password" edited — 12분 전</li>
-            <li>• Milestone "Release 1.0" status changed to In progress — 1시간 전</li>
+            <li>• Test Run &ldquo;Run 1&rdquo; updated by admin — 5분 전</li>
+            <li>• Test Case &ldquo;Login with invalid password&rdquo; edited — 12분 전</li>
+            <li>• Milestone &ldquo;Release 1.0&rdquo; status changed to In progress — 1시간 전</li>
           </ul>
         </section>
 

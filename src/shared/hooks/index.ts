@@ -5,3 +5,4 @@ export { useDebounce } from '@/shared/hooks/use-debounce';
 export { useOutsideClick } from '@/shared/hooks/use-outside-click';
 export { useSelectionSet } from '@/shared/hooks/use-selection-set';
 export { useToggleSet } from '@/shared/hooks/use-toggle-set';
+export { useInViewOnce } from '@/shared/hooks/use-in-view-once';

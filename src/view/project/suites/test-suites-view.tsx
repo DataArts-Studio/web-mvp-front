@@ -11,6 +11,7 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import { SuiteEditForm } from '@/features/suites-edit';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { MainContainer } from '@/shared/lib/primitives';
+import { Skeleton } from '@/shared/ui';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
@@ -18,15 +19,17 @@ import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 const FILTER_OPTIONS = ['전체', '기능별', '시나리오'] as const;
 type FilterOption = typeof FILTER_OPTIONS[number];
+const PAGE_SIZE = 10;
 
 export const TestSuitesView = () => {
   const params = useParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingSuite, setEditingSuite] = useState<TestSuiteCard | null>(null);
 
-  // 검색어 및 필터 상태
+  // 검색어, 필터, 페이지 상태
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterOption>('전체');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
   const { data: projectIdData } = useQuery(projectIdQueryOptions(params.slug as string));
@@ -38,7 +41,7 @@ export const TestSuitesView = () => {
     ...testSuitesQueryOptions(projectId!),
     enabled: !!projectId,
   });
-  const suites: TestSuiteCard[] = suiteData?.success ? suiteData.data : [];
+  const suites: TestSuiteCard[] = useMemo(() => suiteData?.success ? suiteData.data : [], [suiteData]);
 
   // 필터링된 스위트 목록
   const filteredSuites = useMemo(() => {
@@ -61,14 +64,24 @@ export const TestSuitesView = () => {
     return result;
   }, [suites, searchQuery, filterType]);
 
+  // 페이지네이션 계산
+  const totalItems = filteredSuites.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+  const paginatedSuites = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredSuites.slice(start, start + PAGE_SIZE);
+  }, [filteredSuites, currentPage]);
+
   // 검색어 변경 핸들러
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    setCurrentPage(1);
   };
 
   // 필터 변경 핸들러
   const handleFilterChange = (value: string) => {
     setFilterType(value as FilterOption);
+    setCurrentPage(1);
   };
 
   const handleEdit = (suite: TestSuiteCard) => {
@@ -92,16 +105,16 @@ export const TestSuitesView = () => {
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         {/* Header skeleton */}
         <header className="col-span-6 flex flex-col gap-2">
-          <div className="h-8 w-64 animate-pulse rounded bg-bg-3" />
-          <div className="h-5 w-96 animate-pulse rounded bg-bg-3" />
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-5 w-96" />
         </header>
         {/* Toolbar skeleton */}
         <div className="col-span-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1">
-            <div className="h-10 flex-1 max-w-md animate-pulse rounded-2 border border-line-2 bg-bg-2" />
-            <div className="h-10 w-28 animate-pulse rounded-2 border border-line-2 bg-bg-2" />
+            <Skeleton className="h-10 flex-1 max-w-md rounded-2 border border-line-2 bg-bg-2" />
+            <Skeleton className="h-10 w-28 rounded-2 border border-line-2 bg-bg-2" />
           </div>
-          <div className="h-9 w-44 animate-pulse rounded-2 bg-bg-3" />
+          <Skeleton className="h-9 w-44 rounded-2" />
         </div>
         {/* Suite card skeletons */}
         <section className="col-span-6 flex flex-col gap-3">
@@ -110,22 +123,22 @@ export const TestSuitesView = () => {
               {/* Left: title + tag + description */}
               <div className="flex w-full flex-col gap-2 md:w-[40%]">
                 <div className="flex items-center gap-3">
-                  <div className="h-6 w-40 animate-pulse rounded bg-bg-3" />
-                  <div className="h-6 w-16 animate-pulse rounded-full bg-bg-3" />
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
                 </div>
-                <div className="h-4 w-full animate-pulse rounded bg-bg-3" />
+                <Skeleton className="h-4 w-full" />
               </div>
               {/* Middle: path, cases, milestone */}
               <div className="flex w-full flex-col gap-2 md:w-[30%]">
-                <div className="h-4 w-36 animate-pulse rounded bg-bg-3" />
-                <div className="h-4 w-32 animate-pulse rounded bg-bg-3" />
-                <div className="h-4 w-40 animate-pulse rounded bg-bg-3" />
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-40" />
               </div>
               {/* Right: run info */}
               <div className="flex w-full flex-col gap-1 md:w-[30%] md:items-end">
-                <div className="h-4 w-32 animate-pulse rounded bg-bg-3" />
-                <div className="h-4 w-36 animate-pulse rounded bg-bg-3" />
-                <div className="h-4 w-28 animate-pulse rounded bg-bg-3" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-4 w-28" />
               </div>
             </div>
           ))}
@@ -144,7 +157,7 @@ export const TestSuitesView = () => {
   }
 
   return (
-    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+    <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden px-10 py-8">
         {/* 헤더 영역 */}
         <header className="col-span-6 flex w-full items-start justify-between gap-6">
           <div className="flex flex-col gap-2">
@@ -172,20 +185,59 @@ export const TestSuitesView = () => {
             테스트 스위트 생성하기
           </ActionToolbar.Action>
         </ActionToolbar.Root>
-        <section aria-label="테스트 스위트 리스트" className="col-span-6 flex flex-col gap-3">
-          {filteredSuites.length === 0 && (searchQuery || filterType !== '전체') ? (
-            <div className="text-text-3 py-8 text-center">
-              검색 결과가 없습니다.
+        <section aria-label="테스트 스위트 리스트" className="col-span-6 flex min-h-0 flex-col">
+          <div className="flex-1 overflow-y-auto flex flex-col gap-3">
+            {filteredSuites.length === 0 && (searchQuery || filterType !== '전체') ? (
+              <div className="text-text-3 py-8 text-center">
+                검색 결과가 없습니다.
+              </div>
+            ) : null}
+            {paginatedSuites.map((suite) => (
+              <Link
+                key={suite.id}
+                href={`/projects/${params.slug}/suites/${suite.id}`}
+              >
+                <SuiteCard suite={suite} onEdit={() => handleEdit(suite)} />
+              </Link>
+            ))}
+          </div>
+          <div className="flex items-center justify-center px-6 py-3">
+            <div className="flex items-center">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+                className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                &lt;
+              </button>
+              {/* 10개 슬롯 고정 너비: (w-8 + gap-1) × 10 */}
+              <div className="flex items-center justify-center gap-1" style={{ width: 'calc(2rem * 10 + 0.25rem * 9)' }}>
+                {Array.from({ length: totalPages || 1 }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
+                      p === currentPage
+                        ? 'bg-bg-4 text-text-1 font-bold'
+                        : 'text-text-2 hover:bg-bg-3'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={currentPage >= (totalPages || 1)}
+                onClick={() => setCurrentPage(currentPage + 1)}
+                className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                &gt;
+              </button>
             </div>
-          ) : null}
-          {filteredSuites.map((suite) => (
-            <Link
-              key={suite.id}
-              href={`/projects/${params.slug}/suites/${suite.id}`}
-            >
-              <SuiteCard suite={suite} onEdit={() => handleEdit(suite)} />
-            </Link>
-          ))}
+          </div>
         </section>
         {isOpen && projectId && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
         {editingSuite && <SuiteEditForm suite={editingSuite} onClose={handleCloseEdit} />}

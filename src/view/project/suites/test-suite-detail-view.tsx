@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -15,7 +15,7 @@ import type { TestSuiteCard } from '@/entities/test-suite';
 import type { TestCase, TestCaseCardType } from '@/entities/test-case';
 import { SuiteEditForm, AddCasesToSuiteModal } from '@/features/suites-edit';
 import { Container, MainContainer } from '@/shared/lib/primitives';
-import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { DSButton, EmptyState, LoadingSpinner } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { Aside } from '@/widgets';
 import {
@@ -240,8 +240,6 @@ const TestSuiteDetailView = () => {
 
   // 통계 계산
   const passedCount = suite.lastRun?.counts.passed ?? 0;
-  const failedCount = suite.lastRun?.counts.failed ?? 0;
-  const blockedCount = suite.lastRun?.counts.blocked ?? 0;
   const totalCount = suite.lastRun?.total ?? suite.caseCount;
   const passRate = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
 
@@ -433,16 +431,18 @@ const TestSuiteDetailView = () => {
           </div>
 
           {testCases.length === 0 && sections.length === 0 ? (
-            <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
-              <ListChecks className="text-text-3 h-8 w-8" />
-              <div className="text-center">
-                <p className="text-text-1 font-semibold">포함된 테스트 케이스가 없습니다.</p>
-                <p className="text-text-3 text-sm">테스트 케이스를 추가하여 스위트 범위를 정의하세요.</p>
-              </div>
-              <DSButton variant="ghost" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
-                <Plus className="h-4 w-4" />
-                테스트 케이스 추가
-              </DSButton>
+            <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
+              <EmptyState
+                icon={<ListChecks className="h-8 w-8" />}
+                title="포함된 테스트 케이스가 없습니다."
+                description="테스트 케이스를 추가하여 스위트 범위를 정의하세요."
+                action={
+                  <DSButton variant="ghost" className="flex items-center gap-1" onClick={() => setIsAddingCases(true)}>
+                    <Plus className="h-4 w-4" />
+                    테스트 케이스 추가
+                  </DSButton>
+                }
+              />
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -688,12 +688,12 @@ const TestSuiteDetailView = () => {
           <h2 className="typo-h2-heading">최근 실행 이력</h2>
 
           {suite.recentRuns.length === 0 ? (
-            <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
-              <PlayCircle className="text-text-3 h-8 w-8" />
-              <div className="text-center">
-                <p className="text-text-1 font-semibold">테스트 실행 이력이 없습니다.</p>
-                <p className="text-text-3 text-sm">스위트 기반 테스트 실행을 생성하세요.</p>
-              </div>
+            <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
+              <EmptyState
+                icon={<PlayCircle className="h-8 w-8" />}
+                title="테스트 실행 이력이 없습니다."
+                description="스위트 기반 테스트 실행을 생성하세요."
+              />
             </div>
           ) : (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import { testCasesQueryOptions } from '@/features/cases-list/api/query';
 import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { testRunsQueryOptions } from '@/features/runs/api/query';
 import { useDisclosure } from '@/shared/hooks/use-disclosure';
+import { useInViewOnce } from '@/shared/hooks';
 import { DSButton } from '@/shared/ui/ds-button';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronRight, Clock, FileText, FolderOpen, Play, Plus, Share2 } from 'lucide-react';
@@ -35,21 +36,6 @@ type ProjectDashboardContentProps = {
   projectId?: string;
 };
 
-function useInViewOnce(rootMargin = '200px') {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { rootMargin },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [rootMargin]);
-  return { ref, visible };
-}
 
 export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectDashboardContentProps) => {
   const params = useParams();
@@ -59,11 +45,12 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
 
   // 클라이언트 hydration 완료 전까지 전체 페이지 스켈레톤 표시
   const [hydrated, setHydrated] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection requires effect
   useEffect(() => { setHydrated(true); }, []);
 
-  const gantt = useInViewOnce();
-  const casesSection = useInViewOnce();
-  const suitesSection = useInViewOnce();
+  const { targetRef: ganttRef, visible: ganttVisible } = useInViewOnce();
+  const { targetRef: casesRef, visible: casesVisible } = useInViewOnce();
+  const { targetRef: suitesRef, visible: suitesVisible } = useInViewOnce();
 
   const {
     data: dashboardData,
@@ -81,7 +68,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
     enabled: !!projectId,
   });
 
-  const { data: testCasesData, isLoading: isTestCasesLoading } = useQuery({
+  const { data: testCasesData } = useQuery({
     ...testCasesQueryOptions(projectId!),
     enabled: !!projectId,
   });
@@ -91,15 +78,24 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
   const testSuites = dashboardData?.success ? dashboardData.data.testSuites : [];
 
   // 테스트 실행 목록 조회
-  const { data: testRunsData, isLoading: isTestRunsLoading } = useQuery({
+  const { data: testRunsData } = useQuery({
     ...testRunsQueryOptions(projectId!),
     enabled: !!projectId,
   });
 
-  const testRuns = testRunsData?.success ? testRunsData.data : [];
+  const testRuns = useMemo(() => testRunsData?.success ? testRunsData.data : [], [testRunsData]);
+
+  // 자동 선택 기본값: IN_PROGRESS > NOT_STARTED > 최신
+  const defaultRunId = useMemo(() => {
+    if (testRuns.length === 0) return null;
+    const inProgress = testRuns.find((r) => r.status === 'IN_PROGRESS');
+    const notStarted = testRuns.find((r) => r.status === 'NOT_STARTED');
+    return (inProgress || notStarted || testRuns[0])?.id ?? null;
+  }, [testRuns]);
 
   // 테스트 실행 선택 상태
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const effectiveSelectedRunId = selectedRunId ?? defaultRunId;
 
   // 대시보드 View 이벤트
   useEffect(() => {
@@ -108,17 +104,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
     }
   }, [dashboardData?.success, slug]);
 
-  // 자동 선택: IN_PROGRESS > NOT_STARTED > 최신 COMPLETED
-  useEffect(() => {
-    if (testRuns.length > 0 && !selectedRunId) {
-      const inProgress = testRuns.find((r) => r.status === 'IN_PROGRESS');
-      const notStarted = testRuns.find((r) => r.status === 'NOT_STARTED');
-      const best = inProgress || notStarted || testRuns[0];
-      if (best) setSelectedRunId(best.id);
-    }
-  }, [testRuns, selectedRunId]);
-
-  const selectedRun = testRuns.find((r) => r.id === selectedRunId);
+  const selectedRun = testRuns.find((r) => r.id === effectiveSelectedRunId);
 
   // 차트 데이터: 선택된 실행이 있을 때만 표시
   const testStatusData: TestStatusData = React.useMemo(() => {
@@ -135,19 +121,11 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
 
   // 마일스톤 Gantt용 테스트 실행 선택 (차트와 독립)
   const [milestoneRunId, setMilestoneRunId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (testRuns.length > 0 && !milestoneRunId) {
-      const inProgress = testRuns.find((r) => r.status === 'IN_PROGRESS');
-      const notStarted = testRuns.find((r) => r.status === 'NOT_STARTED');
-      const best = inProgress || notStarted || testRuns[0];
-      if (best) setMilestoneRunId(best.id);
-    }
-  }, [testRuns, milestoneRunId]);
+  const effectiveMilestoneRunId = milestoneRunId ?? defaultRunId;
 
   // 마일스톤 조회 (선택된 실행 기준)
   const { data: milestonesData } = useQuery({
-    ...dashboardQueryOptions.milestones(projectId!, milestoneRunId ?? undefined),
+    ...dashboardQueryOptions.milestones(projectId!, effectiveMilestoneRunId ?? undefined),
     enabled: !!projectId,
   });
 
@@ -166,7 +144,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
       track(DASHBOARD_EVENTS.LINK_COPY, { project_id: slug });
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
+    } catch {
     }
   };
 
@@ -328,7 +306,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
             {/* 테스트 실행 선택 드롭다운 */}
             <TestRunDropdown
               testRuns={testRuns}
-              selectedRunId={selectedRunId}
+              selectedRunId={effectiveSelectedRunId}
               onSelect={setSelectedRunId}
               slug={slug}
               selectedRunName={selectedRun?.name}
@@ -374,12 +352,12 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
           ) : (
             <>
               <TestStatusChart data={testStatusData} />
-              <div ref={gantt.ref}>
-                {gantt.visible ? (
+              <div ref={ganttRef}>
+                {ganttVisible ? (
                   <MilestoneGanttChart
                     milestones={dashboardMilestones}
                     testRuns={testRuns}
-                    selectedRunId={milestoneRunId}
+                    selectedRunId={effectiveMilestoneRunId}
                     onRunChange={setMilestoneRunId}
                   />
                 ) : (
@@ -391,8 +369,8 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
         </section>
 
         {/* 테스트 케이스 섹션 — 뷰포트 진입 시 렌더 */}
-        <section ref={casesSection.ref} className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
-          {(casesSection.visible && !showSkeleton) ? (
+        <section ref={casesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
+          {(casesVisible && !showSkeleton) ? (
             <>
               <div className="flex items-center justify-between">
                 <Link href={`/projects/${slug}/cases`} className="flex items-center gap-2 group">
@@ -488,8 +466,8 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
         </section>
 
         {/* 테스트 스위트 섹션 — 뷰포트 진입 시 렌더 */}
-        <section ref={suitesSection.ref} className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
-          {(suitesSection.visible && !showSkeleton) ? (
+        <section ref={suitesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
+          {(suitesVisible && !showSkeleton) ? (
             <>
               <div className="flex items-center justify-between">
                 <Link href={`/projects/${slug}/suites`} className="flex items-center gap-2 group">
