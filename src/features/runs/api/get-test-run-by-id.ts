@@ -3,55 +3,9 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, testRunSuites, milestones, milestoneTestSuites, milestoneTestCases, TestRunStatus, TestCaseRunStatus, TestCaseRunSourceType } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
+import type { TestCaseRunDetail, SourceInfo, TestRunDetail } from '@/entities/test-run';
 import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-
-export interface TestCaseRunDetail {
-  id: string;
-  testCaseId: string;
-  code: string;
-  title: string;
-  status: TestCaseRunStatus;
-  comment: string | null;
-  executedAt: Date | null;
-  sourceType: TestCaseRunSourceType;
-  sourceId: string | null;
-  sourceName: string | null;
-  testSuiteId: string | null;
-  testSuiteName: string | null;
-  preCondition: string | null;
-  steps: string | null;
-  expectedResult: string | null;
-}
-
-export interface SourceInfo {
-  id: string;
-  name: string;
-  type: 'suite' | 'milestone';
-}
-
-export interface TestRunDetail {
-  id: string;
-  name: string;
-  description: string | null;
-  status: TestRunStatus;
-  sourceType: 'SUITE' | 'MILESTONE' | 'ADHOC';
-  sourceName: string;
-  createdAt: Date;
-  updatedAt: Date;
-  testCaseRuns: TestCaseRunDetail[];
-  sources: SourceInfo[];
-  shareToken: string | null;
-  shareExpiresAt: Date | null;
-  stats: {
-    total: number;
-    untested: number;
-    pass: number;
-    fail: number;
-    blocked: number;
-    progressPercent: number;
-  };
-}
 
 /**
  * Read-repair: 테스트 실행 조회 시 마일스톤에 연결된 스위트/케이스 중

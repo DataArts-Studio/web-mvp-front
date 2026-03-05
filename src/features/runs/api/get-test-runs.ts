@@ -3,26 +3,8 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns, testCaseRuns, testRunSuites, testSuites, milestones, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
+import type { FetchedTestRun } from '@/entities/test-run';
 import { eq, inArray } from 'drizzle-orm';
-
-export interface FetchedTestRun {
-  id: string;
-  name: string;
-  description?: string | null;
-  status: TestRunStatus;
-  sourceType: 'SUITE' | 'MILESTONE' | 'ADHOC';
-  sourceName: string;
-  updatedAt: Date;
-  stats: {
-    totalCases: number;
-    completedCases: number;
-    progressPercent: number;
-    pass: number;
-    fail: number;
-    blocked: number;
-    untested: number;
-  };
-}
 
 export async function getTestRunsByProjectId(projectId: string): Promise<ActionResult<FetchedTestRun[]>> {
   try {

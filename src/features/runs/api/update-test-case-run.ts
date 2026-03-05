@@ -3,21 +3,9 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testRuns, TestCaseRunStatus, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
+import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
 import { eq } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';
-
-export interface UpdateTestCaseRunInput {
-  testCaseRunId: string;
-  status: TestCaseRunStatus;
-  comment?: string | null;
-}
-
-export interface UpdateTestCaseRunResult {
-  id: string;
-  status: TestCaseRunStatus;
-  comment: string | null;
-  executedAt: Date | null;
-}
 
 export async function updateTestCaseRunStatus(
   input: UpdateTestCaseRunInput
