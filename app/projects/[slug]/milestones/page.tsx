@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import { MilestonesView } from '@/view';
-import { dashboardQueryOptions } from '@/features/dashboard/api/query';
+import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { milestonesQueryOptions } from '@/entities/milestone/api/query';
 
 export const metadata: Metadata = {
@@ -18,8 +18,8 @@ export default async function Page({
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
 
   try {
-    const statsData = await queryClient.fetchQuery(dashboardQueryOptions.stats(slug));
-    const projectId = statsData?.success ? statsData.data.project.id : undefined;
+    const result = await queryClient.fetchQuery(projectIdQueryOptions(slug));
+    const projectId = result?.success ? result.data.id : undefined;
 
     if (projectId) {
       await queryClient.prefetchQuery(milestonesQueryOptions(projectId));

@@ -40,6 +40,10 @@ interface ITestRun {
     totalCases: number;
     completedCases: number;
     progressPercent: number;
+    pass: number;
+    fail: number;
+    blocked: number;
+    untested: number;
   };
 }
 
@@ -383,14 +387,30 @@ export const TestRunsListView = () => {
                     <span className="font-medium text-text-1">{progressPercent}%</span>
                     <span className="text-text-3">{completedCases} / {totalCases}</span>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-bg-4">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        run.status === 'COMPLETED' ? 'bg-primary' : 'bg-system-blue'
-                      }`}
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
+                  {(() => {
+                    const h = 8;
+                    const r = h / 2;
+                    if (totalCases === 0) return <div className="h-2 w-full rounded-full bg-bg-4" />;
+                    const passP = (run.stats.pass / totalCases) * 100;
+                    const failP = (run.stats.fail / totalCases) * 100;
+                    const blockedP = (run.stats.blocked / totalCases) * 100;
+                    const untestedP = 100 - passP - failP - blockedP;
+                    return (
+                      <svg width="100%" height={h} className="block overflow-hidden rounded-full">
+                        <defs>
+                          <clipPath id={`bar-clip-${run.id}`}>
+                            <rect x="0" y="0" width="100%" height={h} rx={r} ry={r} />
+                          </clipPath>
+                        </defs>
+                        <g clipPath={`url(#bar-clip-${run.id})`}>
+                          {run.stats.pass > 0 && <rect x="0%" y="0" width={`${passP}%`} height={h} fill="#0BB57F" shapeRendering="crispEdges" />}
+                          {run.stats.fail > 0 && <rect x={`${passP}%`} y="0" width={`${failP}%`} height={h} fill="#FC4141" shapeRendering="crispEdges" />}
+                          {run.stats.blocked > 0 && <rect x={`${passP + failP}%`} y="0" width={`${blockedP}%`} height={h} fill="#FBA900" shapeRendering="crispEdges" />}
+                          {untestedP > 0 && <rect x={`${passP + failP + blockedP}%`} y="0" width={`${untestedP}%`} height={h} fill="var(--color-bg-4)" shapeRendering="crispEdges" />}
+                        </g>
+                      </svg>
+                    );
+                  })()}
                 </div>
 
                 <div className="col-span-2 flex justify-center">
