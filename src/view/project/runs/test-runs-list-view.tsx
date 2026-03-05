@@ -1,9 +1,8 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { Container, MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@/shared/lib/primitives';
 import { LoadingSpinner } from '@/shared/ui';
 import { useOutsideClick } from '@/shared/hooks';
-import { Aside } from '@/widgets';
 import {
   Search,
   Filter,
@@ -153,20 +152,14 @@ export const TestRunsListView = () => {
 
   if (isLoadingProject || (projectId && isLoadingRuns)) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans">
-        <Aside />
-        <MainContainer className="flex-1 flex items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </MainContainer>
     );
   }
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
-
-      <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">
+    <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">
         <header className="col-span-6 flex items-start justify-between border-b border-line-2 pb-6">
           <div className="flex flex-col gap-1">
             <h2 className="typo-h1-heading text-text-1">테스트 실행 목록</h2>
@@ -439,6 +432,5 @@ export const TestRunsListView = () => {
           )}
         </section>
       </MainContainer>
-    </Container>
   );
 };

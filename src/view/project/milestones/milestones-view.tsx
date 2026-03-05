@@ -9,10 +9,10 @@ import { projectIdQueryOptions } from '@/entities/project';
 import { MilestoneCreateForm, milestonesQueryOptions } from '@/features/milestones-create';
 import { MilestoneEditForm } from '@/features/milestones-edit';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { Container, MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@/shared/lib/primitives';
 import { LoadingSpinner } from '@/shared/ui';
 import { useDisclosure } from '@/shared/hooks';
-import { ActionToolbar, Aside } from '@/widgets';
+import { ActionToolbar } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
@@ -91,33 +91,23 @@ export const MilestonesView = () => {
   // 로딩 상태
   if (isLoadingProject || isLoadingMilestones) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </MainContainer>
     );
   }
 
   // 에러 상태
   if (!dashboardData?.success) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+      </MainContainer>
     );
   }
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      {/* Aside */}
-      <Aside />
-      {/* Main Content */}
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         <header className="col-span-6 flex w-full items-start justify-between gap-6">
           <div className="flex flex-col gap-2">
             <h1 className="typo-title-heading">마일스톤 & 테스트 진행 현황</h1>
@@ -222,6 +212,5 @@ export const MilestonesView = () => {
         {isOpen && projectId && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
         {editingMilestone && <MilestoneEditForm milestone={editingMilestone} onClose={handleCloseEdit} />}
       </MainContainer>
-    </Container>
   );
 };

@@ -10,10 +10,10 @@ import { projectIdQueryOptions } from '@/entities/project';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { SuiteEditForm } from '@/features/suites-edit';
 import { SuiteCreateForm } from '@/features/suites-create';
-import { Container, MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@/shared/lib/primitives';
 import { LoadingSpinner } from '@/shared/ui';
 import { useDisclosure } from '@/shared/hooks';
-import { ActionToolbar, Aside, testSuitesQueryOptions } from '@/widgets';
+import { ActionToolbar, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
@@ -90,33 +90,23 @@ export const TestSuitesView = () => {
   // 로딩 상태
   if (isLoadingProject || isLoadingSuites) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </MainContainer>
     );
   }
 
   // 에러 상태
   if (!dashboardData?.success) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+      </MainContainer>
     );
   }
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      {/* Aside */}
-      <Aside />
-      {/* Main Content */}
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         {/* 헤더 영역 */}
         <header className="col-span-6 flex w-full items-start justify-between gap-6">
           <div className="flex flex-col gap-2">
@@ -162,6 +152,5 @@ export const TestSuitesView = () => {
         {isOpen && projectId && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
         {editingSuite && <SuiteEditForm suite={editingSuite} onClose={handleCloseEdit} />}
       </MainContainer>
-    </Container>
   );
 };
