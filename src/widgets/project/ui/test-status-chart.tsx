@@ -28,10 +28,8 @@ type TestStatusChartProps = {
   criticalFailCount?: number;
 };
 
-const RADIUS = 90;
-const STROKE_WIDTH = 32;
-const VIEW_SIZE = (RADIUS + STROKE_WIDTH / 2) * 2;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const RADIUS = 106;
+const VIEW_SIZE = RADIUS * 2;
 const GAP_DEGREES = 2;
 
 export const TestStatusChart = ({ data }: TestStatusChartProps) => {
@@ -84,24 +82,31 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
     );
   }
 
-  // 각 세그먼트의 gap을 고려한 stroke-dasharray/offset 계산
+  // 각 세그먼트의 gap을 고려한 pie slice 경로 계산
   const totalGapDegrees = segments.length * GAP_DEGREES;
   const availableDegrees = 360 - totalGapDegrees;
-  let cumulativeOffset = 0;
+  const cx = VIEW_SIZE / 2;
+  const cy = VIEW_SIZE / 2;
+  let cumulativeAngle = -90; // 12시 방향 시작
 
-  const arcs = segments.map((seg) => {
+  const arcs = segments.map((seg, i) => {
     const segDegrees = (seg.value / total) * availableDegrees;
-    const segLength = (segDegrees / 360) * CIRCUMFERENCE;
-    const offset = (cumulativeOffset / 360) * CIRCUMFERENCE;
-    const gapOffset = (segments.indexOf(seg) * GAP_DEGREES / 360) * CIRCUMFERENCE;
+    const startAngle = cumulativeAngle + (i > 0 ? GAP_DEGREES : 0);
+    const endAngle = startAngle + segDegrees;
+    cumulativeAngle = endAngle;
 
-    cumulativeOffset += segDegrees;
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+    const largeArc = segDegrees > 180 ? 1 : 0;
 
-    return {
-      ...seg,
-      dashArray: `${segLength} ${CIRCUMFERENCE - segLength}`,
-      dashOffset: -(offset + gapOffset),
-    };
+    const x1 = cx + RADIUS * Math.cos(startRad);
+    const y1 = cy + RADIUS * Math.sin(startRad);
+    const x2 = cx + RADIUS * Math.cos(endRad);
+    const y2 = cy + RADIUS * Math.sin(endRad);
+
+    const path = `M ${cx} ${cy} L ${x1} ${y1} A ${RADIUS} ${RADIUS} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+    return { ...seg, path };
   });
 
   const hoveredSeg = arcs.find((a) => a.key === hoveredKey);
@@ -125,20 +130,13 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
           <div className="relative aspect-square w-full max-w-[420px] self-center">
             <svg
               viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
-              className="w-full h-full -rotate-90"
+              className="w-full h-full"
             >
               {arcs.map((arc) => (
-                <circle
+                <path
                   key={arc.key}
-                  cx={VIEW_SIZE / 2}
-                  cy={VIEW_SIZE / 2}
-                  r={RADIUS}
-                  fill="none"
-                  stroke={arc.color}
-                  strokeWidth={STROKE_WIDTH}
-                  strokeDasharray={arc.dashArray}
-                  strokeDashoffset={arc.dashOffset}
-                  strokeLinecap="butt"
+                  d={arc.path}
+                  fill={arc.color}
                   className="transition-opacity duration-150"
                   style={{ opacity: hoveredKey && hoveredKey !== arc.key ? 0.4 : 1 }}
                   onMouseEnter={() => setHoveredKey(arc.key)}
