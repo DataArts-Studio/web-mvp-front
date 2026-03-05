@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LifecycleStatusEnum } from '../../project/model/schema';
+import { LifecycleStatusEnum } from '@/shared/types';
 export const MilestoneProgressStatusEnum = z.enum(['planned', 'inProgress', 'done']);
 
 export const MilestoneDtoSchema = z.object({

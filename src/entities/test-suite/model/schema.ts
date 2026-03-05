@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LifecycleStatusEnum } from '../../project/model/schema';
+import { LifecycleStatusEnum } from '@/shared/types';
 
 export const TestSuiteDtoSchema = z.object({
   id: z.uuidv7({ error: 'uuidv7 test error' }),

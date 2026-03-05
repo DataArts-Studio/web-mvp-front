@@ -3,12 +3,12 @@ import {
   CreateTestCaseDtoSchema,
   TestCaseDtoSchema,
 } from './schema';
+import type { LifecycleStatus, TestCaseResultStatus } from '@/shared/types';
+
+export type { LifecycleStatus, TestCaseResultStatus } from '@/shared/types';
 
 export type TestCaseDTO = z.infer<typeof TestCaseDtoSchema>;
 export type CreateTestCaseDTO = z.infer<typeof CreateTestCaseDtoSchema>;
-
-export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
-export type TestCaseResultStatus = 'untested' | 'pass' | 'fail' | 'blocked';
 
 export type TestCase = {
   id: string;
