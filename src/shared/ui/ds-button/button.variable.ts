@@ -30,6 +30,7 @@ const SIZE_VARIANTS = {
   large: 'h-14 px-6 text-lg rounded-lg',
   medium: 'h-12 px-5 text-base rounded-md',
   small: 'h-9 px-4 text-sm rounded',
+  icon: 'h-12 w-12',
 };
 
 // ------------------------------------------------------------------

@@ -20,7 +20,7 @@ export { projectTagsQueryOptions } from './test-case';
 
 // test-suite
 export { TestSuiteDtoSchema, CreateTestSuiteDtoSchema, CreateTestSuiteSchema } from './test-suite';
-export type { TestSuite, SuiteTagTone, RunStatus, TestSuiteCard } from './test-suite';
+export type { TestSuite, CreateTestSuite, SuiteTagTone, RunStatus, TestSuiteCard } from './test-suite';
 export { createTestSuite, deleteTestSuite, updateTestSuite, getTestSuiteById, getTestSuites, getTestSuitesWithStats, getTestSuiteByIdWithStats } from './test-suite';
 export { testSuiteQueryKeys, testSuitesQueryOptions, testSuiteByIdQueryOptions } from './test-suite';
 

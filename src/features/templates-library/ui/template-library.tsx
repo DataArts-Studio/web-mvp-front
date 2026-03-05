@@ -29,7 +29,7 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
   const [editingTemplate, setEditingTemplate] = useState<TestCaseTemplate | null>(null);
 
   const { data, isLoading } = useQuery(templatesQueryOptions(projectId));
-  const templates = data?.success ? data.data : [];
+  const templates = useMemo(() => data?.success ? data.data : [], [data]);
 
   const { mutate: deleteMutate } = useDeleteTemplate();
 

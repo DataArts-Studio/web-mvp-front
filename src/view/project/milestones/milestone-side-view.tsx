@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { MilestoneWithStats } from '@/entities/milestone';
-import { DSButton } from '@/shared/ui';
+import { DSButton, MILESTONE_STATUS_CONFIG } from '@/shared/ui';
 import { Calendar, CheckCircle, Edit2, ExternalLink, ListChecks, PlayCircle, Trash2, X } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { formatDate } from '@/shared/utils/date-format';
@@ -17,21 +17,6 @@ interface MilestoneSideViewProps {
   onDelete?: () => void;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
-  inProgress: {
-    label: '진행 중',
-    style: 'bg-amber-500/20 text-amber-300',
-  },
-  done: {
-    label: '완료',
-    style: 'bg-green-500/20 text-green-300',
-  },
-  planned: {
-    label: '예정',
-    style: 'bg-slate-500/20 text-slate-300',
-  },
-};
-
 export const MilestoneSideView = ({
   milestone,
   onClose,
@@ -39,7 +24,7 @@ export const MilestoneSideView = ({
   onDelete,
 }: MilestoneSideViewProps) => {
   const params = useParams();
-  const statusInfo = STATUS_CONFIG[milestone.progressStatus] || {
+  const statusInfo = MILESTONE_STATUS_CONFIG[milestone.progressStatus] || {
     label: milestone.progressStatus,
     style: 'bg-gray-500/20 text-gray-300',
   };

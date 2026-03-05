@@ -137,6 +137,7 @@ export function AccessForm({
       )}
 
       {/* 폼 */}
+      {/* eslint-disable-next-line react-hooks/refs -- handleSubmit from useForm is not a ref */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <label

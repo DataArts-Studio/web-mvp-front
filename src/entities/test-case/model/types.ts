@@ -49,5 +49,7 @@ export type CreateTestCase = {
 export type TestCaseListItem = Omit<TestCase, 'preCondition' | 'testSteps' | 'expectedResult'>;
 
 export type TestCaseCardType = TestCaseListItem & {
+  status: TestCaseResultStatus;
+  lastExecutedAt: Date | null;
   suiteTitle: string;
 };

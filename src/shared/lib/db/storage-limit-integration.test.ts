@@ -92,7 +92,7 @@ describe('createTestCase - storage limit', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
+      expect(result.errors!._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
     }
     expect(mockCheckStorageLimit).toHaveBeenCalledWith('project-123');
     // DB insert가 호출되지 않아야 한다
@@ -141,7 +141,7 @@ describe('updateTestCase - storage limit', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
+      expect(result.errors!._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
     }
     expect(mockCheckStorageLimit).toHaveBeenCalledWith('project-123');
   });
@@ -169,7 +169,7 @@ describe('createTestSuite - storage limit', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
+      expect(result.errors!._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
     }
     expect(mockCheckStorageLimit).toHaveBeenCalledWith('project-123');
     expect(mockInsert).not.toHaveBeenCalled();
@@ -197,7 +197,7 @@ describe('createMilestone - storage limit', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
+      expect(result.errors!._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
     }
     expect(mockCheckStorageLimit).toHaveBeenCalledWith('project-123');
     expect(mockInsert).not.toHaveBeenCalled();
@@ -225,8 +225,8 @@ describe('createTestRunAction - storage limit', () => {
     });
 
     expect(result.success).toBe(false);
-    if (!result.success && '_storage' in result.errors) {
-      expect(result.errors._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
+    if (!result.success && result.errors && '_storage' in result.errors) {
+      expect(result.errors!._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
     }
     expect(mockCheckStorageLimit).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000');
   });

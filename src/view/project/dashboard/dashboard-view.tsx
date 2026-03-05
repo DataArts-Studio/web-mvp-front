@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -12,16 +11,22 @@ import { useDisclosure } from '@/shared/hooks/use-disclosure';
 import { useInViewOnce } from '@/shared/hooks';
 import { DSButton } from '@/shared/ui/ds-button';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronRight, Clock, FileText, FolderOpen, Play, Plus, Share2 } from 'lucide-react';
+import { Check, Clock, Play, Share2 } from 'lucide-react';
 import { TestRunDropdown } from './test-run-dropdown';
 import dynamic from 'next/dynamic';
 import { KPICards, type KPIData } from '@/widgets/project/ui/kpi-cards';
 import { TestStatusChart, type TestStatusData } from '@/widgets/project/ui/test-status-chart';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
 import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
+import { formatBytes } from '@/shared/utils';
+import type { ActionResult } from '@/shared/types';
+import { KPISkeleton, InfoSkeleton, ChartSkeleton, CardListSkeleton } from './dashboard-skeletons';
+import { DashboardEmptyState } from './dashboard-empty-state';
+import { TestCasesSection, TestSuitesSection } from './dashboard-sections';
+
 const MilestoneGanttChart = dynamic(
   () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
-  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" /> }
+  { ssr: false, loading: () => <div className="bg-bg-2 rounded-2xl p-6 h-75 animate-pulse" /> }
 );
 const TestCaseDetailForm = dynamic(
   () => import('@/features/cases-create').then(mod => ({ default: mod.TestCaseDetailForm })),
@@ -107,7 +112,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
   const selectedRun = testRuns.find((r) => r.id === effectiveSelectedRunId);
 
   // 차트 데이터: 선택된 실행이 있을 때만 표시
-  const testStatusData: TestStatusData = React.useMemo(() => {
+  const testStatusData: TestStatusData = useMemo(() => {
     if (selectedRun) {
       return {
         pass: selectedRun.stats.pass,
@@ -132,7 +137,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
   const dashboardMilestones = milestonesData?.success ? milestonesData.data : [];
 
   // KPI 데이터 계산
-  const kpiData: KPIData = React.useMemo(() => ({
+  const kpiData: KPIData = useMemo(() => ({
     totalCases: totalCasesCount,
     testSuites: testSuites.length,
     ...testStatusData,
@@ -163,117 +168,29 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
   const project = dashboardData?.success ? dashboardData.data.project : undefined;
   const recentActivities = dashboardData?.success ? dashboardData.data.recentActivities : [];
 
+  const handleCreateCase = () => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); };
+  const handleCreateSuite = () => { track(DASHBOARD_EVENTS.TESTSUITE_CREATE_START, { project_id: slug }); onOpen('suite'); };
+
   return (
     <>
         {/* KPI 카드 섹션 */}
         <section className="col-span-6" data-tour="kpi-cards">
-          {showSkeleton ? (
-            <div className="grid grid-cols-5 gap-4 animate-pulse">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="bg-bg-2 rounded-3 border border-line-2 p-5 flex flex-col gap-2">
-                  <div className="bg-bg-3 h-4 w-20 rounded" />
-                  <div className="bg-bg-3 h-8 w-16 rounded" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <KPICards data={kpiData} />
-          )}
+          {showSkeleton ? <KPISkeleton /> : <KPICards data={kpiData} />}
         </section>
 
         {/* 프로젝트 정보 + 저장 용량 + 최근 활동 카드 */}
         <section className="col-span-6 grid grid-cols-6 gap-5">
-          {showSkeleton ? (
-            <>
-              <div className="col-span-2 flex flex-col gap-5 animate-pulse">
-                <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5">
-                  <div className="bg-bg-3 h-4 w-28 rounded" />
-                  <div className="rounded-2 bg-bg-3 h-20" />
-                </div>
-                <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5">
-                  <div className="bg-bg-3 h-4 w-20 rounded" />
-                  <div className="bg-bg-3 h-2 w-full rounded-full" />
-                </div>
-              </div>
-              <div className="rounded-3 border-line-2 bg-bg-2 col-span-4 flex flex-col gap-4 border p-5 animate-pulse">
-                <div className="bg-bg-3 h-4 w-20 rounded" />
-                <div className="flex flex-col gap-2">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="bg-bg-3 h-1.5 w-1.5 rounded-full" />
-                      <div className="bg-bg-3 h-4 flex-1 rounded" />
-                      <div className="bg-bg-3 h-3 w-12 rounded" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : (
+          {showSkeleton ? <InfoSkeleton /> : (
           <>
           {/* 왼쪽: 프로젝트 정보 + 저장 용량 (세로 배치) */}
           <div className="col-span-2 flex flex-col gap-5">
-            {/* 내 프로젝트 정보 카드 */}
-            <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="project-info">
-              <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
-
-              <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
-                <div className="flex items-center gap-2">
-                  <span className="typo-body2-heading text-primary truncate max-w-[200px]">
-                    {project?.name}
-                  </span>
-                  <button
-                    onClick={handleCopyLink}
-                    className="text-primary hover:text-primary/80 transition-colors cursor-pointer"
-                    title="링크 복사"
-                  >
-                    {isCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-                  </button>
-                </div>
-                <span className="typo-caption text-text-3">
-                  {project && formatDateKR(project.created_at)} 생성됨
-                </span>
-              </div>
-            </div>
-
-            {/* 저장 용량 카드 */}
-            {storageData?.success && (() => {
-              const { usedBytes, maxBytes, usedPercent } = storageData.data;
-              const formatBytes = (bytes: number) => {
-                if (bytes < 1024) return `${bytes}B`;
-                if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-                return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-              };
-              const barColor = usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-primary';
-              const textColor = usedPercent >= 95 ? 'text-red-500' : usedPercent >= 80 ? 'text-amber-500' : 'text-primary';
-
-              return (
-                <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="storage-info">
-                  <span className="typo-body2-heading text-text-3">저장 용량</span>
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className={`typo-caption font-medium ${textColor}`}>
-                        {formatBytes(usedBytes)} / {formatBytes(maxBytes)}
-                      </span>
-                      <span className={`typo-caption ${textColor}`}>
-                        {usedPercent}%
-                      </span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-bg-3">
-                      <div
-                        className={`h-full rounded-full transition-all ${barColor}`}
-                        style={{ width: `${Math.min(usedPercent, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+            <ProjectInfoCard project={project} isCopied={isCopied} onCopyLink={handleCopyLink} />
+            <StorageCard storageData={storageData} />
           </div>
 
           {/* 최근 활동 카드 */}
           <div className="rounded-3 border-line-2 bg-bg-2 col-span-4 flex flex-col gap-4 border p-5" data-tour="recent-activity">
             <span className="typo-body2-heading text-text-3">최근 활동</span>
-
             {recentActivities.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-6 flex-1">
                 <Clock className="text-text-3 h-8 w-8" />
@@ -284,12 +201,8 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
                 {recentActivities.slice(0, 7).map((item) => (
                   <li key={item.id} className="flex items-center gap-2">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
-                    <span className="typo-body2-normal text-text-1 flex-1 truncate">
-                      {item.title}
-                    </span>
-                    <span className="typo-caption text-text-3">
-                      {formatRelativeTime(item.created_at)}
-                    </span>
+                    <span className="typo-body2-normal text-text-1 flex-1 truncate">{item.title}</span>
+                    <span className="typo-caption text-text-3">{formatRelativeTime(item.created_at)}</span>
                   </li>
                 ))}
               </ul>
@@ -303,7 +216,6 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
         <section className="col-span-6 flex flex-col gap-4" data-tour="test-status-chart">
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading text-text-1">테스트 현황</h2>
-            {/* 테스트 실행 선택 드롭다운 */}
             <TestRunDropdown
               testRuns={testRuns}
               selectedRunId={effectiveSelectedRunId}
@@ -312,43 +224,21 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
               selectedRunName={selectedRun?.name}
             />
           </div>
-          {showSkeleton ? (
-            <div className="bg-bg-2 rounded-[16px] p-6 animate-pulse">
-              <div className="flex items-stretch gap-10">
-                <div className="flex basis-[70%] flex-col items-center gap-4">
-                  <div className="bg-bg-3 rounded-full h-[280px] w-[280px]" />
-                  <div className="bg-bg-3 h-10 w-40 rounded self-start" />
-                </div>
-                <div className="flex basis-[30%] flex-col justify-center gap-5 p-6">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="bg-bg-3 h-9 w-9 rounded-[16px] shrink-0" />
-                      <div className="flex flex-col gap-1 flex-1">
-                        <div className="bg-bg-3 h-4 w-24 rounded" />
-                        <div className="bg-bg-3 h-3 w-16 rounded" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : testRuns.length === 0 ? (
-            <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
-              <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
-                <Play className="h-6 w-6" strokeWidth={1.5} />
-              </div>
-              <div className="flex flex-col items-center gap-1 text-center">
-                <h3 className="typo-h3-heading text-text-1">첫 번째 테스트를 실행해보세요!</h3>
-                <p className="typo-body2-normal text-text-3">
-                  테스트를 실행하면 결과 차트와 마일스톤 진행 현황을 확인할 수 있어요.
-                </p>
-              </div>
-              <Link href={`/projects/${slug}/runs/create`}>
-                <DSButton variant="solid" className="flex items-center gap-2">
-                  <span>테스트 실행 하기</span>
-                </DSButton>
-              </Link>
-            </div>
+          {showSkeleton ? <ChartSkeleton /> : testRuns.length === 0 ? (
+            <DashboardEmptyState
+              icon={<Play className="h-6 w-6" strokeWidth={1.5} />}
+              title="첫 번째 테스트를 실행해보세요!"
+              description="테스트를 실행하면 결과 차트와 마일스톤 진행 현황을 확인할 수 있어요."
+              buttonLabel="테스트 실행 하기"
+              onAction={() => {}}
+              actionOverride={
+                <Link href={`/projects/${slug}/runs/create`}>
+                  <DSButton variant="solid" className="flex items-center gap-2">
+                    <span>테스트 실행 하기</span>
+                  </DSButton>
+                </Link>
+              }
+            />
           ) : (
             <>
               <TestStatusChart data={testStatusData} />
@@ -358,207 +248,30 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
                     milestones={dashboardMilestones}
                     testRuns={testRuns}
                     selectedRunId={effectiveMilestoneRunId}
-                    onRunChange={setMilestoneRunId}
+                    onRunChangeAction={setMilestoneRunId}
                   />
                 ) : (
-                  <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" />
+                  <div className="bg-bg-2 rounded-2xl p-6 h-75 animate-pulse" />
                 )}
               </div>
             </>
           )}
         </section>
 
-        {/* 테스트 케이스 섹션 — 뷰포트 진입 시 렌더 */}
+        {/* 테스트 케이스 섹션 */}
         <section ref={casesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
-          {(casesVisible && !showSkeleton) ? (
-            <>
-              <div className="flex items-center justify-between">
-                <Link href={`/projects/${slug}/cases`} className="flex items-center gap-2 group">
-                  <h2 className="typo-h2-heading text-text-1">테스트 케이스</h2>
-                  <span className="typo-body2-normal text-text-3">({totalCasesCount})</span>
-                  <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
-                </Link>
-                {totalCasesCount > 0 && (
-                  <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); }}>
-                    <Plus className="h-4 w-4" />
-                    <span>추가</span>
-                  </DSButton>
-                )}
-              </div>
-
-              {totalCasesCount === 0 ? (
-                <div className="rounded-3 border-line-2 bg-bg-2 border-2 border-dashed flex flex-col items-center justify-center gap-6 py-16">
-                  <Image
-                    src="/teacup/tea-cup-not-found.svg"
-                    width={200}
-                    height={255}
-                    alt="테스트 케이스 없음"
-                    loading="lazy"
-                    priority={false}
-                  />
-                  <div className="flex flex-col items-center gap-2 text-center">
-                    <h3 className="typo-h3-heading text-text-1">테스트 케이스를 생성해보세요!</h3>
-                    <p className="typo-body2-normal text-text-3">
-                      아직 생성된 테스트 케이스가 없습니다.
-                      <br />
-                      테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.
-                    </p>
-                  </div>
-                  <DSButton variant="solid" className="flex items-center gap-2" onClick={() => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); }}>
-                    <Plus className="h-4 w-4" />
-                    <span>테스트 케이스 만들기</span>
-                  </DSButton>
-                </div>
-              ) : (
-                <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
-                  {testCases.slice(0, 5).map((testCase) => (
-                    <Link
-                      key={testCase.id}
-                      href={`/projects/${slug}/cases`}
-                      className="flex items-center gap-4 px-5 py-4 hover:bg-bg-3 transition-colors"
-                    >
-                      <div className="bg-primary/10 text-primary rounded-2 flex h-10 w-10 items-center justify-center shrink-0">
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                        <span className="typo-caption text-text-3">{testCase.caseKey}</span>
-                        <span className="typo-body2-heading text-text-1 truncate">{testCase.title}</span>
-                      </div>
-                      <span className="typo-caption text-text-3 shrink-0">
-                        {formatDateKR(testCase.createdAt)}
-                      </span>
-                    </Link>
-                  ))}
-                  {totalCasesCount > 5 && (
-                    <Link
-                      href={`/projects/${slug}/cases`}
-                      className="flex items-center justify-center gap-2 px-5 py-3 text-primary hover:bg-bg-3 transition-colors"
-                    >
-                      <span className="typo-body2-heading">전체 보기 ({totalCasesCount}개)</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="flex flex-col gap-4 animate-pulse">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="bg-bg-3 h-6 w-32 rounded" />
-                  <div className="bg-bg-3 h-5 w-8 rounded" />
-                </div>
-              </div>
-              <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 px-5 py-4">
-                    <div className="bg-bg-3 h-10 w-10 rounded-[8px] shrink-0" />
-                    <div className="flex flex-col gap-1 flex-1">
-                      <div className="bg-bg-3 h-3 w-16 rounded" />
-                      <div className="bg-bg-3 h-4 w-48 rounded" />
-                    </div>
-                    <div className="bg-bg-3 h-3 w-20 rounded shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {(casesVisible && !showSkeleton)
+            ? <TestCasesSection slug={slug} testCases={testCases} totalCount={totalCasesCount} onCreateCase={handleCreateCase} />
+            : <CardListSkeleton />
+          }
         </section>
 
-        {/* 테스트 스위트 섹션 — 뷰포트 진입 시 렌더 */}
+        {/* 테스트 스위트 섹션 */}
         <section ref={suitesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
-          {(suitesVisible && !showSkeleton) ? (
-            <>
-              <div className="flex items-center justify-between">
-                <Link href={`/projects/${slug}/suites`} className="flex items-center gap-2 group">
-                  <h2 className="typo-h2-heading text-text-1">테스트 스위트</h2>
-                  <span className="typo-body2-normal text-text-3">({testSuites.length})</span>
-                  <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
-                </Link>
-                {testSuites.length > 0 && (
-                  <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => { track(DASHBOARD_EVENTS.TESTSUITE_CREATE_START, { project_id: slug }); onOpen('suite'); }}>
-                    <Plus className="h-4 w-4" />
-                    <span>추가</span>
-                  </DSButton>
-                )}
-              </div>
-
-              {testSuites.length === 0 ? (
-                <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
-                  <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
-                    <FolderOpen className="h-6 w-6" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col items-center gap-1 text-center">
-                    <h3 className="typo-h3-heading text-text-1">테스트 스위트를 생성해보세요!</h3>
-                    <p className="typo-body2-normal text-text-3">
-                      아직 생성된 테스트 스위트가 없습니다.
-                      <br />
-                      테스트 스위트로, 테스트 케이스를 더 쉽게 관리해보세요!
-                    </p>
-                  </div>
-                  <DSButton variant="solid" className="flex items-center gap-2" onClick={() => { track(DASHBOARD_EVENTS.TESTSUITE_CREATE_START, { project_id: slug }); onOpen('suite'); }}>
-                    <Plus className="h-4 w-4" />
-                    <span>테스트 스위트 만들기</span>
-                  </DSButton>
-                </div>
-              ) : (
-                <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
-                  {testSuites.slice(0, 5).map((suite) => (
-                    <Link
-                      key={suite.id}
-                      href={`/projects/${slug}/suites/${suite.id}`}
-                      className="flex items-center gap-4 px-5 py-4 hover:bg-bg-3 transition-colors"
-                    >
-                      <div className="bg-system-blue/10 text-system-blue rounded-2 flex h-10 w-10 items-center justify-center shrink-0">
-                        <FolderOpen className="h-5 w-5" />
-                      </div>
-                      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                        <span className="typo-body2-heading text-text-1 truncate">{suite.name}</span>
-                        <span className="typo-caption text-text-3">
-                          {suite.description || '설명 없음'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="typo-caption text-text-3 bg-bg-3 px-2 py-1 rounded-1">
-                          케이스 {suite.case_count}개
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                  {testSuites.length > 5 && (
-                    <Link
-                      href={`/projects/${slug}/suites`}
-                      className="flex items-center justify-center gap-2 px-5 py-3 text-primary hover:bg-bg-3 transition-colors"
-                    >
-                      <span className="typo-body2-heading">전체 보기 ({testSuites.length}개)</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="flex flex-col gap-4 animate-pulse">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="bg-bg-3 h-6 w-32 rounded" />
-                  <div className="bg-bg-3 h-5 w-8 rounded" />
-                </div>
-              </div>
-              <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 px-5 py-4">
-                    <div className="bg-bg-3 h-10 w-10 rounded-[8px] shrink-0" />
-                    <div className="flex flex-col gap-1 flex-1">
-                      <div className="bg-bg-3 h-4 w-40 rounded" />
-                      <div className="bg-bg-3 h-3 w-24 rounded" />
-                    </div>
-                    <div className="bg-bg-3 h-6 w-20 rounded shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {(suitesVisible && !showSkeleton)
+            ? <TestSuitesSection slug={slug} testSuites={testSuites} onCreateSuite={handleCreateSuite} />
+            : <CardListSkeleton showBadge />
+          }
         </section>
 
       {/* Modals */}
@@ -569,5 +282,52 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
         <SuiteCreateForm projectId={projectId} onClose={onClose} />
       )}
     </>
+  );
+};
+
+/* ── 하위 컴포넌트 ── */
+
+type ProjectInfoCardProps = {
+  project?: { name: string; created_at: string };
+  isCopied: boolean;
+  onCopyLink: () => void;
+};
+
+const ProjectInfoCard = ({ project, isCopied, onCopyLink }: ProjectInfoCardProps) => (
+  <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="project-info">
+    <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
+    <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
+      <div className="flex items-center gap-2">
+        <span className="typo-body2-heading text-primary truncate max-w-50">{project?.name}</span>
+        <button onClick={onCopyLink} className="text-primary hover:text-primary/80 transition-colors cursor-pointer" title="링크 복사">
+          {isCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+        </button>
+      </div>
+      <span className="typo-caption text-text-3">
+        {project && formatDateKR(project.created_at)} 생성됨
+      </span>
+    </div>
+  </div>
+);
+
+const StorageCard = ({ storageData }: { storageData?: ActionResult<{ usedBytes: number; maxBytes: number; usedPercent: number }> }) => {
+  if (!storageData?.success) return null;
+  const { usedBytes, maxBytes, usedPercent } = storageData.data;
+  const barColor = usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-primary';
+  const textColor = usedPercent >= 95 ? 'text-red-500' : usedPercent >= 80 ? 'text-amber-500' : 'text-primary';
+
+  return (
+    <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="storage-info">
+      <span className="typo-body2-heading text-text-3">저장 용량</span>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <span className={`typo-caption font-medium ${textColor}`}>{formatBytes(usedBytes)} / {formatBytes(maxBytes)}</span>
+          <span className={`typo-caption ${textColor}`}>{usedPercent}%</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-bg-3">
+          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(usedPercent, 100)}%` }} />
+        </div>
+      </div>
+    </div>
   );
 };

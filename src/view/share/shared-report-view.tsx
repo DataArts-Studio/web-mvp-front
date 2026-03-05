@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, XCircle, Circle, Clock, BarChart3 } from 'lucide-react';
-import { LoadingSpinner } from '@/shared/ui';
+import { LoadingSpinner, RUN_STATUS_CONFIG } from '@/shared/ui';
 import { sharedReportQueryOptions } from '@/features/runs-share';
 import type { TestStatusData } from '@/widgets/project';
 
@@ -13,12 +13,6 @@ const TestStatusChart = dynamic(
   () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
   { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[400px] animate-pulse" /> }
 );
-
-const RUN_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
-  NOT_STARTED: { label: 'Not Started', style: 'bg-slate-500/20 text-slate-300' },
-  IN_PROGRESS: { label: 'In Progress', style: 'bg-blue-500/20 text-blue-300' },
-  COMPLETED: { label: 'Completed', style: 'bg-green-500/20 text-green-300' },
-};
 
 function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('ko-KR', {

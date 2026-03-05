@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Dialog } from '@/shared/lib/primitives';
 import { searchProjects } from '../api/server-action';
 import type { ProjectSearchResult, SearchModalStatus } from '../model/types';
 import { ProjectSearchForm } from './project-search-form';

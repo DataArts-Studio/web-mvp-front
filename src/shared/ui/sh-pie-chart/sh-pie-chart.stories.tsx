@@ -78,7 +78,7 @@ export const CustomColors: Story = {
     category: 'status',
     value: 'count',
     variant: 'donut',
-    colors: ['emerald', 'rose', 'amber', 'slate'],
+    colors: ['emerald', 'pink', 'amber', 'gray'],
     valueFormatter,
   },
 };

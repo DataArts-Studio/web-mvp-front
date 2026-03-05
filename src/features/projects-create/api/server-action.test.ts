@@ -17,6 +17,25 @@ vi.mock('@/access/lib/password-hash', () => ({
   hashPassword: vi.fn(() => Promise.resolve('hashed-identifier')),
 }));
 
+// access token / cookie mocks
+vi.mock('@/access/lib/access-token', () => ({
+  createProjectAccessToken: vi.fn(() => Promise.resolve('mock-token')),
+}));
+
+vi.mock('@/access/lib/cookies', () => ({
+  setAccessTokenCookie: vi.fn(() => Promise.resolve()),
+}));
+
+// turnstile mock
+vi.mock('@/shared/lib/turnstile', () => ({
+  verifyTurnstileToken: vi.fn(() => Promise.resolve(true)),
+}));
+
+// Sentry mock
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+}));
+
 // DB mock
 const mockReturning = vi.fn();
 const mockValues = vi.fn(() => ({ returning: mockReturning }));
@@ -125,7 +144,6 @@ describe('createProject', () => {
   });
 
   it('DB 에러 발생 시 success: false와 에러 메시지를 반환한다', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockReturning.mockRejectedValue(new Error('DB Connection Error'));
 
     const result = await createProject(mockInput);
@@ -134,8 +152,6 @@ describe('createProject', () => {
     if (!result.success) {
       expect(result.errors._form).toContain('프로젝트 생성 중 오류가 발생했습니다.');
     }
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
   });
 });
 
@@ -196,7 +212,6 @@ describe('getProjects', () => {
   });
 
   it('DB 에러 발생 시 success: false와 에러 메시지를 반환한다', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockOrderBy.mockRejectedValue(new Error('DB Error'));
 
     const result = await getProjects();
@@ -205,7 +220,6 @@ describe('getProjects', () => {
     if (!result.success) {
       expect(result.errors._form).toContain('프로젝트 목록 조회에 실패했습니다.');
     }
-    consoleErrorSpy.mockRestore();
   });
 });
 
@@ -213,8 +227,8 @@ describe('checkProjectNameDuplicate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // checkProjectNameDuplicate는 다른 체인을 사용하므로 재설정
-    mockFrom.mockReturnValue({ where: mockWhere });
-    mockWhere.mockReturnValue({ limit: mockLimit });
+    mockFrom.mockReturnValue({ where: mockWhere } as any);
+    mockWhere.mockReturnValue({ limit: mockLimit } as any);
   });
 
   it('중복된 프로젝트명이 있으면 true를 반환한다', async () => {
@@ -249,7 +263,6 @@ describe('checkProjectNameDuplicate', () => {
   });
 
   it('DB 에러 발생 시 success: false와 에러 메시지를 반환한다', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockLimit.mockRejectedValue(new Error('DB Error'));
 
     const result = await checkProjectNameDuplicate('Test');
@@ -258,6 +271,5 @@ describe('checkProjectNameDuplicate', () => {
     if (!result.success) {
       expect(result.errors._form).toContain('중복 체크 중 오류가 발생했습니다.');
     }
-    consoleErrorSpy.mockRestore();
   });
 });

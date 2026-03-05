@@ -67,13 +67,6 @@ export const createSection = async (input: CreateSectionInput): Promise<ActionRe
     }
 
     // 다음 sort_order 계산
-    const [maxOrder] = await db
-      .select({ sortOrder: testSuiteSections.sort_order })
-      .from(testSuiteSections)
-      .where(eq(testSuiteSections.suite_id, input.suiteId))
-      .orderBy(asc(testSuiteSections.sort_order))
-      .limit(1);
-
     const rows = await db
       .select({ sortOrder: testSuiteSections.sort_order })
       .from(testSuiteSections)

@@ -34,22 +34,23 @@ const handleAwaitItem = (e: React.MouseEvent, href: string) => {
 }
 
 // 메뉴 라벨 → prefetch할 쿼리 옵션을 동적으로 로드
-const PREFETCH_LOADERS: Record<string, (pid: string) => Promise<{ queryKey: readonly unknown[]; queryFn: () => Promise<unknown> }>> = {
+type PrefetchOptions = { queryKey: readonly unknown[]; queryFn: () => Promise<unknown>; staleTime?: number };
+const PREFETCH_LOADERS: Record<string, (pid: string) => Promise<PrefetchOptions>> = {
   '테스트 케이스': async (pid) => {
     const { testCasesQueryOptions } = await import('@/features/cases-list');
-    return testCasesQueryOptions(pid);
+    return testCasesQueryOptions(pid) as unknown as PrefetchOptions;
   },
   '테스트 스위트': async (pid) => {
     const { testSuitesQueryOptions } = await import('@/entities/test-suite');
-    return testSuitesQueryOptions(pid);
+    return testSuitesQueryOptions(pid) as unknown as PrefetchOptions;
   },
   '마일스톤': async (pid) => {
     const { milestonesQueryOptions } = await import('@/entities/milestone');
-    return milestonesQueryOptions(pid);
+    return milestonesQueryOptions(pid) as unknown as PrefetchOptions;
   },
   '테스트 실행': async (pid) => {
     const { testRunsQueryOptions } = await import('@/features/runs');
-    return testRunsQueryOptions(pid);
+    return testRunsQueryOptions(pid) as unknown as PrefetchOptions;
   },
 };
 
@@ -78,7 +79,7 @@ export const Aside = () => {
     if (!projectId) return;
 
     const options = await loader(projectId);
-    queryClient.prefetchQuery(options);
+    await queryClient.prefetchQuery(options);
   }, [queryClient, projectSlug]);
 
   if (!menus) {

@@ -86,7 +86,8 @@ export async function createProjectMock(
       ownerName: input.ownerName,
       createdAt: new Date(),
       updatedAt: new Date(),
-      deletedAt: null,
+      archivedAt: null,
+      lifecycleStatus: 'ACTIVE',
     };
 
     mockDatabase.push(newProject);
@@ -111,7 +112,7 @@ export async function getProjectsMock(): Promise<ActionResult<ProjectDomain[]>> 
     await simulateNetworkDelay(50);
 
     const activeProjects = mockDatabase
-      .filter((p) => !p.deletedAt)
+      .filter((p) => p.lifecycleStatus === 'ACTIVE')
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return { success: true, data: activeProjects };

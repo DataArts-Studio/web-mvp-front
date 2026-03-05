@@ -2,7 +2,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { CreateTestSuiteSchema, createTestSuite } from '@/entities/test-suite';
+import { CreateTestSuiteSchema } from '@/entities/test-suite';
 import type { CreateTestSuite } from '@/entities/test-suite';
 import { useCreateSuite } from '@/features/suites-create';
 import { DSButton, LoadingSpinner } from '@/shared/ui';

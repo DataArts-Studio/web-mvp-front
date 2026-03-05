@@ -12,3 +12,5 @@ export * from './tag-chip-input';
 export * from './skeleton';
 export * from './empty-state';
 export * from './status-badge';
+export * from './pagination';
+export * from './project-error-fallback';

@@ -27,7 +27,7 @@ describe('updateMilestone', () => {
     const mockRow = createMockMilestoneRow({ name: 'Updated Milestone' });
     setMockUpdateReturn(mockRow);
 
-    const result = await updateMilestone(mockRow.id, { title: 'Updated Milestone' });
+    const result = await updateMilestone({ id: mockRow.id, title: 'Updated Milestone' });
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -39,7 +39,7 @@ describe('updateMilestone', () => {
   it('수정할 마일스톤이 존재하지 않으면 에러를 반환한다', async () => {
     setMockUpdateReturn(undefined);
 
-    const result = await updateMilestone('non-existent-id', { title: 'New Name' });
+    const result = await updateMilestone({ id: 'non-existent-id', title: 'New Name' });
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -53,7 +53,7 @@ describe('updateMilestone', () => {
       throw new Error('DB Error');
     });
 
-    const result = await updateMilestone('any-id', { title: 'New Name' });
+    const result = await updateMilestone({ id: 'any-id', title: 'New Name' });
 
     expect(result.success).toBe(false);
     if (!result.success) {

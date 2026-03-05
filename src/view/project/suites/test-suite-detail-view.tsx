@@ -64,8 +64,8 @@ const RUN_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
 };
 
 const TEST_STATUS_CONFIG: Record<string, { label: string; style: string }> = {
-  passed: { label: 'Passed', style: 'bg-green-500/20 text-green-300' },
-  failed: { label: 'Failed', style: 'bg-red-500/20 text-red-300' },
+  pass: { label: 'Passed', style: 'bg-green-500/20 text-green-300' },
+  fail: { label: 'Failed', style: 'bg-red-500/20 text-red-300' },
   blocked: { label: 'Blocked', style: 'bg-amber-500/20 text-amber-300' },
   untested: { label: 'Untested', style: 'bg-slate-500/20 text-slate-300' },
 };
@@ -178,7 +178,7 @@ const TestSuiteDetailView = () => {
     .map((tc: TestCase) => ({
       ...tc,
       suiteTitle: suite?.title ?? '',
-      status: tc.resultStatus === 'untested' ? 'untested' : tc.resultStatus === 'pass' ? 'passed' : tc.resultStatus === 'fail' ? 'failed' : 'blocked',
+      status: tc.resultStatus,
       lastExecutedAt: null,
     }));
 
@@ -537,7 +537,7 @@ const TestSuiteDetailView = () => {
                           </div>
                         ) : (
                           sectionCases.map((testCase: TestCaseCardType) => {
-                            const statusConfig = TEST_STATUS_CONFIG[testCase.status] ?? TEST_STATUS_CONFIG.untested;
+                            const statusConfig = TEST_STATUS_CONFIG[testCase.resultStatus] ?? TEST_STATUS_CONFIG.untested;
                             return (
                               <button
                                 key={testCase.id}
@@ -622,7 +622,7 @@ const TestSuiteDetailView = () => {
                   {!collapsedSections.has('__uncategorized__') && (
                     <div className="divide-line-2 divide-y">
                       {uncategorizedCases.map((testCase: TestCaseCardType) => {
-                        const statusConfig = TEST_STATUS_CONFIG[testCase.status] ?? TEST_STATUS_CONFIG.untested;
+                        const statusConfig = TEST_STATUS_CONFIG[testCase.resultStatus] ?? TEST_STATUS_CONFIG.untested;
                         return (
                           <button
                             key={testCase.id}
@@ -654,7 +654,7 @@ const TestSuiteDetailView = () => {
               {sections.length === 0 && uncategorizedCases.length === 0 && testCases.length > 0 && (
                 <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
                   {testCases.map((testCase: TestCaseCardType) => {
-                    const statusConfig = TEST_STATUS_CONFIG[testCase.status] ?? TEST_STATUS_CONFIG.untested;
+                    const statusConfig = TEST_STATUS_CONFIG[testCase.resultStatus] ?? TEST_STATUS_CONFIG.untested;
                     return (
                       <button
                         key={testCase.id}

@@ -3,7 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testRuns, TestCaseRunStatus, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';
 
 export interface UpdateTestCaseRunInput {

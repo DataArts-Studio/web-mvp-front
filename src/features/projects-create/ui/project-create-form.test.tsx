@@ -30,9 +30,10 @@ const mockSuccessResponse: ActionResult<ProjectDomain> = {
     identifier: 'hashed_identifier',
     description: undefined,
     ownerName: undefined,
-    createAt: new Date('2024-01-01'),
-    updateAt: new Date('2024-01-01'),
-    deleteAt: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE' as const,
   },
 };
 

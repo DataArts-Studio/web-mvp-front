@@ -1,9 +1,5 @@
 import React from 'react';
 
-interface GlassBackgroundProps {
-
-}
-
 export const GlassBackground = () => {
   return (
     <div className="absolute top-[288.72px] left-[-114.09px] h-[413.272px] w-[1033.17px]">

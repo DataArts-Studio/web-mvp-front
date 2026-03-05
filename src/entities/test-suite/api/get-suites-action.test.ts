@@ -82,7 +82,7 @@ describe('getTestSuites', () => {
         sort_order: 5,
         created_at: new Date('2024-01-15'),
         updated_at: new Date('2024-01-16'),
-        deleted_at: null,
+        archived_at: null,
       });
       setMockSelectReturn([mockRow]);
 

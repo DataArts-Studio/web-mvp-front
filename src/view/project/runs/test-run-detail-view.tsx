@@ -457,7 +457,7 @@ export const TestRunDetailView = () => {
             milestones={dashboardMilestones}
             testRuns={allTestRuns}
             selectedRunId={testRunId}
-            onRunChange={() => {}}
+            onRunChangeAction={() => {}}
             hideRunSelector
           />
         </div>

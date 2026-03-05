@@ -21,7 +21,7 @@ import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { ImportWizardModal } from '@/features/import-cases';
 import { toast } from 'sonner';
-import { Skeleton } from '@/shared/ui';
+import { Skeleton, ProjectErrorFallback } from '@/shared/ui';
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
@@ -131,6 +131,8 @@ export const TestCasesView = () => {
     ? testCasesData.data.items.map((item) => ({
         ...item,
         suiteTitle: item.testSuiteId ? (suiteMap.get(item.testSuiteId) || '') : '',
+        status: item.resultStatus,
+        lastExecutedAt: null,
       }))
     : [];
 
@@ -198,7 +200,9 @@ export const TestCasesView = () => {
                 <div className="flex flex-1 flex-col gap-1.5 pl-3">
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-3 w-12" />
-                    <Skeleton className="h-4" style={{ width: `${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}%` }} />
+                    <div style={{ width: `${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}%` }}>
+                      <Skeleton className="h-4 w-full" />
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-5 w-16 rounded-full" />
@@ -214,14 +218,7 @@ export const TestCasesView = () => {
     );
   }
 
-  // 에러 상태
-  if (!dashboardData?.success) {
-    return (
-      <MainContainer className="flex flex-1 items-center justify-center">
-        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-      </MainContainer>
-    );
-  }
+  if (!dashboardData?.success) return <ProjectErrorFallback />;
 
   const handleCreateTestCase = () => {
     const title = inputRef.current?.value.trim();

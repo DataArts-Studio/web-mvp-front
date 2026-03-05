@@ -23,7 +23,7 @@ const CreateTestCaseFormSchema = z.object({
   testSuiteId: z.string().uuid().nullable().optional(),
   title: z.string().min(1, '테스트 케이스 제목을 입력해주세요.'),
   testType: z.string().optional(),
-  tags: z.array(z.string().max(30)).max(10).default([]),
+  tags: z.array(z.string().max(30)).max(10).optional(),
   preCondition: z.string().optional(),
   testSteps: z.string().optional(),
   expectedResult: z.string().optional(),
@@ -78,7 +78,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
     const payload: CreateTestCase = {
       ...data,
       testSuiteId: data.testSuiteId || undefined,
-      tags: data.tags.length > 0 ? data.tags : undefined,
+      tags: data.tags?.length ? data.tags : undefined,
     };
 
     // optimistic update로 즉시 반영 → 폼 바로 닫기
@@ -223,7 +223,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
                 render={({ field }) => (
                   <TagChipInput
                     className="w-full"
-                    value={field.value}
+                    value={field.value ?? []}
                     onChange={field.onChange}
                     suggestions={projectTags}
                     placeholder="태그 입력 후 Enter (예: smoke)"

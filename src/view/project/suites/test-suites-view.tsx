@@ -11,7 +11,7 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import { SuiteEditForm } from '@/features/suites-edit';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { MainContainer } from '@/shared/lib/primitives';
-import { Skeleton } from '@/shared/ui';
+import { Skeleton, Pagination, ProjectErrorFallback } from '@/shared/ui';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
@@ -148,13 +148,7 @@ export const TestSuitesView = () => {
   }
 
   // 에러 상태
-  if (!dashboardData?.success) {
-    return (
-      <MainContainer className="flex flex-1 items-center justify-center">
-        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-      </MainContainer>
-    );
-  }
+  if (!dashboardData?.success) return <ProjectErrorFallback />;
 
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden px-10 py-8">
@@ -201,43 +195,7 @@ export const TestSuitesView = () => {
               </Link>
             ))}
           </div>
-          <div className="flex items-center justify-center px-6 py-3">
-            <div className="flex items-center">
-              <button
-                type="button"
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
-                className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
-              >
-                &lt;
-              </button>
-              {/* 10개 슬롯 고정 너비: (w-8 + gap-1) × 10 */}
-              <div className="flex items-center justify-center gap-1" style={{ width: 'calc(2rem * 10 + 0.25rem * 9)' }}>
-                {Array.from({ length: totalPages || 1 }, (_, i) => i + 1).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setCurrentPage(p)}
-                    className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
-                      p === currentPage
-                        ? 'bg-bg-4 text-text-1 font-bold'
-                        : 'text-text-2 hover:bg-bg-3'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                disabled={currentPage >= (totalPages || 1)}
-                onClick={() => setCurrentPage(currentPage + 1)}
-                className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
-              >
-                &gt;
-              </button>
-            </div>
-          </div>
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </section>
         {isOpen && projectId && <SuiteCreateForm onClose={onClose} projectId={projectId} />}
         {editingSuite && <SuiteEditForm suite={editingSuite} onClose={handleCloseEdit} />}

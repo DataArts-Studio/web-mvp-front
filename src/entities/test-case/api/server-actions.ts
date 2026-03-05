@@ -29,7 +29,6 @@ type getTestCasesParams = {
 
 export const getTestCases = async ({
   project_id,
-  limits = { offset: 0, limit: 10 },
 }: getTestCasesParams): Promise<ActionResult<TestCase[]>> => {
   try {
     const db = getDatabase();

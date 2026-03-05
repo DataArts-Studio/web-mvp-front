@@ -105,10 +105,11 @@ export function useOnboardingTour({ projectId, isDataLoaded }: UseOnboardingTour
         driverInstance.destroy();
       },
       onDestroyed: () => {
+        const isLastStep = currentStep === TOTAL_STEPS - 1;
+        if (isLastStep) {
+          handleComplete(TOTAL_STEPS - 1, false);
+        }
         driverRef.current = null;
-      },
-      onFinished: () => {
-        handleComplete(TOTAL_STEPS - 1, false);
       },
     });
 

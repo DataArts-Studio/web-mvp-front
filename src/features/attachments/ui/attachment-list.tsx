@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Download, File, FileImage, FileSpreadsheet, FileText, Trash2, X } from 'lucide-react';
 import { DSButton } from '@/shared';
 import type { Attachment } from '../model/types';
-import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 
 interface AttachmentListProps {
   attachments: Attachment[];

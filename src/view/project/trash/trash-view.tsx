@@ -13,7 +13,7 @@ import {
 import type { TrashItem, TrashItemType } from '@/features/trash';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { MainContainer } from '@/shared/lib/primitives';
-import { DSButton, LoadingSpinner, EmptyState } from '@/shared/ui';
+import { DSButton, LoadingSpinner, EmptyState, ProjectErrorFallback } from '@/shared/ui';
 import { Dialog } from '@/shared/lib/primitives';
 import {
   Trash2,
@@ -282,13 +282,7 @@ export const TrashView = () => {
     );
   }
 
-  if (!dashboardData?.success) {
-    return (
-      <MainContainer className="flex flex-1 items-center justify-center">
-        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-      </MainContainer>
-    );
-  }
+  if (!dashboardData?.success) return <ProjectErrorFallback />;
 
   return (
     <>

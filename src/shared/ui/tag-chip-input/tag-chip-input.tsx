@@ -171,7 +171,7 @@ export const TagChipInput = ({
           placeholder={value.length >= maxTags ? `최대 ${maxTags}개` : placeholder}
           disabled={disabled || value.length >= maxTags}
           className={cn(
-            'flex w-full items-center rounded-4 border bg-bg-1 outline-none transition-colors h-[56px] px-[24px] text-body2',
+            'flex w-full items-center rounded-4 border bg-bg-1 outline-none transition-colors h-14 px-6 text-body2',
             'border-line-2 text-text-1 placeholder:text-text-2',
             'focus:border-primary',
             disabled && 'border-line-3 bg-bg-3 text-line-3 cursor-not-allowed',

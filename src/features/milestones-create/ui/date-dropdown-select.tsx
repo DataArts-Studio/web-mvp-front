@@ -21,6 +21,7 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
 
   useEffect(() => {
     if (value) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing controlled prop with internal state
       setYear(value.getFullYear().toString());
       setMonth((value.getMonth() + 1).toString());
       setDay(value.getDate().toString());

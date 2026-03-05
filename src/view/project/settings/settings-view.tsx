@@ -23,8 +23,9 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import { useUpdateProject, useChangeIdentifier, useDeleteProject } from '@/features/project-settings';
 import { MainContainer } from '@/shared/lib/primitives';
 import { Dialog } from '@/shared/lib/primitives';
-import { DSButton, DsFormField, DsInput, Skeleton, SkeletonCircle } from '@/shared/ui';
+import { DSButton, DsFormField, DsInput, Skeleton, SkeletonCircle, ProjectErrorFallback } from '@/shared/ui';
 import { formatDateKR } from '@/shared/utils/date-format';
+import { formatBytes } from '@/shared/utils';
 
 // ─── Shared UI Primitives ────────────────────────────────────────────────────
 
@@ -120,13 +121,7 @@ export const SettingsView = () => {
     );
   }
 
-  if (!dashboardData?.success || !projectId) {
-    return (
-      <MainContainer className="flex flex-1 items-center justify-center">
-        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-      </MainContainer>
-    );
-  }
+  if (!dashboardData?.success || !projectId) return <ProjectErrorFallback />;
 
   const { project } = dashboardData.data;
 
@@ -266,7 +261,7 @@ const GeneralSettingsSection = ({
           <div className="w-28 shrink-0">
             <span className="typo-label-heading text-text-2">프로젝트 이름</span>
           </div>
-          <DsFormField.Root error={errors.name?.message} className="!flex-row !items-center !gap-3 flex-1">
+          <DsFormField.Root error={errors.name} className="!flex-row !items-center !gap-3 flex-1">
             <DsFormField.Control>
               <DsInput
                 {...register('name')}
@@ -283,7 +278,7 @@ const GeneralSettingsSection = ({
           <div className="w-28 shrink-0">
             <span className="typo-label-heading text-text-2">설명</span>
           </div>
-          <DsFormField.Root error={errors.description?.message} className="!flex-row !items-center !gap-3 flex-1">
+          <DsFormField.Root error={errors.description} className="!flex-row !items-center !gap-3 flex-1">
             <DsFormField.Control>
               <DsInput
                 {...register('description')}
@@ -300,7 +295,7 @@ const GeneralSettingsSection = ({
           <div className="w-28 shrink-0">
             <span className="typo-label-heading text-text-2">소유자</span>
           </div>
-          <DsFormField.Root error={errors.ownerName?.message} className="!flex-row !items-center !gap-3 flex-1">
+          <DsFormField.Root error={errors.ownerName} className="!flex-row !items-center !gap-3 flex-1">
             <DsFormField.Control>
               <DsInput
                 {...register('ownerName')}
@@ -413,7 +408,7 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
       {isFormOpen && (
         <form onSubmit={onSubmit} className="flex flex-col p-6 pt-5">
           <div className="rounded-4 bg-bg-1 flex flex-col gap-5 p-5">
-            <DsFormField.Root error={errors.currentPassword?.message}>
+            <DsFormField.Root error={errors.currentPassword}>
               <DsFormField.Label className="typo-label-heading text-text-2">현재 비밀번호</DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
@@ -429,7 +424,7 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
 
             <div className="border-line-2 border-t" />
 
-            <DsFormField.Root error={errors.newPassword?.message}>
+            <DsFormField.Root error={errors.newPassword}>
               <DsFormField.Label className="typo-label-heading text-text-2">새 비밀번호</DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
@@ -442,7 +437,7 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
               <DsFormField.Message>{errors.newPassword?.message}</DsFormField.Message>
             </DsFormField.Root>
 
-            <DsFormField.Root error={errors.confirmPassword?.message}>
+            <DsFormField.Root error={errors.confirmPassword}>
               <DsFormField.Label className="typo-label-heading text-text-2">새 비밀번호 확인</DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
@@ -500,11 +495,6 @@ interface StorageSectionProps {
 }
 
 const StorageSection = ({ usedBytes, maxBytes, usedPercent }: StorageSectionProps) => {
-  const formatBytes = (bytes: number) => {
-    if (bytes < 1024) return `${bytes}B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-  };
 
   const barColor =
     usedPercent >= 95
