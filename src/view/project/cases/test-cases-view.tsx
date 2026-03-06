@@ -425,8 +425,11 @@ export const TestCasesView = () => {
               <div className="divide-y divide-line-2">
                 {testCaseItems.map((item) => (
                   <div
-                    key={item.caseKey}
-                    className="group flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors hover:bg-bg-3"
+                    key={item.isOptimistic ? item.id : item.caseKey}
+                    className={cn(
+                      "group flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors hover:bg-bg-3",
+                      item.isOptimistic && "opacity-50 pointer-events-none animate-pulse"
+                    )}
                     onClick={() => {
                       track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
                       setSelectedTestCaseId(item.id);

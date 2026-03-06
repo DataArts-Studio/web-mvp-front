@@ -52,4 +52,5 @@ export type TestCaseCardType = TestCaseListItem & {
   status: TestCaseResultStatus;
   lastExecutedAt: Date | null;
   suiteTitle: string;
+  isOptimistic?: boolean;
 };

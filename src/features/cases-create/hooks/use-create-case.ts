@@ -18,6 +18,71 @@ export const useCreateCase = () => {
       return result;
     },
 
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({
+        queryKey: testCaseQueryKeys.all,
+      });
+
+      // Snapshot all matching list caches
+      const previousQueries = queryClient.getQueriesData<any>({
+        queryKey: testCaseQueryKeys.list(variables.projectId),
+      });
+
+      const optimisticId = `optimistic-${Date.now()}`;
+      const now = new Date();
+
+      // Optimistic item
+      const optimisticItem = {
+        id: optimisticId,
+        projectId: variables.projectId,
+        testSuiteId: variables.testSuiteId ?? null,
+        sectionId: variables.sectionId ?? null,
+        displayId: 0,
+        caseKey: '...',
+        title: variables.title,
+        testType: variables.testType ?? '',
+        tags: variables.tags ?? [],
+        sortOrder: 0,
+        resultStatus: 'untested' as const,
+        createdAt: now,
+        updatedAt: now,
+        archivedAt: null,
+        lifecycleStatus: 'ACTIVE' as const,
+        isOptimistic: true,
+      };
+
+      // Prepend optimistic item to all matching list caches
+      queryClient.setQueriesData<any>(
+        { queryKey: testCaseQueryKeys.list(variables.projectId) },
+        (old: any) => {
+          if (!old?.success) return old;
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              items: [optimisticItem, ...old.data.items],
+              pagination: {
+                ...old.data.pagination,
+                totalItems: old.data.pagination.totalItems + 1,
+              },
+            },
+          };
+        },
+      );
+
+      return { previousQueries };
+    },
+
+    onError: (_error, variables, context) => {
+      // Rollback optimistic update on error
+      if (context?.previousQueries) {
+        for (const [queryKey, data] of context.previousQueries) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+    },
+
     onSettled: async (_data, _error, variables) => {
       const { projectId } = variables;
       await Promise.all([
