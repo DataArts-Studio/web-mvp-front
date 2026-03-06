@@ -194,10 +194,12 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
             <Play className="h-4 w-4" />
             테스트 실행
           </DSButton>
+          {/* TODO: 복사 기능 일시 비활성화
           <DSButton variant="ghost" className="flex items-center gap-2">
             <Copy className="h-4 w-4" />
             Copy
           </DSButton>
+          */}
           {/* 템플릿 기능 펜딩 */}
           {testCase && <ArchiveButton targetType='case' targetId={testCase.id} btnType='icon' onSuccess={onClose}/>}
         </div>
