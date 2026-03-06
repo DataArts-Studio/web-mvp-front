@@ -183,6 +183,15 @@ const TestSuiteDetailView = () => {
       setCreateSectionError('섹션 이름을 입력해주세요.');
       return;
     }
+    if (name.length > 100) {
+      setCreateSectionError('섹션 이름은 100자를 초과할 수 없습니다.');
+      return;
+    }
+    const isDuplicate = sections.some((s) => s.name === name);
+    if (isDuplicate) {
+      setCreateSectionError('이미 존재하는 섹션 이름입니다.');
+      return;
+    }
     setCreateSectionError(null);
     createSectionMutation.mutate(name);
   };
@@ -191,6 +200,16 @@ const TestSuiteDetailView = () => {
     const name = editingSectionName.trim();
     if (!name) {
       toast.error('섹션 이름을 입력해주세요.');
+      return;
+    }
+    if (name.length > 100) {
+      toast.error('섹션 이름은 100자를 초과할 수 없습니다.');
+      return;
+    }
+    // 중복 이름 확인 (자기 자신 제외)
+    const isDuplicate = sections.some((s) => s.id !== sectionId && s.name === name);
+    if (isDuplicate) {
+      toast.error('이미 존재하는 섹션 이름입니다.');
       return;
     }
     updateSectionMutation.mutate({ id: sectionId, name });
