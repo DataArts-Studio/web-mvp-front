@@ -13,7 +13,7 @@ import { RUN_STATUS_CONFIG } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { useOutsideClick, useToggleSet } from '@/shared/hooks';
 import { type TestStatusData } from '@/widgets/project';
-import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun, updateTestRunName } from '@/features/runs';
+import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun, updateTestRunName, bulkUpdateTestCaseRunStatus } from '@/features/runs';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 import { ShareButton } from '@/features/runs-share/ui/share-button';
@@ -56,6 +56,7 @@ export const TestRunDetailView = () => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
+  const [selectedCaseIds, setSelectedCaseIds] = useState<Set<string>>(new Set());
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusFilterRef = useRef<HTMLDivElement>(null);
   const suiteFilterRef = useRef<HTMLDivElement>(null);
@@ -130,6 +131,23 @@ export const TestRunDetailView = () => {
     onError: () => {
       toast.error('제목 변경 중 오류가 발생했습니다.');
       setIsEditingTitle(false);
+    },
+  });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: bulkUpdateTestCaseRunStatus,
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(`${result.data.updatedCount}개 케이스 상태가 변경되었습니다.`);
+        queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+        if (projectId) queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
+        setSelectedCaseIds(new Set());
+      } else {
+        toast.error(Object.values(result.errors).flat().join(', '));
+      }
+    },
+    onError: () => {
+      toast.error('일괄 상태 변경 중 오류가 발생했습니다.');
     },
   });
 
@@ -209,6 +227,45 @@ export const TestRunDetailView = () => {
 
     return sorted;
   }, [testRun, filteredCases]);
+
+  // Bulk selection handlers
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedCaseIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleToggleGroupSelect = useCallback((caseIds: string[]) => {
+    setSelectedCaseIds(prev => {
+      const next = new Set(prev);
+      const allSelected = caseIds.every(id => next.has(id));
+      if (allSelected) {
+        caseIds.forEach(id => next.delete(id));
+      } else {
+        caseIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedCaseIds(new Set(filteredCases.map(c => c.id)));
+  }, [filteredCases]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedCaseIds(new Set());
+  }, []);
+
+  const handleBulkStatusChange = useCallback((status: TestCaseRunStatus) => {
+    if (selectedCaseIds.size === 0) return;
+    bulkUpdateMutation.mutate({
+      testCaseRunIds: Array.from(selectedCaseIds),
+      status,
+    });
+  }, [selectedCaseIds, bulkUpdateMutation]);
 
   // Get selected case
   const selectedCase = useMemo(() => {
@@ -505,6 +562,13 @@ export const TestRunDetailView = () => {
             statusFilterRef={statusFilterRef}
             suiteFilterRef={suiteFilterRef}
             onRemoveSuite={(suiteId, suiteName) => setRemoveSuiteTarget({ id: suiteId, name: suiteName })}
+            selectedCaseIds={selectedCaseIds}
+            onToggleSelect={handleToggleSelect}
+            onToggleGroupSelect={handleToggleGroupSelect}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
+            onBulkStatusChange={handleBulkStatusChange}
+            isBulkUpdating={bulkUpdateMutation.isPending}
           />
 
           <RunCaseDetailPanel

@@ -450,6 +450,109 @@ async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
   );
 }
 
+/**
+ * 테스트 케이스를 복사합니다. (제목에 "(복사)" 접미사 추가)
+ */
+export const duplicateTestCase = async (
+  testCaseId: string,
+): Promise<ActionResult<TestCase>> => {
+  try {
+    const db = getDatabase();
+
+    // 원본 조회
+    const [original] = await db
+      .select()
+      .from(testCases)
+      .where(and(eq(testCases.id, testCaseId), eq(testCases.lifecycle_status, 'ACTIVE')));
+
+    if (!original) {
+      return { success: false, errors: { _testCase: ['원본 테스트 케이스를 찾을 수 없습니다.'] } };
+    }
+
+    const projectId = original.project_id!;
+
+    const [hasAccess, storageError] = await Promise.all([
+      requireProjectAccess(projectId),
+      checkStorageLimit(projectId),
+    ]);
+    if (!hasAccess) {
+      return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
+    }
+    if (storageError) return storageError;
+
+    const id = uuidv7();
+    const now = new Date();
+
+    const [maxResult] = await db
+      .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+      .from(testCases)
+      .where(eq(testCases.project_id, projectId));
+    const nextDisplayId = (maxResult?.max ?? 0) + 1;
+
+    const [inserted] = await db
+      .insert(testCases)
+      .values({
+        id,
+        project_id: projectId,
+        test_suite_id: original.test_suite_id,
+        section_id: original.section_id,
+        name: `${original.name} (복사)`,
+        test_type: original.test_type,
+        tags: original.tags,
+        pre_condition: original.pre_condition,
+        steps: original.steps,
+        expected_result: original.expected_result,
+        sort_order: (original.sort_order ?? 0) + 1,
+        display_id: nextDisplayId,
+        case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
+        result_status: 'untested',
+        created_at: now,
+        updated_at: now,
+        archived_at: null,
+        lifecycle_status: 'ACTIVE',
+      })
+      .returning();
+
+    if (!inserted) {
+      return { success: false, errors: { _testCase: ['테스트 케이스 복사 중 오류가 발생했습니다.'] } };
+    }
+
+    // 버전 v1 스냅샷
+    try {
+      await createVersionSnapshot(
+        id,
+        {
+          name: inserted.name,
+          test_type: inserted.test_type,
+          tags: inserted.tags,
+          pre_condition: inserted.pre_condition,
+          steps: inserted.steps,
+          expected_result: inserted.expected_result,
+        },
+        'create',
+        [],
+        '테스트 케이스 복사'
+      );
+    } catch (snapshotError) {
+      Sentry.captureException(snapshotError, { extra: { action: 'duplicateTestCase:versionSnapshot' } });
+    }
+
+    // 스위트에 속한 경우 연결된 테스트 실행에 동기화
+    if (inserted.test_suite_id) {
+      try {
+        await syncCaseToLinkedRuns(id, inserted.test_suite_id);
+      } catch (syncError) {
+        Sentry.captureException(syncError, { extra: { action: 'duplicateTestCase:syncToRuns' } });
+      }
+    }
+
+    return { success: true, data: toTestCase(inserted as TestCaseDTO) };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'duplicateTestCase', testCaseId } });
+    return { success: false, errors: { _testCase: ['테스트 케이스 복사 중 오류가 발생했습니다.'] } };
+  }
+};
+
 type UpdateTestCaseParams = {
   id: string;
   title?: string;

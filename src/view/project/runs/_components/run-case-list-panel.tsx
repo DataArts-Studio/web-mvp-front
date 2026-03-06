@@ -13,9 +13,11 @@ import {
   FolderOpen,
   Filter,
   X,
+  CheckCircle2,
+  Minus,
 } from 'lucide-react';
 
-import { STATUS_CONFIG, type StatusFilter, type GroupedCases } from './run-detail-constants';
+import { STATUS_CONFIG, type StatusFilter, type GroupedCases, type TestCaseRunStatus } from './run-detail-constants';
 
 interface RunCaseListPanelProps {
   searchQuery: string;
@@ -38,6 +40,14 @@ interface RunCaseListPanelProps {
   statusFilterRef: React.RefObject<HTMLDivElement | null>;
   suiteFilterRef: React.RefObject<HTMLDivElement | null>;
   onRemoveSuite?: (suiteId: string, suiteName: string) => void;
+  // 벌크 선택
+  selectedCaseIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleGroupSelect: (caseIds: string[]) => void;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+  onBulkStatusChange: (status: TestCaseRunStatus) => void;
+  isBulkUpdating: boolean;
 }
 
 export const RunCaseListPanel = ({
@@ -61,7 +71,17 @@ export const RunCaseListPanel = ({
   statusFilterRef,
   suiteFilterRef,
   onRemoveSuite,
+  selectedCaseIds,
+  onToggleSelect,
+  onToggleGroupSelect,
+  onSelectAll,
+  onDeselectAll,
+  onBulkStatusChange,
+  isBulkUpdating,
 }: RunCaseListPanelProps) => {
+  const hasSelection = selectedCaseIds.size > 0;
+  const allSelected = filteredCases.length > 0 && selectedCaseIds.size === filteredCases.length;
+
   return (
     <div className="border-line-2 flex w-[60%] flex-col border-r">
       {/* Search & Filter */}
@@ -205,6 +225,46 @@ export const RunCaseListPanel = ({
         </div>
       </div>
 
+      {/* Bulk Action Toolbar */}
+      {hasSelection && (
+        <div className="border-line-2 flex items-center gap-2 border-b bg-primary/5 px-4 py-2">
+          <button
+            onClick={allSelected ? onDeselectAll : onSelectAll}
+            className="text-primary typo-label-normal hover:underline"
+          >
+            {allSelected ? '선택 해제' : '전체 선택'}
+          </button>
+          <span className="text-text-3 text-xs">
+            {selectedCaseIds.size}개 선택됨
+          </span>
+          <div className="ml-auto flex items-center gap-1">
+            {(['pass', 'fail', 'blocked', 'untested'] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => onBulkStatusChange(status)}
+                disabled={isBulkUpdating}
+                className={cn(
+                  'flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium transition-colors',
+                  STATUS_CONFIG[status].bgStyle,
+                  isBulkUpdating && 'opacity-50 cursor-not-allowed'
+                )}
+                title={`선택된 케이스를 ${STATUS_CONFIG[status].label}로 변경`}
+              >
+                {STATUS_CONFIG[status].icon}
+                <span className="hidden lg:inline">{STATUS_CONFIG[status].shortcut}</span>
+              </button>
+            ))}
+            <button
+              onClick={onDeselectAll}
+              className="text-text-3 hover:text-text-1 ml-1 rounded p-1 transition-colors"
+              title="선택 해제"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Case List - Grouped by Source */}
       <div className="flex-1 overflow-y-auto">
         {filteredCases.length === 0 ? (
@@ -219,26 +279,53 @@ export const RunCaseListPanel = ({
             const groupFail = group.cases.filter(c => c.status === 'fail').length;
             const groupBlocked = group.cases.filter(c => c.status === 'blocked').length;
 
+            const groupCaseIds = group.cases.map(c => c.id);
+            const groupSelectedCount = groupCaseIds.filter(id => selectedCaseIds.has(id)).length;
+            const isGroupAllSelected = groupSelectedCount === group.cases.length;
+            const isGroupPartial = groupSelectedCount > 0 && !isGroupAllSelected;
+
             return (
               <div key={group.groupKey}>
-                {/* Suite Group Header - non-interactive section divider */}
+                {/* Suite Group Header */}
                 <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => collapsedGroups.toggle(group.groupKey)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); collapsedGroups.toggle(group.groupKey); } }}
                   className="group/header bg-bg-3/50 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
                 >
-                  <ChevronDown
+                  {/* Group checkbox */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleGroupSelect(groupCaseIds);
+                    }}
                     className={cn(
-                      'text-text-4 h-3.5 w-3.5 transition-transform',
-                      isCollapsed && '-rotate-90'
+                      'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
+                      isGroupAllSelected
+                        ? 'bg-primary border-primary text-white'
+                        : isGroupPartial
+                          ? 'bg-primary/30 border-primary text-white'
+                          : 'border-line-1 hover:border-primary'
                     )}
-                  />
-                  <FolderOpen className="text-text-3 h-3.5 w-3.5" />
-                  <span className="text-text-2 flex-1 text-xs font-semibold uppercase tracking-wide">
-                    {group.suiteName}
-                  </span>
+                  >
+                    {isGroupAllSelected && <CheckCircle2 className="h-3 w-3" />}
+                    {isGroupPartial && <Minus className="h-3 w-3" />}
+                  </button>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => collapsedGroups.toggle(group.groupKey)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); collapsedGroups.toggle(group.groupKey); } }}
+                    className="flex flex-1 items-center gap-2"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        'text-text-4 h-3.5 w-3.5 transition-transform',
+                        isCollapsed && '-rotate-90'
+                      )}
+                    />
+                    <FolderOpen className="text-text-3 h-3.5 w-3.5" />
+                    <span className="text-text-2 flex-1 text-xs font-semibold uppercase tracking-wide">
+                      {group.suiteName}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1.5 text-[10px]">
                     {groupPass > 0 && (
                       <span className="text-green-400/70">{groupPass}P</span>
@@ -268,26 +355,48 @@ export const RunCaseListPanel = ({
                 {!isCollapsed && group.cases.map((tc, index) => {
                   const config = STATUS_CONFIG[tc.status];
                   const isSelected = tc.id === selectedCaseId;
+                  const isChecked = selectedCaseIds.has(tc.id);
 
                   return (
-                    <button
+                    <div
                       key={tc.id}
-                      onClick={() => setSelectedCaseId(tc.id)}
                       className={cn(
-                        'border-line-2 flex w-full items-center gap-3 border-b py-3 pl-8 pr-4 text-left transition-colors',
-                        isSelected ? 'bg-primary/10' : 'hover:bg-bg-2'
+                        'border-line-2 flex w-full items-center gap-3 border-b py-3 pl-4 pr-4 text-left transition-colors',
+                        isSelected ? 'bg-primary/10' : 'hover:bg-bg-2',
+                        isChecked && !isSelected && 'bg-primary/5'
                       )}
                     >
-                      <span className={cn('flex-shrink-0', config.style)}>{config.icon}</span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-primary font-mono text-xs">{tc.code || `#${index + 1}`}</span>
-                          {tc.comment && <MessageSquare className="text-text-3 h-3 w-3" />}
+                      {/* Checkbox */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleSelect(tc.id);
+                        }}
+                        className={cn(
+                          'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
+                          isChecked
+                            ? 'bg-primary border-primary text-white'
+                            : 'border-line-1 hover:border-primary'
+                        )}
+                      >
+                        {isChecked && <CheckCircle2 className="h-3 w-3" />}
+                      </button>
+                      {/* Case content - clickable for detail view */}
+                      <button
+                        onClick={() => setSelectedCaseId(tc.id)}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      >
+                        <span className={cn('flex-shrink-0', config.style)}>{config.icon}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-primary font-mono text-xs">{tc.code || `#${index + 1}`}</span>
+                            {tc.comment && <MessageSquare className="text-text-3 h-3 w-3" />}
+                          </div>
+                          <p className="text-text-1 truncate text-sm">{tc.title || '제목 없음'}</p>
                         </div>
-                        <p className="text-text-1 truncate text-sm">{tc.title || '제목 없음'}</p>
-                      </div>
-                      {isSelected && <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />}
-                    </button>
+                        {isSelected && <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />}
+                      </button>
+                    </div>
                   );
                 })}
               </div>

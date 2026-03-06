@@ -8,5 +8,5 @@ export { parseSteps, serializeSteps, stepsToText, textToSteps } from './model';
 // ui
 export { TestCaseCard } from './ui';
 // api
-export { getTestCase, getTestCases, getTestCasesList, createTestCase, updateTestCase } from './api';
+export { getTestCase, getTestCases, getTestCasesList, createTestCase, updateTestCase, duplicateTestCase } from './api';
 export { projectTagsQueryOptions } from './api';
