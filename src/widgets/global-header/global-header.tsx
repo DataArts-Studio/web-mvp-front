@@ -34,7 +34,7 @@ export const GlobalHeader = () => {
           className="flex items-center space-x-2 text-xl font-bold text-teal-400"
           onClick={() => track(NAVIGATION_EVENTS.LOGO_CLICK)}
         >
-          <Image src="/logo.svg" alt="Testea" width={120} height={28} />
+          <Image src="/logo.svg" alt="Testea 테스티아 로고" width={120} height={28} />
         </Link>
 
         {/* Navigation */}

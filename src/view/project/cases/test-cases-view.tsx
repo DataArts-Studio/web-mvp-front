@@ -4,18 +4,18 @@ import React, { useRef, useState, useMemo, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
-import { TestCaseCard, TestCaseCardType } from '@/entities/test-case';
+import { TestCaseCard, TestCaseCardType, duplicateTestCase } from '@/entities/test-case';
 import { projectIdQueryOptions } from '@/entities/project';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
-import { testCasesQueryOptions } from '@/features/cases-list';
+import { testCasesQueryOptions, testCaseQueryKeys } from '@/features/cases-list';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { Input, MainContainer } from '@/shared/lib/primitives';
 import { useDisclosure } from '@/shared/hooks';
 import { cn } from '@/shared/utils';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { ActionToolbar, TestTable } from '@/widgets';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Download, Upload, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
@@ -55,6 +55,7 @@ export const TestCasesView = () => {
   const listRef = useRef<HTMLDivElement>(null);
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const { mutate } = useCreateCase();
+  const queryClient = useQueryClient();
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
 
   // 검색 및 필터 상태
@@ -219,6 +220,26 @@ export const TestCasesView = () => {
   }
 
   if (!dashboardData?.success) return <ProjectErrorFallback />;
+
+  const duplicateMutation = useMutation({
+    mutationFn: (testCaseId: string) => duplicateTestCase(testCaseId),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success('테스트 케이스가 복제되었습니다.');
+        if (projectId) {
+          queryClient.invalidateQueries({ queryKey: testCaseQueryKeys.list(projectId) });
+          queryClient.invalidateQueries({ queryKey: ['testSuites', projectId] });
+        }
+      } else {
+        const msg = Object.values(result.errors ?? {}).flat().join(', ');
+        toast.error(msg || '복제에 실패했습니다.');
+      }
+    },
+  });
+
+  const handleDuplicate = useCallback((testCaseId: string) => {
+    duplicateMutation.mutate(testCaseId);
+  }, [duplicateMutation]);
 
   const handleCreateTestCase = () => {
     const title = inputRef.current?.value.trim();
@@ -436,7 +457,7 @@ export const TestCasesView = () => {
                       onOpen('detail');
                     }}
                   >
-                    <TestCaseCard testCase={item} />
+                    <TestCaseCard testCase={item} onDuplicate={handleDuplicate} />
                   </div>
                 ))}
               </div>

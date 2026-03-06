@@ -14,10 +14,10 @@ const siteUrl = 'https://gettestea.com';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Testea(테스티아) - 테스트 관리 플랫폼',
-    template: '%s | Testea(테스티아)',
+    default: 'Testea - 테스트 관리 플랫폼',
+    template: '%s | Testea',
   },
-  description: 'Testea(테스티아) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+  description: '테스티아(Testea) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
   keywords: [
     '테스트 관리',
     '테스트 도구',
@@ -52,25 +52,25 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'Testea(테스티아) - 테스트 관리 플랫폼',
-    description: 'Testea(테스티아) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+    title: 'Testea - 테스트 관리 플랫폼',
+    description: '테스티아(Testea) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
     url: siteUrl,
     type: 'website',
     locale: 'ko_KR',
-    siteName: 'Testea(테스티아)',
+    siteName: 'Testea',
     images: [
       {
         url: '/opengraph-image',
         width: 1200,
         height: 630,
-        alt: 'Testea(테스티아) - 테스트 관리 플랫폼',
+        alt: 'Testea - 테스트 관리 플랫폼',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Testea(테스티아) - 테스트 관리 플랫폼',
-    description: 'Testea(테스티아) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+    title: 'Testea - 테스트 관리 플랫폼',
+    description: '테스티아(Testea) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
     creator: '@testea',
     images: ['/opengraph-image'],
   },

@@ -189,7 +189,10 @@ const TestSuiteDetailView = () => {
 
   const handleRenameSection = (sectionId: string) => {
     const name = editingSectionName.trim();
-    if (!name) return;
+    if (!name) {
+      toast.error('섹션 이름을 입력해주세요.');
+      return;
+    }
     updateSectionMutation.mutate({ id: sectionId, name });
   };
 

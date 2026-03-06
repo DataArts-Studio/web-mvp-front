@@ -55,6 +55,13 @@ export const createSection = async (input: CreateSectionInput): Promise<ActionRe
     const db = getDatabase();
     const trimmedName = input.name.trim();
 
+    if (!trimmedName) {
+      return { success: false, errors: { name: ['섹션 이름을 입력해주세요.'] } };
+    }
+    if (trimmedName.length > 100) {
+      return { success: false, errors: { name: ['섹션 이름은 100자를 초과할 수 없습니다.'] } };
+    }
+
     // 중복 이름 확인
     const [existing] = await db
       .select({ id: testSuiteSections.id })
@@ -121,6 +128,13 @@ export const updateSection = async (input: UpdateSectionInput): Promise<ActionRe
 
     if (input.name !== undefined) {
       const trimmedName = input.name.trim();
+
+      if (!trimmedName) {
+        return { success: false, errors: { name: ['섹션 이름을 입력해주세요.'] } };
+      }
+      if (trimmedName.length > 100) {
+        return { success: false, errors: { name: ['섹션 이름은 100자를 초과할 수 없습니다.'] } };
+      }
 
       // 중복 이름 확인 (자기 자신 제외)
       const [dup] = await db

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import type { TestCaseCardType, TestCaseResultStatus } from '@/entities/test-case';
-import { MoreHorizontal } from 'lucide-react';
+import { Copy, MoreHorizontal } from 'lucide-react';
 import { formatRelativeTime } from '@/shared/utils/date-format';
 import { cn } from '@/shared/utils';
 
@@ -34,10 +34,12 @@ const STATUS_CONFIG: Record<TestCaseResultStatus, { bar: string; dot: string; la
 
 interface TestCaseCardProps {
   testCase: TestCaseCardType;
+  onDuplicate?: (testCaseId: string) => void;
 }
 
-export const TestCaseCard = ({ testCase }: TestCaseCardProps) => {
+export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
   const status = STATUS_CONFIG[testCase.resultStatus] ?? STATUS_CONFIG.untested;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <div className="flex items-stretch gap-0 w-full min-w-0">
@@ -77,13 +79,35 @@ export const TestCaseCard = ({ testCase }: TestCaseCardProps) => {
       </div>
 
       {/* Hover-reveal menu */}
-      <div className="flex items-center shrink-0 pl-2">
+      <div className="flex items-center shrink-0 pl-2 relative">
         <button
           className="rounded-1 text-text-4 hover:bg-bg-4 hover:text-text-1 p-1 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen((prev) => !prev);
+          }}
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
+        {isMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); }} />
+            <div className="bg-bg-2 border-line-2 absolute right-0 top-full z-50 mt-1 rounded-2 border py-1 shadow-lg min-w-[120px]">
+              <button
+                type="button"
+                className="text-text-2 hover:bg-bg-3 flex w-full items-center gap-2 px-3 py-2 text-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMenuOpen(false);
+                  onDuplicate?.(testCase.id);
+                }}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                복제
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

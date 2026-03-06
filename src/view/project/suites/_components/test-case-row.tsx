@@ -14,7 +14,10 @@ export const TestCaseRow = ({ testCase, onSelect }: TestCaseRowProps) => {
     <button
       key={testCase.id}
       type="button"
-      className="hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 text-left transition-colors"
+      className={cn(
+        "hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 text-left transition-colors",
+        testCase.isOptimistic && "opacity-50 pointer-events-none animate-pulse"
+      )}
       onClick={() => onSelect(testCase.id)}
     >
       <div className="flex items-center gap-3">

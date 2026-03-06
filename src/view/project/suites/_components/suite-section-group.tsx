@@ -74,6 +74,7 @@ export const SuiteSectionGroup = ({
           ) : (
             <span
               className="typo-body2-heading text-text-1"
+              onClick={(e) => e.stopPropagation()}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 onStartRename(section.id, section.name);
