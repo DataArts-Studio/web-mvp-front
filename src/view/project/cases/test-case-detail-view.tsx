@@ -10,10 +10,8 @@ import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 import { VersionHistoryTab } from '@/features/version-timeline';
 import { testSuitesQueryOptions } from '@/widgets';
-import { Container, MainContainer } from '@/shared/lib';
+import { MainContainer } from '@/shared/lib';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
-
-import { Aside } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Clock, Edit2, Flag, FolderOpen, History, Play, Tag, XCircle } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
@@ -53,35 +51,27 @@ export const TestCaseDetailView = () => {
 
   if (isLoading) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </MainContainer>
     );
   }
 
   if (isError || !data?.success || !testCase) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <XCircle className="h-12 w-12 text-red-400" />
-            <p className="text-text-1 font-semibold">테스트 케이스를 불러올 수 없습니다.</p>
-            <Link href={`/projects/${projectSlug}/cases`} className="text-primary hover:underline">
-              목록으로 돌아가기
-            </Link>
-          </div>
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <XCircle className="h-12 w-12 text-red-400" />
+          <p className="text-text-1 font-semibold">테스트 케이스를 불러올 수 없습니다.</p>
+          <Link href={`/projects/${projectSlug}/cases`} className="text-primary hover:underline">
+            목록으로 돌아가기
+          </Link>
+        </div>
+      </MainContainer>
     );
   }
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
         {/* 뒤로가기 + 헤더 */}
         <header className="col-span-6 flex flex-col gap-4">
@@ -222,7 +212,6 @@ export const TestCaseDetailView = () => {
           />
         )}
       </MainContainer>
-    </Container>
   );
 };
 

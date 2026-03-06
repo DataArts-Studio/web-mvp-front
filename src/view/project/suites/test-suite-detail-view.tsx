@@ -14,10 +14,9 @@ import type { TestSuiteSection } from '@/entities/test-suite-section';
 import type { TestSuiteCard } from '@/entities/test-suite';
 import type { TestCase, TestCaseCardType } from '@/entities/test-case';
 import { SuiteEditForm, AddCasesToSuiteModal } from '@/features/suites-edit';
-import { Container, MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@/shared/lib/primitives';
 import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { cn } from '@/shared/utils';
-import { Aside } from '@/widgets';
 import {
   ArrowLeft,
   Calendar,
@@ -139,12 +138,9 @@ const TestSuiteDetailView = () => {
   // 로딩 중
   if (isSuiteLoading) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </MainContainer>
     );
   }
 
@@ -222,28 +218,23 @@ const TestSuiteDetailView = () => {
 
   if (!suite) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-text-1 font-semibold">테스트 스위트를 찾을 수 없습니다.</p>
-            <Link
-              href={`/projects/${params.slug}/suites`}
-              className="text-primary mt-4 inline-block hover:underline"
-            >
-              스위트 목록으로 돌아가기
-            </Link>
-          </div>
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <div className="text-center">
+          <p className="text-text-1 font-semibold">테스트 스위트를 찾을 수 없습니다.</p>
+          <Link
+            href={`/projects/${params.slug}/suites`}
+            className="text-primary mt-4 inline-block hover:underline"
+          >
+            스위트 목록으로 돌아가기
+          </Link>
+        </div>
+      </MainContainer>
     );
   }
 
   const tagToneStyle = TAG_TONE_CONFIG[suite.tag?.tone ?? 'neutral']?.style ?? TAG_TONE_CONFIG.neutral.style;
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
         {/* 뒤로가기 + 헤더 */}
         <header className="col-span-6 flex flex-col gap-4">
@@ -387,7 +378,6 @@ const TestSuiteDetailView = () => {
           )}
         </AnimatePresence>
       </MainContainer>
-    </Container>
   );
 };
 

@@ -9,8 +9,7 @@ import { getTestTypeLabel } from '@/entities/test-case';
 import { TemplateCreateModal } from '@/features/templates-create';
 import { TemplateEditModal, useDeleteTemplate } from '@/features/templates-edit';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { Container, MainContainer } from '@/shared/lib/primitives';
-import { Aside } from '@/widgets';
+import { MainContainer } from '@/shared/lib/primitives';
 import { DSButton, EmptyState, LoadingSpinner } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -91,29 +90,22 @@ export const TemplatesView = () => {
 
   if (isLoadingProject || isLoadingTemplates) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </MainContainer>
     );
   }
 
   if (!dashboardData?.success) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+      </MainContainer>
     );
   }
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
+    <>
       <MainContainer className="flex min-h-screen w-full flex-1">
         <div className="mx-auto grid w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
           {/* Header */}
@@ -315,7 +307,7 @@ export const TemplatesView = () => {
           onClose={() => setEditingTemplate(null)}
         />
       )}
-    </Container>
+    </>
   );
 };
 
