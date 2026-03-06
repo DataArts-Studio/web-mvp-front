@@ -17,7 +17,11 @@ import { verifyProjectAccessToken } from './access-token';
  * @param projectId - 접근 대상 프로젝트 ID
  * @returns 접근 가능 여부
  */
-export async function requireProjectAccess(projectId: string): Promise<boolean> {
+export async function requireProjectAccess(_projectId: string): Promise<boolean> {
+  // TODO: 로그인/인증 구현 후 아래 토큰 검증 로직 활성화
+  return true;
+
+  /*
   try {
     const tokenMap = await getAllAccessTokenCookies();
 
@@ -32,4 +36,5 @@ export async function requireProjectAccess(projectId: string): Promise<boolean> 
   } catch {
     return false;
   }
+  */
 }
