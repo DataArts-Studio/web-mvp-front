@@ -282,26 +282,30 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     const id = uuidv7();
     const now = new Date();
 
-    const [maxResult] = await db
-      .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
-      .from(testCases)
-      .where(eq(testCases.project_id, input.projectId));
-    const nextDisplayId = (maxResult?.max ?? 0) + 1;
+    const inserted = await db.transaction(async (tx) => {
+      const [maxResult] = await tx
+        .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+        .from(testCases)
+        .where(eq(testCases.project_id, input.projectId));
+      const nextDisplayId = (maxResult?.max ?? 0) + 1;
 
-    const [inserted] = await db
-      .insert(testCases)
-      .values({
-        id,
-        ...dto,
-        display_id: nextDisplayId,
-        case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
-        result_status: 'untested',
-        created_at: now,
-        updated_at: now,
-        archived_at: null,
-        lifecycle_status: 'ACTIVE',
-      })
-      .returning();
+      const [row] = await tx
+        .insert(testCases)
+        .values({
+          id,
+          ...dto,
+          display_id: nextDisplayId,
+          case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
+          result_status: 'untested',
+          created_at: now,
+          updated_at: now,
+          archived_at: null,
+          lifecycle_status: 'ACTIVE',
+        })
+        .returning();
+
+      return row;
+    });
 
     if (!inserted) {
       return {
@@ -483,35 +487,39 @@ export const duplicateTestCase = async (
     const id = uuidv7();
     const now = new Date();
 
-    const [maxResult] = await db
-      .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
-      .from(testCases)
-      .where(eq(testCases.project_id, projectId));
-    const nextDisplayId = (maxResult?.max ?? 0) + 1;
+    const inserted = await db.transaction(async (tx) => {
+      const [maxResult] = await tx
+        .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+        .from(testCases)
+        .where(eq(testCases.project_id, projectId));
+      const nextDisplayId = (maxResult?.max ?? 0) + 1;
 
-    const [inserted] = await db
-      .insert(testCases)
-      .values({
-        id,
-        project_id: projectId,
-        test_suite_id: original.test_suite_id,
-        section_id: original.section_id,
-        name: `${original.name} (복사)`,
-        test_type: original.test_type,
-        tags: original.tags,
-        pre_condition: original.pre_condition,
-        steps: original.steps,
-        expected_result: original.expected_result,
-        sort_order: (original.sort_order ?? 0) + 1,
-        display_id: nextDisplayId,
-        case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
-        result_status: 'untested',
-        created_at: now,
-        updated_at: now,
-        archived_at: null,
-        lifecycle_status: 'ACTIVE',
-      })
-      .returning();
+      const [row] = await tx
+        .insert(testCases)
+        .values({
+          id,
+          project_id: projectId,
+          test_suite_id: original.test_suite_id,
+          section_id: original.section_id,
+          name: `${original.name} (복사)`,
+          test_type: original.test_type,
+          tags: original.tags,
+          pre_condition: original.pre_condition,
+          steps: original.steps,
+          expected_result: original.expected_result,
+          sort_order: (original.sort_order ?? 0) + 1,
+          display_id: nextDisplayId,
+          case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
+          result_status: 'untested',
+          created_at: now,
+          updated_at: now,
+          archived_at: null,
+          lifecycle_status: 'ACTIVE',
+        })
+        .returning();
+
+      return row;
+    });
 
     if (!inserted) {
       return { success: false, errors: { _testCase: ['테스트 케이스 복사 중 오류가 발생했습니다.'] } };
