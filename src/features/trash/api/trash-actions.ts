@@ -448,10 +448,12 @@ export const permanentDeleteItem = async (
       message: '항목이 영구 삭제되었습니다.',
     };
   } catch (error) {
+    console.error('[permanentDeleteItem] error:', error);
     Sentry.captureException(error, { extra: { action: 'permanentDeleteItem' } });
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _trash: ['항목을 영구 삭제하는 도중 오류가 발생했습니다.'] },
+      errors: { _trash: [`항목을 영구 삭제하는 도중 오류가 발생했습니다: ${errorMessage}`] },
     };
   }
 };
