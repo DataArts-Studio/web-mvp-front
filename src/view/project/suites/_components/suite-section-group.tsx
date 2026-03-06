@@ -72,7 +72,16 @@ export const SuiteSectionGroup = ({
               autoFocus
             />
           ) : (
-            <span className="typo-body2-heading text-text-1">{section.name}</span>
+            <span
+              className="typo-body2-heading text-text-1"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                onStartRename(section.id, section.name);
+                setTimeout(() => editSectionInputRef.current?.focus(), 0);
+              }}
+            >
+              {section.name}
+            </span>
           )}
           <span className="text-text-3 text-xs">{sectionCases.length}개</span>
         </button>

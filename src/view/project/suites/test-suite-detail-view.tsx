@@ -62,6 +62,7 @@ const TestSuiteDetailView = () => {
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionName, setEditingSectionName] = useState('');
   const [menuOpenSectionId, setMenuOpenSectionId] = useState<string | null>(null);
+  const [createSectionError, setCreateSectionError] = useState<string | null>(null);
   const newSectionInputRef = useRef<HTMLInputElement>(null);
   const editSectionInputRef = useRef<HTMLInputElement>(null);
 
@@ -178,7 +179,11 @@ const TestSuiteDetailView = () => {
 
   const handleCreateSection = () => {
     const name = newSectionName.trim();
-    if (!name) return;
+    if (!name) {
+      setCreateSectionError('섹션 이름을 입력해주세요.');
+      return;
+    }
+    setCreateSectionError(null);
     createSectionMutation.mutate(name);
   };
 
@@ -315,6 +320,7 @@ const TestSuiteDetailView = () => {
           isCreatingSection={isCreatingSection}
           newSectionName={newSectionName}
           createSectionIsPending={createSectionMutation.isPending}
+          createSectionError={createSectionError}
           newSectionInputRef={newSectionInputRef}
           editSectionInputRef={editSectionInputRef}
           onToggleSection={toggleSection}
@@ -332,9 +338,9 @@ const TestSuiteDetailView = () => {
             setIsCreatingSection(true);
             setTimeout(() => newSectionInputRef.current?.focus(), 0);
           }}
-          onSetNewSectionName={setNewSectionName}
+          onSetNewSectionName={(name) => { setNewSectionName(name); setCreateSectionError(null); }}
           onCreateSection={handleCreateSection}
-          onCancelCreateSection={() => { setIsCreatingSection(false); setNewSectionName(''); }}
+          onCancelCreateSection={() => { setIsCreatingSection(false); setNewSectionName(''); setCreateSectionError(null); }}
           onAddCases={() => setIsAddingCases(true)}
         />
 
