@@ -86,6 +86,7 @@ export async function importTestCases(input: {
       message: `${result.length}건의 테스트케이스가 가져와졌습니다.`,
     };
   } catch (error) {
+    console.error('[importTestCases] error:', error);
     Sentry.captureException(error, { extra: { action: 'importTestCases' } });
     return {
       success: false,
