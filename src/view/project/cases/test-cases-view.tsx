@@ -155,6 +155,26 @@ export const TestCasesView = () => {
     listRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const duplicateMutation = useMutation({
+    mutationFn: (testCaseId: string) => duplicateTestCase(testCaseId),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success('테스트 케이스가 복제되었습니다.');
+        if (projectId) {
+          queryClient.invalidateQueries({ queryKey: testCaseQueryKeys.list(projectId) });
+          queryClient.invalidateQueries({ queryKey: ['testSuites', projectId] });
+        }
+      } else {
+        const msg = Object.values(result.errors ?? {}).flat().join(', ');
+        toast.error(msg || '복제에 실패했습니다.');
+      }
+    },
+  });
+
+  const handleDuplicate = useCallback((testCaseId: string) => {
+    duplicateMutation.mutate(testCaseId);
+  }, [duplicateMutation]);
+
   // 로딩 상태 — 스켈레톤 UI (레이아웃에 Container+Aside 포함)
   if (isLoadingProject || (isLoadingCases && !testCasesData)) {
     const SKELETON_WIDTHS = [70, 55, 85, 60, 75, 50, 90, 65, 80, 45, 70, 60, 85, 55, 75];
@@ -220,26 +240,6 @@ export const TestCasesView = () => {
   }
 
   if (!dashboardData?.success) return <ProjectErrorFallback />;
-
-  const duplicateMutation = useMutation({
-    mutationFn: (testCaseId: string) => duplicateTestCase(testCaseId),
-    onSuccess: (result) => {
-      if (result.success) {
-        toast.success('테스트 케이스가 복제되었습니다.');
-        if (projectId) {
-          queryClient.invalidateQueries({ queryKey: testCaseQueryKeys.list(projectId) });
-          queryClient.invalidateQueries({ queryKey: ['testSuites', projectId] });
-        }
-      } else {
-        const msg = Object.values(result.errors ?? {}).flat().join(', ');
-        toast.error(msg || '복제에 실패했습니다.');
-      }
-    },
-  });
-
-  const handleDuplicate = useCallback((testCaseId: string) => {
-    duplicateMutation.mutate(testCaseId);
-  }, [duplicateMutation]);
 
   const handleCreateTestCase = () => {
     const title = inputRef.current?.value.trim();
