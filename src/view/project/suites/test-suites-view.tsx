@@ -19,7 +19,7 @@ import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 const FILTER_OPTIONS = ['전체', '기능별', '시나리오'] as const;
 type FilterOption = typeof FILTER_OPTIONS[number];
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 7;
 
 export const TestSuitesView = () => {
   const params = useParams();
