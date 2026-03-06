@@ -20,7 +20,7 @@ import { Skeleton, Pagination, ProjectErrorFallback } from '@/shared/ui';
 // 필터 옵션과 상태값 매핑
 const FILTER_OPTIONS = ['전체', '진행 중', '완료', '예정'] as const;
 type FilterOption = (typeof FILTER_OPTIONS)[number];
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 const FILTER_TO_STATUS: Record<FilterOption, string | null> = {
   '전체': null,
