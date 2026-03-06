@@ -1,19 +1,22 @@
 import React from 'react';
 import Link from 'next/link';
 
-import { cn } from '@/shared';
+import { cn } from '@/shared/utils';
 
 type NavItemProps = {
   label: string;
   href: string;
   icon: React.ElementType;
   active?: boolean;
+  onMouseEnter?: () => void;
 };
 
-export const AsideNavItem = ({ label, href, icon: Icon, active }: NavItemProps) => {
+export const AsideNavItem = ({ label, href, icon: Icon, active, onMouseEnter }: NavItemProps) => {
   return (
     <Link
       href={href}
+      prefetch={false}
+      onMouseEnter={onMouseEnter}
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
         active

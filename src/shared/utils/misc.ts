@@ -28,3 +28,9 @@ export const clamp = (value: number, min: number, max: number) => Math.min(Math.
  * @param condition - data 속성을 활성화할지 결정하는 조건값 (true면 속성 포함, false/null/undefined면 속성 제거)
  */
 export const dataAttr = (condition: boolean | undefined | null) => (condition ? '' : undefined);
+
+export const formatBytes = (bytes: number) => {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+};

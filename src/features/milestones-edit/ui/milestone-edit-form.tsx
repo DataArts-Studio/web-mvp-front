@@ -11,7 +11,7 @@ import { useUpdateMilestone } from '../hooks';
 import { UpdateMilestone, UpdateMilestoneSchema } from '../model';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
-import { Check, ChevronDown, ChevronUp, FolderOpen, ListChecks, Search, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, FolderOpen, ListChecks, Search } from 'lucide-react';
 
 interface MilestoneEditFormProps {
   milestone: Milestone;

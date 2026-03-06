@@ -12,9 +12,9 @@ import {
 } from '@/features/trash';
 import type { TrashItem, TrashItemType } from '@/features/trash';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { Container, MainContainer, DSButton, LoadingSpinner } from '@/shared';
+import { MainContainer } from '@/shared/lib/primitives';
+import { DSButton, LoadingSpinner, EmptyState, ProjectErrorFallback } from '@/shared/ui';
 import { Dialog } from '@/shared/lib/primitives';
-import { Aside } from '@/widgets';
 import {
   Trash2,
   RotateCcw,
@@ -198,7 +198,7 @@ export const TrashView = () => {
   const permanentDelete = usePermanentDelete(projectId ?? '');
   const emptyTrashMutation = useEmptyTrash(projectId ?? '');
 
-  const trashItems = trashData?.success ? trashData.data : [];
+  const trashItems = useMemo(() => trashData?.success ? trashData.data : [], [trashData]);
 
   const filteredItems = useMemo(() => {
     let items = trashItems;
@@ -276,29 +276,16 @@ export const TrashView = () => {
 
   if (isLoadingProject || isLoadingTrash) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="flex flex-1 items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </MainContainer>
     );
   }
 
-  if (!dashboardData?.success) {
-    return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-        </MainContainer>
-      </Container>
-    );
-  }
+  if (!dashboardData?.success) return <ProjectErrorFallback />;
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
+    <>
       <MainContainer className="flex min-h-screen w-full flex-1">
         <div className="mx-auto grid w-full max-w-[1000px] flex-1 content-start gap-y-6 px-10 py-8">
           {/* Header */}
@@ -422,37 +409,31 @@ export const TrashView = () => {
             </section>
           ) : trashItems.length > 0 ? (
             /* Search/filter yielded no results */
-            <div className="flex flex-col items-center justify-center gap-3 py-20">
-              <Search className="h-10 w-10 text-text-3/50" />
-              <p className="typo-body2-normal text-text-3">
-                검색 결과가 없습니다.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setFilterType('all');
-                }}
-                className="typo-body2-normal text-primary hover:underline"
-              >
-                필터 초기화
-              </button>
-            </div>
+            <EmptyState
+              icon={<Search className="h-10 w-10" />}
+              title="검색 결과가 없습니다."
+              className="py-20"
+              action={
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterType('all');
+                  }}
+                  className="typo-body2-normal text-primary hover:underline"
+                >
+                  필터 초기화
+                </button>
+              }
+            />
           ) : (
             /* Empty trash state */
-            <div className="flex flex-col items-center justify-center gap-4 py-24">
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-bg-3">
-                <Trash2 className="h-10 w-10 text-text-3/40" />
-              </div>
-              <div className="text-center">
-                <p className="typo-h2-heading text-text-2">
-                  휴지통이 비어있습니다
-                </p>
-                <p className="typo-body2-normal text-text-3 mt-1">
-                  삭제한 항목이 여기에 표시됩니다.
-                </p>
-              </div>
-            </div>
+            <EmptyState
+              icon={<Trash2 className="h-10 w-10" />}
+              title="휴지통이 비어있습니다"
+              description="삭제한 항목이 여기에 표시됩니다."
+              className="py-24"
+            />
           )}
         </div>
       </MainContainer>
@@ -535,7 +516,7 @@ export const TrashView = () => {
                   </Dialog.Title>
                   <Dialog.Description className="text-text-3 typo-body2-normal mt-1.5">
                     <span className="text-text-1 font-medium">
-                      "{deleteConfirm.title}"
+                      &ldquo;{deleteConfirm.title}&rdquo;
                     </span>
                     을(를) 영구 삭제하시겠습니까?
                     <br />
@@ -575,6 +556,6 @@ export const TrashView = () => {
           </Dialog.Portal>
         </Dialog.Root>
       )}
-    </Container>
+    </>
   );
 };

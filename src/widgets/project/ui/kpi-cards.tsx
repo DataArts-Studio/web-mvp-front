@@ -14,6 +14,7 @@ export type KPIData = {
 
 type KPICardsProps = {
   data: KPIData;
+  projectTotalCases?: number;
 };
 
 type KPICardProps = {
@@ -73,7 +74,8 @@ const KPICard = ({
   );
 };
 
-export const KPICards = ({ data }: KPICardsProps) => {
+export const KPICards = React.memo(({ data, projectTotalCases }: KPICardsProps) => {
+  const displayTotal = projectTotalCases ?? data.totalCases;
   const total = data.totalCases;
   const hasData = total > 0;
 
@@ -96,7 +98,7 @@ export const KPICards = ({ data }: KPICardsProps) => {
   return (
     <div className="flex flex-col gap-4">
       <p className="typo-body2-normal text-text-3">
-        전체 <strong className="text-text-1">{total}건</strong>의 테스트 케이스가 있어요.
+        전체 <strong className="text-text-1">{displayTotal}건</strong>의 테스트 케이스가 있어요.
       </p>
       <div className="flex gap-2">
         {/* Total Cases */}
@@ -153,4 +155,6 @@ export const KPICards = ({ data }: KPICardsProps) => {
       </div>
     </div>
   );
-};
+});
+
+KPICards.displayName = 'KPICards';

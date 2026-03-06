@@ -108,6 +108,8 @@ const BaseDecoration = ({
         height={height}
         alt={alt}
         aria-hidden="true"
+        loading="lazy"
+        priority={false}
         className={cn("absolute top-0 left-0", imageClassName)}
       />
     </div>

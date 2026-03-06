@@ -1,1 +1,1 @@
-export * from './use-create-suite';
+export { useCreateSuite } from './use-create-suite';

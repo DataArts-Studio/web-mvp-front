@@ -1,14 +1,36 @@
-import React from 'react';
 import type { Metadata } from 'next';
+import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import { TestSuitesView } from '@/view';
+import { projectIdQueryOptions } from '@/entities/project/api/query';
+import { testSuitesQueryOptions } from '@/entities/test-suite/api/query';
 
 export const metadata: Metadata = {
   title: '테스트 스위트',
   description: '테스트 스위트를 관리하고 케이스를 그룹별로 구성합니다.',
 };
 
-const Page = () => {
-  return <TestSuitesView/>
-};
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
 
-export default Page;
+  try {
+    const result = await queryClient.fetchQuery(projectIdQueryOptions(slug));
+    const projectId = result?.success ? result.data.id : undefined;
+
+    if (projectId) {
+      await queryClient.prefetchQuery(testSuitesQueryOptions(projectId));
+    }
+  } catch {
+    // prefetch 실패 시 클라이언트에서 재시도
+  }
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <TestSuitesView />
+    </HydrationBoundary>
+  );
+}

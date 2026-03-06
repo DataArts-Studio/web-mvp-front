@@ -13,13 +13,13 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googletagmanager.com vercel.live *.vercel.live static.cloudflareinsights.com https://challenges.cloudflare.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googletagmanager.com static.cloudflareinsights.com https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net",
-      `img-src 'self' data: blob: *.vercel.live ${supabaseUrl}`,
+      `img-src 'self' data: blob: ${supabaseUrl}`,
       "font-src 'self' cdn.jsdelivr.net",
       "worker-src 'self' blob:",
-      `connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io *.vercel.live https://challenges.cloudflare.com ${supabaseUrl}`,
-      "frame-src vercel.live *.vercel.live https://challenges.cloudflare.com",
+      `connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io https://challenges.cloudflare.com cdn.jsdelivr.net ${supabaseUrl}`,
+      "frame-src https://challenges.cloudflare.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -34,7 +34,13 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   experimental: {
-    optimizePackageImports: ['recharts', 'framer-motion', 'lucide-react', '@supabase/supabase-js'],
+    optimizePackageImports: [
+      'framer-motion', 'lucide-react', '@supabase/supabase-js',
+      '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities',
+      'zod', 'react-hook-form', '@tanstack/react-query',
+      '@hookform/resolvers', 'sonner', 'drizzle-orm',
+      'date-fns', 'react-markdown',
+    ],
     serverActions: {
       bodySizeLimit: '10mb',
     },

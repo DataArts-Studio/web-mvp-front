@@ -1,6 +1,8 @@
 import React, { ComponentProps, ReactNode } from 'react';
 
-import { DSButton, Input, cn } from '@/shared';
+import { DSButton } from '@/shared/ui';
+import { Input } from '@/shared/lib/primitives';
+import { cn } from '@/shared/utils';
 import { Search } from 'lucide-react';
 
 interface ActionToolBarRootProps extends ComponentProps<'div'> {

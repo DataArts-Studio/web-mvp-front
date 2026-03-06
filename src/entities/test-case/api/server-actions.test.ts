@@ -26,6 +26,8 @@ describe('getTestCases', () => {
         id: 'tc-1',
         project_id: 'proj-1',
         test_suite_id: 'suite-1',
+        section_id: null,
+        display_id: 1,
         case_key: 'TC-001',
         name: '로그인 테스트',
         test_type: 'functional',
@@ -52,6 +54,9 @@ describe('getTestCases', () => {
       expect(result.data[0]).toEqual({
         id: 'tc-1',
         projectId: 'proj-1',
+        testSuiteId: 'suite-1',
+        sectionId: null,
+        displayId: 1,
         caseKey: 'TC-001',
         title: '로그인 테스트',
         testType: 'functional',
@@ -101,6 +106,8 @@ describe('getTestCases', () => {
         id: 'tc-2',
         project_id: 'proj-1',
         test_suite_id: null,
+        section_id: null,
+        display_id: null,
         case_key: null,
         name: '테스트',
         test_type: null,
@@ -124,7 +131,8 @@ describe('getTestCases', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data[0].projectId).toBe('proj-1');
-      expect(result.data[0].caseKey).toBe('');
+      expect(result.data[0].caseKey).toBe('TC-000');
+      expect(result.data[0].displayId).toBe(0);
       expect(result.data[0].testType).toBe('');
       expect(result.data[0].tags).toEqual([]);
       expect(result.data[0].preCondition).toBe('');

@@ -2,11 +2,10 @@ import React, { ReactNode } from 'react';
 
 import type { Metadata, Viewport } from 'next';
 
-import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
-import { GoogleTagManager } from '@next/third-parties/google';
-import { MvpBottomNavbar } from 'src/shared';
-import { Toaster } from 'sonner';
+import Script from 'next/script';
+import { MvpBottomNavbarLazy } from '@/shared/ui/mvp-bottom-navbar/mvp-bottom-navbar-lazy';
+import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
@@ -158,24 +157,63 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css"
+          rel="preload"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          as="style"
         />
+        <link
+          rel="preload"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          media="print"
+          data-font-css
+        />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          />
+        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="antialiased">
-        <QueryProvider>{children}</QueryProvider>
-        <Toaster position="top-right" richColors closeButton />
+        {children}
+        <LazyToaster />
         {/* 테스트용 컴포넌트 */}
-        <MvpBottomNavbar />
+        <MvpBottomNavbarLazy />
+        <Script
+          id="font-swap"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `var f=document.querySelector('[data-font-css]');if(f){if(f.sheet){f.media='all'}else{f.addEventListener('load',function(){this.media='all'})}}`,
+          }}
+        />
         {process.env.NEXT_PUBLIC_GTM_ID && (
-          <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
+          <>
+            <Script
+              id="gtm-init"
+              strategy="lazyOnload"
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});`,
+              }}
+            />
+            <Script
+              id="gtm-script"
+              src={`https://www.googletagmanager.com/gtm.js?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
+              strategy="lazyOnload"
+            />
+          </>
         )}
       </body>
     </html>

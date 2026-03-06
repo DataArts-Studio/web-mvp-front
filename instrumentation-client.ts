@@ -1,31 +1,36 @@
 // This file configures the initialization of Sentry on the client.
-// The added config here will be used whenever a users loads a page in their browser.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
 
+const isProduction = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+
 Sentry.init({
-  dsn: "https://02925772c44609aefbdd39c50ab3bd79@o4510870988849152.ingest.us.sentry.io/4510871614455808",
+  dsn,
+  environment: process.env.NEXT_PUBLIC_VERCEL_ENV || 'development',
 
-  // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
+  // Replay는 초기 번들에서 제거 — 아래에서 lazy load
+  integrations: (defaults) =>
+    defaults.filter((integration) => integration.name !== 'Replay'),
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
+  tracesSampleRate: isProduction ? 0.2 : 1.0,
   enableLogs: true,
-
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.1,
-
-  // Define how likely Replay events are sampled when an error occurs.
-  replaysOnErrorSampleRate: 1.0,
-
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
+
+  enabled: process.env.NODE_ENV !== 'development' && !!dsn,
 });
+
+// Replay를 lazy load하여 초기 번들 크기 ~200KB 절감
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development' && dsn) {
+  Sentry.lazyLoadIntegration('replayIntegration').then((replayIntegration) => {
+    Sentry.addIntegration(replayIntegration({
+      maskAllText: false,
+      blockAllMedia: false,
+    }));
+  }).catch(() => {
+    // Replay 로드 실패 시 무시 — 핵심 에러 추적에 영향 없음
+  });
+}
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

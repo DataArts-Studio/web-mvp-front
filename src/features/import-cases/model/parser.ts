@@ -1,4 +1,3 @@
-import Papa from 'papaparse';
 import type { ParseResult } from './schema';
 import { detectFormat } from './format-detector';
 
@@ -29,6 +28,7 @@ function isExcel(file: File): boolean {
 }
 
 async function parseCsv(file: File): Promise<ParseResult> {
+  const { default: Papa } = await import('papaparse');
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,

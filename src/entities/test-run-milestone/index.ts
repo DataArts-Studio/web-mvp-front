@@ -1,1 +1,1 @@
-export * from './model';
+export { TestRunMilestoneSchema } from './model';

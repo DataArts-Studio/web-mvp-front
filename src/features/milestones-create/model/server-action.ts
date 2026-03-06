@@ -1,15 +1,12 @@
 'use server';
 import * as Sentry from '@sentry/nextjs';
-import { CreateMilestoneSchema } from '@/entities/milestone';
-import { getDatabase, milestones } from '@/shared/lib/db';
+import { CreateMilestoneSchema } from '../../../entities/milestone';
+import { getDatabase, milestones } from '../../../shared/lib/db';
 import { z } from 'zod';
-import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/db';
-
-type FlatErrors = {
-  formErrors: string[];
-  fieldErrors: Record<string, string[] | undefined>;
-};
+import { v7 as uuidv7 } from 'uuid';
+import { requireProjectAccess } from '../../../access/lib/require-access';
+import { checkStorageLimit } from '../../../shared/lib/db';
+import type { FlatErrors } from '@/shared/types';
 
 type CreateMilestoneInput = z.infer<typeof CreateMilestoneSchema>;
 
@@ -20,7 +17,7 @@ export const createMilestoneAction = async (input: CreateMilestoneInput) => {
     return { success: false, errors: validation.error.flatten() as FlatErrors };
   }
 
-  const { project_id } = validation.data;
+  const { projectId: project_id } = validation.data;
 
   // 접근 권한 확인
   const hasAccess = await requireProjectAccess(project_id);
@@ -36,7 +33,17 @@ export const createMilestoneAction = async (input: CreateMilestoneInput) => {
 
   try {
     const db = getDatabase();
-    const [newMilestone] = await db.insert(milestones).values(validation.data).returning();
+    const [newMilestone] = await db
+      .insert(milestones)
+      .values({
+        id: uuidv7(),
+        project_id: validation.data.projectId,
+        name: validation.data.title,
+        description: validation.data.description,
+        start_date: validation.data.startDate?.toISOString(),
+        end_date: validation.data.endDate?.toISOString(),
+      })
+      .returning();
     return { success: true, milestone: newMilestone };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'createMilestoneAction' } });

@@ -1,6 +1,16 @@
-import type { TestSuiteDTO, CreateTestSuiteDTO, TestSuite, CreateTestSuite } from './types';
+import { z } from 'zod';
+import type { TestSuite } from './types';
+import { TestSuiteDtoSchema, CreateTestSuiteDtoSchema } from './schema';
 
-const toDate = (v: string | Date): Date => (v instanceof Date ? v : new Date(v));
+type TestSuiteDTO = z.infer<typeof TestSuiteDtoSchema>;
+type CreateTestSuiteDTO = z.infer<typeof CreateTestSuiteDtoSchema>;
+
+export type CreateTestSuite = {
+  projectId: string;
+  title: string;
+  description?: string;
+  sortOrder?: number;
+};
 
 export const toTestSuite = (dto: TestSuiteDTO): TestSuite => {
   return {
@@ -9,18 +19,10 @@ export const toTestSuite = (dto: TestSuiteDTO): TestSuite => {
     title: dto.name,
     description: dto.description ?? undefined,
     sortOrder: dto.sort_order,
-    createdAt: dto.create_at,
-    updatedAt: dto.update_at,
-    deletedAt: dto.delete_at,
-  };
-};
-
-export const toCreateTestSuite = (dto: CreateTestSuiteDTO): CreateTestSuite => {
-  return {
-    projectId: dto.project_id,
-    title: dto.name,
-    description: dto.description ?? undefined,
-    sortOrder: dto.sort_order,
+    createdAt: dto.created_at,
+    updatedAt: dto.updated_at,
+    archivedAt: dto.archived_at,
+    lifecycleStatus: dto.lifecycle_status,
   };
 };
 
@@ -31,9 +33,10 @@ export const toTestSuiteDTO = (domain: TestSuite): TestSuiteDTO => {
     name: domain.title,
     description: domain.description,
     sort_order: domain.sortOrder,
-    create_at: domain.createdAt,
-    update_at: domain.updatedAt,
-    delete_at: domain.deletedAt,
+    created_at: domain.createdAt,
+    updated_at: domain.updatedAt,
+    archived_at: domain.archivedAt,
+    lifecycle_status: domain.lifecycleStatus,
   };
 };
 

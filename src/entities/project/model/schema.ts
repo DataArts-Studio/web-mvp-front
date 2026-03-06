@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { LifecycleStatusEnum } from '@/shared/types';
 
-export const LifecycleStatusEnum = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
+export { LifecycleStatusEnum } from '@/shared/types';
 
 
 

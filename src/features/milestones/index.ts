@@ -1,1 +1,1 @@
-export * from './api';
+export { getMilestoneById, milestoneByIdQueryOptions } from './api';

@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testSuites, testSuiteSections, testCases } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
 import type { TestSuiteSection, CreateSectionInput, UpdateSectionInput, ReorderSectionsInput } from '../model';
-import { and, eq, asc } from 'drizzle-orm';
+import { and, eq, asc, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 
@@ -35,7 +35,7 @@ export const getSections = async (suiteId: string): Promise<ActionResult<TestSui
     const rows = await db
       .select()
       .from(testSuiteSections)
-      .where(eq(testSuiteSections.suite_id, suiteId))
+      .where(and(eq(testSuiteSections.suite_id, suiteId), isNull(testSuiteSections.archived_at)))
       .orderBy(asc(testSuiteSections.sort_order));
 
     return { success: true, data: rows.map(toSection) };
@@ -67,13 +67,6 @@ export const createSection = async (input: CreateSectionInput): Promise<ActionRe
     }
 
     // 다음 sort_order 계산
-    const [maxOrder] = await db
-      .select({ sortOrder: testSuiteSections.sort_order })
-      .from(testSuiteSections)
-      .where(eq(testSuiteSections.suite_id, input.suiteId))
-      .orderBy(asc(testSuiteSections.sort_order))
-      .limit(1);
-
     const rows = await db
       .select({ sortOrder: testSuiteSections.sort_order })
       .from(testSuiteSections)
@@ -188,14 +181,19 @@ export const deleteSection = async (sectionId: string): Promise<ActionResult<{ i
       return { success: false, errors: { _section: ['접근 권한이 없습니다.'] } };
     }
 
-    // 하위 케이스의 section_id를 NULL로 설정 (ON DELETE SET NULL이지만 명시적으로)
+    const now = new Date();
+
+    // 하위 케이스의 section_id를 NULL로 설정
     await db
       .update(testCases)
-      .set({ section_id: null, updated_at: new Date() })
+      .set({ section_id: null, updated_at: now })
       .where(eq(testCases.section_id, sectionId));
 
-    // 섹션 삭제
-    await db.delete(testSuiteSections).where(eq(testSuiteSections.id, sectionId));
+    // 섹션 소프트 딜리트
+    await db
+      .update(testSuiteSections)
+      .set({ archived_at: now, updated_at: now })
+      .where(eq(testSuiteSections.id, sectionId));
 
     return { success: true, data: { id: sectionId }, message: '섹션이 삭제되었습니다. 포함된 케이스는 미분류로 이동되었습니다.' };
   } catch (error) {

@@ -21,11 +21,11 @@ import { ChangeIdentifierFormSchema, ProjectSettingsFormSchema } from '@/entitie
 import type { ChangeIdentifierForm, ProjectSettingsForm } from '@/entities/project';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { useUpdateProject, useChangeIdentifier, useDeleteProject } from '@/features/project-settings';
-import { Container, MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@/shared/lib/primitives';
 import { Dialog } from '@/shared/lib/primitives';
-import { DSButton, DsFormField, DsInput, LoadingSpinner } from '@/shared/ui';
-import { Aside } from '@/widgets';
+import { DSButton, DsFormField, DsInput, Skeleton, SkeletonCircle, ProjectErrorFallback } from '@/shared/ui';
 import { formatDateKR } from '@/shared/utils/date-format';
+import { formatBytes } from '@/shared/utils';
 
 // ─── Shared UI Primitives ────────────────────────────────────────────────────
 
@@ -83,34 +83,50 @@ export const SettingsView = () => {
     enabled: !!projectId,
   });
 
+  // 로딩 상태 — 스켈레톤 UI
   if (isLoading) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
+      <MainContainer className="mx-auto flex min-h-screen w-full max-w-[1200px] flex-1 flex-col gap-10 px-10 py-8">
+        {/* Header skeleton */}
+        <header className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <SkeletonCircle className="h-9 w-9" />
+            <Skeleton className="h-8 w-40" />
+          </div>
+          <Skeleton className="ml-12 h-5 w-64" />
+        </header>
+        {/* Section skeletons */}
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-5 border border-line-2 bg-bg-2 flex flex-col">
+            <div className="p-6 pb-5 flex items-start gap-4">
+              <SkeletonCircle className="h-10 w-10" />
+              <div className="flex flex-col gap-1">
+                <Skeleton className="h-6 w-28" />
+                <Skeleton className="h-4 w-52" />
+              </div>
+            </div>
+            <div className="border-t border-line-2" />
+            <div className="flex flex-col gap-0 divide-y divide-line-2">
+              {Array.from({ length: 2 }).map((_, j) => (
+                <div key={j} className="flex items-center gap-4 px-6 py-5">
+                  <Skeleton className="h-4 w-28 shrink-0" />
+                  <Skeleton className="h-10 flex-1 rounded-2 border border-line-2 bg-bg-1" />
+                  <Skeleton className="h-8 w-14 shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </MainContainer>
     );
   }
 
-  if (!dashboardData?.success || !projectId) {
-    return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-        </MainContainer>
-      </Container>
-    );
-  }
+  if (!dashboardData?.success || !projectId) return <ProjectErrorFallback />;
 
   const { project } = dashboardData.data;
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
-      <MainContainer className="mx-auto flex min-h-screen w-full max-w-[860px] flex-1 flex-col gap-10 px-10 py-8">
+    <MainContainer className="mx-auto flex min-h-screen w-full max-w-[1200px] flex-1 flex-col gap-10 px-10 py-8">
         {/* Header */}
         <header className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
@@ -152,7 +168,6 @@ export const SettingsView = () => {
         {/* Bottom spacer */}
         <div className="h-8" />
       </MainContainer>
-    </Container>
   );
 };
 
@@ -207,7 +222,7 @@ const GeneralSettingsSection = ({
     });
   };
 
-  const SaveButton = ({ field }: { field: keyof ProjectSettingsForm }) => (
+  const renderSaveButton = (field: keyof ProjectSettingsForm) => (
     <DSButton
       variant="ghost"
       size="small"
@@ -246,7 +261,7 @@ const GeneralSettingsSection = ({
           <div className="w-28 shrink-0">
             <span className="typo-label-heading text-text-2">프로젝트 이름</span>
           </div>
-          <DsFormField.Root error={errors.name?.message} className="!flex-row !items-center !gap-3 flex-1">
+          <DsFormField.Root error={errors.name} className="!flex-row !items-center !gap-3 flex-1">
             <DsFormField.Control>
               <DsInput
                 {...register('name')}
@@ -255,7 +270,7 @@ const GeneralSettingsSection = ({
             </DsFormField.Control>
             <DsFormField.Message>{errors.name?.message}</DsFormField.Message>
           </DsFormField.Root>
-          <SaveButton field="name" />
+          {renderSaveButton("name")}
         </div>
 
         {/* 설명 */}
@@ -263,7 +278,7 @@ const GeneralSettingsSection = ({
           <div className="w-28 shrink-0">
             <span className="typo-label-heading text-text-2">설명</span>
           </div>
-          <DsFormField.Root error={errors.description?.message} className="!flex-row !items-center !gap-3 flex-1">
+          <DsFormField.Root error={errors.description} className="!flex-row !items-center !gap-3 flex-1">
             <DsFormField.Control>
               <DsInput
                 {...register('description')}
@@ -272,7 +287,7 @@ const GeneralSettingsSection = ({
             </DsFormField.Control>
             <DsFormField.Message>{errors.description?.message}</DsFormField.Message>
           </DsFormField.Root>
-          <SaveButton field="description" />
+          {renderSaveButton("description")}
         </div>
 
         {/* 소유자 이름 */}
@@ -280,7 +295,7 @@ const GeneralSettingsSection = ({
           <div className="w-28 shrink-0">
             <span className="typo-label-heading text-text-2">소유자</span>
           </div>
-          <DsFormField.Root error={errors.ownerName?.message} className="!flex-row !items-center !gap-3 flex-1">
+          <DsFormField.Root error={errors.ownerName} className="!flex-row !items-center !gap-3 flex-1">
             <DsFormField.Control>
               <DsInput
                 {...register('ownerName')}
@@ -289,7 +304,7 @@ const GeneralSettingsSection = ({
             </DsFormField.Control>
             <DsFormField.Message>{errors.ownerName?.message}</DsFormField.Message>
           </DsFormField.Root>
-          <SaveButton field="ownerName" />
+          {renderSaveButton("ownerName")}
         </div>
       </div>
     </section>
@@ -393,7 +408,7 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
       {isFormOpen && (
         <form onSubmit={onSubmit} className="flex flex-col p-6 pt-5">
           <div className="rounded-4 bg-bg-1 flex flex-col gap-5 p-5">
-            <DsFormField.Root error={errors.currentPassword?.message}>
+            <DsFormField.Root error={errors.currentPassword}>
               <DsFormField.Label className="typo-label-heading text-text-2">현재 비밀번호</DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
@@ -409,7 +424,7 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
 
             <div className="border-line-2 border-t" />
 
-            <DsFormField.Root error={errors.newPassword?.message}>
+            <DsFormField.Root error={errors.newPassword}>
               <DsFormField.Label className="typo-label-heading text-text-2">새 비밀번호</DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
@@ -422,7 +437,7 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
               <DsFormField.Message>{errors.newPassword?.message}</DsFormField.Message>
             </DsFormField.Root>
 
-            <DsFormField.Root error={errors.confirmPassword?.message}>
+            <DsFormField.Root error={errors.confirmPassword}>
               <DsFormField.Label className="typo-label-heading text-text-2">새 비밀번호 확인</DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
@@ -480,11 +495,6 @@ interface StorageSectionProps {
 }
 
 const StorageSection = ({ usedBytes, maxBytes, usedPercent }: StorageSectionProps) => {
-  const formatBytes = (bytes: number) => {
-    if (bytes < 1024) return `${bytes}B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-  };
 
   const barColor =
     usedPercent >= 95

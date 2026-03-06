@@ -7,11 +7,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/db';
-
-type FlatErrors = {
-  formErrors: string[];
-  fieldErrors: Record<string, string[] | undefined>;
-};
+import type { FlatErrors } from '@/shared/types';
 
 type CreateRunInput = z.infer<typeof CreateTestRunSchema>;
 

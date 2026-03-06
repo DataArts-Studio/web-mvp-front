@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useOutsideClick, useToggleSet } from '@/shared/hooks';
 import type { DashboardMilestone } from '@/features/dashboard';
 import type { FetchedTestRun } from '@/features/runs';
@@ -10,7 +10,7 @@ type MilestoneGanttChartProps = {
   milestones: DashboardMilestone[];
   testRuns: FetchedTestRun[];
   selectedRunId: string | null;
-  onRunChange: (runId: string | null) => void;
+  onRunChangeAction: (runId: string | null) => void;
   hideRunSelector?: boolean;
 };
 
@@ -36,7 +36,7 @@ export const MilestoneGanttChart = ({
   milestones,
   testRuns,
   selectedRunId,
-  onRunChange,
+  onRunChangeAction,
   hideRunSelector = false,
 }: MilestoneGanttChartProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -89,17 +89,15 @@ export const MilestoneGanttChart = ({
     return { weeks, timelineStart: start, timelineEnd: finalEnd, totalMs };
   }, [milestones]);
 
-  // weekOffset이 범위를 벗어나지 않도록 보정
-  useEffect(() => {
-    if (weekOffset > 0 && weekOffset + VISIBLE_WEEK_COUNT > weeks.length) {
-      setWeekOffset(Math.max(0, weeks.length - VISIBLE_WEEK_COUNT));
-    }
-  }, [weeks.length, weekOffset]);
+  // weekOffset이 범위를 벗어나지 않도록 보정 (파생 계산)
+  const effectiveOffset = weekOffset > 0 && weekOffset + VISIBLE_WEEK_COUNT > weeks.length
+    ? Math.max(0, weeks.length - VISIBLE_WEEK_COUNT)
+    : weekOffset;
 
   // 보이는 주차 (페이지네이션)
-  const visibleWeeks = weeks.slice(weekOffset, weekOffset + VISIBLE_WEEK_COUNT);
-  const canGoNext = weekOffset + VISIBLE_WEEK_COUNT < weeks.length;
-  const canGoPrev = weekOffset > 0;
+  const visibleWeeks = weeks.slice(effectiveOffset, effectiveOffset + VISIBLE_WEEK_COUNT);
+  const canGoNext = effectiveOffset + VISIBLE_WEEK_COUNT < weeks.length;
+  const canGoPrev = effectiveOffset > 0;
   const hasPagination = weeks.length > VISIBLE_WEEK_COUNT;
 
   // 보이는 타임라인 범위
@@ -111,10 +109,7 @@ export const MilestoneGanttChart = ({
   const visibleTotalMs = diffMs(visibleTimelineEnd, visibleTimelineStart);
 
   // 오늘 위치 (visible 차트 영역 내 비율)
-  const todayRatio = useMemo(() => {
-    const now = new Date();
-    return diffMs(now, visibleTimelineStart) / visibleTotalMs;
-  }, [visibleTimelineStart, visibleTotalMs]);
+  const todayRatio = diffMs(new Date(), visibleTimelineStart) / visibleTotalMs;
 
   const showTodayLine = todayRatio >= 0 && todayRatio <= 1;
 
@@ -243,7 +238,7 @@ export const MilestoneGanttChart = ({
                     <button
                       key={run.id}
                       onClick={() => {
-                        onRunChange(run.id);
+                        onRunChangeAction(run.id);
                         setShowDropdown(false);
                       }}
                       className={`flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-bg-4 ${

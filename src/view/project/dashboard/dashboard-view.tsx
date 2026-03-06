@@ -1,32 +1,32 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import { testCasesQueryOptions } from '@/features/cases-list';
-import { dashboardQueryOptions } from '@/features/dashboard';
-import { testRunsQueryOptions, FetchedTestRun } from '@/features/runs';
-import { Container, MainContainer } from '@/shared/lib/primitives';
-import { useDisclosure, useOutsideClick } from '@/shared/hooks';
-import { DSButton, LoadingSpinner } from '@/shared/ui';
-import { Aside } from '@/widgets';
+import { testCasesQueryOptions } from '@/features/cases-list/api/query';
+import { dashboardQueryOptions } from '@/features/dashboard/api/query';
+import { testRunsQueryOptions } from '@/features/runs/api/query';
+import { useDisclosure } from '@/shared/hooks/use-disclosure';
+import { useInViewOnce } from '@/shared/hooks';
+import { DSButton } from '@/shared/ui/ds-button';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown, ChevronRight, CircleHelp, Clock, FileText, FolderOpen, Play, Plus, Settings, Share2 } from 'lucide-react';
+import { Check, Clock, Play, Share2 } from 'lucide-react';
+import { TestRunDropdown } from './test-run-dropdown';
 import dynamic from 'next/dynamic';
-import { type TestStatusData, KPICards, type KPIData } from '@/widgets/project';
+import { KPICards, type KPIData } from '@/widgets/project/ui/kpi-cards';
+import { TestStatusChart, type TestStatusData } from '@/widgets/project/ui/test-status-chart';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
 import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
-import { useOnboardingTour } from '@/features/onboarding-tour';
+import { formatBytes } from '@/shared/utils';
+import type { ActionResult } from '@/shared/types';
+import { KPISkeleton, InfoSkeleton, ChartSkeleton, CardListSkeleton } from './dashboard-skeletons';
+import { DashboardEmptyState } from './dashboard-empty-state';
+import { TestCasesSection, TestSuitesSection } from './dashboard-sections';
 
-const TestStatusChart = dynamic(
-  () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
-  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[400px] animate-pulse" /> }
-);
 const MilestoneGanttChart = dynamic(
   () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
-  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" /> }
+  { ssr: false, loading: () => <div className="bg-bg-2 rounded-2xl p-6 h-75 animate-pulse" /> }
 );
 const TestCaseDetailForm = dynamic(
   () => import('@/features/cases-create').then(mod => ({ default: mod.TestCaseDetailForm })),
@@ -37,11 +37,25 @@ const SuiteCreateForm = dynamic(
 
 type ModalType = 'case' | 'suite';
 
-export const ProjectDashboardView = () => {
+type ProjectDashboardContentProps = {
+  projectId?: string;
+};
+
+
+export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectDashboardContentProps) => {
   const params = useParams();
   const slug = params.slug as string;
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const [isCopied, setIsCopied] = useState(false);
+
+  // 클라이언트 hydration 완료 전까지 전체 페이지 스켈레톤 표시
+  const [hydrated, setHydrated] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection requires effect
+  useEffect(() => { setHydrated(true); }, []);
+
+  const { targetRef: ganttRef, visible: ganttVisible } = useInViewOnce();
+  const { targetRef: casesRef, visible: casesVisible } = useInViewOnce();
+  const { targetRef: suitesRef, visible: suitesVisible } = useInViewOnce();
 
   const {
     data: dashboardData,
@@ -51,7 +65,8 @@ export const ProjectDashboardView = () => {
     enabled: !!slug,
   });
 
-  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
+  // 서버에서 전달된 projectId 우선 사용, 없으면 dashboardData에서 추출
+  const projectId = serverProjectId ?? (dashboardData?.success ? dashboardData.data.project.id : undefined);
 
   const { data: storageData } = useQuery({
     ...dashboardQueryOptions.storageInfo(projectId!),
@@ -63,7 +78,8 @@ export const ProjectDashboardView = () => {
     enabled: !!projectId,
   });
 
-  const testCases = testCasesData?.success ? testCasesData.data : [];
+  const testCases = testCasesData?.success ? testCasesData.data.items : [];
+  const totalCasesCount = testCasesData?.success ? testCasesData.data.pagination.totalItems : 0;
   const testSuites = dashboardData?.success ? dashboardData.data.testSuites : [];
 
   // 테스트 실행 목록 조회
@@ -72,15 +88,19 @@ export const ProjectDashboardView = () => {
     enabled: !!projectId,
   });
 
-  const testRuns = testRunsData?.success ? testRunsData.data : [];
+  const testRuns = useMemo(() => testRunsData?.success ? testRunsData.data : [], [testRunsData]);
+
+  // 자동 선택 기본값: IN_PROGRESS > NOT_STARTED > 최신
+  const defaultRunId = useMemo(() => {
+    if (testRuns.length === 0) return null;
+    const inProgress = testRuns.find((r) => r.status === 'IN_PROGRESS');
+    const notStarted = testRuns.find((r) => r.status === 'NOT_STARTED');
+    return (inProgress || notStarted || testRuns[0])?.id ?? null;
+  }, [testRuns]);
 
   // 테스트 실행 선택 상태
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
-  const [showRunDropdown, setShowRunDropdown] = useState(false);
-  const runDropdownRef = useRef<HTMLDivElement>(null);
-
-  // 드롭다운 외부 클릭 닫기
-  useOutsideClick(runDropdownRef, () => setShowRunDropdown(false));
+  const effectiveSelectedRunId = selectedRunId ?? defaultRunId;
 
   // 대시보드 View 이벤트
   useEffect(() => {
@@ -89,20 +109,10 @@ export const ProjectDashboardView = () => {
     }
   }, [dashboardData?.success, slug]);
 
-  // 자동 선택: IN_PROGRESS > NOT_STARTED > 최신 COMPLETED
-  useEffect(() => {
-    if (testRuns.length > 0 && !selectedRunId) {
-      const inProgress = testRuns.find((r) => r.status === 'IN_PROGRESS');
-      const notStarted = testRuns.find((r) => r.status === 'NOT_STARTED');
-      const best = inProgress || notStarted || testRuns[0];
-      if (best) setSelectedRunId(best.id);
-    }
-  }, [testRuns, selectedRunId]);
-
-  const selectedRun = testRuns.find((r) => r.id === selectedRunId);
+  const selectedRun = testRuns.find((r) => r.id === effectiveSelectedRunId);
 
   // 차트 데이터: 선택된 실행이 있을 때만 표시
-  const testStatusData: TestStatusData = React.useMemo(() => {
+  const testStatusData: TestStatusData = useMemo(() => {
     if (selectedRun) {
       return {
         pass: selectedRun.stats.pass,
@@ -116,36 +126,22 @@ export const ProjectDashboardView = () => {
 
   // 마일스톤 Gantt용 테스트 실행 선택 (차트와 독립)
   const [milestoneRunId, setMilestoneRunId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (testRuns.length > 0 && !milestoneRunId) {
-      const inProgress = testRuns.find((r) => r.status === 'IN_PROGRESS');
-      const notStarted = testRuns.find((r) => r.status === 'NOT_STARTED');
-      const best = inProgress || notStarted || testRuns[0];
-      if (best) setMilestoneRunId(best.id);
-    }
-  }, [testRuns, milestoneRunId]);
+  const effectiveMilestoneRunId = milestoneRunId ?? defaultRunId;
 
   // 마일스톤 조회 (선택된 실행 기준)
   const { data: milestonesData } = useQuery({
-    ...dashboardQueryOptions.milestones(projectId!, milestoneRunId ?? undefined),
+    ...dashboardQueryOptions.milestones(projectId!, effectiveMilestoneRunId ?? undefined),
     enabled: !!projectId,
   });
 
   const dashboardMilestones = milestonesData?.success ? milestonesData.data : [];
 
-  // KPI 데이터 계산
-  const kpiData: KPIData = React.useMemo(() => ({
-    totalCases: testCases.length,
+  // KPI 데이터 계산 - 실행 선택 시 실행 기준 totalCases 사용
+  const kpiData: KPIData = useMemo(() => ({
+    totalCases: selectedRun ? selectedRun.stats.totalCases : totalCasesCount,
     testSuites: testSuites.length,
     ...testStatusData,
-  }), [testCases.length, testSuites.length, testStatusData]);
-
-  // 온보딩 투어
-  const { startTour } = useOnboardingTour({
-    projectId,
-    isDataLoaded: !!dashboardData?.success,
-  });
+  }), [selectedRun, totalCasesCount, testSuites.length, testStatusData]);
 
   const handleCopyLink = async () => {
     try {
@@ -153,125 +149,48 @@ export const ProjectDashboardView = () => {
       track(DASHBOARD_EVENTS.LINK_COPY, { project_id: slug });
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
+    } catch {
     }
   };
 
-  // 로딩 상태
-  if (isLoading) {
-    return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </MainContainer>
-      </Container>
-    );
-  }
+  // 전체 페이지 스켈레톤: hydration 미완료 또는 어떤 데이터든 로딩 중이면 전체 스켈레톤
+  const showSkeleton = !hydrated || isLoading || !testRunsData || !testCasesData;
 
   // 에러 상태
-  if (!dashboardData?.success) {
+  if (hydrated && !isLoading && !dashboardData?.success) {
     return (
-      <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-        <Aside />
-        <MainContainer className="flex flex-1 items-center justify-center">
-          <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
-        </MainContainer>
-      </Container>
+      <div className="col-span-6 flex flex-1 items-center justify-center">
+        <div className="text-red-400">프로젝트를 불러올 수 없습니다.</div>
+      </div>
     );
   }
 
-  const { project, recentActivities } = dashboardData.data;
+  const project = dashboardData?.success ? dashboardData.data.project : undefined;
+  const recentActivities = dashboardData?.success ? dashboardData.data.recentActivities : [];
+
+  const handleCreateCase = () => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); };
+  const handleCreateSuite = () => { track(DASHBOARD_EVENTS.TESTSUITE_CREATE_START, { project_id: slug }); onOpen('suite'); };
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen font-sans">
-      <Aside />
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
-        {/* Header */}
-        <header className="border-line-2 col-span-6 flex items-start justify-between border-b pb-6">
-          <div className="flex flex-col gap-1">
-            <h1 className="typo-h1-heading text-text-1">대시보드</h1>
-            <p className="typo-body2-normal text-text-2">
-              클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 만들어보세요.
-            </p>
-          </div>
-          <DSButton variant="ghost" size="small" className="flex items-center gap-1.5" onClick={startTour} data-tour="guide-tour-btn">
-            <CircleHelp className="h-4 w-4" />
-            <span>온보딩</span>
-          </DSButton>
-        </header>
-
+    <>
         {/* KPI 카드 섹션 */}
         <section className="col-span-6" data-tour="kpi-cards">
-          <KPICards data={kpiData} />
+          {showSkeleton ? <KPISkeleton /> : <KPICards data={kpiData} projectTotalCases={totalCasesCount} />}
         </section>
 
         {/* 프로젝트 정보 + 저장 용량 + 최근 활동 카드 */}
         <section className="col-span-6 grid grid-cols-6 gap-5">
+          {showSkeleton ? <InfoSkeleton /> : (
+          <>
           {/* 왼쪽: 프로젝트 정보 + 저장 용량 (세로 배치) */}
           <div className="col-span-2 flex flex-col gap-5">
-            {/* 내 프로젝트 정보 카드 */}
-            <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="project-info">
-              <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
-
-              <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
-                <div className="flex items-center gap-2">
-                  <span className="typo-body2-heading text-primary truncate max-w-[200px]">
-                    {project.name}
-                  </span>
-                  <button
-                    onClick={handleCopyLink}
-                    className="text-primary hover:text-primary/80 transition-colors cursor-pointer"
-                    title="링크 복사"
-                  >
-                    {isCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-                  </button>
-                </div>
-                <span className="typo-caption text-text-3">
-                  {formatDateKR(project.created_at)} 생성됨
-                </span>
-              </div>
-            </div>
-
-            {/* 저장 용량 카드 */}
-            {storageData?.success && (() => {
-              const { usedBytes, maxBytes, usedPercent } = storageData.data;
-              const formatBytes = (bytes: number) => {
-                if (bytes < 1024) return `${bytes}B`;
-                if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-                return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-              };
-              const barColor = usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-primary';
-              const textColor = usedPercent >= 95 ? 'text-red-500' : usedPercent >= 80 ? 'text-amber-500' : 'text-primary';
-
-              return (
-                <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="storage-info">
-                  <span className="typo-body2-heading text-text-3">저장 용량</span>
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className={`typo-caption font-medium ${textColor}`}>
-                        {formatBytes(usedBytes)} / {formatBytes(maxBytes)}
-                      </span>
-                      <span className={`typo-caption ${textColor}`}>
-                        {usedPercent}%
-                      </span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-bg-3">
-                      <div
-                        className={`h-full rounded-full transition-all ${barColor}`}
-                        style={{ width: `${Math.min(usedPercent, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+            <ProjectInfoCard project={project} isCopied={isCopied} onCopyLink={handleCopyLink} />
+            <StorageCard storageData={storageData} />
           </div>
 
           {/* 최근 활동 카드 */}
           <div className="rounded-3 border-line-2 bg-bg-2 col-span-4 flex flex-col gap-4 border p-5" data-tour="recent-activity">
             <span className="typo-body2-heading text-text-3">최근 활동</span>
-
             {recentActivities.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-6 flex-1">
                 <Clock className="text-text-3 h-8 w-8" />
@@ -282,250 +201,78 @@ export const ProjectDashboardView = () => {
                 {recentActivities.slice(0, 7).map((item) => (
                   <li key={item.id} className="flex items-center gap-2">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
-                    <span className="typo-body2-normal text-text-1 flex-1 truncate">
-                      {item.title}
-                    </span>
-                    <span className="typo-caption text-text-3">
-                      {formatRelativeTime(item.created_at)}
-                    </span>
+                    <span className="typo-body2-normal text-text-1 flex-1 truncate">{item.title}</span>
+                    <span className="typo-caption text-text-3">{formatRelativeTime(item.created_at)}</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
+          </>
+          )}
         </section>
 
         {/* 테스트 현황 차트 섹션 */}
         <section className="col-span-6 flex flex-col gap-4" data-tour="test-status-chart">
           <div className="flex items-center justify-between">
             <h2 className="typo-h2-heading text-text-1">테스트 현황</h2>
-            {/* 테스트 실행 선택 드롭다운 */}
-            {testRuns.length > 0 && (
-              <div className="relative" ref={runDropdownRef}>
-                <button
-                  onClick={() => setShowRunDropdown((prev) => !prev)}
-                  className="border-primary/40 text-text-1 rounded-4 flex items-center gap-2 border bg-transparent px-3 py-1.5 transition-colors hover:border-primary cursor-pointer"
-                >
-                  <span className="typo-label-normal max-w-[200px] truncate">
-                    {selectedRun?.name || '테스트 실행 선택'}
-                  </span>
-                  <ChevronDown className={`text-text-3 h-4 w-4 transition-transform ${showRunDropdown ? 'rotate-180' : ''}`} />
-                </button>
-                {showRunDropdown && (
-                  <div className="bg-bg-3 border-line-2 rounded-4 shadow-3 absolute right-0 top-full z-20 mt-1 min-w-[240px] border py-1">
-                    {testRuns.map((run) => (
-                      <button
-                        key={run.id}
-                        onClick={() => {
-                          track(DASHBOARD_EVENTS.CHART_INTERACTION, { project_id: slug, run_id: run.id });
-                          setSelectedRunId(run.id);
-                          setShowRunDropdown(false);
-                        }}
-                        className={`flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-bg-4 ${
-                          run.id === selectedRunId ? 'bg-bg-4' : ''
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                            run.status === 'IN_PROGRESS'
-                              ? 'bg-primary'
-                              : run.status === 'COMPLETED'
-                                ? 'bg-text-3'
-                                : 'bg-text-4'
-                          }`}
-                        />
-                        <div className="flex flex-1 flex-col">
-                          <span className="typo-label-normal text-text-1 truncate">{run.name}</span>
-                          <span className="typo-caption text-text-3">
-                            {run.stats.totalCases}개 케이스 · {run.stats.progressPercent}% 완료
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            <TestRunDropdown
+              testRuns={testRuns}
+              selectedRunId={effectiveSelectedRunId}
+              onSelect={setSelectedRunId}
+              slug={slug}
+              selectedRunName={selectedRun?.name}
+            />
           </div>
-          {testRuns.length === 0 ? (
-            <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
-              <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
-                <Play className="h-6 w-6" strokeWidth={1.5} />
-              </div>
-              <div className="flex flex-col items-center gap-1 text-center">
-                <h3 className="typo-h3-heading text-text-1">첫 번째 테스트를 실행해보세요!</h3>
-                <p className="typo-body2-normal text-text-3">
-                  테스트를 실행하면 결과 차트와 마일스톤 진행 현황을 확인할 수 있어요.
-                </p>
-              </div>
-              <Link href={`/projects/${slug}/runs/create`}>
-                <DSButton variant="solid" className="flex items-center gap-2">
-                  <span>테스트 실행 하기</span>
-                </DSButton>
-              </Link>
-            </div>
+          {showSkeleton ? <ChartSkeleton /> : testRuns.length === 0 ? (
+            <DashboardEmptyState
+              icon={<Play className="h-6 w-6" strokeWidth={1.5} />}
+              title="첫 번째 테스트를 실행해보세요!"
+              description="테스트를 실행하면 결과 차트와 마일스톤 진행 현황을 확인할 수 있어요."
+              buttonLabel="테스트 실행 하기"
+              onAction={() => {}}
+              actionOverride={
+                <Link href={`/projects/${slug}/runs/create`}>
+                  <DSButton variant="solid" className="flex items-center gap-2">
+                    <span>테스트 실행 하기</span>
+                  </DSButton>
+                </Link>
+              }
+            />
           ) : (
             <>
               <TestStatusChart data={testStatusData} />
-              <MilestoneGanttChart
-                milestones={dashboardMilestones}
-                testRuns={testRuns}
-                selectedRunId={milestoneRunId}
-                onRunChange={setMilestoneRunId}
-              />
+              <div ref={ganttRef}>
+                {ganttVisible ? (
+                  <MilestoneGanttChart
+                    milestones={dashboardMilestones}
+                    testRuns={testRuns}
+                    selectedRunId={effectiveMilestoneRunId}
+                    onRunChangeAction={setMilestoneRunId}
+                  />
+                ) : (
+                  <div className="bg-bg-2 rounded-2xl p-6 h-75 animate-pulse" />
+                )}
+              </div>
             </>
           )}
         </section>
 
         {/* 테스트 케이스 섹션 */}
-        <section className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
-          <div className="flex items-center justify-between">
-            <Link href={`/projects/${slug}/cases`} className="flex items-center gap-2 group">
-              <h2 className="typo-h2-heading text-text-1">테스트 케이스</h2>
-              <span className="typo-body2-normal text-text-3">({testCases.length})</span>
-              <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
-            </Link>
-            {testCases.length > 0 && (
-              <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); }}>
-                <Plus className="h-4 w-4" />
-                <span>추가</span>
-              </DSButton>
-            )}
-          </div>
-
-          {testCases.length === 0 ? (
-            /* 빈 상태 카드 */
-            <div className="rounded-3 border-line-2 bg-bg-2 border-2 border-dashed flex flex-col items-center justify-center gap-6 py-16">
-              <Image
-                src="/teacup/tea-cup-not-found.svg"
-                width={200}
-                height={255}
-                alt="테스트 케이스 없음"
-              />
-
-              <div className="flex flex-col items-center gap-2 text-center">
-                <h3 className="typo-h3-heading text-text-1">테스트 케이스를 생성해보세요!</h3>
-                <p className="typo-body2-normal text-text-3">
-                  아직 생성된 테스트 케이스가 없습니다.
-                  <br />
-                  테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.
-                </p>
-              </div>
-
-              <DSButton variant="solid" className="flex items-center gap-2" onClick={() => { track(DASHBOARD_EVENTS.TESTCASE_CREATE_START, { project_id: slug }); onOpen('case'); }}>
-                <Plus className="h-4 w-4" />
-                <span>테스트 케이스 만들기</span>
-              </DSButton>
-            </div>
-          ) : (
-            /* 테스트 케이스 목록 */
-            <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
-              {testCases.slice(0, 5).map((testCase) => (
-                <Link
-                  key={testCase.id}
-                  href={`/projects/${slug}/cases`}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-bg-3 transition-colors"
-                >
-                  <div className="bg-primary/10 text-primary rounded-2 flex h-10 w-10 items-center justify-center shrink-0">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                    <span className="typo-caption text-text-3">{testCase.caseKey}</span>
-                    <span className="typo-body2-heading text-text-1 truncate">{testCase.title}</span>
-                  </div>
-                  <span className="typo-caption text-text-3 shrink-0">
-                    {formatDateKR(testCase.createdAt)}
-                  </span>
-                </Link>
-              ))}
-              {testCases.length > 5 && (
-                <Link
-                  href={`/projects/${slug}/cases`}
-                  className="flex items-center justify-center gap-2 px-5 py-3 text-primary hover:bg-bg-3 transition-colors"
-                >
-                  <span className="typo-body2-heading">전체 보기 ({testCases.length}개)</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
-              )}
-            </div>
-          )}
+        <section ref={casesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
+          {(casesVisible && !showSkeleton)
+            ? <TestCasesSection slug={slug} testCases={testCases} totalCount={totalCasesCount} onCreateCase={handleCreateCase} />
+            : <CardListSkeleton />
+          }
         </section>
 
         {/* 테스트 스위트 섹션 */}
-        <section className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
-          <div className="flex items-center justify-between">
-            <Link href={`/projects/${slug}/suites`} className="flex items-center gap-2 group">
-              <h2 className="typo-h2-heading text-text-1">테스트 스위트</h2>
-              <span className="typo-body2-normal text-text-3">({testSuites.length})</span>
-              <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
-            </Link>
-            {testSuites.length > 0 && (
-              <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={() => { track(DASHBOARD_EVENTS.TESTSUITE_CREATE_START, { project_id: slug }); onOpen('suite'); }}>
-                <Plus className="h-4 w-4" />
-                <span>추가</span>
-              </DSButton>
-            )}
-          </div>
-
-          {testSuites.length === 0 ? (
-            /* 빈 상태 카드 */
-            <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
-              <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
-                <FolderOpen className="h-6 w-6" strokeWidth={1.5} />
-              </div>
-
-              <div className="flex flex-col items-center gap-1 text-center">
-                <h3 className="typo-h3-heading text-text-1">테스트 스위트를 생성해보세요!</h3>
-                <p className="typo-body2-normal text-text-3">
-                  아직 생성된 테스트 스위트가 없습니다.
-                  <br />
-                  테스트 스위트로, 테스트 케이스를 더 쉽게 관리해보세요!
-                </p>
-              </div>
-
-              <DSButton variant="solid" className="flex items-center gap-2" onClick={() => { track(DASHBOARD_EVENTS.TESTSUITE_CREATE_START, { project_id: slug }); onOpen('suite'); }}>
-                <Plus className="h-4 w-4" />
-                <span>테스트 스위트 만들기</span>
-              </DSButton>
-            </div>
-          ) : (
-            /* 테스트 스위트 목록 */
-            <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
-              {testSuites.slice(0, 5).map((suite) => (
-                <Link
-                  key={suite.id}
-                  href={`/projects/${slug}/suites/${suite.id}`}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-bg-3 transition-colors"
-                >
-                  <div className="bg-system-blue/10 text-system-blue rounded-2 flex h-10 w-10 items-center justify-center shrink-0">
-                    <FolderOpen className="h-5 w-5" />
-                  </div>
-                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                    <span className="typo-body2-heading text-text-1 truncate">{suite.name}</span>
-                    <span className="typo-caption text-text-3">
-                      {suite.description || '설명 없음'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="typo-caption text-text-3 bg-bg-3 px-2 py-1 rounded-1">
-                      케이스 {suite.case_count}개
-                    </span>
-                  </div>
-                </Link>
-              ))}
-              {testSuites.length > 5 && (
-                <Link
-                  href={`/projects/${slug}/suites`}
-                  className="flex items-center justify-center gap-2 px-5 py-3 text-primary hover:bg-bg-3 transition-colors"
-                >
-                  <span className="typo-body2-heading">전체 보기 ({testSuites.length}개)</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
-              )}
-            </div>
-          )}
+        <section ref={suitesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
+          {(suitesVisible && !showSkeleton)
+            ? <TestSuitesSection slug={slug} testSuites={testSuites} onCreateSuite={handleCreateSuite} />
+            : <CardListSkeleton showBadge />
+          }
         </section>
-      </MainContainer>
 
       {/* Modals */}
       {isActiveType('case') && projectId && (
@@ -534,6 +281,53 @@ export const ProjectDashboardView = () => {
       {isActiveType('suite') && projectId && (
         <SuiteCreateForm projectId={projectId} onClose={onClose} />
       )}
-    </Container>
+    </>
+  );
+};
+
+/* ── 하위 컴포넌트 ── */
+
+type ProjectInfoCardProps = {
+  project?: { name: string; created_at: string };
+  isCopied: boolean;
+  onCopyLink: () => void;
+};
+
+const ProjectInfoCard = ({ project, isCopied, onCopyLink }: ProjectInfoCardProps) => (
+  <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="project-info">
+    <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
+    <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
+      <div className="flex items-center gap-2">
+        <span className="typo-body2-heading text-primary truncate max-w-50">{project?.name}</span>
+        <button onClick={onCopyLink} className="text-primary hover:text-primary/80 transition-colors cursor-pointer" title="링크 복사">
+          {isCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+        </button>
+      </div>
+      <span className="typo-caption text-text-3">
+        {project && formatDateKR(project.created_at)} 생성됨
+      </span>
+    </div>
+  </div>
+);
+
+const StorageCard = ({ storageData }: { storageData?: ActionResult<{ usedBytes: number; maxBytes: number; usedPercent: number }> }) => {
+  if (!storageData?.success) return null;
+  const { usedBytes, maxBytes, usedPercent } = storageData.data;
+  const barColor = usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-primary';
+  const textColor = usedPercent >= 95 ? 'text-red-500' : usedPercent >= 80 ? 'text-amber-500' : 'text-primary';
+
+  return (
+    <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="storage-info">
+      <span className="typo-body2-heading text-text-3">저장 용량</span>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <span className={`typo-caption font-medium ${textColor}`}>{formatBytes(usedBytes)} / {formatBytes(maxBytes)}</span>
+          <span className={`typo-caption ${textColor}`}>{usedPercent}%</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-bg-3">
+          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(usedPercent, 100)}%` }} />
+        </div>
+      </div>
+    </div>
   );
 };

@@ -1,1 +1,1 @@
-export * from './use-update-milestone';
+export { useUpdateMilestone } from './use-update-milestone';

@@ -112,7 +112,7 @@ describe('updateTestSuite', () => {
         sort_order: 15,
         created_at: new Date('2024-01-01'),
         updated_at: new Date('2024-03-01'),
-        deleted_at: null,
+        archived_at: null,
       });
       setMockUpdateReturn(mockRow);
 

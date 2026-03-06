@@ -5,7 +5,7 @@ import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase 
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import { getDatabase, testCases, testRunSuites, testCaseRuns, testRuns, milestoneTestSuites } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
-import { and, eq, sql, inArray } from 'drizzle-orm';
+import { and, eq, sql, inArray, ilike, or, desc, asc } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/db';
@@ -29,7 +29,6 @@ type getTestCasesParams = {
 
 export const getTestCases = async ({
   project_id,
-  limits = { offset: 0, limit: 10 },
 }: getTestCasesParams): Promise<ActionResult<TestCase[]>> => {
   try {
     const db = getDatabase();
@@ -79,12 +78,83 @@ export const getTestCases = async ({
   }
 };
 
+export type PaginationInfo = {
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+export type PaginatedTestCases = {
+  items: TestCaseListItem[];
+  pagination: PaginationInfo;
+};
+
+type GetTestCasesListParams = {
+  project_id: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+  search?: string;
+  suiteId?: string;
+};
+
 /** 목록 조회용: steps, pre_condition, expected_result 제외하여 페이로드 경량화 */
 export const getTestCasesList = async ({
   project_id,
-}: getTestCasesParams): Promise<ActionResult<TestCaseListItem[]>> => {
+  page = 1,
+  size = 15,
+  sort = 'updatedAt-desc',
+  search,
+  suiteId,
+}: GetTestCasesListParams): Promise<ActionResult<PaginatedTestCases>> => {
   try {
     const db = getDatabase();
+
+    // WHERE 조건 구성
+    const conditions = [
+      eq(testCases.project_id, project_id),
+      eq(testCases.lifecycle_status, 'ACTIVE'),
+    ];
+
+    if (suiteId === '__uncategorized__') {
+      conditions.push(sql`${testCases.test_suite_id} IS NULL`);
+    } else if (suiteId && suiteId !== 'all') {
+      conditions.push(eq(testCases.test_suite_id, suiteId));
+    }
+
+    if (search?.trim()) {
+      const keyword = `%${search.trim()}%`;
+      conditions.push(
+        or(
+          ilike(testCases.name, keyword),
+          ilike(testCases.case_key, keyword),
+        )!
+      );
+    }
+
+    const whereClause = and(...conditions);
+
+    // COUNT 쿼리
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(testCases)
+      .where(whereClause);
+
+    const totalItems = countResult?.count ?? 0;
+    const totalPages = Math.max(1, Math.ceil(totalItems / size));
+    const safePage = Math.min(Math.max(1, page), totalPages);
+    const offset = (safePage - 1) * size;
+
+    // ORDER BY 구성
+    const [sortField, sortOrder] = sort.split('-') as [string, 'asc' | 'desc'];
+    const sortColumn =
+      sortField === 'title' ? testCases.name :
+      sortField === 'createdAt' ? testCases.created_at :
+      testCases.updated_at;
+    const orderFn = sortOrder === 'asc' ? asc : desc;
+
+    // 데이터 쿼리
     const rows = await db
       .select({
         id: testCases.id,
@@ -103,14 +173,12 @@ export const getTestCasesList = async ({
         lifecycle_status: testCases.lifecycle_status,
       })
       .from(testCases)
-      .where(
-        and(
-          eq(testCases.project_id, project_id),
-          eq(testCases.lifecycle_status, 'ACTIVE')
-        )
-      );
+      .where(whereClause)
+      .orderBy(orderFn(sortColumn))
+      .limit(size)
+      .offset(offset);
 
-    const result: TestCaseListItem[] = rows.map((row) => ({
+    const items: TestCaseListItem[] = rows.map((row) => ({
       id: row.id,
       projectId: row.project_id ?? '',
       testSuiteId: row.test_suite_id ?? undefined,
@@ -128,7 +196,13 @@ export const getTestCasesList = async ({
       lifecycleStatus: row.lifecycle_status,
     }));
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: {
+        items,
+        pagination: { page: safePage, size, totalItems, totalPages },
+      },
+    };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getTestCasesList' } });
     return {

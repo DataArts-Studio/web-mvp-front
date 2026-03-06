@@ -6,8 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useCreateRun, type CreateRunInput } from '@/features/runs-create';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { milestonesQueryOptions } from '@/entities/milestone';
-import { Container, DSButton, MainContainer, LoadingSpinner } from '@/shared';
-import { Aside } from '@/widgets';
+import { MainContainer } from '@/shared/lib/primitives';
+import { DSButton, LoadingSpinner } from '@/shared/ui';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 import { toast } from 'sonner';
 
@@ -86,9 +86,7 @@ export const RunCreateView = () => {
   const isLoading = isLoadingProject || isLoadingMilestones;
 
   return (
-    <Container className="bg-bg-1 text-text-1 flex min-h-screen items-center justify-center font-sans">
-      <Aside />
-      <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8 max-w-[1200px] mx-auto">
+    <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8 max-w-[1200px] mx-auto">
         <header className="col-span-full flex flex-col gap-1 border-b border-line-2 pb-6">
           <h2 className="typo-h1-heading text-text-1">테스트 실행 생성</h2>
           <p className="typo-body2-normal text-text-2">
@@ -188,6 +186,5 @@ export const RunCreateView = () => {
           </form>
         )}
       </MainContainer>
-    </Container>
   );
 };

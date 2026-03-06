@@ -12,7 +12,8 @@ export const TEST_SUITES_RICH_MOCK: TestSuiteCard[] = [
     sortOrder: 1,
     createdAt: new Date('2024-12-01T03:00:00.000Z'),
     updatedAt: new Date('2024-12-20T01:35:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     tag: { label: '기능별', tone: 'info' },
     includedPaths: ['/auth/*', '/session/*', '/oauth/*'],
@@ -88,7 +89,8 @@ export const TEST_SUITES_RICH_MOCK: TestSuiteCard[] = [
     sortOrder: 2,
     createdAt: new Date('2024-12-02T03:00:00.000Z'),
     updatedAt: new Date('2024-12-20T01:15:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     tag: { label: '보안', tone: 'warning' },
     includedPaths: ['/admin/*', '/rbac/*', '/policies/*'],
@@ -146,7 +148,8 @@ export const TEST_SUITES_RICH_MOCK: TestSuiteCard[] = [
     sortOrder: 3,
     createdAt: new Date('2024-12-03T03:00:00.000Z'),
     updatedAt: new Date('2024-12-20T00:45:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     tag: { label: '핵심 플로우', tone: 'danger' },
     includedPaths: ['/billing/*', '/payments/*', '/refunds/*'],
@@ -213,7 +216,8 @@ export const TEST_SUITES_RICH_MOCK: TestSuiteCard[] = [
     sortOrder: 4,
     createdAt: new Date('2024-12-04T03:00:00.000Z'),
     updatedAt: new Date('2024-12-19T23:45:00.000Z'),
-    deletedAt: null,
+    archivedAt: null,
+    lifecycleStatus: 'ACTIVE',
 
     tag: { label: 'UX', tone: 'success' },
     includedPaths: ['/onboarding/*', '/tutorial/*', '/welcome/*'],

@@ -3,36 +3,18 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns, testCaseRuns, testRunSuites, testSuites, milestones, TestRunStatus } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq, inArray } from 'drizzle-orm';
-
-export interface FetchedTestRun {
-  id: string;
-  name: string;
-  description?: string | null;
-  status: TestRunStatus;
-  sourceType: 'SUITE' | 'MILESTONE' | 'ADHOC';
-  sourceName: string;
-  updatedAt: Date;
-  stats: {
-    totalCases: number;
-    completedCases: number;
-    progressPercent: number;
-    pass: number;
-    fail: number;
-    blocked: number;
-    untested: number;
-  };
-}
+import type { FetchedTestRun } from '@/entities/test-run';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 export async function getTestRunsByProjectId(projectId: string): Promise<ActionResult<FetchedTestRun[]>> {
   try {
     const db = getDatabase();
 
-    // 1. 테스트 실행 목록 (단순 쿼리)
+    // 1. 테스트 실행 목록 (ACTIVE만)
     const runs = await db
       .select()
       .from(testRuns)
-      .where(eq(testRuns.project_id, projectId));
+      .where(and(eq(testRuns.project_id, projectId), eq(testRuns.lifecycle_status, 'ACTIVE')));
 
     if (runs.length === 0) {
       return { success: true, data: [] };
@@ -40,11 +22,11 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
 
     const runIds = runs.map(r => r.id);
 
-    // 2. 테스트 실행-스위트 연결 조회
+    // 2. 테스트 실행-스위트 연결 조회 (논리 삭제 제외)
     const runSuiteRows = await db
       .select()
       .from(testRunSuites)
-      .where(inArray(testRunSuites.test_run_id, runIds));
+      .where(and(inArray(testRunSuites.test_run_id, runIds), isNull(testRunSuites.excluded_at)));
 
     // 3. 스위트 이름 조회
     const suiteIds = [...new Set(runSuiteRows.map(rs => rs.test_suite_id).filter(Boolean))] as string[];
@@ -53,18 +35,20 @@ export async function getTestRunsByProjectId(projectId: string): Promise<ActionR
       : [];
     const suiteMap = new Map(suiteRows.map(s => [s.id, s.name]));
 
-    // 4. 마일스톤 이름 조회
+    // 4. 마일스톤 이름 조회 (ACTIVE만)
     const milestoneIds = [...new Set(runs.map(r => r.milestone_id).filter(Boolean))] as string[];
     const milestoneRows = milestoneIds.length > 0
-      ? await db.select({ id: milestones.id, name: milestones.name }).from(milestones).where(inArray(milestones.id, milestoneIds))
+      ? await db.select({ id: milestones.id, name: milestones.name }).from(milestones).where(
+          and(inArray(milestones.id, milestoneIds), eq(milestones.lifecycle_status, 'ACTIVE'))
+        )
       : [];
     const milestoneMap = new Map(milestoneRows.map(m => [m.id, m.name]));
 
-    // 5. 테스트 케이스 실행 결과 조회
+    // 5. 테스트 케이스 실행 결과 조회 (논리 삭제 제외)
     const allCaseRuns = await db
       .select()
       .from(testCaseRuns)
-      .where(inArray(testCaseRuns.test_run_id, runIds));
+      .where(and(inArray(testCaseRuns.test_run_id, runIds), isNull(testCaseRuns.excluded_at)));
 
     // 실행별 케이스 실행 그룹핑
     const caseRunsByRunId = new Map<string, typeof allCaseRuns>();

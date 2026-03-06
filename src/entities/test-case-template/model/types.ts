@@ -7,8 +7,10 @@ import {
 export type TestCaseTemplateDTO = z.infer<typeof TestCaseTemplateDtoSchema>;
 export type CreateTestCaseTemplateDTO = z.infer<typeof CreateTestCaseTemplateDtoSchema>;
 
+import type { LifecycleStatus } from '@/shared/types';
+
+export type { LifecycleStatus } from '@/shared/types';
 export type TemplateCategory = 'BUILTIN' | 'CUSTOM';
-export type LifecycleStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
 
 export type TestCaseTemplate = {
   id: string;

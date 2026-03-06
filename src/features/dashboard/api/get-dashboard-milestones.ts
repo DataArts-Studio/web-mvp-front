@@ -10,7 +10,7 @@ import {
   testSuites,
 } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 export interface DashboardMilestoneSuite {
   id: string;
@@ -138,13 +138,13 @@ export async function getDashboardMilestones(
               source_id: testCaseRuns.source_id,
             })
             .from(testCaseRuns)
-            .where(eq(testCaseRuns.test_run_id, testRunId));
+            .where(and(eq(testCaseRuns.test_run_id, testRunId), isNull(testCaseRuns.excluded_at)));
         } else {
           // 마일스톤에 연결된 모든 실행에서
           const runRows = await db
             .select({ id: testRuns.id })
             .from(testRuns)
-            .where(eq(testRuns.milestone_id, m.id));
+            .where(and(eq(testRuns.milestone_id, m.id), eq(testRuns.lifecycle_status, 'ACTIVE')));
 
           const ids = runRows.map((r) => r.id);
           if (ids.length === 0) {
@@ -170,7 +170,7 @@ export async function getDashboardMilestones(
               source_id: testCaseRuns.source_id,
             })
             .from(testCaseRuns)
-            .where(inArray(testCaseRuns.test_run_id, ids));
+            .where(and(inArray(testCaseRuns.test_run_id, ids), isNull(testCaseRuns.excluded_at)));
         }
 
         // 3c. 스위트별 진행률 (source_type='suite' + source_id=suiteId)

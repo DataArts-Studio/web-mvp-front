@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LifecycleStatusEnum } from '../../project/model/schema';
+import { LifecycleStatusEnum } from '@/shared/types';
 
 export const TestRunStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
 

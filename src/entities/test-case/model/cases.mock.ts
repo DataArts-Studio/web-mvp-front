@@ -17,9 +17,6 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
     testType: 'authentication',
     tags: ['ui', 'regression'],
 
-    preCondition: '회원가입 페이지 진입',
-    testSteps: '이메일에 잘못된 형식 입력 후 제출',
-    expectedResult: '이메일 형식 오류 메시지 노출',
     sortOrder: 1000,
 
     createdAt: new Date('2024-12-01T03:00:00.000Z'),
@@ -30,6 +27,7 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
     suiteTitle: '인증 플로우 로그인 회원가입',
     resultStatus: 'untested',
     status: 'untested',
+    displayId: 1001,
     lastExecutedAt: null,
   },
   {
@@ -42,9 +40,6 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
     testType: 'authentication',
     tags: ['smoke', 'critical_path'],
 
-    preCondition: '유효한 계정 존재',
-    testSteps: '아이디 비밀번호 입력 후 로그인',
-    expectedResult: '대시보드로 이동',
     sortOrder: 2000,
 
     createdAt: new Date('2024-12-02T03:00:00.000Z'),
@@ -54,7 +49,8 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
 
     suiteTitle: '인증 플로우 로그인 회원가입',
     resultStatus: 'pass',
-    status: 'passed',
+    status: 'pass',
+    displayId: 1002,
     lastExecutedAt: new Date('2024-12-20T01:30:00.000Z'),
   },
   {
@@ -67,9 +63,6 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
     testType: 'payment',
     tags: ['ui'],
 
-    preCondition: '잔액이 부족한 계정',
-    testSteps: '결제 시도',
-    expectedResult: '잔액 부족 팝업 노출',
     sortOrder: 1000,
 
     createdAt: new Date('2024-12-03T03:00:00.000Z'),
@@ -79,7 +72,8 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
 
     suiteTitle: '결제 플로우 카드 결제 환불',
     resultStatus: 'fail',
-    status: 'failed',
+    status: 'fail',
+    displayId: 2001,
     lastExecutedAt: new Date('2024-12-20T00:40:00.000Z'),
   },
   {
@@ -92,9 +86,6 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
     testType: 'rbac',
     tags: ['security', 'regression'],
 
-    preCondition: '일반 사용자 로그인 상태',
-    testSteps: '어드민 경로로 직접 접근',
-    expectedResult: '접근 거부 또는 권한 안내 화면 노출',
     sortOrder: 1000,
 
     createdAt: new Date('2024-12-04T03:00:00.000Z'),
@@ -105,6 +96,7 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
     suiteTitle: '권한과 접근 제어',
     resultStatus: 'blocked',
     status: 'blocked',
+    displayId: 3001,
     lastExecutedAt: new Date('2024-12-20T01:10:00.000Z'),
   },
   {
@@ -117,9 +109,6 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
     testType: 'ux',
     tags: ['smoke'],
 
-    preCondition: '첫 진입 사용자',
-    testSteps: '튜토리얼 진행 후 완료 버튼 클릭',
-    expectedResult: '홈 화면으로 이동 및 완료 상태 저장',
     sortOrder: 1000,
 
     createdAt: new Date('2024-12-05T03:00:00.000Z'),
@@ -129,7 +118,8 @@ export const TEST_CASES_RICH_MOCK: TestCaseCardType[] = [
 
     suiteTitle: '온보딩과 튜토리얼',
     resultStatus: 'pass',
-    status: 'passed',
+    status: 'pass',
+    displayId: 4001,
     lastExecutedAt: new Date('2024-12-19T23:40:00.000Z'),
   },
 ];

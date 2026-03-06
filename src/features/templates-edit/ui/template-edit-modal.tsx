@@ -16,7 +16,7 @@ const UpdateTemplateFormSchema = z.object({
   name: z.string().min(1, '템플릿 이름을 입력해주세요.').max(50, '템플릿 이름은 50자를 넘을 수 없습니다.'),
   description: z.string().max(200, '설명은 200자를 넘을 수 없습니다.').optional(),
   testType: z.string().optional(),
-  defaultTags: z.array(z.string().max(30)).max(10).default([]),
+  defaultTags: z.array(z.string().max(30)).max(10).optional(),
   preCondition: z.string().optional(),
   testSteps: z.string().optional(),
   expectedResult: z.string().optional(),
@@ -55,7 +55,7 @@ export const TemplateEditModal = ({ template, onClose, onSuccess }: TemplateEdit
   const onSubmit = handleSubmit((data) => {
     const payload: UpdateTestCaseTemplate = {
       ...data,
-      defaultTags: data.defaultTags.length > 0 ? data.defaultTags : [],
+      defaultTags: data.defaultTags?.length ? data.defaultTags : [],
     };
     mutate(payload, {
       onSuccess: () => {
@@ -182,7 +182,7 @@ export const TemplateEditModal = ({ template, onClose, onSuccess }: TemplateEdit
                 render={({ field }) => (
                   <TagChipInput
                     className="w-full"
-                    value={field.value}
+                    value={field.value ?? []}
                     onChange={field.onChange}
                     placeholder="태그 입력 후 Enter"
                   />

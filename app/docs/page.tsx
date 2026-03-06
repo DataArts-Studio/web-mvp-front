@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import { DocsView } from '@/view';
 import { DocsMarkdownContent, slugify } from '@/view/docs/docs-markdown-content';
 import type { DocHeading } from '@/view/docs/docs-view';
+import { Metadata } from 'next';
 
 type DocTab = 'getting-started' | 'dashboard' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';
 
@@ -80,7 +81,7 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
   );
 }
 
-export const metadata = {
+export const metadata: Metadata = {
   title: '사용 가이드',
   description: 'Testea 사용 가이드 - 테스트 케이스 관리, 테스트 스위트, 테스트 실행, 마일스톤 관리 방법을 안내합니다.',
   alternates: {

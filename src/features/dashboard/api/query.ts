@@ -1,4 +1,5 @@
-import { getDashboardStats } from '@/features';
+import { getDashboardStats } from './get-dashboard-stats';
+import { QUERY_STALE_TIME_LONG } from '@/shared/constants/query';
 import { queryOptions } from '@tanstack/react-query';
 import { getDashboardMilestones } from './get-dashboard-milestones';
 import { getStorageInfo } from './get-storage-info';
@@ -28,6 +29,6 @@ export const dashboardQueryOptions = {
     queryOptions({
       queryKey: dashboardQueryKeys.storageInfo(projectId),
       queryFn: () => getStorageInfo(projectId),
-      staleTime: 1000 * 60 * 5,
+      staleTime: QUERY_STALE_TIME_LONG,
     }),
 };

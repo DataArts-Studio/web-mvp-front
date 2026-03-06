@@ -191,7 +191,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
                 control={control}
                 render={({ field }) => (
                   <TagChipInput
-                    value={field.value ?? []}
+                    value={Array.isArray(field.value) ? field.value : []}
                     onChange={field.onChange}
                     suggestions={projectTags}
                     placeholder="태그 입력 후 Enter (예: smoke)"

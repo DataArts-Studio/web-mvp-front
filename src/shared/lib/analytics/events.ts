@@ -116,6 +116,8 @@ export const TESTCASE_EVENTS = {
   STEP_REMOVE: 'testcase_step_remove',
   /** CSV 내보내기 */
   EXPORT: 'testcase_export',
+  /** CSV 가져오기 시작 */
+  IMPORT_START: 'testcase_import_start',
 } as const;
 
 // ─── Test Suite ──────────────────────────────────────────────────
@@ -222,6 +224,10 @@ export const ONBOARDING_EVENTS = {
   TOUR_COMPLETE: 'onboarding_tour_complete',
   /** 온보딩 투어 건너뛰기 */
   TOUR_SKIP: 'onboarding_tour_skip',
+} as const;
+
+export const TEMPLATE_EVENTS = {
+  DELETE: 'template_delete',
 } as const;
 
 // ─── 전체 이벤트 합치기 (필요 시) ─────────────────────────────────

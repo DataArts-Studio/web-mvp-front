@@ -2,9 +2,12 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { CreateTestSuite, CreateTestSuiteSchema, createTestSuite } from '@/entities';
-import { useCreateSuite } from '@/features';
-import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
+import { CreateTestSuiteSchema } from '@/entities/test-suite';
+import type { CreateTestSuite } from '@/entities/test-suite';
+import { useCreateSuite } from '@/features/suites-create';
+import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { FormField } from '@/shared/lib/primitives';
+import { cn } from '@/shared/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
@@ -80,8 +83,8 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
               {...register('title', {
                 required: '유효한 이름을 입력해주세요.',
                 minLength: {
-                  value: 5,
-                  message: '스위트 이름은 최소 5자 이상이어야 합니다.',
+                  value: 3,
+                  message: '스위트 이름은 최소 3자 이상이어야 합니다.',
                 },
                 maxLength: {
                   value: 50,

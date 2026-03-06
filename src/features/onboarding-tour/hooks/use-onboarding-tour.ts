@@ -9,7 +9,6 @@ import { TOUR_STEPS, TOTAL_STEPS } from '../config/tour-steps';
 import { track } from '@/shared/lib/analytics';
 import { ONBOARDING_EVENTS } from '@/shared/lib/analytics';
 
-import 'driver.js/dist/driver.css';
 import '../styles/onboarding.css';
 
 type UseOnboardingTourParams = {
@@ -17,7 +16,24 @@ type UseOnboardingTourParams = {
   isDataLoaded: boolean;
 };
 
+let driverCSSLoaded = false;
+
+function ensureDriverCSS() {
+  if (driverCSSLoaded || typeof document === 'undefined') return;
+  if (document.querySelector('[data-driver-css]')) {
+    driverCSSLoaded = true;
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.setAttribute('data-driver-css', '');
+  link.href = 'https://cdn.jsdelivr.net/npm/driver.js@1/dist/driver.css';
+  document.head.appendChild(link);
+  driverCSSLoaded = true;
+}
+
 async function loadDriverModule() {
+  ensureDriverCSS();
   const { driver } = await import('driver.js');
   return driver;
 }
@@ -89,10 +105,11 @@ export function useOnboardingTour({ projectId, isDataLoaded }: UseOnboardingTour
         driverInstance.destroy();
       },
       onDestroyed: () => {
+        const isLastStep = currentStep === TOTAL_STEPS - 1;
+        if (isLastStep) {
+          handleComplete(TOTAL_STEPS - 1, false);
+        }
         driverRef.current = null;
-      },
-      onFinished: () => {
-        handleComplete(TOTAL_STEPS - 1, false);
       },
     });
 
@@ -106,11 +123,14 @@ export function useOnboardingTour({ projectId, isDataLoaded }: UseOnboardingTour
     if (!isDataLoaded || completed || hasStartedRef.current || !projectId) return;
 
     hasStartedRef.current = true;
-    const timer = setTimeout(() => {
-      startTour();
-    }, 500);
 
-    return () => clearTimeout(timer);
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(() => startTour(), { timeout: 2000 });
+      return () => cancelIdleCallback(id);
+    } else {
+      const timer = setTimeout(() => startTour(), 500);
+      return () => clearTimeout(timer);
+    }
   }, [isDataLoaded, completed, projectId, startTour]);
 
   // 컴포넌트 언마운트 시 정리

@@ -2,7 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { v7 as uuidv7 } from 'uuid';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { getDatabase, testCaseAttachments } from '@/shared/lib/db';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/db';
@@ -49,7 +49,7 @@ export async function getAttachments(
     const rows = await db
       .select()
       .from(testCaseAttachments)
-      .where(eq(testCaseAttachments.test_case_id, testCaseId));
+      .where(and(eq(testCaseAttachments.test_case_id, testCaseId), isNull(testCaseAttachments.archived_at)));
 
     const supabaseUrl = getSupabaseUrl();
     const attachments = rows.map((row) => toAttachment(row, supabaseUrl));
@@ -116,7 +116,7 @@ export async function uploadAttachment(
     const existingFiles = await db
       .select({ id: testCaseAttachments.id })
       .from(testCaseAttachments)
-      .where(eq(testCaseAttachments.test_case_id, testCaseId));
+      .where(and(eq(testCaseAttachments.test_case_id, testCaseId), isNull(testCaseAttachments.archived_at)));
 
     if (existingFiles.length >= ATTACHMENT_LIMITS.MAX_FILES_PER_CASE) {
       return {
@@ -220,21 +220,10 @@ export async function deleteAttachment(
       };
     }
 
-    // Delete from Supabase Storage
-    const supabase = await createSupabaseServerClient();
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove([existing.storage_path]);
-
-    if (storageError) {
-      Sentry.captureException(storageError, {
-        extra: { action: 'deleteAttachment:storage' },
-      });
-    }
-
-    // Delete DB record
+    // 소프트 딜리트 (스토리지 파일 및 DB 레코드 보존)
     await db
-      .delete(testCaseAttachments)
+      .update(testCaseAttachments)
+      .set({ archived_at: new Date() })
       .where(eq(testCaseAttachments.id, id));
 
     return {

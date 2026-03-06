@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { LegalView } from '@/view/legal';
 import { LegalMarkdownContent, slugify } from '@/view/legal/legal-markdown-content';
 import type { LegalHeading } from '@/view/legal/legal-markdown-content';
+import { Metadata } from 'next';
 
 type TabType = 'privacy' | 'terms';
 
@@ -60,7 +61,7 @@ export default async function LegalPage({ searchParams }: LegalPageProps) {
   );
 }
 
-export const metadata = {
+export const metadata: Metadata = {
   title: '법적 고지',
   description: 'Testea 개인정보 처리방침 및 서비스 이용약관을 확인하세요.',
   alternates: {

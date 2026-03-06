@@ -3,7 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, milestones, testRuns, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites, testSuites } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { MilestoneStats, MilestoneWithStats } from '@/entities/milestone';
 
 export async function getMilestoneById(milestoneId: string): Promise<ActionResult<MilestoneWithStats>> {
@@ -30,7 +30,7 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
         name: testRuns.name,
         status: testRuns.status,
         updated_at: testRuns.updated_at,
-      }).from(testRuns).where(eq(testRuns.milestone_id, milestoneId)),
+      }).from(testRuns).where(and(eq(testRuns.milestone_id, milestoneId), eq(testRuns.lifecycle_status, 'ACTIVE'))),
       db.select({ test_case_id: milestoneTestCases.test_case_id })
         .from(milestoneTestCases)
         .where(eq(milestoneTestCases.milestone_id, milestoneId)),
@@ -48,7 +48,7 @@ export async function getMilestoneById(milestoneId: string): Promise<ActionResul
       testRunIds.length > 0
         ? db.select({ test_case_id: testCaseRuns.test_case_id, status: testCaseRuns.status })
             .from(testCaseRuns)
-            .where(inArray(testCaseRuns.test_run_id, testRunIds))
+            .where(and(inArray(testCaseRuns.test_run_id, testRunIds), isNull(testCaseRuns.excluded_at)))
         : Promise.resolve([]),
       mtcTestCaseIds.length > 0
         ? db.select({ id: testCases.id, case_key: testCases.case_key, name: testCases.name })

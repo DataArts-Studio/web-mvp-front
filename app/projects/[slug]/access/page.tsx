@@ -10,6 +10,7 @@ import { redirect, notFound } from 'next/navigation';
 import { AccessForm } from '@/access/project/ui';
 import { checkProjectExists } from '@/access/project/api';
 import { canAccessProject } from '@/access/policy';
+import { Metadata } from 'next';
 
 interface AccessPageProps {
   params: Promise<{
@@ -44,7 +45,7 @@ export default async function ProjectAccessPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-1 px-4">
+    <div className="flex min-h-screen w-full items-center justify-center bg-bg-1 px-4">
       <Suspense
         fallback={
           <div className="h-96 w-full max-w-md animate-pulse rounded-5 bg-bg-3" />
@@ -62,7 +63,7 @@ export default async function ProjectAccessPage({
   );
 }
 
-export const metadata = {
+export const metadata: Metadata = {
   title: '프로젝트 접근',
   description: '프로젝트에 접근하려면 비밀번호를 입력해주세요.',
 };

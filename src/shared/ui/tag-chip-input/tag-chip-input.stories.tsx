@@ -34,7 +34,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const TagChipInputTemplate = (args: React.ComponentProps<typeof TagChipInput>) => {
-  const [tags, setTags] = useState<string[]>(args.value ?? []);
+  const [tags, setTags] = useState<string[]>(Array.isArray(args.value) ? args.value : []);
   return <TagChipInput {...args} value={tags} onChange={setTags} />;
 };
 

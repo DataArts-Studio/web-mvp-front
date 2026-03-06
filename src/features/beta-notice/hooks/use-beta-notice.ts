@@ -9,6 +9,7 @@ export const useBetaNotice = () => {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration: read sessionStorage and sync state
     setIsMounted(true);
     const isDismissed = sessionStorage.getItem(STORAGE_KEY);
     setIsVisible(!isDismissed);

@@ -17,6 +17,7 @@ export const testCaseRuns = pgTable('test_case_runs', {
     executed_at: timestamp('executed_at'),
     source_type: varchar('source_type').$type<TestCaseRunSourceType>().default('adhoc').notNull(),
     source_id: uuid('source_id'),
+    excluded_at: timestamp('excluded_at'),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
 });

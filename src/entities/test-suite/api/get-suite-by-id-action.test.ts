@@ -45,7 +45,8 @@ describe('getTestSuiteById', () => {
         sort_order: 10,
         created_at: new Date('2024-02-01'),
         updated_at: new Date('2024-02-02'),
-        deleted_at: null,
+        archived_at: null,
+        lifecycle_status: 'ACTIVE' as const,
       });
       setMockSelectReturn([mockRow]);
 

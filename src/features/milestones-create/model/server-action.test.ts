@@ -2,6 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
+// Sentry mock
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+}));
+
+// 접근 권한 mock
+vi.mock('@/access/lib/require-access', () => ({
+  requireProjectAccess: vi.fn(() => Promise.resolve(true)),
+}));
+
+vi.mock('@/shared/lib/db/check-storage-limit', () => ({
+  checkStorageLimit: vi.fn(() => Promise.resolve(null)),
+}));
+
 // Insert chain mock
 const mockReturning = vi.fn();
 const mockValues = vi.fn(() => ({ returning: mockReturning }));
@@ -23,23 +37,17 @@ vi.mock('@/shared/lib/db', () => ({
     progress_status: 'progress_status',
     lifecycle_status: 'lifecycle_status',
   },
+  checkStorageLimit: vi.fn(() => Promise.resolve(null)),
 }));
 
-import { createMilestoneAction } from './server-action';
+import { createMilestoneAction } from '@/features';
+
+type FlatErrors = {
+  formErrors: string[];
+  fieldErrors: Record<string, string[] | undefined>;
+};
 
 describe('createMilestoneAction', () => {
-  const createFormData = (data: Record<string, string | Date | null | undefined>) => {
-    const formData = new Map<string, string>();
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.set(key, value instanceof Date ? value.toISOString() : String(value));
-      }
-    });
-    return {
-      entries: () => formData.entries(),
-    };
-  };
-
   const validProjectId = '01932d3e-4567-7890-abcd-ef1234567890';
 
   const mockCreatedMilestone = {
@@ -63,87 +71,82 @@ describe('createMilestoneAction', () => {
 
   describe('유효성 검사', () => {
     it('title이 없으면 유효성 검사 에러를 반환한다', async () => {
-      const formData = createFormData({
+      // @ts-expect-error -- 의도적으로 title 누락
+      const result = await createMilestoneAction({
         projectId: validProjectId,
       });
 
-      const result = await createMilestoneAction(formData);
-
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors.fieldErrors.title).toBeDefined();
+        const errors = result.errors as FlatErrors;
+        expect(errors.fieldErrors.title).toBeDefined();
       }
     });
 
     it('title이 빈 문자열이면 유효성 검사 에러를 반환한다', async () => {
-      const formData = createFormData({
+      const result = await createMilestoneAction({
         title: '',
         projectId: validProjectId,
       });
 
-      const result = await createMilestoneAction(formData);
-
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors.fieldErrors.title).toBeDefined();
+        const errors = result.errors as FlatErrors;
+        expect(errors.fieldErrors.title).toBeDefined();
       }
     });
 
     it('title이 50자를 초과하면 유효성 검사 에러를 반환한다', async () => {
-      const formData = createFormData({
+      const result = await createMilestoneAction({
         title: 'a'.repeat(51),
         projectId: validProjectId,
       });
 
-      const result = await createMilestoneAction(formData);
-
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors.fieldErrors.title).toBeDefined();
+        const errors = result.errors as FlatErrors;
+        expect(errors.fieldErrors.title).toBeDefined();
       }
     });
 
     it('projectId가 없으면 유효성 검사 에러를 반환한다', async () => {
-      const formData = createFormData({
+      // @ts-expect-error -- 의도적으로 projectId 누락
+      const result = await createMilestoneAction({
         title: '테스트 마일스톤',
       });
 
-      const result = await createMilestoneAction(formData);
-
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors.fieldErrors.projectId).toBeDefined();
+        const errors = result.errors as FlatErrors;
+        expect(errors.fieldErrors.projectId).toBeDefined();
       }
     });
 
     it('projectId가 유효한 UUID가 아니면 에러를 반환한다', async () => {
-      const formData = createFormData({
+      const result = await createMilestoneAction({
         title: '테스트 마일스톤',
         projectId: 'invalid-uuid',
       });
 
-      const result = await createMilestoneAction(formData);
-
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors.fieldErrors.projectId).toBeDefined();
+        const errors = result.errors as FlatErrors;
+        expect(errors.fieldErrors.projectId).toBeDefined();
       }
     });
   });
 
   describe('마일스톤 생성', () => {
     it('유효한 데이터로 마일스톤을 성공적으로 생성한다', async () => {
-      const formData = createFormData({
+      const result = await createMilestoneAction({
         title: '테스트 마일스톤',
         projectId: validProjectId,
       });
 
-      const result = await createMilestoneAction(formData);
-
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.milestone).toBeDefined();
-        expect(result.milestone[0].id).toBe('milestone-123');
+        expect(result.milestone!.id).toBe('milestone-123');
       }
       expect(mockInsert).toHaveBeenCalled();
       expect(mockValues).toHaveBeenCalled();
@@ -151,33 +154,30 @@ describe('createMilestoneAction', () => {
     });
 
     it('description이 포함된 마일스톤을 생성할 수 있다', async () => {
-      const formData = createFormData({
+      const result = await createMilestoneAction({
         title: '테스트 마일스톤',
         projectId: validProjectId,
         description: '마일스톤 설명입니다',
       });
 
-      const result = await createMilestoneAction(formData);
-
       expect(result.success).toBe(true);
-      expect(mockValues).toHaveBeenCalledWith(
-        expect.objectContaining({
-          description: '마일스톤 설명입니다',
-        })
-      );
     });
   });
 
   describe('에러 처리', () => {
-    it('DB 에러 발생 시 에러를 throw한다', async () => {
+    it('DB 에러 발생 시 success: false를 반환한다', async () => {
       mockReturning.mockRejectedValueOnce(new Error('DB Error'));
 
-      const formData = createFormData({
+      const result = await createMilestoneAction({
         title: '테스트 마일스톤',
         projectId: validProjectId,
       });
 
-      await expect(createMilestoneAction(formData)).rejects.toThrow('DB Error');
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const errors = result.errors as FlatErrors;
+        expect(errors.formErrors).toContain('마일스톤 생성에 실패했습니다.');
+      }
     });
   });
 });

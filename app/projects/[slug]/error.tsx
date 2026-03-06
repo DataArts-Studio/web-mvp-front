@@ -15,7 +15,7 @@ export default function ProjectError({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
+    <div className="flex min-h-[60vh] w-full flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10">
         <AlertTriangle className="h-8 w-8 text-red-400" />
       </div>

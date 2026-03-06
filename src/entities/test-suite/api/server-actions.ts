@@ -14,7 +14,7 @@ import {
   testCaseRuns,
 } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types';
-import { and, eq, count, desc, inArray, isNotNull } from 'drizzle-orm';
+import { and, eq, count, desc, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/db';
@@ -364,12 +364,12 @@ export const getTestSuitesWithStats = async ({
         ),
       // Q4: 연결된 마일스톤
       milestoneQueryFn(),
-      // Q5: 실행 이력 수 집계
+      // Q5: 실행 이력 수 집계 (논리 삭제 제외)
       db.select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
         .from(testRunSuites)
-        .where(inArray(testRunSuites.test_suite_id, suiteIds))
+        .where(and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at)))
         .groupBy(testRunSuites.test_suite_id),
-      // Q6: 최근 실행 (스위트별 최신 run)
+      // Q6: 최근 실행 (스위트별 최신 run, 논리 삭제 제외)
       db.select({
           suiteId: testRunSuites.test_suite_id,
           runId: testRuns.id,
@@ -377,8 +377,8 @@ export const getTestSuitesWithStats = async ({
           runCreatedAt: testRuns.created_at,
         })
         .from(testRunSuites)
-        .innerJoin(testRuns, eq(testRunSuites.test_run_id, testRuns.id))
-        .where(inArray(testRunSuites.test_suite_id, suiteIds))
+        .innerJoin(testRuns, and(eq(testRunSuites.test_run_id, testRuns.id), eq(testRuns.lifecycle_status, 'ACTIVE')))
+        .where(and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at)))
         .orderBy(desc(testRuns.created_at)),
     ]);
 
@@ -426,7 +426,7 @@ export const getTestSuitesWithStats = async ({
           cnt: count(),
         })
         .from(testCaseRuns)
-        .where(inArray(testCaseRuns.test_run_id, allRunIds))
+        .where(and(inArray(testCaseRuns.test_run_id, allRunIds), isNull(testCaseRuns.excluded_at)))
         .groupBy(testCaseRuns.test_run_id, testCaseRuns.status);
 
       for (const r of caseRunRows) {

@@ -1,5 +1,4 @@
-import { z } from 'zod';
-import type { LifecycleStatus } from '../../test-case/model/types';
+import type { LifecycleStatus } from '@/shared/types';
 
 export type TestSuite = {
   id: string;

@@ -1,9 +1,9 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testRuns, projects } from '@/shared/lib/db';
+import { getDatabase, testRuns, testCaseRuns, projects } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';
 
 export interface SharedReportData {
@@ -107,12 +107,11 @@ export async function getSharedReport(
   try {
     const db = getDatabase();
 
-    const run = await db.query.testRuns.findFirst({
-      where: eq(testRuns.share_token, token),
-      with: {
-        testCaseRuns: true,
-      },
-    });
+    const [run] = await db
+      .select()
+      .from(testRuns)
+      .where(eq(testRuns.share_token, token))
+      .limit(1);
 
     if (!run) {
       return {
@@ -139,8 +138,11 @@ export async function getSharedReport(
       projectName = project?.name || '';
     }
 
-    // Calculate stats
-    const caseRuns = run.testCaseRuns || [];
+    // Calculate stats (논리 삭제 제외)
+    const caseRuns = await db
+      .select({ status: testCaseRuns.status })
+      .from(testCaseRuns)
+      .where(and(eq(testCaseRuns.test_run_id, run.id), isNull(testCaseRuns.excluded_at)));
     const total = caseRuns.length;
     const pass = caseRuns.filter((c) => c.status === 'pass').length;
     const fail = caseRuns.filter((c) => c.status === 'fail').length;
