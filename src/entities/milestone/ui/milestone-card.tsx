@@ -99,8 +99,6 @@ export const MilestoneCard = ({ milestone, onEdit, onStatusChange }: MilestoneCa
     }
   };
 
-  const progressPercent = milestone.progressRate || 0;
-
   return (
     <div
       className={cn(
@@ -152,57 +150,12 @@ export const MilestoneCard = ({ milestone, onEdit, onStatusChange }: MilestoneCa
         </div>
       </div>
 
-      {/* 진행률 영역 - 더 눈에 띄게 */}
-      <div className="flex w-full flex-col gap-2 md:w-[30%]">
-        <div className="flex items-center justify-between">
-          <span className="text-label-normal text-text-3">진행률</span>
-          <span
-            className={cn(
-              'typo-h2-heading text-2xl font-bold',
-              progressPercent === 100 ? 'text-green-400' : 'text-text-1'
-            )}
-          >
-            {progressPercent}%
-          </span>
-        </div>
-        <div className="bg-bg-3 relative h-2.5 w-full overflow-hidden rounded-full">
-          <div
-            className={cn(
-              'h-full rounded-full bg-gradient-to-r transition-all duration-500',
-              statusInfo.progressColor,
-              progressPercent === 100 && 'animate-pulse'
-            )}
-            style={{ width: `${progressPercent}%` }}
-          />
-          {/* 진행률 바 하이라이트 효과 */}
-          <div
-            className="absolute inset-0 h-full rounded-full bg-white/10"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-        {/* 미니 통계 또는 상태 메시지 */}
-        <div className="text-label-normal text-text-3 flex justify-between text-xs">
-          {milestone.totalCases === 0 ? (
-            <span className="text-text-3 italic">테스트 케이스를 추가해주세요</span>
-          ) : progressPercent === 100 ? (
-            <span className="text-green-400 font-medium">모든 테스트 완료!</span>
-          ) : (
-            <span>{milestone.completedCases}/{milestone.totalCases} 완료</span>
-          )}
-          <span>실행 {milestone.runCount}회</span>
-        </div>
-      </div>
-
       {/* 통계 카드 + Quick Action 영역 */}
       <div className="flex w-full items-center gap-4 md:w-auto md:justify-end">
         <div className="flex gap-2">
           <div className="bg-bg-3/50 flex flex-1 flex-col items-center rounded-xl px-3 py-2 md:flex-none md:px-4">
             <span className="typo-body2-heading text-text-1 mt-1">{milestone.totalCases}</span>
             <span className="text-text-3 text-xs">케이스</span>
-          </div>
-          <div className="bg-bg-3/50 flex flex-1 flex-col items-center rounded-xl px-3 py-2 md:flex-none md:px-4">
-            <span className="typo-body2-heading text-text-1 mt-1">{milestone.completedCases}</span>
-            <span className="text-text-3 text-xs">완료</span>
           </div>
           <div className="bg-bg-3/50 flex flex-1 flex-col items-center rounded-xl px-3 py-2 md:flex-none md:px-4">
             <span className="typo-body2-heading text-text-1 mt-1">{milestone.runCount}</span>

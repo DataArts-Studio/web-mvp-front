@@ -48,11 +48,11 @@ export const MilestonesView = () => {
     ...milestonesQueryOptions(projectId!),
     enabled: !!projectId,
   });
-  const milestonesData = useMemo(() => milestonesResult?.success ? milestonesResult.data : [], [milestonesResult]);
+  const milestonesData: MilestoneWithStats[] = useMemo(() => milestonesResult?.success ? milestonesResult.data : [], [milestonesResult]);
 
   // 필터링된 마일스톤 데이터
   const filteredMilestones = useMemo(() => {
-    return milestonesData.filter((milestone: Milestone) => {
+    return milestonesData.filter((milestone: MilestoneWithStats) => {
       // 상태 필터
       const statusMatch = statusFilter === '전체' || milestone.progressStatus === FILTER_TO_STATUS[statusFilter];
 
@@ -239,23 +239,14 @@ export const MilestonesView = () => {
                 </button>
               </div>
             ) : (
-              paginatedMilestones.map((milestone: Milestone) => {
-                const milestoneWithStats: MilestoneWithStats = {
-                  ...milestone,
-                  totalCases: 0,
-                  completedCases: 0,
-                  progressRate: 0,
-                  runCount: 0,
-                };
-                return (
+              paginatedMilestones.map((milestone) => (
                   <Link
                     key={milestone.id}
                     href={`/projects/${params.slug}/milestones/${milestone.id}`}
                   >
-                    <MilestoneCard milestone={milestoneWithStats} onEdit={() => handleEdit(milestone)} />
+                    <MilestoneCard milestone={milestone} onEdit={() => handleEdit(milestone)} />
                   </Link>
-                );
-              })
+              ))
             )}
           </div>
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
