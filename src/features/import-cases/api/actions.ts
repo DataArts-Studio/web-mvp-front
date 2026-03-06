@@ -86,12 +86,13 @@ export async function importTestCases(input: {
       message: `${result.length}건의 테스트케이스가 가져와졌습니다.`,
     };
   } catch (error) {
-    console.error('[importTestCases] error:', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('[importTestCases] error:', errMsg, error);
     Sentry.captureException(error, { extra: { action: 'importTestCases' } });
     return {
       success: false,
       errors: {
-        _import: ['가져오기에 실패했습니다. 다시 시도해주세요.'],
+        _import: [`가져오기에 실패했습니다: ${errMsg}`],
       },
     };
   }
