@@ -5,12 +5,13 @@ import {
   CreateMilestone,
   Milestone,
   MilestoneDTO,
+  MilestoneWithStats,
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
 import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites, testRuns, testCaseRuns, testCases, testRunSuites } from '@/shared/lib/db';
 import { ActionResult } from '@/shared/types';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/db';
@@ -24,7 +25,7 @@ type GetMilestonesParams = {
  */
 export const getMilestones = async ({
   projectId,
-}: GetMilestonesParams): Promise<ActionResult<Milestone[]>> => {
+}: GetMilestonesParams): Promise<ActionResult<MilestoneWithStats[]>> => {
   try {
     const db = getDatabase();
 
@@ -38,19 +39,126 @@ export const getMilestones = async ({
         )
       );
 
-    const result: Milestone[] = rows.map((row) => toMilestone(row as MilestoneDTO));
+    if (rows.length === 0) {
+      return { success: true, data: [] };
+    }
 
-    return {
-      success: true,
+    const milestoneIds = rows.map(r => r.id);
 
-      data: result,
-    };
+    // 병렬 조회: 테스트 실행, 마일스톤-케이스, 마일스톤-스위트
+    const [allRuns, allMtc, allMts] = await Promise.all([
+      db.select({ id: testRuns.id, milestone_id: testRuns.milestone_id })
+        .from(testRuns)
+        .where(and(inArray(testRuns.milestone_id, milestoneIds), eq(testRuns.lifecycle_status, 'ACTIVE'))),
+      db.select()
+        .from(milestoneTestCases)
+        .where(inArray(milestoneTestCases.milestone_id, milestoneIds)),
+      db.select()
+        .from(milestoneTestSuites)
+        .where(inArray(milestoneTestSuites.milestone_id, milestoneIds)),
+    ]);
+
+    // 스위트에 속한 케이스 조회
+    const allSuiteIds = [...new Set(allMts.map(m => m.test_suite_id).filter(Boolean))] as string[];
+    const suiteCases = allSuiteIds.length > 0
+      ? await db.select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
+          .from(testCases)
+          .where(and(inArray(testCases.test_suite_id, allSuiteIds), eq(testCases.lifecycle_status, 'ACTIVE')))
+      : [];
+
+    // 테스트 실행 결과 조회
+    const allRunIds = allRuns.map(r => r.id);
+    const allCaseRuns = allRunIds.length > 0
+      ? await db.select({ test_run_id: testCaseRuns.test_run_id, test_case_id: testCaseRuns.test_case_id, status: testCaseRuns.status })
+          .from(testCaseRuns)
+          .where(and(inArray(testCaseRuns.test_run_id, allRunIds), isNull(testCaseRuns.excluded_at)))
+      : [];
+
+    // 마일스톤별 그룹핑
+    const runsByMilestone = new Map<string, string[]>();
+    for (const r of allRuns) {
+      if (!r.milestone_id) continue;
+      const list = runsByMilestone.get(r.milestone_id) || [];
+      list.push(r.id);
+      runsByMilestone.set(r.milestone_id, list);
+    }
+
+    const mtcByMilestone = new Map<string, string[]>();
+    for (const m of allMtc) {
+      if (!m.test_case_id) continue;
+      const list = mtcByMilestone.get(m.milestone_id) || [];
+      list.push(m.test_case_id);
+      mtcByMilestone.set(m.milestone_id, list);
+    }
+
+    const mtsByMilestone = new Map<string, string[]>();
+    for (const m of allMts) {
+      if (!m.test_suite_id) continue;
+      const list = mtsByMilestone.get(m.milestone_id) || [];
+      list.push(m.test_suite_id);
+      mtsByMilestone.set(m.milestone_id, list);
+    }
+
+    // 스위트별 케이스 매핑
+    const casesBySuite = new Map<string, string[]>();
+    for (const sc of suiteCases) {
+      if (!sc.test_suite_id) continue;
+      const list = casesBySuite.get(sc.test_suite_id) || [];
+      list.push(sc.id);
+      casesBySuite.set(sc.test_suite_id, list);
+    }
+
+    // 실행별 케이스 상태 매핑
+    const caseRunsByRunId = new Map<string, Map<string, string>>();
+    for (const cr of allCaseRuns) {
+      if (!cr.test_run_id || !cr.test_case_id) continue;
+      if (!caseRunsByRunId.has(cr.test_run_id)) caseRunsByRunId.set(cr.test_run_id, new Map());
+      caseRunsByRunId.get(cr.test_run_id)!.set(cr.test_case_id, cr.status);
+    }
+
+    const result: MilestoneWithStats[] = rows.map((row) => {
+      const base = toMilestone(row as MilestoneDTO);
+
+      // 해당 마일스톤의 총 케이스 수 계산
+      const directCaseIds = new Set(mtcByMilestone.get(row.id) || []);
+      const suiteIdsForMs = mtsByMilestone.get(row.id) || [];
+      for (const sid of suiteIdsForMs) {
+        for (const cid of (casesBySuite.get(sid) || [])) {
+          directCaseIds.add(cid);
+        }
+      }
+
+      const totalCases = directCaseIds.size;
+
+      // 완료된 케이스 계산 (마일스톤에 연결된 실행의 결과 기준)
+      const runIds = runsByMilestone.get(row.id) || [];
+      const caseStatusMap = new Map<string, string>();
+      for (const runId of runIds) {
+        const runCases = caseRunsByRunId.get(runId);
+        if (!runCases) continue;
+        for (const [caseId, status] of runCases) {
+          if (directCaseIds.has(caseId)) {
+            caseStatusMap.set(caseId, status);
+          }
+        }
+      }
+      const completedCases = Array.from(caseStatusMap.values()).filter(s => s !== 'untested').length;
+
+      return {
+        ...base,
+        totalCases,
+        completedCases,
+        progressRate: totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0,
+        runCount: runIds.length,
+      };
+    });
+
+    return { success: true, data: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getMilestones' } });
 
     return {
       success: false,
-
       errors: { _milestone: ['마일스톤 목록을 불러오는 도중 오류가 발생했습니다.'] },
     };
   }
