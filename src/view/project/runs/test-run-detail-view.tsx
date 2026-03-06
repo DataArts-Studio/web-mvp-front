@@ -11,7 +11,7 @@ import { Dialog } from '@/shared/lib/primitives/dialog/dialog';
 import { DSButton } from '@/shared/ui';
 import { RUN_STATUS_CONFIG } from '@/shared/ui';
 import { cn } from '@/shared/utils';
-import { useOutsideClick, useToggleSet } from '@/shared/hooks';
+import { useOutsideClick, useToggleSet, useSelectionSet } from '@/shared/hooks';
 import { type TestStatusData } from '@/widgets/project';
 import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun, updateTestRunName, bulkUpdateTestCaseRunStatus } from '@/features/runs';
 import { dashboardQueryOptions } from '@/features/dashboard';
@@ -46,6 +46,7 @@ export const TestRunDetailView = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [suiteFilter, setSuiteFilter] = useState<string>('all');
   const collapsedGroups = useToggleSet();
+  const bulkSelection = useSelectionSet();
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [removeSuiteTarget, setRemoveSuiteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -56,7 +57,6 @@ export const TestRunDetailView = () => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
-  const [selectedCaseIds, setSelectedCaseIds] = useState<Set<string>>(new Set());
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusFilterRef = useRef<HTMLDivElement>(null);
   const suiteFilterRef = useRef<HTMLDivElement>(null);
@@ -141,7 +141,7 @@ export const TestRunDetailView = () => {
         toast.success(`${result.data.updatedCount}개 케이스 상태가 변경되었습니다.`);
         queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
         if (projectId) queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
-        setSelectedCaseIds(new Set());
+        bulkSelection.clear();
       } else {
         toast.error(Object.values(result.errors).flat().join(', '));
       }
@@ -228,44 +228,13 @@ export const TestRunDetailView = () => {
     return sorted;
   }, [testRun, filteredCases]);
 
-  // Bulk selection handlers
-  const handleToggleSelect = useCallback((id: string) => {
-    setSelectedCaseIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const handleToggleGroupSelect = useCallback((caseIds: string[]) => {
-    setSelectedCaseIds(prev => {
-      const next = new Set(prev);
-      const allSelected = caseIds.every(id => next.has(id));
-      if (allSelected) {
-        caseIds.forEach(id => next.delete(id));
-      } else {
-        caseIds.forEach(id => next.add(id));
-      }
-      return next;
-    });
-  }, []);
-
-  const handleSelectAll = useCallback(() => {
-    setSelectedCaseIds(new Set(filteredCases.map(c => c.id)));
-  }, [filteredCases]);
-
-  const handleDeselectAll = useCallback(() => {
-    setSelectedCaseIds(new Set());
-  }, []);
-
   const handleBulkStatusChange = useCallback((status: TestCaseRunStatus) => {
-    if (selectedCaseIds.size === 0) return;
+    if (bulkSelection.count === 0) return;
     bulkUpdateMutation.mutate({
-      testCaseRunIds: Array.from(selectedCaseIds),
+      testCaseRunIds: bulkSelection.toArray(),
       status,
     });
-  }, [selectedCaseIds, bulkUpdateMutation]);
+  }, [bulkSelection, bulkUpdateMutation]);
 
   // Get selected case
   const selectedCase = useMemo(() => {
@@ -562,11 +531,8 @@ export const TestRunDetailView = () => {
             statusFilterRef={statusFilterRef}
             suiteFilterRef={suiteFilterRef}
             onRemoveSuite={(suiteId, suiteName) => setRemoveSuiteTarget({ id: suiteId, name: suiteName })}
-            selectedCaseIds={selectedCaseIds}
-            onToggleSelect={handleToggleSelect}
-            onToggleGroupSelect={handleToggleGroupSelect}
-            onSelectAll={handleSelectAll}
-            onDeselectAll={handleDeselectAll}
+            bulkSelection={bulkSelection}
+            filteredCaseIds={filteredCases.map(c => c.id)}
             onBulkStatusChange={handleBulkStatusChange}
             isBulkUpdating={bulkUpdateMutation.isPending}
           />

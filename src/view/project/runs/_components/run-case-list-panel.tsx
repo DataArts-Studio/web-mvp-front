@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { cn } from '@/shared/utils';
 import { type TestCaseRunDetail } from '@/features/runs';
@@ -18,6 +18,16 @@ import {
 } from 'lucide-react';
 
 import { STATUS_CONFIG, type StatusFilter, type GroupedCases, type TestCaseRunStatus } from './run-detail-constants';
+
+interface BulkSelection {
+  selectedIds: Set<string>;
+  toggle: (id: string) => void;
+  toggleGroup: (ids: string[]) => void;
+  selectAll: (ids: string[]) => void;
+  has: (id: string) => boolean;
+  clear: () => void;
+  count: number;
+}
 
 interface RunCaseListPanelProps {
   searchQuery: string;
@@ -41,11 +51,8 @@ interface RunCaseListPanelProps {
   suiteFilterRef: React.RefObject<HTMLDivElement | null>;
   onRemoveSuite?: (suiteId: string, suiteName: string) => void;
   // 벌크 선택
-  selectedCaseIds: Set<string>;
-  onToggleSelect: (id: string) => void;
-  onToggleGroupSelect: (caseIds: string[]) => void;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
+  bulkSelection: BulkSelection;
+  filteredCaseIds: string[];
   onBulkStatusChange: (status: TestCaseRunStatus) => void;
   isBulkUpdating: boolean;
 }
@@ -71,16 +78,31 @@ export const RunCaseListPanel = ({
   statusFilterRef,
   suiteFilterRef,
   onRemoveSuite,
-  selectedCaseIds,
-  onToggleSelect,
-  onToggleGroupSelect,
-  onSelectAll,
-  onDeselectAll,
+  bulkSelection,
+  filteredCaseIds,
   onBulkStatusChange,
   isBulkUpdating,
 }: RunCaseListPanelProps) => {
-  const hasSelection = selectedCaseIds.size > 0;
-  const allSelected = filteredCases.length > 0 && selectedCaseIds.size === filteredCases.length;
+  const hasSelection = bulkSelection.count > 0;
+  const allSelected = filteredCases.length > 0 && bulkSelection.count === filteredCases.length;
+
+  // 그룹별 선택 상태를 한 번에 계산 (렌더 시 그룹마다 반복 방지)
+  const groupSelectionState = useMemo(() => {
+    const result = new Map<string, { allSelected: boolean; partial: boolean; caseIds: string[] }>();
+    for (const group of groupedCases) {
+      const caseIds = group.cases.map(c => c.id);
+      let selectedCount = 0;
+      for (const id of caseIds) {
+        if (bulkSelection.selectedIds.has(id)) selectedCount++;
+      }
+      result.set(group.groupKey, {
+        allSelected: selectedCount === caseIds.length,
+        partial: selectedCount > 0 && selectedCount < caseIds.length,
+        caseIds,
+      });
+    }
+    return result;
+  }, [groupedCases, bulkSelection.selectedIds]);
 
   return (
     <div className="border-line-2 flex w-[60%] flex-col border-r">
@@ -229,13 +251,13 @@ export const RunCaseListPanel = ({
       {hasSelection && (
         <div className="border-line-2 flex items-center gap-2 border-b bg-primary/5 px-4 py-2">
           <button
-            onClick={allSelected ? onDeselectAll : onSelectAll}
+            onClick={() => allSelected ? bulkSelection.clear() : bulkSelection.selectAll(filteredCaseIds)}
             className="text-primary typo-label-normal hover:underline"
           >
             {allSelected ? '선택 해제' : '전체 선택'}
           </button>
           <span className="text-text-3 text-xs">
-            {selectedCaseIds.size}개 선택됨
+            {bulkSelection.count}개 선택됨
           </span>
           <div className="ml-auto flex items-center gap-1">
             {(['pass', 'fail', 'blocked', 'untested'] as const).map((status) => (
@@ -255,7 +277,7 @@ export const RunCaseListPanel = ({
               </button>
             ))}
             <button
-              onClick={onDeselectAll}
+              onClick={bulkSelection.clear}
               className="text-text-3 hover:text-text-1 ml-1 rounded p-1 transition-colors"
               title="선택 해제"
             >
@@ -279,10 +301,7 @@ export const RunCaseListPanel = ({
             const groupFail = group.cases.filter(c => c.status === 'fail').length;
             const groupBlocked = group.cases.filter(c => c.status === 'blocked').length;
 
-            const groupCaseIds = group.cases.map(c => c.id);
-            const groupSelectedCount = groupCaseIds.filter(id => selectedCaseIds.has(id)).length;
-            const isGroupAllSelected = groupSelectedCount === group.cases.length;
-            const isGroupPartial = groupSelectedCount > 0 && !isGroupAllSelected;
+            const groupState = groupSelectionState.get(group.groupKey)!;
 
             return (
               <div key={group.groupKey}>
@@ -294,19 +313,19 @@ export const RunCaseListPanel = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onToggleGroupSelect(groupCaseIds);
+                      bulkSelection.toggleGroup(groupState.caseIds);
                     }}
                     className={cn(
                       'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
-                      isGroupAllSelected
+                      groupState.allSelected
                         ? 'bg-primary border-primary text-white'
-                        : isGroupPartial
+                        : groupState.partial
                           ? 'bg-primary/30 border-primary text-white'
                           : 'border-line-1 hover:border-primary'
                     )}
                   >
-                    {isGroupAllSelected && <CheckCircle2 className="h-3 w-3" />}
-                    {isGroupPartial && <Minus className="h-3 w-3" />}
+                    {groupState.allSelected && <CheckCircle2 className="h-3 w-3" />}
+                    {groupState.partial && <Minus className="h-3 w-3" />}
                   </button>
                   <div
                     role="button"
@@ -355,7 +374,7 @@ export const RunCaseListPanel = ({
                 {!isCollapsed && group.cases.map((tc, index) => {
                   const config = STATUS_CONFIG[tc.status];
                   const isSelected = tc.id === selectedCaseId;
-                  const isChecked = selectedCaseIds.has(tc.id);
+                  const isChecked = bulkSelection.selectedIds.has(tc.id);
 
                   return (
                     <div
@@ -370,7 +389,7 @@ export const RunCaseListPanel = ({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onToggleSelect(tc.id);
+                          bulkSelection.toggle(tc.id);
                         }}
                         className={cn(
                           'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
