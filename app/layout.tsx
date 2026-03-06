@@ -14,10 +14,10 @@ const siteUrl = 'https://gettestea.com';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Testea - 테스트 관리 플랫폼',
-    template: '%s | Testea',
+    default: 'Testea(테스티아) - 테스트 관리 플랫폼',
+    template: '%s | Testea(테스티아)',
   },
-  description: '무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+  description: 'Testea(테스티아) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
   keywords: [
     '테스트 관리',
     '테스트 도구',
@@ -52,25 +52,25 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'Testea - 테스트 관리 플랫폼',
-    description: '무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+    title: 'Testea(테스티아) - 테스트 관리 플랫폼',
+    description: 'Testea(테스티아) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
     url: siteUrl,
     type: 'website',
     locale: 'ko_KR',
-    siteName: 'Testea',
+    siteName: 'Testea(테스티아)',
     images: [
       {
         url: '/opengraph-image',
         width: 1200,
         height: 630,
-        alt: 'Testea - 테스트 관리 플랫폼',
+        alt: 'Testea(테스티아) - 테스트 관리 플랫폼',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Testea - 테스트 관리 플랫폼',
-    description: '무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+    title: 'Testea(테스티아) - 테스트 관리 플랫폼',
+    description: 'Testea(테스티아) - 무료 테스트 관리 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
     creator: '@testea',
     images: ['/opengraph-image'],
   },
@@ -107,6 +107,7 @@ const jsonLd = {
       '@id': `${siteUrl}/#website`,
       url: siteUrl,
       name: 'Testea',
+      alternateName: '테스티아',
       description: '무료 테스트 관리 도구 · QA 툴',
       inLanguage: 'ko-KR',
     },
@@ -114,6 +115,7 @@ const jsonLd = {
       '@type': 'SoftwareApplication',
       '@id': `${siteUrl}/#software`,
       name: 'Testea',
+      alternateName: '테스티아',
       applicationCategory: 'DeveloperApplication',
       operatingSystem: 'Web',
       description:
@@ -137,6 +139,7 @@ const jsonLd = {
       '@type': 'Organization',
       '@id': `${siteUrl}/#organization`,
       name: 'Testea',
+      alternateName: '테스티아',
       url: siteUrl,
       logo: `${siteUrl}/icon`,
       contactPoint: {

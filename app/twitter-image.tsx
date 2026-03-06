@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
-export const alt = 'Testea - 테스트 관리 플랫폼';
+export const alt = 'Testea(테스티아) - 테스트 관리 플랫폼';
 export const size = {
   width: 1200,
   height: 630,

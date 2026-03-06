@@ -30,6 +30,8 @@ const METADATA = {
     CREATOR: '@testea',
   },
   KEYWORDS: [
+    '테스티아',
+    'Testea',
     '테스트케이스',
     '테스트 관리',
     'QA',

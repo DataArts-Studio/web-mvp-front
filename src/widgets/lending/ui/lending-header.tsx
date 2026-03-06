@@ -23,7 +23,7 @@ export const LendingHeader = () => {
         <span className="hidden sm:inline"> </span>
         <span>반복하고 계신가요?</span>
         <br />
-        <span>Testea로 클릭 몇 번만에 테스트 문서를</span>
+        <span>Testea(테스티아)로 클릭 몇 번만에 테스트 문서를</span>
         <br className="sm:hidden" />
         <span className="hidden sm:inline"> </span>
         <span>자동으로 생성하고 관리하세요.</span>
