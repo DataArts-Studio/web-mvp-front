@@ -4,7 +4,7 @@ export const UpdateTestSuiteSchema = z.object({
   id: z.string(),
   title: z
     .string({ error: 'test error' })
-    .min(5, '최소 5자 이상')
+    .min(3, '최소 3자 이상')
     .max(50, '최대 50 이하'),
   description: z.string().optional(),
 });

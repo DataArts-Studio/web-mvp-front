@@ -83,8 +83,8 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
               {...register('title', {
                 required: '유효한 이름을 입력해주세요.',
                 minLength: {
-                  value: 5,
-                  message: '스위트 이름은 최소 5자 이상이어야 합니다.',
+                  value: 3,
+                  message: '스위트 이름은 최소 3자 이상이어야 합니다.',
                 },
                 maxLength: {
                   value: 50,

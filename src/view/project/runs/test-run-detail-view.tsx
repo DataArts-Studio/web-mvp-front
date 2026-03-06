@@ -13,11 +13,11 @@ import { RUN_STATUS_CONFIG } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import { useOutsideClick, useToggleSet } from '@/shared/hooks';
 import { type TestStatusData } from '@/widgets/project';
-import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun } from '@/features/runs';
+import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun, updateTestRunName } from '@/features/runs';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 import { ShareButton } from '@/features/runs-share/ui/share-button';
-import { ArrowLeft, XCircle, Keyboard } from 'lucide-react';
+import { ArrowLeft, XCircle, Keyboard, Pencil, Check, X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -49,6 +49,10 @@ export const TestRunDetailView = () => {
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [removeSuiteTarget, setRemoveSuiteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [showSourceDropdown, setShowSourceDropdown] = useState(false);
+  const sourceDropdownRef = useRef<HTMLDivElement>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
@@ -83,6 +87,7 @@ export const TestRunDetailView = () => {
   useOutsideClick(statusDropdownRef, () => setShowStatusDropdown(false), showStatusDropdown);
   useOutsideClick(statusFilterRef, () => setShowStatusFilterDropdown(false), showStatusFilterDropdown);
   useOutsideClick(suiteFilterRef, () => setShowSuiteFilterDropdown(false), showSuiteFilterDropdown);
+  useOutsideClick(sourceDropdownRef, () => setShowSourceDropdown(false), showSourceDropdown);
 
   const updateMutation = useMutation({
     mutationFn: updateTestCaseRunStatus,
@@ -107,6 +112,24 @@ export const TestRunDetailView = () => {
     onError: () => {
       toast.error('스위트 제거 중 오류가 발생했습니다.');
       setRemoveSuiteTarget(null);
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: ({ name }: { name: string }) => updateTestRunName(testRunId, name),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success('제목이 변경되었습니다.');
+        queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+        if (projectId) queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
+      } else {
+        toast.error(Object.values(result.errors).flat().join(', '));
+      }
+      setIsEditingTitle(false);
+    },
+    onError: () => {
+      toast.error('제목 변경 중 오류가 발생했습니다.');
+      setIsEditingTitle(false);
     },
   });
 
@@ -315,14 +338,100 @@ export const TestRunDetailView = () => {
             </Link>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-lg font-semibold">{testRun.name}</h1>
+                {isEditingTitle ? (
+                  <form
+                    className="flex items-center gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (editTitle.trim() && editTitle.trim() !== testRun.name) {
+                        renameMutation.mutate({ name: editTitle });
+                      } else {
+                        setIsEditingTitle(false);
+                      }
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="text-lg font-semibold bg-bg-2 border border-line-2 rounded-2 px-2 py-0.5 text-text-1 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setIsEditingTitle(false);
+                      }}
+                      disabled={renameMutation.isPending}
+                    />
+                    <button
+                      type="submit"
+                      className="text-primary hover:text-primary/80 transition-colors"
+                      disabled={renameMutation.isPending}
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingTitle(false)}
+                      className="text-text-3 hover:text-text-1 transition-colors"
+                      disabled={renameMutation.isPending}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    className="group/title flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors"
+                    onClick={() => {
+                      setEditTitle(testRun.name);
+                      setIsEditingTitle(true);
+                    }}
+                  >
+                    {testRun.name}
+                    <Pencil className="h-3.5 w-3.5 text-text-4 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                  </button>
+                )}
                 <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', statusInfo.style)}>
                   {statusInfo.label}
                 </span>
               </div>
-              <div className="text-text-3 flex items-center gap-2 text-sm">
+              <div className="text-text-3 flex items-center gap-2 text-sm" ref={sourceDropdownRef}>
                 {sourceInfo.icon}
-                <span>{testRun.sourceName}</span>
+                {(() => {
+                  const suites = testRun.sources.filter(s => s.type === 'suite');
+                  const milestoneSource = testRun.sources.find(s => s.type === 'milestone');
+                  const MAX_VISIBLE = 2;
+
+                  if (suites.length === 0) {
+                    return <span>{testRun.sourceName}</span>;
+                  }
+
+                  const visible = suites.slice(0, MAX_VISIBLE);
+                  const hiddenCount = suites.length - MAX_VISIBLE;
+
+                  return (
+                    <span className="relative flex items-center gap-1">
+                      <span>{visible.map(s => s.name).join(', ')}</span>
+                      {hiddenCount > 0 && (
+                        <>
+                          <button
+                            onClick={() => setShowSourceDropdown(!showSourceDropdown)}
+                            className="inline-flex items-center rounded-1 bg-bg-4 px-1 py-0.5 text-[10px] font-medium text-text-2 hover:bg-bg-3 hover:text-text-1 transition-colors cursor-pointer"
+                          >
+                            +{hiddenCount}
+                            <ChevronDown className={`ml-0.5 h-3 w-3 transition-transform ${showSourceDropdown ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showSourceDropdown && (
+                            <span className="absolute top-full left-0 z-20 mt-1 w-max max-w-xs rounded-2 border border-line-2 bg-bg-1 px-3 py-2 text-xs text-text-2 shadow-2">
+                              {suites.map((s, i) => (
+                                <span key={i} className="block py-0.5">{s.name}</span>
+                              ))}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {milestoneSource && <span className="ml-1">| 마일스톤: {milestoneSource.name}</span>}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
           </div>
