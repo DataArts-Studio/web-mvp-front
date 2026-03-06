@@ -43,11 +43,11 @@ export const RunCaseDetailPanel = ({
   statusDropdownRef,
 }: RunCaseDetailPanelProps) => {
   return (
-    <div className="flex w-[40%] flex-col overflow-y-auto">
+    <div className="flex w-[40%] min-w-0 flex-col overflow-y-auto overflow-x-hidden">
       {selectedCase ? (
         <>
           {/* Case Header */}
-          <div className="border-line-2 border-b p-6">
+          <div className="border-line-2 overflow-hidden border-b p-6">
             <div className="mb-2 flex items-center gap-2">
               <span className="text-primary font-mono text-sm">{selectedCase.code}</span>
               <span className={cn(
@@ -59,7 +59,7 @@ export const RunCaseDetailPanel = ({
                 {STATUS_CONFIG[selectedCase.status].label}
               </span>
             </div>
-            <h2 className="text-text-1 text-xl font-semibold">{selectedCase.title || '제목 없음'}</h2>
+            <h2 className="text-text-1 text-xl font-semibold break-all">{selectedCase.title || '제목 없음'}</h2>
           </div>
 
           {/* Status Dropdown */}
@@ -131,7 +131,7 @@ export const RunCaseDetailPanel = ({
               <div>
                 <h3 className="text-text-2 mb-2 text-sm font-medium">사전조건</h3>
                 <div className="bg-bg-2 rounded-lg p-3">
-                  <p className="text-text-1 whitespace-pre-wrap text-sm">{selectedCase.preCondition}</p>
+                  <p className="text-text-1 whitespace-pre-wrap break-words text-sm">{selectedCase.preCondition}</p>
                 </div>
               </div>
             )}
@@ -139,7 +139,7 @@ export const RunCaseDetailPanel = ({
               <div>
                 <h3 className="text-text-2 mb-2 text-sm font-medium">테스트 스텝</h3>
                 <div className="bg-bg-2 rounded-lg p-3">
-                  <p className="text-text-1 whitespace-pre-wrap text-sm">{selectedCase.steps}</p>
+                  <p className="text-text-1 whitespace-pre-wrap break-words text-sm">{selectedCase.steps}</p>
                 </div>
               </div>
             )}
@@ -147,7 +147,7 @@ export const RunCaseDetailPanel = ({
               <div>
                 <h3 className="text-text-2 mb-2 text-sm font-medium">기대 결과</h3>
                 <div className="bg-bg-2 rounded-lg p-3">
-                  <p className="text-text-1 whitespace-pre-wrap text-sm">{selectedCase.expectedResult}</p>
+                  <p className="text-text-1 whitespace-pre-wrap break-words text-sm">{selectedCase.expectedResult}</p>
                 </div>
               </div>
             )}

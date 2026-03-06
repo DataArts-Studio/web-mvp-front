@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 
 import { cn } from '@/shared/utils';
+import { useOutsideClick } from '@/shared/hooks';
 import { type TestCaseRunDetail } from '@/features/runs';
 
 import {
@@ -55,6 +56,8 @@ interface RunCaseListPanelProps {
   filteredCaseIds: string[];
   onBulkStatusChange: (status: TestCaseRunStatus) => void;
   isBulkUpdating: boolean;
+  // 인라인 상태 변경
+  onInlineStatusChange: (caseId: string, status: TestCaseRunStatus) => void;
 }
 
 export const RunCaseListPanel = ({
@@ -82,7 +85,11 @@ export const RunCaseListPanel = ({
   filteredCaseIds,
   onBulkStatusChange,
   isBulkUpdating,
+  onInlineStatusChange,
 }: RunCaseListPanelProps) => {
+  const [inlineDropdownId, setInlineDropdownId] = useState<string | null>(null);
+  const inlineDropdownRef = useRef<HTMLDivElement>(null);
+  useOutsideClick(inlineDropdownRef, () => setInlineDropdownId(null), !!inlineDropdownId);
   const hasSelection = bulkSelection.count > 0;
   const allSelected = filteredCases.length > 0 && bulkSelection.count === filteredCases.length;
 
@@ -105,7 +112,7 @@ export const RunCaseListPanel = ({
   }, [groupedCases, bulkSelection.selectedIds]);
 
   return (
-    <div className="border-line-2 flex w-[60%] flex-col border-r">
+    <div className="border-line-2 flex w-[60%] min-w-0 flex-col overflow-hidden border-r">
       {/* Search & Filter */}
       <div className="border-line-2 flex flex-col gap-3 border-b p-4">
         <div className="relative">
@@ -307,7 +314,7 @@ export const RunCaseListPanel = ({
               <div key={group.groupKey}>
                 {/* Suite Group Header */}
                 <div
-                  className="group/header bg-bg-3/50 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
+                  className="group/header bg-bg-3 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
                 >
                   {/* Group checkbox */}
                   <button
@@ -380,7 +387,7 @@ export const RunCaseListPanel = ({
                     <div
                       key={tc.id}
                       className={cn(
-                        'border-line-2 flex w-full items-center gap-3 border-b py-3 pl-4 pr-4 text-left transition-colors',
+                        'border-line-2 flex w-full items-center gap-3 overflow-hidden border-b py-3 pl-4 pr-4 text-left transition-colors',
                         isSelected ? 'bg-primary/10' : 'hover:bg-bg-2',
                         isChecked && !isSelected && 'bg-primary/5'
                       )}
@@ -400,12 +407,11 @@ export const RunCaseListPanel = ({
                       >
                         {isChecked && <CheckCircle2 className="h-3 w-3" />}
                       </button>
-                      {/* Case content - clickable for detail view */}
+                      {/* Case content — clickable for detail view */}
                       <button
                         onClick={() => setSelectedCaseId(tc.id)}
                         className="flex min-w-0 flex-1 items-center gap-3 text-left"
                       >
-                        <span className={cn('flex-shrink-0', config.style)}>{config.icon}</span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-primary font-mono text-xs">{tc.code || `#${index + 1}`}</span>
@@ -413,8 +419,48 @@ export const RunCaseListPanel = ({
                           </div>
                           <p className="text-text-1 truncate text-sm">{tc.title || '제목 없음'}</p>
                         </div>
-                        {isSelected && <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />}
                       </button>
+                      {/* Inline status dropdown — right side */}
+                      <div className="relative flex-shrink-0" ref={inlineDropdownId === tc.id ? inlineDropdownRef : undefined}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setInlineDropdownId(prev => prev === tc.id ? null : tc.id);
+                          }}
+                          className={cn(
+                            'flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors',
+                            config.style,
+                            STATUS_CONFIG[tc.status].bgStyle,
+                          )}
+                          title={`상태: ${config.label} — 클릭하여 변경`}
+                        >
+                          {config.icon}
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
+                        {inlineDropdownId === tc.id && (
+                          <div className="bg-bg-2 border-line-2 absolute right-0 top-full z-30 mt-1 w-32 overflow-hidden rounded-lg border shadow-xl">
+                            {(['pass', 'fail', 'blocked', 'untested'] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onInlineStatusChange(tc.id, s);
+                                  setInlineDropdownId(null);
+                                }}
+                                className={cn(
+                                  'flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors',
+                                  tc.status === s ? cn(STATUS_CONFIG[s].bgStyle.split(' ')[0], STATUS_CONFIG[s].style) : 'hover:bg-bg-3'
+                                )}
+                              >
+                                <span className={STATUS_CONFIG[s].style}>{STATUS_CONFIG[s].icon}</span>
+                                <span className={tc.status === s ? STATUS_CONFIG[s].style : 'text-text-1'}>{STATUS_CONFIG[s].label}</span>
+                                <kbd className="text-text-4 ml-auto text-[10px]">{STATUS_CONFIG[s].shortcut}</kbd>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {isSelected && <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />}
                     </div>
                   );
                 })}
