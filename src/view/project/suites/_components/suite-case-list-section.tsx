@@ -21,6 +21,7 @@ type SuiteCaseListSectionProps = {
   isCreatingSection: boolean;
   newSectionName: string;
   createSectionIsPending: boolean;
+  createSectionError: string | null;
   newSectionInputRef: React.RefObject<HTMLInputElement | null>;
   editSectionInputRef: React.RefObject<HTMLInputElement | null>;
   onToggleSection: (sectionId: string) => void;
@@ -50,6 +51,7 @@ export const SuiteCaseListSection = ({
   isCreatingSection,
   newSectionName,
   createSectionIsPending,
+  createSectionError,
   newSectionInputRef,
   editSectionInputRef,
   onToggleSection,
@@ -129,36 +131,41 @@ export const SuiteCaseListSection = ({
 
           {/* 섹션 추가 인라인 입력 */}
           {isCreatingSection && (
-            <div className="bg-bg-2 border-line-2 rounded-4 flex items-center gap-2 border px-4 py-3">
-              <Plus className="text-text-3 h-4 w-4 shrink-0" />
-              <input
-                ref={newSectionInputRef}
-                type="text"
-                value={newSectionName}
-                onChange={(e) => onSetNewSectionName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onCreateSection();
-                  if (e.key === 'Escape') onCancelCreateSection();
-                }}
-                placeholder="새 섹션 이름을 입력하세요"
-                className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent outline-none"
-                disabled={createSectionIsPending}
-              />
-              <DSButton
-                size="small"
-                variant="solid"
-                onClick={onCreateSection}
-                disabled={createSectionIsPending || !newSectionName.trim()}
-              >
-                {createSectionIsPending ? '생성 중...' : '추가'}
-              </DSButton>
-              <DSButton
-                size="small"
-                variant="ghost"
-                onClick={onCancelCreateSection}
-              >
-                취소
-              </DSButton>
+            <div className="flex flex-col gap-1">
+              <div className="bg-bg-2 border-line-2 rounded-4 flex items-center gap-2 border px-4 py-3">
+                <Plus className="text-text-3 h-4 w-4 shrink-0" />
+                <input
+                  ref={newSectionInputRef}
+                  type="text"
+                  value={newSectionName}
+                  onChange={(e) => onSetNewSectionName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') onCreateSection();
+                    if (e.key === 'Escape') onCancelCreateSection();
+                  }}
+                  placeholder="새 섹션 이름을 입력하세요"
+                  className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent outline-none"
+                  disabled={createSectionIsPending}
+                />
+                <DSButton
+                  size="small"
+                  variant="solid"
+                  onClick={onCreateSection}
+                  disabled={createSectionIsPending || !newSectionName.trim()}
+                >
+                  {createSectionIsPending ? '생성 중...' : '추가'}
+                </DSButton>
+                <DSButton
+                  size="small"
+                  variant="ghost"
+                  onClick={onCancelCreateSection}
+                >
+                  취소
+                </DSButton>
+              </div>
+              {createSectionError && (
+                <p className="text-red-500 text-xs px-4">{createSectionError}</p>
+              )}
             </div>
           )}
 

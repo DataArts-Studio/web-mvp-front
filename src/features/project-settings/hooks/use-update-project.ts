@@ -12,9 +12,10 @@ export const useUpdateProject = () => {
         ownerName: input.ownerName,
       }),
     onSuccess: async () => {
-      await queryClient
-        .invalidateQueries({ queryKey: ['dashboard'], refetchType: 'all' })
-        .catch(() => {});
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['dashboard'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['project'], refetchType: 'all' }),
+      ]).catch(() => {});
     },
   });
 };

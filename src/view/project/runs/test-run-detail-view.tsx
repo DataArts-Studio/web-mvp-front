@@ -11,9 +11,9 @@ import { Dialog } from '@/shared/lib/primitives/dialog/dialog';
 import { DSButton } from '@/shared/ui';
 import { RUN_STATUS_CONFIG } from '@/shared/ui';
 import { cn } from '@/shared/utils';
-import { useOutsideClick, useToggleSet } from '@/shared/hooks';
+import { useOutsideClick, useToggleSet, useSelectionSet } from '@/shared/hooks';
 import { type TestStatusData } from '@/widgets/project';
-import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun, updateTestRunName } from '@/features/runs';
+import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun, updateTestRunName, bulkUpdateTestCaseRunStatus } from '@/features/runs';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 import { ShareButton } from '@/features/runs-share/ui/share-button';
@@ -35,6 +35,32 @@ const MilestoneGanttChart = dynamic(
   { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" /> }
 );
 
+type ActionResultData<T> = { success: true; data: T } | { success: false; errors: Record<string, string[]> };
+type TestRunQueryData = ActionResultData<import('@/entities/test-run').TestRunDetail>;
+
+function applyOptimisticStatusUpdate(
+  old: unknown,
+  caseRunIds: string[],
+  newStatus: string,
+): TestRunQueryData {
+  const data = old as TestRunQueryData;
+  if (!data?.success) return data;
+
+  const idsSet = new Set(caseRunIds);
+  const updatedRuns = data.data.testCaseRuns.map(tc =>
+    idsSet.has(tc.id) ? { ...tc, status: newStatus as TestCaseRunStatus } : tc
+  );
+
+  // stats 재계산
+  const stats = { total: updatedRuns.length, pass: 0, fail: 0, blocked: 0, untested: 0, progressPercent: 0 };
+  for (const tc of updatedRuns) {
+    if (tc.status in stats) stats[tc.status as keyof typeof stats]++;
+  }
+  stats.progressPercent = stats.total > 0 ? Math.round(((stats.total - stats.untested) / stats.total) * 100) : 0;
+
+  return { ...data, data: { ...data.data, testCaseRuns: updatedRuns, stats } };
+}
+
 export const TestRunDetailView = () => {
   const params = useParams();
   const queryClient = useQueryClient();
@@ -46,6 +72,7 @@ export const TestRunDetailView = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [suiteFilter, setSuiteFilter] = useState<string>('all');
   const collapsedGroups = useToggleSet();
+  const bulkSelection = useSelectionSet();
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [removeSuiteTarget, setRemoveSuiteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -91,7 +118,21 @@ export const TestRunDetailView = () => {
 
   const updateMutation = useMutation({
     mutationFn: updateTestCaseRunStatus,
-    onSuccess: () => {
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: ['testRun', testRunId] });
+      const previous = queryClient.getQueryData(['testRun', testRunId]);
+      queryClient.setQueryData(['testRun', testRunId], (old: unknown) => {
+        return applyOptimisticStatusUpdate(old, [input.testCaseRunId], input.status);
+      });
+      return { previous };
+    },
+    onError: (_err, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['testRun', testRunId], context.previous);
+      }
+      toast.error('상태 변경 중 오류가 발생했습니다.');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
     },
   });
@@ -130,6 +171,36 @@ export const TestRunDetailView = () => {
     onError: () => {
       toast.error('제목 변경 중 오류가 발생했습니다.');
       setIsEditingTitle(false);
+    },
+  });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: bulkUpdateTestCaseRunStatus,
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: ['testRun', testRunId] });
+      const previous = queryClient.getQueryData(['testRun', testRunId]);
+      queryClient.setQueryData(['testRun', testRunId], (old: unknown) => {
+        return applyOptimisticStatusUpdate(old, input.testCaseRunIds, input.status);
+      });
+      return { previous };
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(`${result.data.updatedCount}개 케이스 상태가 변경되었습니다.`);
+        bulkSelection.clear();
+      } else {
+        toast.error(Object.values(result.errors).flat().join(', '));
+      }
+    },
+    onError: (_err, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['testRun', testRunId], context.previous);
+      }
+      toast.error('일괄 상태 변경 중 오류가 발생했습니다.');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+      if (projectId) queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
     },
   });
 
@@ -210,6 +281,23 @@ export const TestRunDetailView = () => {
     return sorted;
   }, [testRun, filteredCases]);
 
+  // 인라인 상태 변경 (리스트에서 아이콘 클릭)
+  const handleInlineStatusChange = useCallback((caseId: string, status: TestCaseRunStatus) => {
+    updateMutation.mutate({
+      testCaseRunId: caseId,
+      status,
+      comment: null,
+    });
+  }, [updateMutation]);
+
+  const handleBulkStatusChange = useCallback((status: TestCaseRunStatus) => {
+    if (bulkSelection.count === 0) return;
+    bulkUpdateMutation.mutate({
+      testCaseRunIds: bulkSelection.toArray(),
+      status,
+    });
+  }, [bulkSelection, bulkUpdateMutation]);
+
   // Get selected case
   const selectedCase = useMemo(() => {
     if (!selectedCaseId || !testRun) return null;
@@ -230,25 +318,24 @@ export const TestRunDetailView = () => {
     setComment(selectedCase?.comment || '');
   }, [selectedCase]);
 
-  // Handle status change
-  const handleStatusChange = useCallback(async (status: TestCaseRunStatus) => {
+  // Handle status change (detail panel)
+  const handleStatusChange = useCallback((status: TestCaseRunStatus) => {
     if (!selectedCase) return;
 
     track(TESTRUN_EVENTS.RESULT_UPDATE, { status, case_id: selectedCase.id });
 
-    await updateMutation.mutateAsync({
+    updateMutation.mutate({
       testCaseRunId: selectedCase.id,
       status,
       comment: comment || null,
     });
 
-    // Move to next untested case
+    // Move to next untested case immediately (optimistic)
     const currentIndex = filteredCases.findIndex((tc) => tc.id === selectedCase.id);
     const nextUntested = filteredCases.find((tc, i) => i > currentIndex && tc.status === 'untested');
     if (nextUntested) {
       setSelectedCaseId(nextUntested.id);
     } else {
-      // If no more untested, move to next case
       const nextCase = filteredCases[currentIndex + 1];
       if (nextCase) {
         setSelectedCaseId(nextCase.id);
@@ -325,10 +412,10 @@ export const TestRunDetailView = () => {
   const sourceInfo = SOURCE_TYPE_CONFIG[testRun.sourceType] || SOURCE_TYPE_CONFIG.ADHOC;
 
   return (
-    <MainContainer className="flex flex-1 flex-col min-h-screen">
+    <MainContainer className="flex flex-1 flex-col min-h-screen overflow-x-hidden">
         {/* Header */}
         <header className="border-line-2 flex items-center justify-between border-b px-6 py-4">
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
             <Link
               href={`/projects/${projectSlug}/runs`}
               className="text-text-3 hover:text-text-1 flex items-center gap-1 transition-colors"
@@ -336,7 +423,7 @@ export const TestRunDetailView = () => {
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-3">
                 {isEditingTitle ? (
                   <form
@@ -379,14 +466,15 @@ export const TestRunDetailView = () => {
                   </form>
                 ) : (
                   <button
-                    className="group/title flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors"
+                    className="group/title flex min-w-0 items-center gap-2 text-lg font-semibold hover:text-primary transition-colors"
                     onClick={() => {
                       setEditTitle(testRun.name);
                       setIsEditingTitle(true);
                     }}
+                    title={testRun.name}
                   >
-                    {testRun.name}
-                    <Pencil className="h-3.5 w-3.5 text-text-4 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                    <span className="truncate">{testRun.name}</span>
+                    <Pencil className="h-3.5 w-3.5 flex-shrink-0 text-text-4 opacity-0 group-hover/title:opacity-100 transition-opacity" />
                   </button>
                 )}
                 <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium', statusInfo.style)}>
@@ -437,7 +525,7 @@ export const TestRunDetailView = () => {
           </div>
 
           {/* Progress Stats */}
-          <div className="flex items-center gap-6">
+          <div className="flex shrink-0 items-center gap-6">
             <div className="flex items-center gap-4">
               {(['pass', 'fail', 'blocked', 'untested'] as const).map((status) => (
                 <div key={status} className={cn('flex items-center gap-1.5', STATUS_CONFIG[status].style)}>
@@ -505,6 +593,11 @@ export const TestRunDetailView = () => {
             statusFilterRef={statusFilterRef}
             suiteFilterRef={suiteFilterRef}
             onRemoveSuite={(suiteId, suiteName) => setRemoveSuiteTarget({ id: suiteId, name: suiteName })}
+            bulkSelection={bulkSelection}
+            filteredCaseIds={filteredCases.map(c => c.id)}
+            onBulkStatusChange={handleBulkStatusChange}
+            isBulkUpdating={bulkUpdateMutation.isPending}
+            onInlineStatusChange={handleInlineStatusChange}
           />
 
           <RunCaseDetailPanel

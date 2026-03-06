@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 
 import { cn } from '@/shared/utils';
+import { useOutsideClick } from '@/shared/hooks';
 import { type TestCaseRunDetail } from '@/features/runs';
 
 import {
@@ -13,9 +14,21 @@ import {
   FolderOpen,
   Filter,
   X,
+  CheckCircle2,
+  Minus,
 } from 'lucide-react';
 
-import { STATUS_CONFIG, type StatusFilter, type GroupedCases } from './run-detail-constants';
+import { STATUS_CONFIG, type StatusFilter, type GroupedCases, type TestCaseRunStatus } from './run-detail-constants';
+
+interface BulkSelection {
+  selectedIds: Set<string>;
+  toggle: (id: string) => void;
+  toggleGroup: (ids: string[]) => void;
+  selectAll: (ids: string[]) => void;
+  has: (id: string) => boolean;
+  clear: () => void;
+  count: number;
+}
 
 interface RunCaseListPanelProps {
   searchQuery: string;
@@ -38,6 +51,13 @@ interface RunCaseListPanelProps {
   statusFilterRef: React.RefObject<HTMLDivElement | null>;
   suiteFilterRef: React.RefObject<HTMLDivElement | null>;
   onRemoveSuite?: (suiteId: string, suiteName: string) => void;
+  // 벌크 선택
+  bulkSelection: BulkSelection;
+  filteredCaseIds: string[];
+  onBulkStatusChange: (status: TestCaseRunStatus) => void;
+  isBulkUpdating: boolean;
+  // 인라인 상태 변경
+  onInlineStatusChange: (caseId: string, status: TestCaseRunStatus) => void;
 }
 
 export const RunCaseListPanel = ({
@@ -61,9 +81,38 @@ export const RunCaseListPanel = ({
   statusFilterRef,
   suiteFilterRef,
   onRemoveSuite,
+  bulkSelection,
+  filteredCaseIds,
+  onBulkStatusChange,
+  isBulkUpdating,
+  onInlineStatusChange,
 }: RunCaseListPanelProps) => {
+  const [inlineDropdownId, setInlineDropdownId] = useState<string | null>(null);
+  const inlineDropdownRef = useRef<HTMLDivElement>(null);
+  useOutsideClick(inlineDropdownRef, () => setInlineDropdownId(null), !!inlineDropdownId);
+  const hasSelection = bulkSelection.count > 0;
+  const allSelected = filteredCases.length > 0 && bulkSelection.count === filteredCases.length;
+
+  // 그룹별 선택 상태를 한 번에 계산 (렌더 시 그룹마다 반복 방지)
+  const groupSelectionState = useMemo(() => {
+    const result = new Map<string, { allSelected: boolean; partial: boolean; caseIds: string[] }>();
+    for (const group of groupedCases) {
+      const caseIds = group.cases.map(c => c.id);
+      let selectedCount = 0;
+      for (const id of caseIds) {
+        if (bulkSelection.selectedIds.has(id)) selectedCount++;
+      }
+      result.set(group.groupKey, {
+        allSelected: selectedCount === caseIds.length,
+        partial: selectedCount > 0 && selectedCount < caseIds.length,
+        caseIds,
+      });
+    }
+    return result;
+  }, [groupedCases, bulkSelection.selectedIds]);
+
   return (
-    <div className="border-line-2 flex w-[60%] flex-col border-r">
+    <div className="border-line-2 flex w-[60%] min-w-0 flex-col overflow-hidden border-r">
       {/* Search & Filter */}
       <div className="border-line-2 flex flex-col gap-3 border-b p-4">
         <div className="relative">
@@ -205,6 +254,46 @@ export const RunCaseListPanel = ({
         </div>
       </div>
 
+      {/* Bulk Action Toolbar */}
+      {hasSelection && (
+        <div className="border-line-2 flex items-center gap-2 border-b bg-primary/5 px-4 py-2">
+          <button
+            onClick={() => allSelected ? bulkSelection.clear() : bulkSelection.selectAll(filteredCaseIds)}
+            className="text-primary typo-label-normal hover:underline"
+          >
+            {allSelected ? '선택 해제' : '전체 선택'}
+          </button>
+          <span className="text-text-3 text-xs">
+            {bulkSelection.count}개 선택됨
+          </span>
+          <div className="ml-auto flex items-center gap-1">
+            {(['pass', 'fail', 'blocked', 'untested'] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => onBulkStatusChange(status)}
+                disabled={isBulkUpdating}
+                className={cn(
+                  'flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium transition-colors',
+                  STATUS_CONFIG[status].bgStyle,
+                  isBulkUpdating && 'opacity-50 cursor-not-allowed'
+                )}
+                title={`선택된 케이스를 ${STATUS_CONFIG[status].label}로 변경`}
+              >
+                {STATUS_CONFIG[status].icon}
+                <span className="hidden lg:inline">{STATUS_CONFIG[status].shortcut}</span>
+              </button>
+            ))}
+            <button
+              onClick={bulkSelection.clear}
+              className="text-text-3 hover:text-text-1 ml-1 rounded p-1 transition-colors"
+              title="선택 해제"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Case List - Grouped by Source */}
       <div className="flex-1 overflow-y-auto">
         {filteredCases.length === 0 ? (
@@ -219,26 +308,50 @@ export const RunCaseListPanel = ({
             const groupFail = group.cases.filter(c => c.status === 'fail').length;
             const groupBlocked = group.cases.filter(c => c.status === 'blocked').length;
 
+            const groupState = groupSelectionState.get(group.groupKey)!;
+
             return (
               <div key={group.groupKey}>
-                {/* Suite Group Header - non-interactive section divider */}
+                {/* Suite Group Header */}
                 <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => collapsedGroups.toggle(group.groupKey)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); collapsedGroups.toggle(group.groupKey); } }}
-                  className="group/header bg-bg-3/50 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
+                  className="group/header bg-bg-3 border-line-2 sticky top-0 z-10 flex cursor-pointer select-none items-center gap-2 border-b px-3 py-1.5"
                 >
-                  <ChevronDown
+                  {/* Group checkbox */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      bulkSelection.toggleGroup(groupState.caseIds);
+                    }}
                     className={cn(
-                      'text-text-4 h-3.5 w-3.5 transition-transform',
-                      isCollapsed && '-rotate-90'
+                      'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
+                      groupState.allSelected
+                        ? 'bg-primary border-primary text-white'
+                        : groupState.partial
+                          ? 'bg-primary/30 border-primary text-white'
+                          : 'border-line-1 hover:border-primary'
                     )}
-                  />
-                  <FolderOpen className="text-text-3 h-3.5 w-3.5" />
-                  <span className="text-text-2 flex-1 text-xs font-semibold uppercase tracking-wide">
-                    {group.suiteName}
-                  </span>
+                  >
+                    {groupState.allSelected && <CheckCircle2 className="h-3 w-3" />}
+                    {groupState.partial && <Minus className="h-3 w-3" />}
+                  </button>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => collapsedGroups.toggle(group.groupKey)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); collapsedGroups.toggle(group.groupKey); } }}
+                    className="flex flex-1 items-center gap-2"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        'text-text-4 h-3.5 w-3.5 transition-transform',
+                        isCollapsed && '-rotate-90'
+                      )}
+                    />
+                    <FolderOpen className="text-text-3 h-3.5 w-3.5" />
+                    <span className="text-text-2 flex-1 text-xs font-semibold uppercase tracking-wide">
+                      {group.suiteName}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1.5 text-[10px]">
                     {groupPass > 0 && (
                       <span className="text-green-400/70">{groupPass}P</span>
@@ -268,26 +381,87 @@ export const RunCaseListPanel = ({
                 {!isCollapsed && group.cases.map((tc, index) => {
                   const config = STATUS_CONFIG[tc.status];
                   const isSelected = tc.id === selectedCaseId;
+                  const isChecked = bulkSelection.selectedIds.has(tc.id);
 
                   return (
-                    <button
+                    <div
                       key={tc.id}
-                      onClick={() => setSelectedCaseId(tc.id)}
                       className={cn(
-                        'border-line-2 flex w-full items-center gap-3 border-b py-3 pl-8 pr-4 text-left transition-colors',
-                        isSelected ? 'bg-primary/10' : 'hover:bg-bg-2'
+                        'border-line-2 flex w-full items-center gap-3 overflow-hidden border-b py-3 pl-4 pr-4 text-left transition-colors',
+                        isSelected ? 'bg-primary/10' : 'hover:bg-bg-2',
+                        isChecked && !isSelected && 'bg-primary/5'
                       )}
                     >
-                      <span className={cn('flex-shrink-0', config.style)}>{config.icon}</span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-primary font-mono text-xs">{tc.code || `#${index + 1}`}</span>
-                          {tc.comment && <MessageSquare className="text-text-3 h-3 w-3" />}
+                      {/* Checkbox */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          bulkSelection.toggle(tc.id);
+                        }}
+                        className={cn(
+                          'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
+                          isChecked
+                            ? 'bg-primary border-primary text-white'
+                            : 'border-line-1 hover:border-primary'
+                        )}
+                      >
+                        {isChecked && <CheckCircle2 className="h-3 w-3" />}
+                      </button>
+                      {/* Case content — clickable for detail view */}
+                      <button
+                        onClick={() => setSelectedCaseId(tc.id)}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-primary font-mono text-xs">{tc.code || `#${index + 1}`}</span>
+                            {tc.comment && <MessageSquare className="text-text-3 h-3 w-3" />}
+                          </div>
+                          <p className="text-text-1 truncate text-sm">{tc.title || '제목 없음'}</p>
                         </div>
-                        <p className="text-text-1 truncate text-sm">{tc.title || '제목 없음'}</p>
+                      </button>
+                      {/* Inline status dropdown — right side */}
+                      <div className="relative flex-shrink-0" ref={inlineDropdownId === tc.id ? inlineDropdownRef : undefined}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setInlineDropdownId(prev => prev === tc.id ? null : tc.id);
+                          }}
+                          className={cn(
+                            'flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors',
+                            config.style,
+                            STATUS_CONFIG[tc.status].bgStyle,
+                          )}
+                          title={`상태: ${config.label} — 클릭하여 변경`}
+                        >
+                          {config.icon}
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
+                        {inlineDropdownId === tc.id && (
+                          <div className="bg-bg-2 border-line-2 absolute right-0 top-full z-30 mt-1 w-32 overflow-hidden rounded-lg border shadow-xl">
+                            {(['pass', 'fail', 'blocked', 'untested'] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onInlineStatusChange(tc.id, s);
+                                  setInlineDropdownId(null);
+                                }}
+                                className={cn(
+                                  'flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors',
+                                  tc.status === s ? cn(STATUS_CONFIG[s].bgStyle.split(' ')[0], STATUS_CONFIG[s].style) : 'hover:bg-bg-3'
+                                )}
+                              >
+                                <span className={STATUS_CONFIG[s].style}>{STATUS_CONFIG[s].icon}</span>
+                                <span className={tc.status === s ? STATUS_CONFIG[s].style : 'text-text-1'}>{STATUS_CONFIG[s].label}</span>
+                                <kbd className="text-text-4 ml-auto text-[10px]">{STATUS_CONFIG[s].shortcut}</kbd>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       {isSelected && <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />}
-                    </button>
+                    </div>
                   );
                 })}
               </div>

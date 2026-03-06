@@ -10,7 +10,7 @@ import { FormField } from '@/shared/lib/primitives';
 import { cn } from '@/shared/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMilestone } from '@/features/milestones-create';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 import { Check, ChevronDown, ChevronUp, FolderOpen, ListChecks, Search } from 'lucide-react';
 import { DateDropdownSelect } from './date-dropdown-select';
@@ -22,6 +22,7 @@ interface MilestoneCreateFormProps {
 
 export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormProps) => {
   const { mutateAsync, isPending } = useCreateMilestone();
+  const queryClient = useQueryClient();
   const [selectedCaseIds, setSelectedCaseIds] = useState<Set<string>>(new Set());
   const [selectedSuiteIds, setSelectedSuiteIds] = useState<Set<string>>(new Set());
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
@@ -109,6 +110,14 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
         if (selectedSuiteIds.size > 0) {
           await addTestSuitesToMilestone(milestoneId, Array.from(selectedSuiteIds));
         }
+
+        // 케이스/스위트 추가 후 쿼리 무효화
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
+          queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
+          queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+        ]);
 
         track(MILESTONE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onClose?.();
