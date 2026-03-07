@@ -17,6 +17,7 @@ import { ArrowLeft, Calendar, Clock, Edit2, Flag, FolderOpen, History, Play, Tag
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { formatDateTime } from '@/shared/utils/date-format';
 import { AttachmentSection } from '@/features/attachments';
+import { ExternalLinksSection } from '@/features/github-links';
 
 type DetailTab = 'details' | 'versions';
 
@@ -190,6 +191,17 @@ export const TestCaseDetailView = () => {
 
             {/* 첨부파일 */}
             <AttachmentSection testCaseId={testCase.id} projectId={testCase.projectId} />
+
+            {/* GitHub 연결 */}
+            <section className="col-span-6 flex flex-col gap-2">
+              <ExternalLinksSection
+                testCaseId={testCase.id}
+                projectId={testCase.projectId}
+                testCaseName={testCase.title}
+                displayId={testCase.displayId}
+                resultStatus={testCase.resultStatus}
+              />
+            </section>
 
             {/* 액션 버튼 */}
             <section className="col-span-6">

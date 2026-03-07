@@ -16,4 +16,6 @@ export * from './test-case-versions';
 export * from './test-suite-sections';
 export * from './checklists';
 export * from './checklist-items';
+export * from './github-connections';
+export * from './test-case-external-links';
 export * from './relations';

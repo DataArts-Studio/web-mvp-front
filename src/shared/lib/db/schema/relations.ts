@@ -15,6 +15,8 @@ import { testCaseVersions } from './test-case-versions';
 import { testSuiteSections } from './test-suite-sections';
 import { checklists } from './checklists';
 import { checklistItems } from './checklist-items';
+import { githubConnections } from './github-connections';
+import { testCaseExternalLinks } from './test-case-external-links';
 
 // Project Relations
 export const projectRelations = relations(projects, ({ many }) => ({
@@ -24,6 +26,7 @@ export const projectRelations = relations(projects, ({ many }) => ({
 	milestones: many(milestones),
 	preferences: many(projectPreferences),
 	checklists: many(checklists),
+	githubConnection: many(githubConnections),
 }));
 
 // Project Preferences Relations
@@ -74,6 +77,7 @@ export const testCaseRelations = relations(testCases, ({ one, many }) => ({
 	suiteTestCases: many(suiteTestCases),
 	milestoneTestCases: many(milestoneTestCases),
 	versions: many(testCaseVersions),
+	externalLinks: many(testCaseExternalLinks),
 }));
 
 // Test Case Version Relations
@@ -183,5 +187,21 @@ export const checklistItemRelations = relations(checklistItems, ({ one }) => ({
 	checklist: one(checklists, {
 		fields: [checklistItems.checklist_id],
 		references: [checklists.id],
+	}),
+}));
+
+// GitHub Connection Relations
+export const githubConnectionRelations = relations(githubConnections, ({ one }) => ({
+	project: one(projects, {
+		fields: [githubConnections.project_id],
+		references: [projects.id],
+	}),
+}));
+
+// Test Case External Links Relations
+export const testCaseExternalLinksRelations = relations(testCaseExternalLinks, ({ one }) => ({
+	testCase: one(testCases, {
+		fields: [testCaseExternalLinks.test_case_id],
+		references: [testCases.id],
 	}),
 }));

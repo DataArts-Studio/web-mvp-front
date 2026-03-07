@@ -23,6 +23,7 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import { useUpdateProject, useChangeIdentifier, useDeleteProject } from '@/features/project-settings';
 import { MainContainer } from '@/shared/lib/primitives';
 import { Dialog } from '@/shared/lib/primitives';
+import { GithubConnectCard } from '@/features/github-connect';
 import { DSButton, DsFormField, DsInput, Skeleton, SkeletonCircle, ProjectErrorFallback } from '@/shared/ui';
 import { formatDateKR } from '@/shared/utils/date-format';
 import { formatBytes } from '@/shared/utils';
@@ -153,7 +154,10 @@ export const SettingsView = () => {
         {/* Section 2: Security */}
         <SecuritySection projectId={projectId} />
 
-        {/* Section 3: Storage */}
+        {/* Section 3: GitHub Integration */}
+        <GithubConnectCard projectId={projectId} />
+
+        {/* Section 4: Storage */}
         {storageData?.success && (
           <StorageSection
             usedBytes={storageData.data.usedBytes}
