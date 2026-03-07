@@ -1,17 +1,17 @@
-import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 export const lifecycleStatusEnum = ['ACTIVE', 'ARCHIVED', 'DELETED'] as const;
 export type LifecycleStatus = (typeof lifecycleStatusEnum)[number];
 
 export const projects = pgTable('projects', {
   id: uuid('id').primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
+  name: text('name').notNull().unique(),
   /** 프로젝트 접근 비밀번호의 bcrypt 해시. 원문은 저장하지 않음. */
-  identifier: varchar('identifier', { length: 255 }).notNull(),
-  description: varchar('description', { length: 255 }),
-  owner_name: varchar('owner_name', { length: 255 }),
-  created_at: timestamp('created_at').defaultNow().notNull(),
-  updated_at: timestamp('updated_at').defaultNow().notNull(),
-  archived_at: timestamp('archived_at'),
+  identifier: text('identifier').notNull(),
+  description: text('description'),
+  owner_name: text('owner_name'),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  archived_at: timestamp('archived_at', { withTimezone: true }),
   lifecycle_status: varchar('lifecycle_status', { length: 20 }).$type<LifecycleStatus>().default('ACTIVE').notNull(),
 });
