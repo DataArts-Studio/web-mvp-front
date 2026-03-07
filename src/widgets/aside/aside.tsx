@@ -55,6 +55,8 @@ const PREFETCH_LOADERS: Record<string, (pid: string) => Promise<PrefetchOptions>
   },
 };
 
+const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
 export const Aside = () => {
   const params = useParams();
   const pathname = usePathname();
@@ -111,7 +113,10 @@ export const Aside = () => {
         >
           <Search size={14} />
           <span className="flex-1 text-left typo-label-normal">검색</span>
-          <kbd className="typo-label-normal text-text-4">⌘K</kbd>
+          <kbd className="flex items-center gap-1 typo-label-normal text-text-4">
+            <span>{isMac ? '⌘' : 'Ctrl'}</span>
+            <span>K</span>
+          </kbd>
         </button>
       </div>
 
