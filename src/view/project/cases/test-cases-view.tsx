@@ -16,12 +16,28 @@ import { cn } from '@/shared/utils';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { ActionToolbar, TestTable } from '@/widgets';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Download, Upload, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, Download, Upload, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown, GripVertical } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { ImportWizardModal } from '@/features/import-cases';
 import { toast } from 'sonner';
 import { Skeleton, ProjectErrorFallback } from '@/shared/ui';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useReorderCase, arrayMove } from '@/features/reorder';
 
 const TestCaseSideView = dynamic(
   () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
@@ -34,6 +50,7 @@ const AnimatePresence = dynamic(
 
 // 정렬 옵션
 const SORT_OPTIONS = [
+  { value: 'custom', label: '커스텀 순서' },
   { value: 'updatedAt-desc', label: '최근 수정 순' },
   { value: 'updatedAt-asc', label: '오래된 수정 순' },
   { value: 'createdAt-desc', label: '최근 생성 순' },
@@ -49,6 +66,51 @@ const PAGE_SIZE = 15;
 
 type ModalType = 'create' | 'detail' | 'import';
 
+/** Sortable wrapper for a single TC row */
+const SortableTestCaseRow = ({
+  id,
+  children,
+  disabled,
+}: {
+  id: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    position: isDragging ? 'relative' as const : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={cn(isDragging && 'opacity-50 shadow-lg bg-bg-3')}>
+      <div className="flex items-center">
+        {!disabled && (
+          <button
+            type="button"
+            className="flex h-full w-6 shrink-0 cursor-grab items-center justify-center text-text-4 hover:text-text-2 active:cursor-grabbing"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
+        <div className="flex-1 min-w-0">{children}</div>
+      </div>
+    </div>
+  );
+};
+
 export const TestCasesView = () => {
   const params = useParams();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,7 +123,7 @@ export const TestCasesView = () => {
   // 검색 및 필터 상태
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [sortOption, setSortOption] = useState<SortValue>('updatedAt-desc');
+  const [sortOption, setSortOption] = useState<SortValue>('custom');
   const [selectedSuiteId, setSelectedSuiteId] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -174,6 +236,47 @@ export const TestCasesView = () => {
   const handleDuplicate = useCallback((testCaseId: string) => {
     duplicateMutation.mutate(testCaseId);
   }, [duplicateMutation]);
+
+  // D&D 설정
+  const isCustomSort = sortOption === 'custom';
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
+  const reorderMutation = useReorderCase(projectId ?? '', queryParams);
+  const [localItems, setLocalItems] = useState<TestCaseCardType[] | null>(null);
+
+  // 서버 데이터 변경 시 localItems 리셋
+  useEffect(() => {
+    setLocalItems(null);
+  }, [testCasesData]);
+
+  const displayItems = localItems ?? testCaseItems;
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const items = localItems ?? testCaseItems;
+    const oldIndex = items.findIndex((item) => item.id === active.id);
+    const newIndex = items.findIndex((item) => item.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(items, oldIndex, newIndex);
+    setLocalItems(reordered);
+
+    const beforeItem = newIndex > 0 ? reordered[newIndex - 1] : null;
+    const afterItem = newIndex < reordered.length - 1 ? reordered[newIndex + 1] : null;
+
+    reorderMutation.mutate({
+      id: active.id as string,
+      beforeOrder: beforeItem?.sortOrder ?? null,
+      afterOrder: afterItem?.sortOrder ?? null,
+      orderedIds: reordered.map((item) => item.id),
+      projectId: projectId!,
+      scopeId: selectedSuiteId !== 'all' ? selectedSuiteId : projectId!,
+    });
+  }, [localItems, testCaseItems, reorderMutation, projectId, selectedSuiteId]);
 
   // 로딩 상태 — 스켈레톤 UI (레이아웃에 Container+Aside 포함)
   if (isLoadingProject || (isLoadingCases && !testCasesData)) {
@@ -443,24 +546,29 @@ export const TestCasesView = () => {
                 )}
               </div>
             ) : (
-              <div className="divide-y divide-line-2">
-                {testCaseItems.map((item) => (
-                  <div
-                    key={item.isOptimistic ? item.id : item.caseKey}
-                    className={cn(
-                      "group flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors hover:bg-bg-3",
-                      item.isOptimistic && "opacity-50 pointer-events-none animate-pulse"
-                    )}
-                    onClick={() => {
-                      track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
-                      setSelectedTestCaseId(item.id);
-                      onOpen('detail');
-                    }}
-                  >
-                    <TestCaseCard testCase={item} onDuplicate={handleDuplicate} />
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={displayItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                  <div className="divide-y divide-line-2">
+                    {displayItems.map((item) => (
+                      <SortableTestCaseRow key={item.isOptimistic ? item.id : item.caseKey} id={item.id} disabled={!isCustomSort || item.isOptimistic}>
+                        <div
+                          className={cn(
+                            "group flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors hover:bg-bg-3",
+                            item.isOptimistic && "opacity-50 pointer-events-none animate-pulse"
+                          )}
+                          onClick={() => {
+                            track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
+                            setSelectedTestCaseId(item.id);
+                            onOpen('detail');
+                          }}
+                        >
+                          <TestCaseCard testCase={item} onDuplicate={handleDuplicate} />
+                        </div>
+                      </SortableTestCaseRow>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
 
             {/* Pagination */}

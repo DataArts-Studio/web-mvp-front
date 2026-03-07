@@ -147,8 +147,10 @@ export const getTestCasesList = async ({
     const offset = (safePage - 1) * size;
 
     // ORDER BY 구성
-    const [sortField, sortOrder] = sort.split('-') as [string, 'asc' | 'desc'];
+    const isCustomSort = sort === 'custom';
+    const [sortField, sortOrder] = isCustomSort ? ['sortOrder', 'asc'] : sort.split('-') as [string, 'asc' | 'desc'];
     const sortColumn =
+      isCustomSort ? testCases.sort_order :
       sortField === 'title' ? testCases.name :
       sortField === 'createdAt' ? testCases.created_at :
       testCases.updated_at;
@@ -174,7 +176,11 @@ export const getTestCasesList = async ({
       })
       .from(testCases)
       .where(whereClause)
-      .orderBy(orderFn(sortColumn))
+      .orderBy(
+        ...(isCustomSort
+          ? [asc(testCases.sort_order), asc(testCases.created_at)]
+          : [orderFn(sortColumn)])
+      )
       .limit(size)
       .offset(offset);
 
