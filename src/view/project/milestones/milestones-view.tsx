@@ -8,7 +8,6 @@ import { MilestoneCard, MilestoneWithStats, Milestone } from '@/entities/milesto
 import { projectIdQueryOptions } from '@/entities/project';
 import { MilestoneCreateForm, milestonesQueryOptions } from '@/features/milestones-create';
 import { MilestoneEditForm } from '@/features/milestones-edit';
-import { dashboardQueryOptions } from '@/features/dashboard';
 import { MainContainer } from '@/shared/lib/primitives';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar } from '@/widgets';
@@ -40,10 +39,8 @@ export const MilestonesView = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
-  const { data: projectIdData } = useQuery(projectIdQueryOptions(params.slug as string));
+  const { data: projectIdData, isLoading: isLoadingProject } = useQuery(projectIdQueryOptions(params.slug as string));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
-
-  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
   const { data: milestonesResult, isLoading: isLoadingMilestones } = useQuery({
     ...milestonesQueryOptions(projectId!),
     enabled: !!projectId,
@@ -152,7 +149,7 @@ export const MilestonesView = () => {
     );
   }
 
-  if (!dashboardData?.success) return <ProjectErrorFallback />;
+  if (!projectIdData?.success) return <ProjectErrorFallback />;
 
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden px-10 py-8">

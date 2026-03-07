@@ -7,7 +7,6 @@ import { useParams } from 'next/navigation';
 import { SuiteCard } from '@/entities/test-suite/ui/suite-card';
 import type { TestSuiteCard } from '@/entities/test-suite';
 import { projectIdQueryOptions } from '@/entities/project';
-import { dashboardQueryOptions } from '@/features/dashboard';
 import { SuiteEditForm } from '@/features/suites-edit';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { MainContainer } from '@/shared/lib/primitives';
@@ -32,10 +31,8 @@ export const TestSuitesView = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
-  const { data: projectIdData } = useQuery(projectIdQueryOptions(params.slug as string));
+  const { data: projectIdData, isLoading: isLoadingProject } = useQuery(projectIdQueryOptions(params.slug as string));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
-
-  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(params.slug as string));
 
   const { data: suiteData, isLoading: isLoadingSuites } = useQuery({
     ...testSuitesQueryOptions(projectId!),
@@ -148,7 +145,7 @@ export const TestSuitesView = () => {
   }
 
   // 에러 상태
-  if (!dashboardData?.success) return <ProjectErrorFallback />;
+  if (!projectIdData?.success) return <ProjectErrorFallback />;
 
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden px-10 py-8">
