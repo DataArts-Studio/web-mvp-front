@@ -4,6 +4,7 @@ import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { testCasesQueryOptions } from '@/features/cases-list/api/query';
 import { testRunsQueryOptions } from '@/features/runs/api/query';
+import { cachedGetProjectId, cachedGetDashboardStats, cachedGetTestCasesList, cachedGetTestRuns } from '@/shared/lib/cache';
 
 export async function DashboardData({ slug }: { slug: string }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
@@ -11,14 +12,26 @@ export async function DashboardData({ slug }: { slug: string }) {
   let projectId: string | undefined;
 
   try {
-    const statsData = await queryClient.fetchQuery(dashboardQueryOptions.stats(slug));
+    const statsData = await queryClient.fetchQuery({
+      ...dashboardQueryOptions.stats(slug),
+      queryFn: () => cachedGetDashboardStats(slug),
+    });
     projectId = statsData?.success ? statsData.data.project.id : undefined;
 
     if (projectId) {
       await Promise.all([
-        queryClient.prefetchQuery(projectIdQueryOptions(slug)),
-        queryClient.prefetchQuery(testCasesQueryOptions(projectId)),
-        queryClient.prefetchQuery(testRunsQueryOptions(projectId)),
+        queryClient.prefetchQuery({
+          ...projectIdQueryOptions(slug),
+          queryFn: () => cachedGetProjectId(slug),
+        }),
+        queryClient.prefetchQuery({
+          ...testCasesQueryOptions(projectId),
+          queryFn: () => cachedGetTestCasesList({ project_id: projectId! }),
+        }),
+        queryClient.prefetchQuery({
+          ...testRunsQueryOptions(projectId),
+          queryFn: () => cachedGetTestRuns(projectId!),
+        }),
         queryClient.prefetchQuery(dashboardQueryOptions.storageInfo(projectId)),
       ]);
 

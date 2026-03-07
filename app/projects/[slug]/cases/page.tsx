@@ -5,6 +5,7 @@ import { TestCasesView } from '@/view';
 import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { testCasesQueryOptions } from '@/features/cases-list/api/query';
 import { testSuitesQueryOptions } from '@/entities/test-suite/api/query';
+import { cachedGetProjectId, cachedGetTestCasesList, cachedGetTestSuites } from '@/shared/lib/cache';
 import { CasesSkeleton } from './cases-skeleton';
 
 export const metadata: Metadata = {
@@ -16,13 +17,22 @@ async function CasesData({ slug }: { slug: string }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
 
   try {
-    const result = await queryClient.fetchQuery(projectIdQueryOptions(slug));
+    const result = await queryClient.fetchQuery({
+      ...projectIdQueryOptions(slug),
+      queryFn: () => cachedGetProjectId(slug),
+    });
     const projectId = result?.success ? result.data.id : undefined;
 
     if (projectId) {
       await Promise.all([
-        queryClient.prefetchQuery(testCasesQueryOptions(projectId, { page: 1, size: 15, sort: 'custom' })),
-        queryClient.prefetchQuery(testSuitesQueryOptions(projectId)),
+        queryClient.prefetchQuery({
+          ...testCasesQueryOptions(projectId, { page: 1, size: 15, sort: 'custom' }),
+          queryFn: () => cachedGetTestCasesList({ project_id: projectId, page: 1, size: 15, sort: 'custom' }),
+        }),
+        queryClient.prefetchQuery({
+          ...testSuitesQueryOptions(projectId),
+          queryFn: () => cachedGetTestSuites(projectId),
+        }),
       ]);
     }
   } catch {
