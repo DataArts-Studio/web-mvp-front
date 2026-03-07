@@ -14,4 +14,6 @@ export * from './test-case-attachments';
 export * from './test-case-templates';
 export * from './test-case-versions';
 export * from './test-suite-sections';
+export * from './checklists';
+export * from './checklist-items';
 export * from './relations';

@@ -13,6 +13,8 @@ import { milestoneTestSuites } from './milestone-test-suites';
 import { projectPreferences } from './project-preferences';
 import { testCaseVersions } from './test-case-versions';
 import { testSuiteSections } from './test-suite-sections';
+import { checklists } from './checklists';
+import { checklistItems } from './checklist-items';
 
 // Project Relations
 export const projectRelations = relations(projects, ({ many }) => ({
@@ -21,6 +23,7 @@ export const projectRelations = relations(projects, ({ many }) => ({
 	testRuns: many(testRuns),
 	milestones: many(milestones),
 	preferences: many(projectPreferences),
+	checklists: many(checklists),
 }));
 
 // Project Preferences Relations
@@ -163,5 +166,22 @@ export const milestoneTestSuitesRelations = relations(milestoneTestSuites, ({ on
 	testSuite: one(testSuites, {
 		fields: [milestoneTestSuites.test_suite_id],
 		references: [testSuites.id],
+	}),
+}));
+
+// Checklist Relations
+export const checklistRelations = relations(checklists, ({ one, many }) => ({
+	project: one(projects, {
+		fields: [checklists.project_id],
+		references: [projects.id],
+	}),
+	items: many(checklistItems),
+}));
+
+// Checklist Item Relations
+export const checklistItemRelations = relations(checklistItems, ({ one }) => ({
+	checklist: one(checklists, {
+		fields: [checklistItems.checklist_id],
+		references: [checklists.id],
 	}),
 }));
