@@ -82,7 +82,7 @@ export const Aside = () => {
     await queryClient.prefetchQuery(options);
   }, [queryClient, projectSlug]);
 
-  if (!menus) {
+  if (!menus || pathname.endsWith('/access')) {
     return null;
   }
 
