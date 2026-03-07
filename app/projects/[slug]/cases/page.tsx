@@ -21,7 +21,7 @@ async function CasesData({ slug }: { slug: string }) {
 
     if (projectId) {
       await Promise.all([
-        queryClient.prefetchQuery(testCasesQueryOptions(projectId, { page: 1, size: 15, sort: 'updatedAt-desc' })),
+        queryClient.prefetchQuery(testCasesQueryOptions(projectId, { page: 1, size: 15, sort: 'custom' })),
         queryClient.prefetchQuery(testSuitesQueryOptions(projectId)),
       ]);
     }

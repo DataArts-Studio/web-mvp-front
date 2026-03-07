@@ -9,7 +9,6 @@ import { projectIdQueryOptions } from '@/entities/project';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { TestCaseDetailForm, useCreateCase } from '@/features/cases-create';
 import { testCasesQueryOptions, testCaseQueryKeys } from '@/features/cases-list';
-import { dashboardQueryOptions } from '@/features/dashboard';
 import { Input, MainContainer } from '@/shared/lib/primitives';
 import { useDisclosure } from '@/shared/hooks';
 import { cn } from '@/shared/utils';
@@ -150,13 +149,8 @@ export const TestCasesView = () => {
   }, []);
 
   // slug → projectId를 단일 SELECT로 빠르게 획득 (워터폴 제거)
-  const { data: projectIdData } = useQuery(projectIdQueryOptions(slug));
+  const { data: projectIdData, isLoading: isLoadingProject } = useQuery(projectIdQueryOptions(slug));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
-
-  // dashboard, testSuites 동시 시작
-  const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
-    dashboardQueryOptions.stats(slug),
-  );
 
   const queryParams = useMemo(() => ({
     page: currentPage,
@@ -342,7 +336,7 @@ export const TestCasesView = () => {
     );
   }
 
-  if (!dashboardData?.success) return <ProjectErrorFallback />;
+  if (!projectIdData?.success) return <ProjectErrorFallback />;
 
   const handleCreateTestCase = () => {
     const title = inputRef.current?.value.trim();
@@ -492,8 +486,7 @@ export const TestCasesView = () => {
             </ActionToolbar.Action>
             <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
               track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count: testCaseItems.length });
-              const projectName = dashboardData?.success ? dashboardData.data.project.name : 'project';
-              exportTestCasesToCSV(testCaseItems, projectName);
+              exportTestCasesToCSV(testCaseItems, decodeURIComponent(slug));
             }} className="flex items-center gap-2">
               <Download className="h-4 w-4" />
               <span className="leading-none">내보내기</span>
