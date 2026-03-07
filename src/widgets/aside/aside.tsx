@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { Search } from 'lucide-react';
 import { Logo } from '@/shared/ui/logo';
 import { AsideMenuItem, createAsideMenus } from '@/widgets/aside/model';
 import { AsideNavItem } from '@/widgets/aside/ui';
@@ -99,6 +100,19 @@ export const Aside = () => {
         <p className="typo-label-normal text-text-3 mt-4 tracking-[0.2em]">
           테스트 도구
         </p>
+      </div>
+
+      {/* 검색 트리거 */}
+      <div className="px-4 pt-4">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+          className="flex w-full items-center gap-2 rounded-3 border border-line-2 bg-bg-3 px-3 py-1.5 text-text-4 transition-colors hover:border-line-3 hover:text-text-3"
+        >
+          <Search size={14} />
+          <span className="flex-1 text-left typo-label-normal">검색</span>
+          <kbd className="typo-label-normal text-text-4">⌘K</kbd>
+        </button>
       </div>
 
       {/* 사이드바 메인 메뉴 */}
