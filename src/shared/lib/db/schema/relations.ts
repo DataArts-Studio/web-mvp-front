@@ -17,6 +17,7 @@ import { checklists } from './checklists';
 import { checklistItems } from './checklist-items';
 import { githubConnections } from './github-connections';
 import { testCaseExternalLinks } from './test-case-external-links';
+import { projectAiConfigs } from './project-ai-configs';
 
 // Project Relations
 export const projectRelations = relations(projects, ({ many }) => ({
@@ -27,6 +28,7 @@ export const projectRelations = relations(projects, ({ many }) => ({
 	preferences: many(projectPreferences),
 	checklists: many(checklists),
 	githubConnection: many(githubConnections),
+	aiConfig: many(projectAiConfigs),
 }));
 
 // Project Preferences Relations
@@ -187,6 +189,14 @@ export const checklistItemRelations = relations(checklistItems, ({ one }) => ({
 	checklist: one(checklists, {
 		fields: [checklistItems.checklist_id],
 		references: [checklists.id],
+	}),
+}));
+
+// Project AI Config Relations
+export const projectAiConfigRelations = relations(projectAiConfigs, ({ one }) => ({
+	project: one(projects, {
+		fields: [projectAiConfigs.project_id],
+		references: [projects.id],
 	}),
 }));
 

@@ -15,10 +15,11 @@ import { cn } from '@/shared/utils';
 import { Select } from '@/shared/lib/primitives/select/select';
 import { ActionToolbar, TestTable } from '@/widgets';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Download, Upload, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown, GripVertical } from 'lucide-react';
+import { ChevronDown, Download, Upload, FolderOpen, FolderClosed, Inbox, Plus, ArrowUpDown, GripVertical, Sparkles } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { ImportWizardModal } from '@/features/import-cases';
+import { AiGenerateModal } from '@/features/ai-generate';
 import { toast } from 'sonner';
 import { Skeleton, ProjectErrorFallback } from '@/shared/ui';
 import {
@@ -63,7 +64,7 @@ type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 
 const PAGE_SIZE = 15;
 
-type ModalType = 'create' | 'detail' | 'import';
+type ModalType = 'create' | 'detail' | 'import' | 'ai-generate';
 
 /** Sortable wrapper for a single TC row */
 const SortableTestCaseRow = ({
@@ -477,6 +478,10 @@ export const TestCasesView = () => {
                 </Select.Content>
               </Select.Root>
             </ActionToolbar.Group>
+            <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => onOpen('ai-generate')} className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              <span className="leading-none">AI 생성</span>
+            </ActionToolbar.Action>
             <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
               track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
               onOpen('import');
@@ -588,6 +593,9 @@ export const TestCasesView = () => {
         />
       )}
       {isActiveType('import') && <ImportWizardModal projectId={projectId!} onClose={onClose} />}
+      {isActiveType('ai-generate') && projectId && (
+        <AiGenerateModal projectId={projectId} slug={slug} onClose={onClose} />
+      )}
       <AnimatePresence>
         {isActiveType('detail') && selectedTestCaseId && (
           <TestCaseSideView

@@ -122,7 +122,7 @@ export const GithubConnectCard = ({ projectId }: Props) => {
       <div className="p-6 pb-5">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#24292e]/20">
-            <Github className="h-5 w-5 text-white" />
+            <Github className="h-5 w-5 text-primary" />
           </div>
           <div className="flex flex-1 flex-col gap-0.5">
             <h2 className="typo-h2-heading text-text-1">GitHub 연동</h2>
