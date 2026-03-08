@@ -25,47 +25,9 @@ import { MainContainer } from '@/shared/lib/primitives';
 import { Dialog } from '@/shared/lib/primitives';
 import { GithubConnectCard } from '@/features/github-connect';
 import { AiConfigCard } from '@/features/ai-generate';
-import { DSButton, DsFormField, DsInput, Skeleton, SkeletonCircle, ProjectErrorFallback } from '@/shared/ui';
+import { DSButton, DsFormField, DsInput, Skeleton, SkeletonCircle, ProjectErrorFallback, SettingsCard } from '@/shared/ui';
 import { formatDateKR } from '@/shared/utils/date-format';
 import { formatBytes } from '@/shared/utils';
-
-// ─── Shared UI Primitives ────────────────────────────────────────────────────
-
-const SectionIcon = ({ children, variant = 'default' }: { children: React.ReactNode; variant?: 'default' | 'danger' }) => (
-  <div
-    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-      variant === 'danger'
-        ? 'bg-red-500/10 text-red-400'
-        : 'bg-primary/10 text-primary'
-    }`}
-  >
-    {children}
-  </div>
-);
-
-const SectionHeader = ({
-  icon,
-  title,
-  description,
-  variant = 'default',
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  variant?: 'default' | 'danger';
-}) => (
-  <div className="flex items-start gap-4">
-    <SectionIcon variant={variant}>{icon}</SectionIcon>
-    <div className="flex flex-col gap-0.5">
-      <h2 className={`typo-h2-heading ${variant === 'danger' ? 'text-red-400' : 'text-text-1'}`}>
-        {title}
-      </h2>
-      <p className="typo-caption text-text-3">{description}</p>
-    </div>
-  </div>
-);
-
-const Divider = () => <div className="border-line-2 border-t" />;
 
 // ─── Main View ───────────────────────────────────────────────────────────────
 
@@ -89,7 +51,6 @@ export const SettingsView = () => {
   if (isLoading) {
     return (
       <MainContainer className="mx-auto flex min-h-screen w-full max-w-[1200px] flex-1 flex-col gap-10 px-10 py-8">
-        {/* Header skeleton */}
         <header className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <SkeletonCircle className="h-9 w-9" />
@@ -97,27 +58,8 @@ export const SettingsView = () => {
           </div>
           <Skeleton className="ml-12 h-5 w-64" />
         </header>
-        {/* Section skeletons */}
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-5 border border-line-2 bg-bg-2 flex flex-col">
-            <div className="p-6 pb-5 flex items-start gap-4">
-              <SkeletonCircle className="h-10 w-10" />
-              <div className="flex flex-col gap-1">
-                <Skeleton className="h-6 w-28" />
-                <Skeleton className="h-4 w-52" />
-              </div>
-            </div>
-            <div className="border-t border-line-2" />
-            <div className="flex flex-col gap-0 divide-y divide-line-2">
-              {Array.from({ length: 2 }).map((_, j) => (
-                <div key={j} className="flex items-center gap-4 px-6 py-5">
-                  <Skeleton className="h-4 w-28 shrink-0" />
-                  <Skeleton className="h-10 flex-1 rounded-2 border border-line-2 bg-bg-1" />
-                  <Skeleton className="h-8 w-14 shrink-0" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <SettingsCard.LoadingSkeleton key={i} />
         ))}
       </MainContainer>
     );
@@ -161,7 +103,7 @@ export const SettingsView = () => {
         {/* Section 4: GitHub Integration */}
         <GithubConnectCard projectId={projectId} />
 
-        {/* Section 4: Storage */}
+        {/* Section 5: Storage */}
         {storageData?.success && (
           <StorageSection
             usedBytes={storageData.data.usedBytes}
@@ -170,10 +112,9 @@ export const SettingsView = () => {
           />
         )}
 
-        {/* Section 4: Danger Zone */}
+        {/* Section 6: Danger Zone */}
         <DangerZoneSection projectId={projectId} projectName={project.name} />
 
-        {/* Bottom spacer */}
         <div className="h-8" />
       </MainContainer>
   );
@@ -221,8 +162,7 @@ const GeneralSettingsSection = ({
               setSavedField(field);
               setTimeout(() => setSavedField(null), 2000);
             } else {
-              const errorMsg = Object.values(result.errors).flat().join(', ');
-              toast.error(errorMsg);
+              toast.error(Object.values(result.errors).flat().join(', '));
             }
           },
         },
@@ -251,81 +191,43 @@ const GeneralSettingsSection = ({
     </DSButton>
   );
 
+  const fields = [
+    { key: 'name' as const, label: '프로젝트 이름', placeholder: '프로젝트 이름' },
+    { key: 'description' as const, label: '설명', placeholder: '프로젝트에 대한 간단한 설명' },
+    { key: 'ownerName' as const, label: '소유자', placeholder: '프로젝트 소유자 이름' },
+  ];
+
   return (
-    <section className="rounded-5 border-line-2 bg-bg-2 flex flex-col border transition-colors">
-      <div className="p-6 pb-5">
-        <SectionHeader
-          icon={<Pencil className="h-5 w-5" />}
-          title="일반 설정"
-          description="프로젝트의 기본 정보를 수정합니다."
-        />
-      </div>
-
-      <Divider />
-
+    <SettingsCard.Root>
+      <SettingsCard.Header
+        icon={<Pencil className="h-5 w-5" />}
+        title="일반 설정"
+        description="프로젝트의 기본 정보를 수정합니다."
+      />
+      <SettingsCard.Divider />
       <div className="flex flex-col gap-0 divide-y divide-line-2">
-        {/* 프로젝트 이름 */}
-        <div className="flex items-center gap-4 px-6 py-5">
-          <div className="w-28 shrink-0">
-            <span className="typo-label-heading text-text-2">프로젝트 이름</span>
-          </div>
-          <DsFormField.Root error={errors.name} className="!flex-row !items-center !gap-3 flex-1">
-            <DsFormField.Control>
-              <DsInput
-                {...register('name')}
-                placeholder="프로젝트 이름"
-                              />
-            </DsFormField.Control>
-            <DsFormField.Message>{errors.name?.message}</DsFormField.Message>
-          </DsFormField.Root>
-          {renderSaveButton("name")}
-        </div>
-
-        {/* 설명 */}
-        <div className="flex items-center gap-4 px-6 py-5">
-          <div className="w-28 shrink-0">
-            <span className="typo-label-heading text-text-2">설명</span>
-          </div>
-          <DsFormField.Root error={errors.description} className="!flex-row !items-center !gap-3 flex-1">
-            <DsFormField.Control>
-              <DsInput
-                {...register('description')}
-                placeholder="프로젝트에 대한 간단한 설명"
-                              />
-            </DsFormField.Control>
-            <DsFormField.Message>{errors.description?.message}</DsFormField.Message>
-          </DsFormField.Root>
-          {renderSaveButton("description")}
-        </div>
-
-        {/* 소유자 이름 */}
-        <div className="flex items-center gap-4 px-6 py-5">
-          <div className="w-28 shrink-0">
-            <span className="typo-label-heading text-text-2">소유자</span>
-          </div>
-          <DsFormField.Root error={errors.ownerName} className="!flex-row !items-center !gap-3 flex-1">
-            <DsFormField.Control>
-              <DsInput
-                {...register('ownerName')}
-                placeholder="프로젝트 소유자 이름"
-                              />
-            </DsFormField.Control>
-            <DsFormField.Message>{errors.ownerName?.message}</DsFormField.Message>
-          </DsFormField.Root>
-          {renderSaveButton("ownerName")}
-        </div>
+        {fields.map(({ key, label, placeholder }) => (
+          <SettingsCard.Row key={key}>
+            <div className="w-28 shrink-0">
+              <span className="typo-label-heading text-text-2">{label}</span>
+            </div>
+            <DsFormField.Root error={errors[key]} className="!flex-row !items-center !gap-3 flex-1">
+              <DsFormField.Control>
+                <DsInput {...register(key)} placeholder={placeholder} />
+              </DsFormField.Control>
+              <DsFormField.Message>{errors[key]?.message}</DsFormField.Message>
+            </DsFormField.Root>
+            {renderSaveButton(key)}
+          </SettingsCard.Row>
+        ))}
       </div>
-    </section>
+    </SettingsCard.Root>
   );
 };
 
 // ─── Section 2: Security ─────────────────────────────────────────────────────
 
-interface SecuritySectionProps {
-  projectId: string;
-}
-
-const SecuritySection = ({ projectId }: SecuritySectionProps) => {
+const SecuritySection = ({ projectId }: { projectId: string }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const changeIdentifier = useChangeIdentifier();
 
@@ -368,8 +270,7 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
                 message: result.errors.currentPassword[0],
               });
             } else {
-              const errorMsg = Object.values(result.errors).flat().join(', ');
-              toast.error(errorMsg);
+              toast.error(Object.values(result.errors).flat().join(', '));
             }
           }
         },
@@ -378,20 +279,16 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
   });
 
   return (
-    <section className="rounded-5 border-line-2 bg-bg-2 flex flex-col border transition-colors">
-      <div className="p-6 pb-5">
-        <SectionHeader
-          icon={<Lock className="h-5 w-5" />}
-          title="보안"
-          description="프로젝트 접근 비밀번호를 관리합니다."
-        />
-      </div>
+    <SettingsCard.Root>
+      <SettingsCard.Header
+        icon={<Lock className="h-5 w-5" />}
+        title="보안"
+        description="프로젝트 접근 비밀번호를 관리합니다."
+      />
+      <SettingsCard.Divider />
 
-      <Divider />
-
-      {/* 기본 상태: CTA 행 */}
       {!isFormOpen && (
-        <div className="flex items-center justify-between p-6 pt-5">
+        <SettingsCard.Body className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <span className="typo-body2-heading text-text-1">접근 비밀번호</span>
             <span className="typo-caption text-text-3">
@@ -409,10 +306,9 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
               변경하기
             </span>
           </DSButton>
-        </div>
+        </SettingsCard.Body>
       )}
 
-      {/* 폼 열림 상태 */}
       {isFormOpen && (
         <form onSubmit={onSubmit} className="flex flex-col p-6 pt-5">
           <div className="rounded-4 bg-bg-1 flex flex-col gap-5 p-5">
@@ -490,7 +386,7 @@ const SecuritySection = ({ projectId }: SecuritySectionProps) => {
           </div>
         </form>
       )}
-    </section>
+    </SettingsCard.Root>
   );
 };
 
@@ -503,49 +399,35 @@ interface StorageSectionProps {
 }
 
 const StorageSection = ({ usedBytes, maxBytes, usedPercent }: StorageSectionProps) => {
-
   const barColor =
-    usedPercent >= 95
-      ? 'bg-red-500'
-      : usedPercent >= 80
-        ? 'bg-amber-500'
-        : 'bg-primary';
+    usedPercent >= 95 ? 'bg-red-500'
+    : usedPercent >= 80 ? 'bg-amber-500'
+    : 'bg-primary';
 
   const textColor =
-    usedPercent >= 95
-      ? 'text-red-500'
-      : usedPercent >= 80
-        ? 'text-amber-500'
-        : 'text-primary';
+    usedPercent >= 95 ? 'text-red-500'
+    : usedPercent >= 80 ? 'text-amber-500'
+    : 'text-primary';
 
   const statusLabel =
-    usedPercent >= 95
-      ? '용량 부족'
-      : usedPercent >= 80
-        ? '용량 주의'
-        : '정상';
+    usedPercent >= 95 ? '용량 부족'
+    : usedPercent >= 80 ? '용량 주의'
+    : '정상';
 
   const statusBg =
-    usedPercent >= 95
-      ? 'bg-red-500/10 text-red-400'
-      : usedPercent >= 80
-        ? 'bg-amber-500/10 text-amber-400'
-        : 'bg-primary/10 text-primary';
+    usedPercent >= 95 ? 'bg-red-500/10 text-red-400'
+    : usedPercent >= 80 ? 'bg-amber-500/10 text-amber-400'
+    : 'bg-primary/10 text-primary';
 
   return (
-    <section className="rounded-5 border-line-2 bg-bg-2 flex flex-col border transition-colors">
-      <div className="p-6 pb-5">
-        <SectionHeader
-          icon={<HardDrive className="h-5 w-5" />}
-          title="스토리지"
-          description="프로젝트 데이터 저장 공간 사용 현황입니다."
-        />
-      </div>
-
-      <Divider />
-
-      <div className="flex flex-col gap-4 p-6 pt-5">
-        {/* Usage bar */}
+    <SettingsCard.Root>
+      <SettingsCard.Header
+        icon={<HardDrive className="h-5 w-5" />}
+        title="스토리지"
+        description="프로젝트 데이터 저장 공간 사용 현황입니다."
+      />
+      <SettingsCard.Divider />
+      <SettingsCard.Body className="flex flex-col gap-4">
         <div className="rounded-4 bg-bg-1 p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-baseline gap-2">
@@ -574,19 +456,14 @@ const StorageSection = ({ usedBytes, maxBytes, usedPercent }: StorageSectionProp
             </span>
           </div>
         </div>
-      </div>
-    </section>
+      </SettingsCard.Body>
+    </SettingsCard.Root>
   );
 };
 
 // ─── Section 4: Danger Zone ──────────────────────────────────────────────────
 
-interface DangerZoneSectionProps {
-  projectId: string;
-  projectName: string;
-}
-
-const DangerZoneSection = ({ projectId, projectName }: DangerZoneSectionProps) => {
+const DangerZoneSection = ({ projectId, projectName }: { projectId: string; projectName: string }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
   const deleteProject = useDeleteProject();
@@ -601,8 +478,7 @@ const DangerZoneSection = ({ projectId, projectName }: DangerZoneSectionProps) =
           if (result.success) {
             toast.success(result.message ?? '프로젝트가 삭제되었습니다.');
           } else {
-            const errorMsg = Object.values(result.errors).flat().join(', ');
-            toast.error(errorMsg);
+            toast.error(Object.values(result.errors).flat().join(', '));
             setIsDialogOpen(false);
           }
         },
@@ -612,19 +488,15 @@ const DangerZoneSection = ({ projectId, projectName }: DangerZoneSectionProps) =
 
   return (
     <>
-      <section className="rounded-5 flex flex-col border border-red-500/20 bg-red-500/[0.03] transition-colors">
-        <div className="p-6 pb-5">
-          <SectionHeader
-            icon={<AlertTriangle className="h-5 w-5" />}
-            title="위험 영역"
-            description="이 영역의 작업은 되돌릴 수 없습니다."
-            variant="danger"
-          />
-        </div>
-
-        <div className="border-t border-red-500/10" />
-
-        <div className="flex items-center justify-between p-6 pt-5">
+      <SettingsCard.Root variant="danger">
+        <SettingsCard.Header
+          icon={<AlertTriangle className="h-5 w-5" />}
+          title="위험 영역"
+          description="이 영역의 작업은 되돌릴 수 없습니다."
+          variant="danger"
+        />
+        <SettingsCard.Divider variant="danger" />
+        <SettingsCard.Body className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <span className="typo-body2-heading text-text-1">프로젝트 삭제</span>
             <span className="typo-caption text-text-3">
@@ -642,15 +514,14 @@ const DangerZoneSection = ({ projectId, projectName }: DangerZoneSectionProps) =
               프로젝트 삭제
             </span>
           </DSButton>
-        </div>
-      </section>
+        </SettingsCard.Body>
+      </SettingsCard.Root>
 
       {isDialogOpen && (
         <Dialog.Root defaultOpen>
           <Dialog.Portal>
             <Dialog.Overlay onClick={() => !deleteProject.isPending && setIsDialogOpen(false)} />
             <Dialog.Content className="bg-bg-2 border-line-2 rounded-5 w-full max-w-[460px] border p-0">
-              {/* Dialog header */}
               <div className="flex items-center gap-3 border-b border-line-2 px-6 py-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10">
                   <Trash2 className="h-4 w-4 text-red-400" />
@@ -660,7 +531,6 @@ const DangerZoneSection = ({ projectId, projectName }: DangerZoneSectionProps) =
                 </Dialog.Title>
               </div>
 
-              {/* Dialog body */}
               <div className="flex flex-col gap-4 px-6 py-5">
                 <Dialog.Description className="text-text-2 typo-body2-normal">
                   이 작업은 되돌릴 수 없습니다. 삭제를 확인하려면 프로젝트 이름을 정확히 입력해주세요.
@@ -683,7 +553,6 @@ const DangerZoneSection = ({ projectId, projectName }: DangerZoneSectionProps) =
                 )}
               </div>
 
-              {/* Dialog footer */}
               <div className="flex justify-end gap-2 border-t border-line-2 px-6 py-4">
                 <DSButton
                   variant="ghost"

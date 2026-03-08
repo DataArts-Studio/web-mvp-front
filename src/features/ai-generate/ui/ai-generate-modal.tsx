@@ -135,8 +135,8 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
             {!hasConfig ? (
               /* API 키 미설정 */
               <div className="flex flex-col items-center gap-4 py-10 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-500/10">
-                  <Bot className="h-7 w-7 text-primary-400" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <Bot className="h-7 w-7 text-primary" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <p className="typo-body1-heading text-text-1">API 키가 필요합니다</p>
@@ -190,7 +190,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
             ) : step === 'loading' ? (
               /* 로딩 */
               <div className="flex flex-col items-center gap-4 py-16">
-                <Loader2 className="h-10 w-10 animate-spin text-primary-400" />
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <div className="flex flex-col items-center gap-1">
                   <p className="typo-body1-heading text-text-1">AI가 테스트 케이스를 생성하고 있습니다</p>
                   <p className="typo-body2-normal text-text-3">잠시만 기다려주세요...</p>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Github, Link2, Unlink, Loader2, ExternalLink, ChevronDown } from 'lucide-react';
+import { Github, Link2, Unlink, Loader2, ExternalLink } from 'lucide-react';
 
 import { githubConnectionQueryOptions, githubQueryKeys } from '@/entities/github-connection';
 import type { GithubRepo } from '@/entities/github-connection';
@@ -13,7 +13,7 @@ import {
   getGithubRepos,
   selectGithubRepo,
 } from '@/entities/github-connection/api/server-actions';
-import { DSButton } from '@/shared/ui';
+import { DSButton, SettingsCard } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 
 type Props = {
@@ -45,12 +45,10 @@ export const GithubConnectCard = ({ projectId }: Props) => {
         return;
       }
 
-      // code 교환
       const result = await connectGithub({ projectId, code: event.data.code });
       if (result.success) {
         toast.success('GitHub 인증 완료! 저장소를 선택해주세요.');
         invalidate();
-        // 저장소 목록 로드
         setShowRepoSelect(true);
         setLoadingRepos(true);
         const reposResult = await getGithubRepos(projectId);
@@ -59,8 +57,7 @@ export const GithubConnectCard = ({ projectId }: Props) => {
         }
         setLoadingRepos(false);
       } else {
-        const msg = Object.values(result.errors).flat().join(', ');
-        toast.error(msg);
+        toast.error(Object.values(result.errors).flat().join(', '));
       }
     };
 
@@ -77,7 +74,6 @@ export const GithubConnectCard = ({ projectId }: Props) => {
     const redirectUri = `${window.location.origin}/api/auth/github/callback`;
     const scope = 'repo';
     const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${projectId}`;
-
     window.open(url, 'github-oauth', 'width=600,height=700,left=200,top=100');
   };
 
@@ -89,8 +85,7 @@ export const GithubConnectCard = ({ projectId }: Props) => {
         setShowRepoSelect(false);
         invalidate();
       } else {
-        const msg = Object.values(result.errors).flat().join(', ');
-        toast.error(msg);
+        toast.error(Object.values(result.errors).flat().join(', '));
       }
     },
   });
@@ -109,35 +104,19 @@ export const GithubConnectCard = ({ projectId }: Props) => {
     r.full_name.toLowerCase().includes(repoSearch.toLowerCase()),
   );
 
-  if (isLoading) {
-    return (
-      <div className="rounded-5 border-line-2 bg-bg-2 flex flex-col border p-6 animate-pulse">
-        <div className="h-10 w-10 rounded-full bg-bg-3" />
-      </div>
-    );
-  }
+  if (isLoading) return <SettingsCard.LoadingSkeleton />;
 
   return (
-    <section className="rounded-5 border-line-2 bg-bg-2 flex flex-col border transition-colors">
-      <div className="p-6 pb-5">
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#24292e]/20">
-            <Github className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex flex-1 flex-col gap-0.5">
-            <h2 className="typo-h2-heading text-text-1">GitHub 연동</h2>
-            <p className="typo-caption text-text-3">
-              저장소를 연결하여 PR ↔ TC 자동 링크, 테스트 결과 코멘트를 사용합니다.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-line-2" />
-
-      <div className="p-6 pt-5">
+    <SettingsCard.Root>
+      <SettingsCard.Header
+        icon={<Github className="h-5 w-5" />}
+        title="GitHub 연동"
+        description="저장소를 연결하여 PR ↔ TC 자동 링크, 테스트 결과 코멘트를 사용합니다."
+      />
+      <SettingsCard.Divider />
+      <SettingsCard.Body>
         {isConnected ? (
-          /* 연결 완료 상태 */
+          /* 연결 완료 */
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10">
@@ -217,17 +196,13 @@ export const GithubConnectCard = ({ projectId }: Props) => {
               )}
             </div>
             <div className="flex justify-end">
-              <DSButton
-                variant="ghost"
-                size="small"
-                onClick={() => setShowRepoSelect(false)}
-              >
+              <DSButton variant="ghost" size="small" onClick={() => setShowRepoSelect(false)}>
                 취소
               </DSButton>
             </div>
           </div>
         ) : (
-          /* 미연결 상태 */
+          /* 미연결 */
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <span className="typo-body2-heading text-text-1">GitHub 저장소 연결</span>
@@ -243,7 +218,7 @@ export const GithubConnectCard = ({ projectId }: Props) => {
             </DSButton>
           </div>
         )}
-      </div>
-    </section>
+      </SettingsCard.Body>
+    </SettingsCard.Root>
   );
 };

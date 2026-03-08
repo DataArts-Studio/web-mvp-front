@@ -3,11 +3,19 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Bot, Check, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
+import { Bot, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
 
 import { aiConfigQueryOptions, aiConfigQueryKeys } from '@/entities/ai-config';
 import { saveAiConfig, deleteAiConfig } from '@/entities/ai-config/api/server-actions';
-import { DSButton, DsInput } from '@/shared/ui';
+import { DSButton, DsInput, SettingsCard } from '@/shared/ui';
+
+const PROVIDER_META = {
+  anthropic: { label: 'Anthropic Claude', placeholder: 'sk-ant-...', hint: 'console.anthropic.com에서 API 키를 발급받을 수 있습니다.' },
+  openai: { label: 'OpenAI', placeholder: 'sk-...', hint: 'platform.openai.com에서 API 키를 발급받을 수 있습니다.' },
+  gemini: { label: 'Google Gemini', placeholder: 'AIza...', hint: 'aistudio.google.com에서 API 키를 발급받을 수 있습니다.' },
+} as const;
+
+type Provider = keyof typeof PROVIDER_META;
 
 type Props = {
   projectId: string;
@@ -15,7 +23,7 @@ type Props = {
 
 export const AiConfigCard = ({ projectId }: Props) => {
   const queryClient = useQueryClient();
-  const [provider, setProvider] = useState<'openai' | 'anthropic' | 'gemini'>('anthropic');
+  const [provider, setProvider] = useState<Provider>('anthropic');
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -36,8 +44,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
         setIsEditing(false);
         invalidate();
       } else {
-        const msg = Object.values(result.errors).flat().join(', ');
-        toast.error(msg);
+        toast.error(Object.values(result.errors).flat().join(', '));
       }
     },
   });
@@ -52,80 +59,47 @@ export const AiConfigCard = ({ projectId }: Props) => {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="rounded-5 border-line-2 bg-bg-2 flex flex-col border p-6 animate-pulse">
-        <div className="h-10 w-10 rounded-full bg-bg-3" />
-      </div>
-    );
-  }
+  if (isLoading) return <SettingsCard.LoadingSkeleton />;
 
-  const providerLabel =
-    config?.provider === 'openai' ? 'OpenAI' :
-    config?.provider === 'anthropic' ? 'Anthropic Claude' :
-    config?.provider === 'gemini' ? 'Google Gemini' : '';
-  const defaultModels = {
-    openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1-nano'],
-    anthropic: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-5-20250514'],
-    gemini: ['gemini-2.0-flash', 'gemini-2.5-flash-preview-05-20', 'gemini-2.5-pro-preview-05-06'],
-  };
+  const meta = PROVIDER_META[provider];
 
   return (
-    <section className="rounded-5 border-line-2 bg-bg-2 flex flex-col border transition-colors">
-      <div className="p-6 pb-5">
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-500/10">
-            <Bot className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex flex-1 flex-col gap-0.5">
-            <h2 className="typo-h2-heading text-text-1">AI 테스트 케이스 생성</h2>
-            <p className="typo-caption text-text-3">
-              AI를 사용하여 기능 설명에서 테스트 케이스를 자동 생성합니다. API 키는 암호화되어 저장됩니다.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-line-2" />
-
-      <div className="p-6 pt-5">
+    <SettingsCard.Root>
+      <SettingsCard.Header
+        icon={<Bot className="h-5 w-5" />}
+        title="AI 테스트 케이스 생성"
+        description="AI를 사용하여 기능 설명에서 테스트 케이스를 자동 생성합니다. API 키는 암호화되어 저장됩니다."
+      />
+      <SettingsCard.Divider />
+      <SettingsCard.Body>
         {config && !isEditing ? (
-          /* 설정 완료 상태 */
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10">
-                <Check className="h-4 w-4 text-green-400" />
-              </div>
-              <div className="flex flex-col">
-                <span className="typo-body2-heading text-text-1">{providerLabel}</span>
-                <span className="typo-caption text-text-3">
-                  {config.model || '기본 모델'} · API 키 설정됨
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <DSButton variant="ghost" size="small" onClick={() => { setIsEditing(true); setProvider(config.provider); }}>
-                변경
-              </DSButton>
-              <DSButton
-                variant="ghost"
-                size="small"
-                onClick={() => deleteMutation.mutate()}
-                disabled={deleteMutation.isPending}
-                className="text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </DSButton>
-            </div>
-          </div>
+          <SettingsCard.ConnectedStatus
+            label={PROVIDER_META[config.provider]?.label ?? config.provider}
+            description={`${config.model || '기본 모델'} · API 키 설정됨`}
+            actions={
+              <>
+                <DSButton variant="ghost" size="small" onClick={() => { setIsEditing(true); setProvider(config.provider); }}>
+                  변경
+                </DSButton>
+                <DSButton
+                  variant="ghost"
+                  size="small"
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </DSButton>
+              </>
+            }
+          />
         ) : (
-          /* 설정 폼 */
           <div className="flex flex-col gap-4">
             {/* 프로바이더 선택 */}
             <div className="flex flex-col gap-2">
               <span className="typo-label-heading text-text-2">AI 프로바이더</span>
               <div className="flex gap-2">
-                {(['anthropic', 'openai', 'gemini'] as const).map((p) => (
+                {(Object.keys(PROVIDER_META) as Provider[]).map((p) => (
                   <button
                     key={p}
                     type="button"
@@ -136,7 +110,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                         : 'border-line-2 text-text-3 hover:border-line-1'
                     }`}
                   >
-                    {p === 'anthropic' ? 'Anthropic Claude' : p === 'gemini' ? 'Google Gemini' : 'OpenAI'}
+                    {PROVIDER_META[p].label}
                   </button>
                 ))}
               </div>
@@ -150,7 +124,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={provider === 'anthropic' ? 'sk-ant-...' : provider === 'gemini' ? 'AIza...' : 'sk-...'}
+                  placeholder={meta.placeholder}
                   autoComplete="off"
                 />
                 <button
@@ -161,13 +135,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                   {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="typo-caption text-text-4">
-                {provider === 'anthropic'
-                  ? 'console.anthropic.com에서 API 키를 발급받을 수 있습니다.'
-                  : provider === 'gemini'
-                    ? 'aistudio.google.com에서 API 키를 발급받을 수 있습니다.'
-                    : 'platform.openai.com에서 API 키를 발급받을 수 있습니다.'}
-              </p>
+              <p className="typo-caption text-text-4">{meta.hint}</p>
             </div>
 
             {/* 버튼 */}
@@ -192,7 +160,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
             </div>
           </div>
         )}
-      </div>
-    </section>
+      </SettingsCard.Body>
+    </SettingsCard.Root>
   );
 };

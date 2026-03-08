@@ -39,7 +39,7 @@ const ActionToolBarGroup = ({ className, children }: ActionToolBarGroupProps) =>
 
 const ActionToolBarSearch = ({ className, ...props }: ComponentProps<typeof Input>) => {
   return (
-    <div className="relative w-full max-w-md md:flex-none">
+    <div className="relative w-full min-w-0 flex-1">
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400">
         <Search className="h-4 w-4" />
       </div>

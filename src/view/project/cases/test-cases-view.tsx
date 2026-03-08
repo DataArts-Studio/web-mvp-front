@@ -297,15 +297,16 @@ export const TestCasesView = () => {
             <Skeleton className="h-8 w-56" />
             <Skeleton className="h-5 w-80" />
           </header>
-          <div className="col-span-6 flex items-center justify-between gap-4">
-            <div className="flex w-full max-w-3xl items-center gap-3">
+          <div className="col-span-6 flex flex-wrap items-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <Skeleton className="h-10 flex-1 rounded-2 border border-line-2 bg-bg-2" />
               <Skeleton className="h-10 w-44 shrink-0 rounded-2 border border-line-2 bg-bg-2" />
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Skeleton className="h-9 w-24" />
-              <Skeleton className="h-9 w-24" />
-              <Skeleton className="h-9 w-40 rounded-2" />
+            <div className="flex shrink-0 items-center gap-2">
+              <Skeleton className="h-9 w-9 lg:w-24" />
+              <Skeleton className="h-9 w-9 lg:w-24" />
+              <Skeleton className="h-9 w-9 lg:w-24" />
+              <Skeleton className="h-9 w-9 lg:w-40 rounded-2" />
             </div>
           </div>
           <section className="rounded-3 border-line-2 bg-bg-2 col-span-6 border">
@@ -443,13 +444,12 @@ export const TestCasesView = () => {
             </p>
           </header>
 
-          <ActionToolbar.Root
-            ariaLabel="테스트 케이스 컨트롤"
-            className="col-span-6 flex items-center justify-between gap-4 bg-transparent p-0"
-          >
-            <ActionToolbar.Group className="relative w-full max-w-3xl">
+          {/* Toolbar: 검색/정렬 + 액션 버튼 — 공간 부족 시 2행으로 래핑 */}
+          <div className="col-span-6 flex flex-wrap items-center gap-3">
+            {/* 검색 + 정렬 — 항상 한 줄, 남는 공간을 검색이 차지 */}
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <ActionToolbar.Search
-                placeholder="테스트 케이스 제목을 입력해 주세요."
+                placeholder="테스트 케이스 검색..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -458,11 +458,11 @@ export const TestCasesView = () => {
                   }
                 }}
               />
-              {/* Sort Dropdown */}
               <Select.Root value={sortOption} onValueChange={handleSortChange} className="relative shrink-0 w-fit">
                 <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
                   <ArrowUpDown className="h-4 w-4 shrink-0" />
-                  <span>정렬: {currentSortLabel}</span>
+                  <span className="hidden sm:inline">정렬: {currentSortLabel}</span>
+                  <span className="sm:hidden">정렬</span>
                   <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
                 </Select.Trigger>
                 <Select.Content className="absolute top-full left-0 min-w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
@@ -477,30 +477,34 @@ export const TestCasesView = () => {
                   ))}
                 </Select.Content>
               </Select.Root>
-            </ActionToolbar.Group>
-            <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => onOpen('ai-generate')} className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="leading-none">AI 생성</span>
-            </ActionToolbar.Action>
-            <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
-              track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
-              onOpen('import');
-            }} className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              <span className="leading-none">가져오기</span>
-            </ActionToolbar.Action>
-            <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
-              track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count: testCaseItems.length });
-              exportTestCasesToCSV(testCaseItems, decodeURIComponent(slug));
-            }} className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              <span className="leading-none">내보내기</span>
-            </ActionToolbar.Action>
-            <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => { track(TESTCASE_EVENTS.CREATE_START, { project_id: projectId }); onOpen('create'); }} className='flex items-center gap-2'>
-              <Plus className="h-4 w-4" />
-              <span className='leading-none'>테스트 케이스 생성</span>
-            </ActionToolbar.Action>
-          </ActionToolbar.Root>
+            </div>
+
+            {/* 액션 버튼 그룹 — 공간 부족 시 아래로 래핑, 좁으면 아이콘만 */}
+            <div className="flex shrink-0 items-center gap-2">
+              <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => onOpen('ai-generate')} className="flex items-center gap-2" title="AI 생성">
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden lg:inline leading-none">AI 생성</span>
+              </ActionToolbar.Action>
+              <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
+                track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
+                onOpen('import');
+              }} className="flex items-center gap-2" title="가져오기">
+                <Upload className="h-4 w-4" />
+                <span className="hidden lg:inline leading-none">가져오기</span>
+              </ActionToolbar.Action>
+              <ActionToolbar.Action size="small" type="button" variant="ghost" onClick={() => {
+                track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count: testCaseItems.length });
+                exportTestCasesToCSV(testCaseItems, decodeURIComponent(slug));
+              }} className="flex items-center gap-2" title="내보내기">
+                <Download className="h-4 w-4" />
+                <span className="hidden lg:inline leading-none">내보내기</span>
+              </ActionToolbar.Action>
+              <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => { track(TESTCASE_EVENTS.CREATE_START, { project_id: projectId }); onOpen('create'); }} className="flex items-center gap-2" title="테스트 케이스 생성">
+                <Plus className="h-4 w-4" />
+                <span className="hidden lg:inline leading-none">테스트 케이스 생성</span>
+              </ActionToolbar.Action>
+            </div>
+          </div>
 
           {/* Test Case List Container */}
           <section className={cn(
