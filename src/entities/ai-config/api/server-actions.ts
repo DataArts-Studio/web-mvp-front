@@ -8,7 +8,7 @@ import type { ActionResult } from '@/shared/types';
 import type { AiConfig } from '../model/types';
 import { SaveAiConfigSchema, SaveGeneratedCasesSchema } from '../model/schema';
 
-// --- AI 설정 저장/업데이트 ---
+// --- AI 설정 저장/업데이트 (upsert) ---
 export const saveAiConfig = async (
   input: { projectId: string; provider: string; apiKey: string; model?: string },
 ): Promise<ActionResult<{ config: AiConfig }>> => {
@@ -22,47 +22,24 @@ export const saveAiConfig = async (
     const encryptedKey = encrypt(apiKey);
     const db = getDatabase();
 
-    const [existing] = await db
-      .select({ id: projectAiConfigs.id })
-      .from(projectAiConfigs)
-      .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')))
-      .limit(1);
-
-    if (existing) {
-      const [updated] = await db
-        .update(projectAiConfigs)
-        .set({
-          provider,
-          api_key: encryptedKey,
-          model: model || null,
-          updated_at: new Date(),
-        })
-        .where(eq(projectAiConfigs.id, existing.id))
-        .returning();
-
-      return {
-        success: true,
-        data: {
-          config: {
-            id: updated.id,
-            projectId: updated.project_id,
-            provider: updated.provider,
-            model: updated.model,
-            hasApiKey: true,
-            createdAt: updated.created_at.toISOString(),
-            updatedAt: updated.updated_at.toISOString(),
-          },
-        },
-      };
-    }
-
-    const [created] = await db
+    const [result] = await db
       .insert(projectAiConfigs)
       .values({
         project_id: projectId,
         provider,
         api_key: encryptedKey,
         model: model || null,
+        lifecycle_status: 'ACTIVE',
+      })
+      .onConflictDoUpdate({
+        target: projectAiConfigs.project_id,
+        set: {
+          provider,
+          api_key: encryptedKey,
+          model: model || null,
+          lifecycle_status: 'ACTIVE',
+          updated_at: new Date(),
+        },
       })
       .returning();
 
@@ -70,13 +47,13 @@ export const saveAiConfig = async (
       success: true,
       data: {
         config: {
-          id: created.id,
-          projectId: created.project_id,
-          provider: created.provider,
-          model: created.model,
+          id: result.id,
+          projectId: result.project_id,
+          provider: result.provider,
+          model: result.model,
           hasApiKey: true,
-          createdAt: created.created_at.toISOString(),
-          updatedAt: created.updated_at.toISOString(),
+          createdAt: result.created_at.toISOString(),
+          updatedAt: result.updated_at.toISOString(),
         },
       },
     };
