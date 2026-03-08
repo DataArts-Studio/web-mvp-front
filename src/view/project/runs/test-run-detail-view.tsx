@@ -13,7 +13,7 @@ import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 import { toast } from 'sonner';
 
 import {
-  RunDetailSkeleton, RunDetailError, RunDetailHeader, RunDetailCharts,
+  RunDetailSkeleton, RunDetailError, RunDetailHeader, RunDetailCharts, RunSummaryBar,
   KeyboardShortcutsModal, RunCaseListPanel, RunCaseDetailPanel, RemoveSuiteDialog,
   useRunKeyboardShortcuts,
   type StatusFilter, type TestCaseRunStatus, type GroupedCases,
@@ -63,16 +63,13 @@ export const TestRunDetailView = () => {
   const bulkSelection = useSelectionSet();
   const [comment, setComment] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showCharts, setShowCharts] = useState(false);
   const [removeSuiteTarget, setRemoveSuiteTarget] = useState<{ id: string; name: string } | null>(null);
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
-  const statusDropdownRef = React.useRef<HTMLDivElement>(null);
   const statusFilterRef = React.useRef<HTMLDivElement>(null);
   const suiteFilterRef = React.useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on click outside
-  useOutsideClick(statusDropdownRef, () => setShowStatusDropdown(false), showStatusDropdown);
   useOutsideClick(statusFilterRef, () => setShowStatusFilterDropdown(false), showStatusFilterDropdown);
   useOutsideClick(suiteFilterRef, () => setShowSuiteFilterDropdown(false), showSuiteFilterDropdown);
 
@@ -262,7 +259,6 @@ export const TestRunDetailView = () => {
     track(TESTRUN_EVENTS.RESULT_UPDATE, { status, case_id: selectedCase.id });
     updateMutation.mutate({ testCaseRunId: selectedCase.id, status, comment: comment || null });
 
-    // Move to next untested case (optimistic)
     const currentIndex = filteredCases.findIndex((tc) => tc.id === selectedCase.id);
     const nextUntested = filteredCases.find((tc, i) => i > currentIndex && tc.status === 'untested');
     if (nextUntested) {
@@ -295,17 +291,24 @@ export const TestRunDetailView = () => {
         onRename={(name) => renameMutation.mutate({ name })}
         isRenaming={renameMutation.isPending}
         onShowShortcuts={() => setShowShortcuts(true)}
+        showCharts={showCharts}
+        onToggleCharts={() => setShowCharts(prev => !prev)}
       />
 
-      <RunDetailCharts
-        testStatusData={testStatusData}
-        milestones={dashboardMilestones}
-        testRuns={allTestRuns}
-        selectedRunId={testRunId}
-      />
+      <RunSummaryBar stats={testRun.stats} />
 
-      {/* Main Content - sticky panels */}
-      <div className="sticky top-0 flex h-screen overflow-hidden">
+      {/* Collapsible charts panel */}
+      {showCharts && (
+        <RunDetailCharts
+          testStatusData={testStatusData}
+          milestones={dashboardMilestones}
+          testRuns={allTestRuns}
+          selectedRunId={testRunId}
+        />
+      )}
+
+      {/* Main Content - full height work area */}
+      <div className="sticky top-0 flex flex-1 overflow-hidden">
         <RunCaseListPanel
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -343,9 +346,6 @@ export const TestRunDetailView = () => {
           setComment={setComment}
           handleStatusChange={handleStatusChange}
           updateMutation={updateMutation}
-          showStatusDropdown={showStatusDropdown}
-          setShowStatusDropdown={setShowStatusDropdown}
-          statusDropdownRef={statusDropdownRef}
         />
       </div>
 

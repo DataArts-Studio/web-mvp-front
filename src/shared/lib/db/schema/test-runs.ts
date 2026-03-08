@@ -18,4 +18,5 @@ export const testRuns = pgTable('test_runs', {
   lifecycle_status: varchar('lifecycle_status', { length: 20 }).$type<LifecycleStatus>().default('ACTIVE').notNull(),
   share_token: varchar('share_token', { length: 36 }).unique(),
   share_expires_at: timestamp('share_expires_at'),
+  share_ai_summary: text('share_ai_summary'),
 });
