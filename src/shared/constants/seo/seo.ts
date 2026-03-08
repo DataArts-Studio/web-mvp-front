@@ -8,7 +8,7 @@ interface SiteInfo {
 const SITE: SiteInfo = {
   TITLE: 'testea',
   DESCRIPTION: '테스트케이스를 쉽고 빠르게 작성하고 관리할 수 있는 테스트 관리 도구',
-  URL: 'https://testea.app',
+  URL: 'https://gettestea.com',
   OGIMAGE: '/og-default.png',
 };
 
