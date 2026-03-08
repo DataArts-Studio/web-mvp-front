@@ -5,13 +5,12 @@ import { useForm } from 'react-hook-form';
 import { Milestone, addTestCasesToMilestone, addTestSuitesToMilestone, removeTestCaseFromMilestone, removeTestSuiteFromMilestone } from '@/entities/milestone';
 import { getTestCases } from '@/entities/test-case/api';
 import { getTestSuites } from '@/entities/test-suite/api';
-import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
+import { DSButton, FormField, LoadingSpinner, CaseSelectionPanel, SuiteSelectionPanel, cn } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useUpdateMilestone } from '../hooks';
 import { UpdateMilestone, UpdateMilestoneSchema } from '../model';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
-import { Check, ChevronDown, ChevronUp, FolderOpen, ListChecks, Search } from 'lucide-react';
 
 interface MilestoneEditFormProps {
   milestone: Milestone;
@@ -45,8 +44,6 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
   const [selectedCaseIds, setSelectedCaseIds] = useState<Set<string>>(initialCaseIds);
   const [selectedSuiteIds, setSelectedSuiteIds] = useState<Set<string>>(initialSuiteIds);
-  const [caseSearchQuery, setCaseSearchQuery] = useState('');
-  const [suiteSearchQuery, setSuiteSearchQuery] = useState('');
   const [expandedSection, setExpandedSection] = useState<'cases' | 'suites' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -63,19 +60,6 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
     queryFn: () => getTestSuites({ projectId: milestone.projectId }),
   });
   const allSuites = suitesResult?.success ? suitesResult.data ?? [] : [];
-
-  // 필터링
-  const filteredCases = allCases.filter((tc) => {
-    const search = caseSearchQuery.toLowerCase().trim();
-    if (!search) return true;
-    return tc.title.toLowerCase().includes(search) || tc.caseKey.toLowerCase().includes(search);
-  });
-
-  const filteredSuites = allSuites.filter((suite) => {
-    const search = suiteSearchQuery.toLowerCase().trim();
-    if (!search) return true;
-    return suite.title.toLowerCase().includes(search) || suite.description?.toLowerCase().includes(search);
-  });
 
   const {
     register,
@@ -263,152 +247,22 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
               </div>
 
               {/* 테스트 케이스 선택 */}
-              <div className="border-line-2 rounded-lg border">
-                <button
-                  type="button"
-                  onClick={() => setExpandedSection(expandedSection === 'cases' ? null : 'cases')}
-                  className="hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <ListChecks className="text-primary h-5 w-5" />
-                    <span className="text-text-1 font-medium">테스트 케이스</span>
-                    {selectedCaseIds.size > 0 && (
-                      <span className="bg-primary rounded-full px-2 py-0.5 text-xs text-white">
-                        {selectedCaseIds.size}개 선택
-                      </span>
-                    )}
-                  </div>
-                  {expandedSection === 'cases' ? (
-                    <ChevronUp className="text-text-3 h-5 w-5" />
-                  ) : (
-                    <ChevronDown className="text-text-3 h-5 w-5" />
-                  )}
-                </button>
-
-                {expandedSection === 'cases' && (
-                  <div className="border-line-2 border-t">
-                    {/* 검색 */}
-                    <div className="border-line-2 border-b px-4 py-2">
-                      <div className="bg-bg-3 flex items-center gap-2 rounded-lg px-3 py-2">
-                        <Search className="text-text-3 h-4 w-4" />
-                        <input
-                          type="text"
-                          placeholder="케이스 검색..."
-                          value={caseSearchQuery}
-                          onChange={(e) => setCaseSearchQuery(e.target.value)}
-                          className="text-text-1 placeholder:text-text-3 w-full bg-transparent text-sm outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    {/* 리스트 */}
-                    <div className="max-h-[200px] overflow-y-auto">
-                      {filteredCases.length === 0 ? (
-                        <div className="text-text-3 py-8 text-center text-sm">
-                          {allCases.length === 0 ? '테스트 케이스가 없습니다.' : '검색 결과가 없습니다.'}
-                        </div>
-                      ) : (
-                        filteredCases.map((tc) => (
-                          <div
-                            key={tc.id}
-                            onClick={() => toggleCase(tc.id)}
-                            className="hover:bg-bg-3 flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors"
-                          >
-                            <div
-                              className={cn(
-                                'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
-                                selectedCaseIds.has(tc.id)
-                                  ? 'border-primary bg-primary text-white'
-                                  : 'border-line-2 bg-bg-3'
-                              )}
-                            >
-                              {selectedCaseIds.has(tc.id) && <Check className="h-3 w-3" />}
-                            </div>
-                            <span className="text-primary shrink-0 font-mono text-xs">{tc.caseKey}</span>
-                            <span className="text-text-1 truncate text-sm">{tc.title}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <CaseSelectionPanel
+                allCases={allCases}
+                selectedCaseIds={selectedCaseIds}
+                onToggleCase={toggleCase}
+                isExpanded={expandedSection === 'cases'}
+                onToggleExpand={() => setExpandedSection(expandedSection === 'cases' ? null : 'cases')}
+              />
 
               {/* 테스트 스위트 선택 */}
-              <div className="border-line-2 rounded-lg border">
-                <button
-                  type="button"
-                  onClick={() => setExpandedSection(expandedSection === 'suites' ? null : 'suites')}
-                  className="hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="text-primary h-5 w-5" />
-                    <span className="text-text-1 font-medium">테스트 스위트</span>
-                    {selectedSuiteIds.size > 0 && (
-                      <span className="bg-primary rounded-full px-2 py-0.5 text-xs text-white">
-                        {selectedSuiteIds.size}개 선택
-                      </span>
-                    )}
-                  </div>
-                  {expandedSection === 'suites' ? (
-                    <ChevronUp className="text-text-3 h-5 w-5" />
-                  ) : (
-                    <ChevronDown className="text-text-3 h-5 w-5" />
-                  )}
-                </button>
-
-                {expandedSection === 'suites' && (
-                  <div className="border-line-2 border-t">
-                    {/* 검색 */}
-                    <div className="border-line-2 border-b px-4 py-2">
-                      <div className="bg-bg-3 flex items-center gap-2 rounded-lg px-3 py-2">
-                        <Search className="text-text-3 h-4 w-4" />
-                        <input
-                          type="text"
-                          placeholder="스위트 검색..."
-                          value={suiteSearchQuery}
-                          onChange={(e) => setSuiteSearchQuery(e.target.value)}
-                          className="text-text-1 placeholder:text-text-3 w-full bg-transparent text-sm outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    {/* 리스트 */}
-                    <div className="max-h-[200px] overflow-y-auto">
-                      {filteredSuites.length === 0 ? (
-                        <div className="text-text-3 py-8 text-center text-sm">
-                          {allSuites.length === 0 ? '테스트 스위트가 없습니다.' : '검색 결과가 없습니다.'}
-                        </div>
-                      ) : (
-                        filteredSuites.map((suite) => (
-                          <div
-                            key={suite.id}
-                            onClick={() => toggleSuite(suite.id)}
-                            className="hover:bg-bg-3 flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors"
-                          >
-                            <div
-                              className={cn(
-                                'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
-                                selectedSuiteIds.has(suite.id)
-                                  ? 'border-primary bg-primary text-white'
-                                  : 'border-line-2 bg-bg-3'
-                              )}
-                            >
-                              {selectedSuiteIds.has(suite.id) && <Check className="h-3 w-3" />}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <span className="text-text-1 truncate text-sm">{suite.title}</span>
-                              {suite.description && (
-                                <p className="text-text-3 truncate text-xs">{suite.description}</p>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <SuiteSelectionPanel
+                allSuites={allSuites}
+                selectedSuiteIds={selectedSuiteIds}
+                onToggleSuite={toggleSuite}
+                isExpanded={expandedSection === 'suites'}
+                onToggleExpand={() => setExpandedSection(expandedSection === 'suites' ? null : 'suites')}
+              />
             </div>
           </div>
 

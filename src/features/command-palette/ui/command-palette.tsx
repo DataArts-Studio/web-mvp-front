@@ -4,24 +4,17 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import ReactDOM from 'react-dom';
 import { useRouter, useParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { Search, Clock, Zap } from 'lucide-react';
 import { useCommandPalette } from '../hooks/use-command-palette';
 import { useCommandSearch } from '../hooks/use-command-search';
 import { useRecentVisits } from '../hooks/use-recent-visits';
+import { useCommandNavigation } from '../hooks/use-command-navigation';
 import { getQuickActions } from '../model/actions';
-import { CommandItem } from './command-item';
+import { CommandSearchInput } from './command-search-input';
+import { CommandList } from './command-list';
+import { CommandFooter } from './command-footer';
 import { dashboardQueryKeys } from '@/features/dashboard';
 import type { CommandItem as CommandItemType, CommandItemCategory } from '../model/types';
 import { FileText, FolderOpen, Flag, Play } from 'lucide-react';
-
-const CATEGORY_LABELS: Record<CommandItemCategory, string> = {
-  action: '빠른 액션',
-  recent: '최근 방문',
-  testCase: '테스트 케이스',
-  testSuite: '테스트 스위트',
-  milestone: '마일스톤',
-  testRun: '테스트 실행',
-};
 
 const RECENT_TYPE_ICONS: Record<string, typeof FileText> = {
   testCase: FileText,
@@ -33,7 +26,6 @@ const RECENT_TYPE_ICONS: Record<string, typeof FileText> = {
 export const CommandPalette = () => {
   const { isOpen, close } = useCommandPalette();
   const [query, setQuery] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -109,26 +101,6 @@ export const CommandPalette = () => {
     return groups;
   }, [displayItems]);
 
-  // 열릴 때 초기화
-  useEffect(() => {
-    if (isOpen) {
-      setQuery('');
-      setActiveIndex(0);
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
-  }, [isOpen]);
-
-  // 활성 아이템 스크롤
-  useEffect(() => {
-    const activeEl = listRef.current?.querySelector('[data-active="true"]');
-    activeEl?.scrollIntoView({ block: 'nearest' });
-  }, [activeIndex]);
-
-  // 검색어 변경 시 인덱스 리셋
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
-
   const handleSelect = useCallback(
     (item: CommandItemType) => {
       close();
@@ -141,40 +113,27 @@ export const CommandPalette = () => {
     [close, router],
   );
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          setActiveIndex((prev) => (prev + 1) % displayItems.length || 0);
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setActiveIndex((prev) =>
-            prev <= 0 ? Math.max(displayItems.length - 1, 0) : prev - 1,
-          );
-          break;
-        case 'Enter':
-          e.preventDefault();
-          if (displayItems[activeIndex]) {
-            handleSelect(displayItems[activeIndex]);
-          }
-          break;
-        case 'Escape':
-          e.preventDefault();
-          close();
-          break;
-      }
-    },
-    [activeIndex, displayItems, handleSelect, close],
-  );
+  const { activeIndex, setActiveIndex, handleKeyDown } = useCommandNavigation({
+    items: displayItems,
+    query,
+    isOpen,
+    onSelect: handleSelect,
+    onClose: close,
+    listRef,
+  });
+
+  // 열릴 때 초기화
+  useEffect(() => {
+    if (isOpen) {
+      setQuery('');
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [isOpen]);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   if (!mounted || !isOpen) return null;
-
-  let itemIndex = -1;
 
   return ReactDOM.createPortal(
     <>
@@ -194,75 +153,23 @@ export const CommandPalette = () => {
         className="fixed left-1/2 top-[20%] z-[1001] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-5 border border-line-2 bg-bg-2 shadow-3"
         onKeyDown={handleKeyDown}
       >
-        {/* Search Input */}
-        <div className="flex items-center gap-3 border-b border-line-1 px-4 py-3">
-          <Search size={18} className="shrink-0 text-text-3" />
-          <input
-            ref={inputRef}
-            type="text"
-            className="flex-1 bg-transparent text-text-1 typo-body-normal placeholder:text-text-4 outline-none"
-            placeholder="검색 또는 이동..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <kbd className="shrink-0 rounded-2 border border-line-2 bg-bg-3 px-1.5 py-0.5 typo-label-normal text-text-4">
-            ESC
-          </kbd>
-        </div>
+        <CommandSearchInput
+          ref={inputRef}
+          value={query}
+          onChange={setQuery}
+        />
 
-        {/* Results */}
-        <div ref={listRef} className="max-h-[360px] overflow-y-auto p-2">
-          {displayItems.length === 0 ? (
-            <div className="flex items-center justify-center py-10 text-text-4 typo-body-normal">
-              {query.trim() ? '검색 결과가 없습니다' : '데이터를 불러오는 중...'}
-            </div>
-          ) : (
-            groupedItems.map((group) => (
-              <div key={group.category} className="mb-1 last:mb-0">
-                <div className="flex items-center gap-2 px-3 py-1.5">
-                  {group.category === 'action' && <Zap size={12} className="text-text-4" />}
-                  {group.category === 'recent' && <Clock size={12} className="text-text-4" />}
-                  <span className="typo-label-heading text-text-4 uppercase tracking-wider">
-                    {CATEGORY_LABELS[group.category]}
-                  </span>
-                </div>
-                {group.items.map((item) => {
-                  itemIndex++;
-                  const currentIndex = itemIndex;
-                  return (
-                    <CommandItem
-                      key={item.id}
-                      item={item}
-                      isActive={currentIndex === activeIndex}
-                      onSelect={() => handleSelect(item)}
-                      onMouseEnter={() => setActiveIndex(currentIndex)}
-                    />
-                  );
-                })}
-              </div>
-            ))
-          )}
-        </div>
+        <CommandList
+          ref={listRef}
+          displayItems={displayItems}
+          groupedItems={groupedItems}
+          query={query}
+          activeIndex={activeIndex}
+          onSelect={handleSelect}
+          onActiveIndexChange={setActiveIndex}
+        />
 
-        {/* Footer hints */}
-        <div className="flex items-center gap-4 border-t border-line-1 px-4 py-2">
-          <span className="flex items-center gap-1 typo-label-normal text-text-4">
-            <kbd className="rounded-1 border border-line-2 bg-bg-3 px-1 py-0.5 text-[10px]">↑↓</kbd>
-            이동
-          </span>
-          <span className="flex items-center gap-1 typo-label-normal text-text-4">
-            <kbd className="rounded-1 border border-line-2 bg-bg-3 px-1 py-0.5 text-[10px]">↵</kbd>
-            선택
-          </span>
-          <span className="flex items-center gap-1 typo-label-normal text-text-4">
-            <kbd className="rounded-1 border border-line-2 bg-bg-3 px-1 py-0.5 text-[10px]">ESC</kbd>
-            닫기
-          </span>
-          <span className="flex items-center gap-1 typo-label-normal text-text-4 ml-auto">
-            <kbd className="rounded-1 border border-line-2 bg-bg-3 px-1 py-0.5 text-[10px]">&gt;</kbd>
-            액션 모드
-          </span>
-        </div>
+        <CommandFooter />
       </div>
     </>,
     document.body,

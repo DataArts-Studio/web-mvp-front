@@ -6,7 +6,7 @@ export { TEST_TYPE_OPTIONS, getTestTypeLabel } from './model';
 export type { TestTypeValue } from './model';
 export { parseSteps, serializeSteps, stepsToText, textToSteps } from './model';
 // ui
-export { TestCaseCard } from './ui';
+export { TestCaseCard, BasicInfoFields, TagsField, ScenarioFields } from './ui';
 // api
 export { getTestCase, getTestCases, getTestCasesList, createTestCase, updateTestCase, duplicateTestCase } from './api';
 export { projectTagsQueryOptions } from './api';

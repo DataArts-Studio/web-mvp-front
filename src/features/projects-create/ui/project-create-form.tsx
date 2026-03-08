@@ -1,20 +1,21 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
-import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProject } from '@/features/projects-create';
-import { DSButton, DsCheckbox, DsFormField, DsInput, LoadingSpinner } from '@/shared';
+import { DSButton } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
-import { CheckCircle, ClipboardCheck, Copy, FolderOpen, XIcon } from 'lucide-react';
 import { track, PROJECT_CREATE_EVENTS } from '@/shared/lib/analytics';
 import { ENV } from '@/shared/constants';
 import { toast } from 'sonner';
+
+import { StepProjectInfo } from './step-project-info';
+import { StepPassword } from './step-password';
+import { StepConfirmation } from './step-confirmation';
+import { StepSuccess } from './step-success';
 
 interface ProjectCreateFormProps {
   onClick?: () => void;
@@ -22,11 +23,9 @@ interface ProjectCreateFormProps {
 
 export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
-  const [copied, setCopied] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const turnstileRef = useRef<TurnstileInstance>(null);
   const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const siteKey = isLocalhost ? '' : ENV.CLIENT.TURNSTILE_SITE_KEY;
   const {
@@ -42,6 +41,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     resolver: zodResolver(ProjectFormSchema),
   });
   const projectName = getValues('projectName');
+
   const handleNext = async () => {
     let isStepValid = false;
 
@@ -79,7 +79,6 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
       setStep((prev) => prev + 1);
     }
   };
-  const handlePrev = () => setStep((prev) => prev - 1);
 
   const onSubmit = async (formData: ProjectForm) => {
     if (siteKey && !turnstileToken) {
@@ -108,29 +107,10 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
     }
   };
 
-  const handleCopyLink = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const link = `${origin}/projects/${encodeURIComponent(createdSlug)}`;
-    navigator.clipboard.writeText(link).then(() => {
-      track(PROJECT_CREATE_EVENTS.LINK_COPY);
-      setCopied(true);
-    });
-  };
-
   const router = useRouter();
   const handleRedirectTo = (path: string) => {
     router.replace(path);
   };
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (copied) {
-      timer = setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    }
-    return () => clearTimeout(timer);
-  }, [copied]);
 
   return (
     <>
@@ -161,190 +141,38 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         className="relative z-10 flex w-full shrink-0 flex-col content-stretch items-center gap-[32px]"
       >
         {step === 1 && (
-          <div className="flex flex-col items-center justify-center gap-4">
-            {/* Step1: 프로젝트 이름 입력 */}
-            <div className="flex flex-col items-center justify-center gap-4 space-x-2 text-xl font-bold text-teal-400">
-              <Image src="/logo.svg" alt="Testea Logo" width={120} height={28} />
-              <h2 className="text-primary">테스트 케이스 작성, 단 5분이면 끝!</h2>
-              <p className="mt-2 text-base text-neutral-400">
-                클릭 몇 번이면 뚝딱! 테스트 케이스를 자동으로 생성하고 관리해보세요.
-              </p>
-            </div>
-            <DsFormField.Root error={errors.projectName}>
-              <DsFormField.Label srOnly>프로젝트 이름 (Project Name)</DsFormField.Label>
-              <DsFormField.Control asChild>
-                <DsInput
-                  id="projectName"
-                  type="text"
-                  {...register('projectName', { required: true })}
-                  placeholder="프로젝트 이름을 입력하세요 (예: Testea Web Client)"
-                />
-              </DsFormField.Control>
-            </DsFormField.Root>
-            <div className="flex w-full flex-col gap-2">
-              <label className="flex items-start gap-2 cursor-pointer select-none">
-                <Controller
-                  name="termsAgreed"
-                  control={control}
-                  render={({ field }) => (
-                    <DsCheckbox
-                      checked={field.value === true}
-                      onCheckedChange={(checked) => field.onChange(checked)}
-                      className="mt-0.5 shrink-0"
-                    />
-                  )}
-                />
-                <span className="text-sm text-text-2">
-                  <Link href="/legal?tab=terms" target="_blank" className="underline text-primary">이용약관</Link> 및 <Link href="/legal?tab=privacy" target="_blank" className="underline text-primary">개인정보 처리방침</Link>에 동의합니다.
-                </span>
-              </label>
-              <label className="flex items-start gap-2 cursor-pointer select-none">
-                <Controller
-                  name="ageConfirmed"
-                  control={control}
-                  render={({ field }) => (
-                    <DsCheckbox
-                      checked={field.value === true}
-                      onCheckedChange={(checked) => field.onChange(checked)}
-                      className="mt-0.5 shrink-0"
-                    />
-                  )}
-                />
-                <span className="text-sm text-text-2">
-                  만 14세 이상임을 확인합니다.
-                </span>
-              </label>
-            </div>
-            {(errors.projectName || errors.termsAgreed || errors.ageConfirmed) && (
-              <div className="flex w-full flex-col gap-1">
-                {errors.projectName && (
-                  <p className="text-sm text-system-red">{errors.projectName.message}</p>
-                )}
-                {errors.termsAgreed && (
-                  <p className="text-sm text-system-red">{errors.termsAgreed.message}</p>
-                )}
-                {errors.ageConfirmed && (
-                  <p className="text-sm text-system-red">{errors.ageConfirmed.message}</p>
-                )}
-              </div>
-            )}
-            <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
-              프로젝트 생성 시작
-            </DSButton>
-          </div>
+          <StepProjectInfo
+            register={register}
+            control={control}
+            errors={errors}
+            onNext={handleNext}
+          />
         )}
-        {/* Step2: 프로젝트 식별번호 입력 */}
         {step === 2 && (
-          <div className="flex w-full flex-col items-start gap-4">
-            <div className="inline-flex flex-col items-start justify-start gap-4 self-stretch">
-              <div className="inline-flex items-center justify-between self-stretch">
-                <h2 className="text-2xl">프라이빗 모드로 생성하기</h2>
-                <DSButton type="button" variant="text" className="cursor-pointer" onClick={() => { track(PROJECT_CREATE_EVENTS.ABANDON, { step }); onClick?.(); }}>
-                  <XIcon className="h-8 w-8" />
-                </DSButton>
-              </div>
-              <p className="text-text-2 self-stretch text-start text-base leading-6 font-normal">
-                프라이빗 모드란? 식별번호가 필요한 프로젝트를 의미합니다.
-              </p>
-            </div>
-            <DsFormField.Root error={errors.identifier || errors.identifierConfirm}>
-              <DsFormField.Label srOnly>프로젝트 식별번호 (Identifier/Password)</DsFormField.Label>
-              <DsFormField.Control asChild>
-                <DsInput
-                  id="identifier"
-                  type="password"
-                  {...register('identifier', { required: true })}
-                  placeholder="식별번호를 입력하세요"
-                />
-              </DsFormField.Control>
-            </DsFormField.Root>
-            <DsFormField.Root error={errors.identifier || errors.identifierConfirm}>
-              <DsFormField.Label srOnly>식별번호 재확인</DsFormField.Label>
-              <DsFormField.Control asChild>
-                <DsInput
-                  id="identifierConfirm"
-                  type="password"
-                  {...register('identifierConfirm', { required: true })}
-                  placeholder="식별번호를 다시 입력하세요"
-                />
-              </DsFormField.Control>
-              <DsFormField.Message />
-            </DsFormField.Root>
-            <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={handleNext}>
-              프로젝트 생성하기
-            </DSButton>
-          </div>
+          <StepPassword
+            register={register}
+            errors={errors}
+            step={step}
+            onNext={handleNext}
+            onClose={onClick}
+          />
         )}
-        {/* Step3: 프로젝트 생성 정보 확인 */}
         {step === 3 && (
-          <div className="relative flex w-full flex-col items-center gap-6">
-            {isSubmitting && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-1/80 backdrop-blur-sm">
-                <LoadingSpinner size="md" text="프로젝트를 생성하고 있어요" />
-              </div>
-            )}
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
-              <FolderOpen className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <h2 className="text-xl font-bold text-text-1">프로젝트를 생성하시겠습니까?</h2>
-              <p className="text-sm text-text-3">아래 정보로 새 프로젝트가 생성됩니다.</p>
-            </div>
-            <div className="flex w-full items-center gap-3 rounded-xl border border-line-2 bg-bg-2 px-5 py-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-bg-3">
-                <FolderOpen className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-text-3">프로젝트 이름</p>
-                <p className="truncate text-base font-semibold text-text-1">{projectName}</p>
-              </div>
-            </div>
-            {siteKey && (
-              <Turnstile
-                ref={turnstileRef}
-                siteKey={siteKey}
-                onSuccess={setTurnstileToken}
-                onError={() => setTurnstileToken('')}
-                onExpire={() => setTurnstileToken('')}
-                options={{ theme: 'dark', size: 'flexible' }}
-              />
-            )}
-            <div className="flex w-full gap-3">
-              <DSButton onClick={() => { track(PROJECT_CREATE_EVENTS.ABANDON, { step }); onClick?.(); }} type="button" variant="ghost" className="w-full" disabled={isSubmitting}>
-                취소
-              </DSButton>
-              <DSButton type="submit" variant="solid" className="w-full" disabled={isSubmitting || (!!siteKey && !turnstileToken)}>
-                생성하기
-              </DSButton>
-            </div>
-          </div>
+          <StepConfirmation
+            projectName={projectName}
+            step={step}
+            isSubmitting={isSubmitting}
+            siteKey={siteKey}
+            onTurnstileToken={setTurnstileToken}
+            turnstileToken={turnstileToken}
+            onClose={onClick}
+          />
         )}
-        {/* Step4: URL 제공 및 CTA 버튼 */}
         {step === 4 && (
-          <div className="flex w-full flex-col items-center gap-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15">
-              <CheckCircle className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <h2 className="text-xl font-bold text-text-1">프로젝트 생성 완료!</h2>
-              <p className="text-sm text-text-3">프로젝트가 성공적으로 생성되었습니다.</p>
-            </div>
-            <div className="flex w-full items-center gap-2 rounded-xl border border-line-2 bg-bg-2 px-4 py-3">
-              <p className="min-w-0 flex-1 truncate text-sm font-medium text-text-2">
-                {createdSlug}
-              </p>
-              <DSButton type="button" variant="ghost" size="small" onClick={handleCopyLink} className="shrink-0 gap-1.5">
-                {copied ? <><ClipboardCheck className="h-4 w-4" /> 복사 완료</> : <><Copy className="h-4 w-4" /> 링크 복사</>}
-              </DSButton>
-            </div>
-            <DSButton
-              variant="solid"
-              className="w-full"
-              onClick={() => handleRedirectTo(`/projects/${encodeURIComponent(createdSlug)}`)}
-            >
-              시작하기
-            </DSButton>
-          </div>
+          <StepSuccess
+            createdSlug={createdSlug}
+            onStart={() => handleRedirectTo(`/projects/${encodeURIComponent(createdSlug)}`)}
+          />
         )}
       </form>
       {step === 1 && (

@@ -1,33 +1,24 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
 import { testCasesQueryOptions } from '@/features/cases-list/api/query';
 import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { testRunsQueryOptions } from '@/features/runs/api/query';
 import { useDisclosure } from '@/shared/hooks/use-disclosure';
 import { useInViewOnce } from '@/shared/hooks';
-import { DSButton } from '@/shared/ui/ds-button';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Clock, Play, Share2 } from 'lucide-react';
-import { TestRunDropdown } from './test-run-dropdown';
-import dynamic from 'next/dynamic';
-import { KPICards, type KPIData } from '@/widgets/project/ui/kpi-cards';
-import { TestStatusChart, type TestStatusData } from '@/widgets/project/ui/test-status-chart';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
-import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
-import { formatBytes } from '@/shared/utils';
-import type { ActionResult } from '@/shared/types';
-import { KPISkeleton, InfoSkeleton, ChartSkeleton, CardListSkeleton } from './dashboard-skeletons';
-import { DashboardEmptyState } from './dashboard-empty-state';
+import type { TestStatusData } from '@/widgets/project/ui/test-status-chart';
+import { KPISkeleton, InfoSkeleton, CardListSkeleton } from './dashboard-skeletons';
 import { TestCasesSection, TestSuitesSection } from './dashboard-sections';
+import { ProjectInfoCard, StorageCard } from './_components/dashboard-info-cards';
+import { DashboardRecentActivity } from './_components/dashboard-recent-activity';
+import { DashboardChartSection } from './_components/dashboard-chart-section';
+import { KPICards, type KPIData } from '@/widgets/project/ui/kpi-cards';
 
-const MilestoneGanttChart = dynamic(
-  () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
-  { ssr: false, loading: () => <div className="bg-bg-2 rounded-2xl p-6 h-75 animate-pulse" /> }
-);
 const TestCaseDetailForm = dynamic(
   () => import('@/features/cases-create').then(mod => ({ default: mod.TestCaseDetailForm })),
 );
@@ -40,7 +31,6 @@ type ModalType = 'case' | 'suite';
 type ProjectDashboardContentProps = {
   projectId?: string;
 };
-
 
 export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectDashboardContentProps) => {
   const params = useParams();
@@ -57,10 +47,7 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
   const { targetRef: casesRef, visible: casesVisible } = useInViewOnce();
   const { targetRef: suitesRef, visible: suitesVisible } = useInViewOnce();
 
-  const {
-    data: dashboardData,
-    isLoading,
-  } = useQuery({
+  const { data: dashboardData, isLoading } = useQuery({
     ...dashboardQueryOptions.stats(slug),
     enabled: !!slug,
   });
@@ -173,15 +160,15 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
 
   return (
     <>
-        {/* KPI 카드 섹션 */}
-        <section className="col-span-6" data-tour="kpi-cards">
-          {showSkeleton ? <KPISkeleton /> : <KPICards data={kpiData} projectTotalCases={totalCasesCount} />}
-        </section>
+      {/* KPI 카드 섹션 */}
+      <section className="col-span-6" data-tour="kpi-cards">
+        {showSkeleton ? <KPISkeleton /> : <KPICards data={kpiData} projectTotalCases={totalCasesCount} />}
+      </section>
 
-        {/* 프로젝트 정보 + 저장 용량 + 최근 활동 카드 */}
-        <section className="col-span-6 grid grid-cols-6 gap-5">
-          {showSkeleton ? <InfoSkeleton /> : (
-          <>
+      {/* 프로젝트 정보 + 저장 용량 + 최근 활동 카드 */}
+      <section className="col-span-6 grid grid-cols-6 gap-5">
+        {showSkeleton ? <InfoSkeleton /> : (
+        <>
           {/* 왼쪽: 프로젝트 정보 + 저장 용량 (세로 배치) */}
           <div className="col-span-2 flex flex-col gap-5">
             <ProjectInfoCard project={project} isCopied={isCopied} onCopyLink={handleCopyLink} />
@@ -189,90 +176,42 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
           </div>
 
           {/* 최근 활동 카드 */}
-          <div className="rounded-3 border-line-2 bg-bg-2 col-span-4 flex flex-col gap-4 border p-5" data-tour="recent-activity">
-            <span className="typo-body2-heading text-text-3">최근 활동</span>
-            {recentActivities.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-6 flex-1">
-                <Clock className="text-text-3 h-8 w-8" />
-                <p className="typo-body2-normal text-text-3">최근 활동이 없습니다.</p>
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {recentActivities.slice(0, 7).map((item) => (
-                  <li key={item.id} className="flex items-center gap-2">
-                    <span className="bg-primary h-1.5 w-1.5 rounded-full" />
-                    <span className="typo-body2-normal text-text-1 flex-1 truncate">{item.title}</span>
-                    <span className="typo-caption text-text-3">{formatRelativeTime(item.created_at)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          </>
-          )}
-        </section>
+          <DashboardRecentActivity recentActivities={recentActivities} />
+        </>
+        )}
+      </section>
 
-        {/* 테스트 현황 차트 섹션 */}
-        <section className="col-span-6 flex flex-col gap-4" data-tour="test-status-chart">
-          <div className="flex items-center justify-between">
-            <h2 className="typo-h2-heading text-text-1">테스트 현황</h2>
-            <TestRunDropdown
-              testRuns={testRuns}
-              selectedRunId={effectiveSelectedRunId}
-              onSelect={setSelectedRunId}
-              slug={slug}
-              selectedRunName={selectedRun?.name}
-            />
-          </div>
-          {showSkeleton ? <ChartSkeleton /> : testRuns.length === 0 ? (
-            <DashboardEmptyState
-              icon={<Play className="h-6 w-6" strokeWidth={1.5} />}
-              title="첫 번째 테스트를 실행해보세요!"
-              description="테스트를 실행하면 결과 차트와 마일스톤 진행 현황을 확인할 수 있어요."
-              buttonLabel="테스트 실행 하기"
-              onAction={() => {}}
-              actionOverride={
-                <Link href={`/projects/${slug}/runs/create`}>
-                  <DSButton variant="solid" className="flex items-center gap-2">
-                    <span>테스트 실행 하기</span>
-                  </DSButton>
-                </Link>
-              }
-            />
-          ) : (
-            <>
-              <TestStatusChart data={testStatusData} />
-              <div ref={ganttRef}>
-                {ganttVisible ? (
-                  <MilestoneGanttChart
-                    milestones={dashboardMilestones}
-                    testRuns={testRuns}
-                    selectedRunId={effectiveMilestoneRunId}
-                    onRunChangeAction={setMilestoneRunId}
-                  />
-                ) : (
-                  <div className="bg-bg-2 rounded-2xl p-6 h-75 animate-pulse" />
-                )}
-              </div>
-            </>
-          )}
-        </section>
+      {/* 테스트 현황 차트 섹션 */}
+      <DashboardChartSection
+        slug={slug}
+        showSkeleton={showSkeleton}
+        testRuns={testRuns}
+        testStatusData={testStatusData}
+        effectiveSelectedRunId={effectiveSelectedRunId}
+        selectedRunName={selectedRun?.name}
+        onSelectRun={setSelectedRunId}
+        ganttRef={ganttRef}
+        ganttVisible={ganttVisible}
+        dashboardMilestones={dashboardMilestones}
+        effectiveMilestoneRunId={effectiveMilestoneRunId}
+        onMilestoneRunChange={setMilestoneRunId}
+      />
 
-        {/* 테스트 케이스 섹션 */}
-        <section ref={casesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
-          {(casesVisible && !showSkeleton)
-            ? <TestCasesSection slug={slug} testCases={testCases} totalCount={totalCasesCount} onCreateCase={handleCreateCase} />
-            : <CardListSkeleton />
-          }
-        </section>
+      {/* 테스트 케이스 섹션 */}
+      <section ref={casesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-cases">
+        {(casesVisible && !showSkeleton)
+          ? <TestCasesSection slug={slug} testCases={testCases} totalCount={totalCasesCount} onCreateCase={handleCreateCase} />
+          : <CardListSkeleton />
+        }
+      </section>
 
-        {/* 테스트 스위트 섹션 */}
-        <section ref={suitesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
-          {(suitesVisible && !showSkeleton)
-            ? <TestSuitesSection slug={slug} testSuites={testSuites} onCreateSuite={handleCreateSuite} />
-            : <CardListSkeleton showBadge />
-          }
-        </section>
+      {/* 테스트 스위트 섹션 */}
+      <section ref={suitesRef} className="col-span-6 flex flex-col gap-4" data-tour="test-suites">
+        {(suitesVisible && !showSkeleton)
+          ? <TestSuitesSection slug={slug} testSuites={testSuites} onCreateSuite={handleCreateSuite} />
+          : <CardListSkeleton showBadge />
+        }
+      </section>
 
       {/* Modals */}
       {isActiveType('case') && projectId && (
@@ -282,52 +221,5 @@ export const ProjectDashboardContent = ({ projectId: serverProjectId }: ProjectD
         <SuiteCreateForm projectId={projectId} onClose={onClose} />
       )}
     </>
-  );
-};
-
-/* ── 하위 컴포넌트 ── */
-
-type ProjectInfoCardProps = {
-  project?: { name: string; created_at: string };
-  isCopied: boolean;
-  onCopyLink: () => void;
-};
-
-const ProjectInfoCard = ({ project, isCopied, onCopyLink }: ProjectInfoCardProps) => (
-  <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="project-info">
-    <span className="typo-body2-heading text-text-3">내 프로젝트 정보</span>
-    <div className="rounded-2 bg-bg-3 flex flex-col items-center justify-center gap-2 p-4">
-      <div className="flex items-center gap-2">
-        <span className="typo-body2-heading text-primary truncate max-w-50">{project?.name}</span>
-        <button onClick={onCopyLink} className="text-primary hover:text-primary/80 transition-colors cursor-pointer" title="링크 복사">
-          {isCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-        </button>
-      </div>
-      <span className="typo-caption text-text-3">
-        {project && formatDateKR(project.created_at)} 생성됨
-      </span>
-    </div>
-  </div>
-);
-
-const StorageCard = ({ storageData }: { storageData?: ActionResult<{ usedBytes: number; maxBytes: number; usedPercent: number }> }) => {
-  if (!storageData?.success) return null;
-  const { usedBytes, maxBytes, usedPercent } = storageData.data;
-  const barColor = usedPercent >= 95 ? 'bg-red-500' : usedPercent >= 80 ? 'bg-amber-500' : 'bg-primary';
-  const textColor = usedPercent >= 95 ? 'text-red-500' : usedPercent >= 80 ? 'text-amber-500' : 'text-primary';
-
-  return (
-    <div className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-4 border p-5" data-tour="storage-info">
-      <span className="typo-body2-heading text-text-3">저장 용량</span>
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between">
-          <span className={`typo-caption font-medium ${textColor}`}>{formatBytes(usedBytes)} / {formatBytes(maxBytes)}</span>
-          <span className={`typo-caption ${textColor}`}>{usedPercent}%</span>
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-bg-3">
-          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(usedPercent, 100)}%` }} />
-        </div>
-      </div>
-    </div>
   );
 };

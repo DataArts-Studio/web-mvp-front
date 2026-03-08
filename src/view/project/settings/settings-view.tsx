@@ -1,33 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import {
-  AlertTriangle,
-  Check,
-  HardDrive,
-  Loader2,
-  Lock,
-  Pencil,
-  Settings,
-  Trash2,
-} from 'lucide-react';
+import { Settings } from 'lucide-react';
 
-import { ChangeIdentifierFormSchema, ProjectSettingsFormSchema } from '@/entities/project';
-import type { ChangeIdentifierForm, ProjectSettingsForm } from '@/entities/project';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { useUpdateProject, useChangeIdentifier, useDeleteProject } from '@/features/project-settings';
-import { MainContainer } from '@/shared/lib/primitives';
-import { Dialog } from '@/shared/lib/primitives';
 import { GithubConnectCard } from '@/features/github-connect';
 import { AiConfigCard } from '@/features/ai-generate';
-import { DSButton, DsFormField, DsInput, Skeleton, SkeletonCircle, ProjectErrorFallback, SettingsCard } from '@/shared/ui';
+import { MainContainer } from '@/shared/lib/primitives';
+import { ProjectErrorFallback } from '@/shared/ui';
 import { formatDateKR } from '@/shared/utils/date-format';
-import { formatBytes } from '@/shared/utils';
+
+import { SettingsLoadingSkeleton } from './_components/settings-loading-skeleton';
+import { GeneralSettingsSection } from './_components/general-settings-section';
+import { SecuritySection } from './_components/security-section';
+import { StorageSection } from './_components/storage-section';
+import { DangerZoneSection } from './_components/danger-zone-section';
 
 // ─── Main View ───────────────────────────────────────────────────────────────
 
@@ -47,548 +36,58 @@ export const SettingsView = () => {
     enabled: !!projectId,
   });
 
-  // 로딩 상태 — 스켈레톤 UI
-  if (isLoading) {
-    return (
-      <MainContainer className="mx-auto flex min-h-screen w-full max-w-[1200px] flex-1 flex-col gap-10 px-10 py-8">
-        <header className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <SkeletonCircle className="h-9 w-9" />
-            <Skeleton className="h-8 w-40" />
-          </div>
-          <Skeleton className="ml-12 h-5 w-64" />
-        </header>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <SettingsCard.LoadingSkeleton key={i} />
-        ))}
-      </MainContainer>
-    );
-  }
-
+  if (isLoading) return <SettingsLoadingSkeleton />;
   if (!dashboardData?.success || !projectId) return <ProjectErrorFallback />;
 
   const { project } = dashboardData.data;
 
   return (
     <MainContainer className="mx-auto flex min-h-screen w-full max-w-[1200px] flex-1 flex-col gap-10 px-10 py-8">
-        {/* Header */}
-        <header className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-              <Settings className="h-4.5 w-4.5 text-primary" />
-            </div>
-            <h1 className="typo-h1-heading text-text-1">프로젝트 설정</h1>
+      {/* Header */}
+      <header className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+            <Settings className="h-4.5 w-4.5 text-primary" />
           </div>
-          <p className="typo-body2-normal text-text-3 ml-12">
-            <span className="text-primary font-medium">{project.name}</span>
-            <span className="text-text-4 mx-2">|</span>
-            <span>{formatDateKR(project.created_at)} 생성</span>
-          </p>
-        </header>
-
-        {/* Section 1: General */}
-        <GeneralSettingsSection
-          projectId={projectId}
-          defaultName={project.name}
-          defaultDescription={project.description}
-          defaultOwnerName={project.ownerName}
-        />
-
-        {/* Section 2: Security */}
-        <SecuritySection projectId={projectId} />
-
-        {/* Section 3: AI Configuration */}
-        <AiConfigCard projectId={projectId} />
-
-        {/* Section 4: GitHub Integration */}
-        <GithubConnectCard projectId={projectId} />
-
-        {/* Section 5: Storage */}
-        {storageData?.success && (
-          <StorageSection
-            usedBytes={storageData.data.usedBytes}
-            maxBytes={storageData.data.maxBytes}
-            usedPercent={storageData.data.usedPercent}
-          />
-        )}
-
-        {/* Section 6: Danger Zone */}
-        <DangerZoneSection projectId={projectId} projectName={project.name} />
-
-        <div className="h-8" />
-      </MainContainer>
-  );
-};
-
-// ─── Section 1: General Settings ─────────────────────────────────────────────
-
-interface GeneralSettingsSectionProps {
-  projectId: string;
-  defaultName: string;
-  defaultDescription: string;
-  defaultOwnerName: string;
-}
-
-const GeneralSettingsSection = ({
-  projectId,
-  defaultName,
-  defaultDescription,
-  defaultOwnerName,
-}: GeneralSettingsSectionProps) => {
-  const updateProject = useUpdateProject();
-  const [savedField, setSavedField] = useState<string | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ProjectSettingsForm>({
-    resolver: zodResolver(ProjectSettingsFormSchema),
-    defaultValues: {
-      name: defaultName,
-      description: defaultDescription || '',
-      ownerName: defaultOwnerName || '',
-    },
-  });
-
-  const handleSaveField = (field: keyof ProjectSettingsForm) => {
-    return handleSubmit((data) => {
-      updateProject.mutate(
-        { projectId, [field]: data[field] },
-        {
-          onSuccess: (result) => {
-            if (result.success) {
-              toast.success(result.message ?? '저장되었습니다.');
-              setSavedField(field);
-              setTimeout(() => setSavedField(null), 2000);
-            } else {
-              toast.error(Object.values(result.errors).flat().join(', '));
-            }
-          },
-        },
-      );
-    });
-  };
-
-  const renderSaveButton = (field: keyof ProjectSettingsForm) => (
-    <DSButton
-      variant="ghost"
-      size="small"
-      onClick={handleSaveField(field)}
-      disabled={updateProject.isPending}
-      className="shrink-0"
-    >
-      {updateProject.isPending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : savedField === field ? (
-        <span className="flex items-center gap-1.5 text-green-400">
-          <Check className="h-3.5 w-3.5" />
-          저장됨
-        </span>
-      ) : (
-        '저장'
-      )}
-    </DSButton>
-  );
-
-  const fields = [
-    { key: 'name' as const, label: '프로젝트 이름', placeholder: '프로젝트 이름' },
-    { key: 'description' as const, label: '설명', placeholder: '프로젝트에 대한 간단한 설명' },
-    { key: 'ownerName' as const, label: '소유자', placeholder: '프로젝트 소유자 이름' },
-  ];
-
-  return (
-    <SettingsCard.Root>
-      <SettingsCard.Header
-        icon={<Pencil className="h-5 w-5" />}
-        title="일반 설정"
-        description="프로젝트의 기본 정보를 수정합니다."
-      />
-      <SettingsCard.Divider />
-      <div className="flex flex-col gap-0 divide-y divide-line-2">
-        {fields.map(({ key, label, placeholder }) => (
-          <SettingsCard.Row key={key}>
-            <div className="w-28 shrink-0">
-              <span className="typo-label-heading text-text-2">{label}</span>
-            </div>
-            <DsFormField.Root error={errors[key]} className="!flex-row !items-center !gap-3 flex-1">
-              <DsFormField.Control>
-                <DsInput {...register(key)} placeholder={placeholder} />
-              </DsFormField.Control>
-              <DsFormField.Message>{errors[key]?.message}</DsFormField.Message>
-            </DsFormField.Root>
-            {renderSaveButton(key)}
-          </SettingsCard.Row>
-        ))}
-      </div>
-    </SettingsCard.Root>
-  );
-};
-
-// ─── Section 2: Security ─────────────────────────────────────────────────────
-
-const SecuritySection = ({ projectId }: { projectId: string }) => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const changeIdentifier = useChangeIdentifier();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setError,
-  } = useForm<ChangeIdentifierForm>({
-    resolver: zodResolver(ChangeIdentifierFormSchema),
-    defaultValues: {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    },
-  });
-
-  const handleCancel = () => {
-    setIsFormOpen(false);
-    reset();
-  };
-
-  const onSubmit = handleSubmit((data) => {
-    changeIdentifier.mutate(
-      {
-        projectId,
-        currentPassword: data.currentPassword,
-        newPassword: data.newPassword,
-      },
-      {
-        onSuccess: (result) => {
-          if (result.success) {
-            toast.success(result.message ?? '비밀번호가 변경되었습니다.');
-            reset();
-            setIsFormOpen(false);
-          } else {
-            if (result.errors.currentPassword) {
-              setError('currentPassword', {
-                message: result.errors.currentPassword[0],
-              });
-            } else {
-              toast.error(Object.values(result.errors).flat().join(', '));
-            }
-          }
-        },
-      },
-    );
-  });
-
-  return (
-    <SettingsCard.Root>
-      <SettingsCard.Header
-        icon={<Lock className="h-5 w-5" />}
-        title="보안"
-        description="프로젝트 접근 비밀번호를 관리합니다."
-      />
-      <SettingsCard.Divider />
-
-      {!isFormOpen && (
-        <SettingsCard.Body className="flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="typo-body2-heading text-text-1">접근 비밀번호</span>
-            <span className="typo-caption text-text-3">
-              프로젝트에 접근할 때 사용하는 비밀번호를 변경합니다.
-            </span>
-          </div>
-          <DSButton
-            variant="ghost"
-            size="small"
-            className="shrink-0"
-            onClick={() => setIsFormOpen(true)}
-          >
-            <span className="flex items-center gap-2">
-              <Lock className="h-3.5 w-3.5" />
-              변경하기
-            </span>
-          </DSButton>
-        </SettingsCard.Body>
-      )}
-
-      {isFormOpen && (
-        <form onSubmit={onSubmit} className="flex flex-col p-6 pt-5">
-          <div className="rounded-4 bg-bg-1 flex flex-col gap-5 p-5">
-            <DsFormField.Root error={errors.currentPassword}>
-              <DsFormField.Label className="typo-label-heading text-text-2">현재 비밀번호</DsFormField.Label>
-              <DsFormField.Control>
-                <DsInput
-                  {...register('currentPassword')}
-                  type="password"
-                  placeholder="현재 비밀번호를 입력하세요"
-                  autoComplete="current-password"
-                  autoFocus
-                />
-              </DsFormField.Control>
-              <DsFormField.Message>{errors.currentPassword?.message}</DsFormField.Message>
-            </DsFormField.Root>
-
-            <div className="border-line-2 border-t" />
-
-            <DsFormField.Root error={errors.newPassword}>
-              <DsFormField.Label className="typo-label-heading text-text-2">새 비밀번호</DsFormField.Label>
-              <DsFormField.Control>
-                <DsInput
-                  {...register('newPassword')}
-                  type="password"
-                  placeholder="8~16자의 새 비밀번호"
-                  autoComplete="new-password"
-                />
-              </DsFormField.Control>
-              <DsFormField.Message>{errors.newPassword?.message}</DsFormField.Message>
-            </DsFormField.Root>
-
-            <DsFormField.Root error={errors.confirmPassword}>
-              <DsFormField.Label className="typo-label-heading text-text-2">새 비밀번호 확인</DsFormField.Label>
-              <DsFormField.Control>
-                <DsInput
-                  {...register('confirmPassword')}
-                  type="password"
-                  placeholder="새 비밀번호를 다시 입력하세요"
-                  autoComplete="new-password"
-                />
-              </DsFormField.Control>
-              <DsFormField.Message>{errors.confirmPassword?.message}</DsFormField.Message>
-            </DsFormField.Root>
-          </div>
-
-          <div className="mt-5 flex justify-end gap-2">
-            <DSButton
-              type="button"
-              variant="ghost"
-              size="small"
-              onClick={handleCancel}
-              disabled={changeIdentifier.isPending}
-            >
-              취소
-            </DSButton>
-            <DSButton
-              type="submit"
-              variant="solid"
-              size="small"
-              disabled={changeIdentifier.isPending}
-            >
-              {changeIdentifier.isPending ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  변경 중...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Lock className="h-3.5 w-3.5" />
-                  비밀번호 변경
-                </span>
-              )}
-            </DSButton>
-          </div>
-        </form>
-      )}
-    </SettingsCard.Root>
-  );
-};
-
-// ─── Section 3: Storage ──────────────────────────────────────────────────────
-
-interface StorageSectionProps {
-  usedBytes: number;
-  maxBytes: number;
-  usedPercent: number;
-}
-
-const StorageSection = ({ usedBytes, maxBytes, usedPercent }: StorageSectionProps) => {
-  const barColor =
-    usedPercent >= 95 ? 'bg-red-500'
-    : usedPercent >= 80 ? 'bg-amber-500'
-    : 'bg-primary';
-
-  const textColor =
-    usedPercent >= 95 ? 'text-red-500'
-    : usedPercent >= 80 ? 'text-amber-500'
-    : 'text-primary';
-
-  const statusLabel =
-    usedPercent >= 95 ? '용량 부족'
-    : usedPercent >= 80 ? '용량 주의'
-    : '정상';
-
-  const statusBg =
-    usedPercent >= 95 ? 'bg-red-500/10 text-red-400'
-    : usedPercent >= 80 ? 'bg-amber-500/10 text-amber-400'
-    : 'bg-primary/10 text-primary';
-
-  return (
-    <SettingsCard.Root>
-      <SettingsCard.Header
-        icon={<HardDrive className="h-5 w-5" />}
-        title="스토리지"
-        description="프로젝트 데이터 저장 공간 사용 현황입니다."
-      />
-      <SettingsCard.Divider />
-      <SettingsCard.Body className="flex flex-col gap-4">
-        <div className="rounded-4 bg-bg-1 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-baseline gap-2">
-              <span className={`typo-h2-heading ${textColor}`}>
-                {formatBytes(usedBytes)}
-              </span>
-              <span className="typo-caption text-text-3">
-                / {formatBytes(maxBytes)}
-              </span>
-            </div>
-            <span className={`typo-caption rounded-full px-2.5 py-1 ${statusBg}`}>
-              {statusLabel}
-            </span>
-          </div>
-
-          <div className="h-3 w-full overflow-hidden rounded-full bg-bg-3">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-              style={{ width: `${Math.min(usedPercent, 100)}%` }}
-            />
-          </div>
-
-          <div className="mt-2 flex justify-end">
-            <span className={`typo-caption font-medium ${textColor}`}>
-              {usedPercent}% 사용 중
-            </span>
-          </div>
+          <h1 className="typo-h1-heading text-text-1">프로젝트 설정</h1>
         </div>
-      </SettingsCard.Body>
-    </SettingsCard.Root>
-  );
-};
+        <p className="typo-body2-normal text-text-3 ml-12">
+          <span className="text-primary font-medium">{project.name}</span>
+          <span className="text-text-4 mx-2">|</span>
+          <span>{formatDateKR(project.created_at)} 생성</span>
+        </p>
+      </header>
 
-// ─── Section 4: Danger Zone ──────────────────────────────────────────────────
+      {/* Section 1: General */}
+      <GeneralSettingsSection
+        projectId={projectId}
+        defaultName={project.name}
+        defaultDescription={project.description}
+        defaultOwnerName={project.ownerName}
+      />
 
-const DangerZoneSection = ({ projectId, projectName }: { projectId: string; projectName: string }) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [confirmInput, setConfirmInput] = useState('');
-  const deleteProject = useDeleteProject();
+      {/* Section 2: Security */}
+      <SecuritySection projectId={projectId} />
 
-  const isNameMatch = confirmInput === projectName;
+      {/* Section 3: AI Configuration */}
+      <AiConfigCard projectId={projectId} />
 
-  const handleDelete = () => {
-    deleteProject.mutate(
-      { projectId, confirmName: confirmInput },
-      {
-        onSuccess: (result) => {
-          if (result.success) {
-            toast.success(result.message ?? '프로젝트가 삭제되었습니다.');
-          } else {
-            toast.error(Object.values(result.errors).flat().join(', '));
-            setIsDialogOpen(false);
-          }
-        },
-      },
-    );
-  };
+      {/* Section 4: GitHub Integration */}
+      <GithubConnectCard projectId={projectId} />
 
-  return (
-    <>
-      <SettingsCard.Root variant="danger">
-        <SettingsCard.Header
-          icon={<AlertTriangle className="h-5 w-5" />}
-          title="위험 영역"
-          description="이 영역의 작업은 되돌릴 수 없습니다."
-          variant="danger"
+      {/* Section 5: Storage */}
+      {storageData?.success && (
+        <StorageSection
+          usedBytes={storageData.data.usedBytes}
+          maxBytes={storageData.data.maxBytes}
+          usedPercent={storageData.data.usedPercent}
         />
-        <SettingsCard.Divider variant="danger" />
-        <SettingsCard.Body className="flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="typo-body2-heading text-text-1">프로젝트 삭제</span>
-            <span className="typo-caption text-text-3">
-              모든 테스트 케이스, 스위트, 실행 결과가 영구적으로 삭제됩니다.
-            </span>
-          </div>
-          <DSButton
-            variant="text"
-            size="small"
-            className="shrink-0 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-            onClick={() => setIsDialogOpen(true)}
-          >
-            <span className="flex items-center gap-2">
-              <Trash2 className="h-3.5 w-3.5" />
-              프로젝트 삭제
-            </span>
-          </DSButton>
-        </SettingsCard.Body>
-      </SettingsCard.Root>
-
-      {isDialogOpen && (
-        <Dialog.Root defaultOpen>
-          <Dialog.Portal>
-            <Dialog.Overlay onClick={() => !deleteProject.isPending && setIsDialogOpen(false)} />
-            <Dialog.Content className="bg-bg-2 border-line-2 rounded-5 w-full max-w-[460px] border p-0">
-              <div className="flex items-center gap-3 border-b border-line-2 px-6 py-5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10">
-                  <Trash2 className="h-4 w-4 text-red-400" />
-                </div>
-                <Dialog.Title className="typo-h2-heading text-text-1">
-                  프로젝트 삭제
-                </Dialog.Title>
-              </div>
-
-              <div className="flex flex-col gap-4 px-6 py-5">
-                <Dialog.Description className="text-text-2 typo-body2-normal">
-                  이 작업은 되돌릴 수 없습니다. 삭제를 확인하려면 프로젝트 이름을 정확히 입력해주세요.
-                </Dialog.Description>
-
-                <div className="rounded-4 bg-bg-1 border-line-2 border px-4 py-3">
-                  <span className="typo-caption text-text-3">프로젝트 이름</span>
-                  <p className="typo-body2-heading text-text-1 mt-0.5">{projectName}</p>
-                </div>
-
-                <DsInput
-                  value={confirmInput}
-                  onChange={(e) => setConfirmInput(e.target.value)}
-                  placeholder="프로젝트 이름을 입력하세요"
-                  autoFocus
-                />
-
-                {confirmInput.length > 0 && !isNameMatch && (
-                  <p className="typo-caption text-red-400">프로젝트 이름이 일치하지 않습니다.</p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-line-2 px-6 py-4">
-                <DSButton
-                  variant="ghost"
-                  size="small"
-                  onClick={() => {
-                    setIsDialogOpen(false);
-                    setConfirmInput('');
-                  }}
-                  disabled={deleteProject.isPending}
-                >
-                  취소
-                </DSButton>
-                <DSButton
-                  variant="text"
-                  size="small"
-                  className="bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-40"
-                  onClick={handleDelete}
-                  disabled={!isNameMatch || deleteProject.isPending}
-                >
-                  {deleteProject.isPending ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      삭제 중...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Trash2 className="h-3.5 w-3.5" />
-                      영구 삭제
-                    </span>
-                  )}
-                </DSButton>
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
       )}
-    </>
+
+      {/* Section 6: Danger Zone */}
+      <DangerZoneSection projectId={projectId} projectName={project.name} />
+
+      <div className="h-8" />
+    </MainContainer>
   );
 };

@@ -15,3 +15,5 @@ export * from './status-badge';
 export * from './pagination';
 export * from './project-error-fallback';
 export * from './settings-card';
+export * from './case-selection-panel';
+export * from './suite-selection-panel';

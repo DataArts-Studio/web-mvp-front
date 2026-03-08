@@ -1,20 +1,17 @@
 'use client';
 import React from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 
 import type { CreateTestCase } from '@/entities/test-case';
-import { TEST_TYPE_OPTIONS, parseSteps, serializeSteps } from '@/entities/test-case';
+import { BasicInfoFields, TagsField, ScenarioFields } from '@/entities/test-case';
 import { projectTagsQueryOptions } from '@/entities/test-case/api';
-// import type { TestCaseTemplate } from '@/entities/test-case-template'; // 템플릿 기능 펜딩
-// import { incrementTemplateUsage } from '@/entities/test-case-template/api'; // 템플릿 기능 펜딩
 import { useCreateCase } from '@/features/cases-create/hooks';
-// import { TemplateLibrary } from '@/features/templates-library'; // 템플릿 기능 펜딩
-import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, StepSectionEditor } from '@/shared';
+import { DSButton } from '@/shared';
 import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { testSuitesQueryOptions } from '@/widgets';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, FolderOpen, ListChecks, Tag, TestTube2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -39,7 +36,6 @@ interface TestCaseDetailFormProps {
 }
 
 export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuiteId }: TestCaseDetailFormProps) => {
-  // const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false); // 템플릿 기능 펜딩
   const { mutate } = useCreateCase();
 
   const { data: suitesData } = useQuery({
@@ -72,8 +68,6 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
     },
   });
 
-  const selectedSuiteId = watch('testSuiteId');
-
   const onSubmit = handleSubmit((data) => {
     const payload: CreateTestCase = {
       ...data,
@@ -98,11 +92,6 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
     track(TESTCASE_EVENTS.CREATE_ABANDON, { project_id: projectId });
     onClose();
   };
-
-  // 템플릿 기능 펜딩 - handleApplyTemplate 제거
-
-  const textareaClassName =
-    'w-full rounded-4 border border-line-2 bg-bg-1 px-6 py-4 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary resize-none min-h-[120px]';
 
   return (
     <div
@@ -135,176 +124,22 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
         >
           <input type="hidden" {...register('projectId')} />
 
-          {/* 템플릿 기능 펜딩 */}
-
-          {/* ── 기본 정보 ── */}
-          <fieldset className="flex flex-col gap-5">
-            <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
-              기본 정보
-            </legend>
-
-            {/* 제목 (필수) */}
-            <DsFormField.Root error={errors.title}>
-              <DsFormField.Label className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                테스트 케이스 제목 <span className="text-system-red">*</span>
-              </DsFormField.Label>
-              <DsFormField.Control asChild>
-                <DsInput
-                  {...register('title')}
-                  variant={errors.title ? 'error' : 'default'}
-                  placeholder="예: 회원가입 - 이메일 형식이 잘못된 경우"
-                />
-              </DsFormField.Control>
-              <DsFormField.Message />
-            </DsFormField.Root>
-
-            {/* 소속 스위트 */}
-            <DsFormField.Root>
-              <DsFormField.Label className="flex items-center gap-2">
-                <FolderOpen className="h-4 w-4" />
-                소속 스위트
-              </DsFormField.Label>
-              <DsSelect
-                className='w-full'
-                value={selectedSuiteId || ''}
-                onChange={(v) => setValue('testSuiteId', v || null)}
-                options={[
-                  { value: '', label: '스위트 없음' },
-                  ...suites.map((suite) => ({ value: suite.id, label: suite.title })),
-                ]}
-                placeholder="스위트를 선택하세요"
-              />
-              <span className="text-text-3 typo-caption-normal">테스트 케이스가 속할 스위트를 선택하세요.</span>
-            </DsFormField.Root>
-
-            {/* 테스트 유형 */}
-            <DsFormField.Root>
-              <DsFormField.Label className="flex items-center gap-2">
-                <TestTube2 className="h-4 w-4" />
-                테스트 유형
-              </DsFormField.Label>
-              <Controller
-                name="testType"
-                control={control}
-                render={({ field }) => (
-                  <DsSelect
-                    className="w-full"
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    options={[
-                      { value: '', label: '선택 안 함' },
-                      ...TEST_TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
-                    ]}
-                    placeholder="테스트 유형을 선택하세요"
-                  />
-                )}
-              />
-            </DsFormField.Root>
-          </fieldset>
+          <BasicInfoFields
+            register={register}
+            control={control}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+            suites={suites}
+          />
 
           <div className="border-t border-line-2" />
 
-          {/* ── 분류 ── */}
-          <fieldset className="flex flex-col gap-5">
-            <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
-              분류
-            </legend>
-
-            {/* 태그 */}
-            <DsFormField.Root>
-              <DsFormField.Label className="flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                태그
-              </DsFormField.Label>
-              <Controller
-                name="tags"
-                control={control}
-                render={({ field }) => (
-                  <TagChipInput
-                    className="w-full"
-                    value={field.value ?? []}
-                    onChange={field.onChange}
-                    suggestions={projectTags}
-                    placeholder="태그 입력 후 Enter (예: smoke)"
-                  />
-                )}
-              />
-              <span className="text-text-3 typo-caption-normal">
-                Enter로 태그를 추가하고, 쉼표(,)로 여러 태그를 한 번에 입력할 수 있습니다.
-              </span>
-            </DsFormField.Root>
-          </fieldset>
+          <TagsField control={control} projectTags={projectTags} />
 
           <div className="border-t border-line-2" />
 
-          {/* ── 테스트 시나리오 ── */}
-          <fieldset className="flex flex-col gap-5">
-            <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
-              테스트 시나리오
-            </legend>
-
-            {/* 사전 조건 */}
-            <DsFormField.Root>
-              <DsFormField.Label className="flex items-center gap-2">
-                <ListChecks className="h-4 w-4" />
-                사전 조건 (Preconditions)
-              </DsFormField.Label>
-              <Controller
-                name="preCondition"
-                control={control}
-                render={({ field }) => (
-                  <StepSectionEditor
-                    value={parseSteps(field.value ?? '')}
-                    onChange={(steps) => field.onChange(serializeSteps(steps))}
-                    addLabel="조건 추가"
-                    placeholder="충족되어야 하는 조건을 입력하세요"
-                    textareaClassName={textareaClassName}
-                  />
-                )}
-              />
-            </DsFormField.Root>
-
-            {/* 테스트 단계 */}
-            <DsFormField.Root>
-              <DsFormField.Label className="flex items-center gap-2">
-                <ListChecks className="h-4 w-4" />
-                테스트 단계 (Test Steps)
-              </DsFormField.Label>
-              <Controller
-                name="testSteps"
-                control={control}
-                render={({ field }) => (
-                  <StepSectionEditor
-                    value={parseSteps(field.value ?? '')}
-                    onChange={(steps) => field.onChange(serializeSteps(steps))}
-                    textareaClassName={textareaClassName}
-                  />
-                )}
-              />
-            </DsFormField.Root>
-
-            {/* 기대 결과 */}
-            <DsFormField.Root>
-              <DsFormField.Label className="flex items-center gap-2">
-                <ListChecks className="h-4 w-4" />
-                기대 결과 (Expected Results)
-              </DsFormField.Label>
-              <Controller
-                name="expectedResult"
-                control={control}
-                render={({ field }) => (
-                  <StepSectionEditor
-                    value={parseSteps(field.value ?? '')}
-                    onChange={(steps) => field.onChange(serializeSteps(steps))}
-                    addLabel="결과 추가"
-                    placeholder="예상되는 결과를 입력하세요"
-                    textareaClassName={textareaClassName}
-                  />
-                )}
-              />
-            </DsFormField.Root>
-          </fieldset>
+          <ScenarioFields control={control} />
         </form>
 
         {/* Actions - 스크롤 영역 밖 */}
@@ -317,8 +152,6 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
           </DSButton>
         </div>
       </section>
-
-      {/* 템플릿 기능 펜딩 */}
     </div>
   );
 };
