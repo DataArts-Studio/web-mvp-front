@@ -58,6 +58,30 @@ async function callAnthropic(apiKey: string, model: string, systemPrompt: string
   return textBlock?.text || '';
 }
 
+async function callGemini(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
+  const modelId = model || 'gemini-2.0-flash';
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ parts: [{ text: userPrompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 4000 },
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Gemini API error ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
 function parseJsonResponse(raw: string): unknown[] {
   // JSON 블록 추출 (```json ... ``` 또는 순수 JSON)
   const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\[[\s\S]*\])/);
@@ -94,6 +118,8 @@ export async function POST(req: NextRequest) {
     let rawResponse: string;
     if (config.provider === 'openai') {
       rawResponse = await callOpenAI(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
+    } else if (config.provider === 'gemini') {
+      rawResponse = await callGemini(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
     } else {
       rawResponse = await callAnthropic(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
     }

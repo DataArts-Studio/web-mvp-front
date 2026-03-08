@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const SaveAiConfigSchema = z.object({
   projectId: z.string().uuid(),
-  provider: z.enum(['openai', 'anthropic']),
+  provider: z.enum(['openai', 'anthropic', 'gemini']),
   apiKey: z.string().min(1, 'API 키를 입력해주세요'),
   model: z.string().optional(),
 });

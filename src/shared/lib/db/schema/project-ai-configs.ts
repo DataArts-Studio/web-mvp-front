@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { projects } from './projects';
 
-export const aiProviderEnum = ['openai', 'anthropic'] as const;
+export const aiProviderEnum = ['openai', 'anthropic', 'gemini'] as const;
 export type AiProvider = (typeof aiProviderEnum)[number];
 
 export const projectAiConfigs = pgTable('project_ai_configs', {

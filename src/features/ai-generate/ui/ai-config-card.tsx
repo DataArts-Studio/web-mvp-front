@@ -15,7 +15,7 @@ type Props = {
 
 export const AiConfigCard = ({ projectId }: Props) => {
   const queryClient = useQueryClient();
-  const [provider, setProvider] = useState<'openai' | 'anthropic'>('anthropic');
+  const [provider, setProvider] = useState<'openai' | 'anthropic' | 'gemini'>('anthropic');
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -60,10 +60,14 @@ export const AiConfigCard = ({ projectId }: Props) => {
     );
   }
 
-  const providerLabel = config?.provider === 'openai' ? 'OpenAI' : config?.provider === 'anthropic' ? 'Anthropic Claude' : '';
+  const providerLabel =
+    config?.provider === 'openai' ? 'OpenAI' :
+    config?.provider === 'anthropic' ? 'Anthropic Claude' :
+    config?.provider === 'gemini' ? 'Google Gemini' : '';
   const defaultModels = {
     openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1-nano'],
     anthropic: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-5-20250514'],
+    gemini: ['gemini-2.0-flash', 'gemini-2.5-flash-preview-05-20', 'gemini-2.5-pro-preview-05-06'],
   };
 
   return (
@@ -121,7 +125,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
             <div className="flex flex-col gap-2">
               <span className="typo-label-heading text-text-2">AI 프로바이더</span>
               <div className="flex gap-2">
-                {(['anthropic', 'openai'] as const).map((p) => (
+                {(['anthropic', 'openai', 'gemini'] as const).map((p) => (
                   <button
                     key={p}
                     type="button"
@@ -132,7 +136,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                         : 'border-line-2 text-text-3 hover:border-line-1'
                     }`}
                   >
-                    {p === 'anthropic' ? 'Anthropic Claude' : 'OpenAI'}
+                    {p === 'anthropic' ? 'Anthropic Claude' : p === 'gemini' ? 'Google Gemini' : 'OpenAI'}
                   </button>
                 ))}
               </div>
@@ -146,7 +150,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
+                  placeholder={provider === 'anthropic' ? 'sk-ant-...' : provider === 'gemini' ? 'AIza...' : 'sk-...'}
                   autoComplete="off"
                 />
                 <button
@@ -160,7 +164,9 @@ export const AiConfigCard = ({ projectId }: Props) => {
               <p className="typo-caption text-text-4">
                 {provider === 'anthropic'
                   ? 'console.anthropic.com에서 API 키를 발급받을 수 있습니다.'
-                  : 'platform.openai.com에서 API 키를 발급받을 수 있습니다.'}
+                  : provider === 'gemini'
+                    ? 'aistudio.google.com에서 API 키를 발급받을 수 있습니다.'
+                    : 'platform.openai.com에서 API 키를 발급받을 수 있습니다.'}
               </p>
             </div>
 
