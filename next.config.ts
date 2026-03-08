@@ -18,7 +18,7 @@ const securityHeaders = [
       `img-src 'self' data: blob: ${supabaseUrl}`,
       "font-src 'self' cdn.jsdelivr.net",
       "worker-src 'self' blob:",
-      `connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io https://challenges.cloudflare.com https://vercel.live cdn.jsdelivr.net ${supabaseUrl}`,
+      `connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io *.sentry-cdn.com https://challenges.cloudflare.com https://vercel.live cdn.jsdelivr.net ${supabaseUrl}`,
       "frame-src https://challenges.cloudflare.com https://vercel.live",
       "object-src 'none'",
       "base-uri 'self'",
