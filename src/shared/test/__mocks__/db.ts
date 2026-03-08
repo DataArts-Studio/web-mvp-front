@@ -47,6 +47,9 @@ export const mockDb: any = {
       onConflictDoNothing: vi.fn(() => ({
         returning: vi.fn(() => Promise.resolve(mockInsertReturnValue ? [mockInsertReturnValue] : [])),
       })),
+      onConflictDoUpdate: vi.fn(() => ({
+        returning: vi.fn(() => Promise.resolve(mockInsertReturnValue ? [mockInsertReturnValue] : [])),
+      })),
     })),
   })),
   update: vi.fn(() => ({
