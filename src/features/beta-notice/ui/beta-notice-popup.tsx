@@ -40,7 +40,7 @@ export const BetaNoticePopup = () => {
               <div className="my-1 h-px w-12 self-center bg-text-2/20" />
               <p className="font-medium text-text-1">베타 이용 제한</p>
               <p>프로젝트: 최대 1개</p>
-              <p>저장 용량: 프로젝트당 최대 50MB</p>
+              <p>저장 용량: 프로젝트당 최대 20MB</p>
             </div>
 
             {/* Confirm Button */}

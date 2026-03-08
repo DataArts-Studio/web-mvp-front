@@ -12,7 +12,7 @@ export async function checkStorageLimit(projectId: string): Promise<ActionFailur
   if (bytes >= LIMITS.MAX_STORAGE_BYTES) {
     return {
       success: false,
-      errors: { _storage: ['프로젝트 저장 용량(50MB)을 초과하였습니다.'] },
+      errors: { _storage: ['프로젝트 저장 용량(20MB)을 초과하였습니다.'] },
     };
   }
 

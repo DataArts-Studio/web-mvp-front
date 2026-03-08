@@ -23,7 +23,7 @@ export const TOUR_STEPS: DriveStep[] = [
     element: '[data-tour="storage-info"]',
     popover: {
       title: '저장 용량',
-      description: '프로젝트당 최대 50MB까지 사용할 수 있습니다. 현재 사용량을 확인하세요.',
+      description: '프로젝트당 최대 20MB까지 사용할 수 있습니다. 현재 사용량을 확인하세요.',
       side: 'right',
       align: 'start',
     },

@@ -8,7 +8,7 @@ vi.mock('./get-project-storage', () => ({
 
 vi.mock('@/shared/constants/core', () => ({
   LIMITS: {
-    MAX_STORAGE_BYTES: 50 * 1024 * 1024, // 50MB
+    MAX_STORAGE_BYTES: 20 * 1024 * 1024, // 20MB
     MAX_PROJECTS: 1,
   },
 }));
@@ -30,7 +30,7 @@ describe('checkStorageLimit', () => {
   });
 
   it('용량이 제한 직전이면 null을 반환한다', async () => {
-    mockGetProjectStorageBytes.mockResolvedValue(50 * 1024 * 1024 - 1);
+    mockGetProjectStorageBytes.mockResolvedValue(20 * 1024 * 1024 - 1);
 
     const result = await checkStorageLimit('project-123');
 
@@ -38,26 +38,26 @@ describe('checkStorageLimit', () => {
   });
 
   it('용량이 정확히 제한과 같으면 에러를 반환한다', async () => {
-    mockGetProjectStorageBytes.mockResolvedValue(50 * 1024 * 1024);
+    mockGetProjectStorageBytes.mockResolvedValue(20 * 1024 * 1024);
 
     const result = await checkStorageLimit('project-123');
 
     expect(result).not.toBeNull();
     expect(result?.success).toBe(false);
     if (result && !result.success) {
-      expect(result.errors._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
+      expect(result.errors._storage).toContain('프로젝트 저장 용량(20MB)을 초과하였습니다.');
     }
   });
 
   it('용량이 제한을 초과하면 에러를 반환한다', async () => {
-    mockGetProjectStorageBytes.mockResolvedValue(50 * 1024 * 1024 + 1);
+    mockGetProjectStorageBytes.mockResolvedValue(20 * 1024 * 1024 + 1);
 
     const result = await checkStorageLimit('project-123');
 
     expect(result).not.toBeNull();
     expect(result?.success).toBe(false);
     if (result && !result.success) {
-      expect(result.errors._storage).toContain('프로젝트 저장 용량(50MB)을 초과하였습니다.');
+      expect(result.errors._storage).toContain('프로젝트 저장 용량(20MB)을 초과하였습니다.');
     }
   });
 });
