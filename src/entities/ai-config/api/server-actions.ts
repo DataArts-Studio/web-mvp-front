@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { getDatabase, projectAiConfigs, testCases } from '@/shared/lib/db';
 import { encrypt, decrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
@@ -25,7 +25,7 @@ export const saveAiConfig = async (
     const [existing] = await db
       .select({ id: projectAiConfigs.id })
       .from(projectAiConfigs)
-      .where(eq(projectAiConfigs.project_id, projectId))
+      .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')))
       .limit(1);
 
     if (existing) {
@@ -103,7 +103,7 @@ export const getAiConfig = async (
         updated_at: projectAiConfigs.updated_at,
       })
       .from(projectAiConfigs)
-      .where(eq(projectAiConfigs.project_id, projectId))
+      .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')))
       .limit(1);
 
     if (!config) return { success: true, data: null };
@@ -135,7 +135,7 @@ export const getDecryptedApiKey = async (
   const [config] = await db
     .select()
     .from(projectAiConfigs)
-    .where(eq(projectAiConfigs.project_id, projectId))
+    .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')))
     .limit(1);
 
   if (!config) return null;
@@ -147,13 +147,16 @@ export const getDecryptedApiKey = async (
   };
 };
 
-// --- AI 설정 삭제 ---
+// --- AI 설정 삭제 (소프트 딜리트) ---
 export const deleteAiConfig = async (
   projectId: string,
 ): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
-    await db.delete(projectAiConfigs).where(eq(projectAiConfigs.project_id, projectId));
+    await db
+      .update(projectAiConfigs)
+      .set({ lifecycle_status: 'DELETED', updated_at: new Date() })
+      .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')));
     return { success: true, data: null };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'deleteAiConfig' } });

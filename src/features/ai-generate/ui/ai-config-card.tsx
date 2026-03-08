@@ -7,6 +7,7 @@ import { Bot, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
 
 import { aiConfigQueryOptions, aiConfigQueryKeys } from '@/entities/ai-config';
 import { saveAiConfig, deleteAiConfig } from '@/entities/ai-config/api/server-actions';
+import { API_KEY_RULES } from '@/entities/ai-config/model/schema';
 import { DSButton, DsInput, SettingsCard } from '@/shared/ui';
 
 const PROVIDER_META = {
@@ -27,12 +28,22 @@ export const AiConfigCard = ({ projectId }: Props) => {
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [keyError, setKeyError] = useState<string | null>(null);
 
   const { data: configData, isLoading } = useQuery(aiConfigQueryOptions(projectId));
   const config = configData?.success ? configData.data : null;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: aiConfigQueryKeys.config(projectId) });
+  };
+
+  const validateApiKey = (key: string, p: Provider): string | null => {
+    const trimmed = key.trim();
+    if (!trimmed) return null;
+    const rule = API_KEY_RULES[p];
+    if (!trimmed.startsWith(rule.prefix)) return rule.prefixError;
+    if (trimmed.length < rule.minLength || trimmed.length > rule.maxLength) return rule.lengthError;
+    return null;
   };
 
   const saveMutation = useMutation({
@@ -103,7 +114,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                   <button
                     key={p}
                     type="button"
-                    onClick={() => setProvider(p)}
+                    onClick={() => { setProvider(p); setKeyError(validateApiKey(apiKey, p)); }}
                     className={`typo-body2-normal rounded-2 border px-4 py-2 transition-colors ${
                       provider === p
                         ? 'border-primary bg-primary/5 text-primary'
@@ -123,7 +134,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                 <DsInput
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+                  onChange={(e) => { setApiKey(e.target.value); setKeyError(validateApiKey(e.target.value, provider)); }}
                   placeholder={meta.placeholder}
                   autoComplete="off"
                 />
@@ -136,12 +147,13 @@ export const AiConfigCard = ({ projectId }: Props) => {
                 </button>
               </div>
               <p className="typo-caption text-text-4">{meta.hint}</p>
+              {keyError && <p className="typo-caption text-red-400">{keyError}</p>}
             </div>
 
             {/* 버튼 */}
             <div className="flex justify-end gap-2 pt-2">
               {isEditing && (
-                <DSButton variant="ghost" size="small" onClick={() => { setIsEditing(false); setApiKey(''); }}>
+                <DSButton variant="ghost" size="small" onClick={() => { setIsEditing(false); setApiKey(''); setKeyError(null); }}>
                   취소
                 </DSButton>
               )}
@@ -149,7 +161,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                 variant="solid"
                 size="small"
                 onClick={() => saveMutation.mutate()}
-                disabled={!apiKey.trim() || saveMutation.isPending}
+                disabled={!apiKey.trim() || !!keyError || saveMutation.isPending}
               >
                 {saveMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
