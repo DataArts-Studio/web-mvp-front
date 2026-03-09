@@ -10,6 +10,11 @@ type CacheTestCase = {
   title: string;
 };
 
+type PaginatedTestCases = {
+  items: CacheTestCase[];
+  pagination: unknown;
+};
+
 type CacheTestSuite = {
   id: string;
   title: string;
@@ -50,12 +55,12 @@ export const useCommandSearch = (
     const results: CommandItem[] = [];
     const basePath = `/projects/${projectSlug}`;
 
-    // 1. Test Cases
-    const tcData = queryClient.getQueriesData<ActionResult<CacheTestCase[]>>({
+    // 1. Test Cases (paginated cache: data.data = { items, pagination })
+    const tcData = queryClient.getQueriesData<ActionResult<PaginatedTestCases>>({
       queryKey: ['testCases', 'list', projectId],
     });
     const testCases = tcData.flatMap(([, data]) =>
-      data?.success && data.data ? data.data : [],
+      data?.success && data.data?.items ? data.data.items : [],
     );
     const matchedTCs = testCases
       .map((tc) => ({
