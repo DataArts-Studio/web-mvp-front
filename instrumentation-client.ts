@@ -15,6 +15,8 @@ Sentry.init({
     defaults.filter((integration) => integration.name !== 'Replay'),
 
   tracesSampleRate: isProduction ? 0.2 : 1.0,
+  replaysSessionSampleRate: isProduction ? 0.1 : 0,
+  replaysOnErrorSampleRate: 1.0,
   enableLogs: true,
   sendDefaultPii: true,
 
