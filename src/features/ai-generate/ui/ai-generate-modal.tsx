@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Bot, Loader2, Sparkles, X } from 'lucide-react';
 
 import { aiConfigQueryOptions } from '@/entities/ai-config';
+import { aiUsageQueryOptions } from '@/entities/ai-usage';
 import type { GeneratedTestCase } from '@/entities/ai-config';
 import { saveGeneratedCases } from '@/entities/ai-config/api/server-actions';
 import { testSuitesQueryOptions } from '@/widgets';
@@ -35,6 +36,10 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
 
   const { data: configData } = useQuery(aiConfigQueryOptions(projectId));
   const hasConfig = configData?.success && !!configData.data;
+
+  const { data: usageData } = useQuery(aiUsageQueryOptions(projectId));
+  const usage = usageData?.success ? usageData.data : null;
+  const isLimitExceeded = usage ? usage.used >= usage.limit : false;
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(projectId),
@@ -80,6 +85,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
       if (result.success) {
         toast.success(`${result.data.count}건의 테스트 케이스가 저장되었습니다.`);
         queryClient.invalidateQueries({ queryKey: ['testCases'] });
+        queryClient.invalidateQueries({ queryKey: ['ai-usage'] });
         onClose();
       } else {
         const msg = Object.values(result.errors).flat().join(', ');
@@ -146,12 +152,31 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                 </DSButton>
               </div>
             ) : step === 'input' ? (
+              <>
+                {usage && (
+                  <div className="mb-4 flex items-center justify-between rounded-lg border border-line-2 bg-bg-3 px-4 py-2.5">
+                    <span className="typo-body2-normal text-text-3">
+                      이번 달 사용량
+                    </span>
+                    <span className={`typo-body2-heading ${isLimitExceeded ? 'text-error' : 'text-text-1'}`}>
+                      {usage.used}/{usage.limit}건
+                    </span>
+                  </div>
+                )}
+                {isLimitExceeded && (
+                  <div className="mb-4 rounded-lg border border-error/30 bg-error/5 px-4 py-3">
+                    <p className="typo-body2-normal text-error">
+                      이번 달 사용 한도를 초과했습니다. 다음 달에 다시 이용해주세요.
+                    </p>
+                  </div>
+                )}
               <AiGenerateForm
                 description={description}
                 onDescriptionChange={setDescription}
                 language={language}
                 onLanguageChange={setLanguage}
               />
+              </>
             ) : step === 'loading' ? (
               <AiGeneratingSpinner />
             ) : (
@@ -190,7 +215,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                     variant="solid"
                     size="small"
                     onClick={() => generateMutation.mutate()}
-                    disabled={description.trim().length < 20 || generateMutation.isPending}
+                    disabled={description.trim().length < 20 || generateMutation.isPending || isLimitExceeded}
                   >
                     <span className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4" />

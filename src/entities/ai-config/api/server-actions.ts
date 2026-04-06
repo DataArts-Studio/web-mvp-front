@@ -154,31 +154,39 @@ export const saveGeneratedCases = async (
     const { projectId, suiteId, cases } = parsed.data;
     const db = getDatabase();
 
-    // display_id 최대값 조회
-    const [maxDisplayId] = await db
-      .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
-      .from(testCases)
-      .where(eq(testCases.project_id, projectId));
+    const count = await db.transaction(async (tx) => {
+      // display_id 최대값 조회
+      const [maxDisplayId] = await tx
+        .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+        .from(testCases)
+        .where(eq(testCases.project_id, projectId));
 
-    let nextDisplayId = (maxDisplayId?.max ?? 0) + 1;
+      let nextDisplayId = (maxDisplayId?.max ?? 0) + 1;
 
-    await db.insert(testCases).values(
-      cases.map((tc) => ({
-        id: crypto.randomUUID(),
-        project_id: projectId,
-        test_suite_id: suiteId ?? null,
-        name: tc.name,
-        pre_condition: tc.preCondition || null,
-        steps: tc.steps || null,
-        expected_result: tc.expectedResult || null,
-        tags: [...(tc.tags || []), 'ai-generated'],
-        display_id: nextDisplayId++,
-        sort_order: 0,
-        result_status: 'untested' as const,
-      })),
-    );
+      await tx.insert(testCases).values(
+        cases.map((tc) => {
+          const displayId = nextDisplayId++;
+          return {
+            id: crypto.randomUUID(),
+            project_id: projectId,
+            test_suite_id: suiteId ?? null,
+            name: tc.name,
+            pre_condition: tc.preCondition || null,
+            steps: tc.steps || null,
+            expected_result: tc.expectedResult || null,
+            tags: [...(tc.tags || []), 'ai-generated'],
+            display_id: displayId,
+            case_key: `TC-${String(displayId).padStart(3, '0')}`,
+            sort_order: 0,
+            result_status: 'untested' as const,
+          };
+        }),
+      );
 
-    return { success: true, data: { count: cases.length } };
+      return cases.length;
+    });
+
+    return { success: true, data: { count } };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'saveGeneratedCases' } });
     return { success: false, errors: { _ai: ['TC 저장에 실패했습니다.'] } };

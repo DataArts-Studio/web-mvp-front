@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { GenerateCasesSchema, GeneratedTestCaseSchema } from '@/entities/ai-config/model/schema';
 import { getDecryptedApiKey } from '@/entities/ai-config/api/server-actions';
+import { getMonthlyUsage, recordUsage } from '@/entities/ai-usage/api/server-actions';
 import { SYSTEM_PROMPT, buildUserPrompt } from '@/features/ai-generate/model/prompts';
 import { z } from 'zod';
+
+const MAX_CASES_PER_REQUEST = 10;
 
 async function callOpenAI(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -112,6 +115,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 월간 사용량 체크
+    const usageResult = await getMonthlyUsage(projectId);
+    if (usageResult.success) {
+      const { used, limit } = usageResult.data;
+      if (used >= limit) {
+        return NextResponse.json(
+          { error: `이번 달 사용 한도(${limit}건)를 초과했습니다. 다음 달에 다시 이용해주세요.` },
+          { status: 429 },
+        );
+      }
+    }
+
     const userPrompt = buildUserPrompt(description, language);
 
     // LLM 호출
@@ -137,7 +152,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ cases });
+    // 1회 최대 건수 제한
+    const limitedCases = cases.slice(0, MAX_CASES_PER_REQUEST);
+
+    // 사용량 기록
+    await recordUsage(projectId, 'generate_cases', limitedCases.length);
+
+    return NextResponse.json({ cases: limitedCases });
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'generateCases' } });
 

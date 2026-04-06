@@ -10,7 +10,7 @@ export const LendingContent = () => {
     <>
       <MainContainer
         aria-label="메인 콘텐츠"
-        className="mx-auto flex flex-1 w-full max-w-6xl items-center px-4"
+        className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4"
       >
         <BannerPaddingWrapper>
           <LendingHeader />

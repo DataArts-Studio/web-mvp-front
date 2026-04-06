@@ -56,47 +56,42 @@ export const LendingFeatures = () => {
   };
 
   return (
-    <>
-      <section
-        aria-label="테스티아 QA 도구 주요 기능"
-        className="w-full border-t border-neutral-800 bg-bg-1 py-16"
-      >
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="mb-12 text-center text-2xl font-bold text-text1 sm:text-3xl">
-            왜 <span className="text-primary">테스티아</span>인가요?
-          </h2>
-          <div className="grid gap-8 sm:grid-cols-3">
-            {features.map((feature) => (
-              <article key={feature.title} className="flex flex-col gap-3">
-                <h3 className="text-lg font-semibold text-text1">{feature.title}</h3>
-                <p className="text-sm leading-relaxed text-text-2">{feature.description}</p>
-              </article>
-            ))}
-          </div>
+    <section
+      aria-label="테스티아 QA 도구 소개"
+      className="flex min-h-screen w-full flex-col justify-center border-t border-neutral-800 bg-bg-1 py-16"
+    >
+      <div className="mx-auto max-w-6xl px-4">
+        <h2 className="mb-12 text-center text-2xl font-bold text-text1 sm:text-3xl">
+          왜 <span className="text-primary">테스티아</span>인가요?
+        </h2>
+        <div className="grid gap-8 sm:grid-cols-3">
+          {features.map((feature) => (
+            <article key={feature.title} className="flex flex-col gap-3">
+              <h3 className="text-lg font-semibold text-text1">{feature.title}</h3>
+              <p className="text-sm leading-relaxed text-text-2">{feature.description}</p>
+            </article>
+          ))}
         </div>
-      </section>
-      <section
-        aria-label="자주 묻는 질문"
-        className="w-full border-t border-neutral-800 bg-bg-1 py-16"
-      >
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="mb-8 text-center text-2xl font-bold text-text1 sm:text-3xl">
-            자주 묻는 질문
-          </h2>
-          <dl className="mx-auto max-w-3xl divide-y divide-neutral-800">
-            {faqs.map((faq) => (
-              <div key={faq.question} className="py-6">
-                <dt className="text-base font-semibold text-text1">{faq.question}</dt>
-                <dd className="mt-2 text-sm leading-relaxed text-text-2">{faq.answer}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
-      </section>
-    </>
+      </div>
+
+      <div className="mx-auto mt-16 max-w-6xl border-t border-neutral-800 px-4 pt-16">
+        <h2 className="mb-8 text-center text-2xl font-bold text-text1 sm:text-3xl">
+          자주 묻는 질문
+        </h2>
+        <dl className="mx-auto max-w-3xl divide-y divide-neutral-800">
+          {faqs.map((faq) => (
+            <div key={faq.question} className="py-6">
+              <dt className="text-base font-semibold text-text1">{faq.question}</dt>
+              <dd className="mt-2 text-sm leading-relaxed text-text-2">{faq.answer}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+    </section>
   );
 };
