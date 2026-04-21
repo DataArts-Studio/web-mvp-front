@@ -15,6 +15,11 @@ const BetaNoticePopup = dynamic(
   { ssr: false },
 );
 
+const DbOutageNoticePopup = dynamic(
+  () => import('@/features/db-outage-notice').then(mod => ({ default: mod.DbOutageNoticePopup })),
+  { ssr: false },
+);
+
 export const LendingCta = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 
@@ -37,6 +42,7 @@ export const LendingCta = () => {
         <ProjectCreateForm onClick={() => setIsCreateModalOpen(false)} />
       )}
       <BetaNoticePopup />
+      <DbOutageNoticePopup />
     </>
   );
 };

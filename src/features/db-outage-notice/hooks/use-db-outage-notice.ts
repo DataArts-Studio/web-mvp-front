@@ -1,0 +1,27 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+const STORAGE_KEY = 'db-outage-notice-dismissed-v1';
+
+export const useDbOutageNotice = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration: read sessionStorage and sync state
+    setIsMounted(true);
+    const isDismissed = sessionStorage.getItem(STORAGE_KEY);
+    setIsVisible(!isDismissed);
+  }, []);
+
+  const dismiss = () => {
+    sessionStorage.setItem(STORAGE_KEY, 'true');
+    setIsVisible(false);
+  };
+
+  return {
+    isVisible: isMounted && isVisible,
+    dismiss,
+  };
+};

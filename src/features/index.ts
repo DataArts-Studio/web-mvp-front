@@ -40,3 +40,6 @@ export { getOnboardingStatus, completeOnboardingTour, onboardingQueryKeys, onboa
 
 // beta-notice
 export { BetaNoticePopup, useBetaNotice } from '@/features/beta-notice';
+
+// db-outage-notice
+export { DbOutageNoticePopup, useDbOutageNotice } from '@/features/db-outage-notice';
