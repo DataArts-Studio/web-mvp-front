@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 보안 취약점 제보
+    url: mailto:wkd5878@gmail.com
+    about: 보안 취약점은 공개 이슈로 올리지 마시고 이메일로 제보해주세요.
+  - name: 사용 문의 / 일반 질문
+    url: https://gettestea.com
+    about: 제품 사용 관련 문의는 메인 사이트 또는 이메일로 보내주세요.

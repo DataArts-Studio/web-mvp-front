@@ -1,0 +1,71 @@
+name: 기능 제안
+description: 새로운 기능을 제안하거나 사용자 시나리오를 공유합니다.
+title: "feat: "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        기능 제안 감사합니다.
+        문제 상황과 기대 효과를 함께 적어주시면 우선순위를 판단하기 쉽습니다.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 해결하려는 문제 / 배경
+      description: 이 기능이 왜 필요한지, 어떤 사용자 시나리오에서 마주치는지 설명해주세요.
+      placeholder: "예) 어드민이 점검 안내를 사용자에게 전달할 공식 채널이 없습니다."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안 내용
+      description: 어떤 기능을 어떤 방식으로 추가하고 싶은지 적어주세요.
+    validations:
+      required: true
+
+  - type: textarea
+    id: ux
+    attributes:
+      label: UX / 화면 흐름
+      description: 와이어프레임, 사용자 흐름, 핵심 화면이 있으면 첨부해주세요.
+
+  - type: textarea
+    id: success
+    attributes:
+      label: 성공 지표
+      description: 이 기능이 잘 동작했다고 판단할 수 있는 기준을 적어주세요.
+      placeholder: "예) 점검 공지 발행 후 관련 문의 건수 50% 감소"
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 영향 범위
+      multiple: true
+      options:
+        - 어드민
+        - 고객 (사용자)
+        - 인프라 / 시스템
+        - 결제 / 플랜
+    validations:
+      required: true
+
+  - type: input
+    id: fdd
+    attributes:
+      label: 관련 FDD / 노션 문서
+      description: Notion FDD가 있다면 링크를 첨부해주세요.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 대안 / 검토한 다른 방식
+      description: 다른 방안을 고려했다면 함께 적어주세요.
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: 범위 외 (Out of Scope)
+      description: 이 제안에서 다루지 않을 항목을 명시해주세요.

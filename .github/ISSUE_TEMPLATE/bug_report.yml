@@ -1,0 +1,83 @@
+name: 버그 리포트
+description: 동작이 의도와 다르거나 오류가 발생하는 경우에 사용해주세요.
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        버그 리포트를 작성해주셔서 감사합니다.
+        재현이 가능한 정보를 최대한 자세히 적어주시면 빠르게 대응할 수 있습니다.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 요약
+      description: 어떤 문제가 발생했는지 한두 문장으로 설명해주세요.
+      placeholder: "예) 테스트 실행 상세 페이지에서 상태 변경 시 화면이 갱신되지 않습니다."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 단계
+      description: 문제를 재현할 수 있는 절차를 순서대로 적어주세요.
+      placeholder: |
+        1. `/projects/{slug}/runs/{runId}` 접속
+        2. TC-001 행의 상태 버튼 클릭
+        3. "Pass" 선택
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+      placeholder: "예) 상태 뱃지가 즉시 'Pass'로 갱신되어야 합니다."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 동작
+      placeholder: "예) 상태 뱃지가 변하지 않으며, 새로고침 후에야 반영됩니다."
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 스크린샷 / 로그
+      description: 가능하면 스크린샷, 콘솔 로그, 네트워크 탭, Sentry 이슈 링크 등을 첨부해주세요.
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 환경
+      multiple: true
+      options:
+        - 프로덕션 (gettestea.com)
+        - 개발 (dev.gettestea.com)
+        - 로컬
+        - Chrome
+        - Safari
+        - Firefox
+        - 모바일 (iOS)
+        - 모바일 (Android)
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: 발생 URL
+      placeholder: "https://gettestea.com/projects/..."
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 추가 정보
+      description: 위 항목에 해당하지 않는 참고 사항이 있다면 적어주세요.
