@@ -63,36 +63,37 @@ export const connectGithub = async (
 
     const db = getDatabase();
 
-    // 기존 연결이 있으면 업데이트
     const [existing] = await db
       .select({ id: githubConnections.id })
       .from(githubConnections)
       .where(eq(githubConnections.project_id, projectId))
       .limit(1);
 
-    if (existing) {
-      await db
-        .update(githubConnections)
-        .set({
-          access_token: encryptedToken,
-          updated_at: new Date(),
-        })
-        .where(eq(githubConnections.id, existing.id));
-    }
+    const [row] = existing
+      ? await db
+          .update(githubConnections)
+          .set({ access_token: encryptedToken, updated_at: new Date() })
+          .where(eq(githubConnections.id, existing.id))
+          .returning()
+      : await db
+          .insert(githubConnections)
+          .values({ project_id: projectId, access_token: encryptedToken })
+          .returning();
 
     return {
       success: true,
       data: {
         connection: {
-          id: existing?.id ?? '',
-          projectId,
-          repoFullName: '',
-          connectedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          id: row.id,
+          projectId: row.project_id,
+          repoFullName: row.repo_full_name,
+          connectedAt: row.connected_at.toISOString(),
+          updatedAt: row.updated_at.toISOString(),
         },
       },
     };
   } catch (error) {
+    console.error('[connectGithub] failed:', error);
     Sentry.captureException(error, { extra: { action: 'connectGithub' } });
     return { success: false, errors: { _github: ['GitHub 연결에 실패했습니다.'] } };
   }

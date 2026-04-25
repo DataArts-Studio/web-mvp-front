@@ -7,7 +7,7 @@ export const githubConnections = pgTable('github_connections', {
     .notNull()
     .unique()
     .references(() => projects.id, { onDelete: 'cascade' }),
-  repo_full_name: varchar('repo_full_name', { length: 255 }).notNull(),
+  repo_full_name: varchar('repo_full_name', { length: 255 }),
   access_token: text('access_token').notNull(),
   webhook_id: varchar('webhook_id', { length: 50 }),
   webhook_secret: text('webhook_secret'),

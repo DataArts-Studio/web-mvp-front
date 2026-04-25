@@ -48,18 +48,24 @@ export const GithubConnectCard = ({ projectId }: Props) => {
       }
 
       const result = await connectGithub({ projectId, code: event.data.code });
-      if (result.success) {
-        toast.success('GitHub 인증 완료! 저장소를 선택해주세요.');
-        invalidate();
-        setShowRepoSelect(true);
-        setLoadingRepos(true);
+      if (!result.success) {
+        toast.error(Object.values(result.errors).flat().join(', '));
+        return;
+      }
+
+      toast.success('GitHub 인증 완료! 저장소를 선택해주세요.');
+      invalidate();
+      setShowRepoSelect(true);
+      setLoadingRepos(true);
+      try {
         const reposResult = await getGithubRepos(projectId);
         if (reposResult.success) {
           setRepos(reposResult.data);
+        } else {
+          toast.error(Object.values(reposResult.errors).flat().join(', '));
         }
+      } finally {
         setLoadingRepos(false);
-      } else {
-        toast.error(Object.values(result.errors).flat().join(', '));
       }
     };
 

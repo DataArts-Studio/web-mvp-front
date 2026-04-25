@@ -1,7 +1,7 @@
 export type GithubConnection = {
   id: string;
   projectId: string;
-  repoFullName: string;
+  repoFullName: string | null;
   connectedAt: string;
   updatedAt: string;
 };
