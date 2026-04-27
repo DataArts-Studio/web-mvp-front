@@ -1,0 +1,1 @@
+ALTER TABLE "github_connections" ALTER COLUMN "repo_full_name" DROP NOT NULL;
