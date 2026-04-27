@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import { NextFetchKit } from '@/shared/lib/next-fetch-kit/next-fetch-kit';
+import { NextFetchKit } from './next-fetch-kit';
 
 describe('NextFetchKit', () => {
   const fetchMock = vi.fn();

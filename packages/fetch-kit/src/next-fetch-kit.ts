@@ -4,8 +4,8 @@ import type {
   NextFetchKitRequestOptions,
   NextFetchKitResponse,
   NextFetchKitState,
-} from '@/shared/lib/next-fetch-kit/types';
-import { HttpMethods } from '@/shared/lib/next-fetch-kit/types';
+} from './types';
+import { HttpMethods } from './types';
 
 export class NextFetchKit implements ApiMethods {
   private config: NextFetchKitState;

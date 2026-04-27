@@ -27,6 +27,7 @@
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-query-devtools": "^5.91.1",
     "@testea/db": "workspace:*",
+    "@testea/fetch-kit": "workspace:*",
     "@testea/lib": "workspace:*",
     "@testea/ui": "workspace:*",
     "@testea/util": "workspace:*",

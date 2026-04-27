@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { NextErrorKit } from '@/shared/lib/next-fetch-kit/next-error-kit';
-import { NextFetchError } from '@/shared/lib/next-fetch-kit/next-fetch-error';
-import type { NextFetchKitResponse } from '@/shared/lib/next-fetch-kit/types';
+import { NextErrorKit } from './next-error-kit';
+import { NextFetchError } from './next-fetch-error';
+import type { NextFetchKitResponse } from './types';
 
 describe('NextErrorKit', () => {
   it('converts failed responses to NextFetchError', () => {

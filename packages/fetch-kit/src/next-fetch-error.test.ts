@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { NextFetchError } from '@/shared/lib/next-fetch-kit/next-fetch-error';
+import { NextFetchError } from './next-fetch-error';
 
 describe('NextFetchError', () => {
   it('inherits from Error and keeps response metadata', () => {

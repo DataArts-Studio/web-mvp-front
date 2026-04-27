@@ -1,5 +1,5 @@
-import { NextFetchError } from '@/shared/lib/next-fetch-kit/next-fetch-error';
-import type { NextFetchKitResponse } from '@/shared/lib/next-fetch-kit/types';
+import { NextFetchError } from './next-fetch-error';
+import type { NextFetchKitResponse } from './types';
 
 /** 에러 처리 유틸리티 키트 */
 export class NextErrorKit {

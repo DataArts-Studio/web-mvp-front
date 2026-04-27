@@ -1,4 +1,4 @@
-import type { NextFetchKitError } from '@/shared/lib/next-fetch-kit/types';
+import type { NextFetchKitError } from './types';
 
 /**
  * NextFetchKit에서 발생하는 표준 에러 클래스<br/>
