@@ -1,12 +1,12 @@
 'use server';
 import * as Sentry from '@sentry/nextjs';
 import { CreateTestRunSchema } from '@/entities/test-run';
-import { getDatabase, testRuns, testRunSuites, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites } from '@/shared/lib/db';
+import { getDatabase, testRuns, testRunSuites, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites } from '@testea/db';
 import { inArray, and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/db';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
 
 type CreateRunInput = z.infer<typeof CreateTestRunSchema>;

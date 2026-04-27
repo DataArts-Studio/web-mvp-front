@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, projectPreferences } from '@/shared/lib/db';
+import { getDatabase, projectPreferences } from '@testea/db';
 import { ActionResult } from '@/shared/types';
 import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';

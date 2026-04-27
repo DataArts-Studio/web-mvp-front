@@ -7,7 +7,7 @@ import {
   testSuites,
   milestones,
   auditLogs,
-} from '@/shared/lib/db';
+} from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import { and, eq, lt, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';

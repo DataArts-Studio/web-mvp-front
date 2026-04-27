@@ -2,7 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features/dashboard';
-import { getDatabase, projects, testCases, testSuites } from '@/shared/lib/db';
+import { getDatabase, projects, testCases, testSuites } from '@testea/db';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { ActionResult } from '@/shared/types';
 

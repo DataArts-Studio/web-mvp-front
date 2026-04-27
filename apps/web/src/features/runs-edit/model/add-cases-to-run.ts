@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCaseRuns, testRuns } from '@/shared/lib/db';
+import { getDatabase, testCaseRuns, testRuns } from '@testea/db';
 import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';

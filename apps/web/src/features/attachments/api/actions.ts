@@ -3,10 +3,10 @@
 import * as Sentry from '@sentry/nextjs';
 import { v7 as uuidv7 } from 'uuid';
 import { and, eq, isNull } from 'drizzle-orm';
-import { getDatabase, testCaseAttachments } from '@/shared/lib/db';
+import { getDatabase, testCaseAttachments } from '@testea/db';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/db';
-import { createSupabaseServerClient } from '@/shared/lib/db/supabase/server';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
+import { createSupabaseServerClient } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import type { Attachment } from '../model/types';
 import { ATTACHMENT_LIMITS, BUCKET_NAME } from '../model/constants';

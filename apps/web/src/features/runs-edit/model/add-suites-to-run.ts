@@ -7,7 +7,7 @@ import {
   testCaseRuns,
   testCases,
   testRuns,
-} from '@/shared/lib/db';
+} from '@testea/db';
 import { eq, and, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';

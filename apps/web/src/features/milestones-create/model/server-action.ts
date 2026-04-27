@@ -1,11 +1,11 @@
 'use server';
 import * as Sentry from '@sentry/nextjs';
 import { CreateMilestoneSchema } from '../../../entities/milestone';
-import { getDatabase, milestones } from '../../../shared/lib/db';
+import { getDatabase, milestones } from '@testea/db';
 import { z } from 'zod';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '../../../access/lib/require-access';
-import { checkStorageLimit } from '../../../shared/lib/db';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
 
 type CreateMilestoneInput = z.infer<typeof CreateMilestoneSchema>;

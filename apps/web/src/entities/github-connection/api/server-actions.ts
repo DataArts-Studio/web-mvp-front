@@ -2,7 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { eq, and, asc } from 'drizzle-orm';
-import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from '@/shared/lib/db';
+import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from '@testea/db';
 import { encrypt, decrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
 import type { GithubConnection, ExternalLink, GithubRepo } from '../model/types';

@@ -9,12 +9,12 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
-import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites, testRuns, testCaseRuns, testCases, testRunSuites } from '@/shared/lib/db';
+import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites, testRuns, testCaseRuns, testCases, testRunSuites } from '@testea/db';
 import { ActionResult } from '@/shared/types';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/db';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 
 type GetMilestonesParams = {
   projectId: string;

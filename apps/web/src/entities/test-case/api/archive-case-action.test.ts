@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { archiveTestCase } from './server-actions';
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
   testCases: {
     id: 'id',

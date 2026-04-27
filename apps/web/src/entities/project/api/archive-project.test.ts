@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { archiveProject } from './server-actions';
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
   projects: { id: 'id', archived_at: 'archived_at', lifecycle_status: 'lifecycle_status' },
 }));

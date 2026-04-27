@@ -18,10 +18,10 @@ export interface TestCaseRunDetail {
   testCaseId: string;
   code: string;
   title: string;
-  status: import('@/shared/lib/db').TestCaseRunStatus;
+  status: import('@testea/db').TestCaseRunStatus;
   comment: string | null;
   executedAt: Date | null;
-  sourceType: import('@/shared/lib/db').TestCaseRunSourceType;
+  sourceType: import('@testea/db').TestCaseRunSourceType;
   sourceId: string | null;
   sourceName: string | null;
   testSuiteId: string | null;
@@ -81,13 +81,13 @@ export interface FetchedTestRun {
 
 export interface UpdateTestCaseRunInput {
   testCaseRunId: string;
-  status: import('@/shared/lib/db').TestCaseRunStatus;
+  status: import('@testea/db').TestCaseRunStatus;
   comment?: string | null;
 }
 
 export interface UpdateTestCaseRunResult {
   id: string;
-  status: import('@/shared/lib/db').TestCaseRunStatus;
+  status: import('@testea/db').TestCaseRunStatus;
   comment: string | null;
   executedAt: Date | null;
 }

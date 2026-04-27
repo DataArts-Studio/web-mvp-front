@@ -12,7 +12,7 @@ vi.mock('@/access/lib/require-access', () => ({
   requireProjectAccess: vi.fn(() => Promise.resolve(true)),
 }));
 
-vi.mock('@/shared/lib/db/check-storage-limit', () => ({
+vi.mock('@/shared/lib/storage/check-storage-limit', () => ({
   checkStorageLimit: vi.fn(() => Promise.resolve(null)),
 }));
 
@@ -25,7 +25,7 @@ const mockDb = {
   insert: mockInsert,
 };
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
   milestones: {
     id: 'id',

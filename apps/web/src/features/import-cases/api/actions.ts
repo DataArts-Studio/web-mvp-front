@@ -1,12 +1,12 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCases } from '@/shared/lib/db';
+import { getDatabase, testCases } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/db';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { importRequestSchema } from '../model/schema';
 import type { ImportResult, ImportRowInput } from '../model/schema';
 

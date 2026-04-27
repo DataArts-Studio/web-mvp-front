@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, milestones, testRuns, testCaseRuns } from '@/shared/lib/db';
+import { getDatabase, milestones, testRuns, testCaseRuns } from '@testea/db';
 import { sql, eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';

@@ -2,7 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { and, eq, sql } from 'drizzle-orm';
-import { getDatabase, projectAiConfigs, testCases } from '@/shared/lib/db';
+import { getDatabase, projectAiConfigs, testCases } from '@testea/db';
 import { encrypt, decrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
 import type { AiConfig } from '../model/types';

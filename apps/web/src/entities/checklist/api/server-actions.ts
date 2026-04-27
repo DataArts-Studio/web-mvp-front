@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, checklists, checklistItems } from '@/shared/lib/db';
+import { getDatabase, checklists, checklistItems } from '@testea/db';
 import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
 import type { ActionResult } from '@/shared/types';
 import type { ChecklistWithItems, ChecklistWithProgress } from '../model/types';
@@ -350,7 +350,7 @@ export const convertChecklistToTestCases = async (
     }
 
     // 동적 import로 createTestCase 가져오기
-    const { testCases } = await import('@/shared/lib/db');
+    const { testCases } = await import('@testea/db');
 
     // display_id 최대값 조회
     const [maxDisplayId] = await db

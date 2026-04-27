@@ -1,4 +1,3 @@
-import { SERVER_ENV } from '@/shared/constants/infra/env.server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 
@@ -58,11 +57,11 @@ describe('데이터베이스 연결 관리 (Database Connection)', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await closeDatabase();
-    process.env = { ...originalEnv };
-    vi.spyOn(SERVER_ENV, 'SUPABASE_DB_URL', 'get').mockReturnValue(
-      'postgres://user:pass@localhost:5432/db'
-    );
-    vi.spyOn(SERVER_ENV, 'NODE_ENV', 'get').mockReturnValue('development');
+    process.env = {
+      ...originalEnv,
+      SUPABASE_DB_URL: 'postgres://user:pass@localhost:5432/db',
+      NODE_ENV: 'development',
+    };
   });
 
   afterEach(() => {
@@ -90,7 +89,7 @@ describe('데이터베이스 연결 관리 (Database Connection)', () => {
   });
 
   it('운영(Production) 환경 설정을 올바르게 반영해야 한다', async () => {
-    vi.spyOn(SERVER_ENV, 'NODE_ENV', 'get').mockReturnValue('production');
+    process.env.NODE_ENV = 'production';
     const postgres = (await import('postgres')).default;
     getDatabase();
     expect(postgres).toHaveBeenCalledWith(

@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
 import { toProjectDto } from '@/entities';
-import { getDatabase, projects } from '@/shared/lib/db';
+import { getDatabase, projects } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { getDatabase } from './drizzle';
+import { getDatabase } from '../client/drizzle';
 
 /**
  * 프로젝트에 속한 모든 테이블의 데이터 크기를 합산하여 바이트 단위로 반환합니다.

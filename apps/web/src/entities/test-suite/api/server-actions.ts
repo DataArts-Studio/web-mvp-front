@@ -12,12 +12,12 @@ import {
   testRunSuites,
   testRuns,
   testCaseRuns,
-} from '@/shared/lib/db';
+} from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import { and, eq, count, desc, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/db';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 
 type GetTestSuitesParams = {
   projectId: string;

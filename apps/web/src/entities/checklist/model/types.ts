@@ -1,4 +1,4 @@
-import type { ChecklistStatus } from '@/shared/lib/db/schema/checklists';
+import type { ChecklistStatus } from '@testea/db';
 
 export type ChecklistItem = {
   id: string;

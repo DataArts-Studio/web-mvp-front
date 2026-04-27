@@ -1,6 +1,6 @@
 'use server';
 
-import {getDatabase, testCases} from "@/shared/lib/db";
+import {getDatabase, testCases} from "@testea/db";
 import { CreateTestCaseDtoSchema } from '@/entities/test-case';
 import { z } from 'zod';
 

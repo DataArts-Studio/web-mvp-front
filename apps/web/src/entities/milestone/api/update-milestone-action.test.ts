@@ -7,7 +7,7 @@ import {
   setMockUpdateReturn,
 } from '@/shared/test/__mocks__/db';
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
   milestones: { id: 'id', name: 'name' },
 }));

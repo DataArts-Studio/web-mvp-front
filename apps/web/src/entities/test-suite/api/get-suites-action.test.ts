@@ -7,7 +7,7 @@ import {
 } from '@/shared/test/__mocks__/db';
 
 // DB 모듈 모킹
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
   testSuites: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMilestone } from './server-actions';
 
 // DB 모듈 모킹
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
   milestones: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
 }));

@@ -1,11 +1,10 @@
-import { ENV } from '@/shared/constants';
-import { Database } from '@/shared/lib/db';
-import { SUPABASE_AUTH_OPTIONS } from '@/shared/lib/db/supabase/config';
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_AUTH_OPTIONS } from './config';
+import type { Database } from './types';
 
 export const createSupabaseClient = () => {
-  const supabaseUrl = ENV.CLIENT.SUPABASE_URL!;
-  const supabaseKey = ENV.CLIENT.SUPABASE_ANON_KEY!;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   // 환경변수 체크
   if (!supabaseUrl || !supabaseKey) {

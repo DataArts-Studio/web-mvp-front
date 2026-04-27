@@ -1,9 +1,8 @@
-import { SERVER_ENV } from '@/shared/constants/infra/env.server';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres, { Sql } from 'postgres';
-import * as tables from './schema';
-import * as relations from './schema/relations';
+import * as tables from '../schema';
+import * as relations from '../schema/relations';
 
 const schema = { ...tables, ...relations };
 
@@ -18,7 +17,7 @@ let _db: Database | undefined = globalForDb.__TESTEA_DB__;
 let _client: Sql | undefined = globalForDb.__TESTEA_SQL__;
 
 const getDatabaseUrl = () => {
-  const dbUrl = SERVER_ENV.SUPABASE_DB_URL!;
+  const dbUrl = process.env.SUPABASE_DB_URL;
   if (!dbUrl) throw new Error('SUPABASE_DB_URL is not set');
   return dbUrl;
 }
@@ -26,7 +25,7 @@ const getDatabaseUrl = () => {
 const createClient = () => {
   if (_client) return _client;
   const databaseUrl = getDatabaseUrl();
-  const isProd = SERVER_ENV.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === 'production';
 
   const client = postgres(databaseUrl, {
     max: 1,
@@ -43,7 +42,7 @@ const createClient = () => {
 
 export const getDatabase = (): Database => {
   if (_db) return _db;
-  const isProd = SERVER_ENV.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === 'production';
   const client = createClient();
   const db = drizzle(client, {
     schema,

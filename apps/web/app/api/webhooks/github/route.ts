@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from '@/shared/lib/db';
+import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from '@testea/db';
 import { decrypt } from '@/shared/lib/crypto';
 import { eq, and, inArray } from 'drizzle-orm';
 

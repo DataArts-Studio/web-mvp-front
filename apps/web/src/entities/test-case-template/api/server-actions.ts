@@ -4,13 +4,13 @@ import * as Sentry from '@sentry/nextjs';
 import type { CreateTestCaseTemplate, TestCaseTemplate, TestCaseTemplateDTO, UpdateTestCaseTemplate } from '../model/types';
 import { toCreateTemplateDTO, toTestCaseTemplate } from '../model/mapper';
 import { BUILTIN_TEMPLATES, isBuiltinTemplate } from '../model/constants';
-import { getDatabase, testCaseTemplates } from '@/shared/lib/db';
+import { getDatabase, testCaseTemplates } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/db';
-import { testCases } from '@/shared/lib/db';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
+import { testCases } from '@testea/db';
 
 export const getTemplatesByProjectId = async (
   projectId: string

@@ -8,7 +8,7 @@ const mockFrom = vi.fn(() => ({ where: mockWhere }));
 const mockSelect = vi.fn(() => ({ from: mockFrom }));
 const mockDb = { select: mockSelect };
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
   testCases: { project_id: 'project_id', lifecycle_status: 'lifecycle_status' },
 }));

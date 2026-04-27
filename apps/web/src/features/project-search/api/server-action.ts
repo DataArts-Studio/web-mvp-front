@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, projects } from '@/shared/lib/db';
+import { getDatabase, projects } from '@testea/db';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 import type { ProjectSearchResult, SearchProjectsResponse } from '../model/types';
 

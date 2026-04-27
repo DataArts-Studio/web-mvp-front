@@ -1,6 +1,6 @@
 import { LIMITS } from '@/shared/constants/core';
 import type { ActionFailure } from '@/shared/types';
-import { getProjectStorageBytes } from './get-project-storage';
+import { getProjectStorageBytes } from '@testea/db';
 
 /**
  * 프로젝트의 저장 용량이 제한을 초과하는지 확인합니다.

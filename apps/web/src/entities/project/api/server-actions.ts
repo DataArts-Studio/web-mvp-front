@@ -2,7 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import type { ProjectDomain } from '@/entities/project';
-import { getDatabase, projects } from '@/shared/lib/db';
+import { getDatabase, projects } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import { eq } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';

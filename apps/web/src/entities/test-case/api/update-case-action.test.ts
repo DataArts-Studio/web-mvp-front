@@ -12,7 +12,7 @@ const mockDb = {
   update: mockUpdate,
 };
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
   testCases: {
     id: 'id',

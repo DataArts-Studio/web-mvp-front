@@ -1,7 +1,7 @@
 'use server';
 
 import type { ActionResult } from '@/shared/types';
-import { getProjectStorageBytes } from '@/shared/lib/db/get-project-storage';
+import { getProjectStorageBytes } from '@testea/db';
 import { LIMITS } from '@/shared/constants/core/limits';
 
 export type StorageInfo = {

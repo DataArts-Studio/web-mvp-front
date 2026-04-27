@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, milestones, testRuns, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites, testSuites } from '@/shared/lib/db';
+import { getDatabase, milestones, testRuns, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites, testSuites } from '@testea/db';
 import { ActionResult } from '@/shared/types';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { MilestoneStats, MilestoneWithStats } from '@/entities/milestone';

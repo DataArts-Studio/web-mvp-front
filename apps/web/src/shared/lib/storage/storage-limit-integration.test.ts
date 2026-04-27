@@ -16,7 +16,7 @@ vi.mock('@/access/lib/require-access', () => ({
   requireProjectAccess: (...args: unknown[]) => mockRequireProjectAccess(...args),
 }));
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
   checkStorageLimit: (...args: unknown[]) => mockCheckStorageLimit(...args),
   testCases: { project_id: 'project_id', id: 'id', display_id: 'display_id', lifecycle_status: 'lifecycle_status' },

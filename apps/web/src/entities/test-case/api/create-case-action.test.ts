@@ -5,7 +5,7 @@ const mockValues = vi.fn(() => ({ returning: mockReturning }));
 const mockInsert = vi.fn(() => ({ values: mockValues }));
 const mockDb = { insert: mockInsert };
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
   testCases: {},
 }));

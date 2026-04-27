@@ -3,7 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { eq, and, asc } from 'drizzle-orm';
 
-import { getDatabase, testCases, testSuites } from '@/shared/lib/db';
+import { getDatabase, testCases, testSuites } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import { SORT_ORDER_GAP } from '../model/sort-utils';
 

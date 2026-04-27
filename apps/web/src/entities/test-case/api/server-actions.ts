@@ -3,12 +3,12 @@
 import * as Sentry from '@sentry/nextjs';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
-import { getDatabase, testCases, testRunSuites, testCaseRuns, testRuns, milestoneTestSuites } from '@/shared/lib/db';
+import { getDatabase, testCases, testRunSuites, testCaseRuns, testRuns, milestoneTestSuites } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 import { and, eq, sql, inArray, ilike, or, desc, asc } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/db';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { createVersionSnapshot } from '@/entities/test-case-version/api/actions';
 import { detectChangedFields, generateChangeSummary } from '@/entities/test-case-version/model/diff-utils';
 

@@ -1,7 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testRuns, testCaseRuns, testRunSuites, testSuites, milestones, TestRunStatus } from '@/shared/lib/db';
+import { getDatabase, testRuns, testCaseRuns, testRunSuites, testSuites, milestones, TestRunStatus } from '@testea/db';
 import { ActionResult } from '@/shared/types';
 import type { FetchedTestRun } from '@/entities/test-run';
 import { and, eq, inArray, isNull } from 'drizzle-orm';

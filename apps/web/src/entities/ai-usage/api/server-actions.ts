@@ -2,7 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { eq, sql, and, gte } from 'drizzle-orm';
-import { getDatabase, aiUsageLogs } from '@/shared/lib/db';
+import { getDatabase, aiUsageLogs } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 
 const FREE_MONTHLY_LIMIT = 50;

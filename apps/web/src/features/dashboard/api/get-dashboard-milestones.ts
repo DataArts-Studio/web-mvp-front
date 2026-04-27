@@ -8,7 +8,7 @@ import {
   testCaseRuns,
   milestoneTestSuites,
   testSuites,
-} from '@/shared/lib/db';
+} from '@testea/db';
 import { ActionResult } from '@/shared/types';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 

@@ -12,7 +12,7 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
-import { getDatabase, projects } from '@/shared/lib/db';
+import { getDatabase, projects } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
 
 import { createProjectAccessToken } from '../../lib/access-token';

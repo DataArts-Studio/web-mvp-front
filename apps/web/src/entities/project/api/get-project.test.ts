@@ -12,7 +12,7 @@ const mockDb = {
   select: mockSelect,
 };
 
-vi.mock('@/shared/lib/db', () => ({
+vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
   projects: {
     id: 'id',
