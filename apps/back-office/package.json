@@ -1,0 +1,36 @@
+{
+  "name": "back-office",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.105.0",
+    "@tanstack/react-table": "^8.21.3",
+    "@testea/db": "workspace:*",
+    "@testea/fetch-kit": "workspace:*",
+    "@testea/lib": "workspace:*",
+    "@testea/ui": "workspace:*",
+    "@testea/util": "workspace:*",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "recharts": "^3.8.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^25.0.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "16.0.10",
+    "eslint-config-prettier": "^10.1.8",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5"
+  }
+}
