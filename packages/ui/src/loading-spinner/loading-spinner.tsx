@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 
 export type LoadingSpinnerSize = 'sm' | 'md' | 'lg' | 'xl';
 

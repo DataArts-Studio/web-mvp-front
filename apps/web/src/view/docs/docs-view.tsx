@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, BookOpen, LayoutDashboard, TestTube, FolderKanban, Play, Flag, Menu, X } from 'lucide-react';
 
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { Logo } from '@testea/ui';
 import { Footer } from '@/widgets/footer';
 

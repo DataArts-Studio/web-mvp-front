@@ -14,7 +14,7 @@ import { MainContainer, DSButton, LoadingSpinner } from '@testea/ui';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Clock, Edit2, Flag, FolderOpen, History, Play, Tag, XCircle } from 'lucide-react';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
-import { formatDateTime } from '@/shared/utils/date-format';
+import { formatDateTime } from '@testea/util';
 import { AttachmentSection } from '@/features/attachments';
 import { ExternalLinksSection } from '@/features/github-links';
 

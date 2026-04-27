@@ -2,7 +2,7 @@
 import React from 'react';
 
 import { Slot } from '../../slot';
-import { mergeRefs } from '../../utils';
+import { mergeRefs } from '@testea/util';
 
 // ------------------------------------------------------------------
 // Types & Context & Context Hook

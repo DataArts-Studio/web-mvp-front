@@ -7,7 +7,7 @@ import { Github, GitPullRequest, CircleDot, ExternalLink, Plus, Loader2, AlertCi
 
 import { externalLinksQueryOptions, githubQueryKeys, githubConnectionQueryOptions } from '@/entities/github-connection';
 import { createGithubIssue } from '@/entities/github-connection/api/server-actions';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 type Props = {
   testCaseId: string;

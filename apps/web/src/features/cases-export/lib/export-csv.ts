@@ -1,5 +1,5 @@
 import type { TestCaseCardType } from '@/entities/test-case';
-import { formatDateKR } from '@/shared/utils/date-format';
+import { formatDateKR } from '@testea/util';
 import { toast } from 'sonner';
 
 function escapeCsvField(value: string): string {

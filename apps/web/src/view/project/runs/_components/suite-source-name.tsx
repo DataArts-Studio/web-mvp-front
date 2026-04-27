@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useOutsideClick } from '@/shared/hooks';
+import { useOutsideClick } from '@testea/lib';
 import { MAX_VISIBLE_SUITES, type RunSourceType } from './runs-list-constants';
 
 interface SuiteSourceNameProps {

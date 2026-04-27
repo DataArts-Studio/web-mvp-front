@@ -4,7 +4,7 @@ import React from 'react';
 import { type UseMutationResult } from '@tanstack/react-query';
 
 import { DSButton, EmptyState } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { type TestCaseRunDetail } from '@/features/runs';
 
 import {

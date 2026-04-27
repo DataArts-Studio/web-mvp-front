@@ -2,15 +2,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { cn } from '@/shared/utils';
-import { useOutsideClick } from '@/shared/hooks';
+import { cn } from '@testea/util';
+import { useOutsideClick } from '@testea/lib';
 import { RUN_STATUS_CONFIG } from '@testea/ui';
 import { ShareButton } from '@/features/runs-share/ui/share-button';
 import { ArrowLeft, Keyboard, Pencil, Check, X, ChevronDown, BarChart3 } from 'lucide-react';
 import { SOURCE_TYPE_CONFIG } from './run-detail-constants';
 import { type TestRunDetail } from '@/entities/test-run';
 import { type SourceInfo } from '@/entities/test-run';
-import { formatDateKR } from '@/shared/utils';
+import { formatDateKR } from '@testea/util';
 
 interface RunDetailHeaderProps {
   testRun: TestRunDetail;

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 
 interface EmptyStateProps {
   icon: ReactNode;

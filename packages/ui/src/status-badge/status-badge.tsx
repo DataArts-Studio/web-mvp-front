@@ -1,4 +1,4 @@
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 
 export interface StatusBadgeConfig {
   label: string;

@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { LoadingSpinner, RUN_STATUS_CONFIG } from '@testea/ui';
 import { sharedReportQueryOptions } from '@/features/runs-share';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import type { TestStatusData } from '@/widgets/project';
 import type { SharedReportCaseItem, SharedReportSuiteBreakdown } from '@/features/runs-share/api/share-actions';
 

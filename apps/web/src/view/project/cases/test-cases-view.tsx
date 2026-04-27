@@ -11,7 +11,7 @@ import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { TestCaseDetailForm } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { MainContainer } from '@testea/ui';
-import { useDisclosure } from '@/shared/hooks';
+import { useDisclosure } from '@testea/lib';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { ImportWizardModal } from '@/features/import-cases';

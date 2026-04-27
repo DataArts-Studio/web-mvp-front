@@ -3,7 +3,7 @@
 import React, { useCallback, useState } from 'react';
 import { AlignLeft, List } from 'lucide-react';
 import { stepsToText, textToSteps } from '@/entities/test-case';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@testea/util';
 import { StepBoxEditor, type StepBoxEditorProps } from './step-box-editor';
 
 type Mode = 'stepbox' | 'textarea';

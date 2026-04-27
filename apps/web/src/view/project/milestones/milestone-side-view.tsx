@@ -7,8 +7,8 @@ import { useParams } from 'next/navigation';
 import { MilestoneWithStats } from '@/entities/milestone';
 import { DSButton, MILESTONE_STATUS_CONFIG } from '@testea/ui';
 import { Calendar, CheckCircle, Edit2, ExternalLink, ListChecks, PlayCircle, Trash2, X } from 'lucide-react';
-import { cn } from '@/shared/utils';
-import { formatDate } from '@/shared/utils/date-format';
+import { cn } from '@testea/util';
+import { formatDate } from '@testea/util';
 
 interface MilestoneSideViewProps {
   milestone: MilestoneWithStats;

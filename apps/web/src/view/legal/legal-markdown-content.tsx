@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { slugify, getTextContent } from '@/shared/utils/markdown-utils';
+import { slugify } from '@testea/util';
+import { getTextContent } from '@/shared/utils/markdown-utils';
 export { slugify };
 
 export type LegalHeading = { id: string; text: string; level: 2 | 3 };

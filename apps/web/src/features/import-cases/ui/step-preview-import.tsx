@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { ChevronLeft, Check, AlertCircle } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { testSuitesQueryOptions } from '@/entities/test-suite';

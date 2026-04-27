@@ -9,7 +9,7 @@ import { projectIdQueryOptions } from '@/entities/project';
 import { MilestoneCreateForm, milestonesQueryOptions } from '@/features/milestones-create';
 import { MilestoneEditForm } from '@/features/milestones-edit';
 import { MainContainer } from '@testea/ui';
-import { useDisclosure } from '@/shared/hooks';
+import { useDisclosure } from '@testea/lib';
 import { ActionToolbar } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';

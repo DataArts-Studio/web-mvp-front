@@ -10,7 +10,7 @@ import { GithubConnectCard } from '@/features/github-connect';
 import { AiConfigCard } from '@/features/ai-generate';
 import { MainContainer } from '@testea/ui';
 import { ProjectErrorFallback } from '@testea/ui';
-import { formatDateKR } from '@/shared/utils/date-format';
+import { formatDateKR } from '@testea/util';
 
 import { SettingsLoadingSkeleton } from './_components/settings-loading-skeleton';
 import { GeneralSettingsSection } from './_components/general-settings-section';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { mergeRefs } from '../utils/merge-refs';
+import { mergeRefs } from '@testea/util';
 
 interface SlotProps extends React.HTMLAttributes<HTMLElement> {
   // children: React.ReactElement;

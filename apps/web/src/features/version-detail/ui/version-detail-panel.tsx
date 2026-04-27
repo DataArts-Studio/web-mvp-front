@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useVersionDetail } from '../hooks/use-version-detail';
 import { RollbackConfirmDialog } from '@/features/version-rollback/ui/rollback-confirm-dialog';
 import { LoadingSpinner, DSButton } from '@testea/ui';
-import { formatDateTime } from '@/shared/utils/date-format';
+import { formatDateTime } from '@testea/util';
 import { RotateCcw, GitCompare, Tag } from 'lucide-react';
 import type { ChangeType } from '@/entities/test-case-version';
 

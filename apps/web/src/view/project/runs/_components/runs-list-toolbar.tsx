@@ -9,7 +9,7 @@ import {
   ArrowUpDown,
   X,
 } from 'lucide-react';
-import { useOutsideClick } from '@/shared/hooks';
+import { useOutsideClick } from '@testea/lib';
 import { type RunStatusFilter, type RunSortOption, getStatusFilterLabel } from './runs-list-constants';
 
 interface RunsListToolbarProps {

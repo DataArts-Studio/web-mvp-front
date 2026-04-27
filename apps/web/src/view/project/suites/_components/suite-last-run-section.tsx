@@ -1,6 +1,6 @@
 import type { TestSuiteCard } from '@/entities/test-suite';
-import { cn } from '@/shared/utils';
-import { formatDateTime } from '@/shared/utils/date-format';
+import { cn } from '@testea/util';
+import { formatDateTime } from '@testea/util';
 import { RUN_STATUS_CONFIG } from './suite-detail-constants';
 
 type SuiteLastRunSectionProps = {

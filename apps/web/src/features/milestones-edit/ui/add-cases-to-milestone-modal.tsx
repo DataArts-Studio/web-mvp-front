@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import type { TestCase } from '@/entities/test-case';
 import { addTestCasesToMilestone } from '@/entities/milestone/api';
 import { SelectionModal } from '@/shared';
-import { useSelectionSet } from '@/shared/hooks';
+import { useSelectionSet } from '@testea/lib';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface AddCasesToMilestoneModalProps {

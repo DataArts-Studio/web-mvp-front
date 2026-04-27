@@ -10,7 +10,7 @@ import {
   Trash2,
   MoreVertical,
 } from 'lucide-react';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@testea/util';
 
 interface StepRowMenuProps {
   index: number;

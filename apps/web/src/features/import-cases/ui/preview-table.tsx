@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, X } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import type { ColumnMapping, ValidatedRow } from '../model/schema';
 
 const PREVIEW_LIMIT = 5;

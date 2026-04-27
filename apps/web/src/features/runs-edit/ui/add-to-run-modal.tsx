@@ -5,7 +5,7 @@ import type { TestSuite } from '@/entities/test-suite';
 import type { Milestone } from '@/entities/milestone';
 import type { TestCase } from '@/entities/test-case';
 import { SelectionModal, cn } from '@/shared';
-import { useSelectionSet } from '@/shared/hooks';
+import { useSelectionSet } from '@testea/lib';
 import {
   useAddSuitesToRun,
   useAddMilestonesToRun,

@@ -7,7 +7,7 @@ import { getTestCases } from '@/entities/test-case/api';
 import { getTestSuites } from '@/entities/test-suite/api';
 import { DSButton, LoadingSpinner, CaseSelectionPanel, SuiteSelectionPanel } from '@testea/ui';
 import { FormField } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMilestone } from '@/features/milestones-create';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

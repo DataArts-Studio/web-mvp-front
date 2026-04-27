@@ -16,7 +16,7 @@ import type { TestCase, TestCaseCardType } from '@/entities/test-case';
 import { SuiteEditForm, AddCasesToSuiteModal } from '@/features/suites-edit';
 import { MainContainer } from '@testea/ui';
 import { DSButton, LoadingSpinner } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import {
   ArrowLeft,
   Calendar,
@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
-import { formatDate } from '@/shared/utils/date-format';
+import { formatDate } from '@testea/util';
 import { toast } from 'sonner';
 
 import { TAG_TONE_CONFIG } from './_components/suite-detail-constants';

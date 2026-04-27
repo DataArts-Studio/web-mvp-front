@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 import type { GithubRepo } from '@/entities/github-connection';
 import { DSButton } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 type RepoSelectorProps = {
   repos: GithubRepo[];

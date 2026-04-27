@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { Select } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { ChevronDown } from 'lucide-react';
 
 interface DateDropdownSelectProps {

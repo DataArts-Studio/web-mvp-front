@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 import { dsSelectVariants } from './select.variable';
 import type { DsSelectProps } from './types';
 

@@ -5,7 +5,7 @@ import React, { createContext, type ReactNode, useContext } from 'react';
 import { DSButton } from '../ds-button';
 import { DsCheckbox } from '../checkbox';
 import { LoadingSpinner } from '../loading-spinner';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 import { ListChecks, Search, X, type LucideIcon } from 'lucide-react';
 
 // ─── Context ───────────────────────────────────────────────

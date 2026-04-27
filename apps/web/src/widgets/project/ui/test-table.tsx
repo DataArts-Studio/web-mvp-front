@@ -2,7 +2,7 @@ import React, { ComponentProps, ReactNode } from 'react';
 
 
 
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 
 

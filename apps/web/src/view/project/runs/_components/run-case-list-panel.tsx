@@ -2,8 +2,8 @@
 
 import React, { useMemo, useState, useRef } from 'react';
 
-import { cn } from '@/shared/utils';
-import { useOutsideClick } from '@/shared/hooks';
+import { cn } from '@testea/util';
+import { useOutsideClick } from '@testea/lib';
 import { type TestCaseRunDetail } from '@/features/runs';
 
 import {

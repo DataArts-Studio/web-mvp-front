@@ -4,7 +4,7 @@ import React from 'react';
 import type { TestCaseVersionSummary, ChangeType } from '@/entities/test-case-version';
 import { useVersionsList } from '../hooks/use-versions-list';
 import { LoadingSpinner, DSButton } from '@testea/ui';
-import { formatRelativeTime } from '@/shared/utils/date-format';
+import { formatRelativeTime } from '@testea/util';
 import { Plus, Edit2, RotateCcw, FileText, GitCompare } from 'lucide-react';
 
 const changeTypeConfig: Record<ChangeType, { label: string; color: string; icon: React.ReactNode }> = {

@@ -7,7 +7,7 @@ import type { CreateTestSuite } from '@/entities/test-suite';
 import { useCreateSuite } from '@/features/suites-create';
 import { DSButton, LoadingSpinner } from '@testea/ui';
 import { FormField } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 

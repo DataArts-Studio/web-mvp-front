@@ -4,7 +4,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@testea/util';
 import { StepRowMenu } from './step-row-menu';
 
 interface StepRowProps {

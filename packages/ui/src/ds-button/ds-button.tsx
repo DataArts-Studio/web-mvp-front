@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Button } from '../primitives/button';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 import { buttonVariants } from './button.variable';
 import type { DSButtonProps } from './types';
 

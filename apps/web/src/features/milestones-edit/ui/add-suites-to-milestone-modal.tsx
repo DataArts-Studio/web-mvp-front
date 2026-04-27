@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import type { TestSuite } from '@/entities/test-suite';
 import { addTestSuitesToMilestone } from '@/entities/milestone/api';
 import { SelectionModal } from '@/shared';
-import { useSelectionSet } from '@/shared/hooks';
+import { useSelectionSet } from '@testea/lib';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
 

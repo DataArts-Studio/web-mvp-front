@@ -1,4 +1,4 @@
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 
 interface SkeletonProps {
   className?: string;

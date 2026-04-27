@@ -21,7 +21,7 @@ import { TestCaseCard, TestCaseCardType, duplicateTestCase } from '@/entities/te
 import { testCaseQueryKeys } from '@/features/cases-list';
 import { useReorderCase, arrayMove } from '@/features/reorder';
 import { TestTable } from '@/widgets';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 
 import { SortableTestCaseRow } from './sortable-test-case-row';

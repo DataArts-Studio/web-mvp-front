@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { X } from 'lucide-react';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 
 interface TagChipProps {
   label: string;

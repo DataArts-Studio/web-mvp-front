@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { DsInput, DSButton } from '@testea/ui';
-import { useDebounce, useOutsideClick } from '@/shared/hooks';
+import { useDebounce, useOutsideClick } from '@testea/lib';
 import { searchProjects } from '../api/server-action';
 import { ProjectSearchAutocomplete } from './project-search-autocomplete';
 import type { ProjectSearchResult } from '../model/types';

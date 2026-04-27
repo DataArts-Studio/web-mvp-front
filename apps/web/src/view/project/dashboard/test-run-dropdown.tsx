@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useOutsideClick } from '@/shared/hooks/use-outside-click';
+import { useOutsideClick } from '@testea/lib';
 import { ChevronDown } from 'lucide-react';
 import { track, DASHBOARD_EVENTS } from '@/shared/lib/analytics';
 

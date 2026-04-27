@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { useRouteLoading } from '@/shared/lib/route-loading';
 
 type NavItemProps = {

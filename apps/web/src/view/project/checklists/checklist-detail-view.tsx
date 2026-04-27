@@ -15,7 +15,7 @@ import {
 } from '@/entities/checklist/api/server-actions';
 import { MainContainer } from '@testea/ui';
 import { Skeleton } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, CheckSquare, Plus, RotateCcw, Square, Trash2, X, ArrowRightLeft } from 'lucide-react';
 

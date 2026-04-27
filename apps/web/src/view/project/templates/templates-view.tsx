@@ -11,7 +11,7 @@ import { TemplateEditModal, useDeleteTemplate } from '@/features/templates-edit'
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { MainContainer } from '@testea/ui';
 import { DSButton, EmptyState, LoadingSpinner } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { useQuery } from '@tanstack/react-query';
 import { Edit2, Eye, Inbox, LayoutTemplate, ListChecks, MoreVertical, Plus, Search, Tag, TestTube2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';

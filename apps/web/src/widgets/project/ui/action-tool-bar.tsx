@@ -2,7 +2,7 @@ import React, { ComponentProps, ReactNode } from 'react';
 
 import { DSButton } from '@testea/ui';
 import { Input } from '@testea/ui';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { Search } from 'lucide-react';
 
 interface ActionToolBarRootProps extends ComponentProps<'div'> {

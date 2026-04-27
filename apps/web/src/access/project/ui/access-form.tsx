@@ -16,7 +16,7 @@ import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { track, ACCESS_EVENTS } from '@/shared/lib/analytics';
 import { ENV } from '@/shared/constants';
 
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { Logo } from '@testea/ui';
 import { DSButton } from '@testea/ui';
 

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { ChevronRight, FileText, FolderOpen, Plus } from 'lucide-react';
 import { DSButton } from '@testea/ui';
 import { DashboardEmptyState } from './dashboard-empty-state';
-import { formatDateKR } from '@/shared/utils/date-format';
+import { formatDateKR } from '@testea/util';
 import type { TestCaseListItem } from '@/entities/test-case';
 
 type TestSuite = {

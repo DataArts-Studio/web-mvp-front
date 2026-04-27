@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Download, Upload, MoreVertical } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 const MORE_ACTIONS = [
   { key: 'ai', icon: Bot, label: 'AI 생성' },

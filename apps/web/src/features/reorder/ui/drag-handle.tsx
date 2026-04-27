@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { GripVertical } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 interface DragHandleProps {
   listeners?: Record<string, Function>;

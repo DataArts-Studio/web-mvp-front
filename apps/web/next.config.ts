@@ -28,7 +28,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@testea/db', '@testea/ui'],
+  transpilePackages: ['@testea/db', '@testea/lib', '@testea/ui', '@testea/util'],
   images: {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

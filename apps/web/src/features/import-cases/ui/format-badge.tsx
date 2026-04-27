@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import type { DetectedFormat } from '../model/schema';
 
 const FORMAT_LABELS: Record<Exclude<DetectedFormat, 'generic'>, string> = {

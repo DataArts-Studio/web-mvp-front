@@ -17,7 +17,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@testea/util';
 import { StepRow } from './step-row';
 
 export interface StepBoxEditorProps {

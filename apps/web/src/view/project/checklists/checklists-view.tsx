@@ -12,10 +12,10 @@ import { createChecklist, archiveChecklist } from '@/entities/checklist/api/serv
 import { MainContainer } from '@testea/ui';
 import { Skeleton, ProjectErrorFallback } from '@testea/ui';
 import { ActionToolbar } from '@/widgets';
-import { useDisclosure } from '@/shared/hooks';
+import { useDisclosure } from '@testea/lib';
 import { toast } from 'sonner';
 import { CheckSquare, Plus, Trash2 } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 export const ChecklistsView = () => {
   const params = useParams();

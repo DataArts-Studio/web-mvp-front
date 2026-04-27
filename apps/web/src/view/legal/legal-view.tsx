@@ -6,7 +6,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { Logo } from '@testea/ui';
 import { Footer } from '@/widgets/footer';
 import { ChevronLeft, Shield, FileText, Menu, X } from 'lucide-react';

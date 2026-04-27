@@ -5,7 +5,7 @@ import {
   useFormField,
   type FormFieldError,
 } from '../primitives/form-field';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 import { CircleAlert } from 'lucide-react';
 
 interface DsFormFieldProps extends ComponentProps<typeof FormField.Root> {

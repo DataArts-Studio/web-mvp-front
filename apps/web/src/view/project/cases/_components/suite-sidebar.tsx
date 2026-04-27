@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FolderOpen, FolderClosed, Inbox } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 interface Suite {
   id: string;

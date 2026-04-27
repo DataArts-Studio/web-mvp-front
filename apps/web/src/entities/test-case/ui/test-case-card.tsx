@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 
 import type { TestCaseCardType, TestCaseResultStatus } from '@/entities/test-case';
 import { Copy, MoreHorizontal } from 'lucide-react';
-import { formatRelativeTime } from '@/shared/utils/date-format';
-import { cn } from '@/shared/utils';
+import { formatRelativeTime } from '@testea/util';
+import { cn } from '@testea/util';
 
 const STATUS_CONFIG: Record<TestCaseResultStatus, { bar: string; dot: string; label: string; badge: string }> = {
   untested: {

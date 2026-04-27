@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, ChevronRight, Edit2, FolderOpen, ListChecks, Play, PlayCircle, Plus, XCircle } from 'lucide-react';
 import { getTestSuites } from '@/entities/test-suite';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
-import { formatDateTime } from '@/shared/utils/date-format';
+import { formatDateTime } from '@testea/util';
 
 const AnimatePresence = dynamic(
   () => import('framer-motion').then((mod) => ({ default: mod.AnimatePresence })),

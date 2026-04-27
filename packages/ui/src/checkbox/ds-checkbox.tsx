@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Check } from 'lucide-react';
 
 import { Checkbox, type CheckedState } from '../primitives/checkbox';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 
 export interface DsCheckboxProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onChange' | 'type'> {

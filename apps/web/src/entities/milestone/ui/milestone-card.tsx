@@ -3,7 +3,7 @@ import React from 'react';
 import { MilestoneWithStats } from '@/entities/milestone';
 import { Calendar, Edit, Play, Check, RotateCcw } from 'lucide-react';
 import { cn, DSButton } from '@/shared';
-import { formatDate } from '@/shared/utils/date-format';
+import { formatDate } from '@testea/util';
 
 interface MilestoneCardProps {
   milestone: MilestoneWithStats;

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useOutsideClick } from '@/shared/hooks';
+import { useOutsideClick } from '@testea/lib';
 import type { FetchedTestRun } from '@/features/runs';
 
 type GanttRunSelectorProps = {

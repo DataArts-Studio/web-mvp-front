@@ -5,7 +5,7 @@ import { AlertCircle, FileText, FolderTree, Layers, PlayCircle } from 'lucide-re
 
 import { Edit } from 'lucide-react';
 import { DSButton } from '@/shared';
-import { formatDate } from '@/shared/utils/date-format';
+import { formatDate } from '@testea/util';
 
 interface SuiteCardProps {
   suite: TestSuiteCard;

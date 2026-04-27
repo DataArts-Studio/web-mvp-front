@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { Upload, FileText, X, AlertCircle } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { useImportWizard } from '../model/use-import-wizard';
 import { parseFile, FileValidationError } from '../model/parser';
 import { getAutoMapping } from '../model/format-detector';

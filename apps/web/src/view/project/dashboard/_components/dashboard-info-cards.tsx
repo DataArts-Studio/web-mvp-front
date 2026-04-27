@@ -2,8 +2,8 @@ import React from 'react';
 
 import { Check, Share2 } from 'lucide-react';
 
-import { formatDateKR } from '@/shared/utils/date-format';
-import { formatBytes } from '@/shared/utils';
+import { formatDateKR } from '@testea/util';
+import { formatBytes } from '@testea/util';
 import type { ActionResult } from '@/shared/types';
 
 type ProjectInfoCardProps = {

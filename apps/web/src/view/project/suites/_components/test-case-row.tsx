@@ -1,5 +1,5 @@
 import type { TestCaseCardType } from '@/entities/test-case';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { TEST_STATUS_CONFIG } from './suite-detail-constants';
 
 type TestCaseRowProps = {

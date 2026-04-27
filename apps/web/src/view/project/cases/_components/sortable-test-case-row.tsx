@@ -4,7 +4,7 @@ import React from 'react';
 import { GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 interface SortableTestCaseRowProps {
   id: string;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { useImportWizard } from '../model/use-import-wizard';
 import { StepFileUpload } from './step-file-upload';
 import { StepColumnMapping } from './step-column-mapping';

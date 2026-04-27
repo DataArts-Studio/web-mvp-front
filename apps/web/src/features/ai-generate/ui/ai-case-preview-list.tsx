@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { CheckSquare, Edit2, Square } from 'lucide-react';
 
 import type { GeneratedTestCase } from '@/entities/ai-config';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 import { AiSuiteSelector } from './ai-suite-selector';
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { RotateCcw, Trash2, Loader2, Clock } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import type { TrashItem } from '@/features/trash';
 import { TYPE_CONFIG, formatDeletedDate } from './trash-constants';
 

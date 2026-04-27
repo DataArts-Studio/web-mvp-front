@@ -1,7 +1,7 @@
 import type { TestSuiteCard } from '@/entities/test-suite';
 import { EmptyState } from '@testea/ui';
-import { cn } from '@/shared/utils';
-import { formatDateTime } from '@/shared/utils/date-format';
+import { cn } from '@testea/util';
+import { formatDateTime } from '@testea/util';
 import { PlayCircle } from 'lucide-react';
 import { RUN_STATUS_CONFIG } from './suite-detail-constants';
 

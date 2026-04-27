@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import type { ColumnMapping } from '../model/schema';
 
 interface MappingRowProps {

@@ -2,8 +2,8 @@ import React from 'react';
 
 import { TestSuiteCard } from '@/entities/test-suite';
 import { DSButton } from '@testea/ui';
-import { cn } from '@/shared/utils';
-import { formatDate } from '@/shared/utils/date-format';
+import { cn } from '@testea/util';
+import { formatDate } from '@testea/util';
 import {
   CheckCircle,
   Edit2,

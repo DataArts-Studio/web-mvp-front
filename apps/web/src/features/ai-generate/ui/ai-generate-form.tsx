@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 
 type Props = {
   description: string;

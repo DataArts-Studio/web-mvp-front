@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { MainContainer } from '@testea/ui';
-import { useToggleSet, useSelectionSet, useOutsideClick } from '@/shared/hooks';
+import { useToggleSet, useSelectionSet, useOutsideClick } from '@testea/lib';
 import { type TestStatusData } from '@/widgets/project';
 import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun, updateTestRunName, bulkUpdateTestCaseRunStatus } from '@/features/runs';
 import { dashboardQueryOptions } from '@/features/dashboard';

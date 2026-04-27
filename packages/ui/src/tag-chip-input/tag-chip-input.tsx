@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { cn } from '../utils';
+import { cn } from '@testea/util';
 import { TagChip } from './tag-chip';
 import { TagAutocomplete } from './tag-autocomplete';
 

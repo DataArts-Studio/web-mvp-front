@@ -11,7 +11,7 @@ import { SuiteEditForm } from '@/features/suites-edit';
 import { SuiteCreateForm } from '@/features/suites-create';
 import { MainContainer } from '@testea/ui';
 import { Skeleton, Pagination, ProjectErrorFallback } from '@testea/ui';
-import { useDisclosure } from '@/shared/hooks';
+import { useDisclosure } from '@testea/lib';
 import { ActionToolbar, testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import { STATUS_CONFIG, type TestCaseRunStatus } from './run-detail-constants';
 
 interface RunSummaryBarProps {

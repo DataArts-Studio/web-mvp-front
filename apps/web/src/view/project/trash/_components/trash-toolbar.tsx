@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Search, X } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@testea/util';
 import type { TrashItemType } from '@/features/trash';
 import { FILTER_OPTIONS } from './trash-constants';
 

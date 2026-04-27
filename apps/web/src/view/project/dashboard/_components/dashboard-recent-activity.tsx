@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Clock } from 'lucide-react';
 
-import { formatRelativeTime } from '@/shared/utils/date-format';
+import { formatRelativeTime } from '@testea/util';
 
 type ActivityItem = {
   id: string;
