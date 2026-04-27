@@ -1,12 +1,13 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# idea setting
+# IDE
 .idea
-/storybook-static
+.vscode
+storybook-static
 
-# dependencies
-/node_modules
-/.pnp
+# dependencies (monorepo: 모든 위치)
+node_modules
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -15,18 +16,23 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage
 
-# next.js
-/.next/
-/out/
+# next.js (모든 앱)
+.next/
+out/
+
+# turbo
+.turbo
 
 # production
-/build
+build
+dist
 
 # misc
 .DS_Store
 *.pem
+*.log
 
 # debug
 npm-debug.log*
@@ -34,8 +40,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
 
 # vercel
 .vercel
