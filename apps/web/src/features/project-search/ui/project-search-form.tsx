@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { DsInput, DSButton } from '@/shared/ui';
+import { DsInput, DSButton } from '@testea/ui';
 import { useDebounce, useOutsideClick } from '@/shared/hooks';
 import { searchProjects } from '../api/server-action';
 import { ProjectSearchAutocomplete } from './project-search-autocomplete';

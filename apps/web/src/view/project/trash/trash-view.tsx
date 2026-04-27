@@ -12,8 +12,8 @@ import {
 } from '@/features/trash';
 import type { TrashItem, TrashItemType } from '@/features/trash';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { MainContainer } from '@/shared/lib/primitives';
-import { LoadingSpinner, ProjectErrorFallback } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { LoadingSpinner, ProjectErrorFallback } from '@testea/ui';
 import { toast } from 'sonner';
 
 import { TYPE_CONFIG } from './_components/trash-constants';

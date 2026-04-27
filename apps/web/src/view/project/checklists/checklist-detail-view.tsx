@@ -13,8 +13,8 @@ import {
   reorderChecklistItems,
   convertChecklistToTestCases,
 } from '@/entities/checklist/api/server-actions';
-import { MainContainer } from '@/shared/lib/primitives';
-import { Skeleton } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { Skeleton } from '@testea/ui';
 import { cn } from '@/shared/utils';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, CheckSquare, Plus, RotateCcw, Square, Trash2, X, ArrowRightLeft } from 'lucide-react';

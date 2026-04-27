@@ -10,7 +10,7 @@ import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 // import { SaveAsTemplateModal } from '@/features/templates-save-from-case'; // 템플릿 기능 펜딩
 import { testSuitesQueryOptions } from '@/widgets';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 import { formatDateKR, formatRelativeTime } from '@/shared/utils/date-format';
 import { useVersionsList } from '@/features/version-timeline';
 import { Calendar, Clock, Copy, Edit2, Flag, FolderOpen, History, Maximize2, Play, Tag, X } from 'lucide-react';

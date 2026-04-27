@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { Plus } from 'lucide-react';
-import { Input } from '@/shared/lib/primitives';
+import { Input } from '@testea/ui';
 import { useCreateCase } from '@/features/cases-create';
 import { toast } from 'sonner';
 

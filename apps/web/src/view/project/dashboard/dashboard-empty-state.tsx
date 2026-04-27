@@ -1,5 +1,5 @@
 import React from 'react';
-import { DSButton } from '@/shared/ui/ds-button';
+import { DSButton } from '@testea/ui';
 import { Plus } from 'lucide-react';
 
 type DashboardEmptyStateProps = {

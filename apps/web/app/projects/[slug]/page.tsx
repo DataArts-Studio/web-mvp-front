@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@testea/ui';
 import { DashboardHeader } from '@/view/project/dashboard';
 import { DashboardData } from './dashboard-content';
 import { DashboardContentSkeleton } from './dashboard-content-skeleton';

@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
-import { DSButton } from '@/shared/ui';
-import { Dialog } from '@/shared/lib/primitives';
+import { DSButton } from '@testea/ui';
+import { Dialog } from '@testea/ui';
 
 interface EmptyTrashDialogProps {
   itemCount: number;

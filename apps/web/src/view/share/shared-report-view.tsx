@@ -22,7 +22,7 @@ import {
   ChevronUp,
   Sparkles,
 } from 'lucide-react';
-import { LoadingSpinner, RUN_STATUS_CONFIG } from '@/shared/ui';
+import { LoadingSpinner, RUN_STATUS_CONFIG } from '@testea/ui';
 import { sharedReportQueryOptions } from '@/features/runs-share';
 import { cn } from '@/shared/utils';
 import type { TestStatusData } from '@/widgets/project';

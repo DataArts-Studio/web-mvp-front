@@ -9,7 +9,7 @@ import { Check, Loader2, Pencil } from 'lucide-react';
 import { ProjectSettingsFormSchema } from '@/entities/project';
 import type { ProjectSettingsForm } from '@/entities/project';
 import { useUpdateProject } from '@/features/project-settings';
-import { DSButton, DsFormField, DsInput, SettingsCard } from '@/shared/ui';
+import { DSButton, DsFormField, DsInput, SettingsCard } from '@testea/ui';
 
 // ─── Section: General Settings ───────────────────────────────────────────────
 

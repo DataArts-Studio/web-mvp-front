@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@testea/ui';
 import { XCircle } from 'lucide-react';
 
 interface RunDetailErrorProps {

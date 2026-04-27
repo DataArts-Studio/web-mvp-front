@@ -3,7 +3,7 @@
 import React from 'react';
 import { HardDrive } from 'lucide-react';
 
-import { SettingsCard } from '@/shared/ui';
+import { SettingsCard } from '@testea/ui';
 import { formatBytes } from '@/shared/utils';
 
 // ─── Section: Storage ────────────────────────────────────────────────────────

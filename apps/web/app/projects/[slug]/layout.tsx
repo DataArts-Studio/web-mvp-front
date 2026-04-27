@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Container } from '@/shared/lib/primitives';
+import { Container } from '@testea/ui';
 import { Aside } from '@/widgets/aside';
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import { CommandPalette } from '@/features/command-palette';

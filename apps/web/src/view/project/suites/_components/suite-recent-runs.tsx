@@ -1,5 +1,5 @@
 import type { TestSuiteCard } from '@/entities/test-suite';
-import { EmptyState } from '@/shared/ui';
+import { EmptyState } from '@testea/ui';
 import { cn } from '@/shared/utils';
 import { formatDateTime } from '@/shared/utils/date-format';
 import { PlayCircle } from 'lucide-react';

@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { MainContainer } from '@/shared/lib/primitives';
-import { Skeleton, SkeletonCircle, SettingsCard } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { Skeleton, SkeletonCircle, SettingsCard } from '@testea/ui';
 
 // ─── Settings Loading Skeleton ───────────────────────────────────────────────
 

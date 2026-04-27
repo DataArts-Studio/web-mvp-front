@@ -2,7 +2,7 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 import { track, LANDING_EVENTS } from '@/shared/lib/analytics';
 
 const ProjectCreateForm = dynamic(

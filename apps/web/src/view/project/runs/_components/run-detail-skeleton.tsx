@@ -2,8 +2,8 @@
 
 import React from 'react';
 
-import { MainContainer } from '@/shared/lib/primitives';
-import { Skeleton, SkeletonCircle } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { Skeleton, SkeletonCircle } from '@testea/ui';
 
 export const RunDetailSkeleton = () => {
   return (

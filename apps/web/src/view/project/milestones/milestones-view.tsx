@@ -8,13 +8,13 @@ import { MilestoneCard, MilestoneWithStats, Milestone } from '@/entities/milesto
 import { projectIdQueryOptions } from '@/entities/project';
 import { MilestoneCreateForm, milestonesQueryOptions } from '@/features/milestones-create';
 import { MilestoneEditForm } from '@/features/milestones-edit';
-import { MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@testea/ui';
 import { useDisclosure } from '@/shared/hooks';
 import { ActionToolbar } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
 import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
-import { Skeleton, Pagination, ProjectErrorFallback } from '@/shared/ui';
+import { Skeleton, Pagination, ProjectErrorFallback } from '@testea/ui';
 
 // 필터 옵션과 상태값 매핑
 const FILTER_OPTIONS = ['전체', '진행 중', '완료', '예정'] as const;

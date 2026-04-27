@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 
 import type { DashboardMilestone } from '@/features/dashboard';
 import type { FetchedTestRun } from '@/features/runs';
-import { DSButton } from '@/shared/ui/ds-button';
+import { DSButton } from '@testea/ui';
 import { TestStatusChart, type TestStatusData } from '@/widgets/project/ui/test-status-chart';
 import { Play } from 'lucide-react';
 import { TestRunDropdown } from '../test-run-dropdown';

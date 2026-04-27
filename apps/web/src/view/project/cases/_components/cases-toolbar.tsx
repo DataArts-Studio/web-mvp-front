@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Plus, ArrowUpDown, ChevronDown } from 'lucide-react';
-import { Select } from '@/shared/lib/primitives/select/select';
+import { Select } from '@testea/ui';
 import { ActionToolbar } from '@/widgets';
 import { MoreActionsMenu } from './more-actions-menu';
 

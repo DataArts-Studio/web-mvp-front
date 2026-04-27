@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Trash2,
 } from 'lucide-react';
-import { DSButton, RUN_STATUS_CONFIG, EmptyState, Pagination } from '@/shared/ui';
+import { DSButton, RUN_STATUS_CONFIG, EmptyState, Pagination } from '@testea/ui';
 import { type ITestRun, type RunSourceType, type RunStatusFilter, getStatusFilterLabel } from './runs-list-constants';
 import { SuiteSourceName } from './suite-source-name';
 

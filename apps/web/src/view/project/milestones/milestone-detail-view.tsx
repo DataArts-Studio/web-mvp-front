@@ -9,8 +9,7 @@ import { getTestCases } from '@/entities/test-case/api';
 import { milestoneByIdQueryOptions } from '@/features/milestones';
 import { MilestoneEditForm, AddCasesToMilestoneModal, AddSuitesToMilestoneModal } from '@/features/milestones-edit';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
-import { MainContainer } from '@/shared/lib';
-import { DSButton, StatusBadge, MILESTONE_STATUS_CONFIG, TEST_RESULT_STATUS_CONFIG, RUN_STATUS_CONFIG, EmptyState, Skeleton, SkeletonCircle } from '@/shared/ui';
+import { MainContainer, DSButton, StatusBadge, MILESTONE_STATUS_CONFIG, TEST_RESULT_STATUS_CONFIG, RUN_STATUS_CONFIG, EmptyState, Skeleton, SkeletonCircle } from '@testea/ui';
 
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, ChevronRight, Edit2, FolderOpen, ListChecks, Play, PlayCircle, Plus, XCircle } from 'lucide-react';

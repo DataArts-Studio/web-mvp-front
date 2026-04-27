@@ -10,8 +10,8 @@ import { aiUsageQueryOptions } from '@/entities/ai-usage';
 import type { GeneratedTestCase } from '@/entities/ai-config';
 import { saveGeneratedCases } from '@/entities/ai-config/api/server-actions';
 import { testSuitesQueryOptions } from '@/widgets';
-import { Dialog } from '@/shared/lib/primitives';
-import { DSButton } from '@/shared/ui';
+import { Dialog } from '@testea/ui';
+import { DSButton } from '@testea/ui';
 
 import { AiGenerateForm } from './ai-generate-form';
 import { AiGeneratingSpinner } from './ai-generating-spinner';

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 
 interface TrashHeaderProps {
   hasItems: boolean;

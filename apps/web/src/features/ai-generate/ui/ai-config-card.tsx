@@ -8,7 +8,7 @@ import { Bot, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
 import { aiConfigQueryOptions, aiConfigQueryKeys } from '@/entities/ai-config';
 import { saveAiConfig, deleteAiConfig } from '@/entities/ai-config/api/server-actions';
 import { API_KEY_RULES } from '@/entities/ai-config/model/schema';
-import { DSButton, DsInput, SettingsCard } from '@/shared/ui';
+import { DSButton, DsInput, SettingsCard } from '@testea/ui';
 
 const PROVIDER_META = {
   anthropic: { label: 'Anthropic Claude', placeholder: 'sk-ant-...', hint: 'console.anthropic.com에서 API 키를 발급받을 수 있습니다.' },

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, Mail, Sparkles, Heart, Coffee, MessageCircle } from 'lucide-react';
 
-import { Container, MainContainer } from '@/shared/lib/primitives';
+import { Container, MainContainer } from '@testea/ui';
 import { Footer } from '@/widgets/footer';
 
 const values = [

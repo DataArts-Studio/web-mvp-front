@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 import type { ProjectSearchResult } from '../model/types';
 import { track, PROJECT_SEARCH_EVENTS } from '@/shared/lib/analytics';
 

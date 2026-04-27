@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Dialog } from '@/shared/lib/primitives/dialog/dialog';
-import { DSButton } from '@/shared/ui';
+import { Dialog } from '@testea/ui';
+import { DSButton } from '@testea/ui';
 import { useRollback } from '../hooks/use-rollback';
 
 interface RollbackConfirmDialogProps {

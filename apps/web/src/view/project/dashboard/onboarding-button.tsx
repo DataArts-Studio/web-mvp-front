@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { useOnboardingTour } from '@/features/onboarding-tour';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 import { CircleHelp } from 'lucide-react';
 
 export const OnboardingButton = () => {

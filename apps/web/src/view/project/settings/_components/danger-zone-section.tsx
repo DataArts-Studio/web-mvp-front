@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 
 import { useDeleteProject } from '@/features/project-settings';
-import { Dialog } from '@/shared/lib/primitives';
-import { DSButton, DsInput, SettingsCard } from '@/shared/ui';
+import { Dialog } from '@testea/ui';
+import { DSButton, DsInput, SettingsCard } from '@testea/ui';
 
 // ─── Section: Danger Zone ────────────────────────────────────────────────────
 

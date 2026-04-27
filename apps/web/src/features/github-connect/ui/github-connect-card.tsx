@@ -13,7 +13,7 @@ import {
   getGithubRepos,
   selectGithubRepo,
 } from '@/entities/github-connection/api/server-actions';
-import { DSButton, SettingsCard } from '@/shared/ui';
+import { DSButton, SettingsCard } from '@testea/ui';
 
 import { ConnectedRepoInfo } from './connected-repo-info';
 import { RepoSelector } from './repo-selector';

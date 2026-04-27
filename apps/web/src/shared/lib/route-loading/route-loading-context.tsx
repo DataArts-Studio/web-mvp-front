@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import { LoadingSpinner } from '@/shared/ui/loading-spinner';
+import { LoadingSpinner } from '@testea/ui';
 
 type RouteLoadingContextType = {
   startRouteLoading: () => void;

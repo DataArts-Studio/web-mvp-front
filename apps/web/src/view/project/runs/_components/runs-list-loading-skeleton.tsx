@@ -1,6 +1,6 @@
 import React from 'react';
-import { MainContainer } from '@/shared/lib/primitives';
-import { Skeleton } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { Skeleton } from '@testea/ui';
 
 export const RunsListLoadingSkeleton = () => (
   <MainContainer className="grid min-h-screen w-full flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 py-8 max-w-[1200px] mx-auto px-10">

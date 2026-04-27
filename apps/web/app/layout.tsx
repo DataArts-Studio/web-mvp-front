@@ -4,7 +4,7 @@ import type { Metadata, Viewport } from 'next';
 
 import '@/app-shell/styles/globals.css';
 import Script from 'next/script';
-import { MvpBottomNavbarLazy } from '@/shared/ui/mvp-bottom-navbar/mvp-bottom-navbar-lazy';
+import { MvpBottomNavbarLazy } from '@testea/ui';
 import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단

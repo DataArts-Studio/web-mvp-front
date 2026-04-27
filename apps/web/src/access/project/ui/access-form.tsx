@@ -17,8 +17,8 @@ import { track, ACCESS_EVENTS } from '@/shared/lib/analytics';
 import { ENV } from '@/shared/constants';
 
 import { cn } from '@/shared/utils';
-import { Logo } from '@/shared/ui/logo';
-import { DSButton } from '@/shared/ui/ds-button';
+import { Logo } from '@testea/ui';
+import { DSButton } from '@testea/ui';
 
 import { verifyProjectAccess } from '../api/verify-access';
 import { ProjectAccessFormSchema, type ProjectAccessFormInput } from '../model/schema';

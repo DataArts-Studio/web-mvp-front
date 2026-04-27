@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useVersionCompare } from '../hooks/use-version-compare';
-import { LoadingSpinner } from '@/shared/ui';
+import { LoadingSpinner } from '@testea/ui';
 import type { FieldDiff } from '@/entities/test-case-version';
 import { diffLines, type Change } from 'diff';
 

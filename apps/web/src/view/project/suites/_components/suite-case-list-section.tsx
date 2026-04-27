@@ -4,7 +4,7 @@ import React from 'react';
 
 import type { TestSuiteSection } from '@/entities/test-suite-section';
 import type { TestCaseCardType } from '@/entities/test-case';
-import { DSButton, EmptyState } from '@/shared/ui';
+import { DSButton, EmptyState } from '@testea/ui';
 import { ChevronDown, ChevronRight, ListChecks, Plus } from 'lucide-react';
 import { SuiteSectionGroup } from './suite-section-group';
 import { TestCaseRow } from './test-case-row';

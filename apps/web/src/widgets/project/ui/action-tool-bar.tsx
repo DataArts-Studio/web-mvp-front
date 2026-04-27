@@ -1,7 +1,7 @@
 import React, { ComponentProps, ReactNode } from 'react';
 
-import { DSButton } from '@/shared/ui';
-import { Input } from '@/shared/lib/primitives';
+import { DSButton } from '@testea/ui';
+import { Input } from '@testea/ui';
 import { cn } from '@/shared/utils';
 import { Search } from 'lucide-react';
 

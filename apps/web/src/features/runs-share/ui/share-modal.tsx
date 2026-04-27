@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Link2, Copy, Trash2, RefreshCw, Loader2, ExternalLink } from 'lucide-react';
-import { Dialog } from '@/shared/lib/primitives/dialog';
+import { Dialog } from '@testea/ui';
 import { DSButton } from '@/shared';
 import { generateShareLink, revokeShareLink } from '../api/share-actions';
 

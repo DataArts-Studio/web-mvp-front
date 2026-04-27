@@ -1,7 +1,7 @@
 'use client';
 
-import { Dialog } from '@/shared/lib/primitives/dialog/dialog';
-import { DSButton } from '@/shared/ui';
+import { Dialog } from '@testea/ui';
+import { DSButton } from '@testea/ui';
 import { useDbOutageNotice } from '../hooks/use-db-outage-notice';
 
 export const DbOutageNoticePopup = () => {

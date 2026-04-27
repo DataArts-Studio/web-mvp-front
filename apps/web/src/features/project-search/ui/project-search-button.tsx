@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 
 interface ProjectSearchButtonProps {
   onClick: () => void;

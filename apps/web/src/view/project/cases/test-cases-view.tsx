@@ -10,13 +10,13 @@ import { projectIdQueryOptions } from '@/entities/project';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { TestCaseDetailForm } from '@/features/cases-create';
 import { testCasesQueryOptions } from '@/features/cases-list';
-import { MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@testea/ui';
 import { useDisclosure } from '@/shared/hooks';
 import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { ImportWizardModal } from '@/features/import-cases';
 import { AiGenerateModal } from '@/features/ai-generate';
-import { ProjectErrorFallback } from '@/shared/ui';
+import { ProjectErrorFallback } from '@testea/ui';
 
 import { CasesToolbar, type SortValue } from './_components/cases-toolbar';
 import { SuiteSidebar } from './_components/suite-sidebar';

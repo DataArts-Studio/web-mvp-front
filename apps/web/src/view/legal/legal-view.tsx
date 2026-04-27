@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { cn } from '@/shared/utils';
-import { Logo } from '@/shared/ui/logo';
+import { Logo } from '@testea/ui';
 import { Footer } from '@/widgets/footer';
 import { ChevronLeft, Shield, FileText, Menu, X } from 'lucide-react';
 import type { LegalHeading } from './legal-markdown-content';

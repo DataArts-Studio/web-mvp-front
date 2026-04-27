@@ -8,8 +8,8 @@ import { Settings } from 'lucide-react';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { GithubConnectCard } from '@/features/github-connect';
 import { AiConfigCard } from '@/features/ai-generate';
-import { MainContainer } from '@/shared/lib/primitives';
-import { ProjectErrorFallback } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { ProjectErrorFallback } from '@testea/ui';
 import { formatDateKR } from '@/shared/utils/date-format';
 
 import { SettingsLoadingSkeleton } from './_components/settings-loading-skeleton';

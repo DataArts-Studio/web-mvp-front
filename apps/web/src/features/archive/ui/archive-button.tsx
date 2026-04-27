@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useArchive } from '@/features/archive/hooks/use-archive';
 import { ArchiveTargetType } from '@/features/archive/model/types';
 import { DSButton } from '@/shared';
-import { Dialog } from '@/shared/lib/primitives';
+import { Dialog } from '@testea/ui';
 import { Loader2, Trash2 } from 'lucide-react';
 import { track, TESTCASE_EVENTS, TESTSUITE_EVENTS, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 

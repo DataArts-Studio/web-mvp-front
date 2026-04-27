@@ -14,8 +14,8 @@ import type { TestSuiteSection } from '@/entities/test-suite-section';
 import type { TestSuiteCard } from '@/entities/test-suite';
 import type { TestCase, TestCaseCardType } from '@/entities/test-case';
 import { SuiteEditForm, AddCasesToSuiteModal } from '@/features/suites-edit';
-import { MainContainer } from '@/shared/lib/primitives';
-import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { DSButton, LoadingSpinner } from '@testea/ui';
 import { cn } from '@/shared/utils';
 import {
   ArrowLeft,

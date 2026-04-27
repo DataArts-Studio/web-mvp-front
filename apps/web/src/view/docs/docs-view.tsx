@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, BookOpen, LayoutDashboard, TestTube, FolderKanban, Play, Flag, Menu, X } from 'lucide-react';
 
 import { cn } from '@/shared/utils';
-import { Logo } from '@/shared/ui/logo';
+import { Logo } from '@testea/ui';
 import { Footer } from '@/widgets/footer';
 
 type DocTab = 'getting-started' | 'dashboard' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';

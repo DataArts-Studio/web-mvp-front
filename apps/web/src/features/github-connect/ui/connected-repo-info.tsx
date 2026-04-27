@@ -4,7 +4,7 @@ import React from 'react';
 import { type UseMutationResult } from '@tanstack/react-query';
 import { Link2, Unlink, Loader2, ExternalLink } from 'lucide-react';
 
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 
 type ConnectedRepoInfoProps = {
   repoFullName: string;

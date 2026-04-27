@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@testea/ui';
 import { useToggleSet, useSelectionSet, useOutsideClick } from '@/shared/hooks';
 import { type TestStatusData } from '@/widgets/project';
 import { testRunByIdQueryOptions, testRunsQueryOptions, updateTestCaseRunStatus, removeSuiteFromRun, updateTestRunName, bulkUpdateTestCaseRunStatus } from '@/features/runs';

@@ -9,7 +9,7 @@ import { Loader2, Lock } from 'lucide-react';
 import { ChangeIdentifierFormSchema } from '@/entities/project';
 import type { ChangeIdentifierForm } from '@/entities/project';
 import { useChangeIdentifier } from '@/features/project-settings';
-import { DSButton, DsFormField, DsInput, SettingsCard } from '@/shared/ui';
+import { DSButton, DsFormField, DsInput, SettingsCard } from '@testea/ui';
 
 // ─── Section: Security ───────────────────────────────────────────────────────
 

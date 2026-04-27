@@ -1,5 +1,5 @@
 import React from 'react';
-import { MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@testea/ui';
 import { LendingHeader } from '@/widgets/lending';
 import { LendingCta } from './lending-cta';
 import { LendingFeatures } from './lending-features';

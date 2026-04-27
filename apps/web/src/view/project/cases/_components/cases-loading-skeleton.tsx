@@ -1,6 +1,6 @@
 import React from 'react';
-import { MainContainer } from '@/shared/lib/primitives';
-import { Skeleton } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { Skeleton } from '@testea/ui';
 
 const SKELETON_WIDTHS = [70, 55, 85, 60, 75, 50, 90, 65, 80, 45, 70, 60, 85, 55, 75];
 

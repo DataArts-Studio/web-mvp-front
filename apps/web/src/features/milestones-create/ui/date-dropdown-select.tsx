@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { Select } from '@/shared/lib/primitives/select';
+import { Select } from '@testea/ui';
 import { cn } from '@/shared/utils';
 import { ChevronDown } from 'lucide-react';
 

@@ -5,7 +5,7 @@ import { type UseMutationResult } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 
 import type { GithubRepo } from '@/entities/github-connection';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 import { cn } from '@/shared/utils';
 
 type RepoSelectorProps = {

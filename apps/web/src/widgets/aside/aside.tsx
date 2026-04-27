@@ -6,7 +6,7 @@ import { useParams, usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { Search } from 'lucide-react';
-import { Logo } from '@/shared/ui/logo';
+import { Logo } from '@testea/ui';
 import { AsideMenuItem, createAsideMenus } from '@/widgets/aside/model';
 import { AsideNavItem } from '@/widgets/aside/ui';
 import { track, NAVIGATION_EVENTS } from '@/shared/lib/analytics';

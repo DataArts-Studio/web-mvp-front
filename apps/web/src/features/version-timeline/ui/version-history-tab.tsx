@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { VersionTimeline } from './version-timeline';
 import { VersionDetailPanel } from '@/features/version-detail/ui/version-detail-panel';
 import { VersionCompareView } from '@/features/version-compare/ui/version-compare-view';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 import { ArrowLeft } from 'lucide-react';
 
 type Mode = 'timeline' | 'detail' | 'compare';

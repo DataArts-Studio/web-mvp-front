@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
-import { MainContainer } from '@/shared/lib/primitives';
+import { MainContainer } from '@testea/ui';
 import { Plus } from 'lucide-react';
-import { DSButton } from '@/shared/ui';
+import { DSButton } from '@testea/ui';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { projectIdQueryOptions } from '@/entities/project';

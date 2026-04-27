@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container } from '@/shared/lib/primitives';
+import { Container } from '@testea/ui';
 import { GridBackground } from '@/shared/layout';
 import { GlobalHeader } from '@/widgets/global-header';
 import { Footer } from '@/widgets/footer';

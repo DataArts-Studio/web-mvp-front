@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Search, Trash2 } from 'lucide-react';
-import { EmptyState } from '@/shared/ui';
+import { EmptyState } from '@testea/ui';
 import type { TrashItem } from '@/features/trash';
 import { TrashItemRow } from './trash-item-row';
 

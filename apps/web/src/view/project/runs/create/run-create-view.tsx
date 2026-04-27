@@ -6,8 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useCreateRun, type CreateRunInput } from '@/features/runs-create';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { milestonesQueryOptions } from '@/entities/milestone';
-import { MainContainer } from '@/shared/lib/primitives';
-import { DSButton, LoadingSpinner } from '@/shared/ui';
+import { MainContainer } from '@testea/ui';
+import { DSButton, LoadingSpinner } from '@testea/ui';
 import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
 import { toast } from 'sonner';
 
