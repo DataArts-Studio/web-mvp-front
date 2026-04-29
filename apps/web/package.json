@@ -13,7 +13,7 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build -o .storybook-static"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
