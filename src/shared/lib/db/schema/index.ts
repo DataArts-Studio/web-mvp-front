@@ -3,3 +3,4 @@ export * from './test-suites';
 export * from './test-cases';
 export * from './test-run';
 export * from './milestones';
+export * from "./test-run-milestones";
