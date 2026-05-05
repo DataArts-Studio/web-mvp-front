@@ -1,1 +1,0 @@
-export { TestRunsListView } from '@/view/project/runs/test-runs-list-view';

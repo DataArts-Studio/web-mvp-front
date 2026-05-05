@@ -1,0 +1,3 @@
+export const QUERY_STALE_TIME_SHORT = 1000 * 30;
+export const QUERY_STALE_TIME_DEFAULT = 1000 * 60 * 5;
+export const QUERY_STALE_TIME_LONG = 1000 * 60 * 30;

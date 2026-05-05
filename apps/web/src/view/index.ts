@@ -1,0 +1,12 @@
+export { DocsView } from '@/view/docs';
+export { LendingView } from '@/view/lending';
+export { LegalView } from '@/view/legal';
+export { ProjectDashboardContent, DashboardHeader } from '@/view/project/dashboard';
+export { TestCasesView, TestCaseDetailView } from '@/view/project/cases';
+export { TestSuitesView } from '@/view/project/suites';
+export { TestRunsListView, TestRunDetailView } from '@/view/project/runs';
+export { MilestonesView, MilestoneDetailView } from '@/view/project/milestones';
+export { SettingsView } from '@/view/project/settings';
+export { TrashView } from '@/view/project/trash';
+export { ChecklistsView, ChecklistDetailView } from '@/view/project/checklists';
+export { TeamView } from '@/view/team';
