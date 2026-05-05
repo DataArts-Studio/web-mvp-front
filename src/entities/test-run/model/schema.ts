@@ -6,8 +6,7 @@ export const TestRunSourceTypeEnum = z.enum(['SUITE', 'MILESTONE', 'ADHOC']);
 export const TestRunSchema = z.object({
   id: z.uuidv7({ error: 'uuidv7 test error' }),
   project_id: z.uuidv7(),
-  milestone_id: z.uuidv7().nullable(),
-  run_name: z.string().optional(),
+  run_name: z.string().min(1),
   status: TestRunStatusEnum.default('NOT_STARTED'),
   source_type: TestRunSourceTypeEnum,
   started_at: z.coerce.date().optional(),

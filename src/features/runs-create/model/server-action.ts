@@ -1,11 +1,13 @@
 'use server';
 import { CreateTestRunSchema } from '@/entities/test-run';
 import { getDatabase, testRun } from '@/shared/lib/db';
+import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
+
+type NewTestRun = typeof testRun.$inferInsert;
 
 type MockTestRunData = {
   project_id: string;
-  milestone_id?: string;
   run_name?: string;
   started_at?: string;
   ended_at?: string;
@@ -16,12 +18,18 @@ type MockFlatErrors = {
   fieldErrors: { [key in keyof MockTestRunData]?: string[] };
 };
 
-const createTestRun = async (data: any) => {
+const createTestRun = async (data: Omit<NewTestRun, 'id'>) => {
   const db = getDatabase();
-  return await db.insert(testRun).values(data).returning();
+  return await db
+    .insert(testRun)
+    .values({
+      id: uuidv7(),
+      ...data,
+    })
+    .returning();
 };
 
-export const createTestRunAction = async (formData: any) => {
+export const createTestRunAction = async (formData: FormData) => {
   const data = Object.fromEntries(formData.entries());
   const validation = CreateTestRunSchema.safeParse(data);
   if (!validation.success) return { success: false, errors: z.flattenError(validation.error) };
