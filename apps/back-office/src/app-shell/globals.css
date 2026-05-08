@@ -72,6 +72,27 @@
   --color-purple-100: #f3e8ff;
   --color-purple-600: #9333ea;
 
+  /* Shared UI package tokens */
+  --color-text-1: #ffffff;
+  --color-text-2: rgb(255 255 255 / 0.7);
+  --color-text-3: rgb(255 255 255 / 0.4);
+  --color-text-4: rgb(255 255 255 / 0.2);
+  --color-primary: #0bb57f;
+  --color-secondary: #007351;
+  --color-inactive: rgb(255 255 255 / 0.4);
+  --color-line-1: #8f96a3;
+  --color-line-2: #2b2d31;
+  --color-line-3: #5c6370;
+  --color-icon-1: #4e4e4e;
+  --color-system-red: #fc4141;
+  --color-system-blue: #eaf9ff;
+  --color-system-green: #ecfbf6;
+  --color-bg-1: #0c0d0e;
+  --color-bg-2: #18191b;
+  --color-bg-3: #1e2024;
+  --color-bg-4: #2b2d31;
+  --color-bg-inactive: #1e2024;
+
   /* ========================================= */
   /* Typography — Font Size */
   /* 사용법: text-xs, text-sm, text-base, text-lg, text-xl, text-2xl, text-3xl */
