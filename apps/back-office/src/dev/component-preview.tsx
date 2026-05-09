@@ -60,7 +60,7 @@ export default function BackOfficeComponentPreview() {
             </div>
           </div>
           <div className="rounded-4 border border-line-2 bg-bg-2 px-4 py-3 text-sm text-text-2">
-            apps/back-office/index.tsx
+            /dev/components
           </div>
         </header>
 

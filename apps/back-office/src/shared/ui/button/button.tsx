@@ -1,9 +1,7 @@
 import React from 'react';
 
-import { designTokens } from '../../tokens';
-
 export type ButtonVariant = 'primary' | 'outlined' | 'text';
-export type ButtonSize = keyof typeof designTokens.button.size;
+export type ButtonSize = 'small' | 'medium' | 'large';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -12,32 +10,21 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   rightIcon?: React.ReactNode;
 }
 
-const getVariantStyle = (variant: ButtonVariant): React.CSSProperties => {
-  if (variant === 'outlined') {
-    return {
-      backgroundColor: 'transparent',
-      borderColor: designTokens.color.primary,
-      color: designTokens.color.primary,
-    };
-  }
+const variantClassName: Record<ButtonVariant, string> = {
+  primary: 'border-transparent bg-primary text-white hover:bg-primary/90 active:bg-primary/80',
+  outlined: 'border-primary bg-transparent text-primary hover:bg-primary/10 active:bg-primary/15',
+  text: 'border-transparent bg-transparent text-primary hover:bg-primary/10 active:bg-primary/15',
+};
 
-  if (variant === 'text') {
-    return {
-      backgroundColor: 'transparent',
-      borderColor: 'transparent',
-      color: designTokens.color.primary,
-    };
-  }
-
-  return {
-    backgroundColor: designTokens.color.primary,
-    borderColor: 'transparent',
-    color: designTokens.color.white,
-  };
+const sizeClassName: Record<ButtonSize, string> = {
+  small: 'h-button-sm px-3',
+  medium: 'h-button-md px-4',
+  large: 'h-button-lg px-6',
 };
 
 export const Button = ({
   children,
+  className,
   disabled,
   leftIcon,
   rightIcon,
@@ -47,31 +34,20 @@ export const Button = ({
   variant = 'primary',
   ...props
 }: ButtonProps) => {
-  const sizeTokens = designTokens.button.size[size];
-
   return (
     <button
       type={type}
       disabled={disabled}
-      style={{
-        alignItems: 'center',
-        borderStyle: 'solid',
-        borderWidth: 1,
-        borderRadius: designTokens.button.radius,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        display: 'inline-flex',
-        fontSize: designTokens.typography.button.fontSize,
-        fontWeight: designTokens.typography.button.fontWeight,
-        gap: designTokens.spacing[2],
-        height: sizeTokens.height,
-        justifyContent: 'center',
-        opacity: disabled ? 0.5 : 1,
-        padding: sizeTokens.padding,
-        transition: 'background-color 150ms ease, border-color 150ms ease, color 150ms ease',
-        whiteSpace: 'nowrap',
-        ...getVariantStyle(variant),
-        ...style,
-      }}
+      className={[
+        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-button border border-solid text-sm font-medium transition-colors',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        variantClassName[variant],
+        sizeClassName[size],
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      style={style}
       {...props}
     >
       {leftIcon}

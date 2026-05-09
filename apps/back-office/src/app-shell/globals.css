@@ -72,6 +72,16 @@
   --color-purple-100: #f3e8ff;
   --color-purple-600: #9333ea;
 
+  /* Back-office semantic tokens */
+  --color-text-primary: #101828;
+  --color-text-secondary: #4a5565;
+  --color-icon-default: #6b7280;
+  --color-error-text: #d32f2f;
+  --color-error-icon: #dc2626;
+  --color-border: #e5e7eb;
+  --color-surface-subtle: #f3f4f6;
+  --color-surface-header: #f9fafb;
+
   /* Shared UI package tokens */
   --color-text-1: #ffffff;
   --color-text-2: rgb(255 255 255 / 0.7);
@@ -118,6 +128,7 @@
   /* Spacing */
   /* 사용법: p-1, m-2, gap-3, w-4 ... */
   /* ========================================= */
+  --spacing: 4px;
   --spacing-1: 4px;
   --spacing-2: 8px;
   --spacing-3: 12px;
@@ -138,6 +149,14 @@
   --radius-xl: 12px;
   --radius-2xl: 16px;
   --radius-full: 9999px;
+  --radius-button: 6px;
+
+  /* ========================================= */
+  /* Component Size */
+  /* ========================================= */
+  --height-button-sm: 32px;
+  --height-button-md: 40px;
+  --height-button-lg: 48px;
 
   /* ========================================= */
   /* Line Height (디자인 시스템 외 — 유틸용 유지) */
@@ -178,7 +197,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     height: 100%;
-    @apply bg-white text-gray-900 antialiased;
+    @apply bg-bg-1 text-text-1 antialiased;
   }
 
   button, [role="button"], a, summary, select, [type="checkbox"], [type="radio"] {
