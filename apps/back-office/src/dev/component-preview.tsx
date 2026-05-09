@@ -93,7 +93,7 @@ export default function BackOfficeComponentPreview() {
           <Section title="Inputs">
             <div className="flex flex-col gap-5">
               <DsFormField.Root>
-                <DsFormField.Label className="typo-label-heading text-text-1">
+                <DsFormField.Label className="text-sm font-semibold tracking-zero text-text-1">
                   Project name
                 </DsFormField.Label>
                 <DsFormField.Control asChild>
@@ -102,7 +102,7 @@ export default function BackOfficeComponentPreview() {
               </DsFormField.Root>
 
               <DsFormField.Root error={{ message: 'Required field sample' }}>
-                <DsFormField.Label className="typo-label-heading text-text-1">
+                <DsFormField.Label className="text-sm font-semibold tracking-zero text-text-1">
                   Error state
                 </DsFormField.Label>
                 <DsFormField.Control asChild>

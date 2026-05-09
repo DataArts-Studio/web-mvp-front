@@ -154,9 +154,9 @@
   /* ========================================= */
   /* Component Size */
   /* ========================================= */
-  --height-button-sm: 32px;
-  --height-button-md: 40px;
-  --height-button-lg: 48px;
+  --spacing-button-sm: 32px;
+  --spacing-button-md: 40px;
+  --spacing-button-lg: 48px;
 
   /* ========================================= */
   /* Line Height (디자인 시스템 외 — 유틸용 유지) */

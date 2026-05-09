@@ -33,15 +33,15 @@ export const designTokens = {
     radius: 'var(--radius-button)',
     size: {
       small: {
-        height: 'var(--height-button-sm)',
+        height: 'var(--spacing-button-sm)',
         padding: 'calc(var(--spacing) * 1.5) calc(var(--spacing) * 3)',
       },
       medium: {
-        height: 'var(--height-button-md)',
+        height: 'var(--spacing-button-md)',
         padding: 'calc(var(--spacing) * 2) calc(var(--spacing) * 4)',
       },
       large: {
-        height: 'var(--height-button-lg)',
+        height: 'var(--spacing-button-lg)',
         padding: 'calc(var(--spacing) * 3) calc(var(--spacing) * 6)',
       },
     },
