@@ -2,7 +2,11 @@
 
 import React from 'react';
 
-import { Button as BackOfficeButton } from '@/shared/ui';
+import {
+  Button as BackOfficeButton,
+  Input as BackOfficeInput,
+  SearchInput as BackOfficeSearchInput,
+} from '@/shared/ui';
 import { CaseSelectionPanel } from '@testea/ui/case-selection-panel';
 import { DsCheckbox } from '@testea/ui/checkbox';
 import { DSButton } from '@testea/ui/ds-button';
@@ -73,6 +77,18 @@ export default function BackOfficeComponentPreview() {
             <BackOfficeButton leftIcon={<span aria-hidden="true">@</span>}>
               With icon
             </BackOfficeButton>
+          </div>
+        </Section>
+
+        <Section title="Back-office Local Input">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <BackOfficeInput placeholder="Default input" defaultValue="Back-office QA" />
+            <BackOfficeSearchInput placeholder="검색..." />
+            <BackOfficeInput size="small" placeholder="Small input" />
+            <BackOfficeSearchInput size="small" placeholder="검색..." />
+            <BackOfficeInput size="large" placeholder="Large input" />
+            <BackOfficeInput variant="error" placeholder="Error input" aria-label="Error input" />
+            <BackOfficeInput disabled placeholder="Disabled input" />
           </div>
         </Section>
 
