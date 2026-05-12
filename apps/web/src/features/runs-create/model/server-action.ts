@@ -1,13 +1,22 @@
 'use server';
-import * as Sentry from '@sentry/nextjs';
-import { CreateTestRunSchema } from '@/entities/test-run';
-import { getDatabase, testRuns, testRunSuites, testCaseRuns, testCases, milestoneTestCases, milestoneTestSuites } from '@testea/db';
-import { inArray, and, eq } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
-import { z } from 'zod';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { CreateTestRunSchema } from '@/entities/test-run';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import {
+  getDatabase,
+  milestoneTestCases,
+  milestoneTestSuites,
+  testCaseRuns,
+  testCases,
+  testRunMilestones,
+  testRunSuites,
+  testRuns,
+} from '@testea/db';
+import { and, eq, inArray } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
+import { z } from 'zod';
 
 type CreateRunInput = z.infer<typeof CreateTestRunSchema>;
 
@@ -36,16 +45,23 @@ export const createTestRunAction = async (input: CreateRunInput) => {
 
   try {
     const [newTestRun] = await db.transaction(async (tx) => {
-      // 1. Create the main test run entry with milestone_id
+      // 1. Create the main test run entry and link the selected milestone
       const [run] = await tx
         .insert(testRuns)
         .values({
           project_id,
           name,
           description,
-          milestone_id,
         })
         .returning();
+
+      await tx
+        .insert(testRunMilestones)
+        .values({
+          test_run_id: run.id,
+          milestone_id,
+        })
+        .onConflictDoNothing();
 
       // Track added case IDs to prevent duplicates
       const addedCaseIds = new Set<string>();
@@ -61,7 +77,9 @@ export const createTestRunAction = async (input: CreateRunInput) => {
         .where(eq(milestoneTestCases.milestone_id, milestone_id));
 
       const newMilestoneCaseRuns = milestoneCaseRows
-        .filter((row) => row.test_case_id && row.milestone_id && !addedCaseIds.has(row.test_case_id))
+        .filter(
+          (row) => row.test_case_id && row.milestone_id && !addedCaseIds.has(row.test_case_id)
+        )
         .map((row) => {
           addedCaseIds.add(row.test_case_id!);
           return {
@@ -88,7 +106,9 @@ export const createTestRunAction = async (input: CreateRunInput) => {
         .from(milestoneTestSuites)
         .where(eq(milestoneTestSuites.milestone_id, milestone_id));
 
-      const suiteIds = [...new Set(milestoneSuiteRows.map((r) => r.test_suite_id).filter(Boolean))] as string[];
+      const suiteIds = [
+        ...new Set(milestoneSuiteRows.map((r) => r.test_suite_id).filter(Boolean)),
+      ] as string[];
 
       if (suiteIds.length > 0) {
         // Link suites to the run
