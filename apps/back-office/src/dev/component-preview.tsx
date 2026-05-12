@@ -6,6 +6,7 @@ import {
   Button as BackOfficeButton,
   Input as BackOfficeInput,
   SearchInput as BackOfficeSearchInput,
+  Select as BackOfficeSelect,
 } from '@/shared/ui';
 import { CaseSelectionPanel } from '@testea/ui/case-selection-panel';
 import { DsCheckbox } from '@testea/ui/checkbox';
@@ -34,6 +35,7 @@ const cases = [
 ];
 
 export default function BackOfficeComponentPreview() {
+  const [localSelectValue, setLocalSelectValue] = React.useState('');
   const [selectValue, setSelectValue] = React.useState('active');
   const [checked, setChecked] = React.useState(true);
   const [page, setPage] = React.useState(2);
@@ -89,6 +91,52 @@ export default function BackOfficeComponentPreview() {
             <BackOfficeInput size="large" placeholder="Large input" />
             <BackOfficeInput variant="error" placeholder="Error input" aria-label="Error input" />
             <BackOfficeInput disabled placeholder="Disabled input" />
+          </div>
+        </Section>
+
+        <Section title="Back-office Local Select">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <BackOfficeSelect.Root value={localSelectValue} onValueChange={setLocalSelectValue}>
+              <BackOfficeSelect.Trigger aria-label="Project filter">
+                <BackOfficeSelect.Value placeholder="Select project" />
+              </BackOfficeSelect.Trigger>
+              <BackOfficeSelect.Content>
+                <BackOfficeSelect.Item value="all">All projects</BackOfficeSelect.Item>
+                <BackOfficeSelect.Item value="active">Active only</BackOfficeSelect.Item>
+                <BackOfficeSelect.Separator />
+                <BackOfficeSelect.Item value="archived">Archived</BackOfficeSelect.Item>
+              </BackOfficeSelect.Content>
+            </BackOfficeSelect.Root>
+
+            <BackOfficeSelect.Root size="md" defaultValue="active">
+              <BackOfficeSelect.Trigger aria-label="Medium project filter">
+                <BackOfficeSelect.Value placeholder="Medium select" />
+              </BackOfficeSelect.Trigger>
+              <BackOfficeSelect.Content>
+                <BackOfficeSelect.Item value="all">All projects</BackOfficeSelect.Item>
+                <BackOfficeSelect.Item value="active">Active only</BackOfficeSelect.Item>
+                <BackOfficeSelect.Item value="archived">Archived</BackOfficeSelect.Item>
+              </BackOfficeSelect.Content>
+            </BackOfficeSelect.Root>
+
+            <BackOfficeSelect.Root error>
+              <BackOfficeSelect.Trigger aria-label="Error project filter">
+                <BackOfficeSelect.Value placeholder="Error select" />
+              </BackOfficeSelect.Trigger>
+              <BackOfficeSelect.Content>
+                <BackOfficeSelect.Item value="all">All projects</BackOfficeSelect.Item>
+                <BackOfficeSelect.Item value="active">Active only</BackOfficeSelect.Item>
+              </BackOfficeSelect.Content>
+            </BackOfficeSelect.Root>
+
+            <BackOfficeSelect.Root disabled>
+              <BackOfficeSelect.Trigger aria-label="Disabled project filter">
+                <BackOfficeSelect.Value placeholder="Disabled select" />
+              </BackOfficeSelect.Trigger>
+              <BackOfficeSelect.Content>
+                <BackOfficeSelect.Item value="all">All projects</BackOfficeSelect.Item>
+              </BackOfficeSelect.Content>
+            </BackOfficeSelect.Root>
           </div>
         </Section>
 
