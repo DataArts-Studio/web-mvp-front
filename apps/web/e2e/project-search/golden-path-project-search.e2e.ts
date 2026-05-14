@@ -15,90 +15,70 @@
 - 프로젝트 대시보드로 리디렉트되고 프로젝트 이름이 페이지에 출력된다.*/
 import { expect, test } from '@playwright/test';
 
-test.describe('[Golden Path] 프로젝트 검색', () => {
-  test('[Golden Path] 부분 키워드를 검색했을때 전체 흐름이 끝까지 성공한다', async ({
+import { projectSearchLoc } from './project-search.locators';
+
+test.describe('프로젝트 검색 - Golden Path', () => {
+  // 페이지 열기
+  test.beforeEach(async ({ page }) => {
+    const loc = projectSearchLoc(page);
+    await loc.landing.goto();
+    await loc.landing.closeDialog.dismissDbOutageModal();
+    await loc.landing.closeDialog.dismissBetaModal();
+    await expect(page).toHaveTitle(/테스티아/);
+  });
+
+  test('부분 키워드로 검색하면 결과에서 선택해 대시보드까지 도달한다.', async ({
     page,
   }) => {
-    // 페이지 열기
-    await page.goto('http://localhost:3000');
-    await page
-      .getByLabel('서비스 이용 불편 안내')
-      .getByRole('button', { name: '확인' })
-      .click();
-    await page
-      .getByLabel('Testea 베타 버전 안내')
-      .getByRole('button', { name: '확인' })
-      .click();
-
-    await test.step('랜딩 페이지에서  내 프로젝트 찾기 버튼을 클릭한다.', async () => {
-      await page
-        .getByRole('button', { name: '내 프로젝트 검색 모달 열기' })
-        .click();
-
-      await expect(
-        page.getByRole('dialog', { name: /내 프로젝트 찾기/ })
-      ).toBeVisible();
+    await test.step('내 프로젝트 찾기 모달을 연다.', async () => {
+      const loc = projectSearchLoc(page);
+      await loc.step1.openButton.click();
+      await expect(loc.step1.heading).toBeVisible();
     });
 
-    await test.step('부분 키워드를 입력한다', async () => {
-      await page.getByPlaceholder(/프로젝트명 입력.../).fill('sample');
-      await expect(
-        page.getByRole('link', { name: /sample-project/ })
-      ).toBeVisible();
+    await test.step('부분 키워드를 입력하고 결과 리스트를 확인한다.', async () => {
+      const loc = projectSearchLoc(page);
+      await loc.step2.projectNameInput.fill('sample');
+      await expect(loc.step2.projectList).toBeVisible();
     });
 
     await test.step('결과 리스트에서 프로젝트를 클릭한다.', async () => {
-      await page.getByRole('link', { name: /sample-project/ }).click();
-      await expect(
-        page.getByRole('heading', { name: /프로젝트 접근/ })
-      ).toBeVisible();
+      const loc = projectSearchLoc(page);
+      await loc.step3.linkButton.click();
+      await expect(loc.step3.heading).toBeVisible();
     });
 
     await test.step('올바른 식별번호를 입력하고 제출한다.', async () => {
-      await page.getByPlaceholder(/8~16자리 비밀번호 입력/).fill('123123123');
-      await page.getByRole('button', { name: '접근하기' }).click();
-      await expect(page.getByLabel('대시보드')).toBeVisible();
+      const loc = projectSearchLoc(page);
+      await loc.step4.passwordInput.fill('123123123');
+      await loc.step4.identifier.click();
+      await expect(loc.step4.heading).toBeVisible();
       await expect(page).toHaveURL(/\projects\/sample-project/);
     });
   });
 
-  test('[Golden path] 정확한 이름을 검색하여 프로젝트를 검색할 수 있다.', async ({
+  test('정확한 이름으로 검색하면 검색 버튼 제출로 대시보드까지 도달한다.', async ({
     page,
   }) => {
-    // 페이지 열기
-    await page.goto('http://localhost:3000');
-    await page
-      .getByLabel('서비스 이용 불편 안내')
-      .getByRole('button', { name: '확인' })
-      .click();
-    await page
-      .getByLabel('Testea 베타 버전 안내')
-      .getByRole('button', { name: '확인' })
-      .click();
-
-    await test.step('랜딩 페이지에서  내 프로젝트 찾기 버튼을 클릭한다.', async () => {
-      await page
-        .getByRole('button', { name: '내 프로젝트 검색 모달 열기' })
-        .click();
-
-      await expect(
-        page.getByRole('dialog', { name: /내 프로젝트 찾기/ })
-      ).toBeVisible();
+    await test.step('내 프로젝트 찾기 모달을 연다.', async () => {
+      const loc = projectSearchLoc(page);
+      await loc.step1.openButton.click();
+      await expect(loc.step1.heading).toBeVisible();
     });
 
-    await test.step('정확한 이름 입력 후 검색 버튼 클릭', async () => {
-      await page.getByPlaceholder(/프로젝트명 입력.../).fill('sample-project');
-      await page.getByRole('button', { name: /^검색$/ }).click();
-      await expect(
-        page.getByRole('heading', { name: 'sample-project' })
-      ).toBeVisible();
-      await page.getByRole('button', { name: /접속하기/ }).click();
+    await test.step('정확한 이름으로 검색하고 접속하기를 클릭한다.', async () => {
+      const loc = projectSearchLoc(page);
+      await loc.step2.projectNameInput.fill('sample-project');
+      await loc.step2.searchButton.click();
+      await expect(loc.step2.heading).toBeVisible();
+      await loc.step2.accessButton.click();
     });
 
     await test.step('올바른 식별번호를 입력하고 제출한다.', async () => {
-      await page.getByPlaceholder(/8~16자리 비밀번호 입력/).fill('123123123');
-      await page.getByRole('button', { name: '접근하기' }).click();
-      await expect(page.getByLabel('대시보드')).toBeVisible();
+      const loc = projectSearchLoc(page);
+      await loc.step4.passwordInput.fill('123123123');
+      await loc.step4.identifier.click();
+      await expect(loc.step4.heading).toBeVisible();
       await expect(page).toHaveURL(/\projects\/sample-project/);
     });
   });
