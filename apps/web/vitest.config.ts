@@ -6,7 +6,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/shared/test/setup-tests.ts'],
-    include: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
+    // vitest 는 src/ 의 .test.* 만 본다.
+    // Playwright(e2e) 는 e2e/ 의 .e2e.* 를 본다 — 확장자 자체가 달라 IDE 매핑 충돌 없음.
+    include: ['src/**/*.test.{ts,tsx}'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
   },
   resolve: {
     alias: {
