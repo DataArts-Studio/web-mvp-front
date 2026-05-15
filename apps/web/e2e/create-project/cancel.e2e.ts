@@ -1,6 +1,6 @@
 // 각 step 에서 모달을 닫았을 때 모달이 사라지는지 검증한다.
 // "닫은 뒤 다시 열었을 때 입력값이 비어있는가" 같은 추가 시나리오는 별도 분리 가능.
-import { test, expect } from './_support/fixtures';
+import { test, expect } from '../share/utils';
 import { loc } from './_support/locators';
 import { openModal, reachStep2, reachStep3 } from './_support/flows';
 

@@ -1,6 +1,6 @@
 // 잘못된 입력에 대해 step 비진입 + 에러 노출이 되는지 검증.
 // 각 step 의 validation 규칙은 project-create-form.tsx 의 handleNext 분기 참고.
-import { test, expect } from './_support/fixtures';
+import { test, expect } from '../share/utils';
 import { loc } from './_support/locators';
 import { openModal, reachStep2 } from './_support/flows';
 

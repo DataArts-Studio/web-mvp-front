@@ -3,13 +3,15 @@
 // - apps/web dev 또는 production 빌드 실행 중 (http://localhost:3000)
 // - localhost 환경은 Turnstile siteKey 가 빈 문자열로 처리되어 위젯 미렌더 (봇 검증 자동 통과)
 //   project-create-form.tsx 의 isLocalhost 분기 참고.
-import { test, expect } from './_support/fixtures';
+import { test, expect } from '../share/utils';
 import { loc } from './_support/locators';
 import { openModal } from './_support/flows';
 
 // 클립보드 검증을 위해 권한 부여 (StepSuccess 의 navigator.clipboard.writeText)
 test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
 
+// Golden Path는 플로우 자체가 검증 대상이라서 헬퍼로 감추면 안 됨
+// 프로젝트 생성은 이렇게 진행된다 가 한눈에 보여야 함.
 test.describe('프로젝트 생성 - Golden Path', () => {
   test('[Golden Path] 전체 흐름이 끝까지 성공한다', async ({ page }) => {
     const l = loc(page);
