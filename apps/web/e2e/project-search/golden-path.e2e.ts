@@ -13,20 +13,11 @@
 - 식별번호 입력 페이지로 이동한다.
 - 올바른 식별번호를 입력하고 제출한다.
 - 프로젝트 대시보드로 리디렉트되고 프로젝트 이름이 페이지에 출력된다.*/
-import {test, expect } from '../share/utils'
+import { expect, test } from '../share/utils';
 import { openModal } from './_support/flows';
 import { projectSearchLoc } from './_support/locators';
 
 test.describe('프로젝트 검색 - Golden Path', () => {
-  // 페이지 열기
-  test.beforeEach(async ({ page }) => {
-    const loc = projectSearchLoc(page);
-    await loc.landing.goto();
-    await loc.landing.closeDialog.dismissDbOutageModal();
-    await loc.landing.closeDialog.dismissBetaModal();
-    await expect(page).toHaveTitle(/테스티아/);
-  });
-
   test('부분 키워드로 검색하면 결과에서 선택해 대시보드까지 도달한다.', async ({
     page,
   }) => {
@@ -37,20 +28,14 @@ test.describe('프로젝트 검색 - Golden Path', () => {
     });
 
     await test.step('부분 키워드를 입력하고 결과 리스트를 확인한다.', async () => {
-      await loc.step2.projectNameInput.fill('sample');
-      await expect(loc.step2.projectList).toBeVisible();
+      await loc.step1.projectNameInput.fill('sample');
+      await expect(loc.step1.projectList).toBeVisible();
     });
 
     await test.step('결과 리스트에서 프로젝트를 클릭한다.', async () => {
-      await loc.step3.linkButton.click();
-      await expect(loc.step3.heading).toBeVisible();
-    });
-
-    await test.step('올바른 식별번호를 입력하고 제출한다.', async () => {
-      await loc.step4.passwordInput.fill('123123123');
-      await loc.step4.identifier.click();
-      await expect(loc.step4.heading).toBeVisible();
-      await expect(page).toHaveURL(/\projects\/sample-project/);
+      await loc.step1.linkButton.click();
+      await expect(page).toHaveURL(/\/projects\/sample-project\/access$/);
+      await expect(loc.success.heading).toBeVisible();
     });
   });
 
@@ -64,17 +49,12 @@ test.describe('프로젝트 검색 - Golden Path', () => {
     });
 
     await test.step('정확한 이름으로 검색하고 접속하기를 클릭한다.', async () => {
-      await loc.step2.projectNameInput.fill('sample-project');
-      await loc.step2.searchButton.click();
-      await expect(loc.step2.heading).toBeVisible();
-      await loc.step2.accessButton.click();
-    });
-
-    await test.step('올바른 식별번호를 입력하고 제출한다.', async () => {
-      await loc.step4.passwordInput.fill('123123123');
-      await loc.step4.identifier.click();
-      await expect(loc.step4.heading).toBeVisible();
-      await expect(page).toHaveURL(/\projects\/sample-project/);
+      await loc.step1.projectNameInput.fill('sample-project');
+      await loc.step1.searchButton.click();
+      await expect(loc.step1.heading).toBeVisible();
+      await loc.step1.accessButton.click();
+      await expect(page).toHaveURL(/\/projects\/sample-project\/access$/);
+      await expect(loc.success.heading).toBeVisible();
     });
   });
 });
