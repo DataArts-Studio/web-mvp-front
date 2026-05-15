@@ -16,11 +16,11 @@ export function projectSearchLoc(page: Page) {
             .getByRole('button', { name: '확인' })
             .click(),
       },
-    },
-    step1: {
-      openButton: page.getByRole('button', {
+      openModalButton: page.getByRole('button', {
         name: '내 프로젝트 검색 모달 열기',
       }),
+    },
+    step1: {
       heading: page.getByRole('dialog', { name: /내 프로젝트 찾기/ }),
     },
     step2: {
