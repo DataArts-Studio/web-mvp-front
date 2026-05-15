@@ -13,9 +13,9 @@
 - 식별번호 입력 페이지로 이동한다.
 - 올바른 식별번호를 입력하고 제출한다.
 - 프로젝트 대시보드로 리디렉트되고 프로젝트 이름이 페이지에 출력된다.*/
-import { expect, test } from '@playwright/test';
-
-import { projectSearchLoc } from './project-search.locators';
+import {test, expect } from '../share/utils'
+import { openModal } from './_support/flows';
+import { projectSearchLoc } from './_support/locators';
 
 test.describe('프로젝트 검색 - Golden Path', () => {
   // 페이지 열기
@@ -30,26 +30,23 @@ test.describe('프로젝트 검색 - Golden Path', () => {
   test('부분 키워드로 검색하면 결과에서 선택해 대시보드까지 도달한다.', async ({
     page,
   }) => {
+    const loc = projectSearchLoc(page);
+
     await test.step('내 프로젝트 찾기 모달을 연다.', async () => {
-      const loc = projectSearchLoc(page);
-      await loc.step1.openButton.click();
-      await expect(loc.step1.heading).toBeVisible();
+      await openModal(page);
     });
 
     await test.step('부분 키워드를 입력하고 결과 리스트를 확인한다.', async () => {
-      const loc = projectSearchLoc(page);
       await loc.step2.projectNameInput.fill('sample');
       await expect(loc.step2.projectList).toBeVisible();
     });
 
     await test.step('결과 리스트에서 프로젝트를 클릭한다.', async () => {
-      const loc = projectSearchLoc(page);
       await loc.step3.linkButton.click();
       await expect(loc.step3.heading).toBeVisible();
     });
 
     await test.step('올바른 식별번호를 입력하고 제출한다.', async () => {
-      const loc = projectSearchLoc(page);
       await loc.step4.passwordInput.fill('123123123');
       await loc.step4.identifier.click();
       await expect(loc.step4.heading).toBeVisible();
@@ -60,14 +57,13 @@ test.describe('프로젝트 검색 - Golden Path', () => {
   test('정확한 이름으로 검색하면 검색 버튼 제출로 대시보드까지 도달한다.', async ({
     page,
   }) => {
+    const loc = projectSearchLoc(page);
+
     await test.step('내 프로젝트 찾기 모달을 연다.', async () => {
-      const loc = projectSearchLoc(page);
-      await loc.step1.openButton.click();
-      await expect(loc.step1.heading).toBeVisible();
+      await openModal(page);
     });
 
     await test.step('정확한 이름으로 검색하고 접속하기를 클릭한다.', async () => {
-      const loc = projectSearchLoc(page);
       await loc.step2.projectNameInput.fill('sample-project');
       await loc.step2.searchButton.click();
       await expect(loc.step2.heading).toBeVisible();
@@ -75,7 +71,6 @@ test.describe('프로젝트 검색 - Golden Path', () => {
     });
 
     await test.step('올바른 식별번호를 입력하고 제출한다.', async () => {
-      const loc = projectSearchLoc(page);
       await loc.step4.passwordInput.fill('123123123');
       await loc.step4.identifier.click();
       await expect(loc.step4.heading).toBeVisible();
