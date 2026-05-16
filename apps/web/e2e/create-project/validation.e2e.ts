@@ -22,6 +22,7 @@ test.describe('프로젝트 생성 - Step1 Validation', () => {
     await l.step1.projectName.fill('e2e-validation');
     await l.step1.nextButton.click();
     await expect(l.step2.heading).toBeHidden();
+    await expect(l.step1.projectName).toBeVisible();
   });
 });
 
