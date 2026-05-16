@@ -1,15 +1,22 @@
-import { test, expect } from '../share/utils'
+import { test, expect } from '../share/utils';
 import { ProjectAccessPage } from '../support/pages/project-access';
 
-test.describe('Golden path - 프로젝트 접근 시나리오', () => {
-  let projectAccess: ProjectAccessPage;
-  const BASE_URL = 'http://localhost:3000';
+const SLUG = 'sample-project';
+const VALID_CODE = '123123123';
 
-  // 페이지 접근
+test.describe('Golden path - 프로젝트 접근', () => {
+  let access: ProjectAccessPage;
+
   test.beforeEach(async ({ page }) => {
-    projectAccess = new ProjectAccessPage(page);
-    await projectAccess.open('/');
-  })
-  // 식별번호 입력
-  // 대시보드 접근
-})
+    access = new ProjectAccessPage(page);
+    await access.goto(SLUG);
+  });
+
+  test('올바른 식별번호 입력 시 대시보드로 이동한다', async ({ page }) => {
+    await access.fillCode(VALID_CODE);
+    await access.submit();
+
+    await expect(page).toHaveURL(`/projects/${SLUG}`);
+    await expect(page.getByRole('heading', { name: SLUG })).toBeVisible();
+  });
+});
