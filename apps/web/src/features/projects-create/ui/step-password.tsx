@@ -20,7 +20,16 @@ export const StepPassword = ({ register, errors, step, onNext, onClose }: StepPa
       <div className="inline-flex flex-col items-start justify-start gap-4 self-stretch">
         <div className="inline-flex items-center justify-between self-stretch">
           <h2 className="text-2xl">프라이빗 모드로 생성하기</h2>
-          <DSButton type="button" variant="text" className="cursor-pointer" onClick={() => { track(PROJECT_CREATE_EVENTS.ABANDON, { step }); onClose?.(); }}>
+          <DSButton
+            type="button"
+            variant="text"
+            className="cursor-pointer"
+            aria-label="닫기"
+            onClick={() => {
+              track(PROJECT_CREATE_EVENTS.ABANDON, { step });
+              onClose?.();
+            }}
+          >
             <XIcon className="h-8 w-8" />
           </DSButton>
         </div>
