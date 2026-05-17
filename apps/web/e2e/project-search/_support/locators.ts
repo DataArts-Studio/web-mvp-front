@@ -1,5 +1,11 @@
 import type { Page } from '@playwright/test';
 
+
+
+
+
+
+
 export function projectSearchLoc(page: Page) {
   // 검색 모달은 id 가 없어서 role=dialog + accessible name(aria-labelledby)으로 식별.
   // project-search-modal.tsx 의 <div role="dialog" aria-labelledby="search-modal-title"> 참고.
@@ -19,9 +25,9 @@ export function projectSearchLoc(page: Page) {
       projectNameInput: modal.getByPlaceholder(/프로젝트명 입력.../),
       projectList: modal.getByRole('link', { name: /sample-project/ }),
       searchButton: modal.getByRole('button', { name: /^검색$/ }),
-      heading: page.getByRole('heading', { name: 'sample-project' }),
-      accessButton: page.getByRole('button', { name: /접속하기/ }),
-      linkButton: page.getByRole('link', { name: /sample-project/ }),
+      heading: modal.getByRole('heading', { name: 'sample-project' }),
+      accessButton: modal.getByRole('button', { name: /접속하기/ }),
+      linkButton: modal.getByRole('link', { name: /sample-project/ }),
     },
     success: {
       heading: page.getByRole('heading', { name: /프로젝트 접근/ }),
