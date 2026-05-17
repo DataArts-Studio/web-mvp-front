@@ -26,9 +26,7 @@ export function loc(page: Page) {
       identifier: modal.getByLabel(/^프로젝트 식별번호/),
       identifierConfirm: modal.getByLabel(/^식별번호 재확인/),
       nextButton: modal.getByRole('button', { name: '프로젝트 생성하기' }),
-      // Step2 의 닫기는 우상단 X 아이콘 버튼 (accessible name 없음)
-      // step-password.tsx 의 XIcon DSButton 을 가리킴
-      closeButton: modal.locator('button:has(svg.lucide-x)').first(),
+      closeButton: modal.getByRole('button', { name: '닫기' }),
       // 에러 메시지는 DsFormField.Message 가 <p data-invalid="true"> 로 렌더
       errorMessage: modal.locator('p[data-invalid="true"]'),
     },
