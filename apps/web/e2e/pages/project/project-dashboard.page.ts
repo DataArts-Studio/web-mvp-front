@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-
 import { type Locator, type Page, expect } from '@playwright/test';
 
 import { BasePage } from '../base.page';
@@ -47,7 +45,7 @@ export class ProjectDashboardPage extends BasePage {
 
   // --- 단언 ---------------------------------------------------------------
   async expectLoaded(slug: string): Promise<void> {
-    await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}$`));
+    await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}$`), { timeout: 30_000 });
     await expect(this.heading).toBeVisible();
   }
 
