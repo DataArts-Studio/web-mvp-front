@@ -34,12 +34,13 @@ export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowPro
 
   return (
     <div className="flex items-center gap-3 border-b border-line-2 bg-primary/5 px-4 py-3 transition-colors hover:bg-primary/10">
-      <div className="rounded-1 bg-primary/20 text-primary flex h-6 w-6 shrink-0 items-center justify-center">
+      <div aria-hidden="true" className="rounded-1 bg-primary/20 text-primary flex h-6 w-6 shrink-0 items-center justify-center">
         <Plus className="h-4 w-4" />
       </div>
       <Input
         ref={inputRef}
         type="text"
+        aria-label="새 테스트 케이스 이름"
         placeholder="새로운 테스트 케이스 이름을 입력하고 Enter를 누르세요..."
         className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent focus:outline-none"
         onKeyDown={(e) => {

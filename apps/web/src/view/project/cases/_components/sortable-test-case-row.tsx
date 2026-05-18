@@ -35,11 +35,12 @@ export const SortableTestCaseRow = ({ id, children, disabled }: SortableTestCase
         {!disabled && (
           <button
             type="button"
+            aria-label="드래그하여 순서 변경"
             className="flex h-full w-6 shrink-0 cursor-grab items-center justify-center text-text-4 hover:text-text-2 active:cursor-grabbing"
             {...attributes}
             {...listeners}
           >
-            <GripVertical className="h-4 w-4" />
+            <GripVertical className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
         <div className="flex-1 min-w-0">{children}</div>

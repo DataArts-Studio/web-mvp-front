@@ -41,28 +41,32 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
     <div ref={ref} className="relative">
       <button
         type="button"
+        aria-label="더 보기"
+        aria-haspopup="menu"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
           'typo-body2-heading rounded-2 border border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center justify-center px-2.5 py-2 transition-colors cursor-pointer',
           open && 'bg-bg-3',
         )}
       >
-        <MoreVertical className="h-4 w-4" />
+        <MoreVertical className="h-4 w-4" aria-hidden="true" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
+        <div role="menu" aria-label="더 보기" className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
           {MORE_ACTIONS.map(({ key, icon: Icon, label }) => (
             <button
               key={key}
               type="button"
+              role="menuitem"
               onClick={() => {
                 handlers[key]();
                 setOpen(false);
               }}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-text-2 transition-colors hover:bg-bg-3 hover:text-text-1"
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="typo-body2-normal">{label}</span>
             </button>
           ))}

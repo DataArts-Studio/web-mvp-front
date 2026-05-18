@@ -83,20 +83,25 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
       {/* Hover-reveal menu */}
       <div className="flex items-center shrink-0 pl-2 relative">
         <button
-          className="rounded-1 text-text-4 hover:bg-bg-4 hover:text-text-1 p-1 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+          type="button"
+          aria-label="케이스 작업"
+          aria-haspopup="menu"
+          aria-expanded={isMenuOpen}
+          className="rounded-1 text-text-4 hover:bg-bg-4 hover:text-text-1 p-1 transition-all cursor-pointer opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           onClick={(e) => {
             e.stopPropagation();
             setIsMenuOpen((prev) => !prev);
           }}
         >
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
         </button>
         {isMenuOpen && (
           <>
-            <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); }} />
-            <div className="bg-bg-2 border-line-2 absolute right-0 top-full z-50 mt-1 rounded-2 border py-1 shadow-lg min-w-[120px]">
+            <div className="fixed inset-0 z-40" aria-hidden="true" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); }} />
+            <div role="menu" aria-label="케이스 작업" className="bg-bg-2 border-line-2 absolute right-0 top-full z-50 mt-1 rounded-2 border py-1 shadow-lg min-w-[120px]">
               <button
                 type="button"
+                role="menuitem"
                 className="text-text-2 hover:bg-bg-3 flex w-full items-center gap-2 px-3 py-2 text-sm"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -104,7 +109,7 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
                   onDuplicate?.(testCase.id);
                 }}
               >
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                 복제
               </button>
             </div>
