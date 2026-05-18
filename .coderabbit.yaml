@@ -1,0 +1,156 @@
+# CodeRabbit이 작성할 기본 언어(리뷰/요약/코멘트 언어)
+language: ko-KR
+
+# 리뷰 톤/스타일 지시
+tone_instructions: >-
+  한국어로, POM 레이어 경계 위반은 어긴 원칙과 옮길 위치(locators/flows/spec)를 같이 짚어
+  구체적으로. 폴더/파일 배치 등 아키텍처는 추후 개편 예정이라 지적 금지. 스타일 취향
+  잔소리 자제, 버그·로직·보안·성능·접근성 등 핵심 이슈 우선.
+
+reviews:
+  # 리뷰 성향 프리셋
+  # - chill: 핵심 위주, 코멘트 수/강도가 상대적으로 낮음
+  # - assertive: 더 적극적으로 문제를 집어냄
+  profile: assertive
+
+  # PR 상단에 “요약” 블록을 생성할지 여부
+  high_level_summary: false
+
+  # “현재 PR이 머지 가능해 보이는지” 같은 상태 메시지를 표시할지 여부
+  review_status: true
+
+  # 파일/라인 단위로 매우 자세한 walkthrough(장문) 리뷰를 출력할지 여부
+  # - false: 요약/핵심 위주로 짧아짐(장문 방지 옵션)
+  # - true: 라인별/파일별 상세 설명이 늘어남(길어질 수 있음)
+  review_details: false
+
+  # GitHub Checks(커밋/PR 체크)에 CodeRabbit 결과를 남길지 여부
+  # - true면 PR 상단 “체크 통과/실패”처럼 상태가 보임
+  commit_status: true
+
+  # 리뷰에서 문제가 발견되면 Checks를 실패로 만들지 여부
+  # - false: 정보 제공 중심
+  # - true: 문제가 있으면 체크 실패
+  fail_commit_status: false
+
+  # 아래 항목들은 “부가 기능/노이즈”를 꺼서 리뷰를 짧고 실용적으로 유지하기 위한 설정들
+  poem: false # 시(재미 요소) 출력 여부
+  in_progress_fortune: false # 진행 중 운세/메시지 출력 여부
+  sequence_diagrams: false # 시퀀스 다이어그램 생성 여부
+  estimate_code_review_effort: false # 리뷰 난이도/소요 추정치 출력 여부
+  related_issues: false # 연관 이슈 자동 탐색/표시 여부
+  related_prs: false # 연관 PR 자동 탐색/표시 여부
+  assess_linked_issues: false # 링크된 이슈를 분석/평가할지 여부
+  suggested_labels: false # 라벨 추천 여부
+  auto_apply_labels: false # 라벨 자동 적용 여부
+  suggested_reviewers: false # 리뷰어 추천 여부
+  auto_assign_reviewers: false # 리뷰어 자동 할당 여부
+
+  # 리뷰 대상 파일 범위를 제한(리뷰 길이/노이즈 감소에 효과적)
+  # - 아래는 “포함(include)” 경로들
+  # - ! 로 시작하면 “제외(exclude)” 경로들
+  path_filters:
+    # 포함 경로
+    - 'apps/**/src/**' # 모든 앱(web, backoffice)의 소스 코드
+    - 'apps/web/e2e/**' # E2E 스펙/POM — 없으면 아래 path_instructions 가 적용될 대상이 리뷰 안 됨
+    - 'packages/**/src/**' # 모든 패키지(ui, icons)의 소스 코드
+    - '.github/**' # 워크플로우/템플릿 리뷰
+
+  # PR 생성/업데이트 시 자동 리뷰 실행 여부
+  auto_review:
+    enabled: true # 자동 리뷰 켬
+    drafts: false # Draft PR은 자동 리뷰 안 함
+    auto_incremental_review: true
+
+    # 리뷰 대상 base 브랜치. CodeRabbit 에서 정규식으로 평가되므로
+    # 실제 브랜치명으로 앵커링한다. (기존 'develop' 은 실제 브랜치 'dev' 오타였음)
+    base_branches:
+      - '^main$' # 기본 브랜치 (PR 대상이 main)
+      - '^dev$' # 통합 브랜치
+      - '^feat/.*$'
+      - '^fix/.*$'
+      - '^refactor/.*$'
+      - '^test/.*$'
+
+  path_instructions:
+    # ── 전역 방침: 아키텍처/구조는 지적 금지, POM 패턴+로직만 ──
+    - path: "apps/web/e2e/**"
+      instructions: >-
+        리뷰 범위 한정: 디렉터리 구조, 파일/폴더 위치, _support 를 도메인마다 둔 배치,
+        공용(share) 승격 시점, 추출(extract) 타이밍 같은 "아키텍처/구조" 는 현재 개편
+        예정이라 지적하지 말 것. 대신 (a) POM 레이어 책임 경계가 깨졌는지,
+        (b) 테스트 로직이 실제로 의도한 걸 검증하는지(잘못된 단언, 항상 통과하는
+        assertion, 경합/타이밍 버그, 고정 sleep, 잘못된 셀렉터로 다른 요소를 잡음 등)에 집중.
+
+    # ── 셀렉터 레이어: _support/locators.ts ──
+    - path: "apps/web/e2e/**/_support/locators.ts"
+      instructions: >-
+        POM 셀렉터 레이어. 패턴 위반만 지적: expect / waitFor / assert / toBeVisible 등
+        단언·대기 코드가 있으면 위반(셀렉터 정의 외 행위 금지) — 진입 대기는 flows,
+        결과 검증은 spec 으로 옮기라고 제안.
+        로직 측면: 셀렉터가 의도한 요소가 아닌 다른 요소를 잡을 위험(과도하게 느슨한
+        getByText, 모달 밖 동명 요소와 충돌 등)이 보이면 지적.
+        폴더 위치·export 형태·파일 분리 방식 등 구조는 언급하지 말 것.
+
+    # ── 액션 레이어: _support/flows.ts ──
+    - path: "apps/web/e2e/**/_support/flows.ts"
+      instructions: >-
+        POM 액션 레이어. 패턴 위반만 지적: (1) 결과 검증 assertion(URL 이동, 결과
+        heading/텍스트/개수, 토스트 내용 등)이 있으면 위반 — spec 으로. 단 "동작 진입
+        게이트"(모달 가시성·콘텐츠 렌더 확인) 수준 expect 는 허용. (2) test.step 사용 시
+        위반(step 은 spec 에만). (3) 타 도메인 _support import 시 POM 간 직접 결합으로 위반.
+        로직 측면: 흐름이 실제 사용자 동작 순서와 어긋나거나, race/타이밍에 취약한 패턴
+        (고정 sleep, 조건 없는 클릭 연타 등)이면 지적.
+        "이 정도는 spec 에 둬도/뽑아도 됐다" 같은 추출 시점/구조 훈수는 하지 말 것.
+
+    # ── spec 레이어: *.e2e.ts ──
+    - path: "apps/web/e2e/**/*.e2e.{ts,tsx}"
+      instructions: >-
+        E2E spec. POM 패턴 위반: (1) 핵심 검증 assertion 을 flows/locators 로 빼서 spec 만
+        보고 "무엇을 검증하는지" 안 보이면 위반(검증은 spec 에 남긴다). (2) _support 가 있는
+        도메인인데 spec 가 그걸 안 쓰고 셀렉터를 직접 만져 캡슐화를 우회하면 위반.
+        로직: 항상 통과하는/무의미한 단언(toBeTruthy 남용, 존재만 보고 끝, 잘못된 기대값),
+        비결정적 대기(고정 timeout), 셀렉터가 엉뚱한 요소를 잡는 케이스, 인증/식별번호 등
+        데이터 하드코딩으로 인한 환경 의존을 지적.
+        파일 분리 방식·test.describe 유무·셀렉터 추출 시점 등 구조는 언급하지 말 것.
+
+    # ── 테스트 신뢰성·격리 (이 리포 실제 코드 기반 리스크) ──
+    - path: "apps/web/e2e/**/*.e2e.{ts,tsx}"
+      instructions: >-
+        실제 spec 에서 반복되는 신뢰성 리스크를 로직 관점으로 지적:
+        (1) 서버/DB 영속 상태 생성 후 teardown 부재 — 프로젝트 생성처럼 백엔드에 실데이터를
+        만드는 spec 이 afterEach/afterAll/API cleanup 없이 끝나면 지적. "프로젝트 최대 1개"
+        베타 쿼터가 있어 teardown 없는 happy path 는 2회차 실행부터 스스로 실패함.
+        Date.now() 류 유니크 네이밍은 충돌만 피할 뿐 cleanup 이 아니라는 점도 짚을 것.
+        (2) 환경 결합 단언 — localhost 한정 분기(Turnstile siteKey '' / isLocalhost) 때문에만
+        참인 단언(예: 생성 버튼 toBeEnabled)을 prod/preview 에서도 성립하는 듯 두면 지적.
+        prod 전용 동작을 fixme/skip 으로만 남기고 happy path 가 localhost 분기만 덮으면
+        커버리지 갭으로 명시.
+        (3) 공허한 부정 단언 — 액션 직후 toBeHidden / not.toBeVisible 만으로 "안 넘어갔다"를
+        검증하면 요소가 원래 없을 때도 통과(가짜 통과). 기대되는 현재 상태(예: 직전 step
+        필드가 여전히 보임)를 양성 앵커로 함께 단언하는지 확인.
+        (4) 보안·한도 경로 커버리지 갭 — Turnstile 봇 차단, 베타 프로젝트 한도, rate-limit 등
+        보안/한도 시나리오가 빈 본문 fixme/skip 으로만 있으면 "추적되는 후속 필요"로
+        명시(조용히 통과 금지).
+        (5) 브라우저 API/권한 결합 — navigator.clipboard 등은 Chromium·permission 의존.
+        test.use({ permissions }) 누락이나 단일 브라우저 가정 붕괴 시 지적.
+        (6) 실 비밀값 유출 — 운영 식별번호/비밀번호 등 실제 크리덴셜이 spec 에 박히면 지적
+        (테스트 데이터는 합성값).
+        (7) 공용 page fixture 가 항상 goto('/') 하므로 딥링크/리다이렉트 자체를 검증하려는
+        spec 은 강제 진입에 가려질 수 있음 — 의도 충돌 시 지적.
+
+    # ── 시나리오 ↔ 스펙 정합성 (로직/커버리지 관점만) ──
+    - path: "apps/web/e2e/**/test-scenario.md"
+      instructions: >-
+        같은 폴더 *.e2e.ts 와 비교해 "검증 누락/불일치"라는 로직 관점만 본다: 시나리오에
+        명시된 흐름·기대 결과가 스펙에서 검증되지 않거나, 스펙이 시나리오와 다른 동작을
+        검증하면 지적. 문서 포맷·구조·문서화 스타일은 지적하지 말 것.
+
+  # ── (선택) 결정적 가드레일: AST-grep ──
+  # path_instructions 는 의미 위반(시나리오 드리프트 등)에 강하고, 아래는 "locators.ts 안 expect"
+  # 같은 구조적 위반을 규칙으로 확정 검출. 불필요하면 tools 블록과 .ast-grep/ 폴더째 삭제해도 됨.
+  tools:
+    ast-grep:
+      essential_rules: true
+      rule_dirs:
+        - ".ast-grep/rules"
