@@ -1,20 +1,6 @@
 import { ACCESS_TEST_DATA as DATA } from '../../data/test-data';
 import { test } from '../../fixtures/test';
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * 대시보드 E2E (FDD-PJT02) — 범위는 scenario/dashboard/test-scenario.md 참조.
  *
@@ -70,9 +56,9 @@ test.describe('커맨드 팔레트 - 검색 후 이동할 수 있다.', () => {
     await dashboardPage.expectSearchBarVisible();
   });
 
-  test('검색어를 입력후 이동할 수 있다.', async ({ dashboardPage }) => {})
-  test('빠른액션을 통해 이동할 수 있다.', async ({ dashboardPage }) => {})
-})
+  test('검색어를 입력후 이동할 수 있다.', async ({ dashboardPage }) => {});
+  test('빠른액션을 통해 이동할 수 있다.', async ({ dashboardPage }) => {});
+});
 
 // 시드 데이터 + teardown 필요 (생성이 대시보드에 반영되는 통합 흐름)
 test.describe('대시보드 - 생성 반영', () => {
