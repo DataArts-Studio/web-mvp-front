@@ -7,7 +7,7 @@
 // - 옵션 B: 첫 번째 test 에서 정상 생성 → 두 번째 test 에서 추가 시도
 //   (test 간 격리가 깨져 추천 안 함)
 // - 옵션 C: DB seed fixture (가장 깔끔, 따로 인프라 필요)
-import { test } from './_support/fixtures';
+import { test } from '../share/utils';
 
 test.describe('프로젝트 생성 - 다중 프로젝트 시나리오', () => {
   test.fixme('이미 프로젝트가 있는 상태에서 추가 생성 시 에러 토스트', async () => {

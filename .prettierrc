@@ -25,5 +25,13 @@
     "^[./]"
   ],
   "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true
+  "importOrderSortSpecifiers": true,
+  "overrides": [
+    {
+      "files": "apps/web/e2e/**/*.{ts,tsx}",
+      "options": {
+        "printWidth": 80
+      }
+    }
+  ]
 }
