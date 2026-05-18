@@ -19,9 +19,9 @@ export function projectSearchLoc(page: Page) {
       projectNameInput: modal.getByPlaceholder(/프로젝트명 입력.../),
       projectList: modal.getByRole('link', { name: /sample-project/ }),
       searchButton: modal.getByRole('button', { name: /^검색$/ }),
-      heading: page.getByRole('heading', { name: 'sample-project' }),
-      accessButton: page.getByRole('button', { name: /접속하기/ }),
-      linkButton: page.getByRole('link', { name: /sample-project/ }),
+      heading: modal.getByRole('heading', { name: 'sample-project' }),
+      accessButton: modal.getByRole('button', { name: /접속하기/ }),
+      linkButton: modal.getByRole('link', { name: /sample-project/ }),
     },
     success: {
       heading: page.getByRole('heading', { name: /프로젝트 접근/ }),
