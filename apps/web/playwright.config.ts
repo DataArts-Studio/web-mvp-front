@@ -6,7 +6,7 @@ const isCI = !!process.env.CI;
 export default defineConfig({
   testDir: './tests',
   // tests/ 하위 .spec.* 만 Playwright 가 잡는다.
-  // vitest 와의 충돌은 확장자가 아니라 경로로 분리: vitest 는 src/**/*.test.* 만 수집하고
+  // vitest 와의 충돌은 경로로 분리: vitest 는 src/**/*.test.* 만 수집하고
   // tests/** 를 exclude 한다. (vitest.config.ts 참고)
   testMatch: '**/*.spec.{ts,tsx}',
   // 모든 spec 의 default timeout. 어서션 보다 큰 범위 (test 함수 전체)
@@ -56,7 +56,10 @@ export default defineConfig({
         storageState: 'playwright/.auth/project.json',
       },
       dependencies: ['setup'],
-      testMatch: ['**/scenario/dashboard/**/*.spec.ts']
+      testMatch: [
+        '**/scenario/dashboard/**/*.spec.ts',
+        '**/scenario/testcase/**/*.spec.ts',
+      ]
     },
     // 다른 브라우저 추가 시 여기에 추가
     // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
