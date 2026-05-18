@@ -1,15 +1,6 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
-
-
 import { BasePage } from '../base.page';
-
-
-
-
-
-
-
 
 /**
  * 접근 페이지가 노출하는 메시지 모음.
@@ -121,10 +112,7 @@ export class ProjectAccessPage extends BasePage {
    * 보호 라우트 접근이 access 페이지로 리다이렉트됐는지 단언한다.
    * 미들웨어는 `?redirect=<원래 경로>` 를 부착한다.
    */
-  async expectRedirectedFromProtected(
-    slug: string,
-    fromPath: string
-  ): Promise<void> {
+  async expectRedirectedFromProtected(slug: string, fromPath: string): Promise<void> {
     await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}/access`));
     const redirect = new URL(this.page.url()).searchParams.get('redirect');
     expect(redirect).toBe(fromPath);
@@ -141,9 +129,7 @@ export class ProjectAccessPage extends BasePage {
       await expect(this.remainingAttempts).toBeVisible();
       return;
     }
-    await expect(
-      this.page.getByText(`남은 시도 횟수: ${count}회`)
-    ).toBeVisible();
+    await expect(this.page.getByText(`남은 시도 횟수: ${count}회`)).toBeVisible();
   }
 
   /** rate-limit 차단 메시지가 노출되는지 단언한다. */
