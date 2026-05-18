@@ -9,10 +9,10 @@ type SuiteLastRunSectionProps = {
 
 export const SuiteLastRunSection = ({ lastRun }: SuiteLastRunSectionProps) => {
   return (
-    <section className="col-span-6">
+    <section aria-labelledby="suite-last-run-heading" className="col-span-6">
       <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-text-1 font-semibold">마지막 실행</h3>
+          <h3 id="suite-last-run-heading" className="text-text-1 font-semibold">마지막 실행</h3>
           <span
             className={cn(
               'rounded-full px-2 py-0.5 text-xs font-medium',
