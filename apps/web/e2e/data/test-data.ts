@@ -12,3 +12,13 @@ export const ACCESS_TEST_DATA = {
   /** 8자 미만 → 클라이언트 zod 에서 차단 (서버 미도달) */
   shortCode: '123',
 } as const;
+
+export const ASIDE_NAVLINK = {
+  testCase: 'cases',
+  testSuite: 'suites',
+  milestone: 'milestones',
+  testRun: 'runs',
+  checkList: 'checklists',
+  trash: 'trash',
+  settings: 'settings',
+} as const;
