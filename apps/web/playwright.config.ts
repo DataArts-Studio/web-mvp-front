@@ -38,10 +38,25 @@ export default defineConfig({
 
   projects: [
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    // 미인증
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/project.json' },
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: [
+        '**/tests/access/**/*.spec.ts',
+        '**/create-project/**/*.spec.ts',
+        '**/project-search/**/*.spec.ts',
+      ]
+    },
+    // 인증 필요
+    {
+      name: 'chromium-auth',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/project.json',
+      },
       dependencies: ['setup'],
+      testMatch: ['**/tests/dashboard/**/*.spec.ts']
     },
     // 다른 브라우저 추가 시 여기에 추가
     // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
