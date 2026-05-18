@@ -37,9 +37,11 @@ export default defineConfig({
   },
 
   projects: [
+    { name: 'setup', testMatch: /.*\.setup\.ts/ },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/project.json' },
+      dependencies: ['setup'],
     },
     // 다른 브라우저 추가 시 여기에 추가
     // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
