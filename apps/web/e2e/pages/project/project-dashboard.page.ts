@@ -1,6 +1,36 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
+
+
 import { BasePage } from '../base.page';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export class ProjectDashboardPage extends BasePage {
   readonly heading: Locator;
@@ -10,20 +40,20 @@ export class ProjectDashboardPage extends BasePage {
   readonly testCasesSection: Locator;
   readonly testSuitesSection: Locator;
   readonly sidebar: Locator;
+  readonly searchModalButton: Locator;
+  readonly searchModal: Locator;
 
   constructor(page: Page) {
     super(page);
     this.heading = page.getByRole('heading', { name: '대시보드' });
     this.kpiSection = page.locator('[data-tour="kpi-cards"]');
     this.projectInfoCard = page.locator('[data-tour="project-info"]');
-    this.milestoneSection = page.getByText(
-      '테스트 현황asdasdadas총 47개의 케이스11%'
-    );
-    this.testCasesSection = page.getByText('테스트 케이스(52)추가TC-057BVT');
-    this.testSuitesSection = page.getByText(
-      '테스트 스위트(10)추가ㄴㅁㅇㄻㄴㅇㄻㄴㅇㄹㅁㄴㅇㄻㄴㅇ케이스 3개test suite설명 없음케이스 4개test suite 2설명 없음케이스 3개'
-    );
+    this.milestoneSection = page.locator('[data-tour="test-status-chart"]');
+    this.testCasesSection = page.locator('[data-tour="test-cases"]');
+    this.testSuitesSection = page.locator('[data-tour="test-suites"]');
     this.sidebar = page.locator('#aside');
+    this.searchModalButton = page.getByRole('button', { name: '검색' });
+    this.searchModal = page.getByLabel('커맨드 팔레트');
   }
 
   // 인증 후 렌더링 확인
@@ -37,11 +67,29 @@ export class ProjectDashboardPage extends BasePage {
   }
 
   // --- 액션 ---------------------------------------------------------------
-  async enterSearchText(text: string): Promise<void> {}
+  async openSearchModal(type: 'enter' | 'click'): Promise<void> {
+    // 타입별로 모달 오픈
+    if (type === 'click') await this.searchModalButton.click();
+    else await this.searchModalButton.press('Control+k');
+  }
+
+  async enterSearchTextAndSubmit(text: string): Promise<void> {
+
+  }
+
+  async clickSearchActionList(text: string): Promise<void> {}
+
+  async enterSearchActionList(text: string): Promise<void> {}
 
   async clickOnNavigation(path: string): Promise<void> {}
 
   async clickAddButton(type: 'test-case' | 'test-suite'): Promise<void> {}
+
+  async enterInput(locator: Locator, text: string): Promise<void> {}
+
+  async submit(locator: Locator): Promise<void> {}
+
+  async cancel(locator: Locator): Promise<void> {}
 
   // --- 단언 ---------------------------------------------------------------
   async expectLoaded(slug: string): Promise<void> {
@@ -69,5 +117,7 @@ export class ProjectDashboardPage extends BasePage {
 
   async expectNavigationTo(path: string): Promise<void> {}
 
-  async expectSearchBarVisible(): Promise<void> {}
+  async expectSearchBarVisible(): Promise<void> {
+    await expect(this.searchModal).toBeVisible();
+  }
 }
