@@ -16,7 +16,7 @@ import { test } from '../../fixtures/test';
 
 
 /**
- * 대시보드 E2E (FDD-PJT02) — 범위는 tests/dashboard/test-scenario.md 참조.
+ * 대시보드 E2E (FDD-PJT02) — 범위는 scenario/dashboard/test-scenario.md 참조.
  *
  * - 이 스펙은 chromium-auth 프로젝트로 라우팅됨 → storageState + setup 의존.
  *   즉 "이미 인증된 세션" 전제 (dashboardPage.goto 가 게이트 안 거치고 바로 진입).

@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/shared/test/setup-tests.ts'],
+    setupFiles: ['./src/shared/test/setup-scenario.ts'],
     // vitest 는 src/ 의 .test.* 만 본다.
     // Playwright(e2e) 는 e2e/ 의 .spec.* 를 본다 — 경로로 분리(아래 exclude 의 e2e/**)해
     // 같은 .spec.* 라도 vitest 가 e2e 를 수집하지 않는다.

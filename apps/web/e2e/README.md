@@ -77,7 +77,7 @@ e2e/
 ## 실행
 
 ```bash
-pnpm --filter web exec playwright test e2e/tests/access
+pnpm --filter web exec playwright test e2e/scenario/access
 ```
 
 dev 서버 + `sample-project`(식별번호 `123123123`) 시드 필요. fixme 2건은 skip.
