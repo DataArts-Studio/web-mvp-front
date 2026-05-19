@@ -62,11 +62,15 @@ reviews:
     drafts: false # Draft PR은 자동 리뷰 안 함
     auto_incremental_review: true
 
-    # 리뷰 대상 base 브랜치 패턴 (develop + feat/* test/* 간 PR도 리뷰)
+    # 리뷰 대상 base 브랜치. CodeRabbit 에서 정규식으로 평가되므로
+    # 실제 브랜치명으로 앵커링한다. (기존 'develop' 은 실제 브랜치 'dev' 오타였음)
     base_branches:
-      - develop
-      - 'feat/.*'
-      - 'test/.*'
+      - '^main$' # 기본 브랜치 (PR 대상이 main)
+      - '^dev$' # 통합 브랜치
+      - '^feat/.*$'
+      - '^fix/.*$'
+      - '^refactor/.*$'
+      - '^test/.*$'
 
   path_instructions:
     # ── 전역 방침: 아키텍처/구조는 지적 금지, POM 패턴+로직만 ──
