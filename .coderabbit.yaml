@@ -52,7 +52,7 @@ reviews:
   path_filters:
     # 포함 경로
     - 'apps/**/src/**' # 모든 앱(web, backoffice)의 소스 코드
-    - 'apps/web/e2e/**' # E2E 스펙/POM — 없으면 아래 path_instructions 가 적용될 대상이 리뷰 안 됨
+    - 'apps/web/tests/**' # E2E 스펙/POM — 없으면 아래 path_instructions 가 적용될 대상이 리뷰 안 됨
     - 'packages/**/src/**' # 모든 패키지(ui, icons)의 소스 코드
     - '.github/**' # 워크플로우/템플릿 리뷰
 
@@ -74,7 +74,7 @@ reviews:
 
   path_instructions:
     # ── 전역 방침: 아키텍처/구조는 지적 금지, POM 패턴+로직만 ──
-    - path: "apps/web/e2e/**"
+    - path: "apps/web/tests/**"
       instructions: >-
         리뷰 범위 한정: 디렉터리 구조, 파일/폴더 위치, _support 를 도메인마다 둔 배치,
         공용(share) 승격 시점, 추출(extract) 타이밍 같은 "아키텍처/구조" 는 현재 개편
@@ -83,7 +83,7 @@ reviews:
         assertion, 경합/타이밍 버그, 고정 sleep, 잘못된 셀렉터로 다른 요소를 잡음 등)에 집중.
 
     # ── 셀렉터 레이어: _support/locators.ts ──
-    - path: "apps/web/e2e/**/_support/locators.ts"
+    - path: "apps/web/tests/**/_support/locators.ts"
       instructions: >-
         POM 셀렉터 레이어. 패턴 위반만 지적: expect / waitFor / assert / toBeVisible 등
         단언·대기 코드가 있으면 위반(셀렉터 정의 외 행위 금지) — 진입 대기는 flows,
@@ -93,7 +93,7 @@ reviews:
         폴더 위치·export 형태·파일 분리 방식 등 구조는 언급하지 말 것.
 
     # ── 액션 레이어: _support/flows.ts ──
-    - path: "apps/web/e2e/**/_support/flows.ts"
+    - path: "apps/web/tests/**/_support/flows.ts"
       instructions: >-
         POM 액션 레이어. 패턴 위반만 지적: (1) 결과 검증 assertion(URL 이동, 결과
         heading/텍스트/개수, 토스트 내용 등)이 있으면 위반 — spec 으로. 단 "동작 진입
@@ -103,8 +103,8 @@ reviews:
         (고정 sleep, 조건 없는 클릭 연타 등)이면 지적.
         "이 정도는 spec 에 둬도/뽑아도 됐다" 같은 추출 시점/구조 훈수는 하지 말 것.
 
-    # ── spec 레이어: *.e2e.ts ──
-    - path: "apps/web/e2e/**/*.e2e.{ts,tsx}"
+    # ── spec 레이어: *.spec.ts ──
+    - path: "apps/web/tests/**/*.spec.{ts,tsx}"
       instructions: >-
         E2E spec. POM 패턴 위반: (1) 핵심 검증 assertion 을 flows/locators 로 빼서 spec 만
         보고 "무엇을 검증하는지" 안 보이면 위반(검증은 spec 에 남긴다). (2) _support 가 있는
@@ -115,7 +115,7 @@ reviews:
         파일 분리 방식·test.describe 유무·셀렉터 추출 시점 등 구조는 언급하지 말 것.
 
     # ── 테스트 신뢰성·격리 (이 리포 실제 코드 기반 리스크) ──
-    - path: "apps/web/e2e/**/*.e2e.{ts,tsx}"
+    - path: "apps/web/tests/**/*.spec.{ts,tsx}"
       instructions: >-
         실제 spec 에서 반복되는 신뢰성 리스크를 로직 관점으로 지적:
         (1) 서버/DB 영속 상태 생성 후 teardown 부재 — 프로젝트 생성처럼 백엔드에 실데이터를
@@ -140,9 +140,9 @@ reviews:
         spec 은 강제 진입에 가려질 수 있음 — 의도 충돌 시 지적.
 
     # ── 시나리오 ↔ 스펙 정합성 (로직/커버리지 관점만) ──
-    - path: "apps/web/e2e/**/test-scenario.md"
+    - path: "apps/web/tests/**/test-scenario.md"
       instructions: >-
-        같은 폴더 *.e2e.ts 와 비교해 "검증 누락/불일치"라는 로직 관점만 본다: 시나리오에
+        같은 폴더 *.spec.ts 와 비교해 "검증 누락/불일치"라는 로직 관점만 본다: 시나리오에
         명시된 흐름·기대 결과가 스펙에서 검증되지 않거나, 스펙이 시나리오와 다른 동작을
         검증하면 지적. 문서 포맷·구조·문서화 스타일은 지적하지 말 것.
 

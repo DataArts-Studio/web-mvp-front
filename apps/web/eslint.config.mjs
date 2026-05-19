@@ -117,7 +117,7 @@ const eslintConfig = defineConfig([
 
   // [E2E 전용 규칙] Playwright fixture 의 `use` 콜백을 React 훅으로 오인하는 false positive 제거
   {
-    files: ['e2e/**/*.{ts,tsx}', 'playwright.config.ts'],
+    files: ['tests/**/*.{ts,tsx}', 'playwright.config.ts'],
     rules: {
       'react-hooks/rules-of-hooks': 'off',
       'react-hooks/exhaustive-deps': 'off',

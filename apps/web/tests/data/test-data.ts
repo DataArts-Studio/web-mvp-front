@@ -12,3 +12,21 @@ export const ACCESS_TEST_DATA = {
   /** 8자 미만 → 클라이언트 zod 에서 차단 (서버 미도달) */
   shortCode: '123',
 } as const;
+
+export const ASIDE_NAV_LINK = {
+  TESTCASE: 'cases',
+  TESTSUITE: 'suites',
+  MILESTONE: 'milestones',
+  TEST_RUN: 'runs',
+  CHECKLIST: 'checklists',
+  TRASH: 'trash',
+  SETTINGS: 'settings',
+} as const;
+
+export const caseFactory = {
+  uniqueTitle: () => `E2E Test Case ${Date.now()}`,
+};
+
+export const suiteFactory = {
+  uniqueTitle: () => `E2E Test Suite ${Date.now()}`,
+};

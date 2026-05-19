@@ -21,6 +21,8 @@
 
 import { test as base, expect } from '@playwright/test';
 import { ProjectAccessPage, ProjectDashboardPage } from '../pages';
+import { ProjectTestcasePage } from '../pages/project/project-testcase.page';
+import { ProjectTestsuitePage } from '../pages/project/project-testsuite.page';
 
 /**
  * 베타/DB 장애 안내 dialog 의 sessionStorage dismiss 플래그.
@@ -35,6 +37,8 @@ const NOTICE_DISMISS_KEYS = [
 type PomFixtures = {
   accessPage: ProjectAccessPage;
   dashboardPage: ProjectDashboardPage;
+  testCasePage: ProjectTestcasePage;
+  testSuitePage: ProjectTestsuitePage;
 };
 
 /**
@@ -65,6 +69,16 @@ export const test = base.extend<PomFixtures>({
   // 대시보드 로드·프로젝트명·KPI·사이드바 노출 단언 담당.
   dashboardPage: async ({ page }, use) => {
     await use(new ProjectDashboardPage(page));
+  },
+
+  // ProjectTestcasePage: 프로젝트 내 테스트케이스 관리 페이지
+  testCasePage: async ({ page }, use) => {
+    await use(new ProjectTestcasePage(page));
+  },
+
+  // ProjectTestsuitePage: 프로젝트 내 테스트 스위트 관리 페이지
+  testSuitePage: async ({ page }, use) => {
+    await use(new ProjectTestsuitePage(page));
   },
 });
 

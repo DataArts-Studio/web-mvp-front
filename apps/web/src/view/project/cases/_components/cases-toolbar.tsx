@@ -63,7 +63,7 @@ export const CasesToolbar = ({
           className="flex shrink-0 items-center gap-2"
           title="테스트 케이스 생성"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
           <span className="hidden lg:inline leading-none">새 케이스</span>
         </ActionToolbar.Action>
       </div>
@@ -72,15 +72,16 @@ export const CasesToolbar = ({
       <div className="flex items-center gap-3 py-3">
         <ActionToolbar.Search
           placeholder="검색..."
+          aria-label="테스트 케이스 검색"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
         <Select.Root value={sortOption} onValueChange={onSortChange} className="relative shrink-0 w-fit">
-          <Select.Trigger className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
-            <ArrowUpDown className="h-4 w-4 shrink-0" />
+          <Select.Trigger aria-label={`정렬: ${currentSortLabel}`} className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors cursor-pointer whitespace-nowrap">
+            <ArrowUpDown className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="hidden sm:inline">정렬: {currentSortLabel}</span>
             <span className="sm:hidden">정렬</span>
-            <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
+            <ChevronDown className="text-text-3 h-4 w-4 shrink-0" aria-hidden="true" />
           </Select.Trigger>
           <Select.Content className="absolute top-full left-0 min-w-full mt-1 z-50 rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
             {SORT_OPTIONS.map((option) => (

@@ -1,4 +1,5 @@
-import React from 'react';
+'use client';
+import React, { useEffect, useId, useRef } from 'react';
 
 import { TestSuiteCard } from '@/entities/test-suite';
 import { DSButton } from '@testea/ui';
@@ -35,23 +36,23 @@ const TAG_TONE_STYLES: Record<string, string> = {
 
 const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = {
   passed: {
-    icon: <CheckCircle className="h-4 w-4" />,
+    icon: <CheckCircle className="h-4 w-4" aria-hidden="true" />,
     color: 'text-green-400',
   },
   failed: {
-    icon: <XCircle className="h-4 w-4" />,
+    icon: <XCircle className="h-4 w-4" aria-hidden="true" />,
     color: 'text-red-400',
   },
   blocked: {
-    icon: <AlertCircle className="h-4 w-4" />,
+    icon: <AlertCircle className="h-4 w-4" aria-hidden="true" />,
     color: 'text-amber-400',
   },
   running: {
-    icon: <Play className="h-4 w-4" />,
+    icon: <Play className="h-4 w-4" aria-hidden="true" />,
     color: 'text-blue-400',
   },
   not_run: {
-    icon: <ListChecks className="h-4 w-4" />,
+    icon: <ListChecks className="h-4 w-4" aria-hidden="true" />,
     color: 'text-slate-400',
   },
 };
@@ -65,6 +66,47 @@ export const TestSuiteSideView = ({
 }: TestSuiteSideViewProps) => {
   const tagStyle = TAG_TONE_STYLES[suite.tag.tone] || TAG_TONE_STYLES.neutral;
 
+  const dialogRef = useRef<HTMLElement>(null);
+  const titleId = useId();
+
+  // 사이드 패널 a11y: 진입 시 포커스 이동, 닫을 때 트리거로 포커스 복귀,
+  // ESC 닫기, Tab 포커스 트랩(패널 밖으로 못 나가게).
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const node = dialogRef.current;
+    node?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !node) return;
+      const focusables = node.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    node?.addEventListener('keydown', handleKeyDown);
+    return () => {
+      node?.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
+    // 마운트/언마운트 시 1회만 (onClose 는 안정적)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
     {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
@@ -73,13 +115,20 @@ export const TestSuiteSideView = ({
       onClick={onClose}
       aria-hidden="true"
     />
-    <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out">
+    <section
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      tabIndex={-1}
+      className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out outline-none"
+    >
       <div className="flex flex-col gap-6">
         {/* 헤더 */}
         <header className="flex flex-col gap-3">
           <div className="flex justify-between">
-            <DSButton size="small" variant="ghost" className="px-2" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <DSButton size="small" variant="ghost" className="px-2" onClick={onClose} aria-label="닫기">
+              <X className="h-4 w-4" aria-hidden="true" />
             </DSButton>
             <DSButton
               size="small"
@@ -87,13 +136,13 @@ export const TestSuiteSideView = ({
               className="flex items-center gap-1 px-2"
               onClick={onEdit}
             >
-              <Edit2 className="h-4 w-4" />
+              <Edit2 className="h-4 w-4" aria-hidden="true" />
               <span>수정</span>
             </DSButton>
           </div>
 
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold">{suite.title}</h2>
+            <h2 id={titleId} className="text-xl font-semibold">{suite.title}</h2>
             <span className={cn('rounded-full px-3 py-1 text-sm font-medium', tagStyle)}>
               {suite.tag.label}
             </span>
@@ -102,7 +151,7 @@ export const TestSuiteSideView = ({
           {/* 연결된 마일스톤 */}
           {suite.linkedMilestone && (
             <div className="text-text-3 flex items-center gap-1.5 text-sm">
-              <Flag className="h-4 w-4" strokeWidth={1.5} />
+              <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
               <span>
                 {suite.linkedMilestone.title} ({suite.linkedMilestone.versionLabel})
               </span>
@@ -122,7 +171,7 @@ export const TestSuiteSideView = ({
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
             <div className="text-text-3 flex items-center gap-1.5 text-sm">
-              <ListChecks className="h-4 w-4" strokeWidth={1.5} />
+              <ListChecks className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
               <span>테스트 케이스</span>
             </div>
             <span className="text-text-1 text-xl font-bold">{suite.caseCount}개</span>
@@ -130,7 +179,7 @@ export const TestSuiteSideView = ({
 
           <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
             <div className="text-text-3 flex items-center gap-1.5 text-sm">
-              <History className="h-4 w-4" strokeWidth={1.5} />
+              <History className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
               <span>실행 이력</span>
             </div>
             <span className="text-text-1 text-xl font-bold">{suite.executionHistoryCount}회</span>
@@ -198,6 +247,7 @@ export const TestSuiteSideView = ({
                     title={`${formatDate(run.runAt)} - ${run.passed}/${run.total} passed`}
                   >
                     <div
+                      aria-hidden="true"
                       className={cn(
                         'mx-auto mb-1 h-2 w-2 rounded-full',
                         run.status === 'passed'
@@ -218,7 +268,7 @@ export const TestSuiteSideView = ({
         {/* 액션 버튼 */}
         <div className="border-line-2 mt-auto flex gap-2 border-t pt-4">
           <DSButton className="flex flex-1 items-center justify-center gap-2" onClick={onRun}>
-            <Play className="h-4 w-4" />
+            <Play className="h-4 w-4" aria-hidden="true" />
             테스트 실행
           </DSButton>
           <DSButton
@@ -226,7 +276,7 @@ export const TestSuiteSideView = ({
             className="flex items-center gap-2 text-red-400"
             onClick={onDelete}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
             삭제
           </DSButton>
         </div>

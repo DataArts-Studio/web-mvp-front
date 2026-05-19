@@ -11,13 +11,13 @@ type SuiteRecentRunsProps = {
 
 export const SuiteRecentRuns = ({ recentRuns }: SuiteRecentRunsProps) => {
   return (
-    <section className="col-span-6 flex flex-col gap-4">
-      <h2 className="typo-h2-heading">최근 실행 이력</h2>
+    <section aria-labelledby="suite-recent-runs-heading" className="col-span-6 flex flex-col gap-4">
+      <h2 id="suite-recent-runs-heading" className="typo-h2-heading">최근 실행 이력</h2>
 
       {recentRuns.length === 0 ? (
         <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
           <EmptyState
-            icon={<PlayCircle className="h-8 w-8" />}
+            icon={<PlayCircle className="h-8 w-8" aria-hidden="true" />}
             title="테스트 실행 이력이 없습니다."
             description="스위트 기반 테스트 실행을 생성하세요."
           />
@@ -50,7 +50,14 @@ export const SuiteRecentRuns = ({ recentRuns }: SuiteRecentRunsProps) => {
                     <span className="text-amber-400">{run.blocked} blocked</span>
                   </div>
                   <div className="w-20">
-                    <div className="bg-bg-3 h-2 w-full rounded-full">
+                    <div
+                      role="progressbar"
+                      aria-valuenow={runPassRate}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`통과율 ${runPassRate}%`}
+                      className="bg-bg-3 h-2 w-full rounded-full"
+                    >
                       <div
                         className="bg-primary h-full rounded-full"
                         style={{ width: `${runPassRate}%` }}
