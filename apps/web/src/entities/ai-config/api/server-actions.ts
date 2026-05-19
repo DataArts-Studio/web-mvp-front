@@ -184,6 +184,7 @@ export const saveGeneratedCases = async (input: {
 
     const { projectId, suiteId, cases } = parsed.data;
     const db = getDatabase();
+    const now = new Date();
 
     const count = await db.transaction(async (tx) => {
       // display_id 최대값 조회
@@ -210,6 +211,10 @@ export const saveGeneratedCases = async (input: {
             case_key: `TC-${String(displayId).padStart(3, '0')}`,
             sort_order: 0,
             result_status: 'untested' as const,
+            // DB 컬럼에 DEFAULT now() 가 박혀있지 않아 drizzle 의 DEFAULT 키워드만으로는
+            // NOT NULL 제약에서 막힌다. 단일 케이스 생성과 동일하게 값을 명시한다.
+            created_at: now,
+            updated_at: now,
           };
         })
       );
