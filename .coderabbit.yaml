@@ -52,6 +52,7 @@ reviews:
   path_filters:
     # 포함 경로
     - 'apps/**/src/**' # 모든 앱(web, backoffice)의 소스 코드
+    - 'apps/web/app/**' # Next.js App Router (layout/page/route handler) — app/api 보안 라우트 포함
     - 'apps/web/tests/**' # E2E 스펙/POM — 없으면 아래 path_instructions 가 적용될 대상이 리뷰 안 됨
     - 'packages/**/src/**' # 모든 패키지(ui, icons)의 소스 코드
     - '.github/**' # 워크플로우/템플릿 리뷰
