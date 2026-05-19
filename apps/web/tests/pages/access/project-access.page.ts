@@ -1,4 +1,5 @@
 import { type Locator, type Page, expect } from '@playwright/test';
+
 import { BasePage } from '../base.page';
 
 /**
@@ -46,7 +47,7 @@ export class ProjectAccessPage extends BasePage {
     // pending 중 라벨이 "확인 중..." 으로 바뀐다.
     this.submitButton = page.getByRole('button', { name: /접근하기|확인 중/ });
     this.passwordToggle = page.locator(
-      'button:has(svg.lucide-eye), button:has(svg.lucide-eye-off)',
+      'button:has(svg.lucide-eye), button:has(svg.lucide-eye-off)'
     );
     this.remainingAttempts = page.getByText(/남은 시도 횟수: \d+회/);
   }
@@ -77,7 +78,10 @@ export class ProjectAccessPage extends BasePage {
 
   /** 식별번호 입력란을 채운다. */
   async enterCode(code: string): Promise<void> {
-    await this.codeInput.fill(code);
+    await expect(async () => {
+      await this.codeInput.fill(code);
+      await expect(this.codeInput).toHaveValue(code, { timeout: 1000 });
+    }).toPass({ timeout: 10_000 });
   }
 
   /** "접근하기" 버튼을 클릭한다. */
@@ -108,10 +112,7 @@ export class ProjectAccessPage extends BasePage {
    * 보호 라우트 접근이 access 페이지로 리다이렉트됐는지 단언한다.
    * 미들웨어는 `?redirect=<원래 경로>` 를 부착한다.
    */
-  async expectRedirectedFromProtected(
-    slug: string,
-    fromPath: string,
-  ): Promise<void> {
+  async expectRedirectedFromProtected(slug: string, fromPath: string): Promise<void> {
     await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}/access`));
     const redirect = new URL(this.page.url()).searchParams.get('redirect');
     expect(redirect).toBe(fromPath);
@@ -119,7 +120,7 @@ export class ProjectAccessPage extends BasePage {
 
   /** 에러 메시지가 노출되는지 단언한다. (`ProjectAccessPage.messages` 사용 권장) */
   async expectError(message: string): Promise<void> {
-    await expect(this.page.getByText(message, { exact: false })).toBeVisible();
+    await expect(this.page.getByText(message, { exact: true })).toBeVisible();
   }
 
   /** "남은 시도 횟수: N회" 안내가 노출되는지 단언한다. */
@@ -128,9 +129,7 @@ export class ProjectAccessPage extends BasePage {
       await expect(this.remainingAttempts).toBeVisible();
       return;
     }
-    await expect(
-      this.page.getByText(`남은 시도 횟수: ${count}회`),
-    ).toBeVisible();
+    await expect(this.page.getByText(`남은 시도 횟수: ${count}회`)).toBeVisible();
   }
 
   /** rate-limit 차단 메시지가 노출되는지 단언한다. */

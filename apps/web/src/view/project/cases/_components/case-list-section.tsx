@@ -128,14 +128,18 @@ export const CaseListSection = ({
 
   return (
     <div className="mx-auto w-full max-w-[1200px] flex-1 px-6 lg:px-10 py-6">
-      <section className={cn(
-        'rounded-3 border-line-2 bg-bg-2 shadow-1 border transition-opacity',
-        isFetching && hasData ? 'opacity-60' : 'opacity-100',
-      )}>
+      <section
+        aria-label="테스트 케이스 목록"
+        aria-busy={isFetching && hasData ? true : undefined}
+        className={cn(
+          'rounded-3 border-line-2 bg-bg-2 shadow-1 border transition-opacity',
+          isFetching && hasData ? 'opacity-60' : 'opacity-100',
+        )}
+      >
         <QuickCreateRow projectId={projectId} selectedSuiteId={selectedSuiteId} />
 
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-12">
+          <div role="status" className="flex flex-col items-center justify-center gap-2 py-12">
             <p className="typo-body2-normal text-text-3">
               {debouncedSearch || selectedSuiteId !== 'all' ? '검색 결과가 없습니다.' : '테스트 케이스가 없습니다.'}
             </p>
@@ -152,13 +156,24 @@ export const CaseListSection = ({
                 {displayItems.map((item) => (
                   <SortableTestCaseRow key={item.isOptimistic ? item.id : item.caseKey} id={item.id} disabled={!isCustomSort || item.isOptimistic}>
                     <div
+                      role="button"
+                      tabIndex={item.isOptimistic ? -1 : 0}
+                      aria-label={`테스트 케이스 ${item.caseKey} ${item.title}`}
                       className={cn(
                         'group flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors hover:bg-bg-3',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
                         item.isOptimistic && 'opacity-50 pointer-events-none animate-pulse',
                       )}
                       onClick={() => {
                         track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
                         onSelectCase(item.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
+                          onSelectCase(item.id);
+                        }
                       }}
                     >
                       <TestCaseCard testCase={item} onDuplicate={handleDuplicate} />
