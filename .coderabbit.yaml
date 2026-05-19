@@ -56,6 +56,8 @@ reviews:
     - 'apps/web/tests/**' # E2E 스펙/POM — 없으면 아래 path_instructions 가 적용될 대상이 리뷰 안 됨
     - 'packages/**/src/**' # 모든 패키지(ui, icons)의 소스 코드
     - '.github/**' # 워크플로우/템플릿 리뷰
+    - 'AGENTS.md' # 자동 리뷰 에이전트 상시 지침 — 변경 시 리뷰 대상
+    - 'apps/**/AGENTS.md' # 앱별 에이전트 지침(back-office 등)
 
   # PR 생성/업데이트 시 자동 리뷰 실행 여부
   auto_review:
@@ -63,15 +65,11 @@ reviews:
     drafts: false # Draft PR은 자동 리뷰 안 함
     auto_incremental_review: true
 
-    # 리뷰 대상 base 브랜치. CodeRabbit 에서 정규식으로 평가되므로
-    # 실제 브랜치명으로 앵커링한다. (기존 'develop' 은 실제 브랜치 'dev' 오타였음)
+    # 리뷰 대상 base 브랜치(= PR 의 target). 정규식으로 평가됨.
+    # 모든 브랜치로 향하는 PR 을 자동 리뷰하도록 catch-all 로 둔다.
+    # (이전엔 main/dev/feat·fix·refactor·test 만 명시 → 사실상 main·dev 한정이었음)
     base_branches:
-      - '^main$' # 기본 브랜치 (PR 대상이 main)
-      - '^dev$' # 통합 브랜치
-      - '^feat/.*$'
-      - '^fix/.*$'
-      - '^refactor/.*$'
-      - '^test/.*$'
+      - '.*' # 모든 base 브랜치
 
   path_instructions:
     # ── 전역 방침: 아키텍처/구조는 지적 금지, POM 패턴+로직만 ──
