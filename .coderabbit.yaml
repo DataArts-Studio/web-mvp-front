@@ -56,6 +56,8 @@ reviews:
     - 'apps/web/tests/**' # E2E 스펙/POM — 없으면 아래 path_instructions 가 적용될 대상이 리뷰 안 됨
     - 'packages/**/src/**' # 모든 패키지(ui, icons)의 소스 코드
     - '.github/**' # 워크플로우/템플릿 리뷰
+    - 'AGENTS.md' # 자동 리뷰 에이전트 상시 지침 — 변경 시 리뷰 대상
+    - 'apps/**/AGENTS.md' # 앱별 에이전트 지침(back-office 등)
 
   # PR 생성/업데이트 시 자동 리뷰 실행 여부
   auto_review:
