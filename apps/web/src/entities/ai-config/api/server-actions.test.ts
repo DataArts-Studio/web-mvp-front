@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CryptoError } from '@/shared/lib/crypto';
+import { AiError } from '../model/ai-error';
 
 // ============================================================================
 // Mocks
@@ -6,10 +8,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockEncrypt = vi.fn((key: string) => `encrypted_${key}`);
 const mockDecrypt = vi.fn((key: string) => key.replace('encrypted_', ''));
 
-vi.mock('@/shared/lib/crypto', () => ({
-  encrypt: (key: string) => mockEncrypt(key),
-  decrypt: (key: string) => mockDecrypt(key),
-}));
+vi.mock('@/shared/lib/crypto', async (importActual) => {
+  // encrypt/decrypt 만 모킹하고 CryptoError 등 실제 export 는 유지
+  const actual = await importActual<typeof import('@/shared/lib/crypto')>();
+  return {
+    ...actual,
+    encrypt: (key: string) => mockEncrypt(key),
+    decrypt: (key: string) => mockDecrypt(key),
+  };
+});
 
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
@@ -230,6 +237,47 @@ describe('getDecryptedApiKey', () => {
 
     expect(result).toBeNull();
     expect(mockDecrypt).not.toHaveBeenCalled();
+  });
+
+  it('복호화 인증 실패(키 불일치)는 KEY_UNDECRYPTABLE AiError 로 변환된다', async () => {
+    mockLimit.mockResolvedValue([createMockAiConfigRow()]);
+    mockDecrypt.mockImplementationOnce(() => {
+      throw new CryptoError('AUTH_FAILED', 'unable to authenticate data');
+    });
+
+    const err = await getDecryptedApiKey(PROJECT_ID).catch((e) => e);
+
+    expect(err).toBeInstanceOf(AiError);
+    expect(err.kind).toBe('KEY_UNDECRYPTABLE');
+    expect(err.httpStatus).toBe(409);
+    expect(err.report).toBe(false);
+  });
+
+  it('암호화 키 env 누락은 CRYPTO_MISCONFIG AiError(500, report) 로 변환된다', async () => {
+    mockLimit.mockResolvedValue([createMockAiConfigRow()]);
+    mockDecrypt.mockImplementationOnce(() => {
+      throw new CryptoError('KEY_NOT_SET', 'GITHUB_TOKEN_ENCRYPTION_KEY is not set');
+    });
+
+    const err = await getDecryptedApiKey(PROJECT_ID).catch((e) => e);
+
+    expect(err).toBeInstanceOf(AiError);
+    expect(err.kind).toBe('CRYPTO_MISCONFIG');
+    expect(err.httpStatus).toBe(500);
+    expect(err.report).toBe(true);
+  });
+
+  it('CryptoError 가 아닌 예외는 그대로 전파한다', async () => {
+    mockLimit.mockResolvedValue([createMockAiConfigRow()]);
+    mockDecrypt.mockImplementationOnce(() => {
+      throw new Error('some unrelated failure');
+    });
+
+    const err = await getDecryptedApiKey(PROJECT_ID).catch((e) => e);
+
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(AiError);
+    expect(err.message).toBe('some unrelated failure');
   });
 });
 

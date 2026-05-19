@@ -3,9 +3,10 @@
 import * as Sentry from '@sentry/nextjs';
 import { and, eq, sql } from 'drizzle-orm';
 import { getDatabase, projectAiConfigs, testCases } from '@testea/db';
-import { encrypt, decrypt } from '@/shared/lib/crypto';
+import { encrypt, decrypt, CryptoError } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
 import type { AiConfig } from '../model/types';
+import { AiError } from '../model/ai-error';
 import { SaveAiConfigSchema, SaveGeneratedCasesSchema } from '../model/schema';
 
 // --- AI 설정 저장/업데이트 (upsert) ---
@@ -117,11 +118,18 @@ export const getDecryptedApiKey = async (
 
   if (!config) return null;
 
-  return {
-    provider: config.provider,
-    apiKey: decrypt(config.api_key),
-    model: config.model,
-  };
+  try {
+    return {
+      provider: config.provider,
+      apiKey: decrypt(config.api_key),
+      model: config.model,
+    };
+  } catch (error) {
+    // 복호화 실패(키 env 누락/형식 오류/인증 실패)를 도메인 에러로 승격해
+    // route 가 의미 있는 상태코드·메시지로 응답하도록 한다.
+    if (error instanceof CryptoError) throw AiError.fromCryptoError(error);
+    throw error;
+  }
 };
 
 // --- AI 설정 삭제 (소프트 딜리트) ---
