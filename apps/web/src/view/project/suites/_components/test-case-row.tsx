@@ -14,8 +14,10 @@ export const TestCaseRow = ({ testCase, onSelect }: TestCaseRowProps) => {
     <button
       key={testCase.id}
       type="button"
+      aria-label={`테스트 케이스 ${testCase.caseKey} ${testCase.title}, 상태 ${statusConfig.label}`}
       className={cn(
         "hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 text-left transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
         testCase.isOptimistic && "opacity-50 pointer-events-none animate-pulse"
       )}
       onClick={() => onSelect(testCase.id)}

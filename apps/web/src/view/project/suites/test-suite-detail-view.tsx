@@ -242,7 +242,7 @@ const TestSuiteDetailView = () => {
             href={`/projects/${params.slug}/suites`}
             className="text-text-3 hover:text-text-1 flex w-fit items-center gap-1 text-sm transition-colors"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             스위트 목록으로
           </Link>
 
@@ -258,7 +258,7 @@ const TestSuiteDetailView = () => {
               </div>
               <div className="text-text-3 flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4" strokeWidth={1.5} />
+                  <Calendar className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
                   <span>생성일: {formatDate(suite.createdAt)}</span>
                 </div>
                 {suite.linkedMilestone && (
@@ -266,7 +266,7 @@ const TestSuiteDetailView = () => {
                     href={`/projects/${params.slug}/milestones/${suite.linkedMilestone.id}`}
                     className="hover:text-text-1 flex items-center gap-1.5 transition-colors"
                   >
-                    <Tag className="h-4 w-4" strokeWidth={1.5} />
+                    <Tag className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
                     <span className="hover:underline">
                       {suite.linkedMilestone.title} ({suite.linkedMilestone.versionLabel})
                     </span>
@@ -277,7 +277,7 @@ const TestSuiteDetailView = () => {
 
             <div className="flex gap-2">
               <DSButton variant="ghost" className="flex items-center gap-2" onClick={() => setIsEditing(true)}>
-                <Edit2 className="h-4 w-4" />
+                <Edit2 className="h-4 w-4" aria-hidden="true" />
                 수정
               </DSButton>
               <ArchiveButton targetType='suite' targetId={suite.id} onSuccess={() => router.push(`/projects/${params.slug}/suites`)}/>
@@ -297,7 +297,7 @@ const TestSuiteDetailView = () => {
           <section className="col-span-6">
             <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
               <div className="mb-3 flex items-center gap-2">
-                <FolderTree className="text-text-3 h-4 w-4" strokeWidth={1.5} />
+                <FolderTree className="text-text-3 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
                 <h3 className="text-text-3 font-semibold">포함된 경로</h3>
               </div>
               <div className="flex flex-wrap gap-2">
