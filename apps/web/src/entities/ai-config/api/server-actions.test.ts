@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CryptoError } from '@/shared/lib/crypto';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { AiError } from '../model/ai-error';
 
 // ============================================================================
@@ -300,7 +301,7 @@ describe('deleteAiConfig', () => {
     expect(result.success).toBe(true);
     expect(mockUpdate).toHaveBeenCalled();
     expect(mockUpdateSet).toHaveBeenCalledWith(
-      expect.objectContaining({ lifecycle_status: 'DELETED' }),
+      expect.objectContaining({ lifecycle_status: 'DELETED' })
     );
   });
 
@@ -346,10 +347,7 @@ describe('saveGeneratedCases', () => {
 
     const result = await saveGeneratedCases({
       projectId: PROJECT_ID,
-      cases: [
-        { name: '테스트 케이스 1' },
-        { name: '테스트 케이스 2' },
-      ],
+      cases: [{ name: '테스트 케이스 1' }, { name: '테스트 케이스 2' }],
     });
 
     expect(result.success).toBe(true);

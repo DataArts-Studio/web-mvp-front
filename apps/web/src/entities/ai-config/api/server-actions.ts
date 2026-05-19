@@ -1,18 +1,22 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { and, eq, sql } from 'drizzle-orm';
-import { getDatabase, projectAiConfigs, testCases } from '@testea/db';
-import { encrypt, decrypt, CryptoError } from '@/shared/lib/crypto';
+import { CryptoError, decrypt, encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
-import type { AiConfig } from '../model/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, projectAiConfigs, testCases } from '@testea/db';
+import { and, eq, sql } from 'drizzle-orm';
+
 import { AiError } from '../model/ai-error';
 import { SaveAiConfigSchema, SaveGeneratedCasesSchema } from '../model/schema';
+import type { AiConfig } from '../model/types';
 
 // --- AI 설정 저장/업데이트 (upsert) ---
-export const saveAiConfig = async (
-  input: { projectId: string; provider: string; apiKey: string; model?: string },
-): Promise<ActionResult<{ config: AiConfig }>> => {
+export const saveAiConfig = async (input: {
+  projectId: string;
+  provider: string;
+  apiKey: string;
+  model?: string;
+}): Promise<ActionResult<{ config: AiConfig }>> => {
   try {
     const parsed = SaveAiConfigSchema.safeParse(input);
     if (!parsed.success) {
@@ -65,9 +69,7 @@ export const saveAiConfig = async (
 };
 
 // --- AI 설정 조회 ---
-export const getAiConfig = async (
-  projectId: string,
-): Promise<ActionResult<AiConfig | null>> => {
+export const getAiConfig = async (projectId: string): Promise<ActionResult<AiConfig | null>> => {
   try {
     const db = getDatabase();
 
@@ -81,7 +83,12 @@ export const getAiConfig = async (
         updated_at: projectAiConfigs.updated_at,
       })
       .from(projectAiConfigs)
-      .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')))
+      .where(
+        and(
+          eq(projectAiConfigs.project_id, projectId),
+          eq(projectAiConfigs.lifecycle_status, 'ACTIVE')
+        )
+      )
       .limit(1);
 
     if (!config) return { success: true, data: null };
@@ -106,14 +113,19 @@ export const getAiConfig = async (
 
 // --- AI 설정에서 복호화된 키 조회 (내부용) ---
 export const getDecryptedApiKey = async (
-  projectId: string,
+  projectId: string
 ): Promise<{ provider: string; apiKey: string; model: string | null } | null> => {
   const db = getDatabase();
 
   const [config] = await db
     .select()
     .from(projectAiConfigs)
-    .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')))
+    .where(
+      and(
+        eq(projectAiConfigs.project_id, projectId),
+        eq(projectAiConfigs.lifecycle_status, 'ACTIVE')
+      )
+    )
     .limit(1);
 
   if (!config) return null;
@@ -133,15 +145,18 @@ export const getDecryptedApiKey = async (
 };
 
 // --- AI 설정 삭제 (소프트 딜리트) ---
-export const deleteAiConfig = async (
-  projectId: string,
-): Promise<ActionResult<null>> => {
+export const deleteAiConfig = async (projectId: string): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
     await db
       .update(projectAiConfigs)
       .set({ lifecycle_status: 'DELETED', updated_at: new Date() })
-      .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')));
+      .where(
+        and(
+          eq(projectAiConfigs.project_id, projectId),
+          eq(projectAiConfigs.lifecycle_status, 'ACTIVE')
+        )
+      );
     return { success: true, data: null };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'deleteAiConfig' } });
@@ -150,9 +165,17 @@ export const deleteAiConfig = async (
 };
 
 // --- AI 생성된 TC 일괄 저장 ---
-export const saveGeneratedCases = async (
-  input: { projectId: string; suiteId?: string; cases: { name: string; preCondition?: string; steps?: string; expectedResult?: string; tags?: string[] }[] },
-): Promise<ActionResult<{ count: number }>> => {
+export const saveGeneratedCases = async (input: {
+  projectId: string;
+  suiteId?: string;
+  cases: {
+    name: string;
+    preCondition?: string;
+    steps?: string;
+    expectedResult?: string;
+    tags?: string[];
+  }[];
+}): Promise<ActionResult<{ count: number }>> => {
   try {
     const parsed = SaveGeneratedCasesSchema.safeParse(input);
     if (!parsed.success) {
@@ -188,7 +211,7 @@ export const saveGeneratedCases = async (
             sort_order: 0,
             result_status: 'untested' as const,
           };
-        }),
+        })
       );
 
       return cases.length;

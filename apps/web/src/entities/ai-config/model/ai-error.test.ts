@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
 import { CryptoError } from '@/shared/lib/crypto';
+import { describe, expect, it } from 'vitest';
+
 import { AiError } from './ai-error';
 
 describe('AiError.fromCryptoError', () => {

@@ -34,7 +34,7 @@ function getEncryptionKey(): Buffer {
   if (buf.length !== KEY_LENGTH) {
     throw new CryptoError(
       'KEY_INVALID',
-      `GITHUB_TOKEN_ENCRYPTION_KEY must be ${KEY_LENGTH}-byte hex (got ${buf.length} bytes)`,
+      `GITHUB_TOKEN_ENCRYPTION_KEY must be ${KEY_LENGTH}-byte hex (got ${buf.length} bytes)`
     );
   }
   return buf;
@@ -74,7 +74,7 @@ export function decrypt(ciphertext: string): string {
     throw new CryptoError(
       'AUTH_FAILED',
       error instanceof Error ? error.message : 'decryption failed',
-      { cause: error },
+      { cause: error }
     );
   }
 }

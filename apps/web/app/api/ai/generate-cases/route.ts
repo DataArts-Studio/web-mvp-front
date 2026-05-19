@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
-import { GenerateCasesSchema, GeneratedTestCaseSchema } from '@/entities/ai-config/model/schema';
+
 import { getDecryptedApiKey } from '@/entities/ai-config/api/server-actions';
 import { AiError } from '@/entities/ai-config/model/ai-error';
+import { GenerateCasesSchema, GeneratedTestCaseSchema } from '@/entities/ai-config/model/schema';
 import { getMonthlyUsage, recordUsage } from '@/entities/ai-usage/api/server-actions';
 import { SYSTEM_PROMPT, buildUserPrompt } from '@/features/ai-generate/model/prompts';
+import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 
 const MAX_CASES_PER_REQUEST = 10;
@@ -36,7 +37,12 @@ async function callOpenAI(apiKey: string, model: string, systemPrompt: string, u
   return data.choices[0]?.message?.content || '';
 }
 
-async function callAnthropic(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
+async function callAnthropic(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string
+) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -74,7 +80,7 @@ async function callGemini(apiKey: string, model: string, systemPrompt: string, u
         contents: [{ parts: [{ text: userPrompt }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 4000 },
       }),
-    },
+    }
   );
 
   if (!res.ok) {
@@ -99,10 +105,7 @@ export async function POST(req: NextRequest) {
     const parsed = GenerateCasesSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.errors[0].message },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
 
     const { projectId, description, language } = parsed.data;
@@ -112,7 +115,7 @@ export async function POST(req: NextRequest) {
     if (!config) {
       return NextResponse.json(
         { error: 'AI 설정이 되어 있지 않습니다. 설정 페이지에서 API 키를 등록해주세요.' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -123,7 +126,7 @@ export async function POST(req: NextRequest) {
       if (used >= limit) {
         return NextResponse.json(
           { error: `이번 달 사용 한도(${limit}건)를 초과했습니다. 다음 달에 다시 이용해주세요.` },
-          { status: 429 },
+          { status: 429 }
         );
       }
     }
@@ -137,7 +140,12 @@ export async function POST(req: NextRequest) {
     } else if (config.provider === 'gemini') {
       rawResponse = await callGemini(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
     } else {
-      rawResponse = await callAnthropic(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
+      rawResponse = await callAnthropic(
+        config.apiKey,
+        config.model || '',
+        SYSTEM_PROMPT,
+        userPrompt
+      );
     }
 
     // JSON 파싱 + 검증
@@ -166,17 +174,11 @@ export async function POST(req: NextRequest) {
           extra: { action: 'generateCases', kind: error.kind, ...error.context },
         });
       }
-      return NextResponse.json(
-        { error: error.userMessage },
-        { status: error.httpStatus },
-      );
+      return NextResponse.json({ error: error.userMessage }, { status: error.httpStatus });
     }
 
     // 분류되지 않은 예상 밖 에러만 불투명 500 + 보고
     Sentry.captureException(error, { extra: { action: 'generateCases' } });
-    return NextResponse.json(
-      { error: '생성에 실패했습니다. 다시 시도해주세요.' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: '생성에 실패했습니다. 다시 시도해주세요.' }, { status: 500 });
   }
 }

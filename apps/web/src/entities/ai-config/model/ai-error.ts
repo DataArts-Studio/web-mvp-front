@@ -51,14 +51,12 @@ const SPECS: Record<AiErrorKind, AiErrorSpec> = {
   },
   PROVIDER_RATE_LIMITED: {
     httpStatus: 429,
-    userMessage:
-      'AI 제공자의 요청 한도에 걸렸습니다. 잠시 후 다시 시도해주세요.',
+    userMessage: 'AI 제공자의 요청 한도에 걸렸습니다. 잠시 후 다시 시도해주세요.',
     report: false,
   },
   PROVIDER_UNAVAILABLE: {
     httpStatus: 502,
-    userMessage:
-      'AI 제공자가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.',
+    userMessage: 'AI 제공자가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.',
     report: false,
   },
   PROVIDER_ERROR: {
@@ -100,11 +98,7 @@ export class AiError extends Error {
   }
 
   /** provider 비-2xx 응답을 상태코드 기준으로 분류 */
-  static fromProviderResponse(
-    provider: string,
-    status: number,
-    bodyText: string,
-  ): AiError {
+  static fromProviderResponse(provider: string, status: number, bodyText: string): AiError {
     let kind: AiErrorKind;
     if (status === 401 || status === 403) kind = 'PROVIDER_UNAUTHORIZED';
     else if (status === 404) kind = 'PROVIDER_BAD_MODEL';
