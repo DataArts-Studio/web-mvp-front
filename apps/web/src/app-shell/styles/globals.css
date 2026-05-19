@@ -4,6 +4,8 @@
 /* https://tailwindcss.com/ */
 @import 'tailwindcss';
 
+@source "../../../../../packages/ui/src/**/*.{ts,tsx}";
+
 /* theme variables */
 /* 커스텀 폰트, 컬러 변수 */
 /* https://tailwindcss.com/docs/theme */
