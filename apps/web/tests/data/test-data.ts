@@ -26,3 +26,7 @@ export const ASIDE_NAV_LINK = {
 export const caseFactory = {
   uniqueTitle: () => `E2E Test Case ${Date.now()}`,
 };
+
+export const suiteFactory = {
+  uniqueTitle: () => `E2E Test Suite ${Date.now()}`,
+};
