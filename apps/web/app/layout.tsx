@@ -212,7 +212,8 @@ export default function RootLayout({
             __html: `var f=document.querySelector('[data-font-css]');if(f){if(f.sheet){f.media='all'}else{f.addEventListener('load',function(){this.media='all'})}}`,
           }}
         />
-        {process.env.NEXT_PUBLIC_GTM_ID && (
+        {/* GTM은 production 배포에서만 로드. preview(dev 브랜치)·로컬은 GTM_ID가 주입돼도 차단 */}
+        {process.env.NEXT_PUBLIC_GTM_ID && process.env.VERCEL_ENV === 'production' && (
           <>
             <Script
               id="gtm-init"
