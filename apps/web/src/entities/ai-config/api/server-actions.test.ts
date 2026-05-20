@@ -240,7 +240,7 @@ describe('getDecryptedApiKey', () => {
     expect(mockDecrypt).not.toHaveBeenCalled();
   });
 
-  it('복호화 인증 실패(키 불일치)는 KEY_UNDECRYPTABLE AiError 로 변환된다', async () => {
+  it('복호화 인증 실패는 KEY_UNDECRYPTABLE AiError 로 변환되며 report 는 켜져있다 (키 불일치와 데이터 변조 구분 불가)', async () => {
     mockLimit.mockResolvedValue([createMockAiConfigRow()]);
     mockDecrypt.mockImplementationOnce(() => {
       throw new CryptoError('AUTH_FAILED', 'unable to authenticate data');
@@ -251,13 +251,27 @@ describe('getDecryptedApiKey', () => {
     expect(err).toBeInstanceOf(AiError);
     expect(err.kind).toBe('KEY_UNDECRYPTABLE');
     expect(err.httpStatus).toBe(409);
-    expect(err.report).toBe(false);
+    expect(err.report).toBe(true);
   });
 
   it('암호화 키 env 누락은 CRYPTO_MISCONFIG AiError(500, report) 로 변환된다', async () => {
     mockLimit.mockResolvedValue([createMockAiConfigRow()]);
     mockDecrypt.mockImplementationOnce(() => {
       throw new CryptoError('KEY_NOT_SET', 'GITHUB_TOKEN_ENCRYPTION_KEY is not set');
+    });
+
+    const err = await getDecryptedApiKey(PROJECT_ID).catch((e) => e);
+
+    expect(err).toBeInstanceOf(AiError);
+    expect(err.kind).toBe('CRYPTO_MISCONFIG');
+    expect(err.httpStatus).toBe(500);
+    expect(err.report).toBe(true);
+  });
+
+  it('암호화 데이터 손상(MALFORMED)은 CRYPTO_MISCONFIG AiError(500, report) 로 변환된다', async () => {
+    mockLimit.mockResolvedValue([createMockAiConfigRow()]);
+    mockDecrypt.mockImplementationOnce(() => {
+      throw new CryptoError('MALFORMED', 'ciphertext too short');
     });
 
     const err = await getDecryptedApiKey(PROJECT_ID).catch((e) => e);

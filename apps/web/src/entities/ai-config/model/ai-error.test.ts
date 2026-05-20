@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { AiError } from './ai-error';
 
 describe('AiError.fromCryptoError', () => {
-  it('AUTH_FAILED → KEY_UNDECRYPTABLE (409, report=false)', () => {
+  it('AUTH_FAILED → KEY_UNDECRYPTABLE (409). 키 불일치와 데이터 변조 구분이 불가능하므로 운영 보고는 켜둔다', () => {
     const e = AiError.fromCryptoError(new CryptoError('AUTH_FAILED', 'bad tag'));
     expect(e).toBeInstanceOf(AiError);
     expect(e).toBeInstanceOf(Error);
     expect(e.kind).toBe('KEY_UNDECRYPTABLE');
     expect(e.httpStatus).toBe(409);
-    expect(e.report).toBe(false);
+    expect(e.report).toBe(true);
     expect(e.context).toMatchObject({ cryptoCode: 'AUTH_FAILED' });
   });
 
@@ -26,17 +26,28 @@ describe('AiError.fromCryptoError', () => {
     expect(e.kind).toBe('CRYPTO_MISCONFIG');
     expect(e.httpStatus).toBe(500);
   });
+
+  it('MALFORMED → CRYPTO_MISCONFIG (500, report=true) (데이터 손상은 운영 알림 대상)', () => {
+    const e = AiError.fromCryptoError(new CryptoError('MALFORMED', 'ciphertext too short'));
+    expect(e.kind).toBe('CRYPTO_MISCONFIG');
+    expect(e.httpStatus).toBe(500);
+    expect(e.report).toBe(true);
+    expect(e.context).toMatchObject({ cryptoCode: 'MALFORMED' });
+  });
 });
 
 describe('AiError.fromProviderResponse', () => {
   const cases: Array<[number, string, number]> = [
     [401, 'PROVIDER_UNAUTHORIZED', 401],
-    [403, 'PROVIDER_UNAUTHORIZED', 401],
+    [403, 'PROVIDER_FORBIDDEN', 403],
     [404, 'PROVIDER_BAD_MODEL', 400],
     [429, 'PROVIDER_RATE_LIMITED', 429],
+    [400, 'PROVIDER_BAD_REQUEST', 400],
+    [413, 'PROVIDER_BAD_REQUEST', 400],
+    [418, 'PROVIDER_BAD_REQUEST', 400],
     [500, 'PROVIDER_UNAVAILABLE', 502],
     [503, 'PROVIDER_UNAVAILABLE', 502],
-    [418, 'PROVIDER_ERROR', 502],
+    [301, 'PROVIDER_ERROR', 502],
   ];
 
   it.each(cases)('status %i → kind %s (http %i)', (status, kind, http) => {
@@ -53,8 +64,17 @@ describe('AiError.fromProviderResponse', () => {
     expect(e.userMessage).not.toContain('x');
   });
 
-  it('비정상 상태(418)는 report=true', () => {
-    expect(AiError.fromProviderResponse('anthropic', 418, '').report).toBe(true);
+  it('403 은 키 무효(401) 와 분리되어 권한/지역 안내 메시지로 응답한다', () => {
+    const e = AiError.fromProviderResponse('openai', 403, '');
+    expect(e.kind).toBe('PROVIDER_FORBIDDEN');
+    expect(e.userMessage).toContain('권한');
+  });
+
+  it('알려지지 않은 4xx(418)는 PROVIDER_BAD_REQUEST 로 분류되어 502 가 아닌 400 으로 응답한다', () => {
+    const e = AiError.fromProviderResponse('anthropic', 418, '');
+    expect(e.kind).toBe('PROVIDER_BAD_REQUEST');
+    expect(e.httpStatus).toBe(400);
+    expect(e.report).toBe(true);
   });
 
   it('레이트리밋(429)은 report=false', () => {
