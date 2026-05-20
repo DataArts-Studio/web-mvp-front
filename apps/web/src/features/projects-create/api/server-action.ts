@@ -45,19 +45,24 @@ export async function createProject(
   turnstileToken?: string
 ): Promise<ActionResult<SerializableProjectDomain>> {
   try {
-    // Turnstile 봇 검증: 토큰 없이 호출하는 경로 자체를 차단한다.
-    if (!turnstileToken) {
+    // Turnstile 봇 검증: production 환경에서는 토큰 없이 호출하는 경로 자체를 차단한다.
+    // dev/preview 는 클라이언트가 siteKey 미설정 시 토큰 없이 호출하도록 설계되어 있어
+    // 같은 가드를 적용하면 개발 흐름이 회귀한다. 토큰이 들어오는 경우의 검증은 환경 무관 그대로.
+    const isProduction = process.env.VERCEL_ENV === 'production';
+    if (isProduction && !turnstileToken) {
       return {
         success: false,
         errors: { _form: ['보안 검증 토큰이 없습니다. 페이지를 새로고침 후 다시 시도해주세요.'] },
       };
     }
-    const isHuman = await verifyTurnstileToken(turnstileToken);
-    if (!isHuman) {
-      return {
-        success: false,
-        errors: { _form: ['보안 검증에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.'] },
-      };
+    if (turnstileToken) {
+      const isHuman = await verifyTurnstileToken(turnstileToken);
+      if (!isHuman) {
+        return {
+          success: false,
+          errors: { _form: ['보안 검증에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.'] },
+        };
+      }
     }
 
     const db = getDatabase();
