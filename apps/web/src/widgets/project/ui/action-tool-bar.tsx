@@ -19,7 +19,7 @@ const ActionToolBarRoot = ({
     <div
       aria-label={ariaLabel}
       className={cn(
-        'bg-bg-2 shadow-1 col-span-6 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 rounded-xl px-4 py-3',
+        'bg-bg-2 shadow-1 col-span-6 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-3 md:flex-nowrap',
         className
       )}
       {...props}
@@ -34,7 +34,11 @@ interface ActionToolBarGroupProps extends ComponentProps<'div'> {
 }
 
 const ActionToolBarGroup = ({ className, children }: ActionToolBarGroupProps) => {
-  return <div className={cn(className, 'w-full flex flex-wrap md:flex-nowrap items-center gap-3')}>{children}</div>;
+  return (
+    <div className={cn(className, 'flex w-full flex-wrap items-center gap-3 md:flex-nowrap')}>
+      {children}
+    </div>
+  );
 };
 
 const ActionToolBarSearch = ({ className, ...props }: ComponentProps<typeof Input>) => {
@@ -66,7 +70,7 @@ const ActionToolBarTypeFilter = ({
   onChange,
 }: ActionToolBarTypeFilterProps) => {
   return (
-    <nav className="flex flex-wrap md:flex-nowrap gap-2">
+    <nav className="flex flex-wrap gap-2 md:flex-nowrap">
       {options.map((label) => (
         <button
           key={label}

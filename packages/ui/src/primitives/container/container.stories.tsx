@@ -1,5 +1,7 @@
 import React from 'react';
+
 import type { Meta, StoryObj } from '@storybook/react';
+
 import { Container } from './container';
 
 const meta: Meta<typeof Container> = {
@@ -44,9 +46,7 @@ export const Nested: Story = {
       <p style={{ marginBottom: '16px' }}>외부 Container</p>
       <Container style={{ ...boxStyle, backgroundColor: '#fef3c7' }}>
         <p style={{ marginBottom: '16px' }}>내부 Container</p>
-        <Container style={{ ...boxStyle, backgroundColor: '#dcfce7' }}>
-          최하위 Container
-        </Container>
+        <Container style={{ ...boxStyle, backgroundColor: '#dcfce7' }}>최하위 Container</Container>
       </Container>
     </Container>
   ),

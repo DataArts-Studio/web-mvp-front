@@ -18,10 +18,7 @@ export const useDisclosure = <T extends string = never>(initialValue?: T | boole
     setActiveType(null);
   }, []);
 
-  const isActiveType = React.useCallback(
-    (type: T) => activeType === type,
-    [activeType]
-  );
+  const isActiveType = React.useCallback((type: T) => activeType === type, [activeType]);
 
   return { isOpen, activeType, onOpen, onClose, isActiveType };
 };

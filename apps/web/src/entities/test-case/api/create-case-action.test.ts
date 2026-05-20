@@ -1,3 +1,5 @@
+import { createTestCase } from '@/entities/test-case/api/server-actions';
+import type { CreateTestCase } from '@/entities/test-case/model/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockReturning = vi.fn();
@@ -13,9 +15,6 @@ vi.mock('@testea/db', () => ({
 vi.mock('uuid', () => ({
   v7: vi.fn(() => '0193b5e0-0000-7000-8000-000000000001'),
 }));
-
-import { createTestCase } from '@/entities/test-case/api/server-actions';
-import type { CreateTestCase } from '@/entities/test-case/model/types';
 
 describe('createTestCase', () => {
   const mockInput: CreateTestCase = {

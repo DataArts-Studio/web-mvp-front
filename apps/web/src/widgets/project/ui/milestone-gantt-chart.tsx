@@ -1,21 +1,23 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useToggleSet } from '@testea/lib';
+
 import type { DashboardMilestone } from '@/features/dashboard';
 import type { FetchedTestRun } from '@/features/runs';
+import { useToggleSet } from '@testea/lib';
+
+import { GanttMilestoneRow } from './gantt-milestone-row';
+import { GanttRunSelector } from './gantt-run-selector';
 import {
-  LABEL_W,
   FIXED_W,
+  LABEL_W,
   VISIBLE_WEEK_COUNT,
   WEEK_MS,
+  computeTimeline,
   diffMs,
   getBarStyle,
-  computeTimeline,
 } from './gantt-utils';
-import { GanttRunSelector } from './gantt-run-selector';
 import { GanttWeekNav } from './gantt-week-nav';
-import { GanttMilestoneRow } from './gantt-milestone-row';
 
 type MilestoneGanttChartProps = {
   milestones: DashboardMilestone[];
@@ -39,9 +41,10 @@ export const MilestoneGanttChart = ({
   const { weeks, timelineStart } = useMemo(() => computeTimeline(milestones), [milestones]);
 
   // weekOffset이 범위를 벗어나지 않도록 보정 (파생 계산)
-  const effectiveOffset = weekOffset > 0 && weekOffset + VISIBLE_WEEK_COUNT > weeks.length
-    ? Math.max(0, weeks.length - VISIBLE_WEEK_COUNT)
-    : weekOffset;
+  const effectiveOffset =
+    weekOffset > 0 && weekOffset + VISIBLE_WEEK_COUNT > weeks.length
+      ? Math.max(0, weeks.length - VISIBLE_WEEK_COUNT)
+      : weekOffset;
 
   // 보이는 주차 (페이지네이션)
   const visibleWeeks = weeks.slice(effectiveOffset, effectiveOffset + VISIBLE_WEEK_COUNT);

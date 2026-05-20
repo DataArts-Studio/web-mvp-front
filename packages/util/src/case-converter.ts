@@ -34,4 +34,4 @@ export const keysToSnakeCase = <T extends Record<string, any>>(obj: T): Record<s
     },
     {} as Record<string, any>
   );
-}
+};

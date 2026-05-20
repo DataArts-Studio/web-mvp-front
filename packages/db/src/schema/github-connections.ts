@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+
 import { projects } from './projects';
 
 export const githubConnections = pgTable('github_connections', {

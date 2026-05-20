@@ -1,7 +1,7 @@
 'use server';
 
-import {getDatabase, testCases} from "@testea/db";
 import { CreateTestCaseDtoSchema } from '@/entities/test-case';
+import { getDatabase, testCases } from '@testea/db';
 import { z } from 'zod';
 
 type MockTestCaseData = {
@@ -18,7 +18,7 @@ type MockFlatErrors = {
 const createTestCase = async (data: any) => {
   const db = getDatabase();
   return await db.insert(testCases).values(data).returning();
-}
+};
 
 export const createTestCaseAction = async (formData: any) => {
   const data = Object.fromEntries(formData.entries());

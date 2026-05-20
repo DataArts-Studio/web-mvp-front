@@ -1,13 +1,10 @@
+import type { LifecycleStatus } from '@/shared/types';
 import { z } from 'zod';
-import {
-  CreateTestCaseTemplateDtoSchema,
-  TestCaseTemplateDtoSchema,
-} from './schema';
+
+import { CreateTestCaseTemplateDtoSchema, TestCaseTemplateDtoSchema } from './schema';
 
 export type TestCaseTemplateDTO = z.infer<typeof TestCaseTemplateDtoSchema>;
 export type CreateTestCaseTemplateDTO = z.infer<typeof CreateTestCaseTemplateDtoSchema>;
-
-import type { LifecycleStatus } from '@/shared/types';
 
 export type { LifecycleStatus } from '@/shared/types';
 export type TemplateCategory = 'BUILTIN' | 'CUSTOM';

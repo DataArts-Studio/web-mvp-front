@@ -1,4 +1,5 @@
 import { boolean, integer, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+
 import { checklists } from './checklists';
 
 export const checklistItems = pgTable('checklist_items', {

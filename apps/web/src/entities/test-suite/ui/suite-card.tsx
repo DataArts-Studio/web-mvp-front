@@ -1,11 +1,10 @@
 import React, { useMemo } from 'react';
 
 import { TestSuiteCard } from '@/entities/test-suite';
-import { AlertCircle, FileText, FolderTree, Layers, PlayCircle } from 'lucide-react';
-
-import { Edit } from 'lucide-react';
 import { DSButton } from '@/shared';
 import { formatDate } from '@testea/util';
+import { AlertCircle, FileText, FolderTree, Layers, PlayCircle } from 'lucide-react';
+import { Edit } from 'lucide-react';
 
 interface SuiteCardProps {
   suite: TestSuiteCard;

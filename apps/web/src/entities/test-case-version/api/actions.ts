@@ -1,18 +1,19 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCases, testCaseVersions } from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import { and, eq, sql, desc } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import type { ChangeType, TestCaseVersion, VersionCompareResult } from '../model/types';
-import type { TestCaseVersionDTO } from '../model/schema';
-import { toTestCaseVersion, toTestCaseVersionSummary } from '../model/mapper';
-import { computeFieldDiffs, detectChangedFields, generateChangeSummary } from '../model/diff-utils';
-import type { TestCase } from '@/entities/test-case/model/types';
 import { toTestCase } from '@/entities/test-case/model/mapper';
+import type { TestCase } from '@/entities/test-case/model/types';
 import type { TestCaseDTO } from '@/entities/test-case/model/types';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, testCaseVersions, testCases } from '@testea/db';
+import { and, desc, eq, sql } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
+
+import { computeFieldDiffs, detectChangedFields, generateChangeSummary } from '../model/diff-utils';
+import { toTestCaseVersion, toTestCaseVersionSummary } from '../model/mapper';
+import type { TestCaseVersionDTO } from '../model/schema';
+import type { ChangeType, TestCaseVersion, VersionCompareResult } from '../model/types';
 
 type SnapshotData = {
   name: string;
@@ -61,7 +62,9 @@ export async function getVersionsByTestCaseId(
   testCaseId: string,
   limit = 50,
   offset = 0
-): Promise<ActionResult<{ versions: ReturnType<typeof toTestCaseVersionSummary>[]; total: number }>> {
+): Promise<
+  ActionResult<{ versions: ReturnType<typeof toTestCaseVersionSummary>[]; total: number }>
+> {
   try {
     const db = getDatabase();
 
@@ -97,7 +100,10 @@ export async function getVersionsByTestCaseId(
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getVersionsByTestCaseId' } });
-    return { success: false, errors: { _version: ['버전 목록을 불러오는 도중 오류가 발생했습니다.'] } };
+    return {
+      success: false,
+      errors: { _version: ['버전 목록을 불러오는 도중 오류가 발생했습니다.'] },
+    };
   }
 }
 
@@ -139,7 +145,10 @@ export async function getVersionDetail(
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getVersionDetail' } });
-    return { success: false, errors: { _version: ['버전 상세를 불러오는 도중 오류가 발생했습니다.'] } };
+    return {
+      success: false,
+      errors: { _version: ['버전 상세를 불러오는 도중 오류가 발생했습니다.'] },
+    };
   }
 }
 
@@ -283,7 +292,11 @@ export async function rollbackToVersion(
       );
 
       const result = toTestCase(updated as TestCaseDTO);
-      return { success: true, data: result, message: `v${targetVersionNumber}으로 복원되었습니다.` };
+      return {
+        success: true,
+        data: result,
+        message: `v${targetVersionNumber}으로 복원되었습니다.`,
+      };
     }
 
     return { success: false, errors: { _version: ['테스트케이스를 찾을 수 없습니다.'] } };

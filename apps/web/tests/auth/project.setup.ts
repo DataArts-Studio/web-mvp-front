@@ -8,7 +8,7 @@ setup('authenticate', async ({ page }) => {
   const dashboard = new ProjectDashboardPage(page);
   await access.goto(D.slug);
   await access.authenticate(D.validCode);
-  await page.waitForURL(new RegExp(`/projects/${D.slug}`), { timeout: 30_000 })
+  await page.waitForURL(new RegExp(`/projects/${D.slug}`), { timeout: 30_000 });
   await dashboard.expectLoaded(D.slug);
   await page.context().storageState({ path: 'playwright/.auth/project.json' });
 });

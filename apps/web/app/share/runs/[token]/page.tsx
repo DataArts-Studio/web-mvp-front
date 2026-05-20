@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import { SharedReportView } from '@/view/share/shared-report-view';
 
 export const metadata: Metadata = {

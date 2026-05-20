@@ -1,18 +1,23 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMockTestSuiteRow,
   mockGetDatabase,
   resetMockDb,
   setMockUpdateReturn,
 } from '@/shared/test/__mocks__/db';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { updateTestSuite } from './server-actions';
 
 // DB 모듈 모킹
 vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
-  testSuites: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
+  testSuites: {
+    id: 'id',
+    project_id: 'project_id',
+    name: 'name',
+    lifecycle_status: 'lifecycle_status',
+  },
 }));
-
-import { updateTestSuite } from './server-actions';
 
 describe('updateTestSuite', () => {
   beforeEach(() => {
@@ -165,7 +170,9 @@ describe('updateTestSuite', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain('테스트 스위트를 수정하는 도중 오류가 발생했습니다.');
+        expect(result.errors._testSuite).toContain(
+          '테스트 스위트를 수정하는 도중 오류가 발생했습니다.'
+        );
       }
     });
   });

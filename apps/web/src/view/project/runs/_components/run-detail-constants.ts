@@ -1,15 +1,15 @@
 import React from 'react';
-import {
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Circle,
-  ListTodo,
-  Clock,
-  PlayCircle,
-} from 'lucide-react';
 
 import { type TestCaseRunDetail } from '@/features/runs';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Circle,
+  Clock,
+  ListTodo,
+  PlayCircle,
+  XCircle,
+} from 'lucide-react';
 
 export type StatusFilter = 'all' | 'untested' | 'pass' | 'fail' | 'blocked';
 export type TestCaseRunStatus = 'untested' | 'pass' | 'fail' | 'blocked';
@@ -21,13 +21,16 @@ export interface GroupedCases {
   cases: TestCaseRunDetail[];
 }
 
-export const STATUS_CONFIG: Record<TestCaseRunStatus, {
-  label: string;
-  style: string;
-  bgStyle: string;
-  icon: React.ReactNode;
-  shortcut: string;
-}> = {
+export const STATUS_CONFIG: Record<
+  TestCaseRunStatus,
+  {
+    label: string;
+    style: string;
+    bgStyle: string;
+    icon: React.ReactNode;
+    shortcut: string;
+  }
+> = {
   untested: {
     label: 'Untested',
     style: 'text-slate-400',
@@ -59,7 +62,16 @@ export const STATUS_CONFIG: Record<TestCaseRunStatus, {
 };
 
 export const SOURCE_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode }> = {
-  SUITE: { label: '\uC2A4\uC704\uD2B8', icon: React.createElement(ListTodo, { className: 'h-4 w-4' }) },
-  MILESTONE: { label: '\uB9C8\uC77C\uC2A4\uD1A4', icon: React.createElement(Clock, { className: 'h-4 w-4' }) },
-  ADHOC: { label: '\uC9C1\uC811 \uC120\uD0DD', icon: React.createElement(PlayCircle, { className: 'h-4 w-4' }) },
+  SUITE: {
+    label: '\uC2A4\uC704\uD2B8',
+    icon: React.createElement(ListTodo, { className: 'h-4 w-4' }),
+  },
+  MILESTONE: {
+    label: '\uB9C8\uC77C\uC2A4\uD1A4',
+    icon: React.createElement(Clock, { className: 'h-4 w-4' }),
+  },
+  ADHOC: {
+    label: '\uC9C1\uC811 \uC120\uD0DD',
+    icon: React.createElement(PlayCircle, { className: 'h-4 w-4' }),
+  },
 };

@@ -1,8 +1,9 @@
 import React from 'react';
 
+import { type VariantProps } from 'class-variance-authority';
+
 import { type ButtonProps } from '../primitives/button';
 import { buttonVariants } from './button.variable';
-import { type VariantProps } from 'class-variance-authority';
 
 // ------------------------------------------------------------------
 // Button Design System Type

@@ -1,4 +1,9 @@
-import type { CreateTestCaseTemplate, CreateTestCaseTemplateDTO, TestCaseTemplate, TestCaseTemplateDTO } from './types';
+import type {
+  CreateTestCaseTemplate,
+  CreateTestCaseTemplateDTO,
+  TestCaseTemplate,
+  TestCaseTemplateDTO,
+} from './types';
 
 const toDate = (v: string | Date): Date => (v instanceof Date ? v : new Date(v));
 

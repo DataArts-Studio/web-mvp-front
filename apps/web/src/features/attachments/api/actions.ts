@@ -1,15 +1,16 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { v7 as uuidv7 } from 'uuid';
-import { and, eq, isNull } from 'drizzle-orm';
-import { getDatabase, testCaseAttachments } from '@testea/db';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
-import { createSupabaseServerClient } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
-import type { Attachment } from '../model/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, testCaseAttachments } from '@testea/db';
+import { createSupabaseServerClient } from '@testea/db';
+import { and, eq, isNull } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
+
 import { ATTACHMENT_LIMITS, BUCKET_NAME } from '../model/constants';
+import type { Attachment } from '../model/types';
 
 function getFileExtension(fileName: string): string {
   const parts = fileName.split('.');
@@ -22,7 +23,7 @@ function buildPublicUrl(supabaseUrl: string, storagePath: string): string {
 
 function toAttachment(
   row: typeof testCaseAttachments.$inferSelect,
-  supabaseUrl: string,
+  supabaseUrl: string
 ): Attachment {
   return {
     id: row.id,
@@ -41,15 +42,18 @@ function getSupabaseUrl(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 }
 
-export async function getAttachments(
-  testCaseId: string,
-): Promise<ActionResult<Attachment[]>> {
+export async function getAttachments(testCaseId: string): Promise<ActionResult<Attachment[]>> {
   try {
     const db = getDatabase();
     const rows = await db
       .select()
       .from(testCaseAttachments)
-      .where(and(eq(testCaseAttachments.test_case_id, testCaseId), isNull(testCaseAttachments.archived_at)));
+      .where(
+        and(
+          eq(testCaseAttachments.test_case_id, testCaseId),
+          isNull(testCaseAttachments.archived_at)
+        )
+      );
 
     const supabaseUrl = getSupabaseUrl();
     const attachments = rows.map((row) => toAttachment(row, supabaseUrl));
@@ -64,9 +68,7 @@ export async function getAttachments(
   }
 }
 
-export async function uploadAttachment(
-  formData: FormData,
-): Promise<ActionResult<Attachment>> {
+export async function uploadAttachment(formData: FormData): Promise<ActionResult<Attachment>> {
   try {
     const file = formData.get('file') as File | null;
     const testCaseId = formData.get('testCaseId') as string | null;
@@ -103,7 +105,9 @@ export async function uploadAttachment(
     // File type validation
     if (
       ATTACHMENT_LIMITS.ALLOWED_TYPES.length > 0 &&
-      !ATTACHMENT_LIMITS.ALLOWED_TYPES.includes(file.type as (typeof ATTACHMENT_LIMITS.ALLOWED_TYPES)[number])
+      !ATTACHMENT_LIMITS.ALLOWED_TYPES.includes(
+        file.type as (typeof ATTACHMENT_LIMITS.ALLOWED_TYPES)[number]
+      )
     ) {
       return {
         success: false,
@@ -116,7 +120,12 @@ export async function uploadAttachment(
     const existingFiles = await db
       .select({ id: testCaseAttachments.id })
       .from(testCaseAttachments)
-      .where(and(eq(testCaseAttachments.test_case_id, testCaseId), isNull(testCaseAttachments.archived_at)));
+      .where(
+        and(
+          eq(testCaseAttachments.test_case_id, testCaseId),
+          isNull(testCaseAttachments.archived_at)
+        )
+      );
 
     if (existingFiles.length >= ATTACHMENT_LIMITS.MAX_FILES_PER_CASE) {
       return {
@@ -193,9 +202,7 @@ export async function uploadAttachment(
   }
 }
 
-export async function deleteAttachment(
-  id: string,
-): Promise<ActionResult<{ id: string }>> {
+export async function deleteAttachment(id: string): Promise<ActionResult<{ id: string }>> {
   try {
     const db = getDatabase();
 

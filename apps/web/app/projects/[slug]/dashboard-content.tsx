@@ -1,13 +1,20 @@
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { ProjectDashboardContent } from '@/view/project/dashboard';
 import { projectIdQueryOptions } from '@/entities/project/api/query';
-import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { testCasesQueryOptions } from '@/features/cases-list/api/query';
+import { dashboardQueryOptions } from '@/features/dashboard/api/query';
 import { testRunsQueryOptions } from '@/features/runs/api/query';
-import { cachedGetProjectId, cachedGetDashboardStats, cachedGetTestCasesList, cachedGetTestRuns } from '@/shared/lib/cache';
+import {
+  cachedGetDashboardStats,
+  cachedGetProjectId,
+  cachedGetTestCasesList,
+  cachedGetTestRuns,
+} from '@/shared/lib/cache';
+import { ProjectDashboardContent } from '@/view/project/dashboard';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 export async function DashboardData({ slug }: { slug: string }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   let projectId: string | undefined;
 
@@ -39,9 +46,10 @@ export async function DashboardData({ slug }: { slug: string }) {
       const testRunsData = queryClient.getQueryData(testRunsQueryOptions(projectId).queryKey);
       if (testRunsData?.success && testRunsData.data.length > 0) {
         const runs = testRunsData.data;
-        const bestRun = runs.find((r: { status: string }) => r.status === 'IN_PROGRESS')
-          || runs.find((r: { status: string }) => r.status === 'NOT_STARTED')
-          || runs[0];
+        const bestRun =
+          runs.find((r: { status: string }) => r.status === 'IN_PROGRESS') ||
+          runs.find((r: { status: string }) => r.status === 'NOT_STARTED') ||
+          runs[0];
         if (bestRun) {
           await queryClient.prefetchQuery(dashboardQueryOptions.milestones(projectId, bestRun.id));
         }

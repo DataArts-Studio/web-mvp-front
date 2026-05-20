@@ -18,7 +18,7 @@ export function useInViewOnce(rootMargin = '200px') {
           obs.disconnect();
         }
       },
-      { rootMargin },
+      { rootMargin }
     );
     obsRef.current = obs;
     obs.observe(el);

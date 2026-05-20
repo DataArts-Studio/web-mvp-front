@@ -1,7 +1,10 @@
-import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { MainContainer } from '@testea/ui';
+
+import type { Metadata } from 'next';
+
 import { DashboardHeader } from '@/view/project/dashboard';
+import { MainContainer } from '@testea/ui';
+
 import { DashboardData } from './dashboard-content';
 import { DashboardContentSkeleton } from './dashboard-content-skeleton';
 

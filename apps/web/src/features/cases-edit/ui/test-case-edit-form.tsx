@@ -2,11 +2,16 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { TEST_TYPE_OPTIONS, BasicInfoFields, TagsField, ScenarioFields } from '@/entities/test-case';
+import {
+  BasicInfoFields,
+  ScenarioFields,
+  TEST_TYPE_OPTIONS,
+  TagsField,
+} from '@/entities/test-case';
 import type { TestCase } from '@/entities/test-case';
 import { projectTagsQueryOptions } from '@/entities/test-case/api';
 import { DSButton } from '@/shared';
-import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
+import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { testSuitesQueryOptions } from '@/widgets';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
@@ -47,9 +52,12 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
       id: testCase.id,
       title: testCase.title,
       testSuiteId: testCase.testSuiteId || null,
-      testType: testCase.testType && TEST_TYPE_OPTIONS.some((o) => o.value === testCase.testType)
-        ? testCase.testType
-        : testCase.testType ? 'other' : '',
+      testType:
+        testCase.testType && TEST_TYPE_OPTIONS.some((o) => o.value === testCase.testType)
+          ? testCase.testType
+          : testCase.testType
+            ? 'other'
+            : '',
       tags: testCase.tags ?? [],
       preCondition: testCase.preCondition,
       testSteps: testCase.testSteps,
@@ -63,12 +71,15 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
     onSuccess?.();
     onClose();
 
-    mutate({ ...data, projectId: testCase.projectId }, {
-      onError: (error) => {
-        track(TESTCASE_EVENTS.UPDATE_FAIL, { case_id: testCase.id });
-        toast.error(error.message || '테스트 케이스 수정에 실패했습니다.');
-      },
-    });
+    mutate(
+      { ...data, projectId: testCase.projectId },
+      {
+        onError: (error) => {
+          track(TESTCASE_EVENTS.UPDATE_FAIL, { case_id: testCase.id });
+          toast.error(error.message || '테스트 케이스 수정에 실패했습니다.');
+        },
+      }
+    );
   };
 
   const handleAbandon = () => {
@@ -77,9 +88,12 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handleAbandon}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={handleAbandon}
+    >
       <section
-        className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[900px] flex-col overflow-hidden shadow-4"
+        className="bg-bg-2 border-line-2 rounded-5 shadow-4 relative flex max-h-[85vh] w-full max-w-[900px] flex-col overflow-hidden border"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -112,11 +126,11 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
             suites={suites}
           />
 
-          <div className="border-t border-line-2" />
+          <div className="border-line-2 border-t" />
 
           <TagsField control={control} projectTags={projectTags} />
 
-          <div className="border-t border-line-2" />
+          <div className="border-line-2 border-t" />
 
           <ScenarioFields control={control} />
 

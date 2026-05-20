@@ -1,4 +1,5 @@
 import { type Locator, type Page, expect } from '@playwright/test';
+
 import { BasePage } from '../base.page';
 
 export class ProjectTestsuitePage extends BasePage {
@@ -16,9 +17,15 @@ export class ProjectTestsuitePage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.heading = page.getByRole('heading', { name: '테스트 스위트 관리' });
-    this.createButton = page.getByRole('button', { name: '테스트 스위트 생성하기' });
-    this.createDialog = page.getByRole('dialog', { name: '테스트 스위트 생성' });
-    this.formHeading = page.getByRole('heading', { name: '테스트 스위트 생성' });
+    this.createButton = page.getByRole('button', {
+      name: '테스트 스위트 생성하기',
+    });
+    this.createDialog = page.getByRole('dialog', {
+      name: '테스트 스위트 생성',
+    });
+    this.formHeading = page.getByRole('heading', {
+      name: '테스트 스위트 생성',
+    });
     this.titleInput = page.getByPlaceholder('스위트 이름을 입력해 주세요.');
     this.searchInput = page.getByPlaceholder('스위트 이름 또는 키워드로 검색');
     this.suiteList = page.getByLabel('테스트 스위트 리스트');
@@ -39,7 +46,9 @@ export class ProjectTestsuitePage extends BasePage {
   }
 
   async expectLoaded(slug: string): Promise<void> {
-    await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}/suites$`), { timeout: 30_000 });
+    await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}/suites$`), {
+      timeout: 30_000,
+    });
     await expect(this.heading).toBeVisible({ timeout: 30_000 });
   }
 

@@ -1,5 +1,7 @@
 import React from 'react';
+
 import type { Meta, StoryObj } from '@storybook/react';
+
 import { MainContainer } from './main-container';
 
 const meta: Meta<typeof MainContainer> = {
@@ -44,9 +46,7 @@ export const WithStyling: Story = {
     },
     children: (
       <div>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '24px' }}>
-          대시보드
-        </h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '24px' }}>대시보드</h1>
         <p style={{ color: '#6b7280' }}>스타일이 적용된 MainContainer입니다.</p>
       </div>
     ),

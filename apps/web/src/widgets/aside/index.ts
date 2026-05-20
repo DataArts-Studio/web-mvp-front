@@ -1,1 +1,1 @@
-export {Aside} from '@/widgets/aside/aside';
+export { Aside } from '@/widgets/aside/aside';

@@ -3,6 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { and, desc, eq, ilike } from 'drizzle-orm';
+
 import type { ProjectSearchResult, SearchProjectsResponse } from '../model/types';
 
 const KEYWORD_PATTERN = /^[가-힣a-zA-Z0-9\s\-_]+$/;
@@ -36,10 +37,7 @@ export async function searchProjects(keyword: string): Promise<SearchProjectsRes
       })
       .from(projects)
       .where(
-        and(
-          ilike(projects.name, `%${trimmedKeyword}%`),
-          eq(projects.lifecycle_status, 'ACTIVE')
-        )
+        and(ilike(projects.name, `%${trimmedKeyword}%`), eq(projects.lifecycle_status, 'ACTIVE'))
       )
       .orderBy(desc(projects.created_at))
       .limit(10);

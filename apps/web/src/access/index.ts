@@ -22,11 +22,7 @@ export {
 } from './policy';
 
 // 프로젝트 접근 제어
-export {
-  verifyProjectAccess,
-  revokeProjectAccess,
-  hasProjectPassword,
-} from './project/api';
+export { verifyProjectAccess, revokeProjectAccess, hasProjectPassword } from './project/api';
 
 export {
   type VerifyProjectAccessRequest,

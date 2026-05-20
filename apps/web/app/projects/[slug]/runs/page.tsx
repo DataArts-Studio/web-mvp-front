@@ -1,21 +1,20 @@
 import type { Metadata } from 'next';
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { TestRunsListView } from '@/view';
+
 import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { testRunsQueryOptions } from '@/features/runs/api/query';
+import { TestRunsListView } from '@/view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 export const metadata: Metadata = {
   title: '테스트 실행',
   description: '테스트 실행 목록을 조회하고 실행 결과를 관리합니다.',
 };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   try {
     const result = await queryClient.fetchQuery(projectIdQueryOptions(slug));

@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+
+import type { TrashItem } from '@/features/trash';
 import { DSButton } from '@testea/ui';
 import { Dialog } from '@testea/ui';
-import type { TrashItem } from '@/features/trash';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 interface DeleteConfirmDialogProps {
   item: TrashItem;
@@ -29,28 +30,17 @@ export function DeleteConfirmDialog({
               <AlertTriangle className="h-5 w-5 text-red-400" />
             </div>
             <div>
-              <Dialog.Title className="typo-h2-heading text-text-1">
-                영구 삭제
-              </Dialog.Title>
+              <Dialog.Title className="typo-h2-heading text-text-1">영구 삭제</Dialog.Title>
               <Dialog.Description className="text-text-3 typo-body2-normal mt-1.5">
-                <span className="text-text-1 font-medium">
-                  &ldquo;{item.title}&rdquo;
-                </span>
+                <span className="text-text-1 font-medium">&ldquo;{item.title}&rdquo;</span>
                 을(를) 영구 삭제하시겠습니까?
                 <br />
-                <span className="font-medium text-red-400">
-                  이 작업은 되돌릴 수 없습니다.
-                </span>
+                <span className="font-medium text-red-400">이 작업은 되돌릴 수 없습니다.</span>
               </Dialog.Description>
             </div>
           </div>
           <div className="mt-6 flex justify-end gap-2">
-            <DSButton
-              variant="ghost"
-              size="small"
-              onClick={onCancel}
-              disabled={isPending}
-            >
+            <DSButton variant="ghost" size="small" onClick={onCancel} disabled={isPending}>
               취소
             </DSButton>
             <DSButton

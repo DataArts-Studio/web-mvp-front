@@ -1,17 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMockMilestoneRow,
   mockGetDatabase,
   resetMockDb,
   setMockUpdateReturn,
 } from '@/shared/test/__mocks__/db';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { deleteMilestone } from './server-actions';
 
 vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
   milestones: { id: 'id', archived_at: 'archived_at', lifecycle_status: 'lifecycle_status' },
 }));
-
-import { deleteMilestone } from './server-actions';
 
 describe('deleteMilestone', () => {
   beforeEach(() => {

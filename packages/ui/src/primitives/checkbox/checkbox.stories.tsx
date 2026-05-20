@@ -1,12 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
+
+import type { Meta, StoryObj } from '@storybook/react';
 import { Check, Minus } from 'lucide-react';
 
-import {
-  Checkbox,
-  type CheckboxRootProps,
-  type CheckedState,
-} from './index';
+import { Checkbox, type CheckboxRootProps, type CheckedState } from './index';
 
 // Checkbox.Root의 Props 타입에서 불필요한 속성을 제거
 type CheckboxRootOmittedProps = Omit<
@@ -133,7 +130,7 @@ const getDynamicStyles = (currentState: CheckedState, isDisabled: boolean): Dyna
     currentCursor = 'not-allowed';
     currentBorderColor = DEFAULT_BORDER_COLOR; // 비활성화 시 테두리 색상 고정
     if (currentState === true || currentState === 'indeterminate') {
-        currentBackgroundColor = '#e5e7eb'; // 비활성화 시 배경색 흐리게
+      currentBackgroundColor = '#e5e7eb'; // 비활성화 시 배경색 흐리게
     }
   }
 
@@ -264,11 +261,34 @@ export const Controlled: Story = {
               <IndicatorIcon state={checked} />
             </Checkbox.Indicator>
           </span>
-          <span>전체 선택 (현재 상태: {checked === true ? 'Checked' : checked === 'indeterminate' ? 'Indeterminate' : 'Unchecked'})</span>
+          <span>
+            전체 선택 (현재 상태:{' '}
+            {checked === true
+              ? 'Checked'
+              : checked === 'indeterminate'
+                ? 'Indeterminate'
+                : 'Unchecked'}
+            )
+          </span>
         </Checkbox.Root>
-        <p style={{marginTop: '10px'}}>
-            <button onClick={() => setChecked(prev => !prev)} style={{padding: '5px 10px', border: '1px solid #ccc', borderRadius: '4px'}}>외부에서 상태 토글</button>
-            <button onClick={() => setChecked('indeterminate')} style={{padding: '5px 10px', border: '1px solid #ccc', borderRadius: '4px', marginLeft: '10px'}}>부분 선택 설정</button>
+        <p style={{ marginTop: '10px' }}>
+          <button
+            onClick={() => setChecked((prev) => !prev)}
+            style={{ padding: '5px 10px', border: '1px solid #ccc', borderRadius: '4px' }}
+          >
+            외부에서 상태 토글
+          </button>
+          <button
+            onClick={() => setChecked('indeterminate')}
+            style={{
+              padding: '5px 10px',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              marginLeft: '10px',
+            }}
+          >
+            부분 선택 설정
+          </button>
         </p>
       </div>
     );

@@ -1,13 +1,25 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { Github, GitPullRequest, CircleDot, ExternalLink, Plus, Loader2, AlertCircle } from 'lucide-react';
 
-import { externalLinksQueryOptions, githubQueryKeys, githubConnectionQueryOptions } from '@/entities/github-connection';
+import {
+  externalLinksQueryOptions,
+  githubConnectionQueryOptions,
+  githubQueryKeys,
+} from '@/entities/github-connection';
 import { createGithubIssue } from '@/entities/github-connection/api/server-actions';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@testea/util';
+import {
+  AlertCircle,
+  CircleDot,
+  ExternalLink,
+  GitPullRequest,
+  Github,
+  Loader2,
+  Plus,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 type Props = {
   testCaseId: string;
@@ -23,7 +35,13 @@ const statusConfig: Record<string, { label: string; cls: string }> = {
   merged: { label: 'Merged', cls: 'bg-purple-500/10 text-purple-400' },
 };
 
-export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, displayId, resultStatus }: Props) => {
+export const ExternalLinksSection = ({
+  testCaseId,
+  projectId,
+  testCaseName,
+  displayId,
+  resultStatus,
+}: Props) => {
   const queryClient = useQueryClient();
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [issueTitle, setIssueTitle] = useState('');
@@ -40,11 +58,12 @@ export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, disp
   const links = linksData?.success ? linksData.data : [];
 
   const createIssueMutation = useMutation({
-    mutationFn: () => createGithubIssue({
-      testCaseId,
-      title: issueTitle || `[Testea] TC-${displayId} ${testCaseName} 실패`,
-      body: issueBody || undefined,
-    }),
+    mutationFn: () =>
+      createGithubIssue({
+        testCaseId,
+        title: issueTitle || `[Testea] TC-${displayId} ${testCaseName} 실패`,
+        body: issueBody || undefined,
+      }),
     onSuccess: (result) => {
       if (result.success) {
         toast.success('GitHub Issue가 생성되었습니다.');
@@ -75,7 +94,7 @@ export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, disp
               setIssueTitle(`[Testea] TC-${displayId} ${testCaseName} 실패`);
               setShowIssueForm(true);
             }}
-            className="typo-caption text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+            className="typo-caption flex items-center gap-1 text-red-400 transition-colors hover:text-red-300"
           >
             <AlertCircle className="h-3 w-3" />
             Issue 생성
@@ -86,12 +105,15 @@ export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, disp
       {/* 링크 목록 */}
       {isLoading ? (
         <div className="flex items-center justify-center py-3">
-          <Loader2 className="h-4 w-4 animate-spin text-text-4" />
+          <Loader2 className="text-text-4 h-4 w-4 animate-spin" />
         </div>
       ) : links.length > 0 ? (
         <div className="flex flex-col gap-1">
           {links.map((link) => {
-            const status = statusConfig[link.status ?? ''] ?? { label: link.status, cls: 'bg-text-4/10 text-text-3' };
+            const status = statusConfig[link.status ?? ''] ?? {
+              label: link.status,
+              cls: 'bg-text-4/10 text-text-3',
+            };
             const isPR = link.linkType === 'github_pr';
 
             return (
@@ -100,14 +122,14 @@ export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, disp
                 href={link.externalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center gap-2.5 rounded-2 px-3 py-2 hover:bg-bg-3 transition-colors"
+                className="group rounded-2 hover:bg-bg-3 flex items-center gap-2.5 px-3 py-2 transition-colors"
               >
                 {isPR ? (
-                  <GitPullRequest className="h-4 w-4 text-text-3 shrink-0" />
+                  <GitPullRequest className="text-text-3 h-4 w-4 shrink-0" />
                 ) : (
-                  <CircleDot className="h-4 w-4 text-text-3 shrink-0" />
+                  <CircleDot className="text-text-3 h-4 w-4 shrink-0" />
                 )}
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="typo-caption text-text-1 truncate">
                     {link.title || `#${link.externalId}`}
                   </p>
@@ -115,10 +137,12 @@ export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, disp
                     #{link.externalId} · {link.repoFullName}
                   </p>
                 </div>
-                <span className={cn('typo-caption rounded-full px-1.5 py-0.5 shrink-0', status.cls)}>
+                <span
+                  className={cn('typo-caption shrink-0 rounded-full px-1.5 py-0.5', status.cls)}
+                >
                   {status.label}
                 </span>
-                <ExternalLink className="h-3 w-3 text-text-4 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                <ExternalLink className="text-text-4 h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
               </a>
             );
           })}
@@ -129,13 +153,13 @@ export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, disp
 
       {/* Issue 생성 폼 */}
       {showIssueForm && (
-        <div className="rounded-2 border border-line-2 bg-bg-1 p-3 flex flex-col gap-2 mt-1">
+        <div className="rounded-2 border-line-2 bg-bg-1 mt-1 flex flex-col gap-2 border p-3">
           <input
             type="text"
             placeholder="Issue 제목"
             value={issueTitle}
             onChange={(e) => setIssueTitle(e.target.value)}
-            className="typo-body2-normal bg-transparent text-text-1 placeholder:text-text-4 focus:outline-none border-b border-line-2 pb-2"
+            className="typo-body2-normal text-text-1 placeholder:text-text-4 border-line-2 border-b bg-transparent pb-2 focus:outline-none"
             autoFocus
           />
           <textarea
@@ -143,12 +167,16 @@ export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, disp
             value={issueBody}
             onChange={(e) => setIssueBody(e.target.value)}
             rows={3}
-            className="typo-caption bg-transparent text-text-1 placeholder:text-text-4 focus:outline-none resize-none"
+            className="typo-caption text-text-1 placeholder:text-text-4 resize-none bg-transparent focus:outline-none"
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => { setShowIssueForm(false); setIssueTitle(''); setIssueBody(''); }}
+              onClick={() => {
+                setShowIssueForm(false);
+                setIssueTitle('');
+                setIssueBody('');
+              }}
               className="typo-caption text-text-3 hover:text-text-1 px-2 py-1"
             >
               취소
@@ -157,7 +185,7 @@ export const ExternalLinksSection = ({ testCaseId, projectId, testCaseName, disp
               type="button"
               onClick={() => createIssueMutation.mutate()}
               disabled={!issueTitle.trim() || createIssueMutation.isPending}
-              className="typo-caption bg-red-500/10 text-red-400 rounded-2 px-3 py-1 hover:bg-red-500/20 disabled:opacity-50 transition-colors"
+              className="typo-caption rounded-2 bg-red-500/10 px-3 py-1 text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
             >
               {createIssueMutation.isPending ? (
                 <Loader2 className="h-3 w-3 animate-spin" />

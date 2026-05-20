@@ -1,23 +1,25 @@
 'use client';
 
 import React, { useCallback, useId, useMemo, useState } from 'react';
+
 import {
   DndContext,
-  closestCenter,
+  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
+  closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
+  arrayMove,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-  arrayMove,
 } from '@dnd-kit/sortable';
-import { Plus } from 'lucide-react';
 import { cn } from '@testea/util';
+import { Plus } from 'lucide-react';
+
 import { StepRow } from './step-row';
 
 export interface StepBoxEditorProps {
@@ -29,7 +31,14 @@ export interface StepBoxEditorProps {
   placeholder?: string;
 }
 
-export const StepBoxEditor = ({ value, onChange, disabled, className, addLabel = '단계 추가', placeholder }: StepBoxEditorProps) => {
+export const StepBoxEditor = ({
+  value,
+  onChange,
+  disabled,
+  className,
+  addLabel = '단계 추가',
+  placeholder,
+}: StepBoxEditorProps) => {
   const idPrefix = useId();
   const steps = value.length > 0 ? value : [''];
   const [error, setError] = useState<string | null>(null);
@@ -143,18 +152,16 @@ export const StepBoxEditor = ({ value, onChange, disabled, className, addLabel =
         onClick={addStep}
         disabled={disabled}
         className={cn(
-          'flex items-center justify-center gap-1.5 rounded-4 border border-dashed border-line-2 py-2 text-sm',
-          'text-text-3 transition-colors hover:border-primary hover:text-primary',
-          'disabled:opacity-40 disabled:cursor-not-allowed'
+          'rounded-4 border-line-2 flex items-center justify-center gap-1.5 border border-dashed py-2 text-sm',
+          'text-text-3 hover:border-primary hover:text-primary transition-colors',
+          'disabled:cursor-not-allowed disabled:opacity-40'
         )}
       >
         <Plus className="h-4 w-4" />
         {addLabel}
       </button>
 
-      {error && (
-        <p className="text-xs text-system-red">{error}</p>
-      )}
+      {error && <p className="text-system-red text-xs">{error}</p>}
     </div>
   );
 };

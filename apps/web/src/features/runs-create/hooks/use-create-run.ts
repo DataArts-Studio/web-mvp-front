@@ -1,7 +1,8 @@
 'use client';
+import { CreateTestRunSchema } from '@/entities/test-run';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { CreateTestRunSchema } from '@/entities/test-run';
+
 import { createTestRunAction } from '../model/server-action';
 
 export type CreateRunInput = z.infer<typeof CreateTestRunSchema>;

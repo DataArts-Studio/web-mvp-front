@@ -1,4 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
+
 import { getOnboardingStatus } from './server-actions';
 
 export const onboardingQueryKeys = {

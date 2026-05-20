@@ -5,7 +5,6 @@
  * /projects/[slug]/* 경로에 대해 접근 토큰을 검증하고,
  * 토큰이 없거나 유효하지 않으면 접근 페이지로 리다이렉트.
  */
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -106,9 +105,7 @@ function isPublicPath(pathname: string): boolean {
 function isBlockedInProduction(pathname: string): boolean {
   const blockedPaths = ['/dev', '/sentry-example-page', '/api/sentry-example-api'];
 
-  return blockedPaths.some(
-    (blocked) => pathname === blocked || pathname.startsWith(blocked + '/')
-  );
+  return blockedPaths.some((blocked) => pathname === blocked || pathname.startsWith(blocked + '/'));
 }
 
 export function middleware(request: NextRequest) {
@@ -163,7 +160,10 @@ export function middleware(request: NextRequest) {
   const payload = parseTokenPayload(token);
   if (!payload) {
     const response = NextResponse.redirect(
-      new URL(`/projects/${encodeURIComponent(projectSlug)}/access?redirect=${encodeURIComponent(pathname)}`, request.url)
+      new URL(
+        `/projects/${encodeURIComponent(projectSlug)}/access?redirect=${encodeURIComponent(pathname)}`,
+        request.url
+      )
     );
     response.cookies.delete(cookieName);
     // console.log('[Middleware] Invalid token, redirecting');
@@ -174,7 +174,10 @@ export function middleware(request: NextRequest) {
   const now = Math.floor(Date.now() / 1000);
   if (payload.expiresAt < now) {
     const response = NextResponse.redirect(
-      new URL(`/projects/${encodeURIComponent(projectSlug)}/access?redirect=${encodeURIComponent(pathname)}&expired=true`, request.url)
+      new URL(
+        `/projects/${encodeURIComponent(projectSlug)}/access?redirect=${encodeURIComponent(pathname)}&expired=true`,
+        request.url
+      )
     );
     response.cookies.delete(cookieName);
     // console.log('[Middleware] Token expired, redirecting');
@@ -199,7 +202,5 @@ export function middleware(request: NextRequest) {
  * 미들웨어가 적용될 경로 패턴
  */
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };

@@ -1,35 +1,39 @@
 'use client';
 
-import React, { useRef, useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 
-import { TestCaseCardType } from '@/entities/test-case';
 import { projectIdQueryOptions } from '@/entities/project';
+import { TestCaseCardType } from '@/entities/test-case';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
-import { TestCaseDetailForm } from '@/features/cases-create';
-import { testCasesQueryOptions } from '@/features/cases-list';
-import { MainContainer } from '@testea/ui';
-import { useDisclosure } from '@testea/lib';
-import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
-import { exportTestCasesToCSV } from '@/features/cases-export';
-import { ImportWizardModal } from '@/features/import-cases';
 import { AiGenerateModal } from '@/features/ai-generate';
+import { TestCaseDetailForm } from '@/features/cases-create';
+import { exportTestCasesToCSV } from '@/features/cases-export';
+import { testCasesQueryOptions } from '@/features/cases-list';
+import { ImportWizardModal } from '@/features/import-cases';
+import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
+import { useQuery } from '@tanstack/react-query';
+import { useDisclosure } from '@testea/lib';
+import { MainContainer } from '@testea/ui';
 import { ProjectErrorFallback } from '@testea/ui';
 
-import { CasesToolbar, type SortValue } from './_components/cases-toolbar';
-import { SuiteSidebar } from './_components/suite-sidebar';
 import { CaseListSection } from './_components/case-list-section';
 import { CasesLoadingSkeleton } from './_components/cases-loading-skeleton';
+import { CasesToolbar, type SortValue } from './_components/cases-toolbar';
+import { SuiteSidebar } from './_components/suite-sidebar';
 
 const TestCaseSideView = dynamic(
-  () => import('@/view/project/cases/test-case-side-view').then(mod => ({ default: mod.TestCaseSideView })),
-  { ssr: false },
+  () =>
+    import('@/view/project/cases/test-case-side-view').then((mod) => ({
+      default: mod.TestCaseSideView,
+    })),
+  { ssr: false }
 );
 const AnimatePresence = dynamic(
-  () => import('framer-motion').then(mod => ({ default: mod.AnimatePresence })),
-  { ssr: false },
+  () => import('framer-motion').then((mod) => ({ default: mod.AnimatePresence })),
+  { ssr: false }
 );
 
 const PAGE_SIZE = 15;
@@ -79,18 +83,27 @@ export const TestCasesView = () => {
   }, []);
 
   // Data fetching
-  const { data: projectIdData, isLoading: isLoadingProject } = useQuery(projectIdQueryOptions(slug));
+  const { data: projectIdData, isLoading: isLoadingProject } = useQuery(
+    projectIdQueryOptions(slug)
+  );
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
-  const queryParams = useMemo(() => ({
-    page: currentPage,
-    size: PAGE_SIZE,
-    sort: sortOption,
-    search: debouncedSearch || undefined,
-    suiteId: selectedSuiteId !== 'all' ? selectedSuiteId : undefined,
-  }), [currentPage, sortOption, debouncedSearch, selectedSuiteId]);
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      size: PAGE_SIZE,
+      sort: sortOption,
+      search: debouncedSearch || undefined,
+      suiteId: selectedSuiteId !== 'all' ? selectedSuiteId : undefined,
+    }),
+    [currentPage, sortOption, debouncedSearch, selectedSuiteId]
+  );
 
-  const { data: testCasesData, isLoading: isLoadingCases, isFetching } = useQuery({
+  const {
+    data: testCasesData,
+    isLoading: isLoadingCases,
+    isFetching,
+  } = useQuery({
     ...testCasesQueryOptions(projectId!, queryParams),
     enabled: !!projectId,
     placeholderData: (prev) => prev,
@@ -115,7 +128,7 @@ export const TestCasesView = () => {
   const testCaseItems: TestCaseCardType[] = testCasesData?.success
     ? testCasesData.data.items.map((item) => ({
         ...item,
-        suiteTitle: item.testSuiteId ? (suiteMap.get(item.testSuiteId) || '') : '',
+        suiteTitle: item.testSuiteId ? suiteMap.get(item.testSuiteId) || '' : '',
         status: item.resultStatus,
         lastExecutedAt: null,
       }))
@@ -141,11 +154,12 @@ export const TestCasesView = () => {
   }, [handleSuiteChange]);
 
   // 타이틀 결정
-  const title = selectedSuiteId === 'all'
-    ? '테스트 케이스'
-    : selectedSuiteId === '__uncategorized__'
-      ? '미분류'
-      : suiteMap.get(selectedSuiteId) || '테스트 케이스';
+  const title =
+    selectedSuiteId === 'all'
+      ? '테스트 케이스'
+      : selectedSuiteId === '__uncategorized__'
+        ? '미분류'
+        : suiteMap.get(selectedSuiteId) || '테스트 케이스';
 
   // Loading
   if (isLoadingProject || (isLoadingCases && !testCasesData)) {
@@ -227,7 +241,7 @@ export const TestCasesView = () => {
       <AnimatePresence>
         {isActiveType('detail') && selectedTestCaseId && (
           <TestCaseSideView
-            testCase={testCaseItems.find(tc => tc.id === selectedTestCaseId)}
+            testCase={testCaseItems.find((tc) => tc.id === selectedTestCaseId)}
             onClose={() => {
               setSelectedTestCaseId(null);
               onClose();

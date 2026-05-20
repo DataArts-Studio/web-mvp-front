@@ -1,17 +1,12 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import {
-  getDatabase,
-  testCases,
-  testSuites,
-  milestones,
-  auditLogs,
-} from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import { and, eq, lt, isNull } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { auditLogs, getDatabase, milestones, testCases, testSuites } from '@testea/db';
+import { and, eq, isNull, lt } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
+
 import type { TrashItem, TrashItemType } from '../model/types';
 
 const AUTO_DELETE_DAYS = 30;
@@ -31,7 +26,7 @@ async function writeAuditLogs(
     action: AuditAction;
     snapshot: unknown;
     deletedAt: Date | null;
-  }[],
+  }[]
 ) {
   if (entries.length === 0) return;
 
@@ -46,7 +41,7 @@ async function writeAuditLogs(
       snapshot: e.snapshot,
       deleted_at: e.deletedAt ?? new Date(),
       created_at: new Date(),
-    })),
+    }))
   );
 }
 
@@ -54,9 +49,7 @@ async function writeAuditLogs(
  * 프로젝트의 휴지통 항목을 모두 조회합니다.
  * on-access 방식으로 30일 경과 항목을 자동 정리합니다.
  */
-export const getTrashedItems = async (
-  projectId: string,
-): Promise<ActionResult<TrashItem[]>> => {
+export const getTrashedItems = async (projectId: string): Promise<ActionResult<TrashItem[]>> => {
   try {
     const hasAccess = await requireProjectAccess(projectId);
     if (!hasAccess) {
@@ -77,8 +70,8 @@ export const getTrashedItems = async (
           and(
             eq(testCases.project_id, projectId),
             eq(testCases.lifecycle_status, 'DELETED'),
-            lt(testCases.archived_at, cutoff),
-          ),
+            lt(testCases.archived_at, cutoff)
+          )
         ),
       db
         .select()
@@ -87,8 +80,8 @@ export const getTrashedItems = async (
           and(
             eq(testSuites.project_id, projectId),
             eq(testSuites.lifecycle_status, 'DELETED'),
-            lt(testSuites.archived_at, cutoff),
-          ),
+            lt(testSuites.archived_at, cutoff)
+          )
         ),
       db
         .select()
@@ -97,8 +90,8 @@ export const getTrashedItems = async (
           and(
             eq(milestones.project_id, projectId),
             eq(milestones.lifecycle_status, 'DELETED'),
-            lt(milestones.archived_at, cutoff),
-          ),
+            lt(milestones.archived_at, cutoff)
+          )
         ),
     ]);
 
@@ -140,29 +133,38 @@ export const getTrashedItems = async (
       const purgedAt = new Date();
       await Promise.all([
         expiredCases.length > 0 &&
-          db.update(testCases).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
-            and(
-              eq(testCases.project_id, projectId),
-              eq(testCases.lifecycle_status, 'DELETED'),
-              lt(testCases.archived_at, cutoff),
+          db
+            .update(testCases)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(
+                eq(testCases.project_id, projectId),
+                eq(testCases.lifecycle_status, 'DELETED'),
+                lt(testCases.archived_at, cutoff)
+              )
             ),
-          ),
         expiredSuites.length > 0 &&
-          db.update(testSuites).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
-            and(
-              eq(testSuites.project_id, projectId),
-              eq(testSuites.lifecycle_status, 'DELETED'),
-              lt(testSuites.archived_at, cutoff),
+          db
+            .update(testSuites)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(
+                eq(testSuites.project_id, projectId),
+                eq(testSuites.lifecycle_status, 'DELETED'),
+                lt(testSuites.archived_at, cutoff)
+              )
             ),
-          ),
         expiredMilestones.length > 0 &&
-          db.update(milestones).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
-            and(
-              eq(milestones.project_id, projectId),
-              eq(milestones.lifecycle_status, 'DELETED'),
-              lt(milestones.archived_at, cutoff),
+          db
+            .update(milestones)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(
+                eq(milestones.project_id, projectId),
+                eq(milestones.lifecycle_status, 'DELETED'),
+                lt(milestones.archived_at, cutoff)
+              )
             ),
-          ),
       ]);
     }
 
@@ -175,12 +177,7 @@ export const getTrashedItems = async (
           deletedAt: testCases.archived_at,
         })
         .from(testCases)
-        .where(
-          and(
-            eq(testCases.project_id, projectId),
-            eq(testCases.lifecycle_status, 'DELETED'),
-          ),
-        ),
+        .where(and(eq(testCases.project_id, projectId), eq(testCases.lifecycle_status, 'DELETED'))),
       db
         .select({
           id: testSuites.id,
@@ -189,10 +186,7 @@ export const getTrashedItems = async (
         })
         .from(testSuites)
         .where(
-          and(
-            eq(testSuites.project_id, projectId),
-            eq(testSuites.lifecycle_status, 'DELETED'),
-          ),
+          and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'DELETED'))
         ),
       db
         .select({
@@ -202,19 +196,14 @@ export const getTrashedItems = async (
         })
         .from(milestones)
         .where(
-          and(
-            eq(milestones.project_id, projectId),
-            eq(milestones.lifecycle_status, 'DELETED'),
-          ),
+          and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))
         ),
     ]);
 
     const now = new Date();
     const toDaysRemaining = (deletedAt: Date | null): number => {
       if (!deletedAt) return AUTO_DELETE_DAYS;
-      const elapsed = Math.floor(
-        (now.getTime() - deletedAt.getTime()) / (1000 * 60 * 60 * 24),
-      );
+      const elapsed = Math.floor((now.getTime() - deletedAt.getTime()) / (1000 * 60 * 60 * 24));
       return Math.max(0, AUTO_DELETE_DAYS - elapsed);
     };
 
@@ -243,10 +232,7 @@ export const getTrashedItems = async (
     ];
 
     // 삭제일 기준 최신순 정렬
-    items.sort(
-      (a, b) =>
-        new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime(),
-    );
+    items.sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime());
 
     return { success: true, data: items };
   } catch (error) {
@@ -264,7 +250,7 @@ export const getTrashedItems = async (
 export const restoreItem = async (
   projectId: string,
   targetType: TrashItemType,
-  targetId: string,
+  targetId: string
 ): Promise<ActionResult<{ id: string }>> => {
   try {
     const hasAccess = await requireProjectAccess(projectId);
@@ -285,7 +271,11 @@ export const restoreItem = async (
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
         }
-        return { success: true, data: { id: restored.id }, message: '테스트 케이스가 복원되었습니다.' };
+        return {
+          success: true,
+          data: { id: restored.id },
+          message: '테스트 케이스가 복원되었습니다.',
+        };
       }
       case 'suite': {
         const [restored] = await db
@@ -301,12 +291,13 @@ export const restoreItem = async (
           .update(testCases)
           .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
           .where(
-            and(
-              eq(testCases.test_suite_id, targetId),
-              eq(testCases.lifecycle_status, 'DELETED'),
-            ),
+            and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED'))
           );
-        return { success: true, data: { id: restored.id }, message: '테스트 스위트가 복원되었습니다.' };
+        return {
+          success: true,
+          data: { id: restored.id },
+          message: '테스트 스위트가 복원되었습니다.',
+        };
       }
       case 'milestone': {
         const [restored] = await db
@@ -338,7 +329,7 @@ export const restoreItem = async (
 export const permanentDeleteItem = async (
   projectId: string,
   targetType: TrashItemType,
-  targetId: string,
+  targetId: string
 ): Promise<ActionResult<{ id: string }>> => {
   try {
     const hasAccess = await requireProjectAccess(projectId);
@@ -355,16 +346,21 @@ export const permanentDeleteItem = async (
           .from(testCases)
           .where(and(eq(testCases.id, targetId), eq(testCases.lifecycle_status, 'DELETED')));
         if (row) {
-          await writeAuditLogs(db, [{
-            projectId,
-            entityType: 'test_case',
-            entityId: row.id,
-            entityName: row.name,
-            action: 'permanent_delete',
-            snapshot: row,
-            deletedAt: row.archived_at,
-          }]);
-          await db.update(testCases).set({ lifecycle_status: 'PURGED', updated_at: new Date() }).where(eq(testCases.id, targetId));
+          await writeAuditLogs(db, [
+            {
+              projectId,
+              entityType: 'test_case',
+              entityId: row.id,
+              entityName: row.name,
+              action: 'permanent_delete',
+              snapshot: row,
+              deletedAt: row.archived_at,
+            },
+          ]);
+          await db
+            .update(testCases)
+            .set({ lifecycle_status: 'PURGED', updated_at: new Date() })
+            .where(eq(testCases.id, targetId));
         }
         break;
       }
@@ -378,7 +374,7 @@ export const permanentDeleteItem = async (
           .select()
           .from(testCases)
           .where(
-            and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED')),
+            and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED'))
           );
 
         const entries = [];
@@ -411,12 +407,16 @@ export const permanentDeleteItem = async (
 
         // 하위 TC + 스위트 PURGED 마킹
         const purgedAt = new Date();
-        await db.update(testCases).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
-          and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED')),
-        );
-        await db.update(testSuites).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
-          and(eq(testSuites.id, targetId), eq(testSuites.lifecycle_status, 'DELETED')),
-        );
+        await db
+          .update(testCases)
+          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+          .where(
+            and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED'))
+          );
+        await db
+          .update(testSuites)
+          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+          .where(and(eq(testSuites.id, targetId), eq(testSuites.lifecycle_status, 'DELETED')));
         break;
       }
       case 'milestone': {
@@ -425,16 +425,21 @@ export const permanentDeleteItem = async (
           .from(milestones)
           .where(and(eq(milestones.id, targetId), eq(milestones.lifecycle_status, 'DELETED')));
         if (row) {
-          await writeAuditLogs(db, [{
-            projectId,
-            entityType: 'milestone',
-            entityId: row.id,
-            entityName: row.name,
-            action: 'permanent_delete',
-            snapshot: row,
-            deletedAt: row.archived_at,
-          }]);
-          await db.update(milestones).set({ lifecycle_status: 'PURGED', updated_at: new Date() }).where(eq(milestones.id, targetId));
+          await writeAuditLogs(db, [
+            {
+              projectId,
+              entityType: 'milestone',
+              entityId: row.id,
+              entityName: row.name,
+              action: 'permanent_delete',
+              snapshot: row,
+              deletedAt: row.archived_at,
+            },
+          ]);
+          await db
+            .update(milestones)
+            .set({ lifecycle_status: 'PURGED', updated_at: new Date() })
+            .where(eq(milestones.id, targetId));
         }
         break;
       }
@@ -459,9 +464,7 @@ export const permanentDeleteItem = async (
 /**
  * 휴지통을 비웁니다. (모든 DELETED 항목 스냅샷 기록 후 영구 삭제)
  */
-export const emptyTrash = async (
-  projectId: string,
-): Promise<ActionResult<{ count: number }>> => {
+export const emptyTrash = async (projectId: string): Promise<ActionResult<{ count: number }>> => {
   try {
     const hasAccess = await requireProjectAccess(projectId);
     if (!hasAccess) {
@@ -479,11 +482,15 @@ export const emptyTrash = async (
       db
         .select()
         .from(testSuites)
-        .where(and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'DELETED'))),
+        .where(
+          and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'DELETED'))
+        ),
       db
         .select()
         .from(milestones)
-        .where(and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))),
+        .where(
+          and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))
+        ),
     ]);
 
     // audit log 기록
@@ -525,17 +532,26 @@ export const emptyTrash = async (
     const purgedAt = new Date();
     await Promise.all([
       allCases.length > 0 &&
-        db.update(testCases).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
-          and(eq(testCases.project_id, projectId), eq(testCases.lifecycle_status, 'DELETED')),
-        ),
+        db
+          .update(testCases)
+          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+          .where(
+            and(eq(testCases.project_id, projectId), eq(testCases.lifecycle_status, 'DELETED'))
+          ),
       allSuites.length > 0 &&
-        db.update(testSuites).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
-          and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'DELETED')),
-        ),
+        db
+          .update(testSuites)
+          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+          .where(
+            and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'DELETED'))
+          ),
       allMilestones.length > 0 &&
-        db.update(milestones).set({ lifecycle_status: 'PURGED', updated_at: purgedAt }).where(
-          and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED')),
-        ),
+        db
+          .update(milestones)
+          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+          .where(
+            and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))
+          ),
     ]);
 
     const totalCount = allCases.length + allSuites.length + allMilestones.length;

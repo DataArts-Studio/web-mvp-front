@@ -1,6 +1,7 @@
 import React from 'react';
-import { Truck, Cloud, Home } from 'lucide-react';
+
 import type { Meta, StoryObj } from '@storybook/react';
+import { Cloud, Home, Truck } from 'lucide-react';
 
 import { Select } from './index';
 
@@ -152,16 +153,31 @@ export const Basic: Story = {
 
 const renderIconItems = () => (
   <>
-    <Select.Item value="home" style={iconItemStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
+    <Select.Item
+      value="home"
+      style={iconItemStyle}
+      onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+    >
       <Home size={16} />
       <span>홈 (기본)</span>
     </Select.Item>
-    <Select.Item value="delivery" style={iconItemStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
-      <Truck size={16} color="#ef4444"/>
+    <Select.Item
+      value="delivery"
+      style={iconItemStyle}
+      onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+    >
+      <Truck size={16} color="#ef4444" />
       <span>배송 중</span>
     </Select.Item>
-    <Select.Item value="cloud" style={iconItemStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}>
-      <Cloud size={16} color="#3b82f6"/>
+    <Select.Item
+      value="cloud"
+      style={iconItemStyle}
+      onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+    >
+      <Cloud size={16} color="#3b82f6" />
       <span>클라우드 동기화</span>
     </Select.Item>
   </>
@@ -191,7 +207,15 @@ export const ControlledWithCustomTrigger: Story = {
       <Select.Root value={value} onValueChange={setValue} style={{ width: 280 }}>
         <Select.Trigger asChild style={{ ...triggerStyle, background: '#f9fafb' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '999px', background: '#34d399' }} />
+            <span
+              style={{
+                display: 'inline-block',
+                width: 8,
+                height: 8,
+                borderRadius: '999px',
+                background: '#34d399',
+              }}
+            />
             <Select.Value placeholder="요일 선택" />
           </div>
           <span aria-hidden>⌄</span>

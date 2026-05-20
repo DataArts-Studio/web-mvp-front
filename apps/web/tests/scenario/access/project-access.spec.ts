@@ -1,6 +1,6 @@
-import { test, expect } from '../../fixtures/test';
-import { ProjectAccessPage } from '../../pages';
 import { ACCESS_TEST_DATA as D } from '../../data/test-data';
+import { expect, test } from '../../fixtures/test';
+import { ProjectAccessPage } from '../../pages';
 
 // rate-limit 카운터는 dev 서버 인메모리 Map(프로젝트+IP)에 공유된다.
 // 이 파일은 "틀린 값" 제출을 validation 1건(<5회)만 하고, 골든패스 성공이
@@ -26,7 +26,10 @@ test.describe('프로젝트 접근 - Golden path', () => {
     dashboardPage,
   }) => {
     await accessPage.gotoProtected(`/projects/${D.slug}`);
-    await accessPage.expectRedirectedFromProtected(D.slug, `/projects/${D.slug}`);
+    await accessPage.expectRedirectedFromProtected(
+      D.slug,
+      `/projects/${D.slug}`
+    );
 
     await accessPage.authenticate(D.validCode);
 
@@ -62,7 +65,9 @@ test.describe('프로젝트 접근 - validation', () => {
     await accessPage.expectAtGate(D.slug);
   });
 
-  test('8자 미만 제출 시 길이 안내 메시지가 노출된다', async ({ accessPage }) => {
+  test('8자 미만 제출 시 길이 안내 메시지가 노출된다', async ({
+    accessPage,
+  }) => {
     await accessPage.authenticate(D.shortCode);
     await accessPage.expectError(ProjectAccessPage.messages.tooShort);
   });

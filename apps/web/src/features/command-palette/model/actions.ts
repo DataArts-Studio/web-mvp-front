@@ -1,4 +1,5 @@
 import { FileText, FolderOpen, Play } from 'lucide-react';
+
 import type { CommandItem } from './types';
 
 export const getQuickActions = (projectSlug: string): CommandItem[] => [

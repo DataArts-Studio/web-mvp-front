@@ -91,7 +91,7 @@ const BaseDecoration = ({
   src,
   width,
   height,
-  alt = "",
+  alt = '',
   imageClassName,
   ...props
 }: BaseDecorationProps) => {
@@ -99,7 +99,7 @@ const BaseDecoration = ({
     <div
       aria-hidden="true"
       role="presentation"
-      className={cn("pointer-events-none absolute select-none", className)}
+      className={cn('pointer-events-none absolute select-none', className)}
       {...props}
     >
       <Image
@@ -110,7 +110,7 @@ const BaseDecoration = ({
         aria-hidden="true"
         loading="lazy"
         priority={false}
-        className={cn("absolute top-0 left-0", imageClassName)}
+        className={cn('absolute top-0 left-0', imageClassName)}
       />
     </div>
   );
@@ -120,14 +120,20 @@ const BaseDecoration = ({
  * [Preset] ArrowDecoration
  * BaseDecoration을 사용하여 미리 정의된 화살표 장식입니다.
  */
-const GridBackgroundArrowDecoration = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+const GridBackgroundArrowDecoration = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <BaseDecoration
       src="/backgrounds/arrow.svg"
       width={37.5}
       height={37.5}
       alt=""
-      className={cn("top-1/2 left-[calc(80%-153px)] z-10 h-[50px] w-[50px] -translate-y-1/2", className)}
+      className={cn(
+        'top-1/2 left-[calc(80%-153px)] z-10 h-[50px] w-[50px] -translate-y-1/2',
+        className
+      )}
       imageClassName="z-10"
       {...props}
     />
@@ -138,14 +144,20 @@ const GridBackgroundArrowDecoration = ({ className, ...props }: React.HTMLAttrib
  * [Preset] CircleDecoration
  * BaseDecoration을 사용하여 미리 정의된 원형 장식입니다.
  */
-const GridBackgroundCircleDecoration = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+const GridBackgroundCircleDecoration = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <BaseDecoration
       src="/backgrounds/circular.svg"
       width={1137.1}
       height={972.6}
       alt=""
-      className={cn("top-1/2 left-[calc(60%+5px)] z-0 h-[972px] w-[972px] -translate-y-1/2 opacity-30", className)}
+      className={cn(
+        'top-1/2 left-[calc(60%+5px)] z-0 h-[972px] w-[972px] -translate-y-1/2 opacity-30',
+        className
+      )}
       imageClassName="z-10"
       {...props}
     />

@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMockMilestoneRow,
   mockDb,
@@ -6,13 +5,14 @@ import {
   resetMockDb,
   setMockUpdateReturn,
 } from '@/shared/test/__mocks__/db';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { updateMilestone } from './server-actions';
 
 vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
   milestones: { id: 'id', name: 'name' },
 }));
-
-import { updateMilestone } from './server-actions';
 
 describe('updateMilestone', () => {
   beforeEach(() => {

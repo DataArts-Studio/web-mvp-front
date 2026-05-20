@@ -1,14 +1,14 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { eq, sql, and, gte } from 'drizzle-orm';
-import { getDatabase, aiUsageLogs } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { aiUsageLogs, getDatabase } from '@testea/db';
+import { and, eq, gte, sql } from 'drizzle-orm';
 
 const FREE_MONTHLY_LIMIT = 50;
 
 export const getMonthlyUsage = async (
-  projectId: string,
+  projectId: string
 ): Promise<ActionResult<{ used: number; limit: number }>> => {
   try {
     const db = getDatabase();
@@ -22,12 +22,7 @@ export const getMonthlyUsage = async (
         total: sql<number>`COALESCE(SUM(${aiUsageLogs.generated_count}), 0)`,
       })
       .from(aiUsageLogs)
-      .where(
-        and(
-          eq(aiUsageLogs.project_id, projectId),
-          gte(aiUsageLogs.created_at, startOfMonth),
-        ),
-      );
+      .where(and(eq(aiUsageLogs.project_id, projectId), gte(aiUsageLogs.created_at, startOfMonth)));
 
     return {
       success: true,
@@ -45,7 +40,7 @@ export const getMonthlyUsage = async (
 export const recordUsage = async (
   projectId: string,
   actionType: string,
-  generatedCount: number,
+  generatedCount: number
 ): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();

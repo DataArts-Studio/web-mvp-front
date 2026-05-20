@@ -1,22 +1,21 @@
 import type { Metadata } from 'next';
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { ChecklistsView } from '@/view';
-import { projectIdQueryOptions } from '@/entities/project/api/query';
+
 import { checklistsQueryOptions } from '@/entities/checklist/api/query';
+import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { cachedGetProjectId } from '@/shared/lib/cache';
+import { ChecklistsView } from '@/view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 export const metadata: Metadata = {
   title: '체크리스트',
   description: '배포 전 확인 항목을 체크리스트로 관리합니다.',
 };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   try {
     const result = await queryClient.fetchQuery({

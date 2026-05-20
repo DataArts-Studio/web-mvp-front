@@ -1,6 +1,8 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+
 import { cn } from '@testea/util';
+import { Check } from 'lucide-react';
+
 import { Skeleton, SkeletonCircle } from '../skeleton';
 
 /* ─── Root ─────────────────────────────────────────────────────────────────── */
@@ -13,10 +15,8 @@ const Root = ({ variant = 'default', className, children, ...props }: RootProps)
   <section
     className={cn(
       'rounded-5 flex flex-col border transition-colors',
-      variant === 'danger'
-        ? 'border-red-500/20 bg-red-500/[0.03]'
-        : 'border-line-2 bg-bg-2',
-      className,
+      variant === 'danger' ? 'border-red-500/20 bg-red-500/[0.03]' : 'border-line-2 bg-bg-2',
+      className
     )}
     {...props}
   >
@@ -39,19 +39,14 @@ const Header = ({ icon, title, description, variant = 'default' }: HeaderProps) 
       <div
         className={cn(
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-          variant === 'danger'
-            ? 'bg-red-500/10 text-red-400'
-            : 'bg-primary/10 text-primary',
+          variant === 'danger' ? 'bg-red-500/10 text-red-400' : 'bg-primary/10 text-primary'
         )}
       >
         {icon}
       </div>
       <div className="flex flex-col gap-0.5">
         <h2
-          className={cn(
-            'typo-h2-heading',
-            variant === 'danger' ? 'text-red-400' : 'text-text-1',
-          )}
+          className={cn('typo-h2-heading', variant === 'danger' ? 'text-red-400' : 'text-text-1')}
         >
           {title}
         </h2>
@@ -68,12 +63,7 @@ interface DividerProps {
 }
 
 const Divider = ({ variant = 'default' }: DividerProps) => (
-  <div
-    className={cn(
-      'border-t',
-      variant === 'danger' ? 'border-red-500/10' : 'border-line-2',
-    )}
-  />
+  <div className={cn('border-t', variant === 'danger' ? 'border-red-500/10' : 'border-line-2')} />
 );
 
 /* ─── Body ─────────────────────────────────────────────────────────────────── */
@@ -108,9 +98,7 @@ const ConnectedStatus = ({ label, description, actions }: ConnectedStatusProps) 
       </div>
       <div className="flex flex-col">
         <span className="typo-body2-heading text-text-1">{label}</span>
-        {description && (
-          <span className="typo-caption text-text-3">{description}</span>
-        )}
+        {description && <span className="typo-caption text-text-3">{description}</span>}
       </div>
     </div>
     {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -120,7 +108,7 @@ const ConnectedStatus = ({ label, description, actions }: ConnectedStatusProps) 
 /* ─── LoadingSkeleton — 공통 로딩 스켈레톤 ────────────────────────────────── */
 
 const LoadingSkeleton = () => (
-  <div className="rounded-5 border-line-2 bg-bg-2 flex flex-col border animate-pulse">
+  <div className="rounded-5 border-line-2 bg-bg-2 flex animate-pulse flex-col border">
     <div className="flex items-start gap-4 p-6 pb-5">
       <SkeletonCircle className="h-10 w-10" />
       <div className="flex flex-col gap-1">
@@ -128,7 +116,7 @@ const LoadingSkeleton = () => (
         <Skeleton className="h-4 w-52" />
       </div>
     </div>
-    <div className="border-t border-line-2" />
+    <div className="border-line-2 border-t" />
     <div className="p-6 pt-5">
       <Skeleton className="h-10 w-full" />
     </div>

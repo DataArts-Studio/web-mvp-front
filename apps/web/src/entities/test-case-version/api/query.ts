@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
-import { getVersionsByTestCaseId, getVersionDetail, compareVersions } from './actions';
+
+import { compareVersions, getVersionDetail, getVersionsByTestCaseId } from './actions';
 
 export const versionQueryKeys = {
   all: ['testCaseVersions'] as const,

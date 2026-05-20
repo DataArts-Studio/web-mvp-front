@@ -3,6 +3,7 @@ import { EmptyState } from '@testea/ui';
 import { cn } from '@testea/util';
 import { formatDateTime } from '@testea/util';
 import { PlayCircle } from 'lucide-react';
+
 import { RUN_STATUS_CONFIG } from './suite-detail-constants';
 
 type SuiteRecentRunsProps = {
@@ -12,7 +13,9 @@ type SuiteRecentRunsProps = {
 export const SuiteRecentRuns = ({ recentRuns }: SuiteRecentRunsProps) => {
   return (
     <section aria-labelledby="suite-recent-runs-heading" className="col-span-6 flex flex-col gap-4">
-      <h2 id="suite-recent-runs-heading" className="typo-h2-heading">최근 실행 이력</h2>
+      <h2 id="suite-recent-runs-heading" className="typo-h2-heading">
+        최근 실행 이력
+      </h2>
 
       {recentRuns.length === 0 ? (
         <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">

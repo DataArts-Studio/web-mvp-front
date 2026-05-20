@@ -7,14 +7,14 @@ import { useRouter } from 'next/navigation';
 import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
 import { createProject } from '@/features/projects-create';
 import { DSButton } from '@/shared';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { track, PROJECT_CREATE_EVENTS } from '@/shared/lib/analytics';
 import { ENV } from '@/shared/constants';
+import { PROJECT_CREATE_EVENTS, track } from '@/shared/lib/analytics';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 
-import { StepProjectInfo } from './step-project-info';
-import { StepPassword } from './step-password';
 import { StepConfirmation } from './step-confirmation';
+import { StepPassword } from './step-password';
+import { StepProjectInfo } from './step-project-info';
 import { StepSuccess } from './step-success';
 
 interface ProjectCreateFormProps {
@@ -26,7 +26,9 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [createdSlug, setCreatedSlug] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const siteKey = isLocalhost ? '' : ENV.CLIENT.TURNSTILE_SITE_KEY;
   const {
     register,
@@ -132,55 +134,55 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-project-title"
-        className="fixed top-1/2 left-1/2 z-[1001] box-border flex w-[36rem] -translate-x-1/2 -translate-y-1/2 flex-col content-stretch items-center gap-10 overflow-clip rounded-3xl border border-line-2 bg-bg-1 px-10 py-12"
+        className="border-line-2 bg-bg-1 fixed top-1/2 left-1/2 z-[1001] box-border flex w-[36rem] -translate-x-1/2 -translate-y-1/2 flex-col content-stretch items-center gap-10 overflow-clip rounded-3xl border px-10 py-12"
       >
         {/* TODO: 추후 모달 분리작업 진행(shared/ui/modal) */}
         <form
-        aria-label="project-create-form"
-        onSubmit={handleSubmit(onSubmit)}
-        className="relative z-10 flex w-full shrink-0 flex-col content-stretch items-center gap-[32px]"
-      >
+          aria-label="project-create-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="relative z-10 flex w-full shrink-0 flex-col content-stretch items-center gap-[32px]"
+        >
+          {step === 1 && (
+            <StepProjectInfo
+              register={register}
+              control={control}
+              errors={errors}
+              onNext={handleNext}
+            />
+          )}
+          {step === 2 && (
+            <StepPassword
+              register={register}
+              errors={errors}
+              step={step}
+              onNext={handleNext}
+              onClose={onClick}
+            />
+          )}
+          {step === 3 && (
+            <StepConfirmation
+              projectName={projectName}
+              step={step}
+              isSubmitting={isSubmitting}
+              siteKey={siteKey}
+              onTurnstileToken={setTurnstileToken}
+              turnstileToken={turnstileToken}
+              onClose={onClick}
+            />
+          )}
+          {step === 4 && (
+            <StepSuccess
+              createdSlug={createdSlug}
+              onStart={() => handleRedirectTo(`/projects/${encodeURIComponent(createdSlug)}`)}
+            />
+          )}
+        </form>
         {step === 1 && (
-          <StepProjectInfo
-            register={register}
-            control={control}
-            errors={errors}
-            onNext={handleNext}
-          />
+          <DSButton onClick={onClick} variant="text" className="mx-auto">
+            돌아가기
+          </DSButton>
         )}
-        {step === 2 && (
-          <StepPassword
-            register={register}
-            errors={errors}
-            step={step}
-            onNext={handleNext}
-            onClose={onClick}
-          />
-        )}
-        {step === 3 && (
-          <StepConfirmation
-            projectName={projectName}
-            step={step}
-            isSubmitting={isSubmitting}
-            siteKey={siteKey}
-            onTurnstileToken={setTurnstileToken}
-            turnstileToken={turnstileToken}
-            onClose={onClick}
-          />
-        )}
-        {step === 4 && (
-          <StepSuccess
-            createdSlug={createdSlug}
-            onStart={() => handleRedirectTo(`/projects/${encodeURIComponent(createdSlug)}`)}
-          />
-        )}
-      </form>
-      {step === 1 && (
-        <DSButton onClick={onClick} variant="text" className="mx-auto">
-          돌아가기
-        </DSButton>
-      )}
-    </section>
+      </section>
     </>
   );
 };

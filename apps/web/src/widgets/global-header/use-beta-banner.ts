@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore, useCallback } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 const STORAGE_KEY = 'beta-banner-dismissed-v1';
 
@@ -17,7 +17,7 @@ function getServerSnapshot(): boolean {
 function subscribe(listener: () => void): () => void {
   listeners = [...listeners, listener];
   return () => {
-    listeners = listeners.filter(l => l !== listener);
+    listeners = listeners.filter((l) => l !== listener);
   };
 }
 

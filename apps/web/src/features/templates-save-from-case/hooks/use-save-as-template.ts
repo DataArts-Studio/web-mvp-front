@@ -1,6 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-
 import { createTemplateFromCase, templateQueryKeys } from '@/entities/test-case-template/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 type SaveAsTemplateInput = {
   caseId: string;
@@ -15,10 +14,12 @@ export const useSaveAsTemplate = () => {
     mutationFn: (input: SaveAsTemplateInput) =>
       createTemplateFromCase(input.caseId, input.name, input.description),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: templateQueryKeys.all,
-        refetchType: 'all',
-      }).catch(() => {});
+      await queryClient
+        .invalidateQueries({
+          queryKey: templateQueryKeys.all,
+          refetchType: 'all',
+        })
+        .catch(() => {});
     },
   });
 };

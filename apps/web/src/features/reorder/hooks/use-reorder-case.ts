@@ -1,11 +1,12 @@
 'use client';
 
+import { testCaseQueryKeys } from '@/features/cases-list';
+import type { TestCasesListParams } from '@/features/cases-list/api/query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { reorderTestCase, rebalanceSortOrder } from '../api/actions';
-import { testCaseQueryKeys } from '@/features/cases-list';
+
+import { rebalanceSortOrder, reorderTestCase } from '../api/actions';
 import { calculateMiddleSortOrder } from '../model/sort-utils';
-import type { TestCasesListParams } from '@/features/cases-list/api/query';
 
 interface ReorderCaseParams {
   id: string;

@@ -1,10 +1,11 @@
 'use client';
 
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
+
 import type { ProjectForm } from '@/entities';
 import { DSButton, DsFormField, DsInput } from '@/shared';
+import { PROJECT_CREATE_EVENTS, track } from '@/shared/lib/analytics';
 import { XIcon } from 'lucide-react';
-import { track, PROJECT_CREATE_EVENTS } from '@/shared/lib/analytics';
 
 interface StepPasswordProps {
   register: UseFormRegister<ProjectForm>;

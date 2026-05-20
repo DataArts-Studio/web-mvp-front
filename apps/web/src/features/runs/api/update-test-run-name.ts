@@ -1,13 +1,13 @@
 'use server';
 
+import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns } from '@testea/db';
 import { eq } from 'drizzle-orm';
-import type { ActionResult } from '@/shared/types';
 
 export async function updateTestRunName(
   testRunId: string,
-  name: string,
+  name: string
 ): Promise<ActionResult<{ id: string; name: string }>> {
   try {
     const trimmed = name.trim();

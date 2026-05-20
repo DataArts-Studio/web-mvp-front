@@ -38,12 +38,7 @@ const FormRoot = ({ ref, className, children, ...props }: FormRootProps) => {
 // ----------------------------------------------
 const FormLabel = ({ className, invalid, ref, ...props }: FormLabelProps) => {
   return (
-    <label
-      ref={ref}
-      data-invalid={invalid ? '' : undefined}
-      className={className}
-      {...props}
-    />
+    <label ref={ref} data-invalid={invalid ? '' : undefined} className={className} {...props} />
   );
 };
 
@@ -52,7 +47,15 @@ const FormLabel = ({ className, invalid, ref, ...props }: FormLabelProps) => {
 // ----------------------------------------------
 const FormControl = ({ ref, invalid, className, asChild = false, ...props }: FormControlProps) => {
   const Comp = asChild ? Slot : 'div';
-  return <Comp ref={ref} aria-invalid={invalid} data-invalid={invalid ? '' : undefined} className={className} {...props} />;
+  return (
+    <Comp
+      ref={ref}
+      aria-invalid={invalid}
+      data-invalid={invalid ? '' : undefined}
+      className={className}
+      {...props}
+    />
+  );
 };
 
 // ----------------------------------------------

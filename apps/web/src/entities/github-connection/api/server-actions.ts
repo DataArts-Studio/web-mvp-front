@@ -1,13 +1,14 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { eq, and, asc } from 'drizzle-orm';
-import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from '@testea/db';
-import { encrypt, decrypt } from '@/shared/lib/crypto';
+import { decrypt, encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
-import type { GithubConnection, ExternalLink, GithubRepo } from '../model/types';
-import { ConnectGithubSchema, SelectRepoSchema, CreateGithubIssueSchema } from '../model/schema';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from '@testea/db';
 import crypto from 'crypto';
+import { and, asc, eq } from 'drizzle-orm';
+
+import { ConnectGithubSchema, CreateGithubIssueSchema, SelectRepoSchema } from '../model/schema';
+import type { ExternalLink, GithubConnection, GithubRepo } from '../model/types';
 
 // --- OAuth code → access_token 교환 ---
 async function exchangeCodeForToken(code: string): Promise<string> {
@@ -48,9 +49,10 @@ async function githubApi(token: string, path: string, options?: RequestInit) {
 }
 
 // --- 연결 (OAuth code 교환 + 저장) ---
-export const connectGithub = async (
-  input: { projectId: string; code: string },
-): Promise<ActionResult<{ connection: GithubConnection }>> => {
+export const connectGithub = async (input: {
+  projectId: string;
+  code: string;
+}): Promise<ActionResult<{ connection: GithubConnection }>> => {
   try {
     const parsed = ConnectGithubSchema.safeParse(input);
     if (!parsed.success) {
@@ -100,9 +102,7 @@ export const connectGithub = async (
 };
 
 // --- 저장소 목록 조회 ---
-export const getGithubRepos = async (
-  projectId: string,
-): Promise<ActionResult<GithubRepo[]>> => {
+export const getGithubRepos = async (projectId: string): Promise<ActionResult<GithubRepo[]>> => {
   try {
     const db = getDatabase();
     const [conn] = await db
@@ -126,9 +126,10 @@ export const getGithubRepos = async (
 };
 
 // --- 저장소 선택 + Webhook 등록 ---
-export const selectGithubRepo = async (
-  input: { projectId: string; repoFullName: string },
-): Promise<ActionResult<{ connection: GithubConnection }>> => {
+export const selectGithubRepo = async (input: {
+  projectId: string;
+  repoFullName: string;
+}): Promise<ActionResult<{ connection: GithubConnection }>> => {
   try {
     const parsed = SelectRepoSchema.safeParse(input);
     if (!parsed.success) {
@@ -198,9 +199,7 @@ export const selectGithubRepo = async (
 };
 
 // --- 연결 해제 ---
-export const disconnectGithub = async (
-  projectId: string,
-): Promise<ActionResult<null>> => {
+export const disconnectGithub = async (projectId: string): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
 
@@ -237,7 +236,7 @@ export const disconnectGithub = async (
 
 // --- 연결 상태 조회 ---
 export const getGithubConnection = async (
-  projectId: string,
+  projectId: string
 ): Promise<ActionResult<GithubConnection | null>> => {
   try {
     const db = getDatabase();
@@ -276,7 +275,7 @@ export const getGithubConnection = async (
 
 // --- TC 외부 링크 목록 ---
 export const getExternalLinks = async (
-  testCaseId: string,
+  testCaseId: string
 ): Promise<ActionResult<ExternalLink[]>> => {
   try {
     const db = getDatabase();
@@ -308,9 +307,11 @@ export const getExternalLinks = async (
 };
 
 // --- GitHub Issue 생성 ---
-export const createGithubIssue = async (
-  input: { testCaseId: string; title: string; body?: string },
-): Promise<ActionResult<{ issueUrl: string }>> => {
+export const createGithubIssue = async (input: {
+  testCaseId: string;
+  title: string;
+  body?: string;
+}): Promise<ActionResult<{ issueUrl: string }>> => {
   try {
     const parsed = CreateGithubIssueSchema.safeParse(input);
     if (!parsed.success) {
@@ -322,7 +323,11 @@ export const createGithubIssue = async (
 
     // TC의 프로젝트 확인
     const [tc] = await db
-      .select({ project_id: testCases.project_id, display_id: testCases.display_id, name: testCases.name })
+      .select({
+        project_id: testCases.project_id,
+        display_id: testCases.display_id,
+        name: testCases.name,
+      })
       .from(testCases)
       .where(eq(testCases.id, testCaseId))
       .limit(1);
@@ -344,7 +349,9 @@ export const createGithubIssue = async (
 
     const token = decrypt(conn.access_token);
 
-    const issueBody = body || `## 테스트 실패 보고\n\n**테스트 케이스**: TC-${tc.display_id} ${tc.name}\n\n---\n*이 이슈는 [Testea](https://gettestea.com)에서 자동 생성되었습니다.*`;
+    const issueBody =
+      body ||
+      `## 테스트 실패 보고\n\n**테스트 케이스**: TC-${tc.display_id} ${tc.name}\n\n---\n*이 이슈는 [Testea](https://gettestea.com)에서 자동 생성되었습니다.*`;
 
     const issue = await githubApi(token, `/repos/${conn.repo_full_name}/issues`, {
       method: 'POST',
@@ -369,6 +376,9 @@ export const createGithubIssue = async (
     return { success: true, data: { issueUrl: issue.html_url } };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'createGithubIssue' } });
-    return { success: false, errors: { _github: ['이슈 생성에 실패했습니다. GitHub 연동 상태를 확인해주세요.'] } };
+    return {
+      success: false,
+      errors: { _github: ['이슈 생성에 실패했습니다. GitHub 연동 상태를 확인해주세요.'] },
+    };
   }
 };

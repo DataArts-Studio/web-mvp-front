@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { DSButton } from '@testea/ui';
 import { Plus } from 'lucide-react';
 
@@ -12,8 +13,16 @@ type DashboardEmptyStateProps = {
   actionOverride?: React.ReactNode;
 };
 
-export const DashboardEmptyState = ({ icon, title, description, buttonLabel, onAction, image, actionOverride }: DashboardEmptyStateProps) => (
-  <div className="rounded-3 border-line-2 bg-bg-2/50 border-2 border-dashed flex flex-col items-center justify-center gap-4 py-12">
+export const DashboardEmptyState = ({
+  icon,
+  title,
+  description,
+  buttonLabel,
+  onAction,
+  image,
+  actionOverride,
+}: DashboardEmptyStateProps) => (
+  <div className="rounded-3 border-line-2 bg-bg-2/50 flex flex-col items-center justify-center gap-4 border-2 border-dashed py-12">
     {image ?? (
       <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
         {icon}

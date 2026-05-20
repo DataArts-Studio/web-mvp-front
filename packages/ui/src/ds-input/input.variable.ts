@@ -1,6 +1,7 @@
 import { cva } from 'class-variance-authority';
 
-const BASE_STYLE = 'flex w-full items-center rounded-4 border bg-bg-1 outline-none transition-colors data-[focused]:border-primary';
+const BASE_STYLE =
+  'flex w-full items-center rounded-4 border bg-bg-1 outline-none transition-colors data-[focused]:border-primary';
 
 export const COLOR_VARIANTS = {
   default: 'border-line-2 text-text-1 placeholder:text-text-2',

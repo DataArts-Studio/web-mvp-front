@@ -1,15 +1,15 @@
 'use server';
 
+import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
   getDatabase,
-  milestones,
-  testRuns,
-  testCaseRuns,
   milestoneTestSuites,
+  milestones,
+  testCaseRuns,
+  testRuns,
   testSuites,
 } from '@testea/db';
-import { ActionResult } from '@/shared/types';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 export interface DashboardMilestoneSuite {
@@ -43,7 +43,10 @@ export interface DashboardMilestone {
 }
 
 function calcProgress(rows: { status: string }[]) {
-  let pass = 0, fail = 0, blocked = 0, untested = 0;
+  let pass = 0,
+    fail = 0,
+    blocked = 0,
+    untested = 0;
   for (const r of rows) {
     if (r.status === 'pass') pass++;
     else if (r.status === 'fail') fail++;
@@ -78,19 +81,14 @@ export async function getDashboardMilestones(
         .select({ milestone_id: testRuns.milestone_id })
         .from(testRuns)
         .where(eq(testRuns.id, testRunId));
-      milestoneIds = linked
-        .map((r) => r.milestone_id)
-        .filter(Boolean) as string[];
+      milestoneIds = linked.map((r) => r.milestone_id).filter(Boolean) as string[];
     } else {
       // 전체 활성 마일스톤
       const all = await db
         .select({ id: milestones.id })
         .from(milestones)
         .where(
-          and(
-            eq(milestones.project_id, projectId),
-            eq(milestones.lifecycle_status, 'ACTIVE')
-          )
+          and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'ACTIVE'))
         );
       milestoneIds = all.map((r) => r.id);
     }
@@ -103,12 +101,7 @@ export async function getDashboardMilestones(
     const milestoneRows = await db
       .select()
       .from(milestones)
-      .where(
-        and(
-          inArray(milestones.id, milestoneIds),
-          eq(milestones.lifecycle_status, 'ACTIVE')
-        )
-      );
+      .where(and(inArray(milestones.id, milestoneIds), eq(milestones.lifecycle_status, 'ACTIVE')));
 
     // 3. 각 마일스톤별 스위트 + 진행률 계산
     const result: DashboardMilestone[] = await Promise.all(
@@ -120,10 +113,7 @@ export async function getDashboardMilestones(
             suiteName: testSuites.name,
           })
           .from(milestoneTestSuites)
-          .innerJoin(
-            testSuites,
-            eq(testSuites.id, milestoneTestSuites.test_suite_id)
-          )
+          .innerJoin(testSuites, eq(testSuites.id, milestoneTestSuites.test_suite_id))
           .where(eq(milestoneTestSuites.milestone_id, m.id));
 
         // 3b. 이 마일스톤 관련 testCaseRuns 조회

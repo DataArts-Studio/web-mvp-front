@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { useOutsideClick } from '@testea/lib';
+
 import type { FetchedTestRun } from '@/features/runs';
+import { useOutsideClick } from '@testea/lib';
+import { ChevronDown } from 'lucide-react';
 
 type GanttRunSelectorProps = {
   testRuns: FetchedTestRun[];
@@ -26,7 +27,7 @@ export const GanttRunSelector = ({
       <div className="relative">
         <button
           onClick={() => setShowDropdown((prev) => !prev)}
-          className="border-primary/40 text-text-1 rounded-4 flex items-center gap-2 border bg-transparent px-3 py-1.5 transition-colors hover:border-primary cursor-pointer"
+          className="border-primary/40 text-text-1 rounded-4 hover:border-primary flex cursor-pointer items-center gap-2 border bg-transparent px-3 py-1.5 transition-colors"
         >
           <span className="typo-label-normal max-w-[200px] truncate">
             {selectedRun?.name || '테스트 실행 선택'}
@@ -36,7 +37,7 @@ export const GanttRunSelector = ({
           />
         </button>
         {showDropdown && (
-          <div className="bg-bg-3 border-line-2 rounded-4 shadow-3 absolute left-0 top-full z-20 mt-1 min-w-[240px] border py-1">
+          <div className="bg-bg-3 border-line-2 rounded-4 shadow-3 absolute top-full left-0 z-20 mt-1 min-w-[240px] border py-1">
             {testRuns.map((run) => (
               <button
                 key={run.id}
@@ -44,7 +45,7 @@ export const GanttRunSelector = ({
                   onRunChangeAction(run.id);
                   setShowDropdown(false);
                 }}
-                className={`flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-bg-4 ${
+                className={`hover:bg-bg-4 flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors ${
                   run.id === selectedRunId ? 'bg-bg-4' : ''
                 }`}
               >
@@ -57,9 +58,7 @@ export const GanttRunSelector = ({
                         : 'bg-text-4'
                   }`}
                 />
-                <span className="typo-label-normal text-text-1 truncate">
-                  {run.name}
-                </span>
+                <span className="typo-label-normal text-text-1 truncate">{run.name}</span>
               </button>
             ))}
           </div>

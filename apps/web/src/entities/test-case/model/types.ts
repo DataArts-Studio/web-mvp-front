@@ -1,9 +1,7 @@
-import { z } from 'zod';
-import {
-  CreateTestCaseDtoSchema,
-  TestCaseDtoSchema,
-} from './schema';
 import type { LifecycleStatus, TestCaseResultStatus } from '@/shared/types';
+import { z } from 'zod';
+
+import { CreateTestCaseDtoSchema, TestCaseDtoSchema } from './schema';
 
 export type { LifecycleStatus, TestCaseResultStatus } from '@/shared/types';
 

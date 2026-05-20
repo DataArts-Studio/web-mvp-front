@@ -2,15 +2,19 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { useSaveAsTemplate } from '../hooks';
 import { DSButton, DsFormField, DsInput, LoadingSpinner } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, X } from 'lucide-react';
-import { z } from 'zod';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+import { useSaveAsTemplate } from '../hooks';
 
 const SaveAsTemplateFormSchema = z.object({
-  name: z.string().min(1, '템플릿 이름을 입력해주세요.').max(50, '템플릿 이름은 50자를 넘을 수 없습니다.'),
+  name: z
+    .string()
+    .min(1, '템플릿 이름을 입력해주세요.')
+    .max(50, '템플릿 이름은 50자를 넘을 수 없습니다.'),
   description: z.string().max(200, '설명은 200자를 넘을 수 없습니다.').optional(),
 });
 
@@ -59,7 +63,7 @@ export const SaveAsTemplateModal = ({ caseId, onClose, onSuccess }: SaveAsTempla
       onClick={onClose}
     >
       <section
-        className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[440px] flex-col overflow-hidden shadow-4"
+        className="bg-bg-2 border-line-2 rounded-5 shadow-4 relative flex max-h-[85vh] w-full max-w-[440px] flex-col overflow-hidden border"
         onClick={(e) => e.stopPropagation()}
       >
         {isPending && (

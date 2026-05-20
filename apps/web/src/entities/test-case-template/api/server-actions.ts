@@ -1,16 +1,22 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import type { CreateTestCaseTemplate, TestCaseTemplate, TestCaseTemplateDTO, UpdateTestCaseTemplate } from '../model/types';
-import { toCreateTemplateDTO, toTestCaseTemplate } from '../model/mapper';
-import { BUILTIN_TEMPLATES, isBuiltinTemplate } from '../model/constants';
-import { getDatabase, testCaseTemplates } from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import { and, eq, sql } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, testCaseTemplates } from '@testea/db';
 import { testCases } from '@testea/db';
+import { and, eq, sql } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
+
+import { BUILTIN_TEMPLATES, isBuiltinTemplate } from '../model/constants';
+import { toCreateTemplateDTO, toTestCaseTemplate } from '../model/mapper';
+import type {
+  CreateTestCaseTemplate,
+  TestCaseTemplate,
+  TestCaseTemplateDTO,
+  UpdateTestCaseTemplate,
+} from '../model/types';
 
 export const getTemplatesByProjectId = async (
   projectId: string
@@ -58,10 +64,7 @@ export const getTemplateById = async (
       .select()
       .from(testCaseTemplates)
       .where(
-        and(
-          eq(testCaseTemplates.id, templateId),
-          eq(testCaseTemplates.lifecycle_status, 'ACTIVE')
-        )
+        and(eq(testCaseTemplates.id, templateId), eq(testCaseTemplates.lifecycle_status, 'ACTIVE'))
       );
 
     if (!row) {
@@ -139,10 +142,7 @@ export const createTemplateFromCase = async (
   try {
     const db = getDatabase();
 
-    const [testCase] = await db
-      .select()
-      .from(testCases)
-      .where(eq(testCases.id, caseId));
+    const [testCase] = await db.select().from(testCases).where(eq(testCases.id, caseId));
 
     if (!testCase || !testCase.project_id) {
       return { success: false, errors: { _template: ['테스트 케이스를 찾을 수 없습니다.'] } };
@@ -227,7 +227,8 @@ export const updateTemplate = async (
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined) updateData.description = input.description;
     if (input.testType !== undefined) updateData.test_type = input.testType;
-    if (input.defaultTags !== undefined) updateData.default_tags = JSON.stringify(input.defaultTags);
+    if (input.defaultTags !== undefined)
+      updateData.default_tags = JSON.stringify(input.defaultTags);
     if (input.preCondition !== undefined) updateData.pre_condition = input.preCondition;
     if (input.testSteps !== undefined) updateData.test_steps = input.testSteps;
     if (input.expectedResult !== undefined) updateData.expected_result = input.expectedResult;
@@ -257,9 +258,7 @@ export const updateTemplate = async (
   }
 };
 
-export const deleteTemplate = async (
-  templateId: string
-): Promise<ActionResult<{ id: string }>> => {
+export const deleteTemplate = async (templateId: string): Promise<ActionResult<{ id: string }>> => {
   try {
     if (isBuiltinTemplate(templateId)) {
       return { success: false, errors: { _template: ['빌트인 템플릿은 삭제할 수 없습니다.'] } };

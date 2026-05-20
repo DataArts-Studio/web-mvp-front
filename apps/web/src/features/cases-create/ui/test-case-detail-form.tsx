@@ -3,7 +3,7 @@ import React, { useEffect, useId, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { CreateTestCase } from '@/entities/test-case';
-import { BasicInfoFields, TagsField, ScenarioFields } from '@/entities/test-case';
+import { BasicInfoFields, ScenarioFields, TagsField } from '@/entities/test-case';
 import { projectTagsQueryOptions } from '@/entities/test-case/api';
 import { useCreateCase } from '@/features/cases-create/hooks';
 import { DSButton } from '@/shared';
@@ -35,7 +35,12 @@ interface TestCaseDetailFormProps {
   defaultSuiteId?: string;
 }
 
-export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuiteId }: TestCaseDetailFormProps) => {
+export const TestCaseDetailForm = ({
+  projectId,
+  onClose,
+  onSuccess,
+  defaultSuiteId,
+}: TestCaseDetailFormProps) => {
   const { mutate } = useCreateCase();
 
   const { data: suitesData } = useQuery({
@@ -111,7 +116,7 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
       }
       if (e.key !== 'Tab' || !node) return;
       const focusables = node.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
       if (focusables.length === 0) return;
       const first = focusables[0];
@@ -145,13 +150,15 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[900px] flex-col overflow-hidden shadow-4 outline-none"
+        className="bg-bg-2 border-line-2 rounded-5 shadow-4 relative flex max-h-[85vh] w-full max-w-[900px] flex-col overflow-hidden border outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <header className="border-line-2 flex shrink-0 items-center justify-between border-b px-6 py-5">
           <div>
-            <h2 id={titleId} className="text-text-1 typo-h2-heading">테스트 케이스 생성</h2>
+            <h2 id={titleId} className="text-text-1 typo-h2-heading">
+              테스트 케이스 생성
+            </h2>
             <p className="text-text-3 typo-caption-normal mt-0.5">
               테스트 시나리오의 상세 내용을 작성해주세요.
             </p>
@@ -185,11 +192,11 @@ export const TestCaseDetailForm = ({ projectId, onClose, onSuccess, defaultSuite
             suites={suites}
           />
 
-          <div className="border-t border-line-2" />
+          <div className="border-line-2 border-t" />
 
           <TagsField control={control} projectTags={projectTags} />
 
-          <div className="border-t border-line-2" />
+          <div className="border-line-2 border-t" />
 
           <ScenarioFields control={control} />
         </form>

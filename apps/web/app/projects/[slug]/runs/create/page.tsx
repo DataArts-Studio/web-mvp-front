@@ -1,5 +1,7 @@
 import React from 'react';
+
 import type { Metadata } from 'next';
+
 import { RunCreateView } from '@/view/project/runs/create';
 
 export const metadata: Metadata = {

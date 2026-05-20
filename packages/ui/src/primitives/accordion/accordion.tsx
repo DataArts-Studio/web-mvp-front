@@ -1,8 +1,9 @@
 'use client';
 import React from 'react';
 
+import { composeEventHandlers, ensureArray, mergeRefs } from '@testea/util';
+
 import { Slot } from '../../slot';
-import { mergeRefs, ensureArray, composeEventHandlers } from '@testea/util';
 
 // ------------------------------------------------------------------
 // Types & Context & Context Hook
@@ -72,9 +73,7 @@ const AccordionRoot = ({
       }
 
       applyValues(
-        isOpen
-          ? openValues.filter((current) => current !== itemValue)
-          : [...openValues, itemValue]
+        isOpen ? openValues.filter((current) => current !== itemValue) : [...openValues, itemValue]
       );
     },
     [applyValues, collapsible, openValues, type]
@@ -291,7 +290,4 @@ export type {
 // ------------------------------------------------------------------
 // Export Hook
 // ------------------------------------------------------------------
-export {
-  useAccordionContext as useAccordion,
-  useAccordionItemContext as useAccordionItem
-};
+export { useAccordionContext as useAccordion, useAccordionItemContext as useAccordionItem };

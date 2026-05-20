@@ -1,9 +1,9 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testRunSuites, testCaseRuns } from '@testea/db';
-import { and, eq } from 'drizzle-orm';
 import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, testCaseRuns, testRunSuites } from '@testea/db';
+import { and, eq } from 'drizzle-orm';
 
 type RemoveSuiteParams = {
   testRunId: string;
@@ -23,10 +23,7 @@ export async function removeSuiteFromRun({
       .update(testRunSuites)
       .set({ excluded_at: now })
       .where(
-        and(
-          eq(testRunSuites.test_run_id, testRunId),
-          eq(testRunSuites.test_suite_id, suiteId)
-        )
+        and(eq(testRunSuites.test_run_id, testRunId), eq(testRunSuites.test_suite_id, suiteId))
       );
 
     // 2. 해당 스위트에서 추가된 test_case_runs 논리 삭제

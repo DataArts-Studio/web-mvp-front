@@ -1,4 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
+
 import { getProjectTags } from './get-project-tags';
 
 export const projectTagsQueryOptions = (projectId: string) =>

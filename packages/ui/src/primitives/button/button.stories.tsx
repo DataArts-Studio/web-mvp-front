@@ -1,8 +1,9 @@
 import React from 'react';
 
-import { Button, type ButtonProps } from './index';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Check, Loader, Play } from 'lucide-react';
+
+import { Button, type ButtonProps } from './index';
 
 // ButtonProps에서 Storybook Controls에서 불필요한 속성을 제거
 type ButtonOmittedProps = Omit<ButtonProps, 'className'>;
@@ -147,8 +148,7 @@ const getDynamicButtonStyle = (
 
 // Primary (기본 버튼)
 export const Primary: Story = {
-  args: {
-  },
+  args: {},
   render: (args) => {
     const isDisabled = args.disabled || args.loading;
     const dynamicStyle = getDynamicButtonStyle(isDisabled, args.loading, args.pressed);

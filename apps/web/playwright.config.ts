@@ -46,7 +46,7 @@ export default defineConfig({
         '**/scenario/access/**/*.spec.ts',
         '**/create-project/**/*.spec.ts',
         '**/project-search/**/*.spec.ts',
-      ]
+      ],
     },
     // 인증 필요
     {
@@ -56,10 +56,7 @@ export default defineConfig({
         storageState: 'playwright/.auth/project.json',
       },
       dependencies: ['setup'],
-      testMatch: [
-        '**/scenario/dashboard/**/*.spec.ts',
-        '**/scenario/testcase/**/*.spec.ts',
-      ]
+      testMatch: ['**/scenario/dashboard/**/*.spec.ts', '**/scenario/testcase/**/*.spec.ts'],
     },
     // 다른 브라우저 추가 시 여기에 추가
     // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },

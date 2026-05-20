@@ -1,27 +1,23 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
 
-import {
-  useTrashItems,
-  useRestoreItem,
-  usePermanentDelete,
-  useEmptyTrash,
-} from '@/features/trash';
-import type { TrashItem, TrashItemType } from '@/features/trash';
+import { useParams } from 'next/navigation';
+
 import { dashboardQueryOptions } from '@/features/dashboard';
+import { useEmptyTrash, usePermanentDelete, useRestoreItem, useTrashItems } from '@/features/trash';
+import type { TrashItem, TrashItemType } from '@/features/trash';
+import { useQuery } from '@tanstack/react-query';
 import { MainContainer } from '@testea/ui';
 import { LoadingSpinner, ProjectErrorFallback } from '@testea/ui';
 import { toast } from 'sonner';
 
+import { DeleteConfirmDialog } from './_components/delete-confirm-dialog';
+import { EmptyTrashDialog } from './_components/empty-trash-dialog';
 import { TYPE_CONFIG } from './_components/trash-constants';
 import { TrashHeader } from './_components/trash-header';
-import { TrashToolbar } from './_components/trash-toolbar';
 import { TrashList } from './_components/trash-list';
-import { EmptyTrashDialog } from './_components/empty-trash-dialog';
-import { DeleteConfirmDialog } from './_components/delete-confirm-dialog';
+import { TrashToolbar } from './_components/trash-toolbar';
 
 export const TrashView = () => {
   const params = useParams();
@@ -35,21 +31,17 @@ export const TrashView = () => {
   } | null>(null);
 
   const { data: dashboardData, isLoading: isLoadingProject } = useQuery(
-    dashboardQueryOptions.stats(params.slug as string),
+    dashboardQueryOptions.stats(params.slug as string)
   );
 
-  const projectId = dashboardData?.success
-    ? dashboardData.data.project.id
-    : undefined;
+  const projectId = dashboardData?.success ? dashboardData.data.project.id : undefined;
 
-  const { data: trashData, isLoading: isLoadingTrash } = useTrashItems(
-    projectId ?? '',
-  );
+  const { data: trashData, isLoading: isLoadingTrash } = useTrashItems(projectId ?? '');
   const restore = useRestoreItem(projectId ?? '');
   const permanentDelete = usePermanentDelete(projectId ?? '');
   const emptyTrashMutation = useEmptyTrash(projectId ?? '');
 
-  const trashItems = useMemo(() => trashData?.success ? trashData.data : [], [trashData]);
+  const trashItems = useMemo(() => (trashData?.success ? trashData.data : []), [trashData]);
 
   const filteredItems = useMemo(() => {
     let items = trashItems;
@@ -84,7 +76,7 @@ export const TrashView = () => {
           toast.error(error.message);
           setPendingAction(null);
         },
-      },
+      }
     );
   };
 
@@ -108,7 +100,7 @@ export const TrashView = () => {
           setDeleteConfirm(null);
           setPendingAction(null);
         },
-      },
+      }
     );
   };
 

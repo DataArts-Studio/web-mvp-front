@@ -34,7 +34,7 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
 
   const years = useMemo(
     () => Array.from({ length: 7 }, (_, i) => (currentYear - 1 + i).toString()),
-    [currentYear],
+    [currentYear]
   );
 
   const months = useMemo(() => Array.from({ length: 12 }, (_, i) => (i + 1).toString()), []);
@@ -46,7 +46,7 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
 
   const days = useMemo(
     () => Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString()),
-    [daysInMonth],
+    [daysInMonth]
   );
 
   const buildDate = (y: string, m: string, d: string): Date | null => {
@@ -84,26 +84,31 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
     'border-line-2 bg-bg-1 text-text-1',
     'hover:border-primary/50',
     'data-[state=open]:border-primary',
-    disabled && 'cursor-not-allowed opacity-50',
+    disabled && 'cursor-not-allowed opacity-50'
   );
 
   const contentClass = cn(
     'absolute top-full left-0 z-50 mt-1 max-h-[200px] w-full overflow-y-auto',
-    'rounded-lg border border-line-2 bg-bg-1 shadow-lg',
+    'rounded-lg border border-line-2 bg-bg-1 shadow-lg'
   );
 
   const itemClass = cn(
     'cursor-pointer px-3 py-1.5 text-sm text-text-1 transition-colors',
     'hover:bg-bg-3 data-[state=checked]:text-primary data-[state=checked]:font-medium',
-    'data-[highlighted]:bg-bg-3',
+    'data-[highlighted]:bg-bg-3'
   );
 
   return (
     <div className="grid grid-cols-3 gap-2">
-      <Select.Root value={year} onValueChange={handleYearChange} disabled={disabled} className="relative">
+      <Select.Root
+        value={year}
+        onValueChange={handleYearChange}
+        disabled={disabled}
+        className="relative"
+      >
         <Select.Trigger className={triggerClass}>
           <span className={cn(!year && 'text-text-3')}>{year ? `${year}년` : '년도'}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-text-3" />
+          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" />
         </Select.Trigger>
         <Select.Content className={contentClass}>
           {years.map((y) => (
@@ -114,10 +119,15 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
         </Select.Content>
       </Select.Root>
 
-      <Select.Root value={month} onValueChange={handleMonthChange} disabled={disabled} className="relative">
+      <Select.Root
+        value={month}
+        onValueChange={handleMonthChange}
+        disabled={disabled}
+        className="relative"
+      >
         <Select.Trigger className={triggerClass}>
           <span className={cn(!month && 'text-text-3')}>{month ? `${month}월` : '월'}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-text-3" />
+          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" />
         </Select.Trigger>
         <Select.Content className={contentClass}>
           {months.map((m) => (
@@ -128,10 +138,15 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
         </Select.Content>
       </Select.Root>
 
-      <Select.Root value={day} onValueChange={handleDayChange} disabled={disabled} className="relative">
+      <Select.Root
+        value={day}
+        onValueChange={handleDayChange}
+        disabled={disabled}
+        className="relative"
+      >
         <Select.Trigger className={triggerClass}>
           <span className={cn(!day && 'text-text-3')}>{day ? `${day}일` : '일'}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-text-3" />
+          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" />
         </Select.Trigger>
         <Select.Content className={contentClass}>
           {days.map((d) => (

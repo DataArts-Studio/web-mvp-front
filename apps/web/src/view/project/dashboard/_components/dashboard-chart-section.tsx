@@ -1,20 +1,24 @@
 import React from 'react';
 
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 import type { DashboardMilestone } from '@/features/dashboard';
 import type { FetchedTestRun } from '@/features/runs';
-import { DSButton } from '@testea/ui';
 import { TestStatusChart, type TestStatusData } from '@/widgets/project/ui/test-status-chart';
+import { DSButton } from '@testea/ui';
 import { Play } from 'lucide-react';
-import { TestRunDropdown } from '../test-run-dropdown';
+
 import { DashboardEmptyState } from '../dashboard-empty-state';
 import { ChartSkeleton } from '../dashboard-skeletons';
+import { TestRunDropdown } from '../test-run-dropdown';
 
 const MilestoneGanttChart = dynamic(
-  () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
-  { ssr: false, loading: () => <div className="bg-bg-2 rounded-2xl p-6 h-75 animate-pulse" /> }
+  () =>
+    import('@/widgets/project/ui/milestone-gantt-chart').then((mod) => ({
+      default: mod.MilestoneGanttChart,
+    })),
+  { ssr: false, loading: () => <div className="bg-bg-2 h-75 animate-pulse rounded-2xl p-6" /> }
 );
 
 type DashboardChartSectionProps = {
@@ -57,7 +61,9 @@ export const DashboardChartSection = ({
         selectedRunName={selectedRunName}
       />
     </div>
-    {showSkeleton ? <ChartSkeleton /> : testRuns.length === 0 ? (
+    {showSkeleton ? (
+      <ChartSkeleton />
+    ) : testRuns.length === 0 ? (
       <DashboardEmptyState
         icon={<Play className="h-6 w-6" strokeWidth={1.5} />}
         title="첫 번째 테스트를 실행해보세요!"
@@ -84,7 +90,7 @@ export const DashboardChartSection = ({
               onRunChangeAction={onMilestoneRunChange}
             />
           ) : (
-            <div className="bg-bg-2 rounded-2xl p-6 h-75 animate-pulse" />
+            <div className="bg-bg-2 h-75 animate-pulse rounded-2xl p-6" />
           )}
         </div>
       </>

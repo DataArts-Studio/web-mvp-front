@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import TestSuiteDetailView from '@/view/project/suites/test-suite-detail-view';
+
 import { testSuiteByIdQueryOptions } from '@/entities/test-suite/api/query';
+import TestSuiteDetailView from '@/view/project/suites/test-suite-detail-view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 export const metadata: Metadata = {
   title: '테스트 스위트 상세',
@@ -14,7 +15,9 @@ export default async function SuiteDetailPage({
   params: Promise<{ slug: string; suiteId: string }>;
 }) {
   const { suiteId } = await params;
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   try {
     await queryClient.prefetchQuery(testSuiteByIdQueryOptions(suiteId));

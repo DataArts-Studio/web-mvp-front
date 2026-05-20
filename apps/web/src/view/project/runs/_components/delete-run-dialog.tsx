@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
+
 import { Dialog } from '@testea/ui';
 import { DSButton } from '@testea/ui';
+
 import { type ITestRun } from './runs-list-constants';
 
 interface DeleteRunDialogProps {
@@ -12,16 +14,27 @@ interface DeleteRunDialogProps {
   onCancel: () => void;
 }
 
-export const DeleteRunDialog = ({ deleteTarget, isPending, onConfirm, onCancel }: DeleteRunDialogProps) => (
-  <Dialog.Root defaultOpen onOpenChange={(open) => { if (!open) onCancel(); }}>
+export const DeleteRunDialog = ({
+  deleteTarget,
+  isPending,
+  onConfirm,
+  onCancel,
+}: DeleteRunDialogProps) => (
+  <Dialog.Root
+    defaultOpen
+    onOpenChange={(open) => {
+      if (!open) onCancel();
+    }}
+  >
     <Dialog.Portal>
       <Dialog.Overlay />
       <Dialog.Content className="bg-bg-1 rounded-8 w-full max-w-md p-6 shadow-xl">
-        <Dialog.Title className="text-lg font-semibold text-text-1">
+        <Dialog.Title className="text-text-1 text-lg font-semibold">
           테스트 실행을 삭제하시겠습니까?
         </Dialog.Title>
         <Dialog.Description className="text-text-3 mt-3 text-sm">
-          <strong className="text-text-1">&quot;{deleteTarget.name}&quot;</strong>과(와) 관련된 모든 테스트 케이스 실행 결과가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+          <strong className="text-text-1">&quot;{deleteTarget.name}&quot;</strong>과(와) 관련된 모든
+          테스트 케이스 실행 결과가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
         </Dialog.Description>
         <div className="mt-6 flex justify-end gap-3">
           <DSButton variant="ghost" onClick={onCancel} disabled={isPending}>

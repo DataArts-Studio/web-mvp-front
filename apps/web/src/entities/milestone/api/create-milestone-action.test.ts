@@ -1,4 +1,10 @@
-import { createMockCreateMilestoneInput, createMockMilestoneRow, mockGetDatabase, resetMockDb, setMockInsertReturn } from '@/shared/test/__mocks__/db';
+import {
+  createMockCreateMilestoneInput,
+  createMockMilestoneRow,
+  mockGetDatabase,
+  resetMockDb,
+  setMockInsertReturn,
+} from '@/shared/test/__mocks__/db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMilestone } from './server-actions';
@@ -6,15 +12,18 @@ import { createMilestone } from './server-actions';
 // DB 모듈 모킹
 vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
-  milestones: { id: 'id', project_id: 'project_id', name: 'name', lifecycle_status: 'lifecycle_status' },
+  milestones: {
+    id: 'id',
+    project_id: 'project_id',
+    name: 'name',
+    lifecycle_status: 'lifecycle_status',
+  },
 }));
 
 // uuid 모킹
 vi.mock('uuid', () => ({
   v7: () => '01234567-89ab-cdef-0123-456789abcdef',
 }));
-
-
 
 const MOCK_DATE = new Date('2024-01-15T12:00:00.000Z');
 

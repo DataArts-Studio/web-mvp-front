@@ -2,6 +2,7 @@
 
 import { Dialog } from '@testea/ui';
 import { DSButton } from '@testea/ui';
+
 import { useDbOutageNotice } from '../hooks/use-db-outage-notice';
 
 export const DbOutageNoticePopup = () => {
@@ -22,7 +23,7 @@ export const DbOutageNoticePopup = () => {
           }}
         />
         <Dialog.Content
-          className="w-full max-w-md rounded-2xl bg-bg-2 p-6 shadow-2xl"
+          className="bg-bg-2 w-full max-w-md rounded-2xl p-6 shadow-2xl"
           style={{
             position: 'fixed',
             top: '50%',
@@ -33,11 +34,11 @@ export const DbOutageNoticePopup = () => {
           }}
         >
           <div className="flex flex-col items-center gap-5 text-center">
-            <span className="rounded-full bg-danger/15 px-4 py-1.5 text-xs font-bold tracking-wider uppercase text-danger">
+            <span className="bg-danger/15 text-danger rounded-full px-4 py-1.5 text-xs font-bold tracking-wider uppercase">
               Notice
             </span>
 
-            <Dialog.Title className="text-lg font-bold text-text-1">
+            <Dialog.Title className="text-text-1 text-lg font-bold">
               서비스 이용 불편 안내
             </Dialog.Title>
 
@@ -45,17 +46,15 @@ export const DbOutageNoticePopup = () => {
               DB 장애 복구 및 서비스 정상화 안내
             </Dialog.Description>
 
-            <div className="flex flex-col gap-3 text-sm leading-relaxed text-text-2">
-              <p>DB 장애로 인해 일시적으로 서비스 접속이 원활하지 않았던 점 깊이 사과드립니다. 현재는 수정이 완료되어 정상적으로 이용하실 수 있습니다.</p>
+            <div className="text-text-2 flex flex-col gap-3 text-sm leading-relaxed">
+              <p>
+                DB 장애로 인해 일시적으로 서비스 접속이 원활하지 않았던 점 깊이 사과드립니다. 현재는
+                수정이 완료되어 정상적으로 이용하실 수 있습니다.
+              </p>
               <p>이용에 불편을 드려 죄송합니다.</p>
             </div>
 
-            <DSButton
-              variant="solid"
-              size="medium"
-              className="mt-1 w-full"
-              onClick={dismiss}
-            >
+            <DSButton variant="solid" size="medium" className="mt-1 w-full" onClick={dismiss}>
               확인
             </DSButton>
           </div>

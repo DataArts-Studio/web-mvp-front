@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 
-import type { TestSuite } from '@/entities/test-suite';
 import { addTestSuitesToMilestone } from '@/entities/milestone/api';
+import type { TestSuite } from '@/entities/test-suite';
 import { SelectionModal } from '@/shared';
-import { useSelectionSet } from '@testea/lib';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSelectionSet } from '@testea/lib';
 import { FolderOpen } from 'lucide-react';
 
 interface AddSuitesToMilestoneModalProps {
@@ -56,14 +56,27 @@ export const AddSuitesToMilestoneModal = ({
       <SelectionModal.Loading text="스위트를 추가하고 있어요" />
       <SelectionModal.Header
         title="테스트 스위트 추가"
-        subtitle={<><span className="text-primary font-medium">{milestoneName}</span> 마일스톤에 추가할 스위트를 선택하세요.</>}
+        subtitle={
+          <>
+            <span className="text-primary font-medium">{milestoneName}</span> 마일스톤에 추가할
+            스위트를 선택하세요.
+          </>
+        }
       />
-      <SelectionModal.Search value={searchQuery} onChange={setSearchQuery} placeholder="스위트 이름, 설명으로 검색..." />
+      <SelectionModal.Search
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="스위트 이름, 설명으로 검색..."
+      />
       <SelectionModal.Body>
         {filteredSuites.length === 0 ? (
           <SelectionModal.Empty
             icon={FolderOpen}
-            text={availableSuites.length === 0 ? '추가할 수 있는 테스트 스위트가 없습니다.' : '검색 결과가 없습니다.'}
+            text={
+              availableSuites.length === 0
+                ? '추가할 수 있는 테스트 스위트가 없습니다.'
+                : '검색 결과가 없습니다.'
+            }
           />
         ) : (
           <>
@@ -75,7 +88,11 @@ export const AddSuitesToMilestoneModal = ({
             />
             <SelectionModal.ItemList>
               {filteredSuites.map((suite) => (
-                <SelectionModal.Item key={suite.id} checked={selection.has(suite.id)} onToggle={() => selection.toggle(suite.id)}>
+                <SelectionModal.Item
+                  key={suite.id}
+                  checked={selection.has(suite.id)}
+                  onToggle={() => selection.toggle(suite.id)}
+                >
                   <div className="flex items-center gap-2">
                     <FolderOpen className="text-primary h-4 w-4 shrink-0" />
                     <span className="text-text-1 truncate">{suite.title}</span>
@@ -89,7 +106,11 @@ export const AddSuitesToMilestoneModal = ({
           </>
         )}
       </SelectionModal.Body>
-      <SelectionModal.Footer selectedCount={selection.count} submitLabel={`${selection.count}개 스위트 추가`} onSubmit={handleSubmit} />
+      <SelectionModal.Footer
+        selectedCount={selection.count}
+        submitLabel={`${selection.count}개 스위트 추가`}
+        onSubmit={handleSubmit}
+      />
     </SelectionModal.Root>
   );
 };

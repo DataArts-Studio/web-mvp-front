@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { getProjectById, getProjectByName } from './server-actions';
+
 // Custom mock for this test file - supports the exact chain pattern used in server-actions
 let mockSelectResult: unknown[] = [];
 
@@ -27,15 +29,15 @@ vi.mock('drizzle-orm', () => ({
   eq: vi.fn((a, b) => ({ field: a, value: b })),
 }));
 
-import { getProjectById, getProjectByName } from './server-actions';
-
-const createMockProjectRow = (overrides: Partial<{
-  id: string;
-  name: string;
-  identifier: string;
-  description: string | null;
-  owner_name: string | null;
-}> = {}) => ({
+const createMockProjectRow = (
+  overrides: Partial<{
+    id: string;
+    name: string;
+    identifier: string;
+    description: string | null;
+    owner_name: string | null;
+  }> = {}
+) => ({
   id: overrides.id ?? 'project-123',
   name: overrides.name ?? '테스트 프로젝트',
   identifier: overrides.identifier ?? 'TPJ',

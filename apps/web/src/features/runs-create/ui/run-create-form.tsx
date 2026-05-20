@@ -1,9 +1,10 @@
 'use client';
 import React from 'react';
+import { useForm } from 'react-hook-form';
 
 import { DSButton, FormField } from '@/shared';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+
 interface IFormInput {
   name: string;
 }
@@ -23,12 +24,21 @@ export const RunCreateForm = () => {
           <h2 className="text-primary text-3xl">테스트 스위트를 만들어 볼까요?</h2>
           <p className="mt-2 text-base text-neutral-400">필요한 테스트들을 한 곳에 모아 관리해요</p>
         </div>
-        <FormField.Root className='flex flex-col gap-2'>
+        <FormField.Root className="flex flex-col gap-2">
           <FormField.Label>name</FormField.Label>
-          <FormField.Control placeholder="테스트 스위트 이름 입력" type='text' {...register('name', {required: true})}/>
+          <FormField.Control
+            placeholder="테스트 스위트 이름 입력"
+            type="text"
+            {...register('name', { required: true })}
+          />
         </FormField.Root>
-        <div className='flex gap-2'>
-          <DSButton type="button" variant="ghost" className="mt-2 w-full" onClick={()=> toast.info('취소 클릭')}>
+        <div className="flex gap-2">
+          <DSButton
+            type="button"
+            variant="ghost"
+            className="mt-2 w-full"
+            onClick={() => toast.info('취소 클릭')}
+          >
             취소
           </DSButton>
           <DSButton type="submit" variant="solid" className="mt-2 w-full">

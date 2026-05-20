@@ -11,8 +11,10 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
 export type SearchInputProps = Omit<InputProps, 'type'>;
 
 const variantClassName: Record<InputVariant, string> = {
-  default: 'border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 hover:border-line-3 focus-visible:border-primary',
-  error: 'border-system-red bg-bg-1 text-text-1 placeholder:text-system-red focus-visible:border-system-red focus-visible:outline-system-red',
+  default:
+    'border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 hover:border-line-3 focus-visible:border-primary',
+  error:
+    'border-system-red bg-bg-1 text-text-1 placeholder:text-system-red focus-visible:border-system-red focus-visible:outline-system-red',
 };
 
 const sizeClassName: Record<InputSize, string> = {
@@ -37,7 +39,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
     variant = 'default',
     ...props
   },
-  ref,
+  ref
 ) {
   const invalid = variant === 'error' || ariaInvalid === true || ariaInvalid === 'true';
   const inputClassName = [
@@ -65,25 +67,24 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
 
 Input.displayName = 'Input';
 
-export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput(
-  { className, size = 'medium', ...props },
-  ref,
-) {
-  return (
-    <span className="relative block w-full">
-      <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 text-icon-default">
-        <SearchIcon />
+export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
+  function SearchInput({ className, size = 'medium', ...props }, ref) {
+    return (
+      <span className="relative block w-full">
+        <span className="text-icon-default pointer-events-none absolute top-1/2 left-3 flex -translate-y-1/2">
+          <SearchIcon />
+        </span>
+        <Input
+          ref={ref}
+          type="search"
+          size={size}
+          className={[searchIconPaddingClassName[size], className].filter(Boolean).join(' ')}
+          {...props}
+        />
       </span>
-      <Input
-        ref={ref}
-        type="search"
-        size={size}
-        className={[searchIconPaddingClassName[size], className].filter(Boolean).join(' ')}
-        {...props}
-      />
-    </span>
-  );
-});
+    );
+  }
+);
 
 SearchInput.displayName = 'SearchInput';
 

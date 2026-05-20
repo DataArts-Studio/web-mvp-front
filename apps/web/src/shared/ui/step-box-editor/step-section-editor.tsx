@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { AlignLeft, List } from 'lucide-react';
+
 import { stepsToText, textToSteps } from '@/entities/test-case';
 import { cn } from '@testea/util';
+import { AlignLeft, List } from 'lucide-react';
+
 import { StepBoxEditor, type StepBoxEditorProps } from './step-box-editor';
 
 type Mode = 'stepbox' | 'textarea';
@@ -39,11 +41,10 @@ export const StepSectionEditor = ({
       setTextDraft(text);
       onChange(textToSteps(text));
     },
-    [onChange],
+    [onChange]
   );
 
-  const toggleBtnBase =
-    'flex items-center justify-center rounded-3 p-1 transition-colors';
+  const toggleBtnBase = 'flex items-center justify-center rounded-3 p-1 transition-colors';
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -54,9 +55,7 @@ export const StepSectionEditor = ({
           aria-label="스텝 모드"
           className={cn(
             toggleBtnBase,
-            mode === 'stepbox'
-              ? 'bg-bg-3 text-primary'
-              : 'text-text-3 hover:text-text-1',
+            mode === 'stepbox' ? 'bg-bg-3 text-primary' : 'text-text-3 hover:text-text-1'
           )}
           onClick={switchToStepbox}
           disabled={disabled}
@@ -68,9 +67,7 @@ export const StepSectionEditor = ({
           aria-label="텍스트 모드"
           className={cn(
             toggleBtnBase,
-            mode === 'textarea'
-              ? 'bg-bg-3 text-primary'
-              : 'text-text-3 hover:text-text-1',
+            mode === 'textarea' ? 'bg-bg-3 text-primary' : 'text-text-3 hover:text-text-1'
           )}
           onClick={switchToTextarea}
           disabled={disabled}
@@ -91,8 +88,8 @@ export const StepSectionEditor = ({
       ) : (
         <textarea
           className={cn(
-            'w-full rounded-4 border border-line-2 bg-bg-1 px-6 py-4 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary resize-none min-h-[120px]',
-            textareaClassName,
+            'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary min-h-[120px] w-full resize-none border px-6 py-4 text-base transition-colors outline-none',
+            textareaClassName
           )}
           value={textDraft}
           onChange={handleTextChange}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+
 import * as Sentry from '@sentry/nextjs';
 
 interface GlobalErrorProps {
@@ -15,7 +16,14 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 
   return (
     <html lang="ko">
-      <body style={{ margin: 0, backgroundColor: '#0c0d0e', color: '#ffffff', fontFamily: 'Pretendard, sans-serif' }}>
+      <body
+        style={{
+          margin: 0,
+          backgroundColor: '#0c0d0e',
+          color: '#ffffff',
+          fontFamily: 'Pretendard, sans-serif',
+        }}
+      >
         <div
           style={{
             display: 'flex',
@@ -66,7 +74,9 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             >
               페이지를 새로고침하거나 잠시 후 다시 시도해 주세요.
             </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div
+              style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}
+            >
               <button
                 type="button"
                 onClick={reset}

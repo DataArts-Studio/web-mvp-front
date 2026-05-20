@@ -14,14 +14,9 @@ export type ColumnMapping = z.infer<typeof columnMappingSchema>;
 
 // ── Import Row ──────────────────────────────────────────────────
 export const importRowSchema = z.object({
-  name: z
-    .string()
-    .min(1, '이름은 필수입니다')
-    .max(200, '이름이 200자를 초과합니다'),
+  name: z.string().min(1, '이름은 필수입니다').max(200, '이름이 200자를 초과합니다'),
   testType: z.string().max(50).optional(),
-  tags: z
-    .array(z.string().max(20, '태그는 20자 이내'))
-    .optional(),
+  tags: z.array(z.string().max(20, '태그는 20자 이내')).optional(),
   preCondition: z.string().optional(),
   steps: z.string().optional(),
   expectedResult: z.string().optional(),

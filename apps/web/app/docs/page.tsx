@@ -1,13 +1,21 @@
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import type { ReactNode } from 'react';
 import { Suspense } from 'react';
+
+import { Metadata } from 'next';
+
 import { DocsView } from '@/view';
 import { DocsMarkdownContent, slugify } from '@/view/docs/docs-markdown-content';
 import type { DocHeading } from '@/view/docs/docs-view';
-import { Metadata } from 'next';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 
-type DocTab = 'getting-started' | 'dashboard' | 'test-cases' | 'test-suites' | 'test-runs' | 'milestones';
+type DocTab =
+  | 'getting-started'
+  | 'dashboard'
+  | 'test-cases'
+  | 'test-suites'
+  | 'test-runs'
+  | 'milestones';
 
 interface DocsPageProps {
   searchParams: Promise<{
@@ -17,11 +25,11 @@ interface DocsPageProps {
 
 const docFiles: Record<DocTab, string> = {
   'getting-started': 'getting-started.md',
-  'dashboard': 'dashboard.md',
+  dashboard: 'dashboard.md',
   'test-cases': 'test-cases.md',
   'test-suites': 'test-suites.md',
   'test-runs': 'test-runs.md',
-  'milestones': 'milestones.md',
+  milestones: 'milestones.md',
 };
 
 async function getMarkdownContent(filename: string): Promise<string> {
@@ -75,7 +83,7 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
   ) as Record<DocTab, DocHeading[]>;
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-bg-1" />}>
+    <Suspense fallback={<div className="bg-bg-1 min-h-screen" />}>
       <DocsView renderedContents={renderedContents} headings={headings} initialTab={validTab} />
     </Suspense>
   );
@@ -83,12 +91,14 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
 
 export const metadata: Metadata = {
   title: '사용 가이드',
-  description: '테스티아(Testea) 사용 가이드 - 테스트 케이스 관리, 테스트 스위트, 테스트 실행, 마일스톤 관리 방법을 안내합니다.',
+  description:
+    '테스티아(Testea) 사용 가이드 - 테스트 케이스 관리, 테스트 스위트, 테스트 실행, 마일스톤 관리 방법을 안내합니다.',
   alternates: {
     canonical: '/docs',
   },
   openGraph: {
     title: '사용 가이드 | Testea',
-    description: '테스티아(Testea) 사용 가이드 - 테스트 케이스 관리, 테스트 실행, 마일스톤 관리 방법을 안내합니다.',
+    description:
+      '테스티아(Testea) 사용 가이드 - 테스트 케이스 관리, 테스트 실행, 마일스톤 관리 방법을 안내합니다.',
   },
 };

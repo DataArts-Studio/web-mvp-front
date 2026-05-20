@@ -3,9 +3,9 @@
 // - apps/web dev 또는 production 빌드 실행 중 (http://localhost:3000)
 // - localhost 환경은 Turnstile siteKey 가 빈 문자열로 처리되어 위젯 미렌더 (봇 검증 자동 통과)
 //   project-create-form.tsx 의 isLocalhost 분기 참고.
-import { test, expect } from '../share/utils';
-import { loc } from './_support/locators';
+import { expect, test } from '../share/utils';
 import { openModal } from './_support/flows';
+import { loc } from './_support/locators';
 
 // 클립보드 검증을 위해 권한 부여 (StepSuccess 의 navigator.clipboard.writeText)
 test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
@@ -64,11 +64,15 @@ test.describe('프로젝트 생성 - Golden Path', () => {
       await l.success.copyLinkButton.click();
       await expect(l.success.copiedConfirm).toBeVisible(); // UI 피드백
 
-      const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+      const clipboard = await page.evaluate(() =>
+        navigator.clipboard.readText()
+      );
       // step-success.tsx 가 window.location.origin 기준으로 링크를 만든다.
       // baseURL 이 staging/prod 으로 바뀌어도 동일 검증이 가능하도록 origin 동적 계산.
       const origin = await page.evaluate(() => window.location.origin);
-      expect(clipboard).toBe(`${origin}/projects/${encodeURIComponent(projectName)}`);
+      expect(clipboard).toBe(
+        `${origin}/projects/${encodeURIComponent(projectName)}`
+      );
     });
 
     await test.step('시작하기 → 프로젝트 대시보드로 이동', async () => {
@@ -76,7 +80,7 @@ test.describe('프로젝트 생성 - Golden Path', () => {
       // dev 서버는 동적 라우트 첫 컴파일이 느려 timeout 여유 필요
       await expect(page).toHaveURL(
         new RegExp(`/projects/${encodeURIComponent(projectName)}(/.*)?$`),
-        { timeout: 30_000 },
+        { timeout: 30_000 }
       );
       await expect(page.getByText(projectName).first()).toBeVisible({
         timeout: 15_000,

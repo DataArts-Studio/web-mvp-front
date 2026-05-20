@@ -1,16 +1,7 @@
-import { z } from 'zod';
 import { LifecycleStatusEnum } from '@/shared/types';
+import { z } from 'zod';
 
 export { LifecycleStatusEnum } from '@/shared/types';
-
-
-
-
-
-
-
-
-
 
 export const ProjectDtoSchema = z.object({
   id: z.uuidv7(),
@@ -80,14 +71,16 @@ export const ProjectSettingsFormSchema = z.object({
   ownerName: z.string().max(50, '소유자 이름은 50자를 넘을 수 없습니다.').optional(),
 });
 
-export const ChangeIdentifierFormSchema = z.object({
-  currentPassword: z.string().min(1, '현재 비밀번호를 입력하세요.'),
-  newPassword: z
-    .string()
-    .min(8, '새 비밀번호는 최소 8자리 이상이어야 합니다.')
-    .max(16, '새 비밀번호는 최대 16자리 이하여야 합니다.'),
-  confirmPassword: z.string().min(1, '비밀번호 확인을 입력하세요.'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: '새 비밀번호가 일치하지 않습니다.',
-  path: ['confirmPassword'],
-});
+export const ChangeIdentifierFormSchema = z
+  .object({
+    currentPassword: z.string().min(1, '현재 비밀번호를 입력하세요.'),
+    newPassword: z
+      .string()
+      .min(8, '새 비밀번호는 최소 8자리 이상이어야 합니다.')
+      .max(16, '새 비밀번호는 최대 16자리 이하여야 합니다.'),
+    confirmPassword: z.string().min(1, '비밀번호 확인을 입력하세요.'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: '새 비밀번호가 일치하지 않습니다.',
+    path: ['confirmPassword'],
+  });

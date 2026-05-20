@@ -17,10 +17,7 @@ export const PieChartSvg = ({ arcs, hoveredKey, onHover }: PieChartSvgProps) => 
 
   return (
     <div className="relative aspect-square w-full max-w-[420px] self-center">
-      <svg
-        viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
-        className="w-full h-full"
-      >
+      <svg viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`} className="h-full w-full">
         {arcs.length === 1 ? (
           <circle
             cx={cx}
@@ -47,7 +44,7 @@ export const PieChartSvg = ({ arcs, hoveredKey, onHover }: PieChartSvgProps) => 
       </svg>
       {/* Tooltip */}
       {hoveredSeg && (
-        <div className="rounded-2 border-line-2 bg-bg-3 border px-3 py-2 shadow-lg absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+        <div className="rounded-2 border-line-2 bg-bg-3 pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border px-3 py-2 shadow-lg">
           <p className="typo-body2-heading text-text-1">{hoveredSeg.label}</p>
           <p className="typo-caption text-text-2">
             {hoveredSeg.value}개 ({hoveredSeg.percentage.toFixed(1)}%)

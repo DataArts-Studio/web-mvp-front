@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+
 import { cn } from '@testea/util';
 
 export type LoadingSpinnerSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -32,7 +33,7 @@ export const LoadingSpinner = ({
 
   const content = (
     <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
-      <div className="relative animate-bounce-gentle">
+      <div className="animate-bounce-gentle relative">
         <Image
           src="/teacup/tea-cup-happy.svg"
           alt="Loading..."
@@ -41,15 +42,24 @@ export const LoadingSpinner = ({
           className="animate-wiggle"
           priority
         />
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3/4 h-3 bg-black/15 rounded-full blur-md animate-shadow-pulse" />
+        <div className="animate-shadow-pulse absolute -bottom-2 left-1/2 h-3 w-3/4 -translate-x-1/2 rounded-full bg-black/15 blur-md" />
       </div>
       {displayText && (
         <div className="flex flex-col items-center gap-3">
           <span className={cn('text-text-2 font-medium', textClass)}>{displayText}</span>
           <span className="flex gap-0.5">
-            <span className="w-1.5 h-1.5 bg-text-2 rounded-full animate-bounce-dot" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 bg-text-2 rounded-full animate-bounce-dot" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 bg-text-2 rounded-full animate-bounce-dot" style={{ animationDelay: '300ms' }} />
+            <span
+              className="bg-text-2 animate-bounce-dot h-1.5 w-1.5 rounded-full"
+              style={{ animationDelay: '0ms' }}
+            />
+            <span
+              className="bg-text-2 animate-bounce-dot h-1.5 w-1.5 rounded-full"
+              style={{ animationDelay: '150ms' }}
+            />
+            <span
+              className="bg-text-2 animate-bounce-dot h-1.5 w-1.5 rounded-full"
+              style={{ animationDelay: '300ms' }}
+            />
           </span>
         </div>
       )}
@@ -58,7 +68,7 @@ export const LoadingSpinner = ({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
         {content}
       </div>
     );

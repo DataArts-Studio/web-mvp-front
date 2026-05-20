@@ -1,5 +1,6 @@
-import type { MilestoneWithStats } from './types';
 import { MOCK_PROJECT_ID } from '@/shared';
+
+import type { MilestoneWithStats } from './types';
 
 export const milestonesMock: MilestoneWithStats[] = [
   {

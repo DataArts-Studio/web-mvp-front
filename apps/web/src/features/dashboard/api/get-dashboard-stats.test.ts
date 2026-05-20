@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { getDashboardStats } from './get-dashboard-stats';
+
 vi.mock('server-only', () => ({}));
 
 // 각 쿼리별 결과를 저장
@@ -79,8 +81,6 @@ vi.mock('drizzle-orm', () => ({
   and: vi.fn((...conditions) => ({ and: conditions })),
   notInArray: vi.fn((field, values) => ({ notInArray: { field, values } })),
 }));
-
-import { getDashboardStats } from './get-dashboard-stats';
 
 describe('getDashboardStats', () => {
   beforeEach(() => {

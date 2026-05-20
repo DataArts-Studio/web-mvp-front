@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
-import { Container } from '@testea/ui';
-import { Aside } from '@/widgets/aside';
+
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import { CommandPalette } from '@/features/command-palette';
 import { RouteLoadingProvider } from '@/shared/lib/route-loading';
+import { Aside } from '@/widgets/aside';
+import { Container } from '@testea/ui';
 
 export default function ProjectLayout({ children }: { children: ReactNode }) {
   return (

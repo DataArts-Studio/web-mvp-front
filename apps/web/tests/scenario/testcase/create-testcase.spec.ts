@@ -24,7 +24,9 @@ test.describe('테스트 케이스 생성 시나리오', () => {
     });
   });
 
-  test('제목 미입력 제출 시 에러가 출력되고 폼이 유지된다.', async ({ testCasePage }) => {
+  test('제목 미입력 제출 시 에러가 출력되고 폼이 유지된다.', async ({
+    testCasePage,
+  }) => {
     await testCasePage.goto(TEST_DATA.slug);
     await testCasePage.openCreateForm();
     await testCasePage.submit();

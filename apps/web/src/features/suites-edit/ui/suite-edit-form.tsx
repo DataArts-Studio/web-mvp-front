@@ -4,10 +4,11 @@ import { useForm } from 'react-hook-form';
 
 import { TestSuite } from '@/entities/test-suite';
 import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
+import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import { useUpdateSuite } from '../hooks';
 import { UpdateTestSuite, UpdateTestSuiteSchema } from '../model';
-import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 interface SuiteEditFormProps {
   suite: TestSuite;
@@ -38,7 +39,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
       onError: () => {
         track(TESTSUITE_EVENTS.UPDATE_FAIL, { suite_id: suite.id });
       },
-    })
+    });
   };
 
   const handleAbandon = () => {
@@ -64,7 +65,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
       }
       if (e.key !== 'Tab' || !node) return;
       const focusables = node.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
       if (focusables.length === 0) return;
       const first = focusables[0];
@@ -103,7 +104,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
         onClick={(e) => e.stopPropagation()}
       >
         {isPending && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
+          <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
             <LoadingSpinner size="md" text="테스트 스위트를 수정하고 있어요" />
           </div>
         )}
@@ -111,7 +112,9 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
           <input type="hidden" {...register('id')} />
           {/* Header */}
           <div className="border-line-1 border-b pb-6">
-            <h2 id={titleId} className="text-primary text-3xl">테스트 스위트 수정</h2>
+            <h2 id={titleId} className="text-primary text-3xl">
+              테스트 스위트 수정
+            </h2>
             <p className="mt-2 text-base text-neutral-400">
               테스트 스위트의 이름과 설명을 수정합니다.
             </p>
@@ -143,8 +146,8 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
                   },
                 })}
                 className={cn(
-                  'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
-                  errors.title && 'border-system-red focus:border-system-red',
+                  'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                  errors.title && 'border-system-red focus:border-system-red'
                 )}
               />
               {errors.title && (
@@ -158,7 +161,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
                 type="text"
                 disabled={isPending}
                 {...register('description')}
-                className="h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary"
+                className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
               />
             </FormField.Root>
           </div>
@@ -172,12 +175,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
             >
               취소
             </DSButton>
-            <DSButton
-              type="submit"
-              variant="solid"
-              className="w-full"
-              disabled={isPending}
-            >
+            <DSButton type="submit" variant="solid" className="w-full" disabled={isPending}>
               {isPending ? '수정 중...' : '수정'}
             </DSButton>
           </div>

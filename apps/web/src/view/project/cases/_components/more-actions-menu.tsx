@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Download, Upload, MoreVertical } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+
 import { cn } from '@testea/util';
+import { Bot, Download, MoreVertical, Upload } from 'lucide-react';
 
 const MORE_ACTIONS = [
   { key: 'ai', icon: Bot, label: 'AI 생성' },
@@ -46,15 +47,19 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'typo-body2-heading rounded-2 border border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center justify-center px-2.5 py-2 transition-colors cursor-pointer',
-          open && 'bg-bg-3',
+          'typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex cursor-pointer items-center justify-center border px-2.5 py-2 transition-colors',
+          open && 'bg-bg-3'
         )}
       >
         <MoreVertical className="h-4 w-4" aria-hidden="true" />
       </button>
 
       {open && (
-        <div role="menu" aria-label="더 보기" className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-2 border border-line-2 bg-bg-2 py-1 shadow-lg">
+        <div
+          role="menu"
+          aria-label="더 보기"
+          className="rounded-2 border-line-2 bg-bg-2 absolute top-full right-0 z-50 mt-1 min-w-[160px] border py-1 shadow-lg"
+        >
           {MORE_ACTIONS.map(({ key, icon: Icon, label }) => (
             <button
               key={key}
@@ -64,7 +69,7 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
                 handlers[key]();
                 setOpen(false);
               }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-text-2 transition-colors hover:bg-bg-3 hover:text-text-1"
+              className="text-text-2 hover:bg-bg-3 hover:text-text-1 flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors"
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="typo-body2-normal">{label}</span>

@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { Link2, Copy, Trash2, RefreshCw, Loader2, ExternalLink } from 'lucide-react';
-import { Dialog } from '@testea/ui';
+
 import { DSButton } from '@/shared';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Dialog } from '@testea/ui';
+import { Copy, ExternalLink, Link2, Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+
 import { generateShareLink, revokeShareLink } from '../api/share-actions';
 
 interface ShareModalProps {
@@ -135,7 +137,7 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
                   type="text"
                   readOnly
                   value={getShareUrl(currentToken)}
-                  className="bg-transparent text-text-1 flex-1 truncate text-sm outline-none"
+                  className="text-text-1 flex-1 truncate bg-transparent text-sm outline-none"
                 />
                 <button
                   onClick={handleCopy}
@@ -156,9 +158,7 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
               </div>
 
               {currentExpiresAt && (
-                <p className="text-text-3 text-xs">
-                  만료일: {formatDate(currentExpiresAt)}
-                </p>
+                <p className="text-text-3 text-xs">만료일: {formatDate(currentExpiresAt)}</p>
               )}
 
               <div className="flex justify-end gap-2">
@@ -183,12 +183,10 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
           {/* State: Expired */}
           {shareState === 'expired' && currentToken && (
             <div className="flex flex-col items-center gap-4 py-4">
-              <div className="bg-amber-500/10 flex h-12 w-12 items-center justify-center rounded-full">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
                 <Link2 className="h-6 w-6 text-amber-400" />
               </div>
-              <p className="text-text-2 text-center text-sm">
-                공유 링크가 만료되었습니다.
-              </p>
+              <p className="text-text-2 text-center text-sm">공유 링크가 만료되었습니다.</p>
               <DSButton
                 variant="solid"
                 size="small"

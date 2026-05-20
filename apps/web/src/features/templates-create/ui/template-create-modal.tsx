@@ -2,18 +2,22 @@
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
-import type { CreateTestCaseTemplate } from '@/entities/test-case-template';
 import { TEST_TYPE_OPTIONS } from '@/entities/test-case';
-import { useCreateTemplate } from '../hooks';
-import { DSButton, DsFormField, DsInput, DsSelect, TagChipInput, LoadingSpinner } from '@/shared';
+import type { CreateTestCaseTemplate } from '@/entities/test-case-template';
+import { DSButton, DsFormField, DsInput, DsSelect, LoadingSpinner, TagChipInput } from '@/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, ListChecks, Tag, TestTube2, X } from 'lucide-react';
-import { z } from 'zod';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+import { useCreateTemplate } from '../hooks';
 
 const CreateTemplateFormSchema = z.object({
   projectId: z.string().uuid(),
-  name: z.string().min(1, '템플릿 이름을 입력해주세요.').max(50, '템플릿 이름은 50자를 넘을 수 없습니다.'),
+  name: z
+    .string()
+    .min(1, '템플릿 이름을 입력해주세요.')
+    .max(50, '템플릿 이름은 50자를 넘을 수 없습니다.'),
   description: z.string().max(200, '설명은 200자를 넘을 수 없습니다.').optional(),
   testType: z.string().optional(),
   defaultTags: z.array(z.string().max(30)).max(10).optional(),
@@ -30,7 +34,11 @@ interface TemplateCreateModalProps {
   onSuccess?: () => void;
 }
 
-export const TemplateCreateModal = ({ projectId, onClose, onSuccess }: TemplateCreateModalProps) => {
+export const TemplateCreateModal = ({
+  projectId,
+  onClose,
+  onSuccess,
+}: TemplateCreateModalProps) => {
   const { mutate, isPending } = useCreateTemplate();
 
   const {
@@ -78,7 +86,7 @@ export const TemplateCreateModal = ({ projectId, onClose, onSuccess }: TemplateC
       onClick={onClose}
     >
       <section
-        className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden shadow-4"
+        className="bg-bg-2 border-line-2 rounded-5 shadow-4 relative flex max-h-[85vh] w-full max-w-[560px] flex-col overflow-hidden border"
         onClick={(e) => e.stopPropagation()}
       >
         {isPending && (
@@ -107,7 +115,7 @@ export const TemplateCreateModal = ({ projectId, onClose, onSuccess }: TemplateC
           <input type="hidden" {...register('projectId')} />
 
           <fieldset className="flex flex-col gap-5">
-            <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
+            <legend className="typo-caption-heading text-text-3 mb-1 tracking-widest uppercase">
               기본 정보
             </legend>
 
@@ -165,10 +173,10 @@ export const TemplateCreateModal = ({ projectId, onClose, onSuccess }: TemplateC
             </DsFormField.Root>
           </fieldset>
 
-          <div className="border-t border-line-2" />
+          <div className="border-line-2 border-t" />
 
           <fieldset className="flex flex-col gap-5">
-            <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
+            <legend className="typo-caption-heading text-text-3 mb-1 tracking-widest uppercase">
               기본 태그
             </legend>
             <DsFormField.Root>
@@ -191,10 +199,10 @@ export const TemplateCreateModal = ({ projectId, onClose, onSuccess }: TemplateC
             </DsFormField.Root>
           </fieldset>
 
-          <div className="border-t border-line-2" />
+          <div className="border-line-2 border-t" />
 
           <fieldset className="flex flex-col gap-5">
-            <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
+            <legend className="typo-caption-heading text-text-3 mb-1 tracking-widest uppercase">
               기본 내용
             </legend>
 

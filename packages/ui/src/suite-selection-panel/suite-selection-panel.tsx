@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+
 import { cn } from '@testea/util';
 import { Check, ChevronDown, ChevronUp, FolderOpen, Search } from 'lucide-react';
 
@@ -29,7 +30,10 @@ export const SuiteSelectionPanel = ({
   const filteredSuites = allSuites.filter((suite) => {
     const search = searchQuery.toLowerCase().trim();
     if (!search) return true;
-    return suite.title.toLowerCase().includes(search) || suite.description?.toLowerCase().includes(search);
+    return (
+      suite.title.toLowerCase().includes(search) ||
+      suite.description?.toLowerCase().includes(search)
+    );
   });
 
   return (

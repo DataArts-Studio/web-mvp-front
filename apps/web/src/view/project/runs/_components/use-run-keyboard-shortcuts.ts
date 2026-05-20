@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import { type TestCaseRunStatus } from './run-detail-constants';
+
 import { type TestCaseRunDetail } from '@/features/runs';
+
+import { type TestCaseRunStatus } from './run-detail-constants';
 
 interface UseRunKeyboardShortcutsOptions {
   selectedCaseId: string | null;
