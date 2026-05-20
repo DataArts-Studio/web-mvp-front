@@ -6,21 +6,20 @@
  * 비밀번호를 검증하고 접근 토큰을 발급.
  * 브루트포스 공격 방지를 위한 rate limiting 포함.
  */
-
-import * as Sentry from '@sentry/nextjs';
-import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
-import { getDatabase, projects } from '@testea/db';
+import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, projects } from '@testea/db';
+import { eq } from 'drizzle-orm';
 
 import { createProjectAccessToken } from '../../lib/access-token';
-import { setAccessTokenCookie, deleteAccessTokenCookie } from '../../lib/cookies';
+import { deleteAccessTokenCookie, setAccessTokenCookie } from '../../lib/cookies';
 import { verifyPassword } from '../../lib/password-hash';
-import { verifyTurnstileToken } from '@/shared/lib/turnstile';
-import type { ProjectAccessInfo, VerifyProjectAccessResponse } from '../model/types';
 import { VerifyProjectAccessRequestSchema } from '../model/schema';
+import type { ProjectAccessInfo, VerifyProjectAccessResponse } from '../model/types';
 
 /**
  * 브루트포스 방지를 위한 인메모리 rate limiting
@@ -117,10 +116,19 @@ async function getProjectAccessInfo(projectName: string): Promise<ProjectAccessI
 export async function verifyProjectAccess(
   projectName: string,
   password: string,
-  turnstileToken?: string,
+  turnstileToken?: string
 ): Promise<VerifyProjectAccessResponse> {
   try {
-    // 0. Turnstile 봇 검증
+    // 0. Turnstile 봇 검증: production 환경에서는 토큰 없이 호출하는 경로 자체를 차단한다.
+    // dev/preview 는 클라이언트가 siteKey 미설정 시 토큰 없이 제출하도록 설계되어 있어
+    // 같은 가드를 적용하면 개발 흐름이 회귀한다. 토큰이 들어오면 환경 무관 검증은 그대로 수행.
+    const isProduction = process.env.VERCEL_ENV === 'production';
+    if (isProduction && !turnstileToken) {
+      return {
+        success: false,
+        error: '보안 검증 토큰이 없습니다. 페이지를 새로고침 후 다시 시도해주세요.',
+      };
+    }
     if (turnstileToken) {
       const isHuman = await verifyTurnstileToken(turnstileToken);
       if (!isHuman) {

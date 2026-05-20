@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getDecryptedApiKey } from '@/entities/ai-config/api/server-actions';
+import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
 import { AiError } from '@/entities/ai-config/model/ai-error';
 import { GenerateCasesSchema, GeneratedTestCaseSchema } from '@/entities/ai-config/model/schema';
 import { getMonthlyUsage, recordUsage } from '@/entities/ai-usage/api/server-actions';
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
       const rawCases = parseJsonResponse(rawResponse);
       cases = z.array(GeneratedTestCaseSchema).parse(rawCases);
     } catch (error) {
-      // LLM 이 JSON 이 아닌/스키마 불일치 응답을 준 경우 — 중앙 핸들러에서 분류
+      // LLM 이 JSON 이 아닌/스키마 불일치 응답을 준 경우, 중앙 핸들러에서 분류한다.
       throw AiError.responseUnparsable(error);
     }
 
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ cases: limitedCases });
   } catch (error) {
     if (error instanceof AiError) {
-      // 사용자 환경 이슈(키 재등록/레이트/모델 설정 등)는 정상 분기라
+      // 사용자 환경 이슈(키 재등록/레이트/모델 설정 등) 는 정상 분기라
       // Sentry 노이즈를 피해 report=true 인 예상 밖 결함만 보고한다.
       if (error.report) {
         Sentry.captureException(error, {

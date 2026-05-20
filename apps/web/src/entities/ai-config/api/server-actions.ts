@@ -1,12 +1,11 @@
 'use server';
 
-import { CryptoError, decrypt, encrypt } from '@/shared/lib/crypto';
+import { encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projectAiConfigs, testCases } from '@testea/db';
 import { and, eq, sql } from 'drizzle-orm';
 
-import { AiError } from '../model/ai-error';
 import { SaveAiConfigSchema, SaveGeneratedCasesSchema } from '../model/schema';
 import type { AiConfig } from '../model/types';
 
@@ -111,38 +110,9 @@ export const getAiConfig = async (projectId: string): Promise<ActionResult<AiCon
   }
 };
 
-// --- AI 설정에서 복호화된 키 조회 (내부용) ---
-export const getDecryptedApiKey = async (
-  projectId: string
-): Promise<{ provider: string; apiKey: string; model: string | null } | null> => {
-  const db = getDatabase();
-
-  const [config] = await db
-    .select()
-    .from(projectAiConfigs)
-    .where(
-      and(
-        eq(projectAiConfigs.project_id, projectId),
-        eq(projectAiConfigs.lifecycle_status, 'ACTIVE')
-      )
-    )
-    .limit(1);
-
-  if (!config) return null;
-
-  try {
-    return {
-      provider: config.provider,
-      apiKey: decrypt(config.api_key),
-      model: config.model,
-    };
-  } catch (error) {
-    // 복호화 실패(키 env 누락/형식 오류/인증 실패)를 도메인 에러로 승격해
-    // route 가 의미 있는 상태코드·메시지로 응답하도록 한다.
-    if (error instanceof CryptoError) throw AiError.fromCryptoError(error);
-    throw error;
-  }
-};
+// 복호화된 API 키 조회는 './decrypt-api-key' 로 분리됨.
+// 'use server' 파일에 두면 클라이언트에서 RSC action 으로 직접 호출 가능해
+// 평문 API 키가 외부로 새는 위험이 있어 격리한 것.
 
 // --- AI 설정 삭제 (소프트 딜리트) ---
 export const deleteAiConfig = async (projectId: string): Promise<ActionResult<null>> => {

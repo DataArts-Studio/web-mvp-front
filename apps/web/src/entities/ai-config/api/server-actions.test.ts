@@ -213,10 +213,10 @@ describe('getAiConfig', () => {
 // getDecryptedApiKey
 // ============================================================================
 describe('getDecryptedApiKey', () => {
-  let getDecryptedApiKey: typeof import('./server-actions').getDecryptedApiKey;
+  let getDecryptedApiKey: typeof import('./decrypt-api-key').getDecryptedApiKey;
 
   beforeEach(async () => {
-    const mod = await import('./server-actions');
+    const mod = await import('./decrypt-api-key');
     getDecryptedApiKey = mod.getDecryptedApiKey;
   });
 
