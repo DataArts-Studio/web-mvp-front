@@ -1,1 +1,0 @@
-export { GlassBackground } from './glass-background';

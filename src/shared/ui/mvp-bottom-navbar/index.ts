@@ -1,1 +1,0 @@
-export { MvpBottomNavbar } from '@/shared/ui/mvp-bottom-navbar/mvp-bottom-navbar';

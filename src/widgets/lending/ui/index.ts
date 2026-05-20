@@ -1,1 +1,0 @@
-export {LendingHeader} from '@/widgets/lending/ui/lending-header'

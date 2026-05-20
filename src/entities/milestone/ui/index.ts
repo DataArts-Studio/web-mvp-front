@@ -1,1 +1,0 @@
-export { MilestoneCard } from './milestone-card';

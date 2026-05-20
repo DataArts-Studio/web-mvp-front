@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: prettier (changed files)
+    runs-on: ubuntu-latest
+    # push 이벤트엔 base PR 개념이 없어 PR 에서만 수행 (게이팅 지점)
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # base 대비 변경 파일 diff 를 위해 전체 히스토리 필요
+          fetch-depth: 0
+
+      # packageManager 필드(pnpm@10.23.0)를 그대로 인식
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 레거시 미적용 파일이 많아 전체가 아닌 'PR 변경 파일'만 검사한다.
+      - name: Prettier format check (changed files only)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA"...HEAD \
+            | grep -E '\.(ts|tsx|js|jsx|json|md)$' || true)
+          if [ -z "$changed" ]; then
+            echo "포맷 검사 대상 변경 파일 없음 — skip"
+            exit 0
+          fi
+          echo "검사 대상:"
+          echo "$changed"
+          # 명시 경로로 넘겨도 prettier 는 .prettierignore 를 그대로 존중함
+          echo "$changed" | xargs -d '\n' pnpm exec prettier --check

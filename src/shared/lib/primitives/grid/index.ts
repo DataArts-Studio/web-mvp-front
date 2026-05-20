@@ -1,1 +1,0 @@
-export { Grid } from '@/shared/lib/primitives/grid/grid';

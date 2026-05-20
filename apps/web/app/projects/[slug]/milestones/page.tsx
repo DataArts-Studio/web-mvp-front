@@ -1,0 +1,42 @@
+import type { Metadata } from 'next';
+
+import { milestonesQueryOptions } from '@/entities/milestone/api/query';
+import { projectIdQueryOptions } from '@/entities/project/api/query';
+import { cachedGetMilestones, cachedGetProjectId } from '@/shared/lib/cache';
+import { MilestonesView } from '@/view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+
+export const metadata: Metadata = {
+  title: '마일스톤',
+  description: '프로젝트 마일스톤을 관리하고 테스트 진행률을 추적합니다.',
+};
+
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
+
+  try {
+    const result = await queryClient.fetchQuery({
+      ...projectIdQueryOptions(slug),
+      queryFn: () => cachedGetProjectId(slug),
+    });
+    const projectId = result?.success ? result.data.id : undefined;
+
+    if (projectId) {
+      await queryClient.prefetchQuery({
+        ...milestonesQueryOptions(projectId),
+        queryFn: () => cachedGetMilestones(projectId),
+      });
+    }
+  } catch {
+    // prefetch 실패 시 클라이언트에서 재시도
+  }
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <MilestonesView />
+    </HydrationBoundary>
+  );
+}

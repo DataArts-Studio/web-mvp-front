@@ -1,1 +1,0 @@
-export {Aside} from '@/widgets/aside/aside';
