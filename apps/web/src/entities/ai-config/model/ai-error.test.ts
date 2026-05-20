@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { AiError } from './ai-error';
 
 describe('AiError.fromCryptoError', () => {
-  it('AUTH_FAILED → KEY_UNDECRYPTABLE (409, report=false)', () => {
+  it('AUTH_FAILED → KEY_UNDECRYPTABLE (409). 키 불일치와 데이터 변조 구분이 불가능하므로 운영 보고는 켜둔다', () => {
     const e = AiError.fromCryptoError(new CryptoError('AUTH_FAILED', 'bad tag'));
     expect(e).toBeInstanceOf(AiError);
     expect(e).toBeInstanceOf(Error);
     expect(e.kind).toBe('KEY_UNDECRYPTABLE');
     expect(e.httpStatus).toBe(409);
-    expect(e.report).toBe(false);
+    expect(e.report).toBe(true);
     expect(e.context).toMatchObject({ cryptoCode: 'AUTH_FAILED' });
   });
 

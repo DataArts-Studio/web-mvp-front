@@ -39,7 +39,10 @@ const SPECS: Record<AiErrorKind, AiErrorSpec> = {
     httpStatus: 409,
     userMessage:
       '저장된 API 키를 복호화할 수 없습니다. 설정 페이지에서 API 키를 다시 등록해주세요.',
-    report: false,
+    // GCM 인증 실패는 키 불일치(사용자 환경 이슈) 와 ciphertext 변조(데이터 무결성 이슈) 가
+    // 동일 예외로 떨어져 정규식만으론 구분이 불가능하다. 사용자 메시지는 키 재등록 안내로
+    // 자연스럽게 두되, 운영이 데이터 손상 가능성을 놓치지 않도록 보고는 켠다.
+    report: true,
   },
   PROVIDER_UNAUTHORIZED: {
     httpStatus: 401,

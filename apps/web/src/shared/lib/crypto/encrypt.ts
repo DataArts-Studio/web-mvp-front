@@ -31,14 +31,15 @@ function getEncryptionKey(): Buffer {
   if (!key) {
     throw new CryptoError('KEY_NOT_SET', 'GITHUB_TOKEN_ENCRYPTION_KEY is not set');
   }
-  const buf = Buffer.from(key, 'hex');
-  if (buf.length !== KEY_LENGTH) {
+  // Buffer.from(key, 'hex') 는 첫 비-hex 문자에서 디코드를 멈추고 앞부분만 반환하므로,
+  // 길이만 검증하면 64자리 hex 뒤에 오타가 붙은 키도 통과할 수 있다. 형식 자체를 먼저 본다.
+  if (!/^[0-9a-fA-F]+$/.test(key) || key.length !== KEY_LENGTH * 2) {
     throw new CryptoError(
       'KEY_INVALID',
-      `GITHUB_TOKEN_ENCRYPTION_KEY must be ${KEY_LENGTH}-byte hex (got ${buf.length} bytes)`
+      `GITHUB_TOKEN_ENCRYPTION_KEY must be ${KEY_LENGTH * 2} hex characters (got ${key.length} characters)`
     );
   }
-  return buf;
+  return Buffer.from(key, 'hex');
 }
 
 export function encrypt(plaintext: string): string {
@@ -58,12 +59,13 @@ export function decrypt(ciphertext: string): string {
   const key = getEncryptionKey();
   const buf = Buffer.from(ciphertext, 'base64');
 
-  // 사전 길이 검증: iv + tag + 최소 1byte ciphertext 가 안 되면 데이터가 잘린 것.
-  // 이 경우 GCM 인증 실패와 구분이 안 되는 catch 통합 분류를 피해 명시적으로 MALFORMED.
-  if (buf.length <= IV_LENGTH + TAG_LENGTH) {
+  // 사전 길이 검증: iv + tag 도 채우지 못하면 데이터가 잘린 것.
+  // AES-GCM 은 패딩 없는 스트림 암호라 빈 plaintext 도 28바이트(iv+tag) 정상 ciphertext 를 만들므로,
+  // 등호를 포함하면 정상 케이스(encrypt('')) 까지 거부하는 회귀가 생긴다.
+  if (buf.length < IV_LENGTH + TAG_LENGTH) {
     throw new CryptoError(
       'MALFORMED',
-      `ciphertext too short (${buf.length} bytes, expected > ${IV_LENGTH + TAG_LENGTH})`
+      `ciphertext too short (${buf.length} bytes, expected >= ${IV_LENGTH + TAG_LENGTH})`
     );
   }
 
