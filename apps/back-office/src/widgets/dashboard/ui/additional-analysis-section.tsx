@@ -15,8 +15,13 @@ export function AdditionalAnalysisSection({
         추가 분석
       </h2>
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="border-border shadow-1 rounded-lg border bg-white p-5">
-          <h3 className="text-base font-semibold">가입부터 첫 Run 퍼널</h3>
+        <section
+          aria-labelledby="first-run-funnel-title"
+          className="border-border shadow-1 rounded-lg border bg-white p-5"
+        >
+          <h3 id="first-run-funnel-title" className="text-base font-semibold">
+            가입부터 첫 Run 퍼널
+          </h3>
           <div className="mt-6 grid gap-7">
             {funnel.map((item) => (
               <div key={item[0]}>
@@ -48,10 +53,15 @@ export function AdditionalAnalysisSection({
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        <div className="border-border shadow-1 rounded-lg border bg-white p-5">
-          <h3 className="text-base font-semibold">스토리지 사용량</h3>
+        <section
+          aria-labelledby="storage-usage-title"
+          className="border-border shadow-1 rounded-lg border bg-white p-5"
+        >
+          <h3 id="storage-usage-title" className="text-base font-semibold">
+            스토리지 사용량
+          </h3>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg bg-gray-50 p-5">
               <div className="text-text-secondary text-sm">총 용량</div>
@@ -87,7 +97,7 @@ export function AdditionalAnalysisSection({
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
     </section>
   );

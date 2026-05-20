@@ -11,29 +11,44 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
         어뷰징 및 이상 행동 모니터링
       </h2>
       <div className="grid gap-6 xl:grid-cols-2">
-        {abuseSignals.map((signal) => (
-          <div key={signal.title} className="border-border rounded-xl border bg-white p-6 xl:p-8">
-            <div className="text-xl font-bold">{signal.title}</div>
-            <div className="mt-5 grid gap-4">
-              {signal.items.map((item) => (
-                <div key={item.title} className={`rounded-lg border p-4 ${item.tone}`}>
-                  <div className="flex flex-col gap-2">
-                    <div className="text-text-primary font-semibold">{item.title}</div>
-                    <div className="text-text-secondary text-xs">{item.description}</div>
-                    <div className="text-right text-xl font-bold">{item.value}</div>
-                    {item.helper ? (
-                      <div className="text-text-secondary text-sm">{item.helper}</div>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="text-text-secondary mt-3 text-xs">{signal.footnote}</div>
-          </div>
-        ))}
+        {abuseSignals.map((signal, index) => {
+          const titleId = `abuse-signal-${index}-title`;
 
-        <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
-          <div className="text-xl font-bold">가입 및 IP 모니터링</div>
+          return (
+            <section
+              key={signal.title}
+              aria-labelledby={titleId}
+              className="border-border rounded-xl border bg-white p-6 xl:p-8"
+            >
+              <h3 id={titleId} className="text-xl font-bold">
+                {signal.title}
+              </h3>
+              <div className="mt-5 grid gap-4">
+                {signal.items.map((item) => (
+                  <div key={item.title} className={`rounded-lg border p-4 ${item.tone}`}>
+                    <div className="flex flex-col gap-2">
+                      <div className="text-text-primary font-semibold">{item.title}</div>
+                      <div className="text-text-secondary text-xs">{item.description}</div>
+                      <div className="text-right text-xl font-bold">{item.value}</div>
+                      {item.helper ? (
+                        <div className="text-text-secondary text-sm">{item.helper}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-text-secondary mt-3 text-xs">{signal.footnote}</div>
+            </section>
+          );
+        })}
+
+        <section
+          aria-labelledby="signup-ip-monitoring-title"
+          className="border-border rounded-xl border bg-white p-6 xl:p-8"
+        >
+          <h3 id="signup-ip-monitoring-title" className="text-xl font-bold">
+            가입 및 IP 모니터링
+          </h3>
           <div className="mt-5 grid gap-5">
             <div>
               <div className="flex items-start justify-between">
@@ -63,10 +78,15 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
-          <div className="text-xl font-bold">Rate Limit 위반</div>
+        <section
+          aria-labelledby="rate-limit-violation-title"
+          className="border-border rounded-xl border bg-white p-6 xl:p-8"
+        >
+          <h3 id="rate-limit-violation-title" className="text-xl font-bold">
+            Rate Limit 위반
+          </h3>
           <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -82,7 +102,7 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
           <div className="text-text-secondary mt-5 text-sm">
             API 호출 한도: 100회/분 · 현재 임시 차단: 0건
           </div>
-        </div>
+        </section>
       </div>
     </section>
   );

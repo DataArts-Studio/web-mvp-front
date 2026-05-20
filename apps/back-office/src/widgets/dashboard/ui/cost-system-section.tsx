@@ -12,9 +12,14 @@ export function CostSystemSection({ resourceUsages, systemStatuses }: CostSystem
         비용 및 시스템 상태
       </h2>
       <div className="grid gap-6 xl:grid-cols-3">
-        <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
+        <section
+          aria-labelledby="monthly-ai-cost-title"
+          className="border-border rounded-xl border bg-white p-6 xl:p-8"
+        >
           <div className="mb-7 flex items-start justify-between">
-            <h3 className="text-xl font-bold">AI 비용 (이번 달)</h3>
+            <h3 id="monthly-ai-cost-title" className="text-xl font-bold">
+              AI 비용 (이번 달)
+            </h3>
             <span className="text-3xl text-orange-600" aria-hidden="true">
               $
             </span>
@@ -50,11 +55,16 @@ export function CostSystemSection({ resourceUsages, systemStatuses }: CostSystem
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
+        <section
+          aria-labelledby="infrastructure-usage-title"
+          className="border-border rounded-xl border bg-white p-6 xl:p-8"
+        >
           <div className="mb-7 flex items-start justify-between">
-            <h3 className="text-xl font-bold">인프라 사용량</h3>
+            <h3 id="infrastructure-usage-title" className="text-xl font-bold">
+              인프라 사용량
+            </h3>
             <span className="text-3xl text-[#155DFC]" aria-hidden="true">
               %
             </span>
@@ -84,11 +94,16 @@ export function CostSystemSection({ resourceUsages, systemStatuses }: CostSystem
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
+        <section
+          aria-labelledby="system-health-title"
+          className="border-border rounded-xl border bg-white p-6 xl:p-8"
+        >
           <div className="mb-7 flex items-start justify-between">
-            <h3 className="text-xl font-bold">시스템 헬스</h3>
+            <h3 id="system-health-title" className="text-xl font-bold">
+              시스템 헬스
+            </h3>
             <span className="h-3 w-3 rounded-full bg-green-500" aria-hidden="true" />
           </div>
           <div className="grid gap-5">
@@ -101,7 +116,7 @@ export function CostSystemSection({ resourceUsages, systemStatuses }: CostSystem
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
     </section>
   );

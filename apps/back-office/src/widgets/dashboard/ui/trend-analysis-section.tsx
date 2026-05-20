@@ -50,9 +50,14 @@ export function TrendAnalysisSection({
         추이 분석
       </h2>
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
+        <section
+          aria-labelledby="new-projects-trend-title"
+          className="border-border rounded-xl border bg-white p-6 xl:p-8"
+        >
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="text-xl font-bold">신규 프로젝트 추이</h3>
+            <h3 id="new-projects-trend-title" className="text-xl font-bold">
+              신규 프로젝트 추이
+            </h3>
             <div className="text-text-secondary flex items-center gap-3 text-xs">
               <span>최근 30일</span>
             </div>
@@ -60,20 +65,30 @@ export function TrendAnalysisSection({
           <div className="h-72 w-full" role="img" aria-label="최근 30일 신규 프로젝트 추이 차트">
             <NewProjectsChart data={projectTrend} />
           </div>
-        </div>
+        </section>
 
-        <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
+        <section
+          aria-labelledby="active-users-trend-title"
+          className="border-border rounded-xl border bg-white p-6 xl:p-8"
+        >
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="text-xl font-bold">DAU / WAU / MAU 추이</h3>
+            <h3 id="active-users-trend-title" className="text-xl font-bold">
+              DAU / WAU / MAU 추이
+            </h3>
           </div>
           <div className="h-72 w-full" role="img" aria-label="DAU, WAU, MAU 사용자 추이 차트">
             <ActiveUsersChart data={activeUserTrend} />
           </div>
-        </div>
+        </section>
 
-        <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
+        <section
+          aria-labelledby="productivity-trend-title"
+          className="border-border rounded-xl border bg-white p-6 xl:p-8"
+        >
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="text-xl font-bold">콘텐츠 생산량</h3>
+            <h3 id="productivity-trend-title" className="text-xl font-bold">
+              콘텐츠 생산량
+            </h3>
             <div className="w-32">
               <Select.Root defaultValue="누적" size="md">
                 <Select.Trigger
@@ -106,11 +121,16 @@ export function TrendAnalysisSection({
           >
             <ProductivityChart data={productivityTrend} />
           </div>
-        </div>
+        </section>
 
-        <div className="border-border overflow-hidden rounded-xl border bg-white">
+        <section
+          aria-labelledby="active-projects-title"
+          className="border-border overflow-hidden rounded-xl border bg-white"
+        >
           <div className="border-border border-b px-5 py-4">
-            <h3 className="text-xl font-bold">활성 프로젝트 Top 10</h3>
+            <h3 id="active-projects-title" className="text-xl font-bold">
+              활성 프로젝트 Top 10
+            </h3>
           </div>
           <div className="max-h-80 overflow-auto">
             <table className="w-full min-w-[560px] text-sm">
@@ -147,7 +167,7 @@ export function TrendAnalysisSection({
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </div>
     </section>
   );

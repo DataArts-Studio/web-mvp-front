@@ -10,7 +10,10 @@ export function CostSpikeSection({ costProjects }: CostSpikeSectionProps) {
       <h2 id="cost-spike-title" className="tracking-zero text-lg font-bold">
         비용 급증 프로젝트
       </h2>
-      <div className="border-border shadow-1 rounded-lg border bg-white p-5">
+      <article
+        aria-labelledby="cost-spike-title"
+        className="border-border shadow-1 rounded-lg border bg-white p-5"
+      >
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[620px] text-sm">
             <caption className="sr-only">
@@ -51,7 +54,7 @@ export function CostSpikeSection({ costProjects }: CostSpikeSectionProps) {
             </tbody>
           </table>
         </div>
-      </div>
+      </article>
     </section>
   );
 }
