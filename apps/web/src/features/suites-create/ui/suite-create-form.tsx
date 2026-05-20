@@ -5,11 +5,11 @@ import { useForm } from 'react-hook-form';
 import { CreateTestSuiteSchema } from '@/entities/test-suite';
 import type { CreateTestSuite } from '@/entities/test-suite';
 import { useCreateSuite } from '@/features/suites-create';
+import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { DSButton, LoadingSpinner } from '@testea/ui';
 import { FormField } from '@testea/ui';
 import { cn } from '@testea/util';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 interface SuiteCreateFormProps {
   projectId: string;
@@ -41,7 +41,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
       onError: () => {
         track(TESTSUITE_EVENTS.CREATE_FAIL, { project_id: projectId });
       },
-    })
+    });
   };
 
   const handleAbandon = () => {
@@ -67,7 +67,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
       }
       if (e.key !== 'Tab' || !node) return;
       const focusables = node.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
       if (focusables.length === 0) return;
       const first = focusables[0];
@@ -106,20 +106,25 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
         onClick={(e) => e.stopPropagation()}
       >
         {isPending && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
+          <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
             <LoadingSpinner size="md" text="테스트 스위트를 생성하고 있어요" />
           </div>
         )}
         {/* Header */}
         <div className="border-line-2 shrink-0 border-b px-6 py-5">
-          <h2 id={titleId} className="text-text-1 text-lg font-bold">테스트 스위트 생성</h2>
-          <p className="text-text-3 mt-1 text-sm">
-            필요한 테스트들을 한 곳에 모아 관리해요
-          </p>
+          <h2 id={titleId} className="text-text-1 text-lg font-bold">
+            테스트 스위트 생성
+          </h2>
+          <p className="text-text-3 mt-1 text-sm">필요한 테스트들을 한 곳에 모아 관리해요</p>
         </div>
 
         {/* Body */}
-        <form id="suite-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-5 overflow-y-auto p-6" noValidate>
+        <form
+          id="suite-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-1 flex-col gap-5 overflow-y-auto p-6"
+          noValidate
+        >
           <input type="hidden" {...register('projectId')} />
           <FormField.Root className="flex flex-col gap-2">
             <FormField.Label className="text-text-1 font-medium">
@@ -146,8 +151,8 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
                 },
               })}
               className={cn(
-                'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
-                errors.title && 'border-system-red focus:border-system-red',
+                'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                errors.title && 'border-system-red focus:border-system-red'
               )}
             />
             {errors.title && (
@@ -161,7 +166,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
               type="text"
               disabled={isPending}
               {...register('description')}
-              className="h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary"
+              className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
             />
           </FormField.Root>
         </form>

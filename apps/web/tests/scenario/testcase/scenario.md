@@ -1,11 +1,14 @@
 ## Test Purpose
+
 사용자가 테스트케이스 작성을 완료하고 작성한 테스트케이스가 목록에 반영되는지 검증한다.
 
 ## Pre-condition
+
 - `sample-project`(식별번호 `123123123`)가 시드돼 있다.
 - 인증 통과 세션(`chromium-auth` / `storageState`)으로 진입한다. → 이 스펙은 인증이 필요하므로 `playwright.config.ts`의 `chromium-auth.testMatch`에 `**/scenario/cases/**/*.spec.ts`가 포함돼야 한다.
 
 ## Scenario
+
 1. 사이드메뉴의 테스트케이스 페이지로 접근한다.
 2. 우측 상단 테스트 케이스 생성 버튼을 클릭한다.
 3. 테스트케이스 제목을 입력한다.

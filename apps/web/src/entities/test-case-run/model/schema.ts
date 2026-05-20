@@ -14,10 +14,12 @@ export const TestCaseRunSchema = z.object({
 });
 
 export const CreateTestCaseRunSchema = TestCaseRunSchema.pick({
-    test_run_id: true,
-    test_case_id: true,
-}).merge(TestCaseRunSchema.partial().pick({
+  test_run_id: true,
+  test_case_id: true,
+}).merge(
+  TestCaseRunSchema.partial().pick({
     status: true,
     comment: true,
     executed_at: true,
-}));
+  })
+);

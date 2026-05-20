@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+
 import { searchProjects } from '../api/server-action';
 import type { ProjectSearchResult, SearchModalStatus } from '../model/types';
 import { ProjectSearchForm } from './project-search-form';
@@ -65,17 +66,17 @@ export const ProjectSearchModal = ({ isOpen, onClose }: ProjectSearchModalProps)
         role="dialog"
         aria-modal="true"
         aria-labelledby="search-modal-title"
-        className="fixed left-1/2 top-1/2 z-[1001] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-line-2 bg-bg-1 p-6 shadow-lg"
+        className="border-line-2 bg-bg-1 fixed top-1/2 left-1/2 z-[1001] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border p-6 shadow-lg"
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 id="search-modal-title" className="text-h3 font-semibold text-text-1">
+          <h2 id="search-modal-title" className="text-h3 text-text-1 font-semibold">
             내 프로젝트 찾기
           </h2>
           <button
             type="button"
             onClick={handleClose}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-text-2 transition-colors hover:bg-bg-3 hover:text-text-1"
+            className="text-text-2 hover:bg-bg-3 hover:text-text-1 flex h-8 w-8 items-center justify-center rounded-md transition-colors"
             aria-label="닫기"
           >
             <svg
@@ -99,7 +100,7 @@ export const ProjectSearchModal = ({ isOpen, onClose }: ProjectSearchModalProps)
         <ProjectSearchForm onSearch={handleSearch} isSearching={status === 'searching'} />
 
         {/* Divider */}
-        {status !== 'idle' && <hr className="my-4 border-line-2" />}
+        {status !== 'idle' && <hr className="border-line-2 my-4" />}
 
         {/* Results */}
         <ProjectSearchResultList

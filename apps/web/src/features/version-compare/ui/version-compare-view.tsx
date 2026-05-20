@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useVersionCompare } from '../hooks/use-version-compare';
-import { LoadingSpinner } from '@testea/ui';
+
 import type { FieldDiff } from '@/entities/test-case-version';
-import { diffLines, type Change } from 'diff';
+import { LoadingSpinner } from '@testea/ui';
+import { type Change, diffLines } from 'diff';
+
+import { useVersionCompare } from '../hooks/use-version-compare';
 
 interface VersionCompareViewProps {
   testCaseId: string;
@@ -34,7 +36,9 @@ export const VersionCompareView = ({
   }
 
   if (!data?.success) {
-    return <p className="text-text-3 py-8 text-center text-sm">비교할 데이터를 불러올 수 없습니다.</p>;
+    return (
+      <p className="text-text-3 py-8 text-center text-sm">비교할 데이터를 불러올 수 없습니다.</p>
+    );
   }
 
   const { oldVersion: oldVer, newVersion: newVer, diffs } = data.data;
@@ -64,7 +68,7 @@ function FieldDiffRow({ diff }: { diff: FieldDiff }) {
           {diff.fieldLabel} — 변경 없음
         </summary>
         <div className="border-line-2 border-t px-4 py-3">
-          <p className="text-text-2 whitespace-pre-wrap text-sm">{diff.oldValue || '-'}</p>
+          <p className="text-text-2 text-sm whitespace-pre-wrap">{diff.oldValue || '-'}</p>
         </div>
       </details>
     );
@@ -85,13 +89,13 @@ function FieldDiffRow({ diff }: { diff: FieldDiff }) {
         <div className="grid grid-cols-2 divide-x">
           <div className="bg-red-50/50 p-4">
             <p className="mb-1 text-xs font-medium text-red-600">이전 (Old)</p>
-            <p className="text-text-2 whitespace-pre-wrap text-sm line-through decoration-red-300">
+            <p className="text-text-2 text-sm whitespace-pre-wrap line-through decoration-red-300">
               {diff.oldValue || '-'}
             </p>
           </div>
           <div className="bg-green-50/50 p-4">
             <p className="mb-1 text-xs font-medium text-green-600">현재 (New)</p>
-            <p className="text-text-2 whitespace-pre-wrap text-sm">{diff.newValue || '-'}</p>
+            <p className="text-text-2 text-sm whitespace-pre-wrap">{diff.newValue || '-'}</p>
           </div>
         </div>
       )}
@@ -131,7 +135,7 @@ function LineDiff({ oldValue, newValue }: { oldValue: string; newValue: string }
 
         return (
           <div key={i} className={className}>
-            <span className="mr-2 select-none opacity-50">{prefix}</span>
+            <span className="mr-2 opacity-50 select-none">{prefix}</span>
             {change.value}
           </div>
         );

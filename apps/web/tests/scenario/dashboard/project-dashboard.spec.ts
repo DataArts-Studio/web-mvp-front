@@ -16,18 +16,24 @@ const SLUG = DATA.slug;
 
 // 인증된 시드 프로젝트만 있으면 되는 구조/로드 (시드 후 가장 먼저 활성)
 test.describe('대시보드 - 로드/구조', () => {
-  test.fixme('인증 후 대시보드가 로드된다 (URL + 헤딩)', async ({ dashboardPage }) => {
+  test.fixme('인증 후 대시보드가 로드된다 (URL + 헤딩)', async ({
+    dashboardPage,
+  }) => {
     await dashboardPage.goto(SLUG);
     await dashboardPage.expectLoaded(SLUG);
     await dashboardPage.expectSidebarVisible();
   });
 
-  test.fixme('주요 섹션이 렌더된다 (presence-only)', async ({ dashboardPage }) => {
+  test.fixme('주요 섹션이 렌더된다 (presence-only)', async ({
+    dashboardPage,
+  }) => {
     await dashboardPage.goto(SLUG);
     await dashboardPage.expectSectionsVisible(); // 값 아님, 렌더 여부만
   });
 
-  test.fixme('프로젝트 정보 카드에 프로젝트명이 노출된다', async ({ dashboardPage }) => {
+  test.fixme('프로젝트 정보 카드에 프로젝트명이 노출된다', async ({
+    dashboardPage,
+  }) => {
     await dashboardPage.goto(SLUG);
     await dashboardPage.expectProjectName(SLUG);
   });
@@ -35,13 +41,17 @@ test.describe('대시보드 - 로드/구조', () => {
 
 // 네비게이션 (사이드메뉴 / 전체보기)
 test.describe('대시보드 - 네비게이션', () => {
-  test.fixme('사이드 메뉴 클릭 시 해당 라우트로 이동한다', async ({ dashboardPage }) => {
+  test.fixme('사이드 메뉴 클릭 시 해당 라우트로 이동한다', async ({
+    dashboardPage,
+  }) => {
     await dashboardPage.goto(SLUG);
     await dashboardPage.clickOnNavigation('테스트 케이스');
     await dashboardPage.expectNavigationTo(`/projects/${SLUG}/cases`);
   });
 
-  test.fixme('"전체보기" 클릭 시 목록 페이지로 이동한다', async ({ dashboardPage }) => {
+  test.fixme('"전체보기" 클릭 시 목록 페이지로 이동한다', async ({
+    dashboardPage,
+  }) => {
     await dashboardPage.goto(SLUG);
     // TODO: 전체보기 트리거 → cases/suites 목록 이동 단언
     await dashboardPage.expectNavigationTo(`/projects/${SLUG}/cases`);
@@ -62,7 +72,9 @@ test.describe('커맨드 팔레트 - 검색 후 이동할 수 있다.', () => {
 
 // 시드 데이터 + teardown 필요 (생성이 대시보드에 반영되는 통합 흐름)
 test.describe('대시보드 - 생성 반영', () => {
-  test.fixme('케이스 추가 → 모달 → 생성 → 대시보드 갱신', async ({ dashboardPage }) => {
+  test.fixme('케이스 추가 → 모달 → 생성 → 대시보드 갱신', async ({
+    dashboardPage,
+  }) => {
     await dashboardPage.goto(SLUG);
     await dashboardPage.clickAddButton('test-case');
     // TODO: 모달 입력 → 제출 → 토스트 → 모달 닫힘 → 카운트/목록 갱신 단언

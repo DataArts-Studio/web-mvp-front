@@ -1,5 +1,5 @@
-import { FileText, FolderOpen, Flag } from 'lucide-react';
 import type { TrashItemType } from '@/features/trash';
+import { FileText, Flag, FolderOpen } from 'lucide-react';
 
 export const TYPE_CONFIG: Record<
   TrashItemType,

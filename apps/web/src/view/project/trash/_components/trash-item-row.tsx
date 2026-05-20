@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
-import { RotateCcw, Trash2, Loader2, Clock } from 'lucide-react';
-import { cn } from '@testea/util';
+
 import type { TrashItem } from '@/features/trash';
+import { cn } from '@testea/util';
+import { Clock, Loader2, RotateCcw, Trash2 } from 'lucide-react';
+
 import { TYPE_CONFIG, formatDeletedDate } from './trash-constants';
 
 function DaysRemainingBadge({ days }: { days: number }) {
@@ -12,9 +14,7 @@ function DaysRemainingBadge({ days }: { days: number }) {
     <span
       className={cn(
         'typo-label-normal inline-flex items-center gap-1 rounded-full px-2 py-0.5',
-        isUrgent
-          ? 'bg-red-500/10 text-red-400'
-          : 'bg-bg-3 text-text-3',
+        isUrgent ? 'bg-red-500/10 text-red-400' : 'bg-bg-3 text-text-3'
       )}
     >
       <Clock className="h-3 w-3" />
@@ -46,15 +46,15 @@ export function TrashItemRow({
     <div
       className={cn(
         'group border-line-2 grid grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors',
-        isPending ? 'opacity-50' : 'hover:bg-bg-3/50',
+        isPending ? 'opacity-50' : 'hover:bg-bg-3/50'
       )}
     >
       {/* Type icon + Title */}
-      <div className="col-span-5 flex items-center gap-3 min-w-0">
+      <div className="col-span-5 flex min-w-0 items-center gap-3">
         <div
           className={cn(
             'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-            config.bgColor,
+            config.bgColor
           )}
         >
           <Icon className={cn('h-4 w-4', config.color)} />
@@ -67,9 +67,7 @@ export function TrashItemRow({
 
       {/* Deleted date */}
       <div className="col-span-2 text-center">
-        <span className="typo-body2-normal text-text-3">
-          {formatDeletedDate(item.deletedAt)}
-        </span>
+        <span className="typo-body2-normal text-text-3">{formatDeletedDate(item.deletedAt)}</span>
       </div>
 
       {/* Days remaining */}
@@ -83,7 +81,7 @@ export function TrashItemRow({
           type="button"
           onClick={onRestore}
           disabled={isPending}
-          className="text-text-3 hover:text-primary flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-primary/5 disabled:opacity-50"
+          className="text-text-3 hover:text-primary hover:bg-primary/5 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors disabled:opacity-50"
         >
           {isRestoring ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

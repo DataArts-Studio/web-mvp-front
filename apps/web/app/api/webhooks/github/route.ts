@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+
+import { decrypt } from '@/shared/lib/crypto';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from '@testea/db';
-import { decrypt } from '@/shared/lib/crypto';
-import { eq, and, inArray } from 'drizzle-orm';
+import crypto from 'crypto';
+import { and, eq, inArray } from 'drizzle-orm';
 
 function verifySignature(payload: string, signature: string, secret: string): boolean {
   const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(payload).digest('hex');
@@ -82,10 +83,7 @@ export async function POST(req: NextRequest) {
       .select({ id: testCases.id, display_id: testCases.display_id, name: testCases.name })
       .from(testCases)
       .where(
-        and(
-          eq(testCases.project_id, conn.project_id),
-          inArray(testCases.display_id, displayIds),
-        ),
+        and(eq(testCases.project_id, conn.project_id), inArray(testCases.display_id, displayIds))
       );
 
     if (matchedCases.length === 0) {
@@ -101,8 +99,8 @@ export async function POST(req: NextRequest) {
           and(
             eq(testCaseExternalLinks.test_case_id, tc.id),
             eq(testCaseExternalLinks.external_id, String(prNumber)),
-            eq(testCaseExternalLinks.link_type, 'github_pr'),
-          ),
+            eq(testCaseExternalLinks.link_type, 'github_pr')
+          )
         )
         .limit(1);
 
@@ -137,7 +135,10 @@ export async function POST(req: NextRequest) {
         };
 
         const rows = matchedCases
-          .map((tc) => `| TC-${tc.display_id} | ${tc.name} | ${statusEmoji['untested'] || '⬜'} Untested |`)
+          .map(
+            (tc) =>
+              `| TC-${tc.display_id} | ${tc.name} | ${statusEmoji['untested'] || '⬜'} Untested |`
+          )
           .join('\n');
 
         const commentBody = `🧪 **Testea** - 연결된 테스트 케이스\n\n| ID | 이름 | 상태 |\n|---|---|---|\n${rows}\n\n---\n*[Testea](https://gettestea.com)에서 자동 생성된 코멘트입니다.*`;

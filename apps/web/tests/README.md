@@ -66,13 +66,13 @@ e2e/
 
 ## 시나리오 커버리지
 
-| describe | 케이스 | 상태 |
-|---|---|---|
-| Golden path | 직접 접근→인증→대시보드 / 보호라우트 리다이렉트→복귀 / 세션 재접근 스킵 | active |
-| validation | 빈 값 / 8자 미만 / 틀린 값(잔여 횟수·입력 유지) | active |
-| redirect 쿼리 | 지정 경로 이동 / open-redirect 우회 | active |
-| cancel | 뒤로가기 후 입력값 미보존 | active |
-| 차단 | 6회 rate-limit / Turnstile always-fail | `test.fixme` |
+| describe      | 케이스                                                                  | 상태         |
+| ------------- | ----------------------------------------------------------------------- | ------------ |
+| Golden path   | 직접 접근→인증→대시보드 / 보호라우트 리다이렉트→복귀 / 세션 재접근 스킵 | active       |
+| validation    | 빈 값 / 8자 미만 / 틀린 값(잔여 횟수·입력 유지)                         | active       |
+| redirect 쿼리 | 지정 경로 이동 / open-redirect 우회                                     | active       |
+| cancel        | 뒤로가기 후 입력값 미보존                                               | active       |
+| 차단          | 6회 rate-limit / Turnstile always-fail                                  | `test.fixme` |
 
 ## 실행
 

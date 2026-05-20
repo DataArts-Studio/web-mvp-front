@@ -1,24 +1,14 @@
 import type { ColumnMapping, DetectedFormat } from './schema';
 
-const TESTRAIL_HEADERS = [
-  'ID', 'Title', 'Section', 'Type',
-  'Priority', 'Steps', 'Expected Result',
-];
+const TESTRAIL_HEADERS = ['ID', 'Title', 'Section', 'Type', 'Priority', 'Steps', 'Expected Result'];
 
-const QASE_HEADERS = [
-  'ID', 'Title', 'Suite', 'Status',
-  'Priority', 'Type', 'Pre-conditions',
-];
+const QASE_HEADERS = ['ID', 'Title', 'Suite', 'Status', 'Priority', 'Type', 'Pre-conditions'];
 
 export function detectFormat(headers: string[]): DetectedFormat {
   const normalized = headers.map((h) => h.trim().toLowerCase());
 
-  const testrailMatch = TESTRAIL_HEADERS.filter((h) =>
-    normalized.includes(h.toLowerCase()),
-  );
-  const qaseMatch = QASE_HEADERS.filter((h) =>
-    normalized.includes(h.toLowerCase()),
-  );
+  const testrailMatch = TESTRAIL_HEADERS.filter((h) => normalized.includes(h.toLowerCase()));
+  const qaseMatch = QASE_HEADERS.filter((h) => normalized.includes(h.toLowerCase()));
 
   if (testrailMatch.length >= 4) return 'testrail';
   if (qaseMatch.length >= 4) return 'qase';
@@ -43,10 +33,7 @@ const QASE_MAPPING: Record<string, keyof ColumnMapping> = {
   tags: 'tags',
 };
 
-export function getAutoMapping(
-  headers: string[],
-  format: DetectedFormat,
-): ColumnMapping {
+export function getAutoMapping(headers: string[], format: DetectedFormat): ColumnMapping {
   const mapping: ColumnMapping = { name: '' };
 
   if (format === 'generic') return mapping;

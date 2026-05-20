@@ -13,5 +13,8 @@ export const projects = pgTable('projects', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   archived_at: timestamp('archived_at', { withTimezone: true }),
-  lifecycle_status: varchar('lifecycle_status', { length: 20 }).$type<LifecycleStatus>().default('ACTIVE').notNull(),
+  lifecycle_status: varchar('lifecycle_status', { length: 20 })
+    .$type<LifecycleStatus>()
+    .default('ACTIVE')
+    .notNull(),
 });

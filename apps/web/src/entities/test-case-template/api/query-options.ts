@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
-import { getTemplatesByProjectId, getTemplateById } from './server-actions';
+
+import { getTemplateById, getTemplatesByProjectId } from './server-actions';
 
 export const templateQueryKeys = {
   all: ['templates'] as const,

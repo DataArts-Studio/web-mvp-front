@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { type UseMutationResult } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 
 import type { GithubRepo } from '@/entities/github-connection';
+import { type UseMutationResult } from '@tanstack/react-query';
 import { DSButton } from '@testea/ui';
 import { cn } from '@testea/util';
+import { Loader2 } from 'lucide-react';
 
 type RepoSelectorProps = {
   repos: GithubRepo[];
@@ -26,7 +26,7 @@ export const RepoSelector = ({
   onCancel,
 }: RepoSelectorProps) => {
   const filteredRepos = repos.filter((r) =>
-    r.full_name.toLowerCase().includes(repoSearch.toLowerCase()),
+    r.full_name.toLowerCase().includes(repoSearch.toLowerCase())
   );
 
   return (
@@ -36,16 +36,18 @@ export const RepoSelector = ({
         placeholder="저장소 검색..."
         value={repoSearch}
         onChange={(e) => onRepoSearchChange(e.target.value)}
-        className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-2 border border-line-2 px-3 py-2 focus:outline-none focus:border-primary"
+        className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-2 border-line-2 focus:border-primary border px-3 py-2 focus:outline-none"
         autoFocus
       />
-      <div className="max-h-[240px] overflow-y-auto flex flex-col gap-1">
+      <div className="flex max-h-[240px] flex-col gap-1 overflow-y-auto">
         {loadingRepos ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-text-3" />
+            <Loader2 className="text-text-3 h-5 w-5 animate-spin" />
           </div>
         ) : filteredRepos.length === 0 ? (
-          <p className="typo-body2-normal text-text-3 text-center py-4">저장소를 찾을 수 없습니다.</p>
+          <p className="typo-body2-normal text-text-3 py-4 text-center">
+            저장소를 찾을 수 없습니다.
+          </p>
         ) : (
           filteredRepos.map((repo) => (
             <button
@@ -54,8 +56,8 @@ export const RepoSelector = ({
               onClick={() => selectRepoMutation.mutate(repo.full_name)}
               disabled={selectRepoMutation.isPending}
               className={cn(
-                'flex items-center justify-between rounded-2 px-3 py-2.5 text-left transition-colors hover:bg-bg-3',
-                selectRepoMutation.isPending && 'opacity-50',
+                'rounded-2 hover:bg-bg-3 flex items-center justify-between px-3 py-2.5 text-left transition-colors',
+                selectRepoMutation.isPending && 'opacity-50'
               )}
             >
               <div className="flex flex-col">

@@ -1,5 +1,5 @@
-import type { ParseResult } from './schema';
 import { detectFormat } from './format-detector';
+import type { ParseResult } from './schema';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_EXTENSIONS = ['.csv', '.xlsx'];
@@ -15,7 +15,7 @@ function validateFile(file: File): void {
   const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
     throw new FileValidationError(
-      '지원하지 않는 파일 형식입니다. CSV 또는 XLSX 파일을 선택해주세요.',
+      '지원하지 않는 파일 형식입니다. CSV 또는 XLSX 파일을 선택해주세요.'
     );
   }
   if (file.size > MAX_FILE_SIZE) {
@@ -52,8 +52,8 @@ async function parseCsv(file: File): Promise<ParseResult> {
       error(err) {
         reject(
           new FileValidationError(
-            `파일을 읽을 수 없습니다. 파일이 손상되지 않았는지 확인해주세요. (${err.message})`,
-          ),
+            `파일을 읽을 수 없습니다. 파일이 손상되지 않았는지 확인해주세요. (${err.message})`
+          )
         );
       },
     });

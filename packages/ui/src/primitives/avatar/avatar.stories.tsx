@@ -1,7 +1,10 @@
 import React from 'react';
-import type { Meta, StoryObj } from '@storybook/react';
-import { Avatar } from '..';
+
 import Image from 'next/image';
+
+import type { Meta, StoryObj } from '@storybook/react';
+
+import { Avatar } from '..';
 
 // ------------------------------------------------------------------
 // 테스트용 이미지 URL (실제 프로젝트에서는 CDN 또는 public 폴더 경로 사용)
@@ -42,13 +45,7 @@ const sizeMap = {
   lg: 'w-24 h-24 text-xl',
 };
 
-const AvatarTemplate = ({
-  imageUrl,
-  size,
-  fallbackText,
-  isNextImage
-}: AvatarStoryProps) => {
-
+const AvatarTemplate = ({ imageUrl, size, fallbackText, isNextImage }: AvatarStoryProps) => {
   const sizeClass = sizeMap[size];
 
   // 실제 이미지 컴포넌트 (Next.js Image 또는 기본 img)
@@ -58,25 +55,23 @@ const AvatarTemplate = ({
       alt="User Avatar"
       width={150}
       height={150}
-      className="w-full h-full object-cover"
+      className="h-full w-full object-cover"
       priority
     />
   ) : (
-    <img
-      src={imageUrl}
-      alt="User Avatar"
-      className="w-full h-full object-cover"
-    />
+    <img src={imageUrl} alt="User Avatar" className="h-full w-full object-cover" />
   );
 
   return (
-    <Avatar.Root className={`${sizeClass} rounded-full overflow-hidden shadow-md bg-gray-100`}>
+    <Avatar.Root className={`${sizeClass} overflow-hidden rounded-full bg-gray-100 shadow-md`}>
       <Avatar.Image>
         {/* Slot 패턴: ImageComponent가 Slot의 children으로 전달됨 */}
         {ImageComponent}
       </Avatar.Image>
 
-      <Avatar.Fallback className={`${sizeClass} flex items-center justify-center bg-gray-500 text-white font-semibold`}>
+      <Avatar.Fallback
+        className={`${sizeClass} flex items-center justify-center bg-gray-500 font-semibold text-white`}
+      >
         {fallbackText}
       </Avatar.Fallback>
     </Avatar.Root>

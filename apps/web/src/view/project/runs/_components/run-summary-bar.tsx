@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import { cn } from '@testea/util';
+
 import { STATUS_CONFIG, type TestCaseRunStatus } from './run-detail-constants';
 
 interface RunSummaryBarProps {
@@ -16,12 +18,25 @@ interface RunSummaryBarProps {
   createdAt?: string;
 }
 
-const StatChip = ({ status, count, total }: { status: TestCaseRunStatus; count: number; total: number }) => {
+const StatChip = ({
+  status,
+  count,
+  total,
+}: {
+  status: TestCaseRunStatus;
+  count: number;
+  total: number;
+}) => {
   const config = STATUS_CONFIG[status];
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
 
   return (
-    <div className={cn('flex items-center gap-1.5 rounded-lg px-2.5 py-1', config.bgStyle.split(' ')[0])}>
+    <div
+      className={cn(
+        'flex items-center gap-1.5 rounded-lg px-2.5 py-1',
+        config.bgStyle.split(' ')[0]
+      )}
+    >
       <span className={config.style}>{config.icon}</span>
       <span className={cn('text-sm font-semibold tabular-nums', config.style)}>{count}</span>
       <span className="text-text-4 text-xs tabular-nums">({pct}%)</span>
@@ -78,12 +93,18 @@ export const RunSummaryBar = ({ stats }: RunSummaryBarProps) => {
   const hasIssues = fail > 0 || blocked > 0;
 
   return (
-    <div className="border-line-2 border-b bg-bg-1 px-6 py-2.5">
+    <div className="border-line-2 bg-bg-1 border-b px-6 py-2.5">
       {/* Row 1: Text summary */}
-      <p className={cn(
-        'text-xs mb-2',
-        hasIssues ? 'text-amber-400' : total > 0 && untested === 0 ? 'text-green-400' : 'text-text-3',
-      )}>
+      <p
+        className={cn(
+          'mb-2 text-xs',
+          hasIssues
+            ? 'text-amber-400'
+            : total > 0 && untested === 0
+              ? 'text-green-400'
+              : 'text-text-3'
+        )}
+      >
         {summaryText}
       </p>
 
@@ -100,23 +121,34 @@ export const RunSummaryBar = ({ stats }: RunSummaryBarProps) => {
           <div className="bg-bg-4 h-2 flex-1 overflow-hidden rounded-full">
             <div className="flex h-full">
               {passW > 0 && (
-                <div className="bg-green-500 h-full transition-all duration-300" style={{ width: `${passW}%` }} />
+                <div
+                  className="h-full bg-green-500 transition-all duration-300"
+                  style={{ width: `${passW}%` }}
+                />
               )}
               {failW > 0 && (
-                <div className="bg-red-500 h-full transition-all duration-300" style={{ width: `${failW}%` }} />
+                <div
+                  className="h-full bg-red-500 transition-all duration-300"
+                  style={{ width: `${failW}%` }}
+                />
               )}
               {blockedW > 0 && (
-                <div className="bg-amber-500 h-full transition-all duration-300" style={{ width: `${blockedW}%` }} />
+                <div
+                  className="h-full bg-amber-500 transition-all duration-300"
+                  style={{ width: `${blockedW}%` }}
+                />
               )}
             </div>
           </div>
-          <span className="text-text-2 text-sm font-semibold tabular-nums shrink-0">
+          <span className="text-text-2 shrink-0 text-sm font-semibold tabular-nums">
             {progressPercent}%
           </span>
         </div>
 
-        <div className="bg-bg-3 rounded-lg px-2.5 py-1 shrink-0">
-          <span className="text-text-2 text-xs font-medium">총 <span className="text-text-1 font-semibold">{total}</span>건</span>
+        <div className="bg-bg-3 shrink-0 rounded-lg px-2.5 py-1">
+          <span className="text-text-2 text-xs font-medium">
+            총 <span className="text-text-1 font-semibold">{total}</span>건
+          </span>
         </div>
       </div>
     </div>

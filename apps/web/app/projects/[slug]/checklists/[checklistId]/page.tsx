@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { ChecklistDetailView } from '@/view';
-import { projectIdQueryOptions } from '@/entities/project/api/query';
+
 import { checklistByIdQueryOptions } from '@/entities/checklist/api/query';
+import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { cachedGetProjectId } from '@/shared/lib/cache';
+import { ChecklistDetailView } from '@/view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 export const metadata: Metadata = {
   title: '체크리스트 상세',
@@ -16,7 +17,9 @@ export default async function Page({
   params: Promise<{ slug: string; checklistId: string }>;
 }) {
   const { slug, checklistId } = await params;
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   try {
     const result = await queryClient.fetchQuery({
@@ -33,7 +36,10 @@ export default async function Page({
   }
 
   const projectId = queryClient.getQueryData(projectIdQueryOptions(slug).queryKey);
-  const resolvedProjectId = projectId && typeof projectId === 'object' && 'success' in projectId && projectId.success ? projectId.data.id : '';
+  const resolvedProjectId =
+    projectId && typeof projectId === 'object' && 'success' in projectId && projectId.success
+      ? projectId.data.id
+      : '';
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

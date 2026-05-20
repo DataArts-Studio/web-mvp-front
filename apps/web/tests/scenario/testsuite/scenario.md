@@ -1,12 +1,16 @@
 ## 테스트 스위트 생성 시나리오
+
 ### Test Purpose
+
 사용자가 테스트스위트 작성을 완료하고 작성한 테스트스위트가 목록에 반영되는지 검증한다.
 
 ### Pre-condition
+
 - `sample-project`(식별번호 `123123123`)가 시드돼 있다.
 - 인증 통과 세션(`chromium-auth` / `storageState`)으로 진입한다. → 이 스펙은 인증이 필요하므로 `playwright.config.ts`의 `chromium-auth.testMatch`에 `**/scenario/cases/**/*.spec.ts`가 포함돼야 한다.
 
 ### Scenario
+
 1. 사이드메뉴의 테스트스위트 페이지로 접근한다.
 2. 네비게이션 우측 테스트 스위트 생성하기 버튼을 클릭한다.
 3. 테스트스위트 제목을 입력한다.
@@ -31,15 +35,19 @@
 ---
 
 ## 사용자 이탈 시나리오 (취소 버튼)
+
 ### Test Purpose
+
 사용자가 테스트 스위트 작성 도중 취소 버튼으로 이탈하면, 입력 내용이 저장되지 않고 폼이 닫히며 목록에 반영되지 않는지 검증한다.
 
 ### Pre-condition
+
 - `sample-project`(식별번호 `123123123`)가 시드돼 있다.
 - 인증 통과 세션(`chromium-auth` / `storageState`)으로 진입한다. → 이 스펙은 인증이 필요하므로 `playwright.config.ts`의 `chromium-auth.testMatch`에 `**/scenario/testsuite/**/*.spec.ts`가 포함돼야 한다.
 - 취소 흐름은 DB write가 없으므로 teardown이 필요 없다. (golden path와 달리 `fixme` 아닌 일반 `test`)
 
 ### Scenario
+
 1. 사이드메뉴의 테스트 스위트 페이지로 접근한다.
 2. 툴바의 `테스트 스위트 생성하기` 버튼을 클릭한다.
 3. 고유한 테스트 스위트 제목을 입력한다.
@@ -64,15 +72,19 @@
 ---
 
 ## 사용자 이탈 시나리오 (모달 외부 입력)
+
 ### Test Purpose
+
 사용자가 테스트 스위트 작성 도중 모달 바깥(backdrop) 영역을 클릭해 이탈하면, 입력 내용이 저장되지 않고 폼이 닫히며 목록에 반영되지 않는지 검증한다.
 
 ### Pre-condition
+
 - `sample-project`(식별번호 `123123123`)가 시드돼 있다.
 - 인증 통과 세션(`chromium-auth` / `storageState`)으로 진입한다. → `chromium-auth.testMatch`에 `**/scenario/testsuite/**/*.spec.ts`가 포함돼야 한다.
 - 취소 흐름은 DB write가 없으므로 teardown이 필요 없다.
 
 ### Scenario
+
 1. 사이드메뉴의 테스트 스위트 페이지로 접근한다.
 2. 툴바의 `테스트 스위트 생성하기` 버튼을 클릭한다.
 3. 고유한 테스트 스위트 제목을 입력한다.
@@ -97,6 +109,7 @@
 ---
 
 ### 구현 메모 (두 이탈 시나리오 공통)
+
 - 닫는 경로는 **취소 버튼**과 **모달 바깥(backdrop) 클릭** 둘뿐. **ESC는 suite 모달에 keydown 핸들러가 없어 동작하지 않으므로** 이탈 시나리오로 작성하지 않는다(작성 시 항상 실패).
 - suite 모달은 `role="dialog"`·`aria-modal`이 없다(케이스 a11y 개선 미적용). 닫힘은 dialog role이 아니라 **`테스트 스위트 생성` 헤딩 소멸**로만 단언한다.
 - 트리거 버튼 `테스트 스위트 생성하기`, 헤딩 `테스트 스위트 생성`, 제출 `생성` 이 부분일치로 겹친다. 버튼은 정확 일치 또는 모달 내부 스코프로 구분한다.
@@ -106,15 +119,19 @@
 ---
 
 ## 제목 검증 시나리오
+
 ### Test Purpose
+
 사용자가 유효하지 않은 제목으로 테스트 스위트 생성을 제출했을 때, 검증 에러가 노출되고 폼이 닫히지 않으며 목록에 반영되지 않는지 검증한다.
 
 ### Pre-condition
+
 - `sample-project`(식별번호 `123123123`)가 시드돼 있다.
 - 인증 통과 세션(`chromium-auth` / `storageState`)으로 진입한다. → `chromium-auth.testMatch`에 `**/scenario/testsuite/**/*.spec.ts`가 포함돼야 한다.
 - 검증 실패로 끝나 DB write가 없으므로 teardown이 필요 없다.
 
 ### Scenario
+
 1. 사이드메뉴의 테스트 스위트 페이지로 접근한다.
 2. 툴바의 `테스트 스위트 생성하기` 버튼을 클릭한다.
 3. 검증 실패 케이스별 제목을 입력한다.
@@ -137,6 +154,7 @@
   - 페이지를 새로고침해도 입력했던 제목이 목록에 없다.
 
 ### 구현 메모 (제목 검증)
+
 - 폼 resolver는 `zodResolver(CreateTestSuiteSchema)`다. RHF는 resolver가 있으면 `register('title', { required, minLength, maxLength, validate, pattern })`의 **네이티브 룰을 전부 무시**한다. 실제 검증은 zod 스키마(`.min(3,'최소 3자 이상')` / `.max(200,'최대 200 이하')`)만 적용된다.
   - 빈 제목·1~2자 → 노출 메시지는 `유효한 이름을 입력해주세요.`가 **아니라** `최소 3자 이상`.
   - 공백만(3칸 이상)·특수문자·51~200자 → **클라 검증을 통과한다**(가드 없음). 따라서 거부를 단언할 수 있는 입력은 **빈값 / 3자 미만 / 200자 초과**뿐. 공백·특수문자 케이스는 작성하지 않는다(작성 시 통과돼 실패).
@@ -146,15 +164,19 @@
 ---
 
 ## 제출 실패 시나리오 (서버 에러)
+
 ### Test Purpose
+
 서버 측 생성이 실패(접근 거부 / 스토리지 한도 초과 / insert 실패)했을 때 사용자에게 어떻게 반영되는지 검증한다.
 
 ### Pre-condition
+
 - `sample-project`(식별번호 `123123123`)가 시드돼 있다.
 - 인증 통과 세션(`chromium-auth` / `storageState`)으로 진입한다. → `chromium-auth.testMatch`에 `**/scenario/testsuite/**/*.spec.ts`가 포함돼야 한다.
 - 서버 에러는 `page.route`로 server action 응답을 가로채 강제 실패시킨다. (시드 데이터로는 결정적으로 재현 불가)
 
 ### Scenario
+
 1. 사이드메뉴의 테스트 스위트 페이지로 접근한다.
 2. 툴바의 `테스트 스위트 생성하기` 버튼을 클릭한다.
 3. 유효한 고유 제목을 입력한다.
@@ -174,6 +196,7 @@
   - 실제(현 코드): **에러 UI가 없고 모달이 성공처럼 닫힌다.** 목록에는 반영되지 않는다(서버가 실제로 저장 안 함).
 
 ### 구현 메모 (제출 실패)
+
 - `createTestSuite`는 실패 시 throw가 아니라 `{ success: false, errors: { _testSuite: [...] } }`를 **return**한다.
 - `use-create-suite.ts`의 `useMutation`은 `result.success`를 **검사하지 않는다**. 비-throw 반환값을 react-query가 **성공으로 간주** → 폼 `onSubmit`의 `onSuccess` 실행 → `CREATE_COMPLETE` 트래킹 + `onClose()`로 **모달이 닫힌다**.
 - 폼의 `onError`는 `createTestSuite`가 실제로 throw할 때만(드묾) 동작하며, 그때도 `CREATE_FAIL` 트래킹만 하고 **에러 메시지 UI는 렌더하지 않는다**(`errors._testSuite` 미사용).

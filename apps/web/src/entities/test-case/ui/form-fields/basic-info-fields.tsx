@@ -1,7 +1,13 @@
 'use client';
 import React from 'react';
 import { Controller } from 'react-hook-form';
-import type { Control, FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form';
+import type {
+  Control,
+  FieldErrors,
+  UseFormRegister,
+  UseFormSetValue,
+  UseFormWatch,
+} from 'react-hook-form';
 
 import { TEST_TYPE_OPTIONS } from '@/entities/test-case/model';
 import { DsFormField, DsInput, DsSelect } from '@/shared';
@@ -34,7 +40,7 @@ export const BasicInfoFields = <T extends BasicInfoFieldsForm>({
 
   return (
     <fieldset className="flex flex-col gap-5">
-      <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
+      <legend className="typo-caption-heading text-text-3 mb-1 tracking-widest uppercase">
         기본 정보
       </legend>
 
@@ -70,7 +76,9 @@ export const BasicInfoFields = <T extends BasicInfoFieldsForm>({
           ]}
           placeholder="스위트를 선택하세요"
         />
-        <span className="text-text-3 typo-caption-normal">테스트 케이스가 속할 스위트를 선택하세요.</span>
+        <span className="text-text-3 typo-caption-normal">
+          테스트 케이스가 속할 스위트를 선택하세요.
+        </span>
       </DsFormField.Root>
 
       {/* 테스트 유형 */}

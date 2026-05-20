@@ -1,7 +1,8 @@
 'use client';
 
-import { Check, X } from 'lucide-react';
 import { cn } from '@testea/util';
+import { Check, X } from 'lucide-react';
+
 import type { ColumnMapping, ValidatedRow } from '../model/schema';
 
 const PREVIEW_LIMIT = 5;
@@ -20,13 +21,10 @@ interface PreviewTableProps {
   columnMapping: ColumnMapping;
 }
 
-export function PreviewTable({
-  validatedRows,
-  columnMapping,
-}: PreviewTableProps) {
-  const mappedFields = Object.entries(columnMapping).filter(
-    ([, val]) => !!val,
-  ) as Array<[keyof ColumnMapping, string]>;
+export function PreviewTable({ validatedRows, columnMapping }: PreviewTableProps) {
+  const mappedFields = Object.entries(columnMapping).filter(([, val]) => !!val) as Array<
+    [keyof ColumnMapping, string]
+  >;
 
   const previewRows = validatedRows
     .filter((r) => r.errors.length > 0 || r.isValid)
@@ -65,7 +63,7 @@ export function PreviewTable({
               key={row.index}
               className={cn(
                 'border-line-2 grid gap-2 border-b px-4 py-2 last:border-b-0',
-                !row.isValid && row.errors.length > 0 && 'bg-red-500/5',
+                !row.isValid && row.errors.length > 0 && 'bg-red-500/5'
               )}
               style={{
                 gridTemplateColumns: `40px repeat(${mappedFields.length}, 1fr)`,

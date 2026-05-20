@@ -22,7 +22,7 @@ export const AiGenerateForm = ({
         placeholder="테스트할 기능을 설명해주세요. 예: 사용자가 이메일과 비밀번호로 로그인할 수 있다. 비밀번호는 8자 이상이어야 하며..."
         rows={8}
         maxLength={3000}
-        className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-3 border border-line-2 p-4 focus:outline-none focus:border-primary resize-none"
+        className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-3 border-line-2 focus:border-primary resize-none border p-4 focus:outline-none"
         autoFocus
       />
       <div className="flex items-center justify-between">
@@ -37,16 +37,14 @@ export const AiGenerateForm = ({
                 'typo-caption rounded-full px-2.5 py-0.5 transition-colors',
                 language === l
                   ? 'bg-primary/10 text-primary'
-                  : 'bg-bg-3 text-text-3 hover:text-text-1',
+                  : 'bg-bg-3 text-text-3 hover:text-text-1'
               )}
             >
               {l === 'ko' ? '한국어' : 'English'}
             </button>
           ))}
         </div>
-        <span className="typo-caption text-text-4">
-          {description.length}/3,000
-        </span>
+        <span className="typo-caption text-text-4">{description.length}/3,000</span>
       </div>
     </div>
   </div>

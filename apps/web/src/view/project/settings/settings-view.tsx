@@ -1,22 +1,23 @@
 'use client';
 
 import React from 'react';
-import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { Settings } from 'lucide-react';
 
+import { useParams } from 'next/navigation';
+
+import { AiConfigCard } from '@/features/ai-generate';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { GithubConnectCard } from '@/features/github-connect';
-import { AiConfigCard } from '@/features/ai-generate';
+import { useQuery } from '@tanstack/react-query';
 import { MainContainer } from '@testea/ui';
 import { ProjectErrorFallback } from '@testea/ui';
 import { formatDateKR } from '@testea/util';
+import { Settings } from 'lucide-react';
 
-import { SettingsLoadingSkeleton } from './_components/settings-loading-skeleton';
+import { DangerZoneSection } from './_components/danger-zone-section';
 import { GeneralSettingsSection } from './_components/general-settings-section';
 import { SecuritySection } from './_components/security-section';
+import { SettingsLoadingSkeleton } from './_components/settings-loading-skeleton';
 import { StorageSection } from './_components/storage-section';
-import { DangerZoneSection } from './_components/danger-zone-section';
 
 // ─── Main View ───────────────────────────────────────────────────────────────
 
@@ -46,8 +47,8 @@ export const SettingsView = () => {
       {/* Header */}
       <header className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-            <Settings className="h-4.5 w-4.5 text-primary" />
+          <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-full">
+            <Settings className="text-primary h-4.5 w-4.5" />
           </div>
           <h1 className="typo-h1-heading text-text-1">프로젝트 설정</h1>
         </div>

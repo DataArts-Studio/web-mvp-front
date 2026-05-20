@@ -1,4 +1,4 @@
-export {ProjectHeader} from './project-header';
+export { ProjectHeader } from './project-header';
 export { ActionToolbar } from './action-tool-bar';
 export { TestTable } from './test-table';
 export { TestStatusChart } from './test-status-chart';

@@ -1,10 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import { ChevronLeft } from 'lucide-react';
+
 import { cn } from '@testea/util';
-import { useImportWizard } from '../model/use-import-wizard';
+import { ChevronLeft } from 'lucide-react';
+
 import type { ColumnMapping } from '../model/schema';
+import { useImportWizard } from '../model/use-import-wizard';
 import { FormatBadge } from './format-badge';
 import { MappingRow } from './mapping-row';
 
@@ -22,21 +24,14 @@ const TESTEA_FIELDS: Array<{
 ];
 
 export function StepColumnMapping() {
-  const { parseResult, columnMapping, setColumnMapping, setStep } =
-    useImportWizard();
+  const { parseResult, columnMapping, setColumnMapping, setStep } = useImportWizard();
 
   const sampleRows = parseResult?.rows.slice(0, 3) ?? [];
 
-  const sourceOptions = useMemo(
-    () => {
-      const headers = parseResult?.headers ?? [];
-      return [
-        { value: '', label: '(무시)' },
-        ...headers.map((h) => ({ value: h, label: h })),
-      ];
-    },
-    [parseResult?.headers],
-  );
+  const sourceOptions = useMemo(() => {
+    const headers = parseResult?.headers ?? [];
+    return [{ value: '', label: '(무시)' }, ...headers.map((h) => ({ value: h, label: h }))];
+  }, [parseResult?.headers]);
 
   const handleMappingChange = (field: keyof ColumnMapping, value: string) => {
     setColumnMapping({ ...columnMapping, [field]: value || undefined });
@@ -61,18 +56,10 @@ export function StepColumnMapping() {
       <div className="rounded-3 border-line-2 overflow-hidden border">
         {/* Desktop Header - hidden on mobile */}
         <div className="border-line-2 bg-bg-3 hidden border-b px-4 py-3 md:grid md:grid-cols-12 md:gap-4">
-          <div className="typo-caption1 text-text-3 col-span-3">
-            Testea 필드
-          </div>
-          <div className="typo-caption1 text-text-3 col-span-1 text-center">
-            &nbsp;
-          </div>
-          <div className="typo-caption1 text-text-3 col-span-3">
-            소스 컬럼
-          </div>
-          <div className="typo-caption1 text-text-3 col-span-5">
-            샘플 데이터
-          </div>
+          <div className="typo-caption1 text-text-3 col-span-3">Testea 필드</div>
+          <div className="typo-caption1 text-text-3 col-span-1 text-center">&nbsp;</div>
+          <div className="typo-caption1 text-text-3 col-span-3">소스 컬럼</div>
+          <div className="typo-caption1 text-text-3 col-span-5">샘플 데이터</div>
         </div>
 
         {/* Rows */}
@@ -106,7 +93,7 @@ export function StepColumnMapping() {
             'rounded-2 typo-body2-heading px-6 py-2.5 transition-colors',
             isNameMapped
               ? 'bg-primary hover:bg-primary/90 text-white'
-              : 'bg-bg-3 text-text-3 cursor-not-allowed',
+              : 'bg-bg-3 text-text-3 cursor-not-allowed'
           )}
         >
           다음: 미리보기

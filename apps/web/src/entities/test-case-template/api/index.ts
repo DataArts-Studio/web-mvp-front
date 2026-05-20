@@ -7,4 +7,8 @@ export {
   deleteTemplate,
   incrementTemplateUsage,
 } from './server-actions';
-export { templatesQueryOptions, templateByIdQueryOptions, templateQueryKeys } from './query-options';
+export {
+  templatesQueryOptions,
+  templateByIdQueryOptions,
+  templateQueryKeys,
+} from './query-options';

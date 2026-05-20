@@ -25,7 +25,7 @@ export const ScenarioFields = <T extends ScenarioFieldsForm>({
 }: ScenarioFieldsProps<T>) => {
   return (
     <fieldset className="flex flex-col gap-5">
-      <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
+      <legend className="typo-caption-heading text-text-3 mb-1 tracking-widest uppercase">
         테스트 시나리오
       </legend>
 

@@ -1,13 +1,18 @@
 'use client';
 
 import React from 'react';
-import type { TestCaseVersionSummary, ChangeType } from '@/entities/test-case-version';
-import { useVersionsList } from '../hooks/use-versions-list';
-import { LoadingSpinner, DSButton } from '@testea/ui';
-import { formatRelativeTime } from '@testea/util';
-import { Plus, Edit2, RotateCcw, FileText, GitCompare } from 'lucide-react';
 
-const changeTypeConfig: Record<ChangeType, { label: string; color: string; icon: React.ReactNode }> = {
+import type { ChangeType, TestCaseVersionSummary } from '@/entities/test-case-version';
+import { DSButton, LoadingSpinner } from '@testea/ui';
+import { formatRelativeTime } from '@testea/util';
+import { Edit2, FileText, GitCompare, Plus, RotateCcw } from 'lucide-react';
+
+import { useVersionsList } from '../hooks/use-versions-list';
+
+const changeTypeConfig: Record<
+  ChangeType,
+  { label: string; color: string; icon: React.ReactNode }
+> = {
   create: {
     label: '생성',
     color: 'bg-green-100 text-green-700',
@@ -63,7 +68,9 @@ export const VersionTimeline = ({ testCaseId, onViewDetail, onCompare }: Version
           <div key={version.id} className="relative flex gap-4">
             {/* 타임라인 라인 */}
             <div className="flex flex-col items-center">
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${config.color}`}>
+              <div
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${config.color}`}
+              >
                 {config.icon}
               </div>
               {!isLast && <div className="bg-line-2 w-px flex-1" />}
@@ -93,7 +100,10 @@ export const VersionTimeline = ({ testCaseId, onViewDetail, onCompare }: Version
                 {version.changedFields.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {version.changedFields.map((field: string) => (
-                      <span key={field} className="bg-bg-3 text-text-3 rounded-2 px-1.5 py-0.5 text-xs">
+                      <span
+                        key={field}
+                        className="bg-bg-3 text-text-3 rounded-2 px-1.5 py-0.5 text-xs"
+                      >
                         {field}
                       </span>
                     ))}

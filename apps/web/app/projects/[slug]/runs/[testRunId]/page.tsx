@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { TestRunDetailView } from '@/view';
+
 import { testRunByIdQueryOptions } from '@/features/runs/api/query';
+import { TestRunDetailView } from '@/view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 export const metadata: Metadata = {
   title: '테스트 실행 상세',
@@ -14,7 +15,9 @@ export default async function Page({
   params: Promise<{ slug: string; testRunId: string }>;
 }) {
   const { testRunId } = await params;
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   try {
     await queryClient.prefetchQuery(testRunByIdQueryOptions(testRunId));

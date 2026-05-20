@@ -13,17 +13,24 @@ export const cachedGetProjectId = unstable_cache(
     return getProjectIdBySlug(slug);
   },
   ['project-id-by-slug'],
-  { revalidate: 300, tags: ['project'] },
+  { revalidate: 300, tags: ['project'] }
 );
 
 // --- Test Cases ---
 export const cachedGetTestCasesList = unstable_cache(
-  async (params: { project_id: string; page?: number; size?: number; sort?: string; search?: string; suiteId?: string }) => {
+  async (params: {
+    project_id: string;
+    page?: number;
+    size?: number;
+    sort?: string;
+    search?: string;
+    suiteId?: string;
+  }) => {
     const { getTestCasesList } = await import('@/entities/test-case/api/server-actions');
     return getTestCasesList(params);
   },
   ['test-cases-list'],
-  { revalidate: 60, tags: ['test-cases'] },
+  { revalidate: 60, tags: ['test-cases'] }
 );
 
 // --- Test Suites ---
@@ -33,7 +40,7 @@ export const cachedGetTestSuites = unstable_cache(
     return getTestSuites({ projectId });
   },
   ['test-suites'],
-  { revalidate: 60, tags: ['test-suites'] },
+  { revalidate: 60, tags: ['test-suites'] }
 );
 
 // --- Milestones ---
@@ -43,7 +50,7 @@ export const cachedGetMilestones = unstable_cache(
     return getMilestones({ projectId });
   },
   ['milestones'],
-  { revalidate: 60, tags: ['milestones'] },
+  { revalidate: 60, tags: ['milestones'] }
 );
 
 // --- Dashboard Stats ---
@@ -53,7 +60,7 @@ export const cachedGetDashboardStats = unstable_cache(
     return getDashboardStats({ slug });
   },
   ['dashboard-stats'],
-  { revalidate: 60, tags: ['dashboard'] },
+  { revalidate: 60, tags: ['dashboard'] }
 );
 
 // --- Test Runs ---
@@ -63,5 +70,5 @@ export const cachedGetTestRuns = unstable_cache(
     return getTestRunsByProjectId(projectId);
   },
   ['test-runs'],
-  { revalidate: 60, tags: ['test-runs'] },
+  { revalidate: 60, tags: ['test-runs'] }
 );

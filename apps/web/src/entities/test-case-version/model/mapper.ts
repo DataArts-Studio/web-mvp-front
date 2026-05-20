@@ -1,5 +1,5 @@
-import type { ChangeType, TestCaseVersion, TestCaseVersionSummary } from './types';
 import type { TestCaseVersionDTO } from './schema';
+import type { ChangeType, TestCaseVersion, TestCaseVersionSummary } from './types';
 
 const toDate = (v: string | Date): Date => (v instanceof Date ? v : new Date(v));
 

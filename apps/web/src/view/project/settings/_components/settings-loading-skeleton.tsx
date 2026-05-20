@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { MainContainer } from '@testea/ui';
-import { Skeleton, SkeletonCircle, SettingsCard } from '@testea/ui';
+import { SettingsCard, Skeleton, SkeletonCircle } from '@testea/ui';
 
 // ─── Settings Loading Skeleton ───────────────────────────────────────────────
 

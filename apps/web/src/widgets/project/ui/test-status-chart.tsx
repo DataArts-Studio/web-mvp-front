@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 
-import { type TestStatusData, buildSegments, buildArcs } from './chart-utils';
 import { ChartLegend } from './chart-legend';
+import { type TestStatusData, buildArcs, buildSegments } from './chart-utils';
 import { PieChartSvg } from './pie-chart-svg';
 
 export type { TestStatusData } from './chart-utils';
@@ -28,12 +28,8 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
           <div className="relative h-[200px] w-[200px]">
             <div className="border-bg-4 absolute inset-0 rounded-full border-8" />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-text-3 text-[64px] font-bold leading-none">
-                0%
-              </span>
-              <span className="typo-body2-normal text-text-3 mt-1">
-                Completed
-              </span>
+              <span className="text-text-3 text-[64px] leading-none font-bold">0%</span>
+              <span className="typo-body2-normal text-text-3 mt-1">Completed</span>
             </div>
           </div>
           <p className="typo-body2-normal text-text-3">
@@ -53,24 +49,18 @@ export const TestStatusChart = ({ data }: TestStatusChartProps) => {
       <div className="bg-primary/10 pointer-events-none absolute bottom-0 left-1/4 h-40 w-1/2 rounded-full blur-[80px]" />
 
       {/* Total cases badge - top right */}
-      <div className="rounded-4 absolute right-6 top-6 bg-[rgba(255,255,255,0.02)] px-4 py-2 backdrop-blur-[20px]">
-        <span className="typo-label-heading text-text-2">
-          총 {total}개의 케이스
-        </span>
+      <div className="rounded-4 absolute top-6 right-6 bg-[rgba(255,255,255,0.02)] px-4 py-2 backdrop-blur-[20px]">
+        <span className="typo-label-heading text-text-2">총 {total}개의 케이스</span>
       </div>
 
       <div className="relative flex items-stretch gap-10">
         {/* Left section: Chart + Completion rate (70%) */}
         <div className="flex basis-[70%] flex-col">
-          <PieChartSvg
-            arcs={arcs}
-            hoveredKey={hoveredKey}
-            onHover={setHoveredKey}
-          />
+          <PieChartSvg arcs={arcs} hoveredKey={hoveredKey} onHover={setHoveredKey} />
 
           {/* Completion rate text */}
           <div className="-mt-2 flex items-baseline gap-2">
-            <span className="text-primary text-[96px] font-bold leading-none opacity-50">
+            <span className="text-primary text-[96px] leading-none font-bold opacity-50">
               {completionRate}%
             </span>
             <span className="text-text-3 text-lg">Completed</span>

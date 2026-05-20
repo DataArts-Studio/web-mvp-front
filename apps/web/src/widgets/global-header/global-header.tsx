@@ -1,16 +1,22 @@
 'use client';
 
 import React from 'react';
+
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
+
+import { LANDING_EVENTS, NAVIGATION_EVENTS, track } from '@/shared/lib/analytics';
+
 import { BetaBanner } from './beta-banner';
 import { useBetaBanner } from './use-beta-banner';
-import { track, NAVIGATION_EVENTS, LANDING_EVENTS } from '@/shared/lib/analytics';
 
 const ProjectSearchModal = dynamic(
-  () => import('@/features/project-search/ui/project-search-modal').then(mod => ({ default: mod.ProjectSearchModal })),
-  { ssr: false },
+  () =>
+    import('@/features/project-search/ui/project-search-modal').then((mod) => ({
+      default: mod.ProjectSearchModal,
+    })),
+  { ssr: false }
 );
 
 export const GlobalHeader = () => {
@@ -42,7 +48,7 @@ export const GlobalHeader = () => {
           <Link
             href="/docs?tab=getting-started"
             aria-label="문서 페이지로 이동"
-            className="text-body2 text-text-2 transition-colors hover:text-primary"
+            className="text-body2 text-text-2 hover:text-primary transition-colors"
             onClick={() => track(NAVIGATION_EVENTS.DOCS_CLICK)}
           >
             이용 가이드
@@ -55,7 +61,7 @@ export const GlobalHeader = () => {
             }}
             aria-label="내 프로젝트 검색 모달 열기"
             aria-haspopup="dialog"
-            className="text-body2 text-text-2 transition-colors hover:text-primary cursor-pointer"
+            className="text-body2 text-text-2 hover:text-primary cursor-pointer transition-colors"
           >
             내 프로젝트 찾기
           </button>

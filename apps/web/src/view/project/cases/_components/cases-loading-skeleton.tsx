@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { MainContainer } from '@testea/ui';
 import { Skeleton } from '@testea/ui';
 
@@ -21,27 +22,27 @@ export const CasesLoadingSkeleton = () => (
       </div>
     </nav>
     <div className="flex h-screen w-full flex-1 flex-col overflow-y-auto">
-      <div className="border-b border-line-2 bg-bg-1 px-6 lg:px-10">
+      <div className="border-line-2 bg-bg-1 border-b px-6 lg:px-10">
         <div className="flex items-center gap-4 pt-5 pb-3">
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-4 w-10" />
           <div className="flex-1" />
-          <Skeleton className="h-9 w-9 rounded-2" />
-          <Skeleton className="h-9 w-24 rounded-2" />
+          <Skeleton className="rounded-2 h-9 w-9" />
+          <Skeleton className="rounded-2 h-9 w-24" />
         </div>
         <div className="flex items-center gap-3 pb-4">
-          <Skeleton className="h-10 flex-1 rounded-2" />
-          <Skeleton className="h-10 w-44 shrink-0 rounded-2" />
+          <Skeleton className="rounded-2 h-10 flex-1" />
+          <Skeleton className="rounded-2 h-10 w-44 shrink-0" />
         </div>
       </div>
-      <div className="mx-auto w-full max-w-[1200px] flex-1 px-6 lg:px-10 py-6">
+      <div className="mx-auto w-full max-w-[1200px] flex-1 px-6 py-6 lg:px-10">
         <section className="rounded-3 border-line-2 bg-bg-2 border">
-          <div className="flex items-center gap-3 border-b border-line-2 bg-primary/5 px-4 py-2.5">
-            <Skeleton className="rounded-1 h-6 w-6 bg-primary/20" />
+          <div className="border-line-2 bg-primary/5 flex items-center gap-3 border-b px-4 py-2.5">
+            <Skeleton className="rounded-1 bg-primary/20 h-6 w-6" />
             <Skeleton className="h-5 flex-1" />
           </div>
           {Array.from({ length: 15 }).map((_, i) => (
-            <div key={i} className="flex items-stretch gap-0 border-b border-line-2 px-4 py-3">
+            <div key={i} className="border-line-2 flex items-stretch gap-0 border-b px-4 py-3">
               <Skeleton className="w-[3px] shrink-0 rounded-full" />
               <div className="flex flex-1 flex-col gap-1.5 pl-3">
                 <div className="flex items-center gap-2">

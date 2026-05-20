@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Download, File, FileImage, FileSpreadsheet, FileText, Trash2, X } from 'lucide-react';
+
 import { DSButton } from '@/shared';
+import { Download, File, FileImage, FileSpreadsheet, FileText, Trash2, X } from 'lucide-react';
+
 import type { Attachment } from '../model/types';
 
 interface AttachmentListProps {
@@ -21,11 +23,7 @@ function getFileIcon(fileType: string | null) {
   if (!fileType) return File;
   if (fileType.startsWith('image/')) return FileImage;
   if (fileType === 'application/pdf') return FileText;
-  if (
-    fileType.includes('spreadsheet') ||
-    fileType.includes('excel') ||
-    fileType === 'text/csv'
-  )
+  if (fileType.includes('spreadsheet') || fileType.includes('excel') || fileType === 'text/csv')
     return FileSpreadsheet;
   if (fileType.includes('word') || fileType.includes('document') || fileType === 'text/plain')
     return FileText;
@@ -36,11 +34,7 @@ function isImageType(fileType: string | null): boolean {
   return !!fileType && fileType.startsWith('image/');
 }
 
-export const AttachmentList = ({
-  attachments,
-  onDelete,
-  isDeleting,
-}: AttachmentListProps) => {
+export const AttachmentList = ({ attachments, onDelete, isDeleting }: AttachmentListProps) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -61,11 +55,11 @@ export const AttachmentList = ({
           return (
             <div
               key={attachment.id}
-              className="bg-bg-2 border-line-2 group relative flex items-center gap-3 rounded-4 border p-3 transition-colors hover:border-text-3"
+              className="bg-bg-2 border-line-2 group rounded-4 hover:border-text-3 relative flex items-center gap-3 border p-3 transition-colors"
             >
               {/* Thumbnail or icon */}
               <div
-                className="bg-bg-3 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-3"
+                className="bg-bg-3 rounded-3 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden"
                 onClick={isImage ? () => setPreviewUrl(attachment.url) : undefined}
                 role={isImage ? 'button' : undefined}
                 style={isImage ? { cursor: 'pointer' } : undefined}
@@ -77,7 +71,7 @@ export const AttachmentList = ({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <Icon className="h-5 w-5 text-text-3" strokeWidth={1.5} />
+                  <Icon className="text-text-3 h-5 w-5" strokeWidth={1.5} />
                 )}
               </div>
 
@@ -98,14 +92,14 @@ export const AttachmentList = ({
                   download={attachment.fileName}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-3 p-1.5 text-text-3 transition-colors hover:bg-bg-3 hover:text-text-1"
+                  className="rounded-3 text-text-3 hover:bg-bg-3 hover:text-text-1 p-1.5 transition-colors"
                   title="다운로드"
                 >
                   <Download className="h-4 w-4" />
                 </a>
                 <button
                   onClick={() => setConfirmDeleteId(attachment.id)}
-                  className="rounded-3 p-1.5 text-text-3 transition-colors hover:bg-system-red/10 hover:text-system-red"
+                  className="rounded-3 text-text-3 hover:bg-system-red/10 hover:text-system-red p-1.5 transition-colors"
                   title="삭제"
                   disabled={isDeleting}
                 >
@@ -115,7 +109,7 @@ export const AttachmentList = ({
 
               {/* Delete confirmation inline */}
               {confirmDeleteId === attachment.id && (
-                <div className="bg-bg-2 border-line-2 absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-4 border backdrop-blur-sm">
+                <div className="bg-bg-2 border-line-2 rounded-4 absolute inset-0 z-10 flex items-center justify-center gap-2 border backdrop-blur-sm">
                   <span className="typo-caption-normal text-text-2">삭제할까요?</span>
                   <DSButton
                     variant="solid"
@@ -126,11 +120,7 @@ export const AttachmentList = ({
                   >
                     삭제
                   </DSButton>
-                  <DSButton
-                    variant="ghost"
-                    size="small"
-                    onClick={() => setConfirmDeleteId(null)}
-                  >
+                  <DSButton variant="ghost" size="small" onClick={() => setConfirmDeleteId(null)}>
                     취소
                   </DSButton>
                 </div>
@@ -155,7 +145,7 @@ export const AttachmentList = ({
           <img
             src={previewUrl}
             alt="미리보기"
-            className="max-h-[85vh] max-w-[90vw] rounded-4 object-contain"
+            className="rounded-4 max-h-[85vh] max-w-[90vw] object-contain"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

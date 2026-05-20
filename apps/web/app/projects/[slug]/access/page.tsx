@@ -4,13 +4,14 @@
  * 비밀번호 인증이 필요한 프로젝트에 접근하기 위한 게이트 페이지.
  * 인증 성공 시 원래 요청한 페이지로 리다이렉트.
  */
-
 import { Suspense } from 'react';
-import { redirect, notFound } from 'next/navigation';
-import { AccessForm } from '@/access/project/ui';
-import { checkProjectExists } from '@/access/project/api';
-import { canAccessProject } from '@/access/policy';
+
 import { Metadata } from 'next';
+import { notFound, redirect } from 'next/navigation';
+
+import { canAccessProject } from '@/access/policy';
+import { checkProjectExists } from '@/access/project/api';
+import { AccessForm } from '@/access/project/ui';
 
 interface AccessPageProps {
   params: Promise<{
@@ -22,10 +23,7 @@ interface AccessPageProps {
   }>;
 }
 
-export default async function ProjectAccessPage({
-  params,
-  searchParams,
-}: AccessPageProps) {
+export default async function ProjectAccessPage({ params, searchParams }: AccessPageProps) {
   const { slug: rawSlug } = await params;
   const { redirect: redirectUrl, expired } = await searchParams;
 
@@ -45,18 +43,10 @@ export default async function ProjectAccessPage({
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-bg-1 px-4">
-      <Suspense
-        fallback={
-          <div className="h-96 w-full max-w-md animate-pulse rounded-5 bg-bg-3" />
-        }
-      >
-        <div className="w-full max-w-md rounded-5 bg-bg-2 p-10 shadow-3 border border-line-2">
-          <AccessForm
-            projectSlug={slug}
-            redirectUrl={redirectUrl}
-            isExpired={expired === 'true'}
-          />
+    <div className="bg-bg-1 flex min-h-screen w-full items-center justify-center px-4">
+      <Suspense fallback={<div className="rounded-5 bg-bg-3 h-96 w-full max-w-md animate-pulse" />}>
+        <div className="rounded-5 bg-bg-2 shadow-3 border-line-2 w-full max-w-md border p-10">
+          <AccessForm projectSlug={slug} redirectUrl={redirectUrl} isExpired={expired === 'true'} />
         </div>
       </Suspense>
     </div>

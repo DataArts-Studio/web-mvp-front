@@ -1,13 +1,13 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import type { ProjectDomain } from '@/entities/project';
-import { getDatabase, projects } from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
-import { requireProjectAccess } from '@/access/lib/require-access';
-import { hashPassword, verifyPassword } from '@/access/lib/password-hash';
 import { deleteAccessTokenCookie } from '@/access/lib/cookies';
+import { hashPassword, verifyPassword } from '@/access/lib/password-hash';
+import { requireProjectAccess } from '@/access/lib/require-access';
+import type { ProjectDomain } from '@/entities/project';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, projects } from '@testea/db';
+import { eq } from 'drizzle-orm';
 
 export type ProjectBasicInfo = Pick<
   ProjectDomain,
@@ -30,7 +30,10 @@ export const getProjectIdBySlug = async (slug: string): Promise<ActionResult<{ i
     return { success: true, data: { id: row.id } };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getProjectIdBySlug' } });
-    return { success: false, errors: { _project: ['프로젝트를 불러오는 도중 오류가 발생했습니다.'] } };
+    return {
+      success: false,
+      errors: { _project: ['프로젝트를 불러오는 도중 오류가 발생했습니다.'] },
+    };
   }
 };
 
@@ -122,26 +125,26 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
       return {
         success: false,
         errors: { _project: ['프로젝트를 찾을 수 없습니다.'] },
-      }
+      };
     }
 
     return {
       success: true,
       data: { id: archived.id },
       message: '프로젝트가 휴지통으로 이동되었습니다.',
-    }
+    };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveProject' } });
     return {
       success: false,
       errors: { _project: ['프로젝트를 삭제하는 도중 오류가 발생했습니다.'] },
-    }
+    };
   }
-}
+};
 
 export const updateProject = async (
   projectId: string,
-  data: { name?: string; description?: string; ownerName?: string },
+  data: { name?: string; description?: string; ownerName?: string }
 ): Promise<ActionResult<{ id: string }>> => {
   try {
     const hasAccess = await requireProjectAccess(projectId);
@@ -186,7 +189,7 @@ export const updateProject = async (
 export const changeProjectIdentifier = async (
   projectId: string,
   currentPassword: string,
-  newPassword: string,
+  newPassword: string
 ): Promise<ActionResult<{ id: string }>> => {
   try {
     const hasAccess = await requireProjectAccess(projectId);
@@ -240,7 +243,7 @@ export const changeProjectIdentifier = async (
 
 export const deleteProject = async (
   projectId: string,
-  confirmName: string,
+  confirmName: string
 ): Promise<ActionResult<{ id: string }>> => {
   try {
     const hasAccess = await requireProjectAccess(projectId);

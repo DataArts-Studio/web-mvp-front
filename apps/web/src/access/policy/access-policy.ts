@@ -4,10 +4,9 @@
  * 모든 접근 제어 판단은 이 레이어를 통해 수행.
  * User Auth와 Resource Access를 독립적으로 평가하고 결합.
  */
-
-import type { AccessContext, AccessPolicy } from './types';
 import { verifyProjectAccessToken } from '../lib/access-token';
 import { getAccessTokenCookie } from '../lib/cookies';
+import type { AccessContext, AccessPolicy } from './types';
 
 /**
  * 기본 접근 정책 구현
@@ -112,7 +111,9 @@ export async function canAccessProject(projectName: string): Promise<boolean> {
  * @param projectName - 프로젝트 이름
  * @returns 토큰 정보 또는 null
  */
-export async function getValidAccessToken(projectName: string): Promise<AccessContext['projectAccessToken'] | null> {
+export async function getValidAccessToken(
+  projectName: string
+): Promise<AccessContext['projectAccessToken'] | null> {
   const token = await getAccessTokenCookie(projectName);
   if (!token) {
     return null;

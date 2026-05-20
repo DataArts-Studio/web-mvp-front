@@ -1,5 +1,6 @@
-import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import type { NextConfig } from 'next';
+
+import { withSentryConfig } from '@sentry/nextjs';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
@@ -19,7 +20,7 @@ const securityHeaders = [
       "font-src 'self' cdn.jsdelivr.net",
       "worker-src 'self' blob:",
       `connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io *.sentry-cdn.com https://challenges.cloudflare.com https://vercel.live cdn.jsdelivr.net ${supabaseUrl}`,
-      "frame-src https://challenges.cloudflare.com https://vercel.live",
+      'frame-src https://challenges.cloudflare.com https://vercel.live',
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -28,7 +29,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@testea/db', '@testea/fetch-kit', '@testea/lib', '@testea/ui', '@testea/util'],
+  transpilePackages: [
+    '@testea/db',
+    '@testea/fetch-kit',
+    '@testea/lib',
+    '@testea/ui',
+    '@testea/util',
+  ],
   images: {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -36,11 +43,20 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: [
-      'framer-motion', 'lucide-react', '@supabase/supabase-js',
-      '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities',
-      'zod', 'react-hook-form', '@tanstack/react-query',
-      '@hookform/resolvers', 'sonner', 'drizzle-orm',
-      'date-fns', 'react-markdown',
+      'framer-motion',
+      'lucide-react',
+      '@supabase/supabase-js',
+      '@dnd-kit/core',
+      '@dnd-kit/sortable',
+      '@dnd-kit/utilities',
+      'zod',
+      'react-hook-form',
+      '@tanstack/react-query',
+      '@hookform/resolvers',
+      'sonner',
+      'drizzle-orm',
+      'date-fns',
+      'react-markdown',
     ],
     serverActions: {
       bodySizeLimit: '10mb',
@@ -61,9 +77,9 @@ export default withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "testea",
+  org: 'testea',
 
-  project: "javascript-nextjs",
+  project: 'javascript-nextjs',
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
@@ -78,7 +94,7 @@ export default withSentryConfig(nextConfig, {
   // This can increase your server load as well as your hosting bill.
   // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
   // side errors will fail.
-  tunnelRoute: "/monitoring",
+  tunnelRoute: '/monitoring',
 
   webpack: {
     // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)

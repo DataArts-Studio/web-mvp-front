@@ -1,21 +1,22 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { projectIdQueryOptions } from '@/entities/project';
-import { checklistsQueryOptions, checklistQueryKeys } from '@/entities/checklist';
+import { checklistQueryKeys, checklistsQueryOptions } from '@/entities/checklist';
 import type { ChecklistWithProgress } from '@/entities/checklist';
-import { createChecklist, archiveChecklist } from '@/entities/checklist/api/server-actions';
-import { MainContainer } from '@testea/ui';
-import { Skeleton, ProjectErrorFallback } from '@testea/ui';
+import { archiveChecklist, createChecklist } from '@/entities/checklist/api/server-actions';
+import { projectIdQueryOptions } from '@/entities/project';
 import { ActionToolbar } from '@/widgets';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDisclosure } from '@testea/lib';
-import { toast } from 'sonner';
-import { CheckSquare, Plus, Trash2 } from 'lucide-react';
+import { MainContainer } from '@testea/ui';
+import { ProjectErrorFallback, Skeleton } from '@testea/ui';
 import { cn } from '@testea/util';
+import { CheckSquare, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const ChecklistsView = () => {
   const params = useParams();
@@ -25,7 +26,9 @@ export const ChecklistsView = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: projectIdData, isLoading: isLoadingProject } = useQuery(projectIdQueryOptions(slug));
+  const { data: projectIdData, isLoading: isLoadingProject } = useQuery(
+    projectIdQueryOptions(slug)
+  );
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
   const { data: checklistsData, isLoading: isLoadingChecklists } = useQuery({
@@ -51,12 +54,15 @@ export const ChecklistsView = () => {
     onSuccess: (result) => {
       if (result.success) {
         toast.success('체크리스트가 생성되었습니다.');
-        if (projectId) queryClient.invalidateQueries({ queryKey: checklistQueryKeys.list(projectId) });
+        if (projectId)
+          queryClient.invalidateQueries({ queryKey: checklistQueryKeys.list(projectId) });
         setNewTitle('');
         setNewItems(['']);
         onClose();
       } else {
-        const msg = Object.values(result.errors ?? {}).flat().join(', ');
+        const msg = Object.values(result.errors ?? {})
+          .flat()
+          .join(', ');
         toast.error(msg || '생성에 실패했습니다.');
       }
     },
@@ -95,7 +101,7 @@ export const ChecklistsView = () => {
         }, 0);
       }
     },
-    [newItems],
+    [newItems]
   );
 
   const deleteMutation = useMutation({
@@ -103,14 +109,16 @@ export const ChecklistsView = () => {
     onSuccess: (result) => {
       if (result.success) {
         toast.success('체크리스트가 삭제되었습니다.');
-        if (projectId) queryClient.invalidateQueries({ queryKey: checklistQueryKeys.list(projectId) });
+        if (projectId)
+          queryClient.invalidateQueries({ queryKey: checklistQueryKeys.list(projectId) });
       }
     },
   });
 
   const getStatusBadge = (c: ChecklistWithProgress) => {
     if (c.status === 'completed') return { label: '완료', cls: 'bg-green-500/15 text-green-400' };
-    if (c.status === 'in_progress') return { label: '진행 중', cls: 'bg-yellow-500/15 text-yellow-400' };
+    if (c.status === 'in_progress')
+      return { label: '진행 중', cls: 'bg-yellow-500/15 text-yellow-400' };
     return { label: '대기', cls: 'bg-text-4/15 text-text-3' };
   };
 
@@ -123,7 +131,7 @@ export const ChecklistsView = () => {
         </header>
         <div className="col-span-6 flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-3" />
+            <Skeleton key={i} className="rounded-3 h-20 w-full" />
           ))}
         </div>
       </MainContainer>
@@ -156,23 +164,23 @@ export const ChecklistsView = () => {
       </ActionToolbar.Root>
 
       <section className="col-span-6 flex min-h-0 flex-col">
-        <div className="flex-1 overflow-y-auto flex flex-col gap-3">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
           {/* 생성 폼 */}
           {isOpen && (
-            <div className="rounded-3 border border-primary/30 bg-bg-2 p-5 flex flex-col gap-4">
+            <div className="rounded-3 border-primary/30 bg-bg-2 flex flex-col gap-4 border p-5">
               <input
                 type="text"
                 placeholder="체크리스트 제목"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="typo-body1-heading bg-transparent text-text-1 placeholder:text-text-4 focus:outline-none border-b border-line-2 pb-2"
+                className="typo-body1-heading text-text-1 placeholder:text-text-4 border-line-2 border-b bg-transparent pb-2 focus:outline-none"
                 autoFocus
               />
               <div className="flex flex-col gap-1">
                 <p className="typo-label-normal text-text-3 mb-1">항목 (Enter로 추가)</p>
                 {newItems.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2">
-                    <CheckSquare className="h-4 w-4 text-text-4 shrink-0" />
+                    <CheckSquare className="text-text-4 h-4 w-4 shrink-0" />
                     <input
                       data-checklist-input
                       type="text"
@@ -182,20 +190,24 @@ export const ChecklistsView = () => {
                         setNewItems((prev) => prev.map((v, i) => (i === idx ? e.target.value : v)));
                       }}
                       onKeyDown={(e) => handleItemKeyDown(idx, e)}
-                      className="typo-body2-normal bg-transparent text-text-1 placeholder:text-text-4 focus:outline-none flex-1 py-1"
+                      className="typo-body2-normal text-text-1 placeholder:text-text-4 flex-1 bg-transparent py-1 focus:outline-none"
                     />
                   </div>
                 ))}
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
-                <button type="button" onClick={onClose} className="typo-body2-normal text-text-3 hover:text-text-1 px-3 py-1.5 transition-colors">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="typo-body2-normal text-text-3 hover:text-text-1 px-3 py-1.5 transition-colors"
+                >
                   취소
                 </button>
                 <button
                   type="button"
                   onClick={handleCreate}
                   disabled={createMutation.isPending}
-                  className="typo-body2-heading bg-primary text-white rounded-2 px-4 py-1.5 hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="typo-body2-heading bg-primary rounded-2 hover:bg-primary/90 px-4 py-1.5 text-white transition-colors disabled:opacity-50"
                 >
                   생성
                 </button>
@@ -219,15 +231,18 @@ export const ChecklistsView = () => {
           ) : (
             checklists.map((c) => {
               const badge = getStatusBadge(c);
-              const percent = c.totalItems > 0 ? Math.round((c.checkedItems / c.totalItems) * 100) : 0;
+              const percent =
+                c.totalItems > 0 ? Math.round((c.checkedItems / c.totalItems) * 100) : 0;
               return (
                 <Link key={c.id} href={`/projects/${slug}/checklists/${c.id}`}>
-                  <div className="group rounded-3 border border-line-2 bg-bg-2 px-5 py-4 flex items-center gap-5 transition-colors hover:bg-bg-3">
+                  <div className="group rounded-3 border-line-2 bg-bg-2 hover:bg-bg-3 flex items-center gap-5 border px-5 py-4 transition-colors">
                     {/* 좌: 제목 + 상태 */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2.5 mb-1">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-center gap-2.5">
                         <h3 className="typo-body1-heading text-text-1 truncate">{c.title}</h3>
-                        <span className={cn('typo-label-normal rounded-full px-2 py-0.5', badge.cls)}>
+                        <span
+                          className={cn('typo-label-normal rounded-full px-2 py-0.5', badge.cls)}
+                        >
                           {badge.label}
                         </span>
                       </div>
@@ -238,16 +253,16 @@ export const ChecklistsView = () => {
 
                     {/* 중: 프로그레스 바 */}
                     <div className="w-32 shrink-0">
-                      <div className="h-2 rounded-full bg-bg-4 overflow-hidden">
+                      <div className="bg-bg-4 h-2 overflow-hidden rounded-full">
                         <div
                           className={cn(
                             'h-full rounded-full transition-all',
-                            percent === 100 ? 'bg-green-500' : 'bg-primary',
+                            percent === 100 ? 'bg-green-500' : 'bg-primary'
                           )}
                           style={{ width: `${percent}%` }}
                         />
                       </div>
-                      <p className="typo-label-normal text-text-4 text-right mt-0.5">{percent}%</p>
+                      <p className="typo-label-normal text-text-4 mt-0.5 text-right">{percent}%</p>
                     </div>
 
                     {/* 우: 삭제 */}
@@ -258,7 +273,7 @@ export const ChecklistsView = () => {
                         e.stopPropagation();
                         deleteMutation.mutate(c.id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 text-text-4 hover:text-red-400 transition-all p-1"
+                      className="text-text-4 p-1 opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

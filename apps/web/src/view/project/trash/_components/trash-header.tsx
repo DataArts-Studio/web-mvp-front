@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+
 import { DSButton } from '@testea/ui';
+import { Trash2 } from 'lucide-react';
 
 interface TrashHeaderProps {
   hasItems: boolean;

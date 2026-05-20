@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { milestoneByIdQueryOptions } from '@/features/milestones/api/query';
+import { useQuery } from '@tanstack/react-query';
 
 export default function TestMilestonePage() {
   const milestoneId = '019c38ab-fa86-756e-adac-0cba5985c360';
@@ -18,8 +18,12 @@ export default function TestMilestonePage() {
         <div>
           <p>data.success: {String(data.success)}</p>
           {data.success && <p>Title: {data.data.title}</p>}
-          {!data.success && <pre style={{ color: 'red' }}>{JSON.stringify(data.errors, null, 2)}</pre>}
-          <pre style={{ fontSize: 12, maxHeight: 400, overflow: 'auto' }}>{JSON.stringify(data, null, 2)}</pre>
+          {!data.success && (
+            <pre style={{ color: 'red' }}>{JSON.stringify(data.errors, null, 2)}</pre>
+          )}
+          <pre style={{ fontSize: 12, maxHeight: 400, overflow: 'auto' }}>
+            {JSON.stringify(data, null, 2)}
+          </pre>
         </div>
       )}
     </div>

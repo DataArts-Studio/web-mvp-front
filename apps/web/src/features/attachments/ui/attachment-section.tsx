@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
+
 import { Paperclip } from 'lucide-react';
-import { useAttachments, useUploadAttachment, useDeleteAttachment } from '../hooks';
-import { AttachmentUploadZone } from './attachment-upload-zone';
-import { AttachmentList } from './attachment-list';
+
+import { useAttachments, useDeleteAttachment, useUploadAttachment } from '../hooks';
 import { ATTACHMENT_LIMITS } from '../model/constants';
+import { AttachmentList } from './attachment-list';
+import { AttachmentUploadZone } from './attachment-upload-zone';
 
 interface AttachmentSectionProps {
   testCaseId: string;
@@ -46,11 +48,7 @@ export const AttachmentSection = ({ testCaseId, projectId }: AttachmentSectionPr
           <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
         </div>
       ) : (
-        <AttachmentList
-          attachments={attachments}
-          onDelete={remove}
-          isDeleting={isDeleting}
-        />
+        <AttachmentList attachments={attachments} onDelete={remove} isDeleting={isDeleting} />
       )}
     </section>
   );

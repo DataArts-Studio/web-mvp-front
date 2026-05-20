@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { attachmentsQueryOptions, uploadAttachment, deleteAttachment } from '../api';
+
+import { attachmentsQueryOptions, deleteAttachment, uploadAttachment } from '../api';
 
 export function useAttachments(testCaseId: string) {
   return useQuery(attachmentsQueryOptions(testCaseId));

@@ -1,5 +1,7 @@
 import React from 'react';
+
 import type { Metadata } from 'next';
+
 import { TrashView } from '@/view';
 
 export const metadata: Metadata = {

@@ -1,8 +1,10 @@
 import React from 'react';
-import { Container } from '@testea/ui';
+
 import { GridBackground } from '@/shared/layout';
-import { GlobalHeader } from '@/widgets/global-header';
 import { Footer } from '@/widgets/footer';
+import { GlobalHeader } from '@/widgets/global-header';
+import { Container } from '@testea/ui';
+
 import { LendingContent } from './lending-content';
 
 export const LendingView = () => {
@@ -17,7 +19,7 @@ export const LendingView = () => {
         id="container"
         role="document"
         aria-label="Testea 랜딩 페이지"
-        className="flex min-h-screen w-full flex-col bg-bg-1 font-sans text-text1"
+        className="bg-bg-1 text-text1 flex min-h-screen w-full flex-col font-sans"
       >
         {/* Header */}
         <GlobalHeader />

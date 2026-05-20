@@ -1,9 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { Github } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { githubConnectionQueryOptions, githubQueryKeys } from '@/entities/github-connection';
 import type { GithubRepo } from '@/entities/github-connection';
@@ -13,7 +10,10 @@ import {
   getGithubRepos,
   selectGithubRepo,
 } from '@/entities/github-connection/api/server-actions';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DSButton, SettingsCard } from '@testea/ui';
+import { Github } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { ConnectedRepoInfo } from './connected-repo-info';
 import { RepoSelector } from './repo-selector';

@@ -1,10 +1,16 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCaseRuns, testRuns, type TestCaseRunStatus, type TestRunStatus } from '@testea/db';
-import { ActionResult } from '@/shared/types';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import {
+  type TestCaseRunStatus,
+  type TestRunStatus,
+  getDatabase,
+  testCaseRuns,
+  testRuns,
+} from '@testea/db';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 interface BulkUpdateInput {
   testCaseRunIds: string[];
@@ -85,7 +91,7 @@ async function updateTestRunStatus(db: ReturnType<typeof getDatabase>, testRunId
 
   if (caseRuns.length === 0) return;
 
-  const untested = caseRuns.filter(c => c.status === 'untested').length;
+  const untested = caseRuns.filter((c) => c.status === 'untested').length;
   const total = caseRuns.length;
 
   let newStatus: TestRunStatus;

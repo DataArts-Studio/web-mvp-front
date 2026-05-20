@@ -1,16 +1,15 @@
 'use client';
 
 import React, { useRef } from 'react';
-import {
-  Search,
-  Filter,
-  ChevronDown,
-  CheckCircle2,
-  ArrowUpDown,
-  X,
-} from 'lucide-react';
+
 import { useOutsideClick } from '@testea/lib';
-import { type RunStatusFilter, type RunSortOption, getStatusFilterLabel } from './runs-list-constants';
+import { ArrowUpDown, CheckCircle2, ChevronDown, Filter, Search, X } from 'lucide-react';
+
+import {
+  type RunSortOption,
+  type RunStatusFilter,
+  getStatusFilterLabel,
+} from './runs-list-constants';
 
 interface RunsListToolbarProps {
   searchTerm: string;
@@ -52,7 +51,7 @@ export const RunsListToolbar = ({
       {/* 검색창 */}
       <div className="flex flex-1 items-center gap-3">
         <div className="relative w-full max-w-md">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-3">
+          <div className="text-text-3 pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             <Search className="h-4 w-4" />
           </div>
           <input
@@ -60,12 +59,12 @@ export const RunsListToolbar = ({
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="실행 이름 검색..."
-            className="typo-body2-normal w-full rounded-2 border border-line-2 bg-bg-2 py-2 pl-10 pr-10 text-text-1 placeholder:text-text-4 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="typo-body2-normal rounded-2 border-line-2 bg-bg-2 text-text-1 placeholder:text-text-4 focus:border-primary focus:ring-primary w-full border py-2 pr-10 pl-10 focus:ring-1 focus:outline-none"
           />
           {searchTerm && (
             <button
               onClick={() => onSearchChange('')}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-3 hover:text-text-1 transition-colors"
+              className="text-text-3 hover:text-text-1 absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -78,7 +77,7 @@ export const RunsListToolbar = ({
         <div className="relative" ref={statusDropdownRef}>
           <button
             onClick={onStatusDropdownToggle}
-            className={`typo-body2-heading flex items-center gap-2 rounded-2 border px-3 py-2 transition-colors ${
+            className={`typo-body2-heading rounded-2 flex items-center gap-2 border px-3 py-2 transition-colors ${
               statusFilter !== 'ALL'
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3'
@@ -86,25 +85,29 @@ export const RunsListToolbar = ({
           >
             <Filter className="h-4 w-4" />
             <span>{getStatusFilterLabel(statusFilter)}</span>
-            <ChevronDown className={`h-4 w-4 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}
+            />
           </button>
 
           {isStatusDropdownOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[160px] overflow-hidden rounded-2 border border-line-2 bg-bg-2 shadow-2">
-              {(['ALL', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as RunStatusFilter[]).map((status) => (
-                <button
-                  key={status}
-                  onClick={() => onStatusFilterChange(status)}
-                  className={`typo-body2-normal flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-bg-3 ${
-                    statusFilter === status ? 'bg-bg-3 text-primary' : 'text-text-2'
-                  }`}
-                >
-                  {statusFilter === status && <CheckCircle2 className="h-4 w-4" />}
-                  <span className={statusFilter === status ? '' : 'pl-6'}>
-                    {getStatusFilterLabel(status)}
-                  </span>
-                </button>
-              ))}
+            <div className="rounded-2 border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-10 mt-1 min-w-[160px] overflow-hidden border">
+              {(['ALL', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as RunStatusFilter[]).map(
+                (status) => (
+                  <button
+                    key={status}
+                    onClick={() => onStatusFilterChange(status)}
+                    className={`typo-body2-normal hover:bg-bg-3 flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors ${
+                      statusFilter === status ? 'bg-bg-3 text-primary' : 'text-text-2'
+                    }`}
+                  >
+                    {statusFilter === status && <CheckCircle2 className="h-4 w-4" />}
+                    <span className={statusFilter === status ? '' : 'pl-6'}>
+                      {getStatusFilterLabel(status)}
+                    </span>
+                  </button>
+                )
+              )}
             </div>
           )}
         </div>
@@ -113,18 +116,20 @@ export const RunsListToolbar = ({
         <div className="relative" ref={sortDropdownRef}>
           <button
             onClick={onSortDropdownToggle}
-            className="typo-body2-heading flex items-center gap-2 rounded-2 border border-line-2 bg-bg-2 px-3 py-2 text-text-2 hover:bg-bg-3 transition-colors"
+            className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex items-center gap-2 border px-3 py-2 transition-colors"
           >
             <ArrowUpDown className="h-4 w-4" />
             <span>{sortOption === 'UPDATED' ? '최근 수정 순' : '이름 순'}</span>
-            <ChevronDown className={`h-4 w-4 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`}
+            />
           </button>
 
           {isSortDropdownOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[160px] overflow-hidden rounded-2 border border-line-2 bg-bg-2 shadow-2">
+            <div className="rounded-2 border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-10 mt-1 min-w-[160px] overflow-hidden border">
               <button
                 onClick={() => onSortOptionChange('UPDATED')}
-                className={`typo-body2-normal flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-bg-3 ${
+                className={`typo-body2-normal hover:bg-bg-3 flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors ${
                   sortOption === 'UPDATED' ? 'bg-bg-3 text-primary' : 'text-text-2'
                 }`}
               >
@@ -133,7 +138,7 @@ export const RunsListToolbar = ({
               </button>
               <button
                 onClick={() => onSortOptionChange('NAME')}
-                className={`typo-body2-normal flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-bg-3 ${
+                className={`typo-body2-normal hover:bg-bg-3 flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors ${
                   sortOption === 'NAME' ? 'bg-bg-3 text-primary' : 'text-text-2'
                 }`}
               >

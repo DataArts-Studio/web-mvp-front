@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { VersionTimeline } from './version-timeline';
-import { VersionDetailPanel } from '@/features/version-detail/ui/version-detail-panel';
+
 import { VersionCompareView } from '@/features/version-compare/ui/version-compare-view';
+import { VersionDetailPanel } from '@/features/version-detail/ui/version-detail-panel';
 import { DSButton } from '@testea/ui';
 import { ArrowLeft } from 'lucide-react';
+
+import { VersionTimeline } from './version-timeline';
 
 type Mode = 'timeline' | 'detail' | 'compare';
 

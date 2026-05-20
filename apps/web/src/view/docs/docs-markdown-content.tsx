@@ -1,8 +1,10 @@
-import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { slugify } from '@testea/util';
+
+import Link from 'next/link';
+
 import { getTextContent } from '@/shared/utils/markdown-utils';
+import { slugify } from '@testea/util';
+import remarkGfm from 'remark-gfm';
 
 export { slugify };
 
@@ -16,14 +18,14 @@ export function DocsMarkdownContent({ content }: DocsMarkdownContentProps) {
       remarkPlugins={[remarkGfm]}
       components={{
         h1: ({ children }) => (
-          <h1 className="mb-6 border-b border-line-2 pb-4 typo-h1-heading text-text-1">
+          <h1 className="border-line-2 typo-h1-heading text-text-1 mb-6 border-b pb-4">
             {children}
           </h1>
         ),
         h2: ({ children }) => {
           const id = slugify(getTextContent(children));
           return (
-            <h2 id={id} className="mb-4 mt-8 scroll-mt-12 typo-h2-heading text-text-1">
+            <h2 id={id} className="typo-h2-heading text-text-1 mt-8 mb-4 scroll-mt-12">
               {children}
             </h2>
           );
@@ -31,56 +33,49 @@ export function DocsMarkdownContent({ content }: DocsMarkdownContentProps) {
         h3: ({ children }) => {
           const id = slugify(getTextContent(children));
           return (
-            <h3 id={id} className="mb-3 mt-6 scroll-mt-12 typo-h3-heading text-text-1">
+            <h3 id={id} className="typo-h3-heading text-text-1 mt-6 mb-3 scroll-mt-12">
               {children}
             </h3>
           );
         },
         p: ({ children }) => (
-          <p className="mb-4 typo-body2-normal text-text-2 leading-relaxed">{children}</p>
+          <p className="typo-body2-normal text-text-2 mb-4 leading-relaxed">{children}</p>
         ),
         ul: ({ children }) => (
-          <ul className="mb-4 ml-6 list-disc space-y-2 text-text-2">{children}</ul>
+          <ul className="text-text-2 mb-4 ml-6 list-disc space-y-2">{children}</ul>
         ),
         ol: ({ children }) => (
-          <ol className="mb-4 ml-6 list-decimal space-y-2 text-text-2">{children}</ol>
+          <ol className="text-text-2 mb-4 ml-6 list-decimal space-y-2">{children}</ol>
         ),
         li: ({ children }) => <li className="typo-body2-normal">{children}</li>,
         table: ({ children }) => (
           <div className="mb-6 overflow-x-auto">
-            <table className="w-full border-collapse border border-line-2 typo-body2-normal">
+            <table className="border-line-2 typo-body2-normal w-full border-collapse border">
               {children}
             </table>
           </div>
         ),
         thead: ({ children }) => <thead className="bg-bg-3">{children}</thead>,
         th: ({ children }) => (
-          <th className="border border-line-2 px-4 py-2 text-left text-text-1">
-            {children}
-          </th>
+          <th className="border-line-2 text-text-1 border px-4 py-2 text-left">{children}</th>
         ),
         td: ({ children }) => (
-          <td className="border border-line-2 px-4 py-2 text-text-2">{children}</td>
+          <td className="border-line-2 text-text-2 border px-4 py-2">{children}</td>
         ),
-        hr: () => <hr className="my-8 border-line-2" />,
-        strong: ({ children }) => (
-          <strong className="font-semibold text-text-1">{children}</strong>
-        ),
+        hr: () => <hr className="border-line-2 my-8" />,
+        strong: ({ children }) => <strong className="text-text-1 font-semibold">{children}</strong>,
         code: ({ children }) => (
-          <code className="rounded bg-bg-3 px-1.5 py-0.5 typo-caption-normal text-primary">
+          <code className="bg-bg-3 typo-caption-normal text-primary rounded px-1.5 py-0.5">
             {children}
           </code>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="my-4 border-l-4 border-primary pl-4 text-text-3">
+          <blockquote className="border-primary text-text-3 my-4 border-l-4 pl-4">
             {children}
           </blockquote>
         ),
         a: ({ href, children }) => (
-          <Link
-            href={href || '#'}
-            className="text-primary underline hover:text-primary/80"
-          >
+          <Link href={href || '#'} className="text-primary hover:text-primary/80 underline">
             {children}
           </Link>
         ),

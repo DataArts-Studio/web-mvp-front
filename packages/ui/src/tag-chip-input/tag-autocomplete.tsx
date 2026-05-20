@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+
 import { cn } from '@testea/util';
 
 interface TagAutocompleteProps {
@@ -38,7 +39,7 @@ export const TagAutocomplete = ({
   return (
     <ul
       role="listbox"
-      className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[200px] overflow-y-auto rounded-4 border border-line-2 bg-bg-1 py-1 shadow-4"
+      className="rounded-4 border-line-2 bg-bg-1 shadow-4 absolute top-full right-0 left-0 z-50 mt-1 max-h-[200px] overflow-y-auto border py-1"
     >
       {suggestions.map((tag, index) => (
         <li
@@ -51,8 +52,8 @@ export const TagAutocomplete = ({
           }}
           onMouseEnter={() => onHighlight(index)}
           className={cn(
-            'cursor-pointer px-6 py-2.5 text-body2 transition-colors',
-            highlightedIndex === index && 'bg-bg-3',
+            'text-body2 cursor-pointer px-6 py-2.5 transition-colors',
+            highlightedIndex === index && 'bg-bg-3'
           )}
         >
           {highlightMatch(tag, query)}

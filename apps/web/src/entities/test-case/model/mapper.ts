@@ -1,11 +1,5 @@
 import type { CreateTestCase, CreateTestCaseDTO, TestCase, TestCaseDTO } from './types';
 
-
-
-
-
-
-
 const toDate = (v: string | Date): Date => (v instanceof Date ? v : new Date(v));
 
 export const toTestCase = (dto: TestCaseDTO): TestCase => {

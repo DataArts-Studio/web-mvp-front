@@ -1,11 +1,11 @@
 import React, { ReactNode } from 'react';
 
 import type { Metadata, Viewport } from 'next';
-
-import '@/app-shell/styles/globals.css';
 import Script from 'next/script';
-import { MvpBottomNavbarLazy } from '@testea/ui';
+
 import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
+import '@/app-shell/styles/globals.css';
+import { MvpBottomNavbarLazy } from '@testea/ui';
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
@@ -17,7 +17,8 @@ export const metadata: Metadata = {
     default: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
     template: '%s | 테스티아(Testea)',
   },
-  description: '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서. 소프트웨어 테스트 관리 도구.',
+  description:
+    '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서. 소프트웨어 테스트 관리 도구.',
   keywords: [
     '테스트 관리',
     '테스트 관리 도구',
@@ -63,7 +64,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
-    description: '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+    description:
+      '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
     url: siteUrl,
     type: 'website',
     locale: 'ko_KR',
@@ -80,7 +82,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
-    description: '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+    description:
+      '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
     creator: '@testea',
     images: ['/opengraph-image'],
   },

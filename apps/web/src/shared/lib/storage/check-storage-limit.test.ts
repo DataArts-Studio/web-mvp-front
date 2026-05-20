@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { checkStorageLimit } from './check-storage-limit';
+
 const mockGetProjectStorageBytes = vi.fn<() => Promise<number>>();
 
 vi.mock('./get-project-storage', () => ({
@@ -12,8 +14,6 @@ vi.mock('@/shared/constants/core', () => ({
     MAX_PROJECTS: 1,
   },
 }));
-
-import { checkStorageLimit } from './check-storage-limit';
 
 describe('checkStorageLimit', () => {
   beforeEach(() => {

@@ -1,11 +1,11 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCaseRuns, testRuns, TestCaseRunStatus, TestRunStatus } from '@testea/db';
-import { ActionResult } from '@/shared/types';
-import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
-import { and, eq, isNull } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
+import { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { TestCaseRunStatus, TestRunStatus, getDatabase, testCaseRuns, testRuns } from '@testea/db';
+import { and, eq, isNull } from 'drizzle-orm';
 
 export async function updateTestCaseRunStatus(
   input: UpdateTestCaseRunInput
@@ -82,7 +82,7 @@ async function updateTestRunStatus(db: ReturnType<typeof getDatabase>, testRunId
 
   if (caseRuns.length === 0) return;
 
-  const untested = caseRuns.filter(c => c.status === 'untested').length;
+  const untested = caseRuns.filter((c) => c.status === 'untested').length;
   const total = caseRuns.length;
 
   let newStatus: TestRunStatus;

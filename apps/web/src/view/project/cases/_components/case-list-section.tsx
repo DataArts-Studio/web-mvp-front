@@ -1,31 +1,28 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { TestCaseCard, TestCaseCardType, duplicateTestCase } from '@/entities/test-case';
 import { testCaseQueryKeys } from '@/features/cases-list';
-import { useReorderCase, arrayMove } from '@/features/reorder';
+import { arrayMove, useReorderCase } from '@/features/reorder';
+import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { TestTable } from '@/widgets';
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@testea/util';
-import { track, TESTCASE_EVENTS } from '@/shared/lib/analytics';
+import { toast } from 'sonner';
 
-import { SortableTestCaseRow } from './sortable-test-case-row';
 import { QuickCreateRow } from './quick-create-row';
+import { SortableTestCaseRow } from './sortable-test-case-row';
 
 interface CaseListSectionProps {
   projectId: string;
@@ -68,7 +65,7 @@ export const CaseListSection = ({
   // D&D
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor)
   );
   const reorderMutation = useReorderCase(projectId, queryParams);
   const [localItems, setLocalItems] = useState<TestCaseCardType[] | null>(null);
@@ -80,30 +77,33 @@ export const CaseListSection = ({
 
   const displayItems = localItems ?? items;
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
 
-    const currentItems = localItems ?? items;
-    const oldIndex = currentItems.findIndex((item) => item.id === active.id);
-    const newIndex = currentItems.findIndex((item) => item.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
+      const currentItems = localItems ?? items;
+      const oldIndex = currentItems.findIndex((item) => item.id === active.id);
+      const newIndex = currentItems.findIndex((item) => item.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(currentItems, oldIndex, newIndex);
-    setLocalItems(reordered);
+      const reordered = arrayMove(currentItems, oldIndex, newIndex);
+      setLocalItems(reordered);
 
-    const beforeItem = newIndex > 0 ? reordered[newIndex - 1] : null;
-    const afterItem = newIndex < reordered.length - 1 ? reordered[newIndex + 1] : null;
+      const beforeItem = newIndex > 0 ? reordered[newIndex - 1] : null;
+      const afterItem = newIndex < reordered.length - 1 ? reordered[newIndex + 1] : null;
 
-    reorderMutation.mutate({
-      id: active.id as string,
-      beforeOrder: beforeItem?.sortOrder ?? null,
-      afterOrder: afterItem?.sortOrder ?? null,
-      orderedIds: reordered.map((item) => item.id),
-      projectId,
-      scopeId: selectedSuiteId !== 'all' ? selectedSuiteId : projectId,
-    });
-  }, [localItems, items, reorderMutation, projectId, selectedSuiteId]);
+      reorderMutation.mutate({
+        id: active.id as string,
+        beforeOrder: beforeItem?.sortOrder ?? null,
+        afterOrder: afterItem?.sortOrder ?? null,
+        orderedIds: reordered.map((item) => item.id),
+        projectId,
+        scopeId: selectedSuiteId !== 'all' ? selectedSuiteId : projectId,
+      });
+    },
+    [localItems, items, reorderMutation, projectId, selectedSuiteId]
+  );
 
   // 복제
   const duplicateMutation = useMutation({
@@ -114,26 +114,31 @@ export const CaseListSection = ({
         queryClient.invalidateQueries({ queryKey: testCaseQueryKeys.list(projectId) });
         queryClient.invalidateQueries({ queryKey: ['testSuites', projectId] });
       } else {
-        const msg = Object.values(result.errors ?? {}).flat().join(', ');
+        const msg = Object.values(result.errors ?? {})
+          .flat()
+          .join(', ');
         toast.error(msg || '복제에 실패했습니다.');
       }
     },
   });
 
-  const handleDuplicate = useCallback((testCaseId: string) => {
-    duplicateMutation.mutate(testCaseId);
-  }, [duplicateMutation]);
+  const handleDuplicate = useCallback(
+    (testCaseId: string) => {
+      duplicateMutation.mutate(testCaseId);
+    },
+    [duplicateMutation]
+  );
 
   const isEmpty = items.length === 0 && pagination && pagination.totalItems === 0;
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] flex-1 px-6 lg:px-10 py-6">
+    <div className="mx-auto w-full max-w-[1200px] flex-1 px-6 py-6 lg:px-10">
       <section
         aria-label="테스트 케이스 목록"
         aria-busy={isFetching && hasData ? true : undefined}
         className={cn(
           'rounded-3 border-line-2 bg-bg-2 shadow-1 border transition-opacity',
-          isFetching && hasData ? 'opacity-60' : 'opacity-100',
+          isFetching && hasData ? 'opacity-60' : 'opacity-100'
         )}
       >
         <QuickCreateRow projectId={projectId} selectedSuiteId={selectedSuiteId} />
@@ -141,28 +146,44 @@ export const CaseListSection = ({
         {isEmpty ? (
           <div role="status" className="flex flex-col items-center justify-center gap-2 py-12">
             <p className="typo-body2-normal text-text-3">
-              {debouncedSearch || selectedSuiteId !== 'all' ? '검색 결과가 없습니다.' : '테스트 케이스가 없습니다.'}
+              {debouncedSearch || selectedSuiteId !== 'all'
+                ? '검색 결과가 없습니다.'
+                : '테스트 케이스가 없습니다.'}
             </p>
             {(debouncedSearch || selectedSuiteId !== 'all') && (
-              <button onClick={onResetFilters} className="typo-body2-normal text-primary hover:underline">
+              <button
+                onClick={onResetFilters}
+                className="typo-body2-normal text-primary hover:underline"
+              >
                 필터 초기화
               </button>
             )}
           </div>
         ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={displayItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
-              <div className="divide-y divide-line-2">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={displayItems.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="divide-line-2 divide-y">
                 {displayItems.map((item) => (
-                  <SortableTestCaseRow key={item.isOptimistic ? item.id : item.caseKey} id={item.id} disabled={!isCustomSort || item.isOptimistic}>
+                  <SortableTestCaseRow
+                    key={item.isOptimistic ? item.id : item.caseKey}
+                    id={item.id}
+                    disabled={!isCustomSort || item.isOptimistic}
+                  >
                     <div
                       role="button"
                       tabIndex={item.isOptimistic ? -1 : 0}
                       aria-label={`테스트 케이스 ${item.caseKey} ${item.title}`}
                       className={cn(
-                        'group flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors hover:bg-bg-3',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
-                        item.isOptimistic && 'opacity-50 pointer-events-none animate-pulse',
+                        'group hover:bg-bg-3 flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors',
+                        'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
+                        item.isOptimistic && 'pointer-events-none animate-pulse opacity-50'
                       )}
                       onClick={() => {
                         track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });

@@ -1,6 +1,7 @@
+import { useRouter } from 'next/navigation';
+
 import { deleteProject } from '@/entities/project';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 
 export const useDeleteProject = () => {
   const router = useRouter();

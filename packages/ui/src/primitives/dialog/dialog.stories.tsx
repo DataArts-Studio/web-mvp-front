@@ -1,18 +1,14 @@
 import React from 'react';
 
-
-
-import { Dialog, type DialogContentProps, type DialogOverlayProps, type DialogRootProps, useDialog } from '..';
 import type { Meta, StoryObj } from '@storybook/react';
 
-
-
-
-
-
-
-
-
+import {
+  Dialog,
+  type DialogContentProps,
+  type DialogOverlayProps,
+  type DialogRootProps,
+  useDialog,
+} from '..';
 
 // ------------------------------------------------------------------
 // Meta 정의

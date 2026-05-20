@@ -1,26 +1,26 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
-import type { TestCaseListItem } from '@/entities/test-case/model/types';
-import { getDatabase, testCases, testRunSuites, testCaseRuns, testRuns, milestoneTestSuites } from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import { and, eq, sql, inArray, ilike, or, desc, asc } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
+import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
 import { createVersionSnapshot } from '@/entities/test-case-version/api/actions';
-import { detectChangedFields, generateChangeSummary } from '@/entities/test-case-version/model/diff-utils';
-
-
-
-
-
-
-
-
-
-
+import {
+  detectChangedFields,
+  generateChangeSummary,
+} from '@/entities/test-case-version/model/diff-utils';
+import type { TestCaseListItem } from '@/entities/test-case/model/types';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import {
+  getDatabase,
+  milestoneTestSuites,
+  testCaseRuns,
+  testCases,
+  testRunSuites,
+  testRuns,
+} from '@testea/db';
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
 
 type getTestCasesParams = {
   project_id: string;
@@ -35,12 +35,7 @@ export const getTestCases = async ({
     const rows = await db
       .select()
       .from(testCases)
-      .where(
-        and(
-          eq(testCases.project_id, project_id),
-          eq(testCases.lifecycle_status, 'ACTIVE')
-        )
-      );
+      .where(and(eq(testCases.project_id, project_id), eq(testCases.lifecycle_status, 'ACTIVE')));
     if (!rows)
       return { success: false, errors: { _testCase: ['테스트 케이스가 존재하지 않습니다.'] } };
 
@@ -125,12 +120,7 @@ export const getTestCasesList = async ({
 
     if (search?.trim()) {
       const keyword = `%${search.trim()}%`;
-      conditions.push(
-        or(
-          ilike(testCases.name, keyword),
-          ilike(testCases.case_key, keyword),
-        )!
-      );
+      conditions.push(or(ilike(testCases.name, keyword), ilike(testCases.case_key, keyword))!);
     }
 
     const whereClause = and(...conditions);
@@ -148,12 +138,16 @@ export const getTestCasesList = async ({
 
     // ORDER BY 구성
     const isCustomSort = sort === 'custom';
-    const [sortField, sortOrder] = isCustomSort ? ['sortOrder', 'asc'] : sort.split('-') as [string, 'asc' | 'desc'];
-    const sortColumn =
-      isCustomSort ? testCases.sort_order :
-      sortField === 'title' ? testCases.name :
-      sortField === 'createdAt' ? testCases.created_at :
-      testCases.updated_at;
+    const [sortField, sortOrder] = isCustomSort
+      ? ['sortOrder', 'asc']
+      : (sort.split('-') as [string, 'asc' | 'desc']);
+    const sortColumn = isCustomSort
+      ? testCases.sort_order
+      : sortField === 'title'
+        ? testCases.name
+        : sortField === 'createdAt'
+          ? testCases.created_at
+          : testCases.updated_at;
     const orderFn = sortOrder === 'asc' ? asc : desc;
 
     // 데이터 쿼리
@@ -224,12 +218,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
     const [row] = await db
       .select()
       .from(testCases)
-      .where(
-        and(
-          eq(testCases.id, id),
-          eq(testCases.lifecycle_status, 'ACTIVE')
-        )
-      );
+      .where(and(eq(testCases.id, id), eq(testCases.lifecycle_status, 'ACTIVE')));
 
     if (!row) {
       return {
@@ -337,7 +326,9 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
         '테스트 케이스 생성'
       );
     } catch (snapshotError) {
-      Sentry.captureException(snapshotError, { extra: { action: 'createTestCase:versionSnapshot' } });
+      Sentry.captureException(snapshotError, {
+        extra: { action: 'createTestCase:versionSnapshot' },
+      });
     }
 
     // 스위트에 바로 생성한 경우 연결된 테스트 실행에 동기화
@@ -413,33 +404,28 @@ async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
     .select({ test_run_id: testRunSuites.test_run_id })
     .from(testRunSuites)
     .where(
-      and(
-        inArray(testRunSuites.test_run_id, runIds),
-        eq(testRunSuites.test_suite_id, suiteId)
-      )
+      and(inArray(testRunSuites.test_run_id, runIds), eq(testRunSuites.test_suite_id, suiteId))
     );
   const existingRunSuiteIds = new Set(existingRunSuites.map((r) => r.test_run_id));
   const missingRunSuiteIds = runIds.filter((id) => !existingRunSuiteIds.has(id));
 
   if (missingRunSuiteIds.length > 0) {
-    await db.insert(testRunSuites).values(
-      missingRunSuiteIds.map((runId) => ({
-        test_run_id: runId,
-        test_suite_id: suiteId,
-      }))
-    ).onConflictDoNothing();
+    await db
+      .insert(testRunSuites)
+      .values(
+        missingRunSuiteIds.map((runId) => ({
+          test_run_id: runId,
+          test_suite_id: suiteId,
+        }))
+      )
+      .onConflictDoNothing();
   }
 
   // 이미 등록된 케이스런 확인 (중복 방지)
   const existingRows = await db
     .select({ test_run_id: testCaseRuns.test_run_id })
     .from(testCaseRuns)
-    .where(
-      and(
-        inArray(testCaseRuns.test_run_id, runIds),
-        eq(testCaseRuns.test_case_id, caseId)
-      )
-    );
+    .where(and(inArray(testCaseRuns.test_run_id, runIds), eq(testCaseRuns.test_case_id, caseId)));
 
   const existingRunIds = new Set(existingRows.map((r) => r.test_run_id));
   const newRunIds = runIds.filter((id) => !existingRunIds.has(id));
@@ -463,9 +449,7 @@ async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
 /**
  * 테스트 케이스를 복사합니다. (제목에 "(복사)" 접미사 추가)
  */
-export const duplicateTestCase = async (
-  testCaseId: string,
-): Promise<ActionResult<TestCase>> => {
+export const duplicateTestCase = async (testCaseId: string): Promise<ActionResult<TestCase>> => {
   try {
     const db = getDatabase();
 
@@ -528,7 +512,10 @@ export const duplicateTestCase = async (
     });
 
     if (!inserted) {
-      return { success: false, errors: { _testCase: ['테스트 케이스 복사 중 오류가 발생했습니다.'] } };
+      return {
+        success: false,
+        errors: { _testCase: ['테스트 케이스 복사 중 오류가 발생했습니다.'] },
+      };
     }
 
     // 버전 v1 스냅샷
@@ -548,7 +535,9 @@ export const duplicateTestCase = async (
         '테스트 케이스 복사'
       );
     } catch (snapshotError) {
-      Sentry.captureException(snapshotError, { extra: { action: 'duplicateTestCase:versionSnapshot' } });
+      Sentry.captureException(snapshotError, {
+        extra: { action: 'duplicateTestCase:versionSnapshot' },
+      });
     }
 
     // 스위트에 속한 경우 연결된 테스트 실행에 동기화
@@ -563,7 +552,10 @@ export const duplicateTestCase = async (
     return { success: true, data: toTestCase(inserted as TestCaseDTO) };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'duplicateTestCase', testCaseId } });
-    return { success: false, errors: { _testCase: ['테스트 케이스 복사 중 오류가 발생했습니다.'] } };
+    return {
+      success: false,
+      errors: { _testCase: ['테스트 케이스 복사 중 오류가 발생했습니다.'] },
+    };
   }
 };
 
@@ -665,7 +657,9 @@ export const updateTestCase = async (
         await createVersionSnapshot(id, newSnapshot, 'edit', changedFields, changeSummary);
       }
     } catch (snapshotError) {
-      Sentry.captureException(snapshotError, { extra: { action: 'updateTestCase:versionSnapshot' } });
+      Sentry.captureException(snapshotError, {
+        extra: { action: 'updateTestCase:versionSnapshot' },
+      });
     }
 
     // 스위트 변경 시 연결된 테스트 실행에 케이스 동기화
@@ -698,7 +692,11 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
     const db = getDatabase();
 
     // 접근 권한 확인
-    const [existing] = await db.select({ projectId: testCases.project_id }).from(testCases).where(eq(testCases.id, id)).limit(1);
+    const [existing] = await db
+      .select({ projectId: testCases.project_id })
+      .from(testCases)
+      .where(eq(testCases.id, id))
+      .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
       return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
     }
@@ -717,14 +715,14 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
       return {
         success: false,
         errors: { _testCase: ['테스트케이스를 찾을 수 없습니다.'] },
-      }
+      };
     }
 
     return {
       success: true,
       data: { id: archived.id },
       message: '테스트케이스가 휴지통으로 이동되었습니다.',
-    }
+    };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveTestCase' } });
     return {

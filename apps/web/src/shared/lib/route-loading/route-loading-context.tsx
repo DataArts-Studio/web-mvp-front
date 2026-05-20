@@ -1,7 +1,17 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import {
+  type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
 import { usePathname } from 'next/navigation';
+
 import { LoadingSpinner } from '@testea/ui';
 
 type RouteLoadingContextType = {

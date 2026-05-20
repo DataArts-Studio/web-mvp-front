@@ -2,55 +2,18 @@
 'use client';
 import React from 'react';
 
-
-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-
-
-import { EyeOff, FolderTree, Home, LayoutDashboard, ListChecks, Milestone, Play } from 'lucide-react';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import {
+  EyeOff,
+  FolderTree,
+  Home,
+  LayoutDashboard,
+  ListChecks,
+  Milestone,
+  Play,
+} from 'lucide-react';
 
 const pages = [
   { id: '/', label: '홈', icon: Home, href: '/' },

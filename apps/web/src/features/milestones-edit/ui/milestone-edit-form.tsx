@@ -1,16 +1,30 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { Milestone, addTestCasesToMilestone, addTestSuitesToMilestone, removeTestCaseFromMilestone, removeTestSuiteFromMilestone } from '@/entities/milestone';
+import {
+  Milestone,
+  addTestCasesToMilestone,
+  addTestSuitesToMilestone,
+  removeTestCaseFromMilestone,
+  removeTestSuiteFromMilestone,
+} from '@/entities/milestone';
 import { getTestCases } from '@/entities/test-case/api';
 import { getTestSuites } from '@/entities/test-suite/api';
-import { DSButton, FormField, LoadingSpinner, CaseSelectionPanel, SuiteSelectionPanel, cn } from '@/shared';
+import {
+  CaseSelectionPanel,
+  DSButton,
+  FormField,
+  LoadingSpinner,
+  SuiteSelectionPanel,
+  cn,
+} from '@/shared';
+import { MILESTONE_EVENTS, track } from '@/shared/lib/analytics';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 import { useUpdateMilestone } from '../hooks';
 import { UpdateMilestone, UpdateMilestoneSchema } from '../model';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 
 interface MilestoneEditFormProps {
   milestone: Milestone;
@@ -52,14 +66,14 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
     queryKey: ['testCases', 'forMilestoneEdit', milestone.projectId],
     queryFn: () => getTestCases({ project_id: milestone.projectId }),
   });
-  const allCases = casesResult?.success ? casesResult.data ?? [] : [];
+  const allCases = casesResult?.success ? (casesResult.data ?? []) : [];
 
   // 테스트 스위트 조회
   const { data: suitesResult } = useQuery({
     queryKey: ['testSuites', 'forMilestoneEdit', milestone.projectId],
     queryFn: () => getTestSuites({ projectId: milestone.projectId }),
   });
-  const allSuites = suitesResult?.success ? suitesResult.data ?? [] : [];
+  const allSuites = suitesResult?.success ? (suitesResult.data ?? []) : [];
 
   const {
     register,
@@ -109,7 +123,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
           // 스위트 변경 처리
           const suitesToAdd = Array.from(selectedSuiteIds).filter((id) => !initialSuiteIds.has(id));
-          const suitesToRemove = Array.from(initialSuiteIds).filter((id) => !selectedSuiteIds.has(id));
+          const suitesToRemove = Array.from(initialSuiteIds).filter(
+            (id) => !selectedSuiteIds.has(id)
+          );
 
           // 케이스 추가/삭제
           if (casesToAdd.length > 0) {
@@ -129,7 +145,10 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
           // 쿼리 무효화
           await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ['milestone', milestone.id], refetchType: 'all' }),
+            queryClient.invalidateQueries({
+              queryKey: ['milestone', milestone.id],
+              refetchType: 'all',
+            }),
             queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
             queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
             queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
@@ -160,9 +179,12 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleAbandon}
     >
-      <div className="bg-bg-2 shadow-4 relative max-h-[90vh] w-[700px] overflow-hidden rounded-xl" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="bg-bg-2 shadow-4 relative max-h-[90vh] w-[700px] overflow-hidden rounded-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
+          <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
             <LoadingSpinner size="md" text="마일스톤을 수정하고 있어요" />
           </div>
         )}
@@ -191,8 +213,8 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
                   disabled={isLoading}
                   {...register('title')}
                   className={cn(
-                    'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
-                    errors.title && 'border-system-red focus:border-system-red',
+                    'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                    errors.title && 'border-system-red focus:border-system-red'
                   )}
                 />
                 {errors.title && (
@@ -209,8 +231,8 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
                   disabled={isLoading}
                   {...register('description')}
                   className={cn(
-                    'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
-                    errors.description && 'border-system-red focus:border-system-red',
+                    'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                    errors.description && 'border-system-red focus:border-system-red'
                   )}
                 />
                 {errors.description && (
@@ -225,7 +247,7 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
                     type="datetime-local"
                     disabled={isLoading}
                     {...register('startDate')}
-                    className="h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary"
+                    className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
                   />
                   {errors.startDate && (
                     <span className="text-system-red mt-1 text-sm">{errors.startDate.message}</span>
@@ -238,7 +260,7 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
                     type="datetime-local"
                     disabled={isLoading}
                     {...register('endDate')}
-                    className="h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary"
+                    className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
                   />
                   {errors.endDate && (
                     <span className="text-system-red mt-1 text-sm">{errors.endDate.message}</span>
@@ -252,7 +274,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
                 selectedCaseIds={selectedCaseIds}
                 onToggleCase={toggleCase}
                 isExpanded={expandedSection === 'cases'}
-                onToggleExpand={() => setExpandedSection(expandedSection === 'cases' ? null : 'cases')}
+                onToggleExpand={() =>
+                  setExpandedSection(expandedSection === 'cases' ? null : 'cases')
+                }
               />
 
               {/* 테스트 스위트 선택 */}
@@ -261,7 +285,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
                 selectedSuiteIds={selectedSuiteIds}
                 onToggleSuite={toggleSuite}
                 isExpanded={expandedSection === 'suites'}
-                onToggleExpand={() => setExpandedSection(expandedSection === 'suites' ? null : 'suites')}
+                onToggleExpand={() =>
+                  setExpandedSection(expandedSection === 'suites' ? null : 'suites')
+                }
               />
             </div>
           </div>
@@ -277,12 +303,7 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
             >
               취소
             </DSButton>
-            <DSButton
-              type="submit"
-              variant="solid"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <DSButton type="submit" variant="solid" className="w-full" disabled={isLoading}>
               {isLoading ? '수정 중...' : '수정'}
             </DSButton>
           </div>

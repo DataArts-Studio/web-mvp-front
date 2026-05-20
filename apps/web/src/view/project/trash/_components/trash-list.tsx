@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Search, Trash2 } from 'lucide-react';
-import { EmptyState } from '@testea/ui';
+
 import type { TrashItem } from '@/features/trash';
+import { EmptyState } from '@testea/ui';
+import { Search, Trash2 } from 'lucide-react';
+
 import { TrashItemRow } from './trash-item-row';
 
 interface TrashListProps {
@@ -27,17 +29,17 @@ export function TrashList({
     return (
       <section className="rounded-4 border-line-2 bg-bg-2 shadow-1 overflow-hidden border">
         {/* Table header */}
-        <div className="border-line-2 grid grid-cols-12 gap-4 border-b bg-bg-3/50 px-6 py-3">
-          <span className="typo-label-heading text-text-3 col-span-5 uppercase tracking-wider">
+        <div className="border-line-2 bg-bg-3/50 grid grid-cols-12 gap-4 border-b px-6 py-3">
+          <span className="typo-label-heading text-text-3 col-span-5 tracking-wider uppercase">
             항목
           </span>
-          <span className="typo-label-heading text-text-3 col-span-2 text-center uppercase tracking-wider">
+          <span className="typo-label-heading text-text-3 col-span-2 text-center tracking-wider uppercase">
             삭제일
           </span>
-          <span className="typo-label-heading text-text-3 col-span-2 text-center uppercase tracking-wider">
+          <span className="typo-label-heading text-text-3 col-span-2 text-center tracking-wider uppercase">
             남은 기간
           </span>
-          <span className="typo-label-heading text-text-3 col-span-3 text-right uppercase tracking-wider">
+          <span className="typo-label-heading text-text-3 col-span-3 text-right tracking-wider uppercase">
             작업
           </span>
         </div>
@@ -49,14 +51,8 @@ export function TrashList({
             item={item}
             onRestore={() => onRestore(item)}
             onDelete={() => onDelete(item)}
-            isRestoring={
-              pendingAction?.id === item.id &&
-              pendingAction?.action === 'restore'
-            }
-            isDeleting={
-              pendingAction?.id === item.id &&
-              pendingAction?.action === 'delete'
-            }
+            isRestoring={pendingAction?.id === item.id && pendingAction?.action === 'restore'}
+            isDeleting={pendingAction?.id === item.id && pendingAction?.action === 'delete'}
           />
         ))}
       </section>

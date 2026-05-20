@@ -1,36 +1,6 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
-
-
 import { BasePage } from '../base.page';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 export class ProjectDashboardPage extends BasePage {
   readonly heading: Locator;
@@ -73,9 +43,7 @@ export class ProjectDashboardPage extends BasePage {
     else await this.searchModalButton.press('Control+k');
   }
 
-  async enterSearchTextAndSubmit(text: string): Promise<void> {
-
-  }
+  async enterSearchTextAndSubmit(text: string): Promise<void> {}
 
   async clickSearchActionList(text: string): Promise<void> {}
 
@@ -93,7 +61,9 @@ export class ProjectDashboardPage extends BasePage {
 
   // --- 단언 ---------------------------------------------------------------
   async expectLoaded(slug: string): Promise<void> {
-    await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}$`), { timeout: 30_000 });
+    await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}$`), {
+      timeout: 30_000,
+    });
     await expect(this.heading).toBeVisible();
   }
 
@@ -109,9 +79,7 @@ export class ProjectDashboardPage extends BasePage {
     await expect(this.sidebar).toBeVisible();
   }
 
-  async expectProjectName(slug: string): Promise<void> {
-
-  }
+  async expectProjectName(slug: string): Promise<void> {}
 
   async expectProjectUrlCopy(): Promise<void> {}
 

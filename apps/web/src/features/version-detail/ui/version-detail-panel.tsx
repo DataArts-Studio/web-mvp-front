@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useVersionDetail } from '../hooks/use-version-detail';
-import { RollbackConfirmDialog } from '@/features/version-rollback/ui/rollback-confirm-dialog';
-import { LoadingSpinner, DSButton } from '@testea/ui';
-import { formatDateTime } from '@testea/util';
-import { RotateCcw, GitCompare, Tag } from 'lucide-react';
+
 import type { ChangeType } from '@/entities/test-case-version';
+import { RollbackConfirmDialog } from '@/features/version-rollback/ui/rollback-confirm-dialog';
+import { DSButton, LoadingSpinner } from '@testea/ui';
+import { formatDateTime } from '@testea/util';
+import { GitCompare, RotateCcw, Tag } from 'lucide-react';
+
+import { useVersionDetail } from '../hooks/use-version-detail';
 
 const changeTypeBadge: Record<ChangeType, { label: string; color: string }> = {
   create: { label: '생성', color: 'bg-green-100 text-green-700' },
@@ -54,12 +56,8 @@ export const VersionDetailPanel = ({
             <span className="bg-primary/10 text-primary rounded-2 px-3 py-1 text-sm font-semibold">
               v{version.versionNumber}
             </span>
-            <span className={`rounded-2 px-2 py-0.5 text-xs ${badge.color}`}>
-              {badge.label}
-            </span>
-            <span className="text-text-3 text-sm">
-              {formatDateTime(version.createdAt)}
-            </span>
+            <span className={`rounded-2 px-2 py-0.5 text-xs ${badge.color}`}>{badge.label}</span>
+            <span className="text-text-3 text-sm">{formatDateTime(version.createdAt)}</span>
           </div>
 
           <div className="flex gap-2">
@@ -71,26 +69,21 @@ export const VersionDetailPanel = ({
               <GitCompare className="mr-1 h-4 w-4" />
               현재 버전과 비교
             </DSButton>
-            <DSButton
-              size="small"
-              variant="ghost"
-              onClick={() => setShowRollback(true)}
-            >
-              <RotateCcw className="mr-1 h-4 w-4" />
-              이 버전으로 복원
+            <DSButton size="small" variant="ghost" onClick={() => setShowRollback(true)}>
+              <RotateCcw className="mr-1 h-4 w-4" />이 버전으로 복원
             </DSButton>
           </div>
         </div>
 
         {/* 변경 요약 */}
-        {version.changeSummary && (
-          <p className="text-text-2 text-sm">{version.changeSummary}</p>
-        )}
+        {version.changeSummary && <p className="text-text-2 text-sm">{version.changeSummary}</p>}
 
         {/* 이름 */}
         <section className="flex flex-col gap-2">
           <h3 className="typo-h2-heading">이름</h3>
-          <div className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('name') ? 'ring-2 ring-yellow-300/50' : ''}`}>
+          <div
+            className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('name') ? 'ring-2 ring-yellow-300/50' : ''}`}
+          >
             <p className="text-text-2">{version.name}</p>
           </div>
         </section>
@@ -98,7 +91,9 @@ export const VersionDetailPanel = ({
         {/* 테스트 유형 */}
         <section className="flex flex-col gap-2">
           <h3 className="typo-h2-heading">테스트 유형</h3>
-          <div className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('test_type') ? 'ring-2 ring-yellow-300/50' : ''}`}>
+          <div
+            className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('test_type') ? 'ring-2 ring-yellow-300/50' : ''}`}
+          >
             <p className="text-text-2">{version.testType || '-'}</p>
           </div>
         </section>
@@ -109,10 +104,14 @@ export const VersionDetailPanel = ({
             <Tag className="h-4 w-4" />
             태그
           </h3>
-          <div className={`flex flex-wrap gap-2 ${version.changedFields.includes('tags') ? 'ring-2 ring-yellow-300/50 rounded-4 p-2' : ''}`}>
+          <div
+            className={`flex flex-wrap gap-2 ${version.changedFields.includes('tags') ? 'rounded-4 p-2 ring-2 ring-yellow-300/50' : ''}`}
+          >
             {version.tags.length > 0 ? (
               version.tags.map((tag, i) => (
-                <span key={i} className="bg-bg-3 rounded-2 px-2 py-1 text-sm">{tag}</span>
+                <span key={i} className="bg-bg-3 rounded-2 px-2 py-1 text-sm">
+                  {tag}
+                </span>
               ))
             ) : (
               <span className="text-text-3 text-sm">태그 없음</span>
@@ -123,24 +122,36 @@ export const VersionDetailPanel = ({
         {/* 전제 조건 */}
         <section className="flex flex-col gap-2">
           <h3 className="typo-h2-heading">전제 조건</h3>
-          <div className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('pre_condition') ? 'ring-2 ring-yellow-300/50' : ''}`}>
-            <p className="text-text-2 whitespace-pre-wrap">{version.preCondition || '전제 조건이 없습니다.'}</p>
+          <div
+            className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('pre_condition') ? 'ring-2 ring-yellow-300/50' : ''}`}
+          >
+            <p className="text-text-2 whitespace-pre-wrap">
+              {version.preCondition || '전제 조건이 없습니다.'}
+            </p>
           </div>
         </section>
 
         {/* 테스트 단계 */}
         <section className="flex flex-col gap-2">
           <h3 className="typo-h2-heading">테스트 단계</h3>
-          <div className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('steps') ? 'ring-2 ring-yellow-300/50' : ''}`}>
-            <p className="text-text-2 whitespace-pre-wrap">{version.steps || '테스트 단계가 없습니다.'}</p>
+          <div
+            className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('steps') ? 'ring-2 ring-yellow-300/50' : ''}`}
+          >
+            <p className="text-text-2 whitespace-pre-wrap">
+              {version.steps || '테스트 단계가 없습니다.'}
+            </p>
           </div>
         </section>
 
         {/* 예상 결과 */}
         <section className="flex flex-col gap-2">
           <h3 className="typo-h2-heading">예상 결과</h3>
-          <div className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('expected_result') ? 'ring-2 ring-yellow-300/50' : ''}`}>
-            <p className="text-text-2 whitespace-pre-wrap">{version.expectedResult || '예상 결과가 없습니다.'}</p>
+          <div
+            className={`bg-bg-2 border-line-2 rounded-4 border p-4 ${version.changedFields.includes('expected_result') ? 'ring-2 ring-yellow-300/50' : ''}`}
+          >
+            <p className="text-text-2 whitespace-pre-wrap">
+              {version.expectedResult || '예상 결과가 없습니다.'}
+            </p>
           </div>
         </section>
       </div>

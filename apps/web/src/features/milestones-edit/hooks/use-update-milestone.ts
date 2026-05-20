@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateMilestone } from '@/entities/milestone';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { UpdateMilestone } from '../model';
 
 export const useUpdateMilestone = () => {

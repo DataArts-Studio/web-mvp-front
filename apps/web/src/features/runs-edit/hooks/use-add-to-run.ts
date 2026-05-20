@@ -1,9 +1,10 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { addSuitesToRunAction } from '../model/add-suites-to-run';
-import { addMilestonesToRunAction } from '../model/add-milestones-to-run';
+
 import { addCasesToRunAction } from '../model/add-cases-to-run';
+import { addMilestonesToRunAction } from '../model/add-milestones-to-run';
+import { addSuitesToRunAction } from '../model/add-suites-to-run';
 
 export const useAddSuitesToRun = (runId: string) => {
   const queryClient = useQueryClient();
@@ -25,8 +26,7 @@ export const useAddMilestonesToRun = (runId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (milestoneIds: string[]) =>
-      addMilestonesToRunAction(runId, milestoneIds),
+    mutationFn: (milestoneIds: string[]) => addMilestonesToRunAction(runId, milestoneIds),
     onSuccess: async (result) => {
       if (result.success) {
         await queryClient.invalidateQueries({

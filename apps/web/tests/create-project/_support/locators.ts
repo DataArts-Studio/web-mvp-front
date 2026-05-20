@@ -10,7 +10,9 @@ export function loc(page: Page) {
 
   return {
     landing: {
-      openModalButton: page.getByRole('button', { name: '무료로 프로젝트 생성 시작하기' }),
+      openModalButton: page.getByRole('button', {
+        name: '무료로 프로젝트 생성 시작하기',
+      }),
     },
     modal,
     step1: {
@@ -31,13 +33,17 @@ export function loc(page: Page) {
       errorMessage: modal.locator('p[data-invalid="true"]'),
     },
     step3: {
-      heading: modal.getByRole('heading', { name: '프로젝트를 생성하시겠습니까?' }),
+      heading: modal.getByRole('heading', {
+        name: '프로젝트를 생성하시겠습니까?',
+      }),
       submitButton: modal.getByRole('button', { name: '생성하기' }),
       cancelButton: modal.getByRole('button', { name: '취소' }),
     },
     success: {
       heading: modal.getByRole('heading', { name: '프로젝트 생성 완료!' }),
-      copyLinkButton: modal.getByRole('button', { name: /(링크 복사|복사 완료)/ }),
+      copyLinkButton: modal.getByRole('button', {
+        name: /(링크 복사|복사 완료)/,
+      }),
       copiedConfirm: modal.getByRole('button', { name: '복사 완료' }),
       startButton: modal.getByRole('button', { name: '시작하기' }),
     },

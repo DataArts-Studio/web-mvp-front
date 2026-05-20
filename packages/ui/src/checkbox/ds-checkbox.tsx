@@ -1,12 +1,15 @@
 'use client';
 import * as React from 'react';
+
+import { cn } from '@testea/util';
 import { Check } from 'lucide-react';
 
 import { Checkbox, type CheckedState } from '../primitives/checkbox';
-import { cn } from '@testea/util';
 
-export interface DsCheckboxProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onChange' | 'type'> {
+export interface DsCheckboxProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'onChange' | 'type'
+> {
   checked?: boolean;
   defaultChecked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
@@ -34,7 +37,7 @@ export const DsCheckbox = (props: DsCheckboxProps) => {
       disabled={disabled}
       className={cn(
         'inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-white',
-        'focus:ring-primary focus:outline-none focus:ring-2 focus:ring-offset-2',
+        'focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:outline-none',
         'data-[state=checked]:border-primary data-[state=checked]:bg-primary',
         'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
         className

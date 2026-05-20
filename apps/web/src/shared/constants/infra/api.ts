@@ -1,3 +1,1 @@
-export const API = {
-
-} as const;
+export const API = {} as const;

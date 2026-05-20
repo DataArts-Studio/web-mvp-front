@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from 'react';
+
 import { Upload } from 'lucide-react';
+
 import { ATTACHMENT_LIMITS } from '../model/constants';
 
 interface AttachmentUploadZoneProps {
@@ -37,7 +39,7 @@ export const AttachmentUploadZone = ({
         onUpload(formData);
       }
     },
-    [testCaseId, projectId, onUpload, currentCount],
+    [testCaseId, projectId, onUpload, currentCount]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -59,7 +61,7 @@ export const AttachmentUploadZone = ({
       setIsDragOver(false);
       handleFiles(e.dataTransfer.files);
     },
-    [handleFiles],
+    [handleFiles]
   );
 
   const handleClick = () => {
@@ -84,17 +86,13 @@ export const AttachmentUploadZone = ({
       onDragOver={!isFull ? handleDragOver : undefined}
       onDragLeave={handleDragLeave}
       onDrop={!isFull ? handleDrop : undefined}
-      className={`
-        flex flex-col items-center justify-center gap-2 rounded-4 border-2 border-dashed px-6 py-8
-        transition-colors
-        ${isFull
-          ? 'cursor-not-allowed border-line-2 opacity-50'
+      className={`rounded-4 flex flex-col items-center justify-center gap-2 border-2 border-dashed px-6 py-8 transition-colors ${
+        isFull
+          ? 'border-line-2 cursor-not-allowed opacity-50'
           : isDragOver
             ? 'border-primary bg-primary/5 cursor-copy'
             : 'border-line-2 hover:border-text-3 cursor-pointer'
-        }
-        ${isUploading ? 'pointer-events-none opacity-60' : ''}
-      `}
+      } ${isUploading ? 'pointer-events-none opacity-60' : ''} `}
     >
       <input
         ref={inputRef}
@@ -113,7 +111,7 @@ export const AttachmentUploadZone = ({
         </>
       ) : (
         <>
-          <Upload className="h-6 w-6 text-text-3" strokeWidth={1.5} />
+          <Upload className="text-text-3 h-6 w-6" strokeWidth={1.5} />
           <div className="text-center">
             <p className="typo-body-normal text-text-2">
               {isFull

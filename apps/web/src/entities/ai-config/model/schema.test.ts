@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { SaveAiConfigSchema, GenerateCasesSchema, GeneratedTestCaseSchema, SaveGeneratedCasesSchema, API_KEY_RULES } from './schema';
+
+import {
+  API_KEY_RULES,
+  GenerateCasesSchema,
+  GeneratedTestCaseSchema,
+  SaveAiConfigSchema,
+  SaveGeneratedCasesSchema,
+} from './schema';
 
 // ============================================================================
 // API_KEY_RULES 상수 검증

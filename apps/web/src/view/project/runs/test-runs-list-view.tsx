@@ -1,26 +1,28 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
-import { MainContainer } from '@testea/ui';
-import { Plus } from 'lucide-react';
-import { DSButton } from '@testea/ui';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useMemo, useState } from 'react';
+
 import { useParams, useRouter } from 'next/navigation';
+
 import { projectIdQueryOptions } from '@/entities/project';
 import { dashboardQueryOptions } from '@/features/dashboard';
-import { testRunsQueryOptions, deleteTestRun } from '@/features/runs';
-import { track, TESTRUN_EVENTS } from '@/shared/lib/analytics';
+import { deleteTestRun, testRunsQueryOptions } from '@/features/runs';
+import { TESTRUN_EVENTS, track } from '@/shared/lib/analytics';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { MainContainer } from '@testea/ui';
+import { DSButton } from '@testea/ui';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { DeleteRunDialog } from './_components/delete-run-dialog';
 import {
   type ITestRun,
-  type RunStatusFilter,
-  type RunSortOption,
   PAGE_SIZE,
+  type RunSortOption,
+  type RunStatusFilter,
 } from './_components/runs-list-constants';
 import { RunsListLoadingSkeleton } from './_components/runs-list-loading-skeleton';
-import { RunsListToolbar } from './_components/runs-list-toolbar';
 import { RunsListTable } from './_components/runs-list-table';
-import { DeleteRunDialog } from './_components/delete-run-dialog';
+import { RunsListToolbar } from './_components/runs-list-toolbar';
 
 export const TestRunsListView = () => {
   const params = useParams();
@@ -46,18 +48,21 @@ export const TestRunsListView = () => {
   const { data: projectIdData } = useQuery(projectIdQueryOptions(projectSlug));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
-  const { isLoading: isLoadingProject } = useQuery(
-    dashboardQueryOptions.stats(projectSlug)
-  );
+  const { isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(projectSlug));
 
-  const { data: fetchedRunsData, isLoading: isLoadingRuns, refetch: refetchRuns } = useQuery({
+  const {
+    data: fetchedRunsData,
+    isLoading: isLoadingRuns,
+    refetch: refetchRuns,
+  } = useQuery({
     ...testRunsQueryOptions(projectId!),
     enabled: !!projectId,
   });
 
   const testRuns: ITestRun[] = (fetchedRunsData?.success ? fetchedRunsData.data : []) as ITestRun[];
   const { data: dashboardData } = useQuery(dashboardQueryOptions.stats(projectSlug));
-  const hasError = (dashboardData && !dashboardData.success) || (fetchedRunsData && !fetchedRunsData.success);
+  const hasError =
+    (dashboardData && !dashboardData.success) || (fetchedRunsData && !fetchedRunsData.success);
 
   const deleteMutation = useMutation({
     mutationFn: (testRunId: string) => deleteTestRun(testRunId),
@@ -107,13 +112,36 @@ export const TestRunsListView = () => {
   }, [sortedRuns, currentPage]);
 
   // Handlers
-  const handleSearchChange = (value: string) => { setSearchTerm(value); setCurrentPage(1); };
-  const handleStatusFilterChange = (value: RunStatusFilter) => { setStatusFilter(value); setIsStatusDropdownOpen(false); setCurrentPage(1); };
-  const handleSortOptionChange = (value: RunSortOption) => { setSortOption(value); setIsSortDropdownOpen(false); };
-  const handleStatusDropdownToggle = () => { setIsStatusDropdownOpen(prev => !prev); setIsSortDropdownOpen(false); };
-  const handleSortDropdownToggle = () => { setIsSortDropdownOpen(prev => !prev); setIsStatusDropdownOpen(false); };
-  const handleResetFilters = () => { setSearchTerm(''); setStatusFilter('ALL'); setCurrentPage(1); };
-  const handleCreateRun = () => { track(TESTRUN_EVENTS.CREATE_START, { project_id: projectId }); router.push(`/projects/${projectSlug}/runs/create`); };
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+  const handleStatusFilterChange = (value: RunStatusFilter) => {
+    setStatusFilter(value);
+    setIsStatusDropdownOpen(false);
+    setCurrentPage(1);
+  };
+  const handleSortOptionChange = (value: RunSortOption) => {
+    setSortOption(value);
+    setIsSortDropdownOpen(false);
+  };
+  const handleStatusDropdownToggle = () => {
+    setIsStatusDropdownOpen((prev) => !prev);
+    setIsSortDropdownOpen(false);
+  };
+  const handleSortDropdownToggle = () => {
+    setIsSortDropdownOpen((prev) => !prev);
+    setIsStatusDropdownOpen(false);
+  };
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('ALL');
+    setCurrentPage(1);
+  };
+  const handleCreateRun = () => {
+    track(TESTRUN_EVENTS.CREATE_START, { project_id: projectId });
+    router.push(`/projects/${projectSlug}/runs/create`);
+  };
   const handleRunClick = (runId: string) => router.push(`/projects/${projectSlug}/runs/${runId}`);
 
   // 로딩 상태
@@ -123,8 +151,8 @@ export const TestRunsListView = () => {
 
   return (
     <>
-      <MainContainer className="grid h-screen w-full flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden py-8 max-w-[1200px] mx-auto px-10">
-        <header className="col-span-6 flex items-start justify-between border-b border-line-2 pb-6">
+      <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden px-10 py-8">
+        <header className="border-line-2 col-span-6 flex items-start justify-between border-b pb-6">
           <div className="flex flex-col gap-1">
             <h2 className="typo-h1-heading text-text-1">테스트 실행 목록</h2>
             <p className="typo-body2-normal text-text-2">

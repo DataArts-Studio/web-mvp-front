@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'sonner';
-import { Loader2, Lock } from 'lucide-react';
 
 import { ChangeIdentifierFormSchema } from '@/entities/project';
 import type { ChangeIdentifierForm } from '@/entities/project';
 import { useChangeIdentifier } from '@/features/project-settings';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { DSButton, DsFormField, DsInput, SettingsCard } from '@testea/ui';
+import { Loader2, Lock } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ─── Section: Security ───────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ export const SecuritySection = ({ projectId }: { projectId: string }) => {
             }
           }
         },
-      },
+      }
     );
   });
 
@@ -99,7 +99,9 @@ export const SecuritySection = ({ projectId }: { projectId: string }) => {
         <form onSubmit={onSubmit} className="flex flex-col p-6 pt-5">
           <div className="rounded-4 bg-bg-1 flex flex-col gap-5 p-5">
             <DsFormField.Root error={errors.currentPassword}>
-              <DsFormField.Label className="typo-label-heading text-text-2">현재 비밀번호</DsFormField.Label>
+              <DsFormField.Label className="typo-label-heading text-text-2">
+                현재 비밀번호
+              </DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
                   {...register('currentPassword')}
@@ -115,7 +117,9 @@ export const SecuritySection = ({ projectId }: { projectId: string }) => {
             <div className="border-line-2 border-t" />
 
             <DsFormField.Root error={errors.newPassword}>
-              <DsFormField.Label className="typo-label-heading text-text-2">새 비밀번호</DsFormField.Label>
+              <DsFormField.Label className="typo-label-heading text-text-2">
+                새 비밀번호
+              </DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
                   {...register('newPassword')}
@@ -128,7 +132,9 @@ export const SecuritySection = ({ projectId }: { projectId: string }) => {
             </DsFormField.Root>
 
             <DsFormField.Root error={errors.confirmPassword}>
-              <DsFormField.Label className="typo-label-heading text-text-2">새 비밀번호 확인</DsFormField.Label>
+              <DsFormField.Label className="typo-label-heading text-text-2">
+                새 비밀번호 확인
+              </DsFormField.Label>
               <DsFormField.Control>
                 <DsInput
                   {...register('confirmPassword')}

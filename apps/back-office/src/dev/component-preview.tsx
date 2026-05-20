@@ -53,19 +53,19 @@ export default function BackOfficeComponentPreview() {
   };
 
   return (
-    <main className="min-h-screen bg-bg-1 px-6 py-8 text-text-1">
+    <main className="bg-bg-1 text-text-1 min-h-screen px-6 py-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
-        <header className="flex flex-col gap-4 border-b border-line-2 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <header className="border-line-2 flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-3">
             <Logo width={128} height={31} />
             <div>
-              <h1 className="text-2xl font-bold tracking-zero">Back-office Component Preview</h1>
-              <p className="mt-2 text-sm text-text-2">
+              <h1 className="tracking-zero text-2xl font-bold">Back-office Component Preview</h1>
+              <p className="text-text-2 mt-2 text-sm">
                 Temporary screen for visually checking components used by back-office.
               </p>
             </div>
           </div>
-          <div className="rounded-4 border border-line-2 bg-bg-2 px-4 py-3 text-sm text-text-2">
+          <div className="rounded-4 border-line-2 bg-bg-2 text-text-2 border px-4 py-3 text-sm">
             /dev/components
           </div>
         </header>
@@ -157,7 +157,7 @@ export default function BackOfficeComponentPreview() {
           <Section title="Inputs">
             <div className="flex flex-col gap-5">
               <DsFormField.Root>
-                <DsFormField.Label className="text-sm font-semibold tracking-zero text-text-1">
+                <DsFormField.Label className="tracking-zero text-text-1 text-sm font-semibold">
                   Project name
                 </DsFormField.Label>
                 <DsFormField.Control asChild>
@@ -166,7 +166,7 @@ export default function BackOfficeComponentPreview() {
               </DsFormField.Root>
 
               <DsFormField.Root error={{ message: 'Required field sample' }}>
-                <DsFormField.Label className="text-sm font-semibold tracking-zero text-text-1">
+                <DsFormField.Label className="tracking-zero text-text-1 text-sm font-semibold">
                   Error state
                 </DsFormField.Label>
                 <DsFormField.Control asChild>
@@ -181,7 +181,7 @@ export default function BackOfficeComponentPreview() {
 
           <Section title="Selection Controls">
             <div className="flex flex-col gap-5">
-              <label className="flex items-center gap-3 text-sm text-text-2">
+              <label className="text-text-2 flex items-center gap-3 text-sm">
                 <DsCheckbox checked={checked} onCheckedChange={setChecked} />
                 Checkbox checked: {String(checked)}
               </label>
@@ -240,7 +240,7 @@ export default function BackOfficeComponentPreview() {
                 description="Empty state with an optional action."
                 action={<DSButton size="small">Create project</DSButton>}
               />
-              <div className="flex items-center gap-8 rounded-4 border border-line-2 bg-bg-2 p-6">
+              <div className="rounded-4 border-line-2 bg-bg-2 flex items-center gap-8 border p-6">
                 <LoadingSpinner size="sm" text="Loading" />
                 <div className="flex flex-1 flex-col gap-3">
                   <div className="flex items-center gap-3">
@@ -255,7 +255,7 @@ export default function BackOfficeComponentPreview() {
         </section>
 
         <Section title="Skipped Because Current Source Has Syntax Errors">
-          <div className="grid gap-3 text-sm text-text-2 sm:grid-cols-2">
+          <div className="text-text-2 grid gap-3 text-sm sm:grid-cols-2">
             <Skipped
               name="SuiteSelectionPanel"
               path="packages/ui/src/suite-selection-panel/suite-selection-panel.tsx"
@@ -278,10 +278,10 @@ export default function BackOfficeComponentPreview() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-4 border border-line-2 bg-bg-2 p-5">
+    <section className="rounded-4 border-line-2 bg-bg-2 border p-5">
       <div className="mb-4 flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
-        <h2 className="text-lg font-semibold tracking-zero">{title}</h2>
+        <span className="bg-primary h-2 w-2 rounded-full" aria-hidden="true" />
+        <h2 className="tracking-zero text-lg font-semibold">{title}</h2>
       </div>
       {children}
     </section>
@@ -290,9 +290,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Skipped({ name, path }: { name: string; path: string }) {
   return (
-    <div className="rounded-4 border border-line-2 bg-bg-3 p-4">
-      <div className="font-medium text-text-1">{name}</div>
-      <div className="mt-1 break-all font-mono text-xs">{path}</div>
+    <div className="rounded-4 border-line-2 bg-bg-3 border p-4">
+      <div className="text-text-1 font-medium">{name}</div>
+      <div className="mt-1 font-mono text-xs break-all">{path}</div>
     </div>
   );
 }

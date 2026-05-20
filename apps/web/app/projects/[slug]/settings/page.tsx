@@ -1,5 +1,7 @@
 import React from 'react';
+
 import type { Metadata } from 'next';
+
 import { SettingsView } from '@/view/project';
 
 export const metadata: Metadata = {

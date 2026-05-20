@@ -22,7 +22,7 @@ export const getBarStyle = (
   startDate: string | null,
   endDate: string | null,
   visibleTimelineStart: Date,
-  visibleTotalMs: number,
+  visibleTotalMs: number
 ): { left: string; width: string } | null => {
   if (!startDate || !endDate) return null;
   const start = new Date(startDate);
@@ -43,7 +43,7 @@ export type TimelineData = {
 };
 
 export const computeTimeline = (
-  milestones: { startDate: string | null; endDate: string | null }[],
+  milestones: { startDate: string | null; endDate: string | null }[]
 ): TimelineData => {
   const now = new Date();
   let minDate = now;
@@ -67,10 +67,7 @@ export const computeTimeline = (
 
   const minWeeks = 6;
   const currentWeeks = Math.ceil(diffMs(end, start) / WEEK_MS);
-  const finalEnd =
-    currentWeeks < minWeeks
-      ? new Date(start.getTime() + minWeeks * WEEK_MS)
-      : end;
+  const finalEnd = currentWeeks < minWeeks ? new Date(start.getTime() + minWeeks * WEEK_MS) : end;
 
   const totalMs = diffMs(finalEnd, start);
   const weekCount = Math.ceil(totalMs / WEEK_MS);

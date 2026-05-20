@@ -1,4 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
+
 import { getAiConfig } from './server-actions';
 
 export const aiConfigQueryKeys = {

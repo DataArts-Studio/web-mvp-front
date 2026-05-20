@@ -1,20 +1,17 @@
 'use client';
 
 import React from 'react';
-import { type UseMutationResult } from '@tanstack/react-query';
-import { Link2, Unlink, Loader2, ExternalLink } from 'lucide-react';
 
+import { type UseMutationResult } from '@tanstack/react-query';
 import { DSButton } from '@testea/ui';
+import { ExternalLink, Link2, Loader2, Unlink } from 'lucide-react';
 
 type ConnectedRepoInfoProps = {
   repoFullName: string;
   disconnectMutation: UseMutationResult<any, Error, void, unknown>;
 };
 
-export const ConnectedRepoInfo = ({
-  repoFullName,
-  disconnectMutation,
-}: ConnectedRepoInfoProps) => {
+export const ConnectedRepoInfo = ({ repoFullName, disconnectMutation }: ConnectedRepoInfoProps) => {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -29,7 +26,7 @@ export const ConnectedRepoInfo = ({
           href={`https://github.com/${repoFullName}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-text-4 hover:text-text-2 transition-colors ml-1"
+          className="text-text-4 hover:text-text-2 ml-1 transition-colors"
         >
           <ExternalLink className="h-3.5 w-3.5" />
         </a>

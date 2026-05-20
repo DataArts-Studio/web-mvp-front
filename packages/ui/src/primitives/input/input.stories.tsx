@@ -1,13 +1,11 @@
 import React from 'react';
 
-import { Input, type InputProps } from './index';
 import type { Meta, StoryObj } from '@storybook/react';
 
+import { Input, type InputProps } from './index';
+
 // children은 input에 없고, ref, onFocus, onBlur는 내부에서 처리
-type InputOmittedProps = Omit<
-  InputProps,
-  'ref' | 'onFocus' | 'onBlur' | 'children' | 'className'
->;
+type InputOmittedProps = Omit<InputProps, 'ref' | 'onFocus' | 'onBlur' | 'children' | 'className'>;
 
 // ------------------------------------------------------------------
 // Meta 정의

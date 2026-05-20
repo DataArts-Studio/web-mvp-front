@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createTestRunAction } from './server-action';
+
 vi.mock('server-only', () => ({}));
 
 // Sentry mock
@@ -94,8 +96,6 @@ vi.mock('drizzle-orm', () => ({
   inArray: vi.fn((a, b) => ({ field: a, values: b })),
   and: vi.fn((...conditions) => ({ and: conditions })),
 }));
-
-import { createTestRunAction } from './server-action';
 
 type FlatErrors = {
   formErrors: string[];

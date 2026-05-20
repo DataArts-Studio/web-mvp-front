@@ -1,4 +1,5 @@
 import { integer, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+
 import { projects } from './projects';
 
 export const aiUsageLogs = pgTable('ai_usage_logs', {

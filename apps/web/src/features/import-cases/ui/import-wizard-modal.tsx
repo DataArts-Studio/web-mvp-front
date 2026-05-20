@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
-import { X } from 'lucide-react';
+
 import { cn } from '@testea/util';
+import { X } from 'lucide-react';
+
 import { useImportWizard } from '../model/use-import-wizard';
-import { StepFileUpload } from './step-file-upload';
 import { StepColumnMapping } from './step-column-mapping';
+import { StepFileUpload } from './step-file-upload';
 import { StepPreviewImport } from './step-preview-import';
 
 const STEPS = [
@@ -59,7 +61,9 @@ export function ImportWizardModal({ projectId, onClose }: ImportWizardModalProps
       <div className="bg-bg-1 relative z-10 flex h-full w-full flex-col shadow-2xl md:h-[90vh] md:max-w-[960px] md:rounded-lg">
         {/* Header */}
         <header className="border-line-2 flex items-center justify-between border-b px-4 py-3 md:px-6 md:py-4">
-          <h2 className="typo-body1-heading md:typo-h2-heading text-text-1">테스트케이스 가져오기</h2>
+          <h2 className="typo-body1-heading md:typo-h2-heading text-text-1">
+            테스트케이스 가져오기
+          </h2>
           <button
             type="button"
             onClick={handleClose}
@@ -84,7 +88,7 @@ export function ImportWizardModal({ projectId, onClose }: ImportWizardModalProps
                   'typo-caption1 md:typo-body2-normal flex-1 py-2.5 text-center transition-colors md:py-3',
                   isActive && 'text-primary border-primary border-b-2 font-medium',
                   isCompleted && 'text-text-2',
-                  !isActive && !isCompleted && 'text-text-3',
+                  !isActive && !isCompleted && 'text-text-3'
                 )}
               >
                 {s.label}

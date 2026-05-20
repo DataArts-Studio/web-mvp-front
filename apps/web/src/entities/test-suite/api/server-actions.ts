@@ -1,23 +1,23 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import type { CreateTestSuite, TestSuite, TestSuiteCard, RunStatus } from '@/entities/test-suite';
+import { requireProjectAccess } from '@/access/lib/require-access';
+import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
 import {
   getDatabase,
-  testSuites,
-  testCases,
   milestoneTestSuites,
   milestones,
+  testCaseRuns,
+  testCases,
   testRunSuites,
   testRuns,
-  testCaseRuns,
+  testSuites,
 } from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import { and, eq, count, desc, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 
 type GetTestSuitesParams = {
   projectId: string;
@@ -95,12 +95,7 @@ export const getTestSuites = async ({
     let query = db
       .select()
       .from(testSuites)
-      .where(
-        and(
-          eq(testSuites.project_id, projectId),
-          eq(testSuites.lifecycle_status, 'ACTIVE')
-        )
-      )
+      .where(and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'ACTIVE')))
       .$dynamic();
 
     if (Number.isFinite(limits.limit)) {
@@ -181,7 +176,9 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
 /**
  * 단일 스위트 + 통계 조회 (getTestSuitesWithStats와 동일한 안전한 방식)
  */
-export const getTestSuiteByIdWithStats = async (id: string): Promise<ActionResult<TestSuiteCard>> => {
+export const getTestSuiteByIdWithStats = async (
+  id: string
+): Promise<ActionResult<TestSuiteCard>> => {
   try {
     const db = getDatabase();
 
@@ -190,7 +187,10 @@ export const getTestSuiteByIdWithStats = async (id: string): Promise<ActionResul
       return { success: false, errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] } };
     }
 
-    const result = await getTestSuitesWithStats({ projectId: row.project_id ?? '', limits: { offset: 0, limit: 999 } });
+    const result = await getTestSuitesWithStats({
+      projectId: row.project_id ?? '',
+      limits: { offset: 0, limit: 999 },
+    });
     const card = result.success ? result.data.find((s) => s.id === id) : undefined;
 
     if (!card) {
@@ -233,13 +233,19 @@ type UpdateTestSuiteParams = {
   sortOrder?: number;
 };
 
-export const updateTestSuite = async (params: UpdateTestSuiteParams): Promise<ActionResult<TestSuite>> => {
+export const updateTestSuite = async (
+  params: UpdateTestSuiteParams
+): Promise<ActionResult<TestSuite>> => {
   try {
     const db = getDatabase();
     const { id, ...updateFields } = params;
 
     // 접근 권한 확인
-    const [existing] = await db.select({ projectId: testSuites.project_id }).from(testSuites).where(eq(testSuites.id, id)).limit(1);
+    const [existing] = await db
+      .select({ projectId: testSuites.project_id })
+      .from(testSuites)
+      .where(eq(testSuites.id, id))
+      .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
       return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
     }
@@ -341,44 +347,60 @@ export const getTestSuitesWithStats = async ({
           .where(inArray(milestoneTestSuites.test_suite_id, suiteIds));
       } catch (e) {
         console.warn('milestoneTestSuites 조회 실패:', e);
-        Sentry.captureMessage('milestoneTestSuites 조회 실패', { level: 'warning', extra: { error: e } });
+        Sentry.captureMessage('milestoneTestSuites 조회 실패', {
+          level: 'warning',
+          extra: { error: e },
+        });
         return [];
       }
     };
 
     const [caseCountRows, testTypeRows, msRows, runCountRows, recentRunRows] = await Promise.all([
       // Q2: 케이스 수 집계
-      db.select({ suiteId: testCases.test_suite_id, cnt: count() })
+      db
+        .select({ suiteId: testCases.test_suite_id, cnt: count() })
         .from(testCases)
-        .where(and(eq(testCases.lifecycle_status, 'ACTIVE'), inArray(testCases.test_suite_id, suiteIds)))
+        .where(
+          and(eq(testCases.lifecycle_status, 'ACTIVE'), inArray(testCases.test_suite_id, suiteIds))
+        )
         .groupBy(testCases.test_suite_id),
       // Q3: 케이스 test_type 목록 (포함 경로용)
-      db.select({ suiteId: testCases.test_suite_id, testType: testCases.test_type })
+      db
+        .select({ suiteId: testCases.test_suite_id, testType: testCases.test_type })
         .from(testCases)
         .where(
           and(
             eq(testCases.lifecycle_status, 'ACTIVE'),
             inArray(testCases.test_suite_id, suiteIds),
-            isNotNull(testCases.test_type),
+            isNotNull(testCases.test_type)
           )
         ),
       // Q4: 연결된 마일스톤
       milestoneQueryFn(),
       // Q5: 실행 이력 수 집계 (논리 삭제 제외)
-      db.select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
+      db
+        .select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
         .from(testRunSuites)
-        .where(and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at)))
+        .where(
+          and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
+        )
         .groupBy(testRunSuites.test_suite_id),
       // Q6: 최근 실행 (스위트별 최신 run, 논리 삭제 제외)
-      db.select({
+      db
+        .select({
           suiteId: testRunSuites.test_suite_id,
           runId: testRuns.id,
           runStatus: testRuns.status,
           runCreatedAt: testRuns.created_at,
         })
         .from(testRunSuites)
-        .innerJoin(testRuns, and(eq(testRunSuites.test_run_id, testRuns.id), eq(testRuns.lifecycle_status, 'ACTIVE')))
-        .where(and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at)))
+        .innerJoin(
+          testRuns,
+          and(eq(testRunSuites.test_run_id, testRuns.id), eq(testRuns.lifecycle_status, 'ACTIVE'))
+        )
+        .where(
+          and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
+        )
         .orderBy(desc(testRuns.created_at)),
     ]);
 
@@ -405,7 +427,10 @@ export const getTestSuitesWithStats = async ({
     const runCountMap = new Map(runCountRows.map((r) => [r.suiteId, Number(r.cnt)]));
 
     // 스위트별 run 그룹핑
-    const runsPerSuite = new Map<string, Array<{ runId: string; status: string; createdAt: Date }>>();
+    const runsPerSuite = new Map<
+      string,
+      Array<{ runId: string; status: string; createdAt: Date }>
+    >();
     for (const r of recentRunRows) {
       if (!r.suiteId) continue;
       if (!runsPerSuite.has(r.suiteId)) runsPerSuite.set(r.suiteId, []);
@@ -417,7 +442,10 @@ export const getTestSuitesWithStats = async ({
 
     // 7) 최근 run들의 케이스 결과 집계
     const allRunIds = [...new Set(recentRunRows.map((r) => r.runId))];
-    const runCaseCountMap = new Map<string, { passed: number; failed: number; blocked: number; skipped: number; total: number }>();
+    const runCaseCountMap = new Map<
+      string,
+      { passed: number; failed: number; blocked: number; skipped: number; total: number }
+    >();
     if (allRunIds.length > 0) {
       const caseRunRows = await db
         .select({
@@ -461,7 +489,13 @@ export const getTestSuitesWithStats = async ({
 
       const suiteRuns = runsPerSuite.get(row.id) ?? [];
       const recentRuns = suiteRuns.map((r) => {
-        const counts = runCaseCountMap.get(r.runId) ?? { passed: 0, failed: 0, blocked: 0, skipped: 0, total: 0 };
+        const counts = runCaseCountMap.get(r.runId) ?? {
+          passed: 0,
+          failed: 0,
+          blocked: 0,
+          skipped: 0,
+          total: 0,
+        };
         return {
           runId: r.runId,
           runAt: r.createdAt,
@@ -475,7 +509,13 @@ export const getTestSuitesWithStats = async ({
 
       const lastRun = suiteRuns[0]
         ? (() => {
-            const counts = runCaseCountMap.get(suiteRuns[0].runId) ?? { passed: 0, failed: 0, blocked: 0, skipped: 0, total: 0 };
+            const counts = runCaseCountMap.get(suiteRuns[0].runId) ?? {
+              passed: 0,
+              failed: 0,
+              blocked: 0,
+              skipped: 0,
+              total: 0,
+            };
             return {
               runId: suiteRuns[0].runId,
               runAt: suiteRuns[0].createdAt,
@@ -524,7 +564,11 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
     const db = getDatabase();
 
     // 접근 권한 확인
-    const [existing] = await db.select({ projectId: testSuites.project_id }).from(testSuites).where(eq(testSuites.id, id)).limit(1);
+    const [existing] = await db
+      .select({ projectId: testSuites.project_id })
+      .from(testSuites)
+      .where(eq(testSuites.id, id))
+      .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
       return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
     }
@@ -556,12 +600,7 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
         lifecycle_status: 'DELETED',
         updated_at: now,
       })
-      .where(
-        and(
-          eq(testCases.test_suite_id, id),
-          eq(testCases.lifecycle_status, 'ACTIVE'),
-        )
-      );
+      .where(and(eq(testCases.test_suite_id, id), eq(testCases.lifecycle_status, 'ACTIVE')));
 
     return {
       success: true,

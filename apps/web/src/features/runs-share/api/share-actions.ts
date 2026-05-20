@@ -1,10 +1,10 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testRuns, testCaseRuns, testCases, testSuites, projects } from '@testea/db';
-import { ActionResult } from '@/shared/types';
-import { and, eq, isNull, isNotNull, inArray, gte, sql } from 'drizzle-orm';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, projects, testCaseRuns, testCases, testRuns, testSuites } from '@testea/db';
+import { and, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 
 export interface SharedReportCaseItem {
   code: string;
@@ -66,7 +66,7 @@ async function generateAiSummary(reportContext: string): Promise<string | null> 
           contents: [{ parts: [{ text: reportContext }] }],
           generationConfig: { temperature: 0.3, maxOutputTokens: 200 },
         }),
-      },
+      }
     );
 
     if (!res.ok) return null;
@@ -82,10 +82,17 @@ async function generateAiSummary(reportContext: string): Promise<string | null> 
 function buildReportContext(
   runName: string,
   projectName: string,
-  stats: { total: number; pass: number; fail: number; blocked: number; untested: number; progressPercent: number },
+  stats: {
+    total: number;
+    pass: number;
+    fail: number;
+    blocked: number;
+    untested: number;
+    progressPercent: number;
+  },
   suiteBreakdown: SharedReportSuiteBreakdown[],
   failedCases: SharedReportCaseItem[],
-  blockedCases: SharedReportCaseItem[],
+  blockedCases: SharedReportCaseItem[]
 ): string {
   const lines: string[] = [
     `${projectName}/${runName}`,
@@ -147,94 +154,111 @@ export async function generateShareLink(
       const [{ count: todayCount }] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(testRuns)
-        .where(and(
-          eq(testRuns.project_id, run.projectId),
-          isNotNull(testRuns.share_ai_summary),
-          gte(testRuns.updated_at, todayStart),
-        ));
+        .where(
+          and(
+            eq(testRuns.project_id, run.projectId),
+            isNotNull(testRuns.share_ai_summary),
+            gte(testRuns.updated_at, todayStart)
+          )
+        );
 
       if (todayCount >= AI_DAILY_LIMIT_PER_PROJECT) {
-        console.log(`[generateShareLink] AI daily limit reached for project ${run.projectId} (${todayCount}/${AI_DAILY_LIMIT_PER_PROJECT})`);
+        console.log(
+          `[generateShareLink] AI daily limit reached for project ${run.projectId} (${todayCount}/${AI_DAILY_LIMIT_PER_PROJECT})`
+        );
       } else {
-    try {
-      // Get project name
-      let projectName = '';
-      const [project] = await db
-        .select({ name: projects.name })
-        .from(projects)
-        .where(eq(projects.id, run.projectId))
-        .limit(1);
-      projectName = project?.name || '';
+        try {
+          // Get project name
+          let projectName = '';
+          const [project] = await db
+            .select({ name: projects.name })
+            .from(projects)
+            .where(eq(projects.id, run.projectId))
+            .limit(1);
+          projectName = project?.name || '';
 
-      // Get case runs
-      const caseRuns = await db
-        .select({
-          status: testCaseRuns.status,
-          comment: testCaseRuns.comment,
-          caseName: testCases.name,
-          displayId: testCases.display_id,
-          suiteId: testCases.test_suite_id,
-        })
-        .from(testCaseRuns)
-        .innerJoin(testCases, eq(testCaseRuns.test_case_id, testCases.id))
-        .where(and(eq(testCaseRuns.test_run_id, testRunId), isNull(testCaseRuns.excluded_at)));
+          // Get case runs
+          const caseRuns = await db
+            .select({
+              status: testCaseRuns.status,
+              comment: testCaseRuns.comment,
+              caseName: testCases.name,
+              displayId: testCases.display_id,
+              suiteId: testCases.test_suite_id,
+            })
+            .from(testCaseRuns)
+            .innerJoin(testCases, eq(testCaseRuns.test_case_id, testCases.id))
+            .where(and(eq(testCaseRuns.test_run_id, testRunId), isNull(testCaseRuns.excluded_at)));
 
-      const suiteIds = [...new Set(caseRuns.map(c => c.suiteId).filter(Boolean))] as string[];
-      const suiteMap = new Map<string, string>();
-      if (suiteIds.length > 0) {
-        const suites = await db
-          .select({ id: testSuites.id, name: testSuites.name })
-          .from(testSuites)
-          .where(inArray(testSuites.id, suiteIds));
-        for (const s of suites) suiteMap.set(s.id, s.name);
-      }
+          const suiteIds = [...new Set(caseRuns.map((c) => c.suiteId).filter(Boolean))] as string[];
+          const suiteMap = new Map<string, string>();
+          if (suiteIds.length > 0) {
+            const suites = await db
+              .select({ id: testSuites.id, name: testSuites.name })
+              .from(testSuites)
+              .where(inArray(testSuites.id, suiteIds));
+            for (const s of suites) suiteMap.set(s.id, s.name);
+          }
 
-      const total = caseRuns.length;
-      const pass = caseRuns.filter(c => c.status === 'pass').length;
-      const fail = caseRuns.filter(c => c.status === 'fail').length;
-      const blocked = caseRuns.filter(c => c.status === 'blocked').length;
-      const untested = caseRuns.filter(c => c.status === 'untested').length;
-      const progressPercent = total > 0 ? Math.round(((total - untested) / total) * 100) : 0;
+          const total = caseRuns.length;
+          const pass = caseRuns.filter((c) => c.status === 'pass').length;
+          const fail = caseRuns.filter((c) => c.status === 'fail').length;
+          const blocked = caseRuns.filter((c) => c.status === 'blocked').length;
+          const untested = caseRuns.filter((c) => c.status === 'untested').length;
+          const progressPercent = total > 0 ? Math.round(((total - untested) / total) * 100) : 0;
 
-      // Build suite breakdown
-      const suiteStatsMap = new Map<string, SharedReportSuiteBreakdown>();
-      for (const c of caseRuns) {
-        const suiteName = c.suiteId ? (suiteMap.get(c.suiteId) || '미분류') : '미분류';
-        if (!suiteStatsMap.has(suiteName)) {
-          suiteStatsMap.set(suiteName, { suiteName, total: 0, pass: 0, fail: 0, blocked: 0, untested: 0, passRate: 0 });
+          // Build suite breakdown
+          const suiteStatsMap = new Map<string, SharedReportSuiteBreakdown>();
+          for (const c of caseRuns) {
+            const suiteName = c.suiteId ? suiteMap.get(c.suiteId) || '미분류' : '미분류';
+            if (!suiteStatsMap.has(suiteName)) {
+              suiteStatsMap.set(suiteName, {
+                suiteName,
+                total: 0,
+                pass: 0,
+                fail: 0,
+                blocked: 0,
+                untested: 0,
+                passRate: 0,
+              });
+            }
+            const ss = suiteStatsMap.get(suiteName)!;
+            ss.total++;
+            if (c.status === 'pass') ss.pass++;
+            else if (c.status === 'fail') ss.fail++;
+            else if (c.status === 'blocked') ss.blocked++;
+            else ss.untested++;
+          }
+          const suiteBreakdown = Array.from(suiteStatsMap.values()).map((s) => ({
+            ...s,
+            passRate: s.total > 0 ? Math.round((s.pass / s.total) * 100) : 0,
+          }));
+
+          const toCaseItem = (c: (typeof caseRuns)[number]): SharedReportCaseItem => ({
+            code: c.displayId ? `TC-${String(c.displayId).padStart(3, '0')}` : '',
+            title: c.caseName,
+            status: c.status as SharedReportCaseItem['status'],
+            comment: c.comment,
+            executedAt: null,
+            suiteName: c.suiteId ? suiteMap.get(c.suiteId) || null : null,
+          });
+
+          const failedCases = caseRuns.filter((c) => c.status === 'fail').map(toCaseItem);
+          const blockedCases = caseRuns.filter((c) => c.status === 'blocked').map(toCaseItem);
+
+          const context = buildReportContext(
+            run.name,
+            projectName,
+            { total, pass, fail, blocked, untested, progressPercent },
+            suiteBreakdown,
+            failedCases,
+            blockedCases
+          );
+
+          aiSummary = await generateAiSummary(context);
+        } catch (aiError) {
+          console.error('[generateShareLink] AI summary error (non-blocking):', aiError);
         }
-        const ss = suiteStatsMap.get(suiteName)!;
-        ss.total++;
-        if (c.status === 'pass') ss.pass++;
-        else if (c.status === 'fail') ss.fail++;
-        else if (c.status === 'blocked') ss.blocked++;
-        else ss.untested++;
-      }
-      const suiteBreakdown = Array.from(suiteStatsMap.values())
-        .map(s => ({ ...s, passRate: s.total > 0 ? Math.round((s.pass / s.total) * 100) : 0 }));
-
-      const toCaseItem = (c: typeof caseRuns[number]): SharedReportCaseItem => ({
-        code: c.displayId ? `TC-${String(c.displayId).padStart(3, '0')}` : '',
-        title: c.caseName,
-        status: c.status as SharedReportCaseItem['status'],
-        comment: c.comment,
-        executedAt: null,
-        suiteName: c.suiteId ? (suiteMap.get(c.suiteId) || null) : null,
-      });
-
-      const failedCases = caseRuns.filter(c => c.status === 'fail').map(toCaseItem);
-      const blockedCases = caseRuns.filter(c => c.status === 'blocked').map(toCaseItem);
-
-      const context = buildReportContext(
-        run.name, projectName,
-        { total, pass, fail, blocked, untested, progressPercent },
-        suiteBreakdown, failedCases, blockedCases,
-      );
-
-      aiSummary = await generateAiSummary(context);
-    } catch (aiError) {
-      console.error('[generateShareLink] AI summary error (non-blocking):', aiError);
-    }
       } // end else (within daily limit)
     } // end if (shouldGenerateAi)
 
@@ -297,17 +321,11 @@ export async function revokeShareLink(
   }
 }
 
-export async function getSharedReport(
-  token: string
-): Promise<ActionResult<SharedReportData>> {
+export async function getSharedReport(token: string): Promise<ActionResult<SharedReportData>> {
   try {
     const db = getDatabase();
 
-    const [run] = await db
-      .select()
-      .from(testRuns)
-      .where(eq(testRuns.share_token, token))
-      .limit(1);
+    const [run] = await db.select().from(testRuns).where(eq(testRuns.share_token, token)).limit(1);
 
     if (!run) {
       return {
@@ -350,7 +368,7 @@ export async function getSharedReport(
       .where(and(eq(testCaseRuns.test_run_id, run.id), isNull(testCaseRuns.excluded_at)));
 
     // Fetch suite names for lookup
-    const suiteIds = [...new Set(caseRuns.map(c => c.suiteId).filter(Boolean))] as string[];
+    const suiteIds = [...new Set(caseRuns.map((c) => c.suiteId).filter(Boolean))] as string[];
     const suiteMap = new Map<string, string>();
     if (suiteIds.length > 0) {
       const suites = await db
@@ -372,9 +390,17 @@ export async function getSharedReport(
     // Build suite breakdown
     const suiteStatsMap = new Map<string, SharedReportSuiteBreakdown>();
     for (const c of caseRuns) {
-      const suiteName = c.suiteId ? (suiteMap.get(c.suiteId) || '미분류') : '미분류';
+      const suiteName = c.suiteId ? suiteMap.get(c.suiteId) || '미분류' : '미분류';
       if (!suiteStatsMap.has(suiteName)) {
-        suiteStatsMap.set(suiteName, { suiteName, total: 0, pass: 0, fail: 0, blocked: 0, untested: 0, passRate: 0 });
+        suiteStatsMap.set(suiteName, {
+          suiteName,
+          total: 0,
+          pass: 0,
+          fail: 0,
+          blocked: 0,
+          untested: 0,
+          passRate: 0,
+        });
       }
       const ss = suiteStatsMap.get(suiteName)!;
       ss.total++;
@@ -384,22 +410,22 @@ export async function getSharedReport(
       else ss.untested++;
     }
     const suiteBreakdown = Array.from(suiteStatsMap.values())
-      .map(s => ({ ...s, passRate: s.total > 0 ? Math.round((s.pass / s.total) * 100) : 0 }))
+      .map((s) => ({ ...s, passRate: s.total > 0 ? Math.round((s.pass / s.total) * 100) : 0 }))
       .sort((a, b) => a.suiteName.localeCompare(b.suiteName));
 
     // Build case items for failed/blocked
-    const toCaseItem = (c: typeof caseRuns[number]): SharedReportCaseItem => ({
+    const toCaseItem = (c: (typeof caseRuns)[number]): SharedReportCaseItem => ({
       code: c.displayId ? `TC-${String(c.displayId).padStart(3, '0')}` : '',
       title: c.caseName,
       status: c.status as SharedReportCaseItem['status'],
       comment: c.comment,
       executedAt: c.executedAt ? new Date(c.executedAt).toISOString() : null,
-      suiteName: c.suiteId ? (suiteMap.get(c.suiteId) || null) : null,
+      suiteName: c.suiteId ? suiteMap.get(c.suiteId) || null : null,
     });
 
     const allCases = caseRuns.map(toCaseItem);
-    const failedCases = caseRuns.filter(c => c.status === 'fail').map(toCaseItem);
-    const blockedCases = caseRuns.filter(c => c.status === 'blocked').map(toCaseItem);
+    const failedCases = caseRuns.filter((c) => c.status === 'fail').map(toCaseItem);
+    const blockedCases = caseRuns.filter((c) => c.status === 'blocked').map(toCaseItem);
 
     return {
       success: true,

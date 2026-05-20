@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { useArchive } from '@/features/archive/hooks/use-archive';
 import { ArchiveTargetType } from '@/features/archive/model/types';
 import { DSButton } from '@/shared';
+import { MILESTONE_EVENTS, TESTCASE_EVENTS, TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
 import { Dialog } from '@testea/ui';
 import { Loader2, Trash2 } from 'lucide-react';
-import { track, TESTCASE_EVENTS, TESTSUITE_EVENTS, MILESTONE_EVENTS } from '@/shared/lib/analytics';
 
 const TARGET_LABEL: Record<ArchiveTargetType, string> = {
   project: '프로젝트',
@@ -21,7 +21,12 @@ interface ArchiveButtonProps {
   onSuccess?: () => void;
 }
 
-export const ArchiveButton = ({ targetType, targetId, btnType = 'text', onSuccess }: ArchiveButtonProps) => {
+export const ArchiveButton = ({
+  targetType,
+  targetId,
+  btnType = 'text',
+  onSuccess,
+}: ArchiveButtonProps) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const archive = useArchive({
@@ -79,11 +84,10 @@ export const ArchiveButton = ({ targetType, targetId, btnType = 'text', onSucces
           <Dialog.Portal>
             <Dialog.Overlay onClick={() => !archive.isPending && setIsConfirmOpen(false)} />
             <Dialog.Content className="bg-bg-2 border-line-2 rounded-4 w-full max-w-[400px] border p-6">
-              <Dialog.Title className="typo-h2-heading text-text-1">
-                {label} 삭제
-              </Dialog.Title>
+              <Dialog.Title className="typo-h2-heading text-text-1">{label} 삭제</Dialog.Title>
               <Dialog.Description className="text-text-3 typo-body2-normal mt-2">
-                정말 이 {label}을(를) 삭제하시겠습니까?<br />
+                정말 이 {label}을(를) 삭제하시겠습니까?
+                <br />
                 삭제된 데이터는 복구할 수 없습니다.
               </Dialog.Description>
               <div className="mt-6 flex justify-end gap-2">

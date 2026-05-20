@@ -39,8 +39,8 @@ export const Button = ({
       type={type}
       disabled={disabled}
       className={[
-        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-button border border-solid text-sm font-medium transition-colors',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+        'rounded-button inline-flex items-center justify-center gap-2 border border-solid text-sm font-medium whitespace-nowrap transition-colors',
+        'focus-visible:outline-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
         'disabled:cursor-not-allowed disabled:opacity-50',
         variantClassName[variant],
         sizeClassName[size],

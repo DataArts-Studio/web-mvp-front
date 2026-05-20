@@ -1,8 +1,9 @@
 'use client';
 import React from 'react';
 
-import { Slot } from '../../slot';
 import { mergeRefs } from '@testea/util';
+
+import { Slot } from '../../slot';
 
 // ------------------------------------------------------------------
 // Types & Context & Context Hook
@@ -83,7 +84,9 @@ const SelectRoot = ({
   // 열릴 때 선택된 항목이나 첫 번째 항목으로 activeIndex 초기화
   React.useEffect(() => {
     if (open && itemValues.length > 0) {
-      const selectedIndex = itemValues.indexOf(isControlled ? value ?? '' : uncontrolledValue ?? '');
+      const selectedIndex = itemValues.indexOf(
+        isControlled ? (value ?? '') : (uncontrolledValue ?? '')
+      );
       setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
     } else if (!open) {
       setActiveIndex(-1);
@@ -152,7 +155,20 @@ const SelectRoot = ({
       registerItem,
       unregisterItem,
     }),
-    [open, disabled, currentValue, setValue, toggleOpen, close, triggerId, listboxId, activeIndex, itemValues, registerItem, unregisterItem]
+    [
+      open,
+      disabled,
+      currentValue,
+      setValue,
+      toggleOpen,
+      close,
+      triggerId,
+      listboxId,
+      activeIndex,
+      itemValues,
+      registerItem,
+      unregisterItem,
+    ]
   );
 
   return (
@@ -175,11 +191,23 @@ interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const SelectTrigger = ({ asChild, children, className, ref, ...props }: SelectTriggerProps) => {
-  const { open, disabled, toggleOpen, triggerId, listboxId, triggerRef, activeIndex, setActiveIndex, itemValues, setValue } = useSelectContext();
+  const {
+    open,
+    disabled,
+    toggleOpen,
+    triggerId,
+    listboxId,
+    triggerRef,
+    activeIndex,
+    setActiveIndex,
+    itemValues,
+    setValue,
+  } = useSelectContext();
   const handleRef = mergeRefs(triggerRef, ref);
   const Comp = asChild ? Slot : 'button';
 
-  const activeItemId = activeIndex >= 0 && itemValues[activeIndex] ? `${listboxId}-item-${activeIndex}` : undefined;
+  const activeItemId =
+    activeIndex >= 0 && itemValues[activeIndex] ? `${listboxId}-item-${activeIndex}` : undefined;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (disabled) return;
@@ -310,7 +338,15 @@ const SelectItem = ({
   className,
   ...props
 }: SelectItemProps) => {
-  const { value: selectedValue, setValue, registerItem, unregisterItem, activeIndex, itemValues, listboxId } = useSelectContext();
+  const {
+    value: selectedValue,
+    setValue,
+    registerItem,
+    unregisterItem,
+    activeIndex,
+    itemValues,
+    listboxId,
+  } = useSelectContext();
   const isSelected = selectedValue === value;
   const itemIndex = itemValues.indexOf(value);
   const isActive = itemIndex === activeIndex;

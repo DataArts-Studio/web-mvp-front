@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
+
 import { Dialog } from '@testea/ui';
 import { DSButton } from '@testea/ui';
+
 import { useRollback } from '../hooks/use-rollback';
 
 interface RollbackConfirmDialogProps {
@@ -42,8 +44,8 @@ export const RollbackConfirmDialog = ({
             v{targetVersionNumber}으로 복원하시겠습니까?
           </Dialog.Title>
           <Dialog.Description className="text-text-3 mt-3 text-sm">
-            현재 테스트케이스 내용이 새로운 버전으로 기록된 후, v{targetVersionNumber} 시점의 내용으로 복원됩니다.
-            이 작업은 되돌릴 수 있습니다.
+            현재 테스트케이스 내용이 새로운 버전으로 기록된 후, v{targetVersionNumber} 시점의
+            내용으로 복원됩니다. 이 작업은 되돌릴 수 있습니다.
           </Dialog.Description>
 
           <div className="mt-6 flex justify-end gap-3">

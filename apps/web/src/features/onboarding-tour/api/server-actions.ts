@@ -1,11 +1,11 @@
 'use server';
 
+import { requireProjectAccess } from '@/access/lib/require-access';
+import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projectPreferences } from '@testea/db';
-import { ActionResult } from '@/shared/types';
 import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import { requireProjectAccess } from '@/access/lib/require-access';
 
 type OnboardingStatus = {
   completed: boolean;
@@ -17,7 +17,7 @@ type OnboardingStatus = {
  * 프로젝트의 온보딩 투어 완료 상태를 조회합니다.
  */
 export const getOnboardingStatus = async (
-  projectId: string,
+  projectId: string
 ): Promise<ActionResult<OnboardingStatus>> => {
   try {
     const db = getDatabase();
@@ -28,8 +28,8 @@ export const getOnboardingStatus = async (
       .where(
         and(
           eq(projectPreferences.project_id, projectId),
-          eq(projectPreferences.key, 'onboarding_completed'),
-        ),
+          eq(projectPreferences.key, 'onboarding_completed')
+        )
       );
 
     if (!row) {
@@ -52,7 +52,7 @@ export const getOnboardingStatus = async (
  */
 export const completeOnboardingTour = async (
   projectId: string,
-  lastStep: number,
+  lastStep: number
 ): Promise<ActionResult<OnboardingStatus>> => {
   try {
     const hasAccess = await requireProjectAccess(projectId);

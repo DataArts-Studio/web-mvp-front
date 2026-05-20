@@ -1,12 +1,13 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCases } from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import { and, eq, sql } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, testCases } from '@testea/db';
+import { and, eq, sql } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
+
 import { importRequestSchema } from '../model/schema';
 import type { ImportResult, ImportRowInput } from '../model/schema';
 
@@ -40,10 +41,7 @@ export async function importTestCases(input: {
       .select({ max: sql<number>`COALESCE(MAX(${testCases.sort_order}), 0)` })
       .from(testCases)
       .where(
-        and(
-          eq(testCases.project_id, validated.projectId),
-          eq(testCases.lifecycle_status, 'ACTIVE'),
-        ),
+        and(eq(testCases.project_id, validated.projectId), eq(testCases.lifecycle_status, 'ACTIVE'))
       );
     const currentOrder = (maxOrder?.max ?? 0) + 1;
 

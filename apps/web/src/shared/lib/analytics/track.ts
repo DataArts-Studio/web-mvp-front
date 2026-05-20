@@ -14,9 +14,7 @@ export function track(eventName: string, params?: EventParams): void {
 
   // undefined/null 파라미터 정리
   const cleanParams = params
-    ? Object.fromEntries(
-        Object.entries(params).filter(([, v]) => v !== undefined && v !== null),
-      )
+    ? Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null))
     : {};
 
   sendGTMEvent({ event: eventName, ...cleanParams });
@@ -33,11 +31,7 @@ export function track(eventName: string, params?: EventParams): void {
  * @example
  * trackPageView('Testea - 랜딩', '/', { referrer: document.referrer });
  */
-export function trackPageView(
-  pageTitle: string,
-  pagePath: string,
-  extra?: EventParams,
-): void {
+export function trackPageView(pageTitle: string, pagePath: string, extra?: EventParams): void {
   track('page_view', {
     page_title: pageTitle,
     page_path: pagePath,

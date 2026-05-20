@@ -1,8 +1,9 @@
 import React from 'react';
 
-import { Accordion, AccordionRootProps } from './index';
-import { ensureArray } from '@testea/util';
 import type { Meta, StoryObj } from '@storybook/react';
+import { ensureArray } from '@testea/util';
+
+import { Accordion, AccordionRootProps } from './index';
 
 // Storybook 메타데이터
 const meta: Meta<typeof Accordion.Root> = {

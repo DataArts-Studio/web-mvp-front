@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { ChevronLeft, Check, AlertCircle } from 'lucide-react';
-import { cn } from '@testea/util';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+
 import { testSuitesQueryOptions } from '@/entities/test-suite';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { cn } from '@testea/util';
+import { AlertCircle, Check, ChevronLeft } from 'lucide-react';
+import { toast } from 'sonner';
+
+import { importTestCases } from '../api/actions';
 import { useImportWizard } from '../model/use-import-wizard';
 import { validateRows } from '../model/validator';
-import { importTestCases } from '../api/actions';
-import { PreviewTable } from './preview-table';
 import { ImportResultView } from './import-result';
+import { PreviewTable } from './preview-table';
 
 interface StepPreviewImportProps {
   projectId: string;
@@ -55,12 +57,8 @@ export function StepPreviewImport({ projectId }: StepPreviewImportProps) {
   }, [parseResult, columnMapping, setValidatedRows]);
 
   const validCount = validatedRows.filter((r) => r.isValid).length;
-  const errorCount = validatedRows.filter(
-    (r) => !r.isValid && r.errors.length > 0,
-  ).length;
-  const skippedCount = validatedRows.filter(
-    (r) => !r.isValid && r.errors.length === 0,
-  ).length;
+  const errorCount = validatedRows.filter((r) => !r.isValid && r.errors.length > 0).length;
+  const skippedCount = validatedRows.filter((r) => !r.isValid && r.errors.length === 0).length;
 
   const canImport = validCount > 0 && !!targetSuiteId;
   const isImporting = status === 'importing';
@@ -72,9 +70,7 @@ export function StepPreviewImport({ projectId }: StepPreviewImportProps) {
     setStatus('importing');
     setError(null);
 
-    const validRows = validatedRows
-      .filter((r) => r.isValid && r.mapped)
-      .map((r) => r.mapped!);
+    const validRows = validatedRows.filter((r) => r.isValid && r.mapped).map((r) => r.mapped!);
 
     const res = await importTestCases({
       projectId,
@@ -93,8 +89,7 @@ export function StepPreviewImport({ projectId }: StepPreviewImportProps) {
     } else {
       setStatus('error');
       const errorMsg =
-        Object.values(res.errors).flat()[0] ??
-        '가져오기에 실패했습니다. 다시 시도해주세요.';
+        Object.values(res.errors).flat()[0] ?? '가져오기에 실패했습니다. 다시 시도해주세요.';
       setError(errorMsg);
       toast.error(errorMsg);
     }
@@ -128,7 +123,7 @@ export function StepPreviewImport({ projectId }: StepPreviewImportProps) {
           onChange={(e) => setTargetSuiteId(e.target.value)}
           className={cn(
             'rounded-2 border-line-2 bg-bg-2 text-text-1 typo-body2-normal w-full border px-3 py-2 md:max-w-sm',
-            !targetSuiteId && 'text-text-3',
+            !targetSuiteId && 'text-text-3'
           )}
         >
           <option value="">스위트를 선택하세요</option>
@@ -154,20 +149,21 @@ export function StepPreviewImport({ projectId }: StepPreviewImportProps) {
             전체 {validatedRows.length}건 중{' '}
             <span className="text-green-400">{validCount}건 가져오기 가능</span>
             {errorCount > 0 && (
-              <>, <span className="text-red-400">{errorCount}건 오류</span></>
+              <>
+                , <span className="text-red-400">{errorCount}건 오류</span>
+              </>
             )}
             {skippedCount > 0 && (
-              <>, <span className="text-text-3">{skippedCount}건 건너뜀</span></>
+              <>
+                , <span className="text-text-3">{skippedCount}건 건너뜀</span>
+              </>
             )}
           </span>
         )}
       </div>
 
       {/* Preview Table */}
-      <PreviewTable
-        validatedRows={validatedRows}
-        columnMapping={columnMapping}
-      />
+      <PreviewTable validatedRows={validatedRows} columnMapping={columnMapping} />
 
       {/* Error Message */}
       {error && (
@@ -196,12 +192,12 @@ export function StepPreviewImport({ projectId }: StepPreviewImportProps) {
             'rounded-2 typo-body2-heading flex items-center gap-2 px-6 py-2.5 transition-colors',
             canImport && !isImporting
               ? 'bg-primary hover:bg-primary/90 text-white'
-              : 'bg-bg-3 text-text-3 cursor-not-allowed',
+              : 'bg-bg-3 text-text-3 cursor-not-allowed'
           )}
         >
           {isImporting ? (
             <>
-              <span className="border-white/30 h-4 w-4 animate-spin rounded-full border-2 border-t-white" />
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
               가져오는 중...
             </>
           ) : (

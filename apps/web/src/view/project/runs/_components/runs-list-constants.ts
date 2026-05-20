@@ -26,9 +26,13 @@ export interface ITestRun {
 
 export const getStatusFilterLabel = (filter: RunStatusFilter): string => {
   switch (filter) {
-    case 'ALL': return '전체 상태';
-    case 'COMPLETED': return '완료됨';
-    case 'IN_PROGRESS': return '진행 중';
-    case 'NOT_STARTED': return '시작 전';
+    case 'ALL':
+      return '전체 상태';
+    case 'COMPLETED':
+      return '완료됨';
+    case 'IN_PROGRESS':
+      return '진행 중';
+    case 'NOT_STARTED':
+      return '시작 전';
   }
 };

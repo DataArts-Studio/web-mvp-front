@@ -1,9 +1,8 @@
 import React from 'react';
-import {
-  VisuallyHidden,
-  type VisuallyHiddenProps,
-} from './index';
+
 import type { Meta, StoryObj } from '@storybook/react';
+
+import { VisuallyHidden, type VisuallyHiddenProps } from './index';
 
 // ------------------------------------------------------------------
 // 타입 정의 및 Meta 정의

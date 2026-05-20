@@ -4,8 +4,7 @@
  * 프로젝트 접근 토큰의 생성, 검증, 파싱을 담당.
  * JWT 형식의 토큰을 사용하며, HMAC-SHA256으로 서명.
  */
-
-import type { ProjectAccessTokenPayload, AccessTokenConfig, AccessError } from '../policy/types';
+import type { AccessError, AccessTokenConfig, ProjectAccessTokenPayload } from '../policy/types';
 import { DEFAULT_ACCESS_TOKEN_CONFIG } from '../policy/types';
 
 /**
@@ -54,7 +53,7 @@ function getTokenSecret(): string {
   if (!secret) {
     throw new Error(
       'ACCESS_TOKEN_SECRET environment variable is required. ' +
-      'Set it in .env.local for development.'
+        'Set it in .env.local for development.'
     );
   }
   return secret;

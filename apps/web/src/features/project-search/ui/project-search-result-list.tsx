@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+
 import type { ProjectSearchResult, SearchModalStatus } from '../model/types';
 import { ProjectSearchResultItem } from './project-search-result-item';
 
@@ -13,15 +14,15 @@ interface ProjectSearchResultListProps {
 
 const LoadingState = () => (
   <div className="flex items-center justify-center py-8">
-    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-    <span className="ml-2 text-body2 text-text-2">검색 중...</span>
+    <div className="border-primary h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
+    <span className="text-body2 text-text-2 ml-2">검색 중...</span>
   </div>
 );
 
 const EmptyState = () => (
-  <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-line-2 bg-bg-2 py-8">
-    <p className="text-body1 font-medium text-text-1">검색 결과가 없습니다</p>
-    <ul className="list-disc pl-5 text-body3 text-text-2">
+  <div className="border-line-2 bg-bg-2 flex flex-col items-center justify-center gap-3 rounded-lg border py-8">
+    <p className="text-body1 text-text-1 font-medium">검색 결과가 없습니다</p>
+    <ul className="text-body3 text-text-2 list-disc pl-5">
       <li>프로젝트명을 다시 확인해주세요</li>
       <li>프로젝트가 삭제되었을 수 있습니다</li>
     </ul>
@@ -29,8 +30,8 @@ const EmptyState = () => (
 );
 
 const ErrorState = ({ error }: { error: string }) => (
-  <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-system-red bg-bg-2 py-8">
-    <p className="text-body1 font-medium text-system-red">{error}</p>
+  <div className="border-system-red bg-bg-2 flex flex-col items-center justify-center gap-2 rounded-lg border py-8">
+    <p className="text-body1 text-system-red font-medium">{error}</p>
   </div>
 );
 

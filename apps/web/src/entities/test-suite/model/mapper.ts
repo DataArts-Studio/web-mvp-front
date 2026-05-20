@@ -1,6 +1,7 @@
 import { z } from 'zod';
+
+import { CreateTestSuiteDtoSchema, TestSuiteDtoSchema } from './schema';
 import type { TestSuite } from './types';
-import { TestSuiteDtoSchema, CreateTestSuiteDtoSchema } from './schema';
 
 type TestSuiteDTO = z.infer<typeof TestSuiteDtoSchema>;
 type CreateTestSuiteDTO = z.infer<typeof CreateTestSuiteDtoSchema>;

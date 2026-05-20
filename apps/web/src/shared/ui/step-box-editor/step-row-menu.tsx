@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  ArrowUp,
-  ArrowDown,
-  ArrowUpFromLine,
-  ArrowDownFromLine,
-  Copy,
-  Trash2,
-  MoreVertical,
-} from 'lucide-react';
+
 import { cn } from '@testea/util';
+import {
+  ArrowDown,
+  ArrowDownFromLine,
+  ArrowUp,
+  ArrowUpFromLine,
+  Copy,
+  MoreVertical,
+  Trash2,
+} from 'lucide-react';
 
 interface StepRowMenuProps {
   index: number;
@@ -113,9 +114,9 @@ export const StepRowMenu = ({
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
         className={cn(
-          'flex h-7 w-7 items-center justify-center rounded-3 transition-colors',
+          'rounded-3 flex h-7 w-7 items-center justify-center transition-colors',
           'text-text-3 hover:bg-bg-3 hover:text-text-1',
-          'disabled:opacity-40 disabled:cursor-not-allowed'
+          'disabled:cursor-not-allowed disabled:opacity-40'
         )}
         aria-label="행 메뉴"
         aria-haspopup="true"
@@ -128,7 +129,7 @@ export const StepRowMenu = ({
         <div
           ref={menuRef}
           role="menu"
-          className="bg-bg-2 border-line-2 absolute right-0 top-full z-20 mt-1 min-w-[140px] rounded-4 border py-1 shadow-4"
+          className="bg-bg-2 border-line-2 rounded-4 shadow-4 absolute top-full right-0 z-20 mt-1 min-w-[140px] border py-1"
         >
           {items.map((item, i) => {
             const Icon = item.icon;
@@ -144,7 +145,9 @@ export const StepRowMenu = ({
                   item.isDisabled
                     ? 'text-text-3 cursor-not-allowed opacity-40'
                     : 'text-text-1 hover:bg-bg-3',
-                  item.label === '삭제' && !item.isDisabled && 'text-system-red hover:text-system-red'
+                  item.label === '삭제' &&
+                    !item.isDisabled &&
+                    'text-system-red hover:text-system-red'
                 )}
                 onClick={() => {
                   if (!item.isDisabled) {

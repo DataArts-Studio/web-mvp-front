@@ -6,6 +6,7 @@ import { DSButton } from '@testea/ui';
 import { cn } from '@testea/util';
 import { formatDate } from '@testea/util';
 import {
+  AlertCircle,
   CheckCircle,
   Edit2,
   Flag,
@@ -15,7 +16,6 @@ import {
   Trash2,
   X,
   XCircle,
-  AlertCircle,
 } from 'lucide-react';
 
 interface TestSuiteSideViewProps {
@@ -84,7 +84,7 @@ export const TestSuiteSideView = ({
       }
       if (e.key !== 'Tab' || !node) return;
       const focusables = node.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
       if (focusables.length === 0) return;
       const first = focusables[0];
@@ -109,179 +109,183 @@ export const TestSuiteSideView = ({
 
   return (
     <>
-    {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
-    <div
-      className="fixed inset-0 z-40 bg-black/50"
-      onClick={onClose}
-      aria-hidden="true"
-    />
-    <section
-      ref={dialogRef}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      tabIndex={-1}
-      className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out outline-none"
-    >
-      <div className="flex flex-col gap-6">
-        {/* 헤더 */}
-        <header className="flex flex-col gap-3">
-          <div className="flex justify-between">
-            <DSButton size="small" variant="ghost" className="px-2" onClick={onClose} aria-label="닫기">
-              <X className="h-4 w-4" aria-hidden="true" />
-            </DSButton>
-            <DSButton
-              size="small"
-              variant="ghost"
-              className="flex items-center gap-1 px-2"
-              onClick={onEdit}
-            >
-              <Edit2 className="h-4 w-4" aria-hidden="true" />
-              <span>수정</span>
-            </DSButton>
-          </div>
+      {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
+      <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <section
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] translate-x-0 overflow-y-auto border-l p-4 transition-transform duration-300 ease-in-out outline-none"
+      >
+        <div className="flex flex-col gap-6">
+          {/* 헤더 */}
+          <header className="flex flex-col gap-3">
+            <div className="flex justify-between">
+              <DSButton
+                size="small"
+                variant="ghost"
+                className="px-2"
+                onClick={onClose}
+                aria-label="닫기"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </DSButton>
+              <DSButton
+                size="small"
+                variant="ghost"
+                className="flex items-center gap-1 px-2"
+                onClick={onEdit}
+              >
+                <Edit2 className="h-4 w-4" aria-hidden="true" />
+                <span>수정</span>
+              </DSButton>
+            </div>
 
-          <div className="flex items-center gap-3">
-            <h2 id={titleId} className="text-xl font-semibold">{suite.title}</h2>
-            <span className={cn('rounded-full px-3 py-1 text-sm font-medium', tagStyle)}>
-              {suite.tag.label}
-            </span>
-          </div>
-
-          {/* 연결된 마일스톤 */}
-          {suite.linkedMilestone && (
-            <div className="text-text-3 flex items-center gap-1.5 text-sm">
-              <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-              <span>
-                {suite.linkedMilestone.title} ({suite.linkedMilestone.versionLabel})
+            <div className="flex items-center gap-3">
+              <h2 id={titleId} className="text-xl font-semibold">
+                {suite.title}
+              </h2>
+              <span className={cn('rounded-full px-3 py-1 text-sm font-medium', tagStyle)}>
+                {suite.tag.label}
               </span>
             </div>
-          )}
-        </header>
 
-        {/* 설명 */}
-        <div className="flex flex-col gap-2">
-          <h3 className="text-text-3 text-lg font-semibold">설명</h3>
-          <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-            <p className="text-text-2">{suite.description || '설명이 없습니다.'}</p>
-          </div>
-        </div>
-
-        {/* 통계 */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
-            <div className="text-text-3 flex items-center gap-1.5 text-sm">
-              <ListChecks className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-              <span>테스트 케이스</span>
-            </div>
-            <span className="text-text-1 text-xl font-bold">{suite.caseCount}개</span>
-          </div>
-
-          <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
-            <div className="text-text-3 flex items-center gap-1.5 text-sm">
-              <History className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-              <span>실행 이력</span>
-            </div>
-            <span className="text-text-1 text-xl font-bold">{suite.executionHistoryCount}회</span>
-          </div>
-        </div>
-
-        {/* 마지막 실행 결과 */}
-        {suite.lastRun && (
-          <div className="flex flex-col gap-3">
-            <h3 className="text-text-3 text-lg font-semibold">마지막 실행 결과</h3>
-            <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-text-3 text-sm">{formatDate(suite.lastRun.runAt)}</span>
-                <span
-                  className={cn(
-                    'flex items-center gap-1',
-                    STATUS_CONFIG[suite.lastRun.status]?.color
-                  )}
-                >
-                  {STATUS_CONFIG[suite.lastRun.status]?.icon}
-                  <span className="text-sm font-medium capitalize">{suite.lastRun.status}</span>
+            {/* 연결된 마일스톤 */}
+            {suite.linkedMilestone && (
+              <div className="text-text-3 flex items-center gap-1.5 text-sm">
+                <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                <span>
+                  {suite.linkedMilestone.title} ({suite.linkedMilestone.versionLabel})
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="flex flex-col">
-                  <span className="text-lg font-bold text-green-400">
-                    {suite.lastRun.counts.passed}
+            )}
+          </header>
+
+          {/* 설명 */}
+          <div className="flex flex-col gap-2">
+            <h3 className="text-text-3 text-lg font-semibold">설명</h3>
+            <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+              <p className="text-text-2">{suite.description || '설명이 없습니다.'}</p>
+            </div>
+          </div>
+
+          {/* 통계 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
+              <div className="text-text-3 flex items-center gap-1.5 text-sm">
+                <ListChecks className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                <span>테스트 케이스</span>
+              </div>
+              <span className="text-text-1 text-xl font-bold">{suite.caseCount}개</span>
+            </div>
+
+            <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
+              <div className="text-text-3 flex items-center gap-1.5 text-sm">
+                <History className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                <span>실행 이력</span>
+              </div>
+              <span className="text-text-1 text-xl font-bold">{suite.executionHistoryCount}회</span>
+            </div>
+          </div>
+
+          {/* 마지막 실행 결과 */}
+          {suite.lastRun && (
+            <div className="flex flex-col gap-3">
+              <h3 className="text-text-3 text-lg font-semibold">마지막 실행 결과</h3>
+              <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-text-3 text-sm">{formatDate(suite.lastRun.runAt)}</span>
+                  <span
+                    className={cn(
+                      'flex items-center gap-1',
+                      STATUS_CONFIG[suite.lastRun.status]?.color
+                    )}
+                  >
+                    {STATUS_CONFIG[suite.lastRun.status]?.icon}
+                    <span className="text-sm font-medium capitalize">{suite.lastRun.status}</span>
                   </span>
-                  <span className="text-text-3 text-xs">Passed</span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-lg font-bold text-red-400">
-                    {suite.lastRun.counts.failed}
-                  </span>
-                  <span className="text-text-3 text-xs">Failed</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-lg font-bold text-amber-400">
-                    {suite.lastRun.counts.blocked}
-                  </span>
-                  <span className="text-text-3 text-xs">Blocked</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-lg font-bold text-slate-400">
-                    {suite.lastRun.counts.skipped}
-                  </span>
-                  <span className="text-text-3 text-xs">Skipped</span>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-green-400">
+                      {suite.lastRun.counts.passed}
+                    </span>
+                    <span className="text-text-3 text-xs">Passed</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-red-400">
+                      {suite.lastRun.counts.failed}
+                    </span>
+                    <span className="text-text-3 text-xs">Failed</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-amber-400">
+                      {suite.lastRun.counts.blocked}
+                    </span>
+                    <span className="text-text-3 text-xs">Blocked</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-slate-400">
+                      {suite.lastRun.counts.skipped}
+                    </span>
+                    <span className="text-text-3 text-xs">Skipped</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 최근 실행 이력 미니 그래프 */}
-        {suite.recentRuns.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <h3 className="text-text-3 text-lg font-semibold">최근 실행 이력</h3>
-            <div className="flex gap-1">
-              {suite.recentRuns.slice(0, 5).map((run) => {
-                const passRate = run.total > 0 ? (run.passed / run.total) * 100 : 0;
-                return (
-                  <div
-                    key={run.runId}
-                    className="bg-bg-2 border-line-2 flex-1 rounded border p-2 text-center"
-                    title={`${formatDate(run.runAt)} - ${run.passed}/${run.total} passed`}
-                  >
+          {/* 최근 실행 이력 미니 그래프 */}
+          {suite.recentRuns.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h3 className="text-text-3 text-lg font-semibold">최근 실행 이력</h3>
+              <div className="flex gap-1">
+                {suite.recentRuns.slice(0, 5).map((run) => {
+                  const passRate = run.total > 0 ? (run.passed / run.total) * 100 : 0;
+                  return (
                     <div
-                      aria-hidden="true"
-                      className={cn(
-                        'mx-auto mb-1 h-2 w-2 rounded-full',
-                        run.status === 'passed'
-                          ? 'bg-green-400'
-                          : run.status === 'failed'
-                            ? 'bg-red-400'
-                            : 'bg-amber-400'
-                      )}
-                    />
-                    <span className="text-text-3 text-xs">{Math.round(passRate)}%</span>
-                  </div>
-                );
-              })}
+                      key={run.runId}
+                      className="bg-bg-2 border-line-2 flex-1 rounded border p-2 text-center"
+                      title={`${formatDate(run.runAt)} - ${run.passed}/${run.total} passed`}
+                    >
+                      <div
+                        aria-hidden="true"
+                        className={cn(
+                          'mx-auto mb-1 h-2 w-2 rounded-full',
+                          run.status === 'passed'
+                            ? 'bg-green-400'
+                            : run.status === 'failed'
+                              ? 'bg-red-400'
+                              : 'bg-amber-400'
+                        )}
+                      />
+                      <span className="text-text-3 text-xs">{Math.round(passRate)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 액션 버튼 */}
-        <div className="border-line-2 mt-auto flex gap-2 border-t pt-4">
-          <DSButton className="flex flex-1 items-center justify-center gap-2" onClick={onRun}>
-            <Play className="h-4 w-4" aria-hidden="true" />
-            테스트 실행
-          </DSButton>
-          <DSButton
-            variant="ghost"
-            className="flex items-center gap-2 text-red-400"
-            onClick={onDelete}
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            삭제
-          </DSButton>
+          {/* 액션 버튼 */}
+          <div className="border-line-2 mt-auto flex gap-2 border-t pt-4">
+            <DSButton className="flex flex-1 items-center justify-center gap-2" onClick={onRun}>
+              <Play className="h-4 w-4" aria-hidden="true" />
+              테스트 실행
+            </DSButton>
+            <DSButton
+              variant="ghost"
+              className="flex items-center gap-2 text-red-400"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              삭제
+            </DSButton>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
     </>
   );
 };

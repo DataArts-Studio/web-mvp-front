@@ -1,16 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
-import { toast } from 'sonner';
-import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 
 import { useDeleteProject } from '@/features/project-settings';
 import { Dialog } from '@testea/ui';
 import { DSButton, DsInput, SettingsCard } from '@testea/ui';
+import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ─── Section: Danger Zone ────────────────────────────────────────────────────
 
-export const DangerZoneSection = ({ projectId, projectName }: { projectId: string; projectName: string }) => {
+export const DangerZoneSection = ({
+  projectId,
+  projectName,
+}: {
+  projectId: string;
+  projectName: string;
+}) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
   const deleteProject = useDeleteProject();
@@ -29,7 +35,7 @@ export const DangerZoneSection = ({ projectId, projectName }: { projectId: strin
             setIsDialogOpen(false);
           }
         },
-      },
+      }
     );
   };
 
@@ -69,18 +75,17 @@ export const DangerZoneSection = ({ projectId, projectName }: { projectId: strin
           <Dialog.Portal>
             <Dialog.Overlay onClick={() => !deleteProject.isPending && setIsDialogOpen(false)} />
             <Dialog.Content className="bg-bg-2 border-line-2 rounded-5 w-full max-w-[460px] border p-0">
-              <div className="flex items-center gap-3 border-b border-line-2 px-6 py-5">
+              <div className="border-line-2 flex items-center gap-3 border-b px-6 py-5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10">
                   <Trash2 className="h-4 w-4 text-red-400" />
                 </div>
-                <Dialog.Title className="typo-h2-heading text-text-1">
-                  프로젝트 삭제
-                </Dialog.Title>
+                <Dialog.Title className="typo-h2-heading text-text-1">프로젝트 삭제</Dialog.Title>
               </div>
 
               <div className="flex flex-col gap-4 px-6 py-5">
                 <Dialog.Description className="text-text-2 typo-body2-normal">
-                  이 작업은 되돌릴 수 없습니다. 삭제를 확인하려면 프로젝트 이름을 정확히 입력해주세요.
+                  이 작업은 되돌릴 수 없습니다. 삭제를 확인하려면 프로젝트 이름을 정확히
+                  입력해주세요.
                 </Dialog.Description>
 
                 <div className="rounded-4 bg-bg-1 border-line-2 border px-4 py-3">
@@ -100,7 +105,7 @@ export const DangerZoneSection = ({ projectId, projectName }: { projectId: strin
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 border-t border-line-2 px-6 py-4">
+              <div className="border-line-2 flex justify-end gap-2 border-t px-6 py-4">
                 <DSButton
                   variant="ghost"
                   size="small"
