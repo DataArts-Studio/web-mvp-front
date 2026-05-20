@@ -1,3 +1,5 @@
+import { BarChart3, FolderKanban, LayoutDashboard, Settings, Users } from 'lucide-react';
+
 import type {
   AbuseSignal,
   Alert,
@@ -40,23 +42,20 @@ export const metrics: Metric[] = [
 export const navItems: NavItem[] = [
   {
     label: '대시보드',
-    iconPath: 'M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Z',
+    icon: LayoutDashboard,
   },
   {
     label: '프로젝트 관리',
-    iconPath:
-      'M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z',
+    icon: FolderKanban,
   },
   {
     label: '사용자 관리',
-    iconPath:
-      'M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8.5 3 2 2 3-4',
+    icon: Users,
   },
-  { label: '통계', iconPath: 'M4 19V9m5 10V5m5 14v-7m5 7V3' },
+  { label: '통계', icon: BarChart3 },
   {
     label: '설정',
-    iconPath:
-      'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm0-12v2m0 13v2m8.5-8.5h-2m-13 0h-2m14.5-6.5-1.4 1.4m-9.2 9.2-1.4 1.4m0-12 1.4 1.4m9.2 9.2 1.4 1.4',
+    icon: Settings,
   },
 ];
 

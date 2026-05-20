@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react';
+
 export type Alert = {
   title: string;
   description: string;
@@ -13,7 +15,7 @@ export type Metric = {
 
 export type NavItem = {
   label: string;
-  iconPath: string;
+  icon: LucideIcon;
 };
 
 export type TrendPoint = {

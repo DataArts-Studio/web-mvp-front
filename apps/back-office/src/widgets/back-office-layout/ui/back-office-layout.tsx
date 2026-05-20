@@ -26,6 +26,7 @@ export function BackOfficeLayout({ navItems, children }: BackOfficeLayoutProps) 
           <nav aria-label="Back office 주요 메뉴" className="flex flex-col gap-1 px-3 py-4 text-sm">
             {navItems.map((item) => {
               const isCurrent = item.label === '대시보드';
+              const Icon = item.icon;
 
               return (
                 <a
@@ -39,18 +40,7 @@ export function BackOfficeLayout({ navItems, children }: BackOfficeLayoutProps) 
                   ].join(' ')}
                   href={isCurrent ? '#dashboard-main' : '#'}
                 >
-                  <svg
-                    aria-hidden="true"
-                    className="h-4 w-4 shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d={item.iconPath} />
-                  </svg>
+                  <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
                 </a>
               );
