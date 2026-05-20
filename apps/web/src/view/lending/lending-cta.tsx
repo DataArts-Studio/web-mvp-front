@@ -1,24 +1,27 @@
 'use client';
 
 import React from 'react';
+
 import dynamic from 'next/dynamic';
+
+import { LANDING_EVENTS, track } from '@/shared/lib/analytics';
 import { DSButton } from '@testea/ui';
-import { track, LANDING_EVENTS } from '@/shared/lib/analytics';
 
 const ProjectCreateForm = dynamic(
-  () => import('@/features/projects-create').then(mod => ({ default: mod.ProjectCreateForm })),
-  { ssr: false },
+  () => import('@/features/projects-create').then((mod) => ({ default: mod.ProjectCreateForm })),
+  { ssr: false }
 );
 
 const BetaNoticePopup = dynamic(
-  () => import('@/features/beta-notice').then(mod => ({ default: mod.BetaNoticePopup })),
-  { ssr: false },
+  () => import('@/features/beta-notice').then((mod) => ({ default: mod.BetaNoticePopup })),
+  { ssr: false }
 );
 
-const DbOutageNoticePopup = dynamic(
-  () => import('@/features/db-outage-notice').then(mod => ({ default: mod.DbOutageNoticePopup })),
-  { ssr: false },
-);
+// DB 장애 복구 완료로 공지 비활성화. 향후 동일 공지 필요 시 주석 해제.
+// const DbOutageNoticePopup = dynamic(
+//   () => import('@/features/db-outage-notice').then(mod => ({ default: mod.DbOutageNoticePopup })),
+//   { ssr: false },
+// );
 
 export const LendingCta = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
@@ -38,11 +41,9 @@ export const LendingCta = () => {
           무료로 시작하기
         </DSButton>
       </section>
-      {isCreateModalOpen && (
-        <ProjectCreateForm onClick={() => setIsCreateModalOpen(false)} />
-      )}
+      {isCreateModalOpen && <ProjectCreateForm onClick={() => setIsCreateModalOpen(false)} />}
       <BetaNoticePopup />
-      <DbOutageNoticePopup />
+      {/* <DbOutageNoticePopup /> */}
     </>
   );
 };
