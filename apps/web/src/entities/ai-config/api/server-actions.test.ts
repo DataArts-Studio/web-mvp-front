@@ -268,6 +268,20 @@ describe('getDecryptedApiKey', () => {
     expect(err.report).toBe(true);
   });
 
+  it('암호화 데이터 손상(MALFORMED)은 CRYPTO_MISCONFIG AiError(500, report) 로 변환된다', async () => {
+    mockLimit.mockResolvedValue([createMockAiConfigRow()]);
+    mockDecrypt.mockImplementationOnce(() => {
+      throw new CryptoError('MALFORMED', 'ciphertext too short');
+    });
+
+    const err = await getDecryptedApiKey(PROJECT_ID).catch((e) => e);
+
+    expect(err).toBeInstanceOf(AiError);
+    expect(err.kind).toBe('CRYPTO_MISCONFIG');
+    expect(err.httpStatus).toBe(500);
+    expect(err.report).toBe(true);
+  });
+
   it('CryptoError 가 아닌 예외는 그대로 전파한다', async () => {
     mockLimit.mockResolvedValue([createMockAiConfigRow()]);
     mockDecrypt.mockImplementationOnce(() => {

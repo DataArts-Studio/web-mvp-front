@@ -12,11 +12,13 @@ import { CryptoError } from '@/shared/lib/crypto';
 export type AiErrorKind =
   | 'CRYPTO_MISCONFIG' // 서버 암호화 키 env 누락/형식 오류 (운영 대응)
   | 'KEY_UNDECRYPTABLE' // 저장된 키를 현재 키로 복호화 불가 (재등록 필요)
-  | 'PROVIDER_UNAUTHORIZED' // provider 401/403 — API 키 무효
-  | 'PROVIDER_BAD_MODEL' // provider 404 — 모델 설정 오류
+  | 'PROVIDER_UNAUTHORIZED' // provider 401 (API 키 무효)
+  | 'PROVIDER_FORBIDDEN' // provider 403 (지역/권한 제한, 키 유효)
+  | 'PROVIDER_BAD_MODEL' // provider 404 (모델 설정 오류)
   | 'PROVIDER_RATE_LIMITED' // provider 429
+  | 'PROVIDER_BAD_REQUEST' // provider 그 외 4xx (입력 형식/요청 구조 오류 등)
   | 'PROVIDER_UNAVAILABLE' // provider 5xx
-  | 'PROVIDER_ERROR' // provider 그 외 비-2xx (예상 밖)
+  | 'PROVIDER_ERROR' // provider 그 외 비-2xx (예상 밖, 3xx 또는 알 수 없는 상태)
   | 'RESPONSE_UNPARSABLE'; // LLM 응답이 JSON 으로 해석 불가
 
 interface AiErrorSpec {
@@ -44,6 +46,12 @@ const SPECS: Record<AiErrorKind, AiErrorSpec> = {
     userMessage: 'API 키가 유효하지 않습니다. 설정 페이지에서 키를 확인해주세요.',
     report: false,
   },
+  PROVIDER_FORBIDDEN: {
+    httpStatus: 403,
+    userMessage:
+      'AI 제공자가 요청을 거절했습니다. 지역 또는 계정 권한 제한일 수 있어, 제공자 콘솔에서 권한·결제 상태를 확인해주세요.',
+    report: false,
+  },
   PROVIDER_BAD_MODEL: {
     httpStatus: 400,
     userMessage: 'AI 모델 설정이 올바르지 않습니다. 설정 페이지에서 모델을 확인해주세요.',
@@ -53,6 +61,11 @@ const SPECS: Record<AiErrorKind, AiErrorSpec> = {
     httpStatus: 429,
     userMessage: 'AI 제공자의 요청 한도에 걸렸습니다. 잠시 후 다시 시도해주세요.',
     report: false,
+  },
+  PROVIDER_BAD_REQUEST: {
+    httpStatus: 400,
+    userMessage: 'AI 제공자가 요청을 거절했습니다. 입력 길이나 형식을 줄여 다시 시도해주세요.',
+    report: true,
   },
   PROVIDER_UNAVAILABLE: {
     httpStatus: 502,
@@ -92,6 +105,8 @@ export class AiError extends Error {
 
   /** 복호화 계층(CryptoError)을 도메인 에러로 변환 */
   static fromCryptoError(error: CryptoError): AiError {
+    // AUTH_FAILED 는 사용자 환경 이슈(키 로테이션·환경 불일치) 라 키 재등록 안내.
+    // 그 외 KEY_NOT_SET/KEY_INVALID/MALFORMED 는 서버 환경 또는 데이터 무결성 문제라 운영 알림.
     const kind: AiErrorKind =
       error.code === 'AUTH_FAILED' ? 'KEY_UNDECRYPTABLE' : 'CRYPTO_MISCONFIG';
     return new AiError(kind, { cryptoCode: error.code }, error);
@@ -100,9 +115,11 @@ export class AiError extends Error {
   /** provider 비-2xx 응답을 상태코드 기준으로 분류 */
   static fromProviderResponse(provider: string, status: number, bodyText: string): AiError {
     let kind: AiErrorKind;
-    if (status === 401 || status === 403) kind = 'PROVIDER_UNAUTHORIZED';
+    if (status === 401) kind = 'PROVIDER_UNAUTHORIZED';
+    else if (status === 403) kind = 'PROVIDER_FORBIDDEN';
     else if (status === 404) kind = 'PROVIDER_BAD_MODEL';
     else if (status === 429) kind = 'PROVIDER_RATE_LIMITED';
+    else if (status >= 400 && status < 500) kind = 'PROVIDER_BAD_REQUEST';
     else if (status >= 500) kind = 'PROVIDER_UNAVAILABLE';
     else kind = 'PROVIDER_ERROR';
     return new AiError(kind, {
