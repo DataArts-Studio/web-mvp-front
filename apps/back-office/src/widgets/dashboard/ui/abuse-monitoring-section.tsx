@@ -6,11 +6,11 @@ type AbuseMonitoringSectionProps = {
 
 export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionProps) {
   return (
-    <>
+    <section aria-labelledby="abuse-monitoring-title" className="grid gap-6">
       <h2 id="abuse-monitoring-title" className="tracking-zero text-lg font-bold">
         어뷰징 및 이상 행동 모니터링
       </h2>
-      <section aria-labelledby="abuse-monitoring-title" className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2">
         {abuseSignals.map((signal) => (
           <div key={signal.title} className="border-border rounded-xl border bg-white p-6 xl:p-8">
             <div className="text-xl font-bold">{signal.title}</div>
@@ -83,7 +83,7 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
             API 호출 한도: 100회/분 · 현재 임시 차단: 0건
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

@@ -45,11 +45,11 @@ export function TrendAnalysisSection({
   activeProjects,
 }: TrendAnalysisSectionProps) {
   return (
-    <>
+    <section aria-labelledby="trend-title" className="grid gap-6">
       <h2 id="trend-title" className="tracking-zero text-lg font-bold">
         추이 분석
       </h2>
-      <section aria-labelledby="trend-title" className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2">
         <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h3 className="text-xl font-bold">신규 프로젝트 추이</h3>
@@ -148,7 +148,7 @@ export function TrendAnalysisSection({
             </table>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

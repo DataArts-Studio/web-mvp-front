@@ -10,11 +10,11 @@ export function AdditionalAnalysisSection({
   storageProjects,
 }: AdditionalAnalysisSectionProps) {
   return (
-    <>
+    <section aria-labelledby="additional-analysis-title" className="grid gap-6">
       <h2 id="additional-analysis-title" className="tracking-zero text-lg font-bold">
         추가 분석
       </h2>
-      <section aria-labelledby="additional-analysis-title" className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2">
         <div className="border-border shadow-1 rounded-lg border bg-white p-5">
           <h3 className="text-base font-semibold">가입부터 첫 Run 퍼널</h3>
           <div className="mt-6 grid gap-7">
@@ -88,7 +88,7 @@ export function AdditionalAnalysisSection({
             ))}
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

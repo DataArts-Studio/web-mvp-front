@@ -7,11 +7,11 @@ type CostSystemSectionProps = {
 
 export function CostSystemSection({ resourceUsages, systemStatuses }: CostSystemSectionProps) {
   return (
-    <>
+    <section aria-labelledby="cost-system-title" className="grid gap-6">
       <h2 id="cost-system-title" className="tracking-zero text-lg font-bold">
         비용 및 시스템 상태
       </h2>
-      <section aria-labelledby="cost-system-title" className="grid gap-6 xl:grid-cols-3">
+      <div className="grid gap-6 xl:grid-cols-3">
         <div className="border-border rounded-xl border bg-white p-6 xl:p-8">
           <div className="mb-7 flex items-start justify-between">
             <h3 className="text-xl font-bold">AI 비용 (이번 달)</h3>
@@ -102,7 +102,7 @@ export function CostSystemSection({ resourceUsages, systemStatuses }: CostSystem
             ))}
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }
