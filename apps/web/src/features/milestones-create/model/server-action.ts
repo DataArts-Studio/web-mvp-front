@@ -1,12 +1,13 @@
 'use server';
-import * as Sentry from '@sentry/nextjs';
-import { CreateMilestoneSchema } from '../../../entities/milestone';
-import { getDatabase, milestones } from '@testea/db';
-import { z } from 'zod';
-import { v7 as uuidv7 } from 'uuid';
-import { requireProjectAccess } from '../../../access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, milestones } from '@testea/db';
+import { v7 as uuidv7 } from 'uuid';
+import { z } from 'zod';
+
+import { requireProjectAccess } from '../../../access/lib/require-access';
+import { CreateMilestoneSchema } from '../../../entities/milestone';
 
 type CreateMilestoneInput = z.infer<typeof CreateMilestoneSchema>;
 
@@ -33,6 +34,7 @@ export const createMilestoneAction = async (input: CreateMilestoneInput) => {
 
   try {
     const db = getDatabase();
+    const now = new Date();
     const [newMilestone] = await db
       .insert(milestones)
       .values({
@@ -42,6 +44,10 @@ export const createMilestoneAction = async (input: CreateMilestoneInput) => {
         description: validation.data.description,
         start_date: validation.data.startDate?.toISOString(),
         end_date: validation.data.endDate?.toISOString(),
+        // DB 컬럼에 DEFAULT now() 가 없어 drizzle 의 DEFAULT 키워드만으로는
+        // NOT NULL 제약에서 막힌다. 값을 명시한다.
+        created_at: now,
+        updated_at: now,
       })
       .returning();
     return { success: true, milestone: newMilestone };
