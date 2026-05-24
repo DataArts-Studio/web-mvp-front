@@ -185,11 +185,17 @@ export const CaseListSection = ({
                         'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
                         item.isOptimistic && 'pointer-events-none animate-pulse opacity-50'
                       )}
-                      onClick={() => {
+                      onClick={(e) => {
+                        // 내부 액션 버튼(더보기 / 복제 등) 클릭은 부모로 위임하지 않는다.
+                        // 자식 onClick 의 stopPropagation 에만 기대지 않고 부모에서도 가드한다.
+                        if (e.target !== e.currentTarget) return;
                         track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
                         onSelectCase(item.id);
                       }}
                       onKeyDown={(e) => {
+                        // 내부 버튼에 포커스된 상태의 Enter/Space 가 부모로 버블링돼
+                        // 행 선택이 동시에 일어나지 않도록 가드한다.
+                        if (e.target !== e.currentTarget) return;
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
                           track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
