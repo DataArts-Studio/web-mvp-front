@@ -2,8 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
 import { AiError } from '@/entities/ai-config/model/ai-error';
-import { GenerateCasesSchema, GeneratedTestCaseSchema } from '@/entities/ai-config/model/schema';
-import { getMonthlyUsage, recordUsage } from '@/entities/ai-usage/api/server-actions';
+import {
+  GenerateCasesMultipartSchema,
+  GenerateCasesSchema,
+  GeneratedTestCaseSchema,
+} from '@/entities/ai-config/model/schema';
+import {
+  type AttachmentUsageMeta,
+  getMonthlyUsage,
+  recordUsage,
+} from '@/entities/ai-usage/api/server-actions';
+import {
+  type AttachmentExtractResult,
+  extractAttachmentText,
+} from '@/features/ai-generate/lib/extract-attachment';
 import { SYSTEM_PROMPT, buildUserPrompt } from '@/features/ai-generate/model/prompts';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
@@ -99,22 +111,84 @@ function parseJsonResponse(raw: string): unknown[] {
   return JSON.parse(jsonStr);
 }
 
+/**
+ * JSON 경로와 multipart 경로를 단일 구조로 수렴시킨다. 이후 LLM 호출·사용량 기록은
+ * 입력 경로를 신경 쓰지 않고 NormalizedInput 만 보면 된다.
+ */
+interface NormalizedInput {
+  projectId: string;
+  description: string;
+  language: 'ko' | 'en';
+  attachment?: AttachmentExtractResult;
+  /** 첨부 파일의 원본 이름. multipart 경로에서만 설정됨. */
+  attachmentFilename?: string;
+}
+
+class InputError extends Error {
+  constructor(public userMessage: string) {
+    super(userMessage);
+    this.name = 'InputError';
+  }
+}
+
+async function parseJsonRequest(req: NextRequest): Promise<NormalizedInput> {
+  const body = await req.json();
+  const parsed = GenerateCasesSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new InputError(parsed.error.issues[0]?.message ?? '요청 값이 올바르지 않습니다.');
+  }
+  return { ...parsed.data };
+}
+
+async function parseMultipartRequest(req: NextRequest): Promise<NormalizedInput> {
+  const form = await req.formData();
+  const parsed = GenerateCasesMultipartSchema.safeParse({
+    projectId: form.get('projectId'),
+    description: form.get('description') ?? '',
+    language: form.get('language') ?? 'ko',
+  });
+  if (!parsed.success) {
+    throw new InputError(parsed.error.issues[0]?.message ?? '요청 값이 올바르지 않습니다.');
+  }
+
+  const fileEntry = form.get('file');
+  const file = fileEntry instanceof File ? fileEntry : null;
+
+  let attachment: AttachmentExtractResult | undefined;
+  let attachmentFilename: string | undefined;
+  if (file && file.size > 0) {
+    attachment = await extractAttachmentText(file);
+    attachmentFilename = file.name;
+  }
+
+  // 파일 없으면 V1 과 동일하게 description 최소 20자 강제. 파일이 있으면 description 은 보조 컨텍스트로 풀어줌.
+  if (!attachment && parsed.data.description.trim().length < 20) {
+    throw new InputError(
+      '더 구체적인 설명을 입력하거나 PDF / Markdown 파일을 첨부해주세요 (최소 20자)'
+    );
+  }
+
+  return { ...parsed.data, attachment, attachmentFilename };
+}
+
+function toAttachmentMeta(extract: AttachmentExtractResult): AttachmentUsageMeta {
+  return {
+    type: extract.type,
+    sizeBytes: extract.sizeBytes,
+    pageCount: extract.pageCount,
+    charCount: extract.charCount,
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const parsed = GenerateCasesSchema.safeParse(body);
+    const contentType = req.headers.get('content-type') ?? '';
+    const isMultipart = contentType.includes('multipart/form-data');
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? '요청 값이 올바르지 않습니다.' },
-        { status: 400 }
-      );
-    }
-
-    const { projectId, description, language } = parsed.data;
+    const input = isMultipart ? await parseMultipartRequest(req) : await parseJsonRequest(req);
 
     // AI 설정 조회
-    const config = await getDecryptedApiKey(projectId);
+    const config = await getDecryptedApiKey(input.projectId);
     if (!config) {
       return NextResponse.json(
         { error: 'AI 설정이 되어 있지 않습니다. 설정 페이지에서 API 키를 등록해주세요.' },
@@ -123,7 +197,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 월간 사용량 체크
-    const usageResult = await getMonthlyUsage(projectId);
+    const usageResult = await getMonthlyUsage(input.projectId);
     if (usageResult.success) {
       const { used, limit } = usageResult.data;
       if (used >= limit) {
@@ -134,7 +208,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const userPrompt = buildUserPrompt(description, language);
+    const userPrompt = buildUserPrompt({
+      description: input.description,
+      attachment: input.attachment
+        ? {
+            type: input.attachment.type,
+            filename:
+              input.attachmentFilename ??
+              `attachment.${input.attachment.type === 'pdf' ? 'pdf' : 'md'}`,
+            text: input.attachment.text,
+            truncated: input.attachment.truncated,
+          }
+        : undefined,
+      language: input.language,
+    });
 
     // LLM 호출
     let rawResponse: string;
@@ -164,13 +251,33 @@ export async function POST(req: NextRequest) {
     // 1회 최대 건수 제한
     const limitedCases = cases.slice(0, MAX_CASES_PER_REQUEST);
 
-    // 사용량 기록
-    await recordUsage(projectId, 'generate_cases', limitedCases.length);
+    // 사용량 기록 (첨부 메타 포함)
+    await recordUsage(
+      input.projectId,
+      'generate_cases',
+      limitedCases.length,
+      input.attachment ? toAttachmentMeta(input.attachment) : undefined
+    );
 
-    return NextResponse.json({ cases: limitedCases });
+    return NextResponse.json({
+      cases: limitedCases,
+      attachment: input.attachment
+        ? {
+            type: input.attachment.type,
+            sizeBytes: input.attachment.sizeBytes,
+            pageCount: input.attachment.pageCount,
+            charCount: input.attachment.charCount,
+            truncated: input.attachment.truncated,
+          }
+        : null,
+    });
   } catch (error) {
+    if (error instanceof InputError) {
+      return NextResponse.json({ error: error.userMessage }, { status: 400 });
+    }
+
     if (error instanceof AiError) {
-      // 사용자 환경 이슈(키 재등록/레이트/모델 설정 등) 는 정상 분기라
+      // 사용자 환경 이슈(키 재등록/레이트/모델 설정 / 첨부 입력 형식 등) 는 정상 분기라
       // Sentry 노이즈를 피해 report=true 인 예상 밖 결함만 보고한다.
       if (error.report) {
         Sentry.captureException(error, {

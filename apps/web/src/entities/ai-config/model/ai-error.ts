@@ -19,7 +19,11 @@ export type AiErrorKind =
   | 'PROVIDER_BAD_REQUEST' // provider 그 외 4xx (입력 형식/요청 구조 오류 등)
   | 'PROVIDER_UNAVAILABLE' // provider 5xx
   | 'PROVIDER_ERROR' // provider 그 외 비-2xx (예상 밖, 3xx 또는 알 수 없는 상태)
-  | 'RESPONSE_UNPARSABLE'; // LLM 응답이 JSON 으로 해석 불가
+  | 'RESPONSE_UNPARSABLE' // LLM 응답이 JSON 으로 해석 불가
+  | 'ATTACHMENT_UNSUPPORTED_TYPE' // 첨부 파일 형식 미지원 (PDF / Markdown 외)
+  | 'ATTACHMENT_TOO_LARGE' // 첨부 파일 크기 초과 (PDF 10MB / MD 1MB)
+  | 'ATTACHMENT_EMPTY' // 첨부 파일이 비어있거나 추출 결과가 0자
+  | 'ATTACHMENT_PARSE_FAILED'; // PDF 파싱 실패 (텍스트 추출 불가 / 손상)
 
 interface AiErrorSpec {
   httpStatus: number;
@@ -85,6 +89,27 @@ const SPECS: Record<AiErrorKind, AiErrorSpec> = {
     userMessage: 'AI 응답을 해석할 수 없습니다. 다시 시도해주세요.',
     report: true,
   },
+  ATTACHMENT_UNSUPPORTED_TYPE: {
+    httpStatus: 400,
+    userMessage: '지원하지 않는 파일 형식입니다. PDF 또는 Markdown 파일만 첨부할 수 있습니다.',
+    report: false,
+  },
+  ATTACHMENT_TOO_LARGE: {
+    httpStatus: 400,
+    userMessage: '파일이 너무 큽니다. PDF는 10MB, Markdown은 1MB 이하만 첨부할 수 있습니다.',
+    report: false,
+  },
+  ATTACHMENT_EMPTY: {
+    httpStatus: 400,
+    userMessage: '파일에서 텍스트를 추출하지 못했습니다. 다른 파일을 시도해주세요.',
+    report: false,
+  },
+  ATTACHMENT_PARSE_FAILED: {
+    httpStatus: 400,
+    userMessage:
+      'PDF에서 텍스트를 추출할 수 없습니다. 텍스트 추출 가능한 PDF인지 확인해주세요 (이미지·스캔본은 미지원).',
+    report: false,
+  },
 };
 
 export class AiError extends Error {
@@ -134,5 +159,29 @@ export class AiError extends Error {
 
   static responseUnparsable(cause?: unknown): AiError {
     return new AiError('RESPONSE_UNPARSABLE', {}, cause);
+  }
+
+  /** 첨부 파일 형식 미지원 */
+  static attachmentUnsupportedType(mime: string, filename: string): AiError {
+    return new AiError('ATTACHMENT_UNSUPPORTED_TYPE', { mime, filename });
+  }
+
+  /** 첨부 파일 크기 초과 */
+  static attachmentTooLarge(
+    type: 'pdf' | 'markdown',
+    sizeBytes: number,
+    maxBytes: number
+  ): AiError {
+    return new AiError('ATTACHMENT_TOO_LARGE', { type, sizeBytes, maxBytes });
+  }
+
+  /** 첨부 파일에서 추출된 텍스트가 0자 */
+  static attachmentEmpty(type: 'pdf' | 'markdown'): AiError {
+    return new AiError('ATTACHMENT_EMPTY', { type });
+  }
+
+  /** PDF 파싱 실패 (라이브러리 에러 등) */
+  static attachmentParseFailed(cause?: unknown): AiError {
+    return new AiError('ATTACHMENT_PARSE_FAILED', {}, cause);
   }
 }
