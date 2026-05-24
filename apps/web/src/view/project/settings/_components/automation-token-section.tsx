@@ -157,9 +157,12 @@ export const AutomationTokenSection = ({ projectId }: AutomationTokenSectionProp
         </SettingsCard.Body>
       </SettingsCard.Root>
 
-      {/* 발급 직후 평문 노출 모달 (1회만) */}
+      {/* 발급 직후 평문 노출 모달 (1회만)
+          Dialog.Root 는 외부 onOpenChange 콜백을 지원하지 않으므로 외부 상태 정리는
+          명시 close 버튼에서 setIssuedPlaintext(null) 로 처리한다.
+          `key={issuedPlaintext}` 로 재발급 시마다 강제 re-mount 해 defaultOpen 이 적용되도록 한다. */}
       {issuedPlaintext && (
-        <Dialog.Root defaultOpen onOpenChange={(open) => !open && setIssuedPlaintext(null)}>
+        <Dialog.Root key={issuedPlaintext} defaultOpen>
           <Dialog.Portal>
             <Dialog.Overlay
               className="animate-in fade-in"
@@ -217,7 +220,7 @@ export const AutomationTokenSection = ({ projectId }: AutomationTokenSectionProp
 
       {/* 회수 확인 다이얼로그 */}
       {confirmRevoke && (
-        <Dialog.Root defaultOpen onOpenChange={(open) => !open && setConfirmRevoke(false)}>
+        <Dialog.Root defaultOpen>
           <Dialog.Portal>
             <Dialog.Overlay
               className="animate-in fade-in"
