@@ -38,6 +38,20 @@ export const Footer = () => {
         <Link href="/team" aria-label={t('teamAria')} className="hover:text-teal-400">
           {t('team')}
         </Link>
+        <span aria-hidden="true" className="mx-2">
+          {' '}
+          |{' '}
+        </span>
+        <Link href="/blog" aria-label="블로그" className="hover:text-teal-400">
+          블로그
+        </Link>
+        <span aria-hidden="true" className="mx-2">
+          {' '}
+          |{' '}
+        </span>
+        <Link href="/news" aria-label="소식·공지" className="hover:text-teal-400">
+          소식·공지
+        </Link>
       </nav>
     </footer>
   );
