@@ -43,7 +43,6 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
       <button
         type="button"
         aria-label="더 보기"
-        aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
@@ -56,7 +55,6 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
 
       {open && (
         <div
-          role="menu"
           aria-label="더 보기"
           className="rounded-2 border-line-2 bg-bg-2 absolute top-full right-0 z-50 mt-1 min-w-[160px] border py-1 shadow-lg"
         >
@@ -64,7 +62,6 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
             <button
               key={key}
               type="button"
-              role="menuitem"
               onClick={() => {
                 handlers[key]();
                 setOpen(false);
