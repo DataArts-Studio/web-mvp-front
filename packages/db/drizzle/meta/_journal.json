@@ -36,6 +36,13 @@
       "when": 1779606707488,
       "tag": "0004_curved_ink",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779609994056,
+      "tag": "0005_tearful_mentor",
+      "breakpoints": true
     }
   ]
 }
