@@ -91,7 +91,6 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
         <button
           type="button"
           aria-label="케이스 작업"
-          aria-haspopup="menu"
           aria-expanded={isMenuOpen}
           className="rounded-1 text-text-4 hover:bg-bg-4 hover:text-text-1 focus-visible:ring-primary cursor-pointer p-1 opacity-0 transition-all group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
           onClick={(e) => {
@@ -112,13 +111,11 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
               }}
             />
             <div
-              role="menu"
               aria-label="케이스 작업"
               className="bg-bg-2 border-line-2 rounded-2 absolute top-full right-0 z-50 mt-1 min-w-[120px] border py-1 shadow-lg"
             >
               <button
                 type="button"
-                role="menuitem"
                 className="text-text-2 hover:bg-bg-3 flex w-full items-center gap-2 px-3 py-2 text-sm"
                 onClick={(e) => {
                   e.stopPropagation();
