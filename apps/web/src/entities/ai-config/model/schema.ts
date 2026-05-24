@@ -64,6 +64,18 @@ export const GenerateCasesSchema = z.object({
   language: z.enum(['ko', 'en']).default('ko'),
 });
 
+/**
+ * multipart 경로용 검증 스키마 (FDD-TC11 V2 / 이슈 #132).
+ *
+ * 파일 첨부가 있을 때는 description 이 없어도 되고 길이 제한도 풀린다.
+ * 라우트 핸들러가 파일 유무를 보고 최소 길이를 별도로 강제한다.
+ */
+export const GenerateCasesMultipartSchema = z.object({
+  projectId: z.string().uuid(),
+  description: z.string().max(3000, '설명은 3,000자를 초과할 수 없습니다').optional().default(''),
+  language: z.enum(['ko', 'en']).default('ko'),
+});
+
 export const GeneratedTestCaseSchema = z.object({
   name: z.string().min(1).max(200),
   preCondition: z.string().max(1000).optional().default(''),
