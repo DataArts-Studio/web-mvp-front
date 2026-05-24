@@ -21,6 +21,7 @@
 import { test as base, expect } from '@playwright/test';
 
 import { ProjectAccessPage, ProjectDashboardPage } from '../pages';
+import { LandingPage } from '../pages/landing/landing.page';
 import { ProjectTestcasePage } from '../pages/project/project-testcase.page';
 import { ProjectTestsuitePage } from '../pages/project/project-testsuite.page';
 
@@ -39,6 +40,7 @@ type PomFixtures = {
   dashboardPage: ProjectDashboardPage;
   testCasePage: ProjectTestcasePage;
   testSuitePage: ProjectTestsuitePage;
+  landingPage: LandingPage;
 };
 
 /**
@@ -57,6 +59,10 @@ export const test = base.extend<PomFixtures>({
       for (const k of keys) sessionStorage.setItem(k, 'true');
     }, NOTICE_DISMISS_KEYS);
     await use(page);
+  },
+
+  landingPage: async ({ page }, use) => {
+    await use(new LandingPage(page));
   },
 
   // accessPage: 인증 게이트(`/projects/{slug}/access`) Page Object.
