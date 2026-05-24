@@ -196,6 +196,8 @@ export const NAVIGATION_EVENTS = {
   LOGO_CLICK: 'logo_click',
   /** 문서 페이지 이동 */
   DOCS_CLICK: 'docs_click',
+  /** 블로그 페이지 이동 */
+  BLOG_CLICK: 'blog_click',
   /** 하단 네비게이션 클릭 */
   BOTTOM_NAV_CLICK: 'bottom_nav_click',
 } as const;
