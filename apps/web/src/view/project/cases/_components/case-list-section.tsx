@@ -186,16 +186,20 @@ export const CaseListSection = ({
                         item.isOptimistic && 'pointer-events-none animate-pulse opacity-50'
                       )}
                       onClick={(e) => {
-                        // 내부 액션 버튼(더보기 / 복제 등) 클릭은 부모로 위임하지 않는다.
-                        // 자식 onClick 의 stopPropagation 에만 기대지 않고 부모에서도 가드한다.
-                        if (e.target !== e.currentTarget) return;
+                        // 내부 인터랙티브 자식(액션 버튼 등) 클릭은 부모로 위임하지 않는다.
+                        // currentTarget 비교는 자식 텍스트(div / span) 클릭까지 전부 차단해서
+                        // 행 본문 클릭으로 케이스 진입이 안 되는 회귀가 생긴다.
+                        // 인터랙티브 요소(button / a / input / select / textarea)만 가드한다.
+                        if ((e.target as HTMLElement).closest('button, a, input, select, textarea'))
+                          return;
                         track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
                         onSelectCase(item.id);
                       }}
                       onKeyDown={(e) => {
-                        // 내부 버튼에 포커스된 상태의 Enter/Space 가 부모로 버블링돼
-                        // 행 선택이 동시에 일어나지 않도록 가드한다.
-                        if (e.target !== e.currentTarget) return;
+                        // 내부 인터랙티브 자식에 포커스된 상태의 Enter/Space 가
+                        // 부모로 버블링돼 행 선택이 동시에 일어나지 않도록 가드한다.
+                        if ((e.target as HTMLElement).closest('button, a, input, select, textarea'))
+                          return;
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
                           track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
