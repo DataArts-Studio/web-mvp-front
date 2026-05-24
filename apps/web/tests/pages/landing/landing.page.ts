@@ -45,39 +45,60 @@ export class LandingPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.heading = page.getByLabel('Testea 홈으로 이동');
-    this.openModalButton = page.getByRole('button', { name: '무료로 시작하기' });
+    this.openModalButton = page.getByRole('button', {
+      name: '무료로 시작하기',
+    });
 
     // 모달 본체 — 레거시 locators.ts 의 검증된 셀렉터.
     this.modal = page.locator('#create-project[role="dialog"]');
 
-    this.formHeading = page.getByRole('heading', { name: '테스트 케이스 작성, 단 5분이면 끝!' });
+    this.formHeading = page.getByRole('heading', {
+      name: '테스트 케이스 작성, 단 5분이면 끝!',
+    });
     this.formTitleInput = page.getByPlaceholder(
       '프로젝트 이름을 입력하세요 (예: Testea Web Client)'
     );
     // 체크박스는 <button role="checkbox">(접근가능한 이름 없음) → 감싸는 label 텍스트로 스코프
-    this.formTermsCheckbox = page.locator('label', { hasText: '이용약관' }).getByRole('checkbox');
+    this.formTermsCheckbox = page
+      .locator('label', { hasText: '이용약관' })
+      .getByRole('checkbox');
     this.formPrivacyCheckbox = page
       .locator('label', { hasText: '만 14세 이상' })
       .getByRole('checkbox');
-    this.formStartButton = page.getByRole('button', { name: '프로젝트 생성 시작' });
+    this.formStartButton = page.getByRole('button', {
+      name: '프로젝트 생성 시작',
+    });
 
     // Step 2
-    this.step2Heading = this.modal.getByRole('heading', { name: '프라이빗 모드로 생성하기' });
+    this.step2Heading = this.modal.getByRole('heading', {
+      name: '프라이빗 모드로 생성하기',
+    });
     this.step2CloseButton = this.modal.getByRole('button', { name: '닫기' });
     this.step2Error = this.modal.locator('p[data-invalid="true"]');
     // 식별번호 입력 (type=password → textbox role 없음 → srOnly label 사용)
     this.formPasswordInput = page.getByLabel(/프로젝트 식별번호/);
     this.formPasswordConfirmInput = page.getByLabel(/식별번호 재확인/);
-    this.formStepTwoButton = page.getByRole('button', { name: '프로젝트 생성하기' });
+    this.formStepTwoButton = page.getByRole('button', {
+      name: '프로젝트 생성하기',
+    });
 
     // Step 3
-    this.step3Heading = this.modal.getByRole('heading', { name: '프로젝트를 생성하시겠습니까?' });
+    this.step3Heading = this.modal.getByRole('heading', {
+      name: '프로젝트를 생성하시겠습니까?',
+    });
     this.step3CancelButton = this.modal.getByRole('button', { name: '취소' });
-    this.formSubmitButton = page.getByRole('button', { name: '생성하기', exact: true });
+    this.formSubmitButton = page.getByRole('button', {
+      name: '생성하기',
+      exact: true,
+    });
 
     // 성공
-    this.successHeading = this.modal.getByRole('heading', { name: '프로젝트 생성 완료!' });
-    this.formProjectUrlCopyButton = page.getByRole('button', { name: '링크 복사' });
+    this.successHeading = this.modal.getByRole('heading', {
+      name: '프로젝트 생성 완료!',
+    });
+    this.formProjectUrlCopyButton = page.getByRole('button', {
+      name: '링크 복사',
+    });
     this.startButton = page.getByRole('button', { name: '시작하기' });
   }
 
@@ -200,8 +221,12 @@ export class LandingPage extends BasePage {
   /** "링크 복사"가 클립보드에 올린 값이 프로젝트 URL 과 일치한다. */
   async expectCopiedProjectUrl(projectName: string): Promise<void> {
     const origin = await this.page.evaluate(() => window.location.origin);
-    const clipboard = await this.page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toBe(`${origin}/projects/${encodeURIComponent(projectName)}`);
+    const clipboard = await this.page.evaluate(() =>
+      navigator.clipboard.readText()
+    );
+    expect(clipboard).toBe(
+      `${origin}/projects/${encodeURIComponent(projectName)}`
+    );
   }
 
   /** 생성한 프로젝트 대시보드(`/projects/{slug}`)로 도착했다. */
@@ -210,6 +235,8 @@ export class LandingPage extends BasePage {
       new RegExp(`/projects/${encodeURIComponent(projectName)}(/.*)?$`),
       { timeout: 30_000 }
     );
-    await expect(this.page.getByText(projectName).first()).toBeVisible({ timeout: 15_000 });
+    await expect(this.page.getByText(projectName).first()).toBeVisible({
+      timeout: 15_000,
+    });
   }
 }

@@ -54,7 +54,9 @@ test.describe('프로젝트 생성 시나리오', () => {
     });
   });
 
-  test('Step1 필수 미입력 시 프로젝트 생성이 진행되지 않는다', async ({ landingPage }) => {
+  test('Step1 필수 미입력 시 프로젝트 생성이 진행되지 않는다', async ({
+    landingPage,
+  }) => {
     await test.step('프로젝트 생성 모달을 연다.', async () => {
       await landingPage.goto();
       await landingPage.openModal();
@@ -78,7 +80,9 @@ test.describe('프로젝트 생성 시나리오', () => {
     });
   });
 
-  test('Step2 식별번호 불일치 시 프로젝트 생성이 진행되지 않는다', async ({ landingPage }) => {
+  test('Step2 식별번호 불일치 시 프로젝트 생성이 진행되지 않는다', async ({
+    landingPage,
+  }) => {
     const identifier = 'Pass1234!';
 
     await test.step('프로젝트 생성 모달을 연다.', async () => {
@@ -111,7 +115,9 @@ test.describe('프로젝트 생성 시나리오', () => {
     });
   });
 
-  test('모달 바깥 클릭으로 이탈하면 프로젝트가 생성되지 않는다', async ({ landingPage }) => {
+  test('모달 바깥 클릭으로 이탈하면 프로젝트가 생성되지 않는다', async ({
+    landingPage,
+  }) => {
     await test.step('프로젝트 생성 모달을 연다.', async () => {
       await landingPage.goto();
       await landingPage.openModal();
@@ -138,7 +144,9 @@ test.describe('프로젝트 생성 시나리오', () => {
     });
   });
 
-  test('취소/닫기 버튼으로 이탈하면 프로젝트가 생성되지 않는다', async ({ landingPage }) => {
+  test('취소/닫기 버튼으로 이탈하면 프로젝트가 생성되지 않는다', async ({
+    landingPage,
+  }) => {
     const identifier = 'Pass1234!';
 
     await test.step('프로젝트 생성 모달을 연다.', async () => {
