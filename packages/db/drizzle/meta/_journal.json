@@ -22,6 +22,13 @@
       "when": 1779234863628,
       "tag": "0002_default_now_timestamps",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779632299887,
+      "tag": "0003_naive_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }
