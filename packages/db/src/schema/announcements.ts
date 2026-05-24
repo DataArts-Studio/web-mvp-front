@@ -1,4 +1,13 @@
-import { boolean, index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 /**
  * 공지사항 카테고리.
@@ -95,5 +104,10 @@ export const notificationReads = pgTable(
   (t) => ({
     userIdx: index('notification_reads_user_idx').on(t.user_id),
     announcementIdx: index('notification_reads_announcement_idx').on(t.announcement_id),
+    // 동일 (user_id, announcement_id) 중복 기록 방지. ON CONFLICT DO NOTHING 으로 멱등 처리.
+    userAnnouncementUnq: unique('notification_reads_user_announcement_unq').on(
+      t.user_id,
+      t.announcement_id
+    ),
   })
 );

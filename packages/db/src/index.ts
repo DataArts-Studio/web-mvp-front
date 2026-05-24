@@ -5,5 +5,9 @@ export { getProjectStorageBytes } from './queries/get-project-storage';
 export {
   getActiveAnnouncements,
   getCriticalAnnouncement,
+  getActiveAnnouncementsWithReadState,
+  countUnreadAnnouncements,
+  markAnnouncementRead,
   type PublicAnnouncement,
+  type AnnouncementWithReadState,
 } from './queries/announcements';

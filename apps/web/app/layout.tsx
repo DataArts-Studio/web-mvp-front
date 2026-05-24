@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 
 import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
+import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
 import { CriticalBanner } from '@/widgets/announcement-banner';
 import { MvpBottomNavbarLazy } from '@testea/ui';
@@ -205,8 +206,10 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <CriticalBanner />
-        {children}
+        <QueryProvider>
+          <CriticalBanner />
+          {children}
+        </QueryProvider>
         <LazyToaster />
         {/* 테스트용 컴포넌트 */}
         <MvpBottomNavbarLazy />

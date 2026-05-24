@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { LANDING_EVENTS, NAVIGATION_EVENTS, track } from '@/shared/lib/analytics';
+import { NotificationBell } from '@/widgets/notification-center';
 
 import { BetaBanner } from './beta-banner';
 import { useBetaBanner } from './use-beta-banner';
@@ -65,6 +66,7 @@ export const GlobalHeader = () => {
           >
             내 프로젝트 찾기
           </button>
+          <NotificationBell />
         </nav>
       </header>
 
