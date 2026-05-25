@@ -47,3 +47,69 @@ jobs:
           echo "$changed"
           # 명시 경로로 넘겨도 prettier 는 .prettierignore 를 그대로 존중함
           echo "$changed" | xargs -d '\n' pnpm exec prettier --check
+
+  # 학습용: 전체 E2E 를 분리 없이 한 잡에서 돌려본다.
+  # 목적은 "왜 PR 단계에서 smoke 만 돌려야 하는가" 를 시간으로 직접 체감하는 것.
+  # 나중에는 e2e-smoke(PR) + e2e-regression(main push) 로 쪼갠다.
+  e2e:
+    name: e2e (Playwright, 전체)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      # 시드된 sample-project 가 있는 dev DB 그대로 사용
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+      # GitHub 은 secret 이름의 GITHUB_ prefix 를 예약·차단한다.
+      # 앱·로컬·Vercel 은 GITHUB_ 그대로 두고, CI 매핑만 secret(GH_)←→env(GITHUB_) 로 우회.
+      GITHUB_TOKEN_ENCRYPTION_KEY: ${{ secrets.GH_TOKEN_ENCRYPTION_KEY }}
+      # Cloudflare 공식 always-pass 테스트 키 (실제 키 비노출)
+      NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      # AI config 진입 spec 이 있어 필요 (없으면 일부 spec 만 영향)
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Playwright 브라우저 바이너리는 무겁다. 의존성 hash 기반으로 캐시.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: pw-${{ runner.os }}-
+
+      - name: Install Playwright (chromium only)
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      # webServer 는 playwright.config.ts 가 자동 기동 (pnpm --filter web dev)
+      - name: Run E2E (전체 scenario)
+        run: pnpm --filter web e2e
+
+      # 결과 리포트는 항상 업로드 (성공이든 실패든 시간·통계 확인용)
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
+
+      # 실패 시 trace/screenshot/video 도 같이 (디버깅용)
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: apps/web/test-results
+          retention-days: 7
