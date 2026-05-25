@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 
 import type { ChangeType } from '@/entities/test-case-version';
+import { versionsListQueryOptions } from '@/entities/test-case-version/api/query';
 import { RollbackConfirmDialog } from '@/features/version-rollback/ui/rollback-confirm-dialog';
+import { useQuery } from '@tanstack/react-query';
 import { DSButton, LoadingSpinner } from '@testea/ui';
 import { formatDateTime } from '@testea/util';
 import { GitCompare, RotateCcw, Tag } from 'lucide-react';
@@ -30,7 +32,12 @@ export const VersionDetailPanel = ({
   onBack,
 }: VersionDetailPanelProps) => {
   const { data, isLoading } = useVersionDetail(testCaseId, versionNumber);
+  const { data: listData } = useQuery(versionsListQueryOptions(testCaseId));
   const [showRollback, setShowRollback] = useState(false);
+
+  const latestVersionNumber = listData?.success
+    ? (listData.data.versions[0]?.versionNumber ?? 0)
+    : 0;
 
   if (isLoading) {
     return (
@@ -61,14 +68,16 @@ export const VersionDetailPanel = ({
           </div>
 
           <div className="flex gap-2">
-            <DSButton
-              size="small"
-              variant="ghost"
-              onClick={() => onCompare(version.versionNumber, version.versionNumber)}
-            >
-              <GitCompare className="mr-1 h-4 w-4" />
-              현재 버전과 비교
-            </DSButton>
+            {latestVersionNumber > 0 && version.versionNumber !== latestVersionNumber && (
+              <DSButton
+                size="small"
+                variant="ghost"
+                onClick={() => onCompare(version.versionNumber, latestVersionNumber)}
+              >
+                <GitCompare className="mr-1 h-4 w-4" />
+                현재 버전과 비교
+              </DSButton>
+            )}
             <DSButton size="small" variant="ghost" onClick={() => setShowRollback(true)}>
               <RotateCcw className="mr-1 h-4 w-4" />이 버전으로 복원
             </DSButton>
