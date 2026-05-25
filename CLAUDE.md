@@ -29,11 +29,13 @@ packages/
 ## 자주 쓰는 명령
 
 루트 (Turbo가 워크스페이스 fan-out):
+
 - `pnpm dev` — 모든 앱 dev 동시 실행
 - `pnpm build` / `pnpm lint`
 - `pnpm format` / `pnpm format:check` — Prettier (CI는 PR 변경 파일만 검사)
 
 `apps/web`:
+
 - `pnpm --filter web dev` / `build` / `start`
 - `pnpm --filter web test` — Vitest (단위, `src/**/*.test.*`만 수집)
 - `pnpm --filter web test:watch` / `test:coverage`
@@ -43,6 +45,7 @@ packages/
 - 단일 테스트: `pnpm --filter web exec vitest run path/to/file.test.ts` / `pnpm --filter web exec playwright test tests/scenario/access`
 
 `packages/db`:
+
 - `pnpm --filter @testea/db db:generate` / `db:migrate` / `db:studio`
 
 ## 테스트 분리 규약 (중요)
@@ -54,6 +57,7 @@ packages/
 - 위치를 바꾸거나 `setupFiles`/`testMatch`/`include`/`exclude` 손댈 때는 실제 파일 존재 여부를 반드시 대조 (AGENTS.md 블로킹 항목).
 
 Playwright project:
+
 - `chromium` — 미인증 시나리오 (`scenario/access`, `create-project`, `project-search`)
 - `chromium-auth` — `playwright/.auth/project.json` storageState 필요. `setup` 프로젝트가 선행 (`scenario/dashboard`, `scenario/testcase`)
 - localhost는 Turnstile siteKey 빈 문자열 → 위젯 미렌더로 자동 통과. CI는 Cloudflare 공식 always-pass 키 사용 (`.github/workflows/ci.yml:67`).
@@ -62,6 +66,7 @@ Playwright project:
 ## 아키텍처 — apps/web (FSD)
 
 `src/` 하위:
+
 ```
 app-shell/   # 프로바이더, 전역 스타일
 shared/      # ui, utils, lib, layout, logging
@@ -90,6 +95,7 @@ DB는 **Vercel env 분기로 prod ↔ preview/dev 서로 다른 DB**. 로컬/CI 
 ## CI
 
 `.github/workflows/ci.yml`:
+
 1. **prettier (changed files)** — PR에서 base 대비 diff된 ts/tsx/js/jsx/json/md만 `prettier --check`. 게이팅.
 2. **e2e (전체)** — Playwright 전체 시나리오. webServer는 `playwright.config.ts`가 자동 기동. 실패 시 trace/screenshot/video 아티팩트 업로드.
 
