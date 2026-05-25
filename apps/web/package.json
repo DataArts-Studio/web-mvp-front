@@ -12,6 +12,8 @@
     "format": "prettier --write .",
     "test": "vitest",
     "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:ui": "vitest --coverage --ui",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
@@ -84,6 +86,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/coverage-v8": "^4.1.7",
     "autoprefixer": "^10.4.23",
     "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9.39.2",
@@ -96,6 +99,6 @@
     "tailwindcss": "^4.1.18",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
     "typescript": "^5",
-    "vitest": "^4.0.15"
+    "vitest": "^4.1.7"
   }
 }
