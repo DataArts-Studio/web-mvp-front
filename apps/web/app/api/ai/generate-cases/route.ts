@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireProjectAccess } from '@/access/lib/require-access';
 import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
 import { AiError } from '@/entities/ai-config/model/ai-error';
 import {
@@ -189,6 +190,11 @@ export async function POST(req: NextRequest) {
     const isMultipart = contentType.includes('multipart/form-data');
 
     const input = isMultipart ? await parseMultipartRequest(req) : await parseJsonRequest(req);
+
+    // 프로젝트 접근 토큰 검증. 외부 호출자가 임의 projectId 로 다른 프로젝트의 API 키·월간 한도를 소진하는 것을 차단한다.
+    if (!(await requireProjectAccess(input.projectId))) {
+      return NextResponse.json({ error: '프로젝트 접근 권한이 없습니다.' }, { status: 401 });
+    }
 
     // AI 설정 조회
     const config = await getDecryptedApiKey(input.projectId);
