@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // Storybook 빌드 산출물 (gitignored, 로컬 lint 잡음 제거)
+    'storybook-static/**',
   ]),
 
   // [FSD 공통 규칙] shared는 절대 상위 레이어(비즈니스 로직)를 알면 안 됨

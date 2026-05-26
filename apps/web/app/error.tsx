@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 
 import Image from 'next/image';
+import Link from 'next/link';
 
 import * as Sentry from '@sentry/nextjs';
 
@@ -44,12 +45,12 @@ export default function Error({ error, reset }: ErrorProps) {
             >
               다시 시도
             </button>
-            <a
+            <Link
               href="/"
               className="rounded-4 border-line-2 text-body2 text-text-1 hover:bg-bg-3 inline-flex w-fit items-center justify-center border px-6 py-3 font-semibold transition-colors"
             >
               홈으로 돌아가기
-            </a>
+            </Link>
           </div>
         </div>
 
