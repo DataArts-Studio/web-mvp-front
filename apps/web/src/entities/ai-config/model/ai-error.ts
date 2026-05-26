@@ -23,7 +23,8 @@ export type AiErrorKind =
   | 'ATTACHMENT_UNSUPPORTED_TYPE' // 첨부 파일 형식 미지원 (PDF / Markdown 외)
   | 'ATTACHMENT_TOO_LARGE' // 첨부 파일 크기 초과 (PDF 10MB / MD 1MB)
   | 'ATTACHMENT_EMPTY' // 첨부 파일이 비어있거나 추출 결과가 0자
-  | 'ATTACHMENT_PARSE_FAILED'; // PDF 파싱 실패 (텍스트 추출 불가 / 손상)
+  | 'ATTACHMENT_PARSE_FAILED' // PDF 파싱 실패 (텍스트 추출 불가 / 손상)
+  | 'ATTACHMENT_DECODE_FAILED'; // Markdown UTF-8 디코딩 실패 (비-UTF-8 인코딩)
 
 interface AiErrorSpec {
   httpStatus: number;
@@ -110,6 +111,12 @@ const SPECS: Record<AiErrorKind, AiErrorSpec> = {
       'PDF에서 텍스트를 추출할 수 없습니다. 텍스트 추출 가능한 PDF인지 확인해주세요 (이미지·스캔본은 미지원).',
     report: false,
   },
+  ATTACHMENT_DECODE_FAILED: {
+    httpStatus: 400,
+    userMessage:
+      'Markdown 파일 인코딩을 해석할 수 없습니다. UTF-8 로 저장된 파일인지 확인해주세요.',
+    report: false,
+  },
 };
 
 export class AiError extends Error {
@@ -183,5 +190,10 @@ export class AiError extends Error {
   /** PDF 파싱 실패 (라이브러리 에러 등) */
   static attachmentParseFailed(cause?: unknown): AiError {
     return new AiError('ATTACHMENT_PARSE_FAILED', {}, cause);
+  }
+
+  /** Markdown UTF-8 디코딩 실패 (비-UTF-8 인코딩 / 손상) */
+  static attachmentDecodeFailed(cause?: unknown): AiError {
+    return new AiError('ATTACHMENT_DECODE_FAILED', {}, cause);
   }
 }

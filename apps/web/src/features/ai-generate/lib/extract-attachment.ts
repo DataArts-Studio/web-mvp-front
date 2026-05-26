@@ -15,6 +15,7 @@ export const ATTACHMENT_LIMITS = {
   pdf: {
     maxBytes: 10 * ONE_MB,
     mimeTypes: ['application/pdf'] as readonly string[],
+    extensions: ['.pdf'] as readonly string[],
   },
   markdown: {
     maxBytes: 1 * ONE_MB,
@@ -46,23 +47,21 @@ export interface AttachmentExtractResult {
 
 /**
  * MIME 타입과 파일명으로 첨부 파일 종류를 판별한다.
- * Markdown 은 일부 환경에서 `text/plain` 으로만 오기 때문에 확장자도 함께 본다.
+ * 일부 브라우저/OS 가 PDF 를 `application/octet-stream` 으로, Markdown 을 `text/plain`
+ * 또는 빈 문자열로 내려주는 경우가 있어 MIME 과 확장자 중 하나만 일치해도 허용한다.
  */
 export function classifyAttachment(file: File): AttachmentType {
-  if (ATTACHMENT_LIMITS.pdf.mimeTypes.includes(file.type)) {
+  const name = file.name.toLowerCase();
+
+  const hasPdfMime = ATTACHMENT_LIMITS.pdf.mimeTypes.includes(file.type);
+  const hasPdfExt = ATTACHMENT_LIMITS.pdf.extensions.some((ext) => name.endsWith(ext));
+  if (hasPdfMime || hasPdfExt) {
     return 'pdf';
   }
 
-  const name = file.name.toLowerCase();
-  const hasMarkdownExt = ATTACHMENT_LIMITS.markdown.extensions.some((ext) => name.endsWith(ext));
   const hasMarkdownMime = ATTACHMENT_LIMITS.markdown.mimeTypes.includes(file.type);
-
-  if (hasMarkdownExt || (hasMarkdownMime && hasMarkdownExt)) {
-    return 'markdown';
-  }
-
-  // 확장자가 .md / .markdown 인데 MIME 이 비어있는 경우(브라우저별 다름) 도 허용
-  if (file.type === '' && hasMarkdownExt) {
+  const hasMarkdownExt = ATTACHMENT_LIMITS.markdown.extensions.some((ext) => name.endsWith(ext));
+  if (hasMarkdownMime || hasMarkdownExt) {
     return 'markdown';
   }
 
@@ -137,7 +136,10 @@ export async function extractAttachmentText(file: File): Promise<AttachmentExtra
   };
 }
 
-/** UTF-8 디코딩. BOM 제거. 디코딩 실패 시 빈 문자열이 아니라 throw 한다. */
+/**
+ * Markdown UTF-8 디코딩. BOM 제거. 디코딩 실패는 Markdown 전용 에러로 분류한다
+ * (PDF 추출 실패 메시지를 그대로 노출하지 않게).
+ */
 function decodeUtf8(buffer: ArrayBuffer): string {
   try {
     const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: false });
@@ -145,7 +147,7 @@ function decodeUtf8(buffer: ArrayBuffer): string {
     // BOM 이 남아 있으면 제거
     return text.replace(/^﻿/, '');
   } catch (cause) {
-    throw AiError.attachmentParseFailed(cause);
+    throw AiError.attachmentDecodeFailed(cause);
   }
 }
 

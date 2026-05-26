@@ -112,16 +112,16 @@ function parseJsonResponse(raw: string): unknown[] {
 }
 
 /**
- * JSON 경로와 multipart 경로를 단일 구조로 수렴시킨다. 이후 LLM 호출·사용량 기록은
- * 입력 경로를 신경 쓰지 않고 NormalizedInput 만 보면 된다.
+ * JSON 경로와 multipart 경로를 단일 구조로 수렴시킨다. 첨부 본문 추출은 사용량/설정
+ * 가드 통과 이후 POST 핸들러에서 수행하므로, multipart 경로도 여기서는 raw `File`
+ * 만 들고 다닌다.
  */
 interface NormalizedInput {
   projectId: string;
   description: string;
   language: 'ko' | 'en';
-  attachment?: AttachmentExtractResult;
-  /** 첨부 파일의 원본 이름. multipart 경로에서만 설정됨. */
-  attachmentFilename?: string;
+  /** multipart 경로에서 받은 첨부 파일 원본. 사용량 체크 통과 후에 본문을 추출한다. */
+  attachmentFile?: File;
 }
 
 class InputError extends Error {
@@ -132,7 +132,12 @@ class InputError extends Error {
 }
 
 async function parseJsonRequest(req: NextRequest): Promise<NormalizedInput> {
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    throw new InputError('요청 본문이 올바른 JSON 형식이 아닙니다.');
+  }
   const parsed = GenerateCasesSchema.safeParse(body);
   if (!parsed.success) {
     throw new InputError(parsed.error.issues[0]?.message ?? '요청 값이 올바르지 않습니다.');
@@ -154,21 +159,19 @@ async function parseMultipartRequest(req: NextRequest): Promise<NormalizedInput>
   const fileEntry = form.get('file');
   const file = fileEntry instanceof File ? fileEntry : null;
 
-  let attachment: AttachmentExtractResult | undefined;
-  let attachmentFilename: string | undefined;
-  if (file && file.size > 0) {
-    attachment = await extractAttachmentText(file);
-    attachmentFilename = file.name;
+  // 0 바이트 파일은 첨부가 없는 것처럼 조용히 무시되지 않도록 명시 거부한다.
+  if (file && file.size === 0) {
+    throw new InputError('빈 파일은 첨부할 수 없습니다.');
   }
 
   // 파일 없으면 V1 과 동일하게 description 최소 20자 강제. 파일이 있으면 description 은 보조 컨텍스트로 풀어줌.
-  if (!attachment && parsed.data.description.trim().length < 20) {
+  if (!file && parsed.data.description.trim().length < 20) {
     throw new InputError(
       '더 구체적인 설명을 입력하거나 PDF / Markdown 파일을 첨부해주세요 (최소 20자)'
     );
   }
 
-  return { ...parsed.data, attachment, attachmentFilename };
+  return { ...parsed.data, attachmentFile: file ?? undefined };
 }
 
 function toAttachmentMeta(extract: AttachmentExtractResult): AttachmentUsageMeta {
@@ -182,7 +185,7 @@ function toAttachmentMeta(extract: AttachmentExtractResult): AttachmentUsageMeta
 
 export async function POST(req: NextRequest) {
   try {
-    const contentType = req.headers.get('content-type') ?? '';
+    const contentType = (req.headers.get('content-type') ?? '').toLowerCase();
     const isMultipart = contentType.includes('multipart/form-data');
 
     const input = isMultipart ? await parseMultipartRequest(req) : await parseJsonRequest(req);
@@ -208,16 +211,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 한도/설정 가드 통과 후에 첨부 본문을 추출한다. 거부될 호출이 PDF 파싱 비용을 먼저 지불하지 않도록.
+    let attachment: AttachmentExtractResult | undefined;
+    if (input.attachmentFile) {
+      attachment = await extractAttachmentText(input.attachmentFile);
+    }
+
     const userPrompt = buildUserPrompt({
       description: input.description,
-      attachment: input.attachment
+      attachment: attachment
         ? {
-            type: input.attachment.type,
+            type: attachment.type,
             filename:
-              input.attachmentFilename ??
-              `attachment.${input.attachment.type === 'pdf' ? 'pdf' : 'md'}`,
-            text: input.attachment.text,
-            truncated: input.attachment.truncated,
+              input.attachmentFile?.name ??
+              `attachment.${attachment.type === 'pdf' ? 'pdf' : 'md'}`,
+            text: attachment.text,
+            truncated: attachment.truncated,
           }
         : undefined,
       language: input.language,
@@ -256,18 +265,18 @@ export async function POST(req: NextRequest) {
       input.projectId,
       'generate_cases',
       limitedCases.length,
-      input.attachment ? toAttachmentMeta(input.attachment) : undefined
+      attachment ? toAttachmentMeta(attachment) : undefined
     );
 
     return NextResponse.json({
       cases: limitedCases,
-      attachment: input.attachment
+      attachment: attachment
         ? {
-            type: input.attachment.type,
-            sizeBytes: input.attachment.sizeBytes,
-            pageCount: input.attachment.pageCount,
-            charCount: input.attachment.charCount,
-            truncated: input.attachment.truncated,
+            type: attachment.type,
+            sizeBytes: attachment.sizeBytes,
+            pageCount: attachment.pageCount,
+            charCount: attachment.charCount,
+            truncated: attachment.truncated,
           }
         : null,
     });
