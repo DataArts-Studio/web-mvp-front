@@ -29,6 +29,13 @@
       "when": 1779632299887,
       "tag": "0003_naive_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779810808916,
+      "tag": "0004_ai_attached_file_type_enum",
+      "breakpoints": true
     }
   ]
 }
