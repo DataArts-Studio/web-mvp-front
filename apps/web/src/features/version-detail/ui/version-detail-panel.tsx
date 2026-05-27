@@ -69,18 +69,20 @@ export const VersionDetailPanel = ({
 
           <div className="flex gap-2">
             {latestVersionNumber > 0 && version.versionNumber !== latestVersionNumber && (
-              <DSButton
-                size="small"
-                variant="ghost"
-                onClick={() => onCompare(version.versionNumber, latestVersionNumber)}
-              >
-                <GitCompare className="mr-1 h-4 w-4" />
-                현재 버전과 비교
-              </DSButton>
+              <>
+                <DSButton
+                  size="small"
+                  variant="ghost"
+                  onClick={() => onCompare(version.versionNumber, latestVersionNumber)}
+                >
+                  <GitCompare className="mr-1 h-4 w-4" />
+                  현재 버전과 비교
+                </DSButton>
+                <DSButton size="small" variant="ghost" onClick={() => setShowRollback(true)}>
+                  <RotateCcw className="mr-1 h-4 w-4" />이 버전으로 복원
+                </DSButton>
+              </>
             )}
-            <DSButton size="small" variant="ghost" onClick={() => setShowRollback(true)}>
-              <RotateCcw className="mr-1 h-4 w-4" />이 버전으로 복원
-            </DSButton>
           </div>
         </div>
 

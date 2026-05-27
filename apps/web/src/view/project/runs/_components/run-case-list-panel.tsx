@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { type TestCaseRunDetail } from '@/features/runs';
-import { useOutsideClick } from '@testea/lib';
 import { cn } from '@testea/util';
 import {
   CheckCircle2,
@@ -92,8 +92,34 @@ export const RunCaseListPanel = ({
   onInlineStatusChange,
 }: RunCaseListPanelProps) => {
   const [inlineDropdownId, setInlineDropdownId] = useState<string | null>(null);
-  const inlineDropdownRef = useRef<HTMLDivElement>(null);
-  useOutsideClick(inlineDropdownRef, () => setInlineDropdownId(null), !!inlineDropdownId);
+  const [inlineDropdownAnchor, setInlineDropdownAnchor] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
+  const inlineDropdownTriggerRef = useRef<HTMLDivElement>(null);
+  const inlineDropdownContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!inlineDropdownId) return;
+    const close = () => {
+      setInlineDropdownId(null);
+      setInlineDropdownAnchor(null);
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (inlineDropdownTriggerRef.current?.contains(target)) return;
+      if (inlineDropdownContentRef.current?.contains(target)) return;
+      close();
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [inlineDropdownId]);
   const hasSelection = bulkSelection.count > 0;
   const allSelected = filteredCases.length > 0 && bulkSelection.count === filteredCases.length;
 
@@ -441,63 +467,86 @@ export const RunCaseListPanel = ({
                             </p>
                           </div>
                         </button>
-                        {/* Inline status dropdown — right side */}
+                        {/* Inline status dropdown (right side) */}
                         <div
-                          className="relative flex-shrink-0"
-                          ref={inlineDropdownId === tc.id ? inlineDropdownRef : undefined}
+                          className="flex-shrink-0"
+                          ref={inlineDropdownId === tc.id ? inlineDropdownTriggerRef : undefined}
                         >
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setInlineDropdownId((prev) => (prev === tc.id ? null : tc.id));
+                              if (inlineDropdownId === tc.id) {
+                                setInlineDropdownId(null);
+                                setInlineDropdownAnchor(null);
+                                return;
+                              }
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setInlineDropdownAnchor({
+                                top: rect.bottom + 4,
+                                right: window.innerWidth - rect.right,
+                              });
+                              setInlineDropdownId(tc.id);
                             }}
                             className={cn(
                               'flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors',
                               config.style,
                               STATUS_CONFIG[tc.status].bgStyle
                             )}
-                            title={`상태: ${config.label} — 클릭하여 변경`}
+                            title={`상태: ${config.label} (클릭하여 변경)`}
                           >
                             {config.icon}
                             <ChevronDown className="h-3 w-3" />
                           </button>
-                          {inlineDropdownId === tc.id && (
-                            <div className="bg-bg-2 border-line-2 absolute top-full right-0 z-30 mt-1 w-32 overflow-hidden rounded-lg border shadow-xl">
-                              {(['pass', 'fail', 'blocked', 'untested'] as const).map((s) => (
-                                <button
-                                  key={s}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onInlineStatusChange(tc.id, s);
-                                    setInlineDropdownId(null);
-                                  }}
-                                  className={cn(
-                                    'flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors',
-                                    tc.status === s
-                                      ? cn(
-                                          STATUS_CONFIG[s].bgStyle.split(' ')[0],
-                                          STATUS_CONFIG[s].style
-                                        )
-                                      : 'hover:bg-bg-3'
-                                  )}
-                                >
-                                  <span className={STATUS_CONFIG[s].style}>
-                                    {STATUS_CONFIG[s].icon}
-                                  </span>
-                                  <span
-                                    className={
-                                      tc.status === s ? STATUS_CONFIG[s].style : 'text-text-1'
-                                    }
+                          {inlineDropdownId === tc.id &&
+                            inlineDropdownAnchor &&
+                            typeof document !== 'undefined' &&
+                            createPortal(
+                              <div
+                                ref={inlineDropdownContentRef}
+                                style={{
+                                  position: 'fixed',
+                                  top: inlineDropdownAnchor.top,
+                                  right: inlineDropdownAnchor.right,
+                                }}
+                                className="bg-bg-2 border-line-2 z-50 w-32 overflow-hidden rounded-lg border shadow-xl"
+                              >
+                                {(['pass', 'fail', 'blocked', 'untested'] as const).map((s) => (
+                                  <button
+                                    key={s}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onInlineStatusChange(tc.id, s);
+                                      setInlineDropdownId(null);
+                                      setInlineDropdownAnchor(null);
+                                    }}
+                                    className={cn(
+                                      'flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors',
+                                      tc.status === s
+                                        ? cn(
+                                            STATUS_CONFIG[s].bgStyle.split(' ')[0],
+                                            STATUS_CONFIG[s].style
+                                          )
+                                        : 'hover:bg-bg-3'
+                                    )}
                                   >
-                                    {STATUS_CONFIG[s].label}
-                                  </span>
-                                  <kbd className="text-text-4 ml-auto text-[10px]">
-                                    {STATUS_CONFIG[s].shortcut}
-                                  </kbd>
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                                    <span className={STATUS_CONFIG[s].style}>
+                                      {STATUS_CONFIG[s].icon}
+                                    </span>
+                                    <span
+                                      className={
+                                        tc.status === s ? STATUS_CONFIG[s].style : 'text-text-1'
+                                      }
+                                    >
+                                      {STATUS_CONFIG[s].label}
+                                    </span>
+                                    <kbd className="text-text-4 ml-auto text-[10px]">
+                                      {STATUS_CONFIG[s].shortcut}
+                                    </kbd>
+                                  </button>
+                                ))}
+                              </div>,
+                              document.body
+                            )}
                         </div>
                         {isSelected && (
                           <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />
