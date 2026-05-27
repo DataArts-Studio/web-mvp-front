@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireProjectAccess } from '@/access/lib/require-access';
 import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
 import { AiError } from '@/entities/ai-config/model/ai-error';
 import {
@@ -146,7 +147,12 @@ async function parseJsonRequest(req: NextRequest): Promise<NormalizedInput> {
 }
 
 async function parseMultipartRequest(req: NextRequest): Promise<NormalizedInput> {
-  const form = await req.formData();
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    throw new InputError('요청 본문이 올바른 multipart/form-data 형식이 아닙니다.');
+  }
   const parsed = GenerateCasesMultipartSchema.safeParse({
     projectId: form.get('projectId'),
     description: form.get('description') ?? '',
@@ -189,6 +195,11 @@ export async function POST(req: NextRequest) {
     const isMultipart = contentType.includes('multipart/form-data');
 
     const input = isMultipart ? await parseMultipartRequest(req) : await parseJsonRequest(req);
+
+    // 임의 projectId 로 다른 프로젝트의 AI 키·월간 한도를 소진하지 못하도록, 설정 조회 전에 차단한다.
+    if (!(await requireProjectAccess(input.projectId))) {
+      return NextResponse.json({ error: '프로젝트 접근 권한이 없습니다.' }, { status: 401 });
+    }
 
     // AI 설정 조회
     const config = await getDecryptedApiKey(input.projectId);
