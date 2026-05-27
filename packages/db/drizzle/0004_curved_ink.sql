@@ -1,0 +1,1 @@
+ALTER TABLE "notification_reads" ADD CONSTRAINT "notification_reads_user_announcement_unq" UNIQUE("user_id","announcement_id");
