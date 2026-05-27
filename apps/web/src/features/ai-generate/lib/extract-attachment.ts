@@ -18,8 +18,11 @@ export const ATTACHMENT_LIMITS = {
     extensions: ['.pdf'] as readonly string[],
   },
   markdown: {
+    // text/plain 은 .txt 등 무관 파일까지 포함하는 너무 넓은 카테고리라 제외하고,
+    // 클라이언트 (ai-attachment-dropzone) 와 동일한 규칙으로 좁힌다.
+    // .md 확장자에 text/plain MIME 이 붙는 흔한 케이스는 확장자 매칭으로 통과한다.
     maxBytes: 1 * ONE_MB,
-    mimeTypes: ['text/markdown', 'text/plain', 'text/x-markdown'] as readonly string[],
+    mimeTypes: ['text/markdown', 'text/x-markdown'] as readonly string[],
     extensions: ['.md', '.markdown'] as readonly string[],
   },
 } as const;
@@ -95,7 +98,9 @@ export async function extractAttachmentText(file: File): Promise<AttachmentExtra
   if (type === 'markdown') {
     const raw = decodeUtf8(buffer);
     const text = truncate(raw, MAX_EXTRACTED_CHARS);
-    if (text.length === 0) {
+    // 공백·개행만 든 .md 도 LLM 호출 비용만 발생시키고 무의미한 케이스를 생성하므로
+    // PDF 분기처럼 정규화 후 의미 있는 문자가 없으면 빈 첨부로 거절한다.
+    if (text.trim().length === 0) {
       throw AiError.attachmentEmpty('markdown');
     }
     return {
