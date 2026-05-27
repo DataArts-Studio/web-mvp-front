@@ -72,12 +72,27 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
           });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '생성에 실패했습니다.');
-      return data.cases as GeneratedTestCase[];
+      return {
+        cases: data.cases as GeneratedTestCase[],
+        attachment: data.attachment as {
+          type: 'pdf' | 'markdown';
+          truncated: boolean;
+          charCount: number;
+        } | null,
+      };
     },
     onMutate: () => setStep('loading'),
-    onSuccess: (result) => {
+    onSuccess: ({ cases: result, attachment: attachmentMeta }) => {
       setCases(result);
       setSelected(new Set(result.map((_, i) => i)));
+      // 응답이 잘림을 알려주면 사용자에게 명시한다. 안 그러면 긴 문서 뒷부분의 요구사항이 누락된 채
+      // 생성이 끝난 줄 알게 됨.
+      if (attachmentMeta?.truncated) {
+        const typeLabel = attachmentMeta.type === 'pdf' ? 'PDF' : 'Markdown';
+        toast.warning(
+          `${typeLabel} 첨부가 ${attachmentMeta.charCount.toLocaleString()}자에서 잘려 뒷부분은 분석되지 않았어요.`
+        );
+      }
       setStep('preview');
     },
     onError: (error: Error) => {

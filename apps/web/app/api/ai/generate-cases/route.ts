@@ -23,6 +23,12 @@ import { z } from 'zod';
 
 const MAX_CASES_PER_REQUEST = 10;
 
+/**
+ * multipart 본문이 PDF 10MB / MD 1MB 한도 + multipart overhead 를 넘으면 formData()
+ * 파싱 비용 자체를 피해 사전 거부한다. 클라이언트가 헤더를 위조해도 후속 단계에서 한 번 더 잡힌다.
+ */
+const MAX_MULTIPART_BYTES = 12 * 1024 * 1024;
+
 async function callOpenAI(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -147,6 +153,19 @@ async function parseJsonRequest(req: NextRequest): Promise<NormalizedInput> {
 }
 
 async function parseMultipartRequest(req: NextRequest): Promise<NormalizedInput> {
+  // 거대 본문이 formData() 로 전체 메모리에 올라가기 전에 헤더 단계에서 차단한다.
+  const contentLengthRaw = req.headers.get('content-length');
+  const contentLength = contentLengthRaw === null ? null : Number(contentLengthRaw);
+  if (
+    contentLength !== null &&
+    Number.isFinite(contentLength) &&
+    contentLength > MAX_MULTIPART_BYTES
+  ) {
+    throw new InputError(
+      `요청 본문이 너무 큽니다 (최대 ${MAX_MULTIPART_BYTES / (1024 * 1024)}MB).`
+    );
+  }
+
   let form: FormData;
   try {
     form = await req.formData();
@@ -162,8 +181,12 @@ async function parseMultipartRequest(req: NextRequest): Promise<NormalizedInput>
     throw new InputError(parsed.error.issues[0]?.message ?? '요청 값이 올바르지 않습니다.');
   }
 
+  // file 키가 존재하는데 File 인스턴스가 아니면 클라/서버 계약 위반이므로 조용히 무시하지 않는다.
   const fileEntry = form.get('file');
-  const file = fileEntry instanceof File ? fileEntry : null;
+  if (fileEntry !== null && !(fileEntry instanceof File)) {
+    throw new InputError('첨부 파일 형식이 올바르지 않습니다.');
+  }
+  const file: File | null = fileEntry;
 
   // 0 바이트 파일은 첨부가 없는 것처럼 조용히 무시되지 않도록 명시 거부한다.
   if (file && file.size === 0) {
@@ -193,6 +216,13 @@ export async function POST(req: NextRequest) {
   try {
     const contentType = (req.headers.get('content-type') ?? '').toLowerCase();
     const isMultipart = contentType.includes('multipart/form-data');
+    const isJson = contentType.includes('application/json');
+
+    // 계약상 허용하는 두 가지(JSON / multipart) 외 Content-Type 은 명시 거절.
+    // 그 외 값은 JSON 파서로 흘러가 의미 불명 500 으로 분류되기 쉬워서다.
+    if (!isMultipart && !isJson) {
+      return NextResponse.json({ error: '지원하지 않는 Content-Type 입니다.' }, { status: 415 });
+    }
 
     const input = isMultipart ? await parseMultipartRequest(req) : await parseJsonRequest(req);
 
