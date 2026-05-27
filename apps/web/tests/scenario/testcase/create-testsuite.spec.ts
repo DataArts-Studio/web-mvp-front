@@ -53,6 +53,11 @@ test.describe('테스트 스위트 생성 E2E 테스트', () => {
       await testSuitePage.expectModalClosed();
       await testSuitePage.expectSuiteNotInList(suiteTitle);
     });
+
+    await test.step('폼을 다시 열어도 이전 입력값이 남아 있지 않다.', async () => {
+      await testSuitePage.openCreateForm();
+      await testSuitePage.expectTitleInputEmpty();
+    });
   });
 
   test('작성 중 모달 바깥을 클릭해 이탈하면 저장되지 않고 목록에 반영되지 않는다.', async ({
@@ -75,6 +80,11 @@ test.describe('테스트 스위트 생성 E2E 테스트', () => {
       await testSuitePage.expectModalClosed();
       await testSuitePage.expectSuiteNotInList(suiteTitle);
     });
+
+    await test.step('폼을 다시 열어도 이전 입력값이 남아 있지 않다.', async () => {
+      await testSuitePage.openCreateForm();
+      await testSuitePage.expectTitleInputEmpty();
+    });
   });
 
   test('제목 미입력 또는 3자 미만이면 검증 에러가 노출되고 폼이 유지된다.', async ({
@@ -95,6 +105,12 @@ test.describe('테스트 스위트 생성 E2E 테스트', () => {
       await testSuitePage.enterTitle('ab');
       await testSuitePage.submit();
       await testSuitePage.expectTitleValidationError();
+    });
+
+    await test.step('새로고침해도 검증 실패한 짧은 제목이 목록에 생성되지 않았다.', async () => {
+      await testSuitePage.reload();
+      await testSuitePage.expectLoaded(TEST_DATA.slug);
+      await testSuitePage.expectSuiteNotInList('ab');
     });
   });
 

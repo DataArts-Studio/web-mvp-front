@@ -44,8 +44,8 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       testMatch: [
         '**/scenario/access/**/*.spec.ts',
-        '**/create-project/**/*.spec.ts',
-        '**/project-search/**/*.spec.ts',
+        '**/scenario/project/**/*.spec.ts',
+        '**/smoke/**/*.spec.ts',
       ],
     },
     // 인증 필요

@@ -101,6 +101,11 @@ export class ProjectTestsuitePage extends BasePage {
     await expect(this.suiteList.getByText(title)).not.toBeVisible();
   }
 
+  /** 폼 재오픈 시 이전 입력값이 남아 있지 않음을 단언한다. (이탈 후 상태 누수 회귀 방지) */
+  async expectTitleInputEmpty(): Promise<void> {
+    await expect(this.titleInput).toHaveValue('');
+  }
+
   /**
    * 제목 검증 실패 단언.
    * 폼 resolver 는 zodResolver(CreateTestSuiteSchema) 라 RHF register 룰은 무시되고

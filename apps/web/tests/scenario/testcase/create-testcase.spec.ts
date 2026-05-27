@@ -22,6 +22,12 @@ test.describe('테스트 케이스 생성 시나리오', () => {
     await test.step('생성된 테스트 케이스가 목록에 정상적으로 반영되었는지 확인한다.', async () => {
       await testCasePage.expectCaseInTable(testCaseTitle);
     });
+
+    await test.step('새로고침해도 해당 테스트 케이스가 목록에 남아 있다.', async () => {
+      await testCasePage.reload();
+      await testCasePage.expectLoaded(TEST_DATA.slug);
+      await testCasePage.expectCaseInTable(testCaseTitle);
+    });
   });
 
   test('제목 미입력 제출 시 에러가 출력되고 폼이 유지된다.', async ({
