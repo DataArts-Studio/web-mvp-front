@@ -73,9 +73,7 @@
         "projects_name_unique": {
           "name": "projects_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -150,12 +148,8 @@
           "name": "test_suites_project_id_projects_id_fk",
           "tableFrom": "test_suites",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -289,12 +283,8 @@
           "name": "test_cases_project_id_projects_id_fk",
           "tableFrom": "test_cases",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -302,12 +292,8 @@
           "name": "test_cases_test_suite_id_test_suites_id_fk",
           "tableFrom": "test_cases",
           "tableTo": "test_suites",
-          "columnsFrom": [
-            "test_suite_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_suite_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -315,12 +301,8 @@
           "name": "test_cases_section_id_test_suite_sections_id_fk",
           "tableFrom": "test_cases",
           "tableTo": "test_suite_sections",
-          "columnsFrom": [
-            "section_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["section_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -330,18 +312,12 @@
         "test_cases_project_id_name_unique": {
           "name": "test_cases_project_id_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id",
-            "name"
-          ]
+          "columns": ["project_id", "name"]
         },
         "test_cases_project_id_display_id_unique": {
           "name": "test_cases_project_id_display_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id",
-            "display_id"
-          ]
+          "columns": ["project_id", "display_id"]
         }
       },
       "policies": {},
@@ -442,12 +418,8 @@
           "name": "test_runs_project_id_projects_id_fk",
           "tableFrom": "test_runs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -455,12 +427,8 @@
           "name": "test_runs_milestone_id_milestones_id_fk",
           "tableFrom": "test_runs",
           "tableTo": "milestones",
-          "columnsFrom": [
-            "milestone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["milestone_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -470,9 +438,7 @@
         "test_runs_share_token_unique": {
           "name": "test_runs_share_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "share_token"
-          ]
+          "columns": ["share_token"]
         }
       },
       "policies": {},
@@ -560,12 +526,8 @@
           "name": "milestones_project_id_projects_id_fk",
           "tableFrom": "milestones",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -657,12 +619,8 @@
           "name": "test_case_runs_test_run_id_test_runs_id_fk",
           "tableFrom": "test_case_runs",
           "tableTo": "test_runs",
-          "columnsFrom": [
-            "test_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -670,12 +628,8 @@
           "name": "test_case_runs_test_case_id_test_cases_id_fk",
           "tableFrom": "test_case_runs",
           "tableTo": "test_cases",
-          "columnsFrom": [
-            "test_case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_case_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -709,12 +663,8 @@
           "name": "test_run_milestones_test_run_id_test_runs_id_fk",
           "tableFrom": "test_run_milestones",
           "tableTo": "test_runs",
-          "columnsFrom": [
-            "test_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -722,12 +672,8 @@
           "name": "test_run_milestones_milestone_id_milestones_id_fk",
           "tableFrom": "test_run_milestones",
           "tableTo": "milestones",
-          "columnsFrom": [
-            "milestone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["milestone_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -735,10 +681,7 @@
       "compositePrimaryKeys": {
         "test_run_milestones_test_run_id_milestone_id_pk": {
           "name": "test_run_milestones_test_run_id_milestone_id_pk",
-          "columns": [
-            "test_run_id",
-            "milestone_id"
-          ]
+          "columns": ["test_run_id", "milestone_id"]
         }
       },
       "uniqueConstraints": {},
@@ -775,12 +718,8 @@
           "name": "test_run_suites_test_run_id_test_runs_id_fk",
           "tableFrom": "test_run_suites",
           "tableTo": "test_runs",
-          "columnsFrom": [
-            "test_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -788,12 +727,8 @@
           "name": "test_run_suites_test_suite_id_test_suites_id_fk",
           "tableFrom": "test_run_suites",
           "tableTo": "test_suites",
-          "columnsFrom": [
-            "test_suite_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_suite_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -801,10 +736,7 @@
       "compositePrimaryKeys": {
         "test_run_suites_test_run_id_test_suite_id_pk": {
           "name": "test_run_suites_test_run_id_test_suite_id_pk",
-          "columns": [
-            "test_run_id",
-            "test_suite_id"
-          ]
+          "columns": ["test_run_id", "test_suite_id"]
         }
       },
       "uniqueConstraints": {},
@@ -841,12 +773,8 @@
           "name": "suite_test_cases_suite_id_test_suites_id_fk",
           "tableFrom": "suite_test_cases",
           "tableTo": "test_suites",
-          "columnsFrom": [
-            "suite_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["suite_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -854,12 +782,8 @@
           "name": "suite_test_cases_test_case_id_test_cases_id_fk",
           "tableFrom": "suite_test_cases",
           "tableTo": "test_cases",
-          "columnsFrom": [
-            "test_case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_case_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -893,12 +817,8 @@
           "name": "milestone_test_cases_milestone_id_milestones_id_fk",
           "tableFrom": "milestone_test_cases",
           "tableTo": "milestones",
-          "columnsFrom": [
-            "milestone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["milestone_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -906,12 +826,8 @@
           "name": "milestone_test_cases_test_case_id_test_cases_id_fk",
           "tableFrom": "milestone_test_cases",
           "tableTo": "test_cases",
-          "columnsFrom": [
-            "test_case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_case_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -919,10 +835,7 @@
       "compositePrimaryKeys": {
         "milestone_test_cases_milestone_id_test_case_id_pk": {
           "name": "milestone_test_cases_milestone_id_test_case_id_pk",
-          "columns": [
-            "milestone_id",
-            "test_case_id"
-          ]
+          "columns": ["milestone_id", "test_case_id"]
         }
       },
       "uniqueConstraints": {},
@@ -953,12 +866,8 @@
           "name": "milestone_test_suites_milestone_id_milestones_id_fk",
           "tableFrom": "milestone_test_suites",
           "tableTo": "milestones",
-          "columnsFrom": [
-            "milestone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["milestone_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -966,12 +875,8 @@
           "name": "milestone_test_suites_test_suite_id_test_suites_id_fk",
           "tableFrom": "milestone_test_suites",
           "tableTo": "test_suites",
-          "columnsFrom": [
-            "test_suite_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_suite_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -979,10 +884,7 @@
       "compositePrimaryKeys": {
         "milestone_test_suites_milestone_id_test_suite_id_pk": {
           "name": "milestone_test_suites_milestone_id_test_suite_id_pk",
-          "columns": [
-            "milestone_id",
-            "test_suite_id"
-          ]
+          "columns": ["milestone_id", "test_suite_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1039,12 +941,8 @@
           "name": "project_preferences_project_id_projects_id_fk",
           "tableFrom": "project_preferences",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1054,10 +952,7 @@
         "project_preferences_project_id_key_unique": {
           "name": "project_preferences_project_id_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id",
-            "key"
-          ]
+          "columns": ["project_id", "key"]
         }
       },
       "policies": {},
@@ -1130,12 +1025,8 @@
           "name": "audit_logs_project_id_projects_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1212,12 +1103,8 @@
           "name": "test_case_attachments_test_case_id_test_cases_id_fk",
           "tableFrom": "test_case_attachments",
           "tableTo": "test_cases",
-          "columnsFrom": [
-            "test_case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_case_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1225,12 +1112,8 @@
           "name": "test_case_attachments_project_id_projects_id_fk",
           "tableFrom": "test_case_attachments",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1348,12 +1231,8 @@
           "name": "test_case_templates_project_id_projects_id_fk",
           "tableFrom": "test_case_templates",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1363,10 +1242,7 @@
         "test_case_templates_project_id_name_unique": {
           "name": "test_case_templates_project_id_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id",
-            "name"
-          ]
+          "columns": ["project_id", "name"]
         }
       },
       "policies": {},
@@ -1463,12 +1339,8 @@
           "name": "test_case_versions_test_case_id_test_cases_id_fk",
           "tableFrom": "test_case_versions",
           "tableTo": "test_cases",
-          "columnsFrom": [
-            "test_case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_case_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1478,10 +1350,7 @@
         "test_case_versions_test_case_id_version_number_unique": {
           "name": "test_case_versions_test_case_id_version_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "test_case_id",
-            "version_number"
-          ]
+          "columns": ["test_case_id", "version_number"]
         }
       },
       "policies": {},
@@ -1544,12 +1413,8 @@
           "name": "test_suite_sections_suite_id_test_suites_id_fk",
           "tableFrom": "test_suite_sections",
           "tableTo": "test_suites",
-          "columnsFrom": [
-            "suite_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["suite_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1559,10 +1424,7 @@
         "test_suite_sections_suite_id_name_unique": {
           "name": "test_suite_sections_suite_id_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "suite_id",
-            "name"
-          ]
+          "columns": ["suite_id", "name"]
         }
       },
       "policies": {},
@@ -1645,12 +1507,8 @@
           "name": "checklists_project_id_projects_id_fk",
           "tableFrom": "checklists",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1718,12 +1576,8 @@
           "name": "checklist_items_checklist_id_checklists_id_fk",
           "tableFrom": "checklist_items",
           "tableTo": "checklists",
-          "columnsFrom": [
-            "checklist_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["checklist_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1796,12 +1650,8 @@
           "name": "github_connections_project_id_projects_id_fk",
           "tableFrom": "github_connections",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1811,9 +1661,7 @@
         "github_connections_project_id_unique": {
           "name": "github_connections_project_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id"
-          ]
+          "columns": ["project_id"]
         }
       },
       "policies": {},
@@ -1924,12 +1772,8 @@
           "name": "test_case_external_links_test_case_id_test_cases_id_fk",
           "tableFrom": "test_case_external_links",
           "tableTo": "test_cases",
-          "columnsFrom": [
-            "test_case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_case_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2003,12 +1847,8 @@
           "name": "project_ai_configs_project_id_projects_id_fk",
           "tableFrom": "project_ai_configs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2018,9 +1858,7 @@
         "project_ai_configs_project_id_unique": {
           "name": "project_ai_configs_project_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id"
-          ]
+          "columns": ["project_id"]
         }
       },
       "policies": {},
@@ -2085,12 +1923,8 @@
           "name": "ai_usage_logs_project_id_projects_id_fk",
           "tableFrom": "ai_usage_logs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2296,12 +2130,8 @@
           "name": "notification_reads_announcement_id_announcements_id_fk",
           "tableFrom": "notification_reads",
           "tableTo": "announcements",
-          "columnsFrom": [
-            "announcement_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["announcement_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2311,10 +2141,7 @@
         "notification_reads_user_announcement_unq": {
           "name": "notification_reads_user_announcement_unq",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "announcement_id"
-          ]
+          "columns": ["user_id", "announcement_id"]
         }
       },
       "policies": {},
