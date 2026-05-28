@@ -1,4 +1,5 @@
-import { jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { check, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 import { testCases } from './test-cases';
 import { testRuns } from './test-runs';
@@ -29,21 +30,30 @@ export interface TestCaseRunAutomationMeta {
   errorMessage?: string;
 }
 
-export const testCaseRuns = pgTable('test_case_runs', {
-  id: uuid('id').primaryKey(),
-  test_run_id: uuid('test_run_id').references(() => testRuns.id, { onDelete: 'cascade' }),
-  test_case_id: uuid('test_case_id').references(() => testCases.id, { onDelete: 'cascade' }),
-  status: varchar('status').$type<TestCaseRunStatus>().default('untested').notNull(),
-  comment: text('comment'),
-  executed_at: timestamp('executed_at', { withTimezone: true }),
-  source_type: varchar('source_type').$type<TestCaseRunSourceType>().default('adhoc').notNull(),
-  source_id: uuid('source_id'),
-  excluded_at: timestamp('excluded_at'),
-  result_source: varchar('result_source', { length: 20 })
-    .$type<TestCaseRunResultSource>()
-    .default('manual')
-    .notNull(),
-  automation_meta: jsonb('automation_meta').$type<TestCaseRunAutomationMeta>(),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+export const testCaseRuns = pgTable(
+  'test_case_runs',
+  {
+    id: uuid('id').primaryKey(),
+    test_run_id: uuid('test_run_id').references(() => testRuns.id, { onDelete: 'cascade' }),
+    test_case_id: uuid('test_case_id').references(() => testCases.id, { onDelete: 'cascade' }),
+    status: varchar('status').$type<TestCaseRunStatus>().default('untested').notNull(),
+    comment: text('comment'),
+    executed_at: timestamp('executed_at', { withTimezone: true }),
+    source_type: varchar('source_type').$type<TestCaseRunSourceType>().default('adhoc').notNull(),
+    source_id: uuid('source_id'),
+    excluded_at: timestamp('excluded_at'),
+    result_source: varchar('result_source', { length: 20 })
+      .$type<TestCaseRunResultSource>()
+      .default('manual')
+      .notNull(),
+    automation_meta: jsonb('automation_meta').$type<TestCaseRunAutomationMeta>(),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    resultSourceCheck: check(
+      'test_case_runs_result_source_check',
+      sql`${t.result_source} in ('manual', 'auto')`
+    ),
+  })
+);

@@ -20,7 +20,7 @@
  * - redirect 쿼리, open-redirect, 뒤로가기 보존, rate-limit 락아웃 (scenario)
  */
 import { ACCESS_TEST_DATA as D } from '../data/test-data';
-import { expect, test } from '../fixtures/test';
+import { test } from '../fixtures/test';
 import { ProjectAccessPage } from '../pages';
 
 test.describe('@smoke 프로젝트 접근', () => {
@@ -42,6 +42,6 @@ test.describe('@smoke 프로젝트 접근', () => {
     await accessPage.authenticate(D.wrongCode);
 
     await accessPage.expectError(ProjectAccessPage.messages.wrongPassword);
-    expect(await accessPage.currentCode()).toBe(D.wrongCode);
+    await accessPage.expectCodeValue(D.wrongCode);
   });
 });

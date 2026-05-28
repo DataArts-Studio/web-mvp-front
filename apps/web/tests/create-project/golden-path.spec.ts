@@ -15,7 +15,7 @@ test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
 test.describe('프로젝트 생성 - Golden Path', () => {
   test('[Golden Path] 전체 흐름이 끝까지 성공한다', async ({ page }) => {
     const l = loc(page);
-    const projectName = `e2e-${Date.now()}`;
+    const projectName = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const identifier = 'Pass1234!';
 
     await test.step('모달 진입', async () => {

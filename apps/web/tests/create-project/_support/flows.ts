@@ -15,7 +15,8 @@ interface ReachOptions {
 // 매 실행 고유한 이름. 베타 제한 "프로젝트 최대 1개" 때문에
 // 실제로는 cleanup 까지 같이 가야 하지만, 일단 충돌은 피할 수 있다.
 function uniqueName() {
-  return `e2e-${Date.now()}`;
+  // 같은 밀리초 병렬 실행 충돌을 피하려 랜덤 suffix 를 덧붙인다.
+  return `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 // 모달을 열고 Step1 까지만 진입.

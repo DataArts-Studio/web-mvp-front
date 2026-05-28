@@ -104,9 +104,10 @@ export class ProjectTestsuitePage extends BasePage {
   /** 제목으로 검색 필터한 뒤 목록에 없음을 단언한다. (헤딩 단언과 대칭) */
   async expectSuiteNotInList(title: string): Promise<void> {
     await this.search(title);
+    // 숨김/부재를 구분 못 하는 not.toBeVisible 대신 "0개"로 명확히 단언한다.
     await expect(
       this.suiteList.getByRole('heading', { name: title })
-    ).not.toBeVisible();
+    ).toHaveCount(0);
   }
 
   /** 폼 재오픈 시 이전 입력값이 남아 있지 않음을 단언한다. (이탈 후 상태 누수 회귀 방지) */
