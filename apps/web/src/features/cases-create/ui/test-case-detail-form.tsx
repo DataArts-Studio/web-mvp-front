@@ -116,7 +116,7 @@ export const TestCaseDetailForm = ({
       }
       if (e.key !== 'Tab' || !node) return;
       const focusables = node.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
       if (focusables.length === 0) return;
       const first = focusables[0];

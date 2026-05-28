@@ -1,6 +1,6 @@
 {
-  "id": "2d14e458-8ce2-4123-b00c-610d904069bf",
-  "prevId": "bf74464e-26f6-4b27-9f8d-c9af5bd437f2",
+  "id": "e657a79b-c391-4e2c-8887-c5d53e700e20",
+  "prevId": "2d14e458-8ce2-4123-b00c-610d904069bf",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1956,7 +1956,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "ai_usage_logs_attached_file_type_check": {
+          "name": "ai_usage_logs_attached_file_type_check",
+          "value": "\"ai_usage_logs\".\"attached_file_type\" in ('pdf', 'markdown')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.announcements": {

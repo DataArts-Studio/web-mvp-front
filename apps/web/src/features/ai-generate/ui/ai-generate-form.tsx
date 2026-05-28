@@ -5,6 +5,8 @@ type Props = {
   onDescriptionChange: (value: string) => void;
   language: 'ko' | 'en';
   onLanguageChange: (value: 'ko' | 'en') => void;
+  /** 첨부가 있으면 설명은 보조 입력이라 라벨·placeholder·필수성을 조정 */
+  hasAttachment?: boolean;
 };
 
 export const AiGenerateForm = ({
@@ -12,14 +14,21 @@ export const AiGenerateForm = ({
   onDescriptionChange,
   language,
   onLanguageChange,
+  hasAttachment = false,
 }: Props) => (
   <div className="flex flex-col gap-4">
     <div className="flex flex-col gap-2">
-      <label className="typo-label-heading text-text-2">기능 설명</label>
+      <label className="typo-label-heading text-text-2">
+        기능 설명{hasAttachment ? ' (선택, 첨부 보조 설명)' : ''}
+      </label>
       <textarea
         value={description}
         onChange={(e) => onDescriptionChange(e.target.value)}
-        placeholder="테스트할 기능을 설명해주세요. 예: 사용자가 이메일과 비밀번호로 로그인할 수 있다. 비밀번호는 8자 이상이어야 하며..."
+        placeholder={
+          hasAttachment
+            ? '첨부 문서에 더하고 싶은 맥락이 있으면 입력하세요. (선택)'
+            : '테스트할 기능을 설명해주세요. 예: 사용자가 이메일과 비밀번호로 로그인할 수 있다. 비밀번호는 8자 이상이어야 하며...'
+        }
         rows={8}
         maxLength={3000}
         className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-3 border-line-2 focus:border-primary resize-none border p-4 focus:outline-none"
