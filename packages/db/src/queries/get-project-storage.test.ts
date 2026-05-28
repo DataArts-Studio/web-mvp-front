@@ -4,7 +4,7 @@ import { getProjectStorageBytes } from './get-project-storage';
 
 const mockExecute = vi.fn();
 
-vi.mock('./drizzle', () => ({
+vi.mock('../client/drizzle', () => ({
   getDatabase: vi.fn(() => ({
     execute: mockExecute,
   })),

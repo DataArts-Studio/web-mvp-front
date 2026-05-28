@@ -88,6 +88,10 @@ vi.mock('@testea/db', () => ({
     test_suite_id: 'test_suite_id',
     milestone_id: 'milestone_id',
   },
+  testRunMilestones: {
+    test_run_id: 'test_run_id',
+    milestone_id: 'milestone_id',
+  },
   checkStorageLimit: vi.fn(() => Promise.resolve(null)),
 }));
 
