@@ -122,7 +122,12 @@ export const StepBoxEditor = ({
 
   return (
     <div className={cn('flex w-full flex-col gap-2', className)}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        id={idPrefix}
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
         <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
           {steps.map((step, i) => (
             <StepRow
