@@ -6,7 +6,7 @@ import { cn } from '@testea/util';
 import { FileText, Paperclip, X } from 'lucide-react';
 
 /**
- * AI 생성 모달용 첨부 드롭존 (FDD-TC11 V2 / 이슈 #132).
+ * AI 첨부 드롭존. AI 테스트 케이스 생성 / 요구사항 분석에서 공용으로 쓴다.
  *
  * - 지원 형식: PDF (10MB 이하) / Markdown `.md` `.markdown` (1MB 이하)
  * - 단일 파일만. 새 파일을 고르면 기존 파일을 대체한다.
@@ -56,7 +56,7 @@ type Props = {
   disabled?: boolean;
 };
 
-export const AiAttachmentDropzone = ({ file, onChange, disabled }: Props) => {
+export const AttachmentDropzone = ({ file, onChange, disabled }: Props) => {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);

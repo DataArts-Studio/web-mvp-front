@@ -9,6 +9,7 @@ import { projectIdQueryOptions } from '@/entities/project';
 import { TestCaseCardType } from '@/entities/test-case';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { AiGenerateModal } from '@/features/ai-generate';
+import { RequirementAnalysisModal } from '@/features/ai-requirement-analysis';
 import { TestCaseDetailForm } from '@/features/cases-create';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { testCasesQueryOptions } from '@/features/cases-list';
@@ -38,7 +39,7 @@ const AnimatePresence = dynamic(
 
 const PAGE_SIZE = 15;
 
-type ModalType = 'create' | 'detail' | 'import' | 'ai-generate';
+type ModalType = 'create' | 'detail' | 'import' | 'ai-generate' | 'ai-requirement-analysis';
 
 export const TestCasesView = () => {
   const params = useParams();
@@ -191,6 +192,7 @@ export const TestCasesView = () => {
               onOpen('create');
             }}
             onAiGenerate={() => onOpen('ai-generate')}
+            onAiAnalyze={() => onOpen('ai-requirement-analysis')}
             onImport={() => {
               track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
               onOpen('import');
@@ -237,6 +239,9 @@ export const TestCasesView = () => {
       {isActiveType('import') && <ImportWizardModal projectId={projectId!} onClose={onClose} />}
       {isActiveType('ai-generate') && projectId && (
         <AiGenerateModal projectId={projectId} slug={slug} onClose={onClose} />
+      )}
+      {isActiveType('ai-requirement-analysis') && projectId && (
+        <RequirementAnalysisModal projectId={projectId} onClose={onClose} />
       )}
       <AnimatePresence>
         {isActiveType('detail') && selectedTestCaseId && (

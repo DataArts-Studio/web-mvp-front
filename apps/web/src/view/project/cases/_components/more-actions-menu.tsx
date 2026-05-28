@@ -3,10 +3,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { cn } from '@testea/util';
-import { Bot, Download, MoreVertical, Upload } from 'lucide-react';
+import { Bot, Download, FileSearch, MoreVertical, Upload } from 'lucide-react';
 
 const MORE_ACTIONS = [
   { key: 'ai', icon: Bot, label: 'AI 생성' },
+  { key: 'ai-analyze', icon: FileSearch, label: '요구사항 분석' },
   { key: 'import', icon: Upload, label: '가져오기' },
   { key: 'export', icon: Download, label: '내보내기' },
 ] as const;
@@ -15,11 +16,17 @@ type MoreActionsKey = (typeof MORE_ACTIONS)[number]['key'];
 
 interface MoreActionsMenuProps {
   onAiGenerate: () => void;
+  onAiAnalyze: () => void;
   onImport: () => void;
   onExport: () => void;
 }
 
-export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreActionsMenuProps) => {
+export const MoreActionsMenu = ({
+  onAiGenerate,
+  onAiAnalyze,
+  onImport,
+  onExport,
+}: MoreActionsMenuProps) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -34,6 +41,7 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
 
   const handlers: Record<MoreActionsKey, () => void> = {
     ai: onAiGenerate,
+    'ai-analyze': onAiAnalyze,
     import: onImport,
     export: onExport,
   };
