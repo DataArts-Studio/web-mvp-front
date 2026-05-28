@@ -1,0 +1,1 @@
+ALTER TABLE "ai_usage_logs" ADD CONSTRAINT "ai_usage_logs_attached_file_type_check" CHECK ("ai_usage_logs"."attached_file_type" in ('pdf', 'markdown'));
