@@ -37,10 +37,19 @@ export const getMonthlyUsage = async (
   }
 };
 
+export interface AttachmentUsageMeta {
+  type: 'pdf' | 'markdown';
+  sizeBytes: number;
+  /** PDF 일 때만 값 있음. Markdown 은 null. */
+  pageCount: number | null;
+  charCount: number;
+}
+
 export const recordUsage = async (
   projectId: string,
   actionType: string,
-  generatedCount: number
+  generatedCount: number,
+  attachment?: AttachmentUsageMeta
 ): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
@@ -49,6 +58,10 @@ export const recordUsage = async (
       project_id: projectId,
       action_type: actionType,
       generated_count: generatedCount,
+      attached_file_type: attachment?.type ?? null,
+      attached_file_size_bytes: attachment?.sizeBytes ?? null,
+      attached_file_page_count: attachment?.pageCount ?? null,
+      attached_file_char_count: attachment?.charCount ?? null,
     });
 
     return { success: true, data: null };

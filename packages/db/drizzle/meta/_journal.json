@@ -36,6 +36,20 @@
       "when": 1779606707488,
       "tag": "0004_curved_ink",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779975860921,
+      "tag": "0005_damp_colossus",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779983675139,
+      "tag": "0006_unusual_chronomancer",
+      "breakpoints": true
     }
   ]
 }
