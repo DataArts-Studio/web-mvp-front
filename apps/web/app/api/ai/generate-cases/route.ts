@@ -154,13 +154,14 @@ async function parseJsonRequest(req: NextRequest): Promise<NormalizedInput> {
 
 async function parseMultipartRequest(req: NextRequest): Promise<NormalizedInput> {
   // 거대 본문이 formData() 로 전체 메모리에 올라가기 전에 헤더 단계에서 차단한다.
+  // Content-Length 가 없거나(예: chunked 전송) 숫자가 아니면 본문 크기를 사전 판정할 수
+  // 없어 크기 가드가 무력화되므로, formData() 호출 전에 명시 거부한다.
   const contentLengthRaw = req.headers.get('content-length');
   const contentLength = contentLengthRaw === null ? null : Number(contentLengthRaw);
-  if (
-    contentLength !== null &&
-    Number.isFinite(contentLength) &&
-    contentLength > MAX_MULTIPART_BYTES
-  ) {
+  if (contentLength === null || !Number.isFinite(contentLength)) {
+    throw new InputError('요청 본문 크기를 확인할 수 없습니다. Content-Length 헤더가 필요합니다.');
+  }
+  if (contentLength > MAX_MULTIPART_BYTES) {
     throw new InputError(
       `요청 본문이 너무 큽니다 (최대 ${MAX_MULTIPART_BYTES / (1024 * 1024)}MB).`
     );
