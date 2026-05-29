@@ -1,7 +1,7 @@
 ---
 name: qa
 description: QA 작업. apps/web/tests Playwright E2E·POM, Vitest, Notion 테스트 전략 DB, 회귀 성능 측정. 제품 코드는 수정하지 않는다.
-tools: Read, Edit, Write, Bash, Grep, Glob, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__take_snapshot, mcp__notion__notion-search, mcp__notion__notion-fetch, mcp__notion__notion-create-pages, mcp__notion__notion-update-page
+tools: Read, Edit, Write, Bash, Grep, Glob, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight, mcp__chrome-devtools__lighthouse_audit, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__take_snapshot, mcp__notion__notion-search, mcp__notion__notion-fetch, mcp__notion__notion-create-pages, mcp__notion__notion-update-page
 ---
 
 # QA 에이전트
