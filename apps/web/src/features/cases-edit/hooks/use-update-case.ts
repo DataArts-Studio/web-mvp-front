@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateTestCase } from '@/entities/test-case/api';
 import { testCaseQueryKeys } from '@/features/cases-list';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { UpdateTestCase } from '../model';
 
 type MutationInput = UpdateTestCase & { projectId: string };
@@ -12,8 +13,10 @@ export const useUpdateCase = () => {
     mutationFn: async (input: MutationInput) => {
       const result = await updateTestCase(input);
       if (!result.success) {
-        const message = Object.values(result.errors ?? {}).flat().join(', ')
-          || '테스트케이스를 수정하는 도중 오류가 발생했습니다.';
+        const message =
+          Object.values(result.errors ?? {})
+            .flat()
+            .join(', ') || '테스트케이스를 수정하는 도중 오류가 발생했습니다.';
         throw new Error(message);
       }
       return result;

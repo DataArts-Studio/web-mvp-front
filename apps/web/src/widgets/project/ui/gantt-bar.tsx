@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { ChevronDown, ChevronRight } from 'lucide-react';
+
 import { LABEL_W, RIGHT_W } from './gantt-utils';
 import type { WeekInfo } from './gantt-utils';
 
@@ -26,9 +28,9 @@ export const GanttBar = ({
 }: GanttBarProps) => (
   <div className="flex items-center">
     {/* Label */}
-    <div style={{ width: LABEL_W }} className="shrink-0 pr-2 flex items-center">
+    <div style={{ width: LABEL_W }} className="flex shrink-0 items-center pr-2">
       <span
-        className={`block truncate flex-1 min-w-0 ${
+        className={`block min-w-0 flex-1 truncate ${
           isChild ? 'typo-caption text-text-3 pl-4' : 'typo-label-normal text-text-1'
         }`}
       >
@@ -40,7 +42,7 @@ export const GanttBar = ({
             e.stopPropagation();
             collapseProps.onToggle();
           }}
-          className="shrink-0 p-0.5 rounded-1 hover:bg-bg-3 text-text-3 cursor-pointer"
+          className="rounded-1 hover:bg-bg-3 text-text-3 shrink-0 cursor-pointer p-0.5"
         >
           {collapseProps.isCollapsed ? (
             <ChevronRight className="h-3.5 w-3.5" />

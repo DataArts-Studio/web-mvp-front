@@ -34,13 +34,7 @@ const AvatarRoot = ({ children, className, label, ref, ...props }: AvatarRootPro
 
   return (
     <AvatarContext.Provider value={{ status, setStatus }}>
-      <div
-        role="img"
-        aria-label={label}
-        ref={ref}
-        {...props}
-        className={className}
-      >
+      <div role="img" aria-label={label} ref={ref} {...props} className={className}>
         {children}
       </div>
     </AvatarContext.Provider>

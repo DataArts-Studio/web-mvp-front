@@ -1,18 +1,6 @@
 import React, { ComponentProps, ReactNode } from 'react';
 
-
-
 import { cn } from '@testea/util';
-
-
-
-
-
-
-
-
-
-
 
 interface TestTableRootProps extends ComponentProps<'div'> {
   ariaLabel?: string;
@@ -20,32 +8,34 @@ interface TestTableRootProps extends ComponentProps<'div'> {
 
 const TestTableRoot = ({ children, className, ...props }: TestTableRootProps) => {
   return (
-    <div
-      className={cn(
-        className,
-        'flex flex-col'
-      )}
-      {...props}
-    >
+    <div className={cn(className, 'flex flex-col')} {...props}>
       {children}
     </div>
   );
 };
 
 interface TestTableHeaderProps extends ComponentProps<'div'> {
-  headers?: readonly {label: string, colSpan?: string, textAlign?: string}[];
+  headers?: readonly { label: string; colSpan?: string; textAlign?: string }[];
   children?: ReactNode;
 }
 
 const TestTableHeader = ({ children, headers, className }: TestTableHeaderProps) => {
   return (
-    <div className={cn(className, "border-line-2 bg-bg-3 grid grid-cols-12 gap-4 border-b px-6 py-3")}>
-      {headers ? headers.map((header, index) => (
-        <TestTableHeaderItem key={`${header.label}-${index}`} label={header.label} colSpan={header.colSpan} textAlign={header.textAlign}/>)) : (
-        children
-      )}
+    <div
+      className={cn(className, 'border-line-2 bg-bg-3 grid grid-cols-12 gap-4 border-b px-6 py-3')}
+    >
+      {headers
+        ? headers.map((header, index) => (
+            <TestTableHeaderItem
+              key={`${header.label}-${index}`}
+              label={header.label}
+              colSpan={header.colSpan}
+              textAlign={header.textAlign}
+            />
+          ))
+        : children}
     </div>
-  )
+  );
 };
 
 interface TestTableHeaderItemProps extends ComponentProps<'div'> {
@@ -54,27 +44,38 @@ interface TestTableHeaderItemProps extends ComponentProps<'div'> {
   textAlign?: string;
 }
 
-const TestTableHeaderItem = ({label, colSpan, textAlign, ...props}: TestTableHeaderItemProps) => {
+const TestTableHeaderItem = ({ label, colSpan, textAlign, ...props }: TestTableHeaderItemProps) => {
   return (
-    <div className={cn("typo-caption-heading text-text-3 uppercase",
-      colSpan ? colSpan : 'col-span-1', textAlign)} {...props}>
+    <div
+      className={cn(
+        'typo-caption-heading text-text-3 uppercase',
+        colSpan ? colSpan : 'col-span-1',
+        textAlign
+      )}
+      {...props}
+    >
       {label}
     </div>
-  )
-}
+  );
+};
 
 const TestTableRow = ({ children, className, onClick, ...props }: ComponentProps<'div'>) => {
   return (
-    <div className={cn(className, "group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors")} onClick={onClick} {...props}>
+    <div
+      className={cn(
+        className,
+        'group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-12 items-center gap-4 border-b px-6 py-4 transition-colors'
+      )}
+      onClick={onClick}
+      {...props}
+    >
       {children}
     </div>
-  )
+  );
 };
 
 const TestTableItem = ({ children }: ComponentProps<'div'>) => {
-  return (
-    <div className="">{children}</div>
-  )
+  return <div className="">{children}</div>;
 };
 
 interface TestTablePaginationProps {
@@ -114,7 +115,7 @@ const TestTablePagination = ({
           type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+          className="typo-caption-normal rounded-1 text-text-2 hover:bg-bg-3 flex h-8 w-8 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
         >
           &lt;
         </button>
@@ -125,9 +126,7 @@ const TestTablePagination = ({
             onClick={() => onPageChange(p)}
             className={cn(
               'typo-caption-normal rounded-1 flex h-8 min-w-8 items-center justify-center px-1.5 transition-colors',
-              p === page
-                ? 'bg-primary text-white font-medium'
-                : 'text-text-2 hover:bg-bg-3'
+              p === page ? 'bg-primary font-medium text-white' : 'text-text-2 hover:bg-bg-3'
             )}
           >
             {p}
@@ -137,7 +136,7 @@ const TestTablePagination = ({
           type="button"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="typo-caption-normal rounded-1 flex h-8 w-8 items-center justify-center text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-30 disabled:pointer-events-none"
+          className="typo-caption-normal rounded-1 text-text-2 hover:bg-bg-3 flex h-8 w-8 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
         >
           &gt;
         </button>

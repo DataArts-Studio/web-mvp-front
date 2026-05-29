@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { Upload, FileText, X, AlertCircle } from 'lucide-react';
+
 import { cn } from '@testea/util';
-import { useImportWizard } from '../model/use-import-wizard';
-import { parseFile, FileValidationError } from '../model/parser';
+import { AlertCircle, FileText, Upload, X } from 'lucide-react';
+
 import { getAutoMapping } from '../model/format-detector';
+import { FileValidationError, parseFile } from '../model/parser';
+import { useImportWizard } from '../model/use-import-wizard';
 import { FormatBadge } from './format-badge';
 
 const MAX_ROWS = 500;
@@ -37,7 +39,7 @@ export function StepFileUpload() {
 
         if (result.totalRows > MAX_ROWS) {
           setError(
-            `최대 ${MAX_ROWS}건까지 가져올 수 있습니다. 현재 ${result.totalRows}건. 처음 ${MAX_ROWS}건만 처리됩니다.`,
+            `최대 ${MAX_ROWS}건까지 가져올 수 있습니다. 현재 ${result.totalRows}건. 처음 ${MAX_ROWS}건만 처리됩니다.`
           );
           result.rows = result.rows.slice(0, MAX_ROWS);
           result.totalRows = MAX_ROWS;
@@ -61,7 +63,7 @@ export function StepFileUpload() {
         }
       }
     },
-    [setFile, setError, setStatus, setParseResult, setColumnMapping],
+    [setFile, setError, setStatus, setParseResult, setColumnMapping]
   );
 
   const handleDrop = useCallback(
@@ -71,7 +73,7 @@ export function StepFileUpload() {
       const droppedFile = e.dataTransfer.files[0];
       if (droppedFile) handleFile(droppedFile);
     },
-    [handleFile],
+    [handleFile]
   );
 
   const handleInputChange = useCallback(
@@ -81,7 +83,7 @@ export function StepFileUpload() {
       // Reset input so same file can be re-selected
       e.target.value = '';
     },
-    [handleFile],
+    [handleFile]
   );
 
   const handleRemoveFile = useCallback(() => {
@@ -115,22 +117,18 @@ export function StepFileUpload() {
           onClick={() => inputRef.current?.click()}
           className={cn(
             'rounded-4 border-line-2 flex cursor-pointer flex-col items-center justify-center gap-3 border-2 border-dashed px-4 py-10 transition-colors md:gap-4 md:px-8 md:py-16',
-            isDragOver
-              ? 'border-primary bg-primary/5'
-              : 'hover:border-primary/50 hover:bg-bg-2',
-            isParsing && 'pointer-events-none opacity-50',
+            isDragOver ? 'border-primary bg-primary/5' : 'hover:border-primary/50 hover:bg-bg-2',
+            isParsing && 'pointer-events-none opacity-50'
           )}
         >
-          <div className="rounded-full bg-bg-2 p-3 md:p-4">
+          <div className="bg-bg-2 rounded-full p-3 md:p-4">
             <Upload className="text-text-3 h-6 w-6 md:h-8 md:w-8" />
           </div>
           <div className="flex flex-col items-center gap-1">
             <p className="typo-body2-heading md:typo-body1-heading text-text-1 text-center">
               {isParsing ? '파일 분석 중...' : '파일을 드래그하거나 클릭하여 선택'}
             </p>
-            <p className="typo-caption1 md:typo-body2-normal text-text-3">
-              .csv, .xlsx (최대 5MB)
-            </p>
+            <p className="typo-caption1 md:typo-body2-normal text-text-3">.csv, .xlsx (최대 5MB)</p>
           </div>
           <input
             ref={inputRef}
@@ -185,7 +183,7 @@ export function StepFileUpload() {
             'rounded-2 typo-body2-heading px-6 py-2.5 transition-colors',
             isReady
               ? 'bg-primary hover:bg-primary/90 text-white'
-              : 'bg-bg-3 text-text-3 cursor-not-allowed',
+              : 'bg-bg-3 text-text-3 cursor-not-allowed'
           )}
         >
           다음: 컬럼 매핑

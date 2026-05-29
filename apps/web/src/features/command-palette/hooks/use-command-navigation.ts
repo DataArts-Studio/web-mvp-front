@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
 import type { CommandItem } from '../model/types';
 
 interface UseCommandNavigationOptions {
@@ -47,9 +48,7 @@ export const useCommandNavigation = ({
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setActiveIndex((prev) =>
-            prev <= 0 ? Math.max(items.length - 1, 0) : prev - 1,
-          );
+          setActiveIndex((prev) => (prev <= 0 ? Math.max(items.length - 1, 0) : prev - 1));
           break;
         case 'Enter':
           e.preventDefault();
@@ -63,7 +62,7 @@ export const useCommandNavigation = ({
           break;
       }
     },
-    [activeIndex, items, onSelect, onClose],
+    [activeIndex, items, onSelect, onClose]
   );
 
   return {

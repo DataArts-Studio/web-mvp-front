@@ -1,11 +1,18 @@
-import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { TestCasesView } from '@/view';
+
+import type { Metadata } from 'next';
+
 import { projectIdQueryOptions } from '@/entities/project/api/query';
-import { testCasesQueryOptions } from '@/features/cases-list/api/query';
 import { testSuitesQueryOptions } from '@/entities/test-suite/api/query';
-import { cachedGetProjectId, cachedGetTestCasesList, cachedGetTestSuites } from '@/shared/lib/cache';
+import { testCasesQueryOptions } from '@/features/cases-list/api/query';
+import {
+  cachedGetProjectId,
+  cachedGetTestCasesList,
+  cachedGetTestSuites,
+} from '@/shared/lib/cache';
+import { TestCasesView } from '@/view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+
 import { CasesSkeleton } from './cases-skeleton';
 
 export const metadata: Metadata = {
@@ -14,7 +21,9 @@ export const metadata: Metadata = {
 };
 
 async function CasesData({ slug }: { slug: string }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   try {
     const result = await queryClient.fetchQuery({
@@ -27,7 +36,8 @@ async function CasesData({ slug }: { slug: string }) {
       await Promise.all([
         queryClient.prefetchQuery({
           ...testCasesQueryOptions(projectId, { page: 1, size: 15, sort: 'custom' }),
-          queryFn: () => cachedGetTestCasesList({ project_id: projectId, page: 1, size: 15, sort: 'custom' }),
+          queryFn: () =>
+            cachedGetTestCasesList({ project_id: projectId, page: 1, size: 15, sort: 'custom' }),
         }),
         queryClient.prefetchQuery({
           ...testSuitesQueryOptions(projectId),
@@ -46,11 +56,7 @@ async function CasesData({ slug }: { slug: string }) {
   );
 }
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
   return (

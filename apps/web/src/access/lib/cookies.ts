@@ -4,8 +4,8 @@
  * 프로젝트 접근 토큰을 안전하게 쿠키에 저장/조회/삭제.
  * httpOnly, secure, sameSite 옵션으로 보안 강화.
  */
-
 import { cookies } from 'next/headers';
+
 import type { AccessTokenConfig } from '../policy/types';
 import { DEFAULT_ACCESS_TOKEN_CONFIG } from '../policy/types';
 

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { getTestCases } from './server-actions';
+
 vi.mock('server-only', () => ({}));
 
 // DB 모킹
@@ -12,8 +14,6 @@ vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
   testCases: { project_id: 'project_id', lifecycle_status: 'lifecycle_status' },
 }));
-
-import { getTestCases } from './server-actions';
 
 describe('getTestCases', () => {
   beforeEach(() => {

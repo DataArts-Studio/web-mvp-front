@@ -1,7 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectDomain } from '@/entities';
 import type { ActionResult } from '@/shared/types';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Import after mocks
+import { ProjectCreateForm } from './project-create-form';
 
 // Next.js router mock
 const mockReplace = vi.fn();
@@ -18,9 +21,6 @@ const mockCreateProject = vi.fn();
 vi.mock('@/features/projects-create/api/server-action', () => ({
   createProject: (...args: unknown[]) => mockCreateProject(...args),
 }));
-
-// Import after mocks
-import { ProjectCreateForm } from './project-create-form';
 
 const mockSuccessResponse: ActionResult<ProjectDomain> = {
   success: true,

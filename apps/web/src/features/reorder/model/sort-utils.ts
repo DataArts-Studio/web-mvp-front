@@ -13,10 +13,7 @@ export const MIN_GAP = 1;
  * 두 sort_order 값 사이의 중간값 계산
  * before가 없으면 after 앞에 배치, after가 없으면 before 뒤에 배치
  */
-export function calculateMiddleSortOrder(
-  before: number | null,
-  after: number | null,
-): number {
+export function calculateMiddleSortOrder(before: number | null, after: number | null): number {
   if (before == null && after == null) return SORT_ORDER_GAP;
   if (before == null) return Math.floor(after! / 2);
   if (after == null) return before + SORT_ORDER_GAP;

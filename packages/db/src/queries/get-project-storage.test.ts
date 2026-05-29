@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { getProjectStorageBytes } from './get-project-storage';
+
 const mockExecute = vi.fn();
 
-vi.mock('./drizzle', () => ({
+vi.mock('../client/drizzle', () => ({
   getDatabase: vi.fn(() => ({
     execute: mockExecute,
   })),
@@ -11,8 +13,6 @@ vi.mock('./drizzle', () => ({
 vi.mock('drizzle-orm', () => ({
   sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values }),
 }));
-
-import { getProjectStorageBytes } from './get-project-storage';
 
 describe('getProjectStorageBytes', () => {
   beforeEach(() => {

@@ -1,19 +1,18 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
 import { revalidatePath } from 'next/cache';
 
-import type { CreateProjectDomain, ProjectDomain } from '@/entities';
-import { toProjectDto } from '@/entities';
-import { getDatabase, projects } from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import { eq } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
-
-import { hashPassword } from '@/access/lib/password-hash';
 import { createProjectAccessToken } from '@/access/lib/access-token';
 import { setAccessTokenCookie } from '@/access/lib/cookies';
+import { hashPassword } from '@/access/lib/password-hash';
+import type { CreateProjectDomain, ProjectDomain } from '@/entities';
+import { toProjectDto } from '@/entities';
 import { verifyTurnstileToken } from '@/shared/lib/turnstile';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, projects } from '@testea/db';
+import { eq } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
 
 // ============================================================================
 // Helpers
@@ -27,7 +26,10 @@ export async function hashIdentifier(identifier: string): Promise<string> {
 
 // Server Action에서 클라이언트로 전달할 때 Date 객체는 직렬화 불가능하므로 string으로 변환
 // identifier(해시)는 보안상 응답에 포함하지 않음
-type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' | 'archivedAt' | 'identifier'> & {
+type SerializableProjectDomain = Omit<
+  ProjectDomain,
+  'createdAt' | 'updatedAt' | 'archivedAt' | 'identifier'
+> & {
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -40,10 +42,19 @@ type SerializableProjectDomain = Omit<ProjectDomain, 'createdAt' | 'updatedAt' |
  */
 export async function createProject(
   input: CreateProjectDomain,
-  turnstileToken?: string,
+  turnstileToken?: string
 ): Promise<ActionResult<SerializableProjectDomain>> {
   try {
-    // Turnstile 봇 검증
+    // Turnstile 봇 검증: production 환경에서는 토큰 없이 호출하는 경로 자체를 차단한다.
+    // dev/preview 는 클라이언트가 siteKey 미설정 시 토큰 없이 호출하도록 설계되어 있어
+    // 같은 가드를 적용하면 개발 흐름이 회귀한다. 토큰이 들어오는 경우의 검증은 환경 무관 그대로.
+    const isProduction = process.env.VERCEL_ENV === 'production';
+    if (isProduction && !turnstileToken) {
+      return {
+        success: false,
+        errors: { _form: ['보안 검증 토큰이 없습니다. 페이지를 새로고침 후 다시 시도해주세요.'] },
+      };
+    }
     if (turnstileToken) {
       const isHuman = await verifyTurnstileToken(turnstileToken);
       if (!isHuman) {

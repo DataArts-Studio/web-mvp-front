@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckSquare, Edit2, Square } from 'lucide-react';
 
 import type { GeneratedTestCase } from '@/entities/ai-config';
 import { cn } from '@testea/util';
+import { CheckSquare, Edit2, Square } from 'lucide-react';
 
 import { AiSuiteSelector } from './ai-suite-selector';
 
@@ -47,26 +47,22 @@ export const AiCasePreviewList = ({
       {/* 상단 컨트롤 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onToggleAll} className="text-text-3 hover:text-text-1 transition-colors">
+          <button
+            type="button"
+            onClick={onToggleAll}
+            className="text-text-3 hover:text-text-1 transition-colors"
+          >
             {selected.size === cases.length ? (
-              <CheckSquare className="h-4.5 w-4.5 text-primary" />
+              <CheckSquare className="text-primary h-4.5 w-4.5" />
             ) : (
               <Square className="h-4.5 w-4.5" />
             )}
           </button>
-          <span className="typo-body2-heading text-text-1">
-            {cases.length}개 생성됨
-          </span>
-          <span className="typo-caption text-text-3">
-            ({selected.size}개 선택)
-          </span>
+          <span className="typo-body2-heading text-text-1">{cases.length}개 생성됨</span>
+          <span className="typo-caption text-text-3">({selected.size}개 선택)</span>
         </div>
 
-        <AiSuiteSelector
-          suiteId={suiteId}
-          onSuiteIdChange={onSuiteIdChange}
-          suites={suites}
-        />
+        <AiSuiteSelector suiteId={suiteId} onSuiteIdChange={onSuiteIdChange} suites={suites} />
       </div>
 
       {/* TC 목록 */}
@@ -80,19 +76,19 @@ export const AiCasePreviewList = ({
               key={idx}
               className={cn(
                 'rounded-3 border p-4 transition-colors',
-                selected.has(idx) ? 'border-primary/30 bg-primary/[0.02]' : 'border-line-2 bg-bg-1',
+                selected.has(idx) ? 'border-primary/30 bg-primary/[0.02]' : 'border-line-2 bg-bg-1'
               )}
             >
               <div className="flex items-start gap-3">
                 <button type="button" onClick={() => onToggleOne(idx)} className="mt-0.5 shrink-0">
                   {selected.has(idx) ? (
-                    <CheckSquare className="h-4.5 w-4.5 text-primary" />
+                    <CheckSquare className="text-primary h-4.5 w-4.5" />
                   ) : (
-                    <Square className="h-4.5 w-4.5 text-text-4" />
+                    <Square className="text-text-4 h-4.5 w-4.5" />
                   )}
                 </button>
 
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   {isEditing ? (
                     <EditableCase
                       tc={tc}
@@ -104,15 +100,19 @@ export const AiCasePreviewList = ({
                     />
                   ) : (
                     <>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="typo-body2-heading text-text-1 flex-1 truncate">{tc.name}</span>
-                        <span className={cn('typo-caption rounded-full px-2 py-0.5 shrink-0', cat.cls)}>
+                      <div className="mb-1.5 flex items-center gap-2">
+                        <span className="typo-body2-heading text-text-1 flex-1 truncate">
+                          {tc.name}
+                        </span>
+                        <span
+                          className={cn('typo-caption shrink-0 rounded-full px-2 py-0.5', cat.cls)}
+                        >
                           {cat.text}
                         </span>
                         <button
                           type="button"
                           onClick={() => setEditingIdx(idx)}
-                          className="text-text-4 hover:text-text-2 transition-colors shrink-0"
+                          className="text-text-4 hover:text-text-2 shrink-0 transition-colors"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
                         </button>
@@ -155,7 +155,7 @@ function EditableCase({
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="typo-body2-heading bg-transparent text-text-1 focus:outline-none border-b border-line-2 pb-1"
+        className="typo-body2-heading text-text-1 border-line-2 border-b bg-transparent pb-1 focus:outline-none"
         autoFocus
       />
       <div className="flex flex-col gap-1.5">
@@ -164,7 +164,7 @@ function EditableCase({
           value={preCondition}
           onChange={(e) => setPreCondition(e.target.value)}
           rows={2}
-          className="typo-caption bg-bg-2 text-text-1 rounded-2 border border-line-2 p-2 focus:outline-none resize-none"
+          className="typo-caption bg-bg-2 text-text-1 rounded-2 border-line-2 resize-none border p-2 focus:outline-none"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -173,7 +173,7 @@ function EditableCase({
           value={steps}
           onChange={(e) => setSteps(e.target.value)}
           rows={3}
-          className="typo-caption bg-bg-2 text-text-1 rounded-2 border border-line-2 p-2 focus:outline-none resize-none"
+          className="typo-caption bg-bg-2 text-text-1 rounded-2 border-line-2 resize-none border p-2 focus:outline-none"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -182,17 +182,21 @@ function EditableCase({
           value={expectedResult}
           onChange={(e) => setExpectedResult(e.target.value)}
           rows={2}
-          className="typo-caption bg-bg-2 text-text-1 rounded-2 border border-line-2 p-2 focus:outline-none resize-none"
+          className="typo-caption bg-bg-2 text-text-1 rounded-2 border-line-2 resize-none border p-2 focus:outline-none"
         />
       </div>
       <div className="flex justify-end gap-2 pt-1">
-        <button type="button" onClick={onCancel} className="typo-caption text-text-3 hover:text-text-1 px-2 py-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="typo-caption text-text-3 hover:text-text-1 px-2 py-1"
+        >
           취소
         </button>
         <button
           type="button"
           onClick={() => onSave({ ...tc, name, preCondition, steps, expectedResult })}
-          className="typo-caption bg-primary/10 text-primary rounded-2 px-3 py-1 hover:bg-primary/20 transition-colors"
+          className="typo-caption bg-primary/10 text-primary rounded-2 hover:bg-primary/20 px-3 py-1 transition-colors"
         >
           적용
         </button>

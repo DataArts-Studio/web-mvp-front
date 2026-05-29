@@ -21,4 +21,6 @@ export * from './github-connections';
 export * from './test-case-external-links';
 export * from './project-ai-configs';
 export * from './ai-usage-logs';
+export * from './announcements';
+export * from './project-automation-tokens';
 export * from './relations';

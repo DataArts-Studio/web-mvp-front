@@ -1,1 +1,1 @@
-export {AsideNavItem} from '@/widgets/aside/ui/aside-nav-item';
+export { AsideNavItem } from '@/widgets/aside/ui/aside-nav-item';

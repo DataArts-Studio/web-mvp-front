@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createTestRunAction } from './server-action';
+
 vi.mock('server-only', () => ({}));
 
 // Sentry mock
@@ -86,6 +88,10 @@ vi.mock('@testea/db', () => ({
     test_suite_id: 'test_suite_id',
     milestone_id: 'milestone_id',
   },
+  testRunMilestones: {
+    test_run_id: 'test_run_id',
+    milestone_id: 'milestone_id',
+  },
   checkStorageLimit: vi.fn(() => Promise.resolve(null)),
 }));
 
@@ -94,8 +100,6 @@ vi.mock('drizzle-orm', () => ({
   inArray: vi.fn((a, b) => ({ field: a, values: b })),
   and: vi.fn((...conditions) => ({ and: conditions })),
 }));
-
-import { createTestRunAction } from './server-action';
 
 type FlatErrors = {
   formErrors: string[];

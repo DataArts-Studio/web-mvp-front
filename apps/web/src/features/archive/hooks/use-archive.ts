@@ -35,7 +35,8 @@ export const useArchive = (options?: UseArchiveOptions) => {
 
       if (!result.success) {
         const errorKey = Object.keys(result.errors)[0];
-        const errorMessage = result.errors[errorKey]?.[0] ?? `${ENTITY_NAME_MAP[targetType]} 삭제에 실패했습니다.`;
+        const errorMessage =
+          result.errors[errorKey]?.[0] ?? `${ENTITY_NAME_MAP[targetType]} 삭제에 실패했습니다.`;
         throw new Error(errorMessage);
       }
 

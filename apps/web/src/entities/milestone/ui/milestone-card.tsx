@@ -1,9 +1,9 @@
 import React from 'react';
 
 import { MilestoneWithStats } from '@/entities/milestone';
-import { Calendar, Edit, Play, Check, RotateCcw } from 'lucide-react';
-import { cn, DSButton } from '@/shared';
+import { DSButton, cn } from '@/shared';
 import { formatDate } from '@testea/util';
+import { Calendar, Check, Edit, Play, RotateCcw } from 'lucide-react';
 
 interface MilestoneCardProps {
   milestone: MilestoneWithStats;
@@ -102,7 +102,7 @@ export const MilestoneCard = ({ milestone, onEdit, onStatusChange }: MilestoneCa
   return (
     <div
       className={cn(
-        'bg-bg-2 shadow-1 rounded-3 group relative flex w-full flex-col gap-5 border-l-4 px-6 py-5 transition-all duration-200 hover:shadow-lg hover:scale-[1.01] md:flex-row md:items-center md:justify-between',
+        'bg-bg-2 shadow-1 rounded-3 group relative flex w-full flex-col gap-5 border-l-4 px-6 py-5 transition-all duration-200 hover:scale-[1.01] hover:shadow-lg md:flex-row md:items-center md:justify-between',
         milestone.progressStatus === 'done' && 'border-l-green-500',
         milestone.progressStatus === 'inProgress' && 'border-l-amber-500',
         milestone.progressStatus === 'planned' && 'border-l-slate-500',
@@ -112,10 +112,7 @@ export const MilestoneCard = ({ milestone, onEdit, onStatusChange }: MilestoneCa
       {/* 제목, 설명, 날짜 영역 */}
       <div className="flex w-full flex-col gap-2.5 md:w-[35%]">
         <div className="flex items-center gap-3">
-          <h2
-            className="typo-h2-heading max-w-[180px] truncate"
-            title={milestone.title}
-          >
+          <h2 className="typo-h2-heading max-w-[180px] truncate" title={milestone.title}>
             {milestone.title}
           </h2>
           <span
@@ -167,9 +164,9 @@ export const MilestoneCard = ({ milestone, onEdit, onStatusChange }: MilestoneCa
           <button
             onClick={handleQuickAction}
             className={cn(
-              'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all shadow-sm',
+              'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-sm transition-all',
               'opacity-0 group-hover:opacity-100 group-hover:shadow-md',
-              'transform translate-x-2 group-hover:translate-x-0',
+              'translate-x-2 transform group-hover:translate-x-0',
               quickAction.buttonStyle
             )}
           >

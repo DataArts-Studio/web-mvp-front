@@ -2,10 +2,11 @@
 
 import React from 'react';
 
-import type { TestSuiteSection } from '@/entities/test-suite-section';
 import type { TestCaseCardType } from '@/entities/test-case';
+import type { TestSuiteSection } from '@/entities/test-suite-section';
 import { DSButton, EmptyState } from '@testea/ui';
 import { ChevronDown, ChevronRight, ListChecks, Plus } from 'lucide-react';
+
 import { SuiteSectionGroup } from './suite-section-group';
 import { TestCaseRow } from './test-case-row';
 
@@ -69,7 +70,7 @@ export const SuiteCaseListSection = ({
   onAddCases,
 }: SuiteCaseListSectionProps) => {
   return (
-    <section className="col-span-6 flex flex-col gap-4">
+    <section aria-label="포함된 테스트 케이스" className="col-span-6 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="typo-h2-heading">포함된 테스트 케이스</h2>
         <div className="flex items-center gap-2">
@@ -79,12 +80,17 @@ export const SuiteCaseListSection = ({
             className="flex items-center gap-1"
             onClick={onStartCreatingSection}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
             섹션 추가
           </DSButton>
           {testCases.length > 0 && (
-            <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={onAddCases}>
-              <Plus className="h-4 w-4" />
+            <DSButton
+              variant="ghost"
+              size="small"
+              className="flex items-center gap-1"
+              onClick={onAddCases}
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
               케이스 추가
             </DSButton>
           )}
@@ -94,12 +100,12 @@ export const SuiteCaseListSection = ({
       {testCases.length === 0 && sections.length === 0 ? (
         <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
           <EmptyState
-            icon={<ListChecks className="h-8 w-8" />}
+            icon={<ListChecks className="h-8 w-8" aria-hidden="true" />}
             title="포함된 테스트 케이스가 없습니다."
             description="테스트 케이스를 추가하여 스위트 범위를 정의하세요."
             action={
               <DSButton variant="ghost" className="flex items-center gap-1" onClick={onAddCases}>
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
                 테스트 케이스 추가
               </DSButton>
             }
@@ -133,10 +139,11 @@ export const SuiteCaseListSection = ({
           {isCreatingSection && (
             <div className="flex flex-col gap-1">
               <div className="bg-bg-2 border-line-2 rounded-4 flex items-center gap-2 border px-4 py-3">
-                <Plus className="text-text-3 h-4 w-4 shrink-0" />
+                <Plus className="text-text-3 h-4 w-4 shrink-0" aria-hidden="true" />
                 <input
                   ref={newSectionInputRef}
                   type="text"
+                  aria-label="새 섹션 이름"
                   value={newSectionName}
                   onChange={(e) => onSetNewSectionName(e.target.value)}
                   onKeyDown={(e) => {
@@ -155,60 +162,58 @@ export const SuiteCaseListSection = ({
                 >
                   {createSectionIsPending ? '생성 중...' : '추가'}
                 </DSButton>
-                <DSButton
-                  size="small"
-                  variant="ghost"
-                  onClick={onCancelCreateSection}
-                >
+                <DSButton size="small" variant="ghost" onClick={onCancelCreateSection}>
                   취소
                 </DSButton>
               </div>
               {createSectionError && (
-                <p className="text-red-500 text-xs px-4">{createSectionError}</p>
+                <p role="alert" className="px-4 text-xs text-red-500">
+                  {createSectionError}
+                </p>
               )}
             </div>
           )}
 
           {/* 미분류 케이스 (섹션이 있을 때만 별도 표시) */}
-          {(sections.length > 0 || uncategorizedCases.length > 0) && uncategorizedCases.length > 0 && (
-            <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
-              <div className="border-line-2 flex items-center gap-2 border-b px-4 py-2.5">
-                <button
-                  type="button"
-                  className="flex flex-1 items-center gap-2 text-left"
-                  onClick={() => onToggleSection('__uncategorized__')}
-                >
-                  {collapsedSections.has('__uncategorized__')
-                    ? <ChevronRight className="text-text-3 h-4 w-4 shrink-0" />
-                    : <ChevronDown className="text-text-3 h-4 w-4 shrink-0" />
-                  }
-                  <span className="typo-body2-heading text-text-3">미분류</span>
-                  <span className="text-text-3 text-xs">{uncategorizedCases.length}개</span>
-                </button>
-              </div>
-              {!collapsedSections.has('__uncategorized__') && (
-                <div className="divide-line-2 divide-y">
-                  {uncategorizedCases.map((testCase: TestCaseCardType) => (
-                    <TestCaseRow
-                      key={testCase.id}
-                      testCase={testCase}
-                      onSelect={onSelectTestCase}
-                    />
-                  ))}
+          {(sections.length > 0 || uncategorizedCases.length > 0) &&
+            uncategorizedCases.length > 0 && (
+              <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
+                <div className="border-line-2 flex items-center gap-2 border-b px-4 py-2.5">
+                  <button
+                    type="button"
+                    aria-expanded={!collapsedSections.has('__uncategorized__')}
+                    aria-label="미분류 케이스 펼치기/접기"
+                    className="flex flex-1 items-center gap-2 text-left"
+                    onClick={() => onToggleSection('__uncategorized__')}
+                  >
+                    {collapsedSections.has('__uncategorized__') ? (
+                      <ChevronRight className="text-text-3 h-4 w-4 shrink-0" aria-hidden="true" />
+                    ) : (
+                      <ChevronDown className="text-text-3 h-4 w-4 shrink-0" aria-hidden="true" />
+                    )}
+                    <span className="typo-body2-heading text-text-3">미분류</span>
+                    <span className="text-text-3 text-xs">{uncategorizedCases.length}개</span>
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
+                {!collapsedSections.has('__uncategorized__') && (
+                  <div className="divide-line-2 divide-y">
+                    {uncategorizedCases.map((testCase: TestCaseCardType) => (
+                      <TestCaseRow
+                        key={testCase.id}
+                        testCase={testCase}
+                        onSelect={onSelectTestCase}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* 섹션이 없고 케이스만 있는 경우 (기존 플랫 구조) */}
           {sections.length === 0 && uncategorizedCases.length === 0 && testCases.length > 0 && (
             <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
               {testCases.map((testCase: TestCaseCardType) => (
-                <TestCaseRow
-                  key={testCase.id}
-                  testCase={testCase}
-                  onSelect={onSelectTestCase}
-                />
+                <TestCaseRow key={testCase.id} testCase={testCase} onSelect={onSelectTestCase} />
               ))}
             </div>
           )}

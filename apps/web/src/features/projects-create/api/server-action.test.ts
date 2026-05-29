@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { checkProjectNameDuplicate, createProject, getProjects } from './server-action';
+
 vi.mock('server-only', () => ({}));
 
 // next/cache mock
@@ -70,8 +72,6 @@ vi.mock('@testea/db', () => ({
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((a, b) => ({ field: a, value: b })),
 }));
-
-import { checkProjectNameDuplicate, createProject, getProjects } from './server-action';
 
 describe('createProject', () => {
   const mockInput = {

@@ -1,6 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
 
-export type CommandItemCategory = 'action' | 'testCase' | 'testSuite' | 'milestone' | 'testRun' | 'recent';
+export type CommandItemCategory =
+  | 'action'
+  | 'testCase'
+  | 'testSuite'
+  | 'milestone'
+  | 'testRun'
+  | 'recent';
 
 export type CommandItem = {
   id: string;

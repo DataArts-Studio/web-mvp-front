@@ -1,6 +1,7 @@
 import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
-import { projects, LifecycleStatus } from './projects';
+
 import { milestones } from './milestones';
+import { LifecycleStatus, projects } from './projects';
 
 export const testRunStatusEnum = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as const;
 export type TestRunStatus = (typeof testRunStatusEnum)[number];
@@ -15,7 +16,10 @@ export const testRuns = pgTable('test_runs', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   archived_at: timestamp('archived_at', { withTimezone: true }),
-  lifecycle_status: varchar('lifecycle_status', { length: 20 }).$type<LifecycleStatus>().default('ACTIVE').notNull(),
+  lifecycle_status: varchar('lifecycle_status', { length: 20 })
+    .$type<LifecycleStatus>()
+    .default('ACTIVE')
+    .notNull(),
   share_token: varchar('share_token', { length: 36 }).unique(),
   share_expires_at: timestamp('share_expires_at'),
   share_ai_summary: text('share_ai_summary'),

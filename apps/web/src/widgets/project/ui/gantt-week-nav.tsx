@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 import { LABEL_W, RIGHT_W, VISIBLE_WEEK_COUNT } from './gantt-utils';
 import type { WeekInfo } from './gantt-utils';
 
@@ -25,15 +27,12 @@ export const GanttWeekNav = ({
       <div style={{ width: LABEL_W }} className="shrink-0" />
       <div className="relative flex flex-1">
         {visibleWeeks.map((week, i) => (
-          <div
-            key={i}
-            className="typo-caption text-text-3 flex-1 text-center uppercase"
-          >
+          <div key={i} className="typo-caption text-text-3 flex-1 text-center uppercase">
             {week.label}
           </div>
         ))}
       </div>
-      <div style={{ width: RIGHT_W }} className="shrink-0 flex items-center justify-end gap-1">
+      <div style={{ width: RIGHT_W }} className="flex shrink-0 items-center justify-end gap-1">
         {hasPagination && (
           <>
             <button
@@ -48,7 +47,14 @@ export const GanttWeekNav = ({
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
-              onClick={() => onOffsetChange(Math.min(effectiveOffset + VISIBLE_WEEK_COUNT, totalWeekCount - VISIBLE_WEEK_COUNT))}
+              onClick={() =>
+                onOffsetChange(
+                  Math.min(
+                    effectiveOffset + VISIBLE_WEEK_COUNT,
+                    totalWeekCount - VISIBLE_WEEK_COUNT
+                  )
+                )
+              }
               disabled={!canGoNext}
               className={`rounded-full p-1 transition-colors ${
                 canGoNext

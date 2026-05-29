@@ -1,1 +1,1 @@
-export {LendingHeader} from '@/widgets/lending/ui'
+export { LendingHeader } from '@/widgets/lending/ui';

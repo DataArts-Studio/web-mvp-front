@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Search, X } from 'lucide-react';
-import { cn } from '@testea/util';
+
 import type { TrashItemType } from '@/features/trash';
+import { cn } from '@testea/util';
+import { Search, X } from 'lucide-react';
+
 import { FILTER_OPTIONS } from './trash-constants';
 
 interface TrashToolbarProps {
@@ -36,14 +38,14 @@ export function TrashToolbar({
                 'typo-body2-normal flex items-center gap-1.5 rounded-lg px-3 py-2 transition-colors',
                 isActive
                   ? 'bg-bg-3 text-text-1 font-medium'
-                  : 'text-text-3 hover:text-text-2 hover:bg-bg-2',
+                  : 'text-text-3 hover:text-text-2 hover:bg-bg-2'
               )}
             >
               {opt.label}
               <span
                 className={cn(
-                  'typo-label-normal rounded-full px-1.5 py-0.5 min-w-[20px] text-center',
-                  isActive ? 'bg-bg-4 text-text-2' : 'bg-bg-2 text-text-3',
+                  'typo-label-normal min-w-[20px] rounded-full px-1.5 py-0.5 text-center',
+                  isActive ? 'bg-bg-4 text-text-2' : 'bg-bg-2 text-text-3'
                 )}
               >
                 {count}
@@ -54,8 +56,8 @@ export function TrashToolbar({
       </div>
 
       {/* Search */}
-      <div className="border-line-2 flex items-center gap-2 rounded-lg border bg-bg-2 px-3 py-2">
-        <Search className="h-4 w-4 text-text-3" />
+      <div className="border-line-2 bg-bg-2 flex items-center gap-2 rounded-lg border px-3 py-2">
+        <Search className="text-text-3 h-4 w-4" />
         <input
           type="text"
           placeholder="검색..."

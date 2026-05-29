@@ -1,5 +1,6 @@
 'use server';
 import { createClient } from '@supabase/supabase-js';
+
 import { SUPABASE_AUTH_OPTIONS } from './config';
 import type { Database } from './types';
 

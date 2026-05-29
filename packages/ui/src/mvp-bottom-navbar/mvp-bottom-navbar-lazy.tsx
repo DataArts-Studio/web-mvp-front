@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 
 const MvpBottomNavbar = dynamic(
-  () => import('./mvp-bottom-navbar').then(m => ({ default: m.MvpBottomNavbar })),
+  () => import('./mvp-bottom-navbar').then((m) => ({ default: m.MvpBottomNavbar })),
   { ssr: false }
 );
 

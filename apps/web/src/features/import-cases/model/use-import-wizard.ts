@@ -1,19 +1,9 @@
 import { create } from 'zustand';
-import type {
-  ColumnMapping,
-  ImportResult,
-  ParseResult,
-  ValidatedRow,
-} from './schema';
+
+import type { ColumnMapping, ImportResult, ParseResult, ValidatedRow } from './schema';
 
 export type WizardStep = 'upload' | 'mapping' | 'preview';
-export type ImportStatus =
-  | 'idle'
-  | 'parsing'
-  | 'ready'
-  | 'importing'
-  | 'success'
-  | 'error';
+export type ImportStatus = 'idle' | 'parsing' | 'ready' | 'importing' | 'success' | 'error';
 
 interface ImportWizardState {
   step: WizardStep;

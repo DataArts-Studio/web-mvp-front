@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
 import { versionCompareQueryOptions } from '@/entities/test-case-version/api/query';
+import { useQuery } from '@tanstack/react-query';
 
 export const useVersionCompare = (testCaseId: string) => {
   const [oldVersion, setOldVersion] = useState<number>(0);

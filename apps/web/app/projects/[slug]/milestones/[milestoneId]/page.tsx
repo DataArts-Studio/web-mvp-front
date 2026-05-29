@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { MilestoneDetailView } from '@/view';
+
 import { milestoneByIdQueryOptions } from '@/features/milestones/api/query';
+import { MilestoneDetailView } from '@/view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 export const metadata: Metadata = {
   title: '마일스톤 상세',
@@ -14,7 +15,9 @@ export default async function Page({
   params: Promise<{ slug: string; milestoneId: string }>;
 }) {
   const { milestoneId } = await params;
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   try {
     await queryClient.prefetchQuery(milestoneByIdQueryOptions(milestoneId));

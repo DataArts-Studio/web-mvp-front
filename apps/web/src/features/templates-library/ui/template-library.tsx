@@ -1,17 +1,18 @@
 'use client';
-import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
 
 import type { TestCaseTemplate } from '@/entities/test-case-template';
 import { templatesQueryOptions } from '@/entities/test-case-template/api';
-import { TemplateCard } from './template-card';
-import { TemplatePreview } from './template-preview';
 import { TemplateCreateModal } from '@/features/templates-create';
 import { TemplateEditModal } from '@/features/templates-edit';
 import { useDeleteTemplate } from '@/features/templates-edit';
 import { DSButton, DsInput, LoadingSpinner } from '@/shared';
+import { useQuery } from '@tanstack/react-query';
 import { Plus, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
+
+import { TemplateCard } from './template-card';
+import { TemplatePreview } from './template-preview';
 
 type TabType = 'all' | 'builtin' | 'custom';
 
@@ -29,7 +30,7 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
   const [editingTemplate, setEditingTemplate] = useState<TestCaseTemplate | null>(null);
 
   const { data, isLoading } = useQuery(templatesQueryOptions(projectId));
-  const templates = useMemo(() => data?.success ? data.data : [], [data]);
+  const templates = useMemo(() => (data?.success ? data.data : []), [data]);
 
   const { mutate: deleteMutate } = useDeleteTemplate();
 
@@ -45,9 +46,7 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (t) =>
-          t.name.toLowerCase().includes(query) ||
-          t.description.toLowerCase().includes(query)
+        (t) => t.name.toLowerCase().includes(query) || t.description.toLowerCase().includes(query)
       );
     }
 
@@ -82,7 +81,7 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
         onClick={onClose}
       >
         <section
-          className="bg-bg-2 border border-line-2 rounded-5 relative flex max-h-[85vh] w-full max-w-[900px] flex-col overflow-hidden shadow-4"
+          className="bg-bg-2 border-line-2 rounded-5 shadow-4 relative flex max-h-[85vh] w-full max-w-[900px] flex-col overflow-hidden border"
           onClick={(e) => e.stopPropagation()}
         >
           <header className="border-line-2 flex shrink-0 items-center justify-between border-b px-6 py-5">
@@ -93,9 +92,13 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <DSButton variant="ghost" size="small" onClick={() => setIsCreateOpen(true)} className="flex items-center gap-1">
-                <Plus className="h-4 w-4" />
-                새 템플릿
+              <DSButton
+                variant="ghost"
+                size="small"
+                onClick={() => setIsCreateOpen(true)}
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />새 템플릿
               </DSButton>
               <DSButton variant="ghost" size="small" onClick={onClose} className="p-2">
                 <X className="h-5 w-5" />
@@ -105,16 +108,16 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
 
           <div className="flex flex-1 overflow-hidden">
             {/* Left: List */}
-            <div className="w-[360px] border-r border-line-2 flex flex-col shrink-0">
+            <div className="border-line-2 flex w-[360px] shrink-0 flex-col border-r">
               {/* Tabs */}
-              <div className="flex border-b border-line-2 px-4">
+              <div className="border-line-2 flex border-b px-4">
                 {tabs.map((tab) => (
                   <button
                     key={tab.key}
-                    className={`px-3 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+                    className={`border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
                       activeTab === tab.key
                         ? 'text-primary border-primary'
-                        : 'text-text-3 border-transparent hover:text-text-1'
+                        : 'text-text-3 hover:text-text-1 border-transparent'
                     }`}
                     onClick={() => setActiveTab(tab.key)}
                   >
@@ -126,7 +129,7 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
               {/* Search */}
               <div className="p-3">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-3" />
+                  <Search className="text-text-3 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                   <DsInput
                     className="pl-9"
                     placeholder="템플릿 검색..."
@@ -137,13 +140,13 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
               </div>
 
               {/* Card list */}
-              <div className="flex-1 overflow-y-auto px-3 pb-3 flex flex-col gap-2">
+              <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <LoadingSpinner size="sm" text="로딩 중..." />
                   </div>
                 ) : filteredTemplates.length === 0 ? (
-                  <p className="text-text-3 text-sm text-center py-8">
+                  <p className="text-text-3 py-8 text-center text-sm">
                     {searchQuery ? '검색 결과가 없습니다.' : '템플릿이 없습니다.'}
                   </p>
                 ) : (
@@ -162,11 +165,11 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
             </div>
 
             {/* Right: Preview */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-6">
               {selectedTemplate ? (
                 <TemplatePreview template={selectedTemplate} onApply={onApply} />
               ) : (
-                <div className="flex items-center justify-center h-full text-text-3 text-sm">
+                <div className="text-text-3 flex h-full items-center justify-center text-sm">
                   템플릿을 선택하면 미리보기가 표시됩니다.
                 </div>
               )}
@@ -176,17 +179,11 @@ export const TemplateLibrary = ({ projectId, onApply, onClose }: TemplateLibrary
       </div>
 
       {isCreateOpen && (
-        <TemplateCreateModal
-          projectId={projectId}
-          onClose={() => setIsCreateOpen(false)}
-        />
+        <TemplateCreateModal projectId={projectId} onClose={() => setIsCreateOpen(false)} />
       )}
 
       {editingTemplate && (
-        <TemplateEditModal
-          template={editingTemplate}
-          onClose={() => setEditingTemplate(null)}
-        />
+        <TemplateEditModal template={editingTemplate} onClose={() => setEditingTemplate(null)} />
       )}
     </>
   );

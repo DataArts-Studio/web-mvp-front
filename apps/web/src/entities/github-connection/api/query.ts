@@ -1,6 +1,7 @@
-import { queryOptions } from '@tanstack/react-query';
 import { QUERY_STALE_TIME_DEFAULT } from '@/shared/constants/query';
-import { getGithubConnection, getExternalLinks } from './server-actions';
+import { queryOptions } from '@tanstack/react-query';
+
+import { getExternalLinks, getGithubConnection } from './server-actions';
 
 export const githubQueryKeys = {
   all: ['github'] as const,

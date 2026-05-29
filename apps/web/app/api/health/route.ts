@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, milestones, testRuns, testCaseRuns } from '@testea/db';
-import { sql, eq } from 'drizzle-orm';
+
+import { getDatabase, milestones, testCaseRuns, testRuns } from '@testea/db';
+import { eq, sql } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,10 @@ export async function GET() {
 
     // 4. Test case runs select
     if (runList.length > 0) {
-      const caseRuns = await db.select().from(testCaseRuns).where(eq(testCaseRuns.test_run_id, runList[0].id));
+      const caseRuns = await db
+        .select()
+        .from(testCaseRuns)
+        .where(eq(testCaseRuns.test_run_id, runList[0].id));
       results.testCaseRuns = { ok: true, count: caseRuns.length };
     }
   } catch (e: any) {

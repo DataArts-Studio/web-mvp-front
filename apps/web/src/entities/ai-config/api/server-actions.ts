@@ -1,17 +1,21 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { and, eq, sql } from 'drizzle-orm';
-import { getDatabase, projectAiConfigs, testCases } from '@testea/db';
-import { encrypt, decrypt } from '@/shared/lib/crypto';
+import { encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
-import type { AiConfig } from '../model/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, projectAiConfigs, testCases } from '@testea/db';
+import { and, eq, sql } from 'drizzle-orm';
+
 import { SaveAiConfigSchema, SaveGeneratedCasesSchema } from '../model/schema';
+import type { AiConfig } from '../model/types';
 
 // --- AI 설정 저장/업데이트 (upsert) ---
-export const saveAiConfig = async (
-  input: { projectId: string; provider: string; apiKey: string; model?: string },
-): Promise<ActionResult<{ config: AiConfig }>> => {
+export const saveAiConfig = async (input: {
+  projectId: string;
+  provider: string;
+  apiKey: string;
+  model?: string;
+}): Promise<ActionResult<{ config: AiConfig }>> => {
   try {
     const parsed = SaveAiConfigSchema.safeParse(input);
     if (!parsed.success) {
@@ -64,9 +68,7 @@ export const saveAiConfig = async (
 };
 
 // --- AI 설정 조회 ---
-export const getAiConfig = async (
-  projectId: string,
-): Promise<ActionResult<AiConfig | null>> => {
+export const getAiConfig = async (projectId: string): Promise<ActionResult<AiConfig | null>> => {
   try {
     const db = getDatabase();
 
@@ -80,7 +82,12 @@ export const getAiConfig = async (
         updated_at: projectAiConfigs.updated_at,
       })
       .from(projectAiConfigs)
-      .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')))
+      .where(
+        and(
+          eq(projectAiConfigs.project_id, projectId),
+          eq(projectAiConfigs.lifecycle_status, 'ACTIVE')
+        )
+      )
       .limit(1);
 
     if (!config) return { success: true, data: null };
@@ -103,37 +110,23 @@ export const getAiConfig = async (
   }
 };
 
-// --- AI 설정에서 복호화된 키 조회 (내부용) ---
-export const getDecryptedApiKey = async (
-  projectId: string,
-): Promise<{ provider: string; apiKey: string; model: string | null } | null> => {
-  const db = getDatabase();
-
-  const [config] = await db
-    .select()
-    .from(projectAiConfigs)
-    .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')))
-    .limit(1);
-
-  if (!config) return null;
-
-  return {
-    provider: config.provider,
-    apiKey: decrypt(config.api_key),
-    model: config.model,
-  };
-};
+// 복호화된 API 키 조회는 './decrypt-api-key' 로 분리됨.
+// 'use server' 파일에 두면 클라이언트에서 RSC action 으로 직접 호출 가능해
+// 평문 API 키가 외부로 새는 위험이 있어 격리한 것.
 
 // --- AI 설정 삭제 (소프트 딜리트) ---
-export const deleteAiConfig = async (
-  projectId: string,
-): Promise<ActionResult<null>> => {
+export const deleteAiConfig = async (projectId: string): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
     await db
       .update(projectAiConfigs)
       .set({ lifecycle_status: 'DELETED', updated_at: new Date() })
-      .where(and(eq(projectAiConfigs.project_id, projectId), eq(projectAiConfigs.lifecycle_status, 'ACTIVE')));
+      .where(
+        and(
+          eq(projectAiConfigs.project_id, projectId),
+          eq(projectAiConfigs.lifecycle_status, 'ACTIVE')
+        )
+      );
     return { success: true, data: null };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'deleteAiConfig' } });
@@ -142,9 +135,17 @@ export const deleteAiConfig = async (
 };
 
 // --- AI 생성된 TC 일괄 저장 ---
-export const saveGeneratedCases = async (
-  input: { projectId: string; suiteId?: string; cases: { name: string; preCondition?: string; steps?: string; expectedResult?: string; tags?: string[] }[] },
-): Promise<ActionResult<{ count: number }>> => {
+export const saveGeneratedCases = async (input: {
+  projectId: string;
+  suiteId?: string;
+  cases: {
+    name: string;
+    preCondition?: string;
+    steps?: string;
+    expectedResult?: string;
+    tags?: string[];
+  }[];
+}): Promise<ActionResult<{ count: number }>> => {
   try {
     const parsed = SaveGeneratedCasesSchema.safeParse(input);
     if (!parsed.success) {
@@ -153,6 +154,7 @@ export const saveGeneratedCases = async (
 
     const { projectId, suiteId, cases } = parsed.data;
     const db = getDatabase();
+    const now = new Date();
 
     const count = await db.transaction(async (tx) => {
       // display_id 최대값 조회
@@ -179,8 +181,12 @@ export const saveGeneratedCases = async (
             case_key: `TC-${String(displayId).padStart(3, '0')}`,
             sort_order: 0,
             result_status: 'untested' as const,
+            // DB 컬럼에 DEFAULT now() 가 박혀있지 않아 drizzle 의 DEFAULT 키워드만으로는
+            // NOT NULL 제약에서 막힌다. 단일 케이스 생성과 동일하게 값을 명시한다.
+            created_at: now,
+            updated_at: now,
           };
-        }),
+        })
       );
 
       return cases.length;

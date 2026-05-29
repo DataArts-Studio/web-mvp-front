@@ -1,6 +1,7 @@
-import { queryOptions } from '@tanstack/react-query';
 import { QUERY_STALE_TIME_DEFAULT } from '@/shared/constants/query';
-import { getTestSuites, getTestSuiteByIdWithStats } from './server-actions';
+import { queryOptions } from '@tanstack/react-query';
+
+import { getTestSuiteByIdWithStats, getTestSuites } from './server-actions';
 
 export const testSuitesQueryOptions = (projectId: string) =>
   queryOptions({

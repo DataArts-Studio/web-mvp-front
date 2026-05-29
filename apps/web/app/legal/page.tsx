@@ -1,11 +1,12 @@
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import type { ReactNode } from 'react';
+
+import { Metadata } from 'next';
 
 import { LegalView } from '@/view/legal';
 import { LegalMarkdownContent, slugify } from '@/view/legal/legal-markdown-content';
 import type { LegalHeading } from '@/view/legal/legal-markdown-content';
-import { Metadata } from 'next';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 type TabType = 'privacy' | 'terms';
 

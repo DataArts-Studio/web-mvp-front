@@ -1,5 +1,6 @@
-import { queryOptions } from '@tanstack/react-query';
 import { QUERY_STALE_TIME_DEFAULT } from '@/shared/constants/query';
+import { queryOptions } from '@tanstack/react-query';
+
 import { getMilestoneById } from './get-milestone-by-id';
 
 export const milestoneByIdQueryOptions = (milestoneId: string) =>

@@ -1,21 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
-import {
-  FormField,
-  type FormFieldRootProps,
-  type FormFieldError,
-  useFormField,
-} from './index';
+
+import type { Meta, StoryObj } from '@storybook/react';
+
+import { FormField, type FormFieldError, type FormFieldRootProps, useFormField } from './index';
 
 // ------------------------------------------------------------------
 // 타입 정의 및 Meta 정의
 // ------------------------------------------------------------------
 
 // Storybook Controls에 노출할 FormField.Root의 Props를 정의합니다.
-type FormFieldRootOmittedProps = Omit<
-  FormFieldRootProps,
-  'children' | 'ref' | 'className'
->;
+type FormFieldRootOmittedProps = Omit<FormFieldRootProps, 'children' | 'ref' | 'className'>;
 
 const meta: Meta<typeof FormField.Root> = {
   title: 'Primitive Components/FormField',
@@ -38,7 +32,8 @@ const meta: Meta<typeof FormField.Root> = {
     },
     disabled: {
       control: 'boolean',
-      description: '폼 필드를 **비활성화** 상태로 만듭니다. Root, Label, Control 요소에 `data-disabled` 속성이 적용됩니다.',
+      description:
+        '폼 필드를 **비활성화** 상태로 만듭니다. Root, Label, Control 요소에 `data-disabled` 속성이 적용됩니다.',
       table: {
         category: 'State',
         type: { summary: 'boolean' },
@@ -79,9 +74,7 @@ const StoryInput = React.forwardRef<HTMLInputElement, React.ComponentProps<'inpu
     // useFormField 훅을 사용하여 FormField Context에서 필요한 ID와 상태를 가져옵니다.
     const { id, labelId, descriptionId, messageId, invalid, disabled, name } = useFormField();
 
-    const ariaDescribedBy = invalid
-      ? `${descriptionId} ${messageId}`
-      : descriptionId;
+    const ariaDescribedBy = invalid ? `${descriptionId} ${messageId}` : descriptionId;
 
     return (
       <input

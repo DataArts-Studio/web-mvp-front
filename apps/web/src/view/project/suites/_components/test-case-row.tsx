@@ -1,5 +1,6 @@
 import type { TestCaseCardType } from '@/entities/test-case';
 import { cn } from '@testea/util';
+
 import { TEST_STATUS_CONFIG } from './suite-detail-constants';
 
 type TestCaseRowProps = {
@@ -14,9 +15,11 @@ export const TestCaseRow = ({ testCase, onSelect }: TestCaseRowProps) => {
     <button
       key={testCase.id}
       type="button"
+      aria-label={`테스트 케이스 ${testCase.caseKey} ${testCase.title}, 상태 ${statusConfig.label}`}
       className={cn(
-        "hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 text-left transition-colors",
-        testCase.isOptimistic && "opacity-50 pointer-events-none animate-pulse"
+        'hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 text-left transition-colors',
+        'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
+        testCase.isOptimistic && 'pointer-events-none animate-pulse opacity-50'
       )}
       onClick={() => onSelect(testCase.id)}
     >
@@ -25,7 +28,9 @@ export const TestCaseRow = ({ testCase, onSelect }: TestCaseRowProps) => {
         <span className="text-text-1">{testCase.title}</span>
         <div className="flex gap-1">
           {testCase.tags.slice(0, 2).map((tag: string) => (
-            <span key={tag} className="bg-bg-3 text-text-3 rounded px-1.5 py-0.5 text-xs">{tag}</span>
+            <span key={tag} className="bg-bg-3 text-text-3 rounded px-1.5 py-0.5 text-xs">
+              {tag}
+            </span>
           ))}
         </div>
       </div>

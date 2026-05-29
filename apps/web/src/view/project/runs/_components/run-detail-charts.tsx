@@ -1,19 +1,33 @@
 'use client';
 
 import React from 'react';
+
 import dynamic from 'next/dynamic';
-import { type TestStatusData } from '@/widgets/project';
+
 import { type FetchedTestRun } from '@/entities/test-run';
 import { type DashboardMilestone } from '@/features/dashboard';
+import { type TestStatusData } from '@/widgets/project';
 
 const TestStatusChart = dynamic(
-  () => import('@/widgets/project/ui/test-status-chart').then(mod => ({ default: mod.TestStatusChart })),
-  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[400px] animate-pulse" /> }
+  () =>
+    import('@/widgets/project/ui/test-status-chart').then((mod) => ({
+      default: mod.TestStatusChart,
+    })),
+  {
+    ssr: false,
+    loading: () => <div className="bg-bg-2 h-[400px] animate-pulse rounded-[16px] p-6" />,
+  }
 );
 
 const MilestoneGanttChart = dynamic(
-  () => import('@/widgets/project/ui/milestone-gantt-chart').then(mod => ({ default: mod.MilestoneGanttChart })),
-  { ssr: false, loading: () => <div className="bg-bg-2 rounded-[16px] p-6 h-[300px] animate-pulse" /> }
+  () =>
+    import('@/widgets/project/ui/milestone-gantt-chart').then((mod) => ({
+      default: mod.MilestoneGanttChart,
+    })),
+  {
+    ssr: false,
+    loading: () => <div className="bg-bg-2 h-[300px] animate-pulse rounded-[16px] p-6" />,
+  }
 );
 
 interface RunDetailChartsProps {

@@ -1,5 +1,7 @@
 import React from 'react';
+
 import type { Meta, StoryObj } from '@storybook/react';
+
 import { Logo } from './logo';
 
 const meta: Meta<typeof Logo> = {
@@ -44,7 +46,9 @@ export const Large: Story = {
 
 export const SizeComparison: Story = {
   render: () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'flex-start' }}>
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'flex-start' }}
+    >
       <div>
         <p style={{ marginBottom: '8px', fontSize: '12px', color: '#666' }}>Small (60x14)</p>
         <Logo width={60} height={14} />

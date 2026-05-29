@@ -33,6 +33,7 @@ dist
 .DS_Store
 *.pem
 *.log
+.tmp/
 
 # debug
 npm-debug.log*
@@ -53,3 +54,9 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Playwright 인증 상태 (storageState — 쿠키 포함, 절대 커밋 금지)
+apps/web/playwright/.auth/
+
+# Playwright 실행 산출물 (trace/screenshot 등 — 커밋 금지)
+apps/web/test-results/

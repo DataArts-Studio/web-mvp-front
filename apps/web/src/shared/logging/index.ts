@@ -1,1 +1,1 @@
-export { dev } from '@/shared/logging/logging'
+export { dev } from '@/shared/logging/logging';

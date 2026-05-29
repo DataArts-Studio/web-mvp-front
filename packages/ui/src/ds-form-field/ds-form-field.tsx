@@ -1,12 +1,9 @@
 import React, { ComponentProps, ReactNode } from 'react';
 
-import {
-  FormField,
-  useFormField,
-  type FormFieldError,
-} from '../primitives/form-field';
 import { cn } from '@testea/util';
 import { CircleAlert } from 'lucide-react';
+
+import { FormField, type FormFieldError, useFormField } from '../primitives/form-field';
 
 interface DsFormFieldProps extends ComponentProps<typeof FormField.Root> {
   children: ReactNode;
@@ -61,8 +58,8 @@ const DsFormFieldMessage = ({ children }: ComponentProps<typeof FormField.Messag
   const { invalid } = useFormField();
   if (!invalid) return null;
   return (
-    <div className="flex items-center gap-2 text-system-red">
-      <CircleAlert className={cn('w-4 h-4')}/>
+    <div className="text-system-red flex items-center gap-2">
+      <CircleAlert className={cn('h-4 w-4')} />
       <FormField.Message>{children}</FormField.Message>
     </div>
   );

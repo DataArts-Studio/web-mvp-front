@@ -1,10 +1,11 @@
 'use client';
 
+import { Controller } from 'react-hook-form';
+import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { Controller } from 'react-hook-form';
 
-import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
 import type { ProjectForm } from '@/entities';
 import { DSButton, DsCheckbox, DsFormField, DsInput } from '@/shared';
 
@@ -38,7 +39,7 @@ export const StepProjectInfo = ({ register, control, errors, onNext }: StepProje
         </DsFormField.Control>
       </DsFormField.Root>
       <div className="flex w-full flex-col gap-2">
-        <label className="flex items-start gap-2 cursor-pointer select-none">
+        <label className="flex cursor-pointer items-start gap-2 select-none">
           <Controller
             name="termsAgreed"
             control={control}
@@ -50,11 +51,18 @@ export const StepProjectInfo = ({ register, control, errors, onNext }: StepProje
               />
             )}
           />
-          <span className="text-sm text-text-2">
-            <Link href="/legal?tab=terms" target="_blank" className="underline text-primary">이용약관</Link> 및 <Link href="/legal?tab=privacy" target="_blank" className="underline text-primary">개인정보 처리방침</Link>에 동의합니다.
+          <span className="text-text-2 text-sm">
+            <Link href="/legal?tab=terms" target="_blank" className="text-primary underline">
+              이용약관
+            </Link>{' '}
+            및{' '}
+            <Link href="/legal?tab=privacy" target="_blank" className="text-primary underline">
+              개인정보 처리방침
+            </Link>
+            에 동의합니다.
           </span>
         </label>
-        <label className="flex items-start gap-2 cursor-pointer select-none">
+        <label className="flex cursor-pointer items-start gap-2 select-none">
           <Controller
             name="ageConfirmed"
             control={control}
@@ -66,21 +74,19 @@ export const StepProjectInfo = ({ register, control, errors, onNext }: StepProje
               />
             )}
           />
-          <span className="text-sm text-text-2">
-            만 14세 이상임을 확인합니다.
-          </span>
+          <span className="text-text-2 text-sm">만 14세 이상임을 확인합니다.</span>
         </label>
       </div>
       {(errors.projectName || errors.termsAgreed || errors.ageConfirmed) && (
         <div className="flex w-full flex-col gap-1">
           {errors.projectName && (
-            <p className="text-sm text-system-red">{errors.projectName.message}</p>
+            <p className="text-system-red text-sm">{errors.projectName.message}</p>
           )}
           {errors.termsAgreed && (
-            <p className="text-sm text-system-red">{errors.termsAgreed.message}</p>
+            <p className="text-system-red text-sm">{errors.termsAgreed.message}</p>
           )}
           {errors.ageConfirmed && (
-            <p className="text-sm text-system-red">{errors.ageConfirmed.message}</p>
+            <p className="text-system-red text-sm">{errors.ageConfirmed.message}</p>
           )}
         </div>
       )}

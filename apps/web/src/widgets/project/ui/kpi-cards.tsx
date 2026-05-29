@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { FileText, FolderOpen, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+
+import { AlertTriangle, CheckCircle, Clock, FileText, FolderOpen } from 'lucide-react';
 
 export type KPIData = {
   totalCases: number;
@@ -54,7 +55,7 @@ const KPICard = ({
 
   return (
     <div
-      className={`relative h-[205px] overflow-hidden rounded-3 p-5 flex flex-col flex-1 ${bgClass} ${isEmpty ? 'opacity-60' : ''}`}
+      className={`rounded-3 relative flex h-[205px] flex-1 flex-col overflow-hidden p-5 ${bgClass} ${isEmpty ? 'opacity-60' : ''}`}
     >
       <span className={`typo-caption-normal ${labelClass}`}>{label}</span>
       <div className="mt-2 flex items-baseline gap-1">

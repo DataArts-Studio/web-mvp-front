@@ -1,9 +1,11 @@
 'use client';
 
 import React, { forwardRef } from 'react';
+
 import { Clock, Zap } from 'lucide-react';
+
+import type { CommandItemCategory, CommandItem as CommandItemType } from '../model/types';
 import { CommandItem } from './command-item';
-import type { CommandItem as CommandItemType, CommandItemCategory } from '../model/types';
 
 const CATEGORY_LABELS: Record<CommandItemCategory, string> = {
   action: '빠른 액션',
@@ -35,7 +37,7 @@ export const CommandList = forwardRef<HTMLDivElement, CommandListProps>(
     return (
       <div ref={ref} className="max-h-[360px] overflow-y-auto p-2">
         {displayItems.length === 0 ? (
-          <div className="flex items-center justify-center py-10 text-text-4 typo-body-normal">
+          <div className="text-text-4 typo-body-normal flex items-center justify-center py-10">
             {query.trim() ? '검색 결과가 없습니다' : '데이터를 불러오는 중...'}
           </div>
         ) : (
@@ -44,7 +46,7 @@ export const CommandList = forwardRef<HTMLDivElement, CommandListProps>(
               <div className="flex items-center gap-2 px-3 py-1.5">
                 {group.category === 'action' && <Zap size={12} className="text-text-4" />}
                 {group.category === 'recent' && <Clock size={12} className="text-text-4" />}
-                <span className="typo-label-heading text-text-4 uppercase tracking-wider">
+                <span className="typo-label-heading text-text-4 tracking-wider uppercase">
                   {CATEGORY_LABELS[group.category]}
                 </span>
               </div>
@@ -66,7 +68,7 @@ export const CommandList = forwardRef<HTMLDivElement, CommandListProps>(
         )}
       </div>
     );
-  },
+  }
 );
 
 CommandList.displayName = 'CommandList';

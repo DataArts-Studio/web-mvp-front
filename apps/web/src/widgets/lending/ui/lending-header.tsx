@@ -2,11 +2,14 @@ import React from 'react';
 
 export const LendingHeader = () => {
   return (
-    <section aria-labelledby="landing-title" className="flex w-full flex-col gap-4 text-left md:gap-6">
+    <section
+      aria-labelledby="landing-title"
+      className="flex w-full flex-col gap-4 text-left md:gap-6"
+    >
       {/* title */}
       <h1
         id="landing-title"
-        className="animate-fade-in-up text-4xl font-bold leading-[140%] sm:text-5xl md:text-7xl"
+        className="animate-fade-in-up text-4xl leading-[140%] font-bold sm:text-5xl md:text-7xl"
       >
         <span>테스트 케이스 작성,</span>
         <br />
@@ -16,7 +19,7 @@ export const LendingHeader = () => {
       {/* sub-title */}
       <p
         aria-label="서비스 설명"
-        className="animate-fade-in-up-delay text-sm font-semibold leading-[160%] text-text-2 sm:text-base md:text-lg"
+        className="animate-fade-in-up-delay text-text-2 text-sm leading-[160%] font-semibold sm:text-base md:text-lg"
       >
         <span>테스트 케이스, 엑셀에 복사-붙여넣기를</span>
         <br className="sm:hidden" />

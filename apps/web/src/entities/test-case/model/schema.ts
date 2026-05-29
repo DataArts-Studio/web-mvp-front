@@ -1,5 +1,6 @@
-import { z } from 'zod';
 import { LifecycleStatusEnum } from '@/shared/types';
+import { z } from 'zod';
+
 export const TestCaseResultStatusEnum = z.enum(['untested', 'pass', 'fail', 'blocked']);
 
 export const TestCaseDtoSchema = z.object({
@@ -7,7 +8,10 @@ export const TestCaseDtoSchema = z.object({
   project_id: z.string().uuid(),
   test_suite_id: z.string().uuid().nullable().optional(),
   section_id: z.string().uuid().nullable().optional(),
-  name: z.string().min(1, '테스트 케이스 이름은 최소 1글자 이상이어야 합니다.').max(200, '테스트 케이스 이름은 200자를 넘을 수 없습니다.'),
+  name: z
+    .string()
+    .min(1, '테스트 케이스 이름은 최소 1글자 이상이어야 합니다.')
+    .max(200, '테스트 케이스 이름은 200자를 넘을 수 없습니다.'),
   display_id: z.int(),
   case_key: z.string().optional(),
   test_type: z.string().optional(),

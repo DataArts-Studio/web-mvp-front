@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres, { Sql } from 'postgres';
+
 import * as tables from '../schema';
 import * as relations from '../schema/relations';
 
@@ -20,7 +21,7 @@ const getDatabaseUrl = () => {
   const dbUrl = process.env.SUPABASE_DB_URL;
   if (!dbUrl) throw new Error('SUPABASE_DB_URL is not set');
   return dbUrl;
-}
+};
 
 const createClient = () => {
   if (_client) return _client;
@@ -38,7 +39,7 @@ const createClient = () => {
   _client = client;
   if (!isProd) globalForDb.__TESTEA_SQL__ = client;
   return client;
-}
+};
 
 export const getDatabase = (): Database => {
   if (_db) return _db;
@@ -52,12 +53,12 @@ export const getDatabase = (): Database => {
   _db = db;
   if (!isProd) globalForDb.__TESTEA_DB__ = db;
   return db;
-}
+};
 
 export const checkDatabaseHealth = async () => {
   const db = getDatabase();
   return await db.execute(sql`select 1 as health`);
-}
+};
 
 export const closeDatabase = async () => {
   if (_client) {
@@ -67,4 +68,4 @@ export const closeDatabase = async () => {
     globalForDb.__TESTEA_DB__ = undefined;
     globalForDb.__TESTEA_SQL__ = undefined;
   }
-}
+};

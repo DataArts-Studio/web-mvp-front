@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache';
 
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
-import type { ActionResult } from '@/shared/types';
 import { hashIdentifier } from '@/features';
+import type { ActionResult } from '@/shared/types';
 import { v7 as uuidv7 } from 'uuid';
 
 // ============================================================================

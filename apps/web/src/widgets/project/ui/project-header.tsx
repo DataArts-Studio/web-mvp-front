@@ -1,11 +1,5 @@
 import React from 'react';
 
-
-
-
-
-
-
 export const ProjectHeader = () => {
   return (
     <header className="flex w-full flex-col gap-4 md:flex-row md:items-end md:justify-between">

@@ -1,12 +1,18 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testSuites, testSuiteSections, testCases } from '@testea/db';
-import type { ActionResult } from '@/shared/types';
-import type { TestSuiteSection, CreateSectionInput, UpdateSectionInput, ReorderSectionsInput } from '../model';
-import { and, eq, asc, isNull } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, testCases, testSuiteSections, testSuites } from '@testea/db';
+import { and, asc, eq, isNull } from 'drizzle-orm';
+import { v7 as uuidv7 } from 'uuid';
+
+import type {
+  CreateSectionInput,
+  ReorderSectionsInput,
+  TestSuiteSection,
+  UpdateSectionInput,
+} from '../model';
 
 async function getSuiteProjectId(suiteId: string): Promise<string | null> {
   const db = getDatabase();
@@ -45,7 +51,9 @@ export const getSections = async (suiteId: string): Promise<ActionResult<TestSui
   }
 };
 
-export const createSection = async (input: CreateSectionInput): Promise<ActionResult<TestSuiteSection>> => {
+export const createSection = async (
+  input: CreateSectionInput
+): Promise<ActionResult<TestSuiteSection>> => {
   try {
     const projectId = await getSuiteProjectId(input.suiteId);
     if (!projectId || !(await requireProjectAccess(projectId))) {
@@ -66,7 +74,9 @@ export const createSection = async (input: CreateSectionInput): Promise<ActionRe
     const [existing] = await db
       .select({ id: testSuiteSections.id })
       .from(testSuiteSections)
-      .where(and(eq(testSuiteSections.suite_id, input.suiteId), eq(testSuiteSections.name, trimmedName)))
+      .where(
+        and(eq(testSuiteSections.suite_id, input.suiteId), eq(testSuiteSections.name, trimmedName))
+      )
       .limit(1);
 
     if (existing) {
@@ -94,7 +104,10 @@ export const createSection = async (input: CreateSectionInput): Promise<ActionRe
       .returning();
 
     if (!inserted) {
-      return { success: false, errors: { _section: ['섹션을 생성하는 도중 오류가 발생했습니다.'] } };
+      return {
+        success: false,
+        errors: { _section: ['섹션을 생성하는 도중 오류가 발생했습니다.'] },
+      };
     }
 
     return { success: true, data: toSection(inserted), message: '섹션이 생성되었습니다.' };
@@ -104,7 +117,9 @@ export const createSection = async (input: CreateSectionInput): Promise<ActionRe
   }
 };
 
-export const updateSection = async (input: UpdateSectionInput): Promise<ActionResult<TestSuiteSection>> => {
+export const updateSection = async (
+  input: UpdateSectionInput
+): Promise<ActionResult<TestSuiteSection>> => {
   try {
     const db = getDatabase();
 
@@ -143,8 +158,8 @@ export const updateSection = async (input: UpdateSectionInput): Promise<ActionRe
         .where(
           and(
             eq(testSuiteSections.suite_id, existing.suite_id),
-            eq(testSuiteSections.name, trimmedName),
-          ),
+            eq(testSuiteSections.name, trimmedName)
+          )
         )
         .limit(1);
 
@@ -166,7 +181,10 @@ export const updateSection = async (input: UpdateSectionInput): Promise<ActionRe
       .returning();
 
     if (!updated) {
-      return { success: false, errors: { _section: ['섹션을 수정하는 도중 오류가 발생했습니다.'] } };
+      return {
+        success: false,
+        errors: { _section: ['섹션을 수정하는 도중 오류가 발생했습니다.'] },
+      };
     }
 
     return { success: true, data: toSection(updated) };
@@ -209,7 +227,11 @@ export const deleteSection = async (sectionId: string): Promise<ActionResult<{ i
       .set({ archived_at: now, updated_at: now })
       .where(eq(testSuiteSections.id, sectionId));
 
-    return { success: true, data: { id: sectionId }, message: '섹션이 삭제되었습니다. 포함된 케이스는 미분류로 이동되었습니다.' };
+    return {
+      success: true,
+      data: { id: sectionId },
+      message: '섹션이 삭제되었습니다. 포함된 케이스는 미분류로 이동되었습니다.',
+    };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'deleteSection' } });
     return { success: false, errors: { _section: ['섹션을 삭제하는 도중 오류가 발생했습니다.'] } };
@@ -230,20 +252,23 @@ export const reorderSections = async (input: ReorderSectionsInput): Promise<Acti
         db
           .update(testSuiteSections)
           .set({ sort_order: index, updated_at: new Date() })
-          .where(and(eq(testSuiteSections.id, id), eq(testSuiteSections.suite_id, input.suiteId))),
-      ),
+          .where(and(eq(testSuiteSections.id, id), eq(testSuiteSections.suite_id, input.suiteId)))
+      )
     );
 
     return { success: true, data: null };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'reorderSections' } });
-    return { success: false, errors: { _section: ['섹션 순서를 변경하는 도중 오류가 발생했습니다.'] } };
+    return {
+      success: false,
+      errors: { _section: ['섹션 순서를 변경하는 도중 오류가 발생했습니다.'] },
+    };
   }
 };
 
 export const moveTestCaseToSection = async (
   caseId: string,
-  sectionId: string | null,
+  sectionId: string | null
 ): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
@@ -266,6 +291,9 @@ export const moveTestCaseToSection = async (
     return { success: true, data: null };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'moveTestCaseToSection' } });
-    return { success: false, errors: { _section: ['케이스를 이동하는 도중 오류가 발생했습니다.'] } };
+    return {
+      success: false,
+      errors: { _section: ['케이스를 이동하는 도중 오류가 발생했습니다.'] },
+    };
   }
 };

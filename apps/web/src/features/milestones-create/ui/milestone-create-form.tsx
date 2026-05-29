@@ -2,16 +2,22 @@
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
-import { CreateMilestone, CreateMilestoneSchema, addTestCasesToMilestone, addTestSuitesToMilestone } from '@/entities/milestone';
+import {
+  CreateMilestone,
+  CreateMilestoneSchema,
+  addTestCasesToMilestone,
+  addTestSuitesToMilestone,
+} from '@/entities/milestone';
 import { getTestCases } from '@/entities/test-case/api';
 import { getTestSuites } from '@/entities/test-suite/api';
-import { DSButton, LoadingSpinner, CaseSelectionPanel, SuiteSelectionPanel } from '@testea/ui';
+import { useCreateMilestone } from '@/features/milestones-create';
+import { MILESTONE_EVENTS, track } from '@/shared/lib/analytics';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { CaseSelectionPanel, DSButton, LoadingSpinner, SuiteSelectionPanel } from '@testea/ui';
 import { FormField } from '@testea/ui';
 import { cn } from '@testea/util';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useCreateMilestone } from '@/features/milestones-create';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { track, MILESTONE_EVENTS } from '@/shared/lib/analytics';
+
 import { DateDropdownSelect } from './date-dropdown-select';
 
 interface MilestoneCreateFormProps {
@@ -32,14 +38,14 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
     queryKey: ['testCases', 'forMilestoneCreate', projectId],
     queryFn: () => getTestCases({ project_id: projectId }),
   });
-  const allCases = casesResult?.success ? casesResult.data ?? [] : [];
+  const allCases = casesResult?.success ? (casesResult.data ?? []) : [];
 
   // 테스트 스위트 조회
   const { data: suitesResult } = useQuery({
     queryKey: ['testSuites', 'forMilestoneCreate', projectId],
     queryFn: () => getTestSuites({ projectId }),
   });
-  const allSuites = suitesResult?.success ? suitesResult.data ?? [] : [];
+  const allSuites = suitesResult?.success ? (suitesResult.data ?? []) : [];
 
   const {
     register,
@@ -128,9 +134,12 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleAbandon}
     >
-      <div className="bg-bg-2 shadow-4 relative max-h-[90vh] w-[700px] overflow-hidden rounded-xl" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="bg-bg-2 shadow-4 relative max-h-[90vh] w-[700px] overflow-hidden rounded-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
+          <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
             <LoadingSpinner size="md" text="마일스톤을 생성하고 있어요" />
           </div>
         )}
@@ -159,8 +168,8 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                   disabled={isLoading}
                   {...register('title')}
                   className={cn(
-                    'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
-                    errors.title && 'border-system-red focus:border-system-red',
+                    'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                    errors.title && 'border-system-red focus:border-system-red'
                   )}
                 />
                 {errors.title && (
@@ -177,8 +186,8 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                   disabled={isLoading}
                   {...register('description')}
                   className={cn(
-                    'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
-                    errors.description && 'border-system-red focus:border-system-red',
+                    'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                    errors.description && 'border-system-red focus:border-system-red'
                   )}
                 />
                 {errors.description && (
@@ -230,7 +239,9 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                 selectedCaseIds={selectedCaseIds}
                 onToggleCase={toggleCase}
                 isExpanded={expandedSection === 'cases'}
-                onToggleExpand={() => setExpandedSection(expandedSection === 'cases' ? null : 'cases')}
+                onToggleExpand={() =>
+                  setExpandedSection(expandedSection === 'cases' ? null : 'cases')
+                }
               />
 
               {/* 테스트 스위트 선택 */}
@@ -239,7 +250,9 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                 selectedSuiteIds={selectedSuiteIds}
                 onToggleSuite={toggleSuite}
                 isExpanded={expandedSection === 'suites'}
-                onToggleExpand={() => setExpandedSection(expandedSection === 'suites' ? null : 'suites')}
+                onToggleExpand={() =>
+                  setExpandedSection(expandedSection === 'suites' ? null : 'suites')
+                }
               />
             </div>
           </div>
@@ -255,12 +268,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
             >
               취소
             </DSButton>
-            <DSButton
-              type="submit"
-              variant="solid"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <DSButton type="submit" variant="solid" className="w-full" disabled={isLoading}>
               {isLoading ? '생성 중...' : '생성'}
             </DSButton>
           </div>

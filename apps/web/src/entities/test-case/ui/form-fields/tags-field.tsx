@@ -15,13 +15,10 @@ interface TagsFieldProps<T extends TagsFieldForm> {
   projectTags: string[];
 }
 
-export const TagsField = <T extends TagsFieldForm>({
-  control,
-  projectTags,
-}: TagsFieldProps<T>) => {
+export const TagsField = <T extends TagsFieldForm>({ control, projectTags }: TagsFieldProps<T>) => {
   return (
     <fieldset className="flex flex-col gap-5">
-      <legend className="typo-caption-heading text-text-3 mb-1 uppercase tracking-widest">
+      <legend className="typo-caption-heading text-text-3 mb-1 tracking-widest uppercase">
         분류
       </legend>
 

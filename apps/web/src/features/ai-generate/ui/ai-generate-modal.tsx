@@ -1,21 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { Bot, Loader2, Sparkles, X } from 'lucide-react';
 
 import { aiConfigQueryOptions } from '@/entities/ai-config';
-import { aiUsageQueryOptions } from '@/entities/ai-usage';
 import type { GeneratedTestCase } from '@/entities/ai-config';
 import { saveGeneratedCases } from '@/entities/ai-config/api/server-actions';
+import { aiUsageQueryOptions } from '@/entities/ai-usage';
 import { testSuitesQueryOptions } from '@/widgets';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog } from '@testea/ui';
 import { DSButton } from '@testea/ui';
+import { Bot, Loader2, Sparkles, X } from 'lucide-react';
+import { toast } from 'sonner';
 
+import { AiAttachmentDropzone } from './ai-attachment-dropzone';
+import { AiCasePreviewList } from './ai-case-preview-list';
 import { AiGenerateForm } from './ai-generate-form';
 import { AiGeneratingSpinner } from './ai-generating-spinner';
-import { AiCasePreviewList } from './ai-case-preview-list';
 
 type Props = {
   projectId: string;
@@ -30,6 +31,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
   const [step, setStep] = useState<Step>('input');
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState<'ko' | 'en'>('ko');
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [cases, setCases] = useState<GeneratedTestCase[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [suiteId, setSuiteId] = useState<string>('');
@@ -47,22 +49,50 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
   });
   const suites = suitesData?.success ? suitesData.data : [];
 
-  // AI 생성 요청
+  // AI 생성 요청 (첨부가 있으면 multipart, 없으면 기존 JSON 경로)
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/ai/generate-cases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, description, language }),
-      });
+      const res = attachment
+        ? await fetch('/api/ai/generate-cases', {
+            method: 'POST',
+            // FormData 사용 시 Content-Type 은 브라우저가 boundary 와 함께 자동 세팅 — 직접 지정 금지
+            body: (() => {
+              const fd = new FormData();
+              fd.set('projectId', projectId);
+              fd.set('description', description);
+              fd.set('language', language);
+              fd.set('file', attachment);
+              return fd;
+            })(),
+          })
+        : await fetch('/api/ai/generate-cases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId, description, language }),
+          });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '생성에 실패했습니다.');
-      return data.cases as GeneratedTestCase[];
+      return {
+        cases: data.cases as GeneratedTestCase[],
+        attachment: data.attachment as {
+          type: 'pdf' | 'markdown';
+          truncated: boolean;
+          charCount: number;
+        } | null,
+      };
     },
     onMutate: () => setStep('loading'),
-    onSuccess: (result) => {
+    onSuccess: ({ cases: result, attachment: attachmentMeta }) => {
       setCases(result);
       setSelected(new Set(result.map((_, i) => i)));
+      // 응답이 잘림을 알려주면 사용자에게 명시한다. 안 그러면 긴 문서 뒷부분의 요구사항이 누락된 채
+      // 생성이 끝난 줄 알게 됨.
+      if (attachmentMeta?.truncated) {
+        const typeLabel = attachmentMeta.type === 'pdf' ? 'PDF' : 'Markdown';
+        toast.warning(
+          `${typeLabel} 첨부가 ${attachmentMeta.charCount.toLocaleString()}자에서 잘려 뒷부분은 분석되지 않았어요.`
+        );
+      }
       setStep('preview');
     },
     onError: (error: Error) => {
@@ -92,6 +122,9 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
         toast.error(msg);
       }
     },
+    onError: (error: Error) => {
+      toast.error(error.message || 'TC 저장 중 오류가 발생했습니다.');
+    },
   });
 
   const toggleAll = () => {
@@ -119,16 +152,20 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
     <Dialog.Root defaultOpen>
       <Dialog.Portal>
         <Dialog.Overlay onClick={step !== 'loading' ? onClose : undefined} />
-        <Dialog.Content className="bg-bg-2 border-line-2 rounded-5 w-full max-w-[720px] max-h-[85vh] border p-0 flex flex-col">
+        <Dialog.Content className="bg-bg-2 border-line-2 rounded-5 flex max-h-[85vh] w-full max-w-[720px] flex-col border p-0">
           {/* 헤더 */}
-          <div className="flex items-center justify-between border-b border-line-2 px-6 py-4">
+          <div className="border-line-2 flex items-center justify-between border-b px-6 py-4">
             <div className="flex items-center gap-3">
               <Dialog.Title className="typo-h2-heading text-text-1">
                 AI 테스트 케이스 생성
               </Dialog.Title>
             </div>
             {step !== 'loading' && (
-              <button type="button" onClick={onClose} className="text-text-4 hover:text-text-2 transition-colors">
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-text-4 hover:text-text-2 transition-colors"
+              >
                 <X className="h-5 w-5" />
               </button>
             )}
@@ -138,8 +175,8 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
           <div className="flex-1 overflow-y-auto p-6">
             {!hasConfig ? (
               <div className="flex flex-col items-center gap-4 py-10 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                  <Bot className="h-7 w-7 text-primary" />
+                <div className="bg-primary/10 flex h-14 w-14 items-center justify-center rounded-full">
+                  <Bot className="text-primary h-7 w-7" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <p className="typo-body1-heading text-text-1">API 키가 필요합니다</p>
@@ -154,28 +191,37 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
             ) : step === 'input' ? (
               <>
                 {usage && (
-                  <div className="mb-4 flex items-center justify-between rounded-lg border border-line-2 bg-bg-3 px-4 py-2.5">
-                    <span className="typo-body2-normal text-text-3">
-                      이번 달 사용량
-                    </span>
-                    <span className={`typo-body2-heading ${isLimitExceeded ? 'text-error' : 'text-text-1'}`}>
+                  <div className="border-line-2 bg-bg-3 mb-4 flex items-center justify-between rounded-lg border px-4 py-2.5">
+                    <span className="typo-body2-normal text-text-3">이번 달 사용량</span>
+                    <span
+                      className={`typo-body2-heading ${isLimitExceeded ? 'text-error' : 'text-text-1'}`}
+                    >
                       {usage.used}/{usage.limit}건
                     </span>
                   </div>
                 )}
                 {isLimitExceeded && (
-                  <div className="mb-4 rounded-lg border border-error/30 bg-error/5 px-4 py-3">
+                  <div className="border-error/30 bg-error/5 mb-4 rounded-lg border px-4 py-3">
                     <p className="typo-body2-normal text-error">
                       이번 달 사용 한도를 초과했습니다. 다음 달에 다시 이용해주세요.
                     </p>
                   </div>
                 )}
-              <AiGenerateForm
-                description={description}
-                onDescriptionChange={setDescription}
-                language={language}
-                onLanguageChange={setLanguage}
-              />
+                <AiGenerateForm
+                  description={description}
+                  onDescriptionChange={setDescription}
+                  language={language}
+                  onLanguageChange={setLanguage}
+                  hasAttachment={!!attachment}
+                />
+                <div className="mt-4 flex flex-col gap-2">
+                  <label className="typo-label-heading text-text-2">참고 문서 첨부 (선택)</label>
+                  <AiAttachmentDropzone
+                    file={attachment}
+                    onChange={setAttachment}
+                    disabled={generateMutation.isPending}
+                  />
+                </div>
               </>
             ) : step === 'loading' ? (
               <AiGeneratingSpinner />
@@ -195,7 +241,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
 
           {/* 푸터 */}
           {hasConfig && step !== 'loading' && (
-            <div className="flex items-center justify-between border-t border-line-2 px-6 py-4">
+            <div className="border-line-2 flex items-center justify-between border-t px-6 py-4">
               {step === 'preview' && (
                 <button
                   type="button"
@@ -215,7 +261,12 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                     variant="solid"
                     size="small"
                     onClick={() => generateMutation.mutate()}
-                    disabled={description.trim().length < 20 || generateMutation.isPending || isLimitExceeded}
+                    disabled={
+                      // 첨부 없으면 V1과 동일하게 최소 20자, 첨부가 있으면 설명은 비워도 OK
+                      (!attachment && description.trim().length < 20) ||
+                      generateMutation.isPending ||
+                      isLimitExceeded
+                    }
                   >
                     <span className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4" />

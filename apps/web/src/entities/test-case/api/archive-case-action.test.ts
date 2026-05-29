@@ -63,7 +63,9 @@ describe('archiveTestCase', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._testCase).toContain('테스트 케이스를 삭제하는 도중 오류가 발생했습니다.');
+      expect(result.errors._testCase).toContain(
+        '테스트 케이스를 삭제하는 도중 오류가 발생했습니다.'
+      );
     }
   });
 });

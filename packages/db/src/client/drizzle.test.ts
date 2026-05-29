@@ -1,38 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-
-
 import { checkDatabaseHealth, closeDatabase, getDatabase } from './drizzle';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // postgres 모듈 모킹 (실제 DB 연결 방지)
 vi.mock('postgres', () => {

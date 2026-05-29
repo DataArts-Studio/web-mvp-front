@@ -1,19 +1,31 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { Bot, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
 
-import { aiConfigQueryOptions, aiConfigQueryKeys } from '@/entities/ai-config';
-import { saveAiConfig, deleteAiConfig } from '@/entities/ai-config/api/server-actions';
+import { aiConfigQueryKeys, aiConfigQueryOptions } from '@/entities/ai-config';
+import { deleteAiConfig, saveAiConfig } from '@/entities/ai-config/api/server-actions';
 import { API_KEY_RULES } from '@/entities/ai-config/model/schema';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DSButton, DsInput, SettingsCard } from '@testea/ui';
+import { Bot, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const PROVIDER_META = {
-  anthropic: { label: 'Anthropic Claude', placeholder: 'sk-ant-...', hint: 'console.anthropic.com에서 API 키를 발급받을 수 있습니다.' },
-  openai: { label: 'OpenAI', placeholder: 'sk-...', hint: 'platform.openai.com에서 API 키를 발급받을 수 있습니다.' },
-  gemini: { label: 'Google Gemini', placeholder: 'AIza...', hint: 'aistudio.google.com에서 API 키를 발급받을 수 있습니다.' },
+  anthropic: {
+    label: 'Anthropic Claude',
+    placeholder: 'sk-ant-...',
+    hint: 'console.anthropic.com에서 API 키를 발급받을 수 있습니다.',
+  },
+  openai: {
+    label: 'OpenAI',
+    placeholder: 'sk-...',
+    hint: 'platform.openai.com에서 API 키를 발급받을 수 있습니다.',
+  },
+  gemini: {
+    label: 'Google Gemini',
+    placeholder: 'AIza...',
+    hint: 'aistudio.google.com에서 API 키를 발급받을 수 있습니다.',
+  },
 } as const;
 
 type Provider = keyof typeof PROVIDER_META;
@@ -89,7 +101,14 @@ export const AiConfigCard = ({ projectId }: Props) => {
             description={`${config.model || '기본 모델'} · API 키 설정됨`}
             actions={
               <>
-                <DSButton variant="ghost" size="small" onClick={() => { setIsEditing(true); setProvider(config.provider); }}>
+                <DSButton
+                  variant="ghost"
+                  size="small"
+                  onClick={() => {
+                    setIsEditing(true);
+                    setProvider(config.provider);
+                  }}
+                >
                   변경
                 </DSButton>
                 <DSButton
@@ -114,7 +133,10 @@ export const AiConfigCard = ({ projectId }: Props) => {
                   <button
                     key={p}
                     type="button"
-                    onClick={() => { setProvider(p); setKeyError(validateApiKey(apiKey, p)); }}
+                    onClick={() => {
+                      setProvider(p);
+                      setKeyError(validateApiKey(apiKey, p));
+                    }}
                     className={`typo-body2-normal rounded-2 border px-4 py-2 transition-colors ${
                       provider === p
                         ? 'border-primary bg-primary/5 text-primary'
@@ -134,14 +156,17 @@ export const AiConfigCard = ({ projectId }: Props) => {
                 <DsInput
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
-                  onChange={(e) => { setApiKey(e.target.value); setKeyError(validateApiKey(e.target.value, provider)); }}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    setKeyError(validateApiKey(e.target.value, provider));
+                  }}
                   placeholder={meta.placeholder}
                   autoComplete="off"
                 />
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-4 hover:text-text-2"
+                  className="text-text-4 hover:text-text-2 absolute top-1/2 right-3 -translate-y-1/2"
                 >
                   {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -153,7 +178,15 @@ export const AiConfigCard = ({ projectId }: Props) => {
             {/* 버튼 */}
             <div className="flex justify-end gap-2 pt-2">
               {isEditing && (
-                <DSButton variant="ghost" size="small" onClick={() => { setIsEditing(false); setApiKey(''); setKeyError(null); }}>
+                <DSButton
+                  variant="ghost"
+                  size="small"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setApiKey('');
+                    setKeyError(null);
+                  }}
+                >
                   취소
                 </DSButton>
               )}
@@ -163,11 +196,7 @@ export const AiConfigCard = ({ projectId }: Props) => {
                 onClick={() => saveMutation.mutate()}
                 disabled={!apiKey.trim() || !!keyError || saveMutation.isPending}
               >
-                {saveMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  '저장'
-                )}
+                {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : '저장'}
               </DSButton>
             </div>
           </div>

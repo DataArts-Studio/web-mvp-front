@@ -45,24 +45,31 @@ export const mockDb: any = {
     values: vi.fn(() => ({
       returning: vi.fn(() => Promise.resolve(mockInsertReturnValue ? [mockInsertReturnValue] : [])),
       onConflictDoNothing: vi.fn(() => ({
-        returning: vi.fn(() => Promise.resolve(mockInsertReturnValue ? [mockInsertReturnValue] : [])),
+        returning: vi.fn(() =>
+          Promise.resolve(mockInsertReturnValue ? [mockInsertReturnValue] : [])
+        ),
       })),
       onConflictDoUpdate: vi.fn(() => ({
-        returning: vi.fn(() => Promise.resolve(mockInsertReturnValue ? [mockInsertReturnValue] : [])),
+        returning: vi.fn(() =>
+          Promise.resolve(mockInsertReturnValue ? [mockInsertReturnValue] : [])
+        ),
       })),
     })),
   })),
   update: vi.fn(() => ({
     set: vi.fn(() => ({
       where: vi.fn(() => ({
-        returning: vi.fn(() => Promise.resolve(mockUpdateReturnValue ? [mockUpdateReturnValue] : [])),
+        returning: vi.fn(() =>
+          Promise.resolve(mockUpdateReturnValue ? [mockUpdateReturnValue] : [])
+        ),
       })),
     })),
   })),
   delete: vi.fn(() => ({
     where: vi.fn(() => ({
       returning: vi.fn(() => Promise.resolve(mockDeleteReturnValue ? [mockDeleteReturnValue] : [])),
-      then: (resolve: (value: unknown) => void) => Promise.resolve(mockDeleteReturnValue).then(resolve),
+      then: (resolve: (value: unknown) => void) =>
+        Promise.resolve(mockDeleteReturnValue).then(resolve),
     })),
   })),
 };
@@ -395,7 +402,10 @@ export const createMockMilestoneTestCaseRow = (
 // ============================================================================
 
 /** 여러 개의 Project Row 생성 */
-export const createMockProjectRows = (count: number, baseOverrides?: Parameters<typeof createMockProjectRow>[0]) =>
+export const createMockProjectRows = (
+  count: number,
+  baseOverrides?: Parameters<typeof createMockProjectRow>[0]
+) =>
   Array.from({ length: count }, (_, i) =>
     createMockProjectRow({
       id: `project-${i + 1}`,
@@ -406,7 +416,10 @@ export const createMockProjectRows = (count: number, baseOverrides?: Parameters<
   );
 
 /** 여러 개의 TestSuite Row 생성 */
-export const createMockTestSuiteRows = (count: number, baseOverrides?: Parameters<typeof createMockTestSuiteRow>[0]) =>
+export const createMockTestSuiteRows = (
+  count: number,
+  baseOverrides?: Parameters<typeof createMockTestSuiteRow>[0]
+) =>
   Array.from({ length: count }, (_, i) =>
     createMockTestSuiteRow({
       id: `suite-${i + 1}`,
@@ -417,7 +430,10 @@ export const createMockTestSuiteRows = (count: number, baseOverrides?: Parameter
   );
 
 /** 여러 개의 TestCase Row 생성 */
-export const createMockTestCaseRows = (count: number, baseOverrides?: Parameters<typeof createMockTestCaseRow>[0]) =>
+export const createMockTestCaseRows = (
+  count: number,
+  baseOverrides?: Parameters<typeof createMockTestCaseRow>[0]
+) =>
   Array.from({ length: count }, (_, i) =>
     createMockTestCaseRow({
       id: `test-case-${i + 1}`,
@@ -429,7 +445,10 @@ export const createMockTestCaseRows = (count: number, baseOverrides?: Parameters
   );
 
 /** 여러 개의 TestRun Row 생성 */
-export const createMockTestRunRows = (count: number, baseOverrides?: Parameters<typeof createMockTestRunRow>[0]) =>
+export const createMockTestRunRows = (
+  count: number,
+  baseOverrides?: Parameters<typeof createMockTestRunRow>[0]
+) =>
   Array.from({ length: count }, (_, i) =>
     createMockTestRunRow({
       id: `test-run-${i + 1}`,

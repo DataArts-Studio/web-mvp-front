@@ -1,10 +1,16 @@
 'use server';
 
+import type {
+  DashboardStats,
+  ProjectInfo,
+  RecentActivity,
+  TestCaseStats,
+  TestSuiteSummary,
+} from '@/features/dashboard';
+import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import type { DashboardStats, ProjectInfo, RecentActivity, TestCaseStats, TestSuiteSummary } from '@/features/dashboard';
 import { getDatabase, projects, testCases, testSuites } from '@testea/db';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
-import { ActionResult } from '@/shared/types';
 
 type GetDashboardStatsParams = {
   slug: string;
@@ -42,74 +48,64 @@ export const getDashboardStats = async ({
     };
 
     // 독립 쿼리 4개를 병렬 실행 (N+1 제거: 스위트별 케이스 수를 LEFT JOIN으로 단일 쿼리)
-    const [
-      testCaseStatsRows,
-      suiteWithCountRows,
-      recentTestCases,
-      recentSuites,
-    ] = await Promise.all([
-      // 1) 테스트 케이스 통계 (total + unassigned 한번에)
-      db
-        .select({
-          total: count(),
-          unassigned: count(sql`CASE WHEN ${testCases.test_suite_id} IS NULL THEN 1 END`),
-        })
-        .from(testCases)
-        .where(
-          and(
-            eq(testCases.project_id, projectRow.id),
-            eq(testCases.lifecycle_status, 'ACTIVE')
-          )
-        ),
+    const [testCaseStatsRows, suiteWithCountRows, recentTestCases, recentSuites] =
+      await Promise.all([
+        // 1) 테스트 케이스 통계 (total + unassigned 한번에)
+        db
+          .select({
+            total: count(),
+            unassigned: count(sql`CASE WHEN ${testCases.test_suite_id} IS NULL THEN 1 END`),
+          })
+          .from(testCases)
+          .where(
+            and(eq(testCases.project_id, projectRow.id), eq(testCases.lifecycle_status, 'ACTIVE'))
+          ),
 
-      // 2) 스위트 + 케이스 수 (LEFT JOIN, N+1 → 1 쿼리)
-      db
-        .select({
-          id: testSuites.id,
-          name: testSuites.name,
-          description: testSuites.description,
-          case_count: count(testCases.id),
-        })
-        .from(testSuites)
-        .leftJoin(
-          testCases,
-          and(
-            eq(testCases.test_suite_id, testSuites.id),
-            eq(testCases.lifecycle_status, 'ACTIVE')
+        // 2) 스위트 + 케이스 수 (LEFT JOIN, N+1 → 1 쿼리)
+        db
+          .select({
+            id: testSuites.id,
+            name: testSuites.name,
+            description: testSuites.description,
+            case_count: count(testCases.id),
+          })
+          .from(testSuites)
+          .leftJoin(
+            testCases,
+            and(
+              eq(testCases.test_suite_id, testSuites.id),
+              eq(testCases.lifecycle_status, 'ACTIVE')
+            )
           )
-        )
-        .where(eq(testSuites.project_id, projectRow.id))
-        .groupBy(testSuites.id, testSuites.name, testSuites.description),
+          .where(eq(testSuites.project_id, projectRow.id))
+          .groupBy(testSuites.id, testSuites.name, testSuites.description),
 
-      // 3) 최근 테스트 케이스
-      db
-        .select({
-          id: testCases.id,
-          title: testCases.name,
-          created_at: testCases.created_at,
-        })
-        .from(testCases)
-        .where(
-          and(
-            eq(testCases.project_id, projectRow.id),
-            eq(testCases.lifecycle_status, 'ACTIVE')
+        // 3) 최근 테스트 케이스
+        db
+          .select({
+            id: testCases.id,
+            title: testCases.name,
+            created_at: testCases.created_at,
+          })
+          .from(testCases)
+          .where(
+            and(eq(testCases.project_id, projectRow.id), eq(testCases.lifecycle_status, 'ACTIVE'))
           )
-        )
-        .orderBy(desc(testCases.created_at))
-        .limit(5),
+          .orderBy(desc(testCases.created_at))
+          .limit(5),
 
-      // 4) 최근 스위트
-      db
-        .select({
-          id: testSuites.id,
-          title: testSuites.name,
-          created_at: testSuites.created_at,
-        })
-        .from(testSuites)
-        .where(eq(testSuites.project_id, projectRow.id))
-        .orderBy(desc(testSuites.created_at))
-        .limit(5),
-    ]);
+        // 4) 최근 스위트
+        db
+          .select({
+            id: testSuites.id,
+            title: testSuites.name,
+            created_at: testSuites.created_at,
+          })
+          .from(testSuites)
+          .where(eq(testSuites.project_id, projectRow.id))
+          .orderBy(desc(testSuites.created_at))
+          .limit(5),
+      ]);
 
     const testCaseStats: TestCaseStats = {
       total: testCaseStatsRows[0]?.total ?? 0,

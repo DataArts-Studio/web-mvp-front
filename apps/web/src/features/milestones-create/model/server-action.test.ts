@@ -1,3 +1,4 @@
+import { createMilestoneAction } from '@/features';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
@@ -39,8 +40,6 @@ vi.mock('@testea/db', () => ({
   },
   checkStorageLimit: vi.fn(() => Promise.resolve(null)),
 }));
-
-import { createMilestoneAction } from '@/features';
 
 type FlatErrors = {
   formErrors: string[];

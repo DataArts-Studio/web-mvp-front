@@ -1,13 +1,18 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { rollbackToVersion } from '@/entities/test-case-version/api/actions';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export const useRollback = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ testCaseId, targetVersionNumber }: { testCaseId: string; targetVersionNumber: number }) =>
-      rollbackToVersion(testCaseId, targetVersionNumber),
+    mutationFn: ({
+      testCaseId,
+      targetVersionNumber,
+    }: {
+      testCaseId: string;
+      targetVersionNumber: number;
+    }) => rollbackToVersion(testCaseId, targetVersionNumber),
     onSuccess: async (result) => {
       if (result.success) {
         toast.success(result.message || '버전이 복원되었습니다.');

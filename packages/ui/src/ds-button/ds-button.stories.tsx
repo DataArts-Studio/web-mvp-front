@@ -1,7 +1,9 @@
 import React from 'react';
+
 import type { Meta, StoryObj } from '@storybook/react';
+import { Loader, Play } from 'lucide-react';
+
 import { DSButton } from './ds-button';
-import { Play, Loader } from 'lucide-react';
 
 const meta: Meta<typeof DSButton> = {
   title: 'Design System/DSButton',

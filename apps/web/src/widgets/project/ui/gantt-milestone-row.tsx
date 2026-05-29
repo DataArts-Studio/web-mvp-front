@@ -1,5 +1,7 @@
 import React from 'react';
+
 import type { DashboardMilestone } from '@/features/dashboard';
+
 import { GanttBar } from './gantt-bar';
 import type { WeekInfo } from './gantt-utils';
 

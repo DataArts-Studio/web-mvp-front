@@ -28,7 +28,7 @@
   "importOrderSortSpecifiers": true,
   "overrides": [
     {
-      "files": "apps/web/e2e/**/*.{ts,tsx}",
+      "files": "apps/web/tests/**/*.{ts,tsx}",
       "options": {
         "printWidth": 80
       }

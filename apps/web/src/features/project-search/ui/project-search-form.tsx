@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
-import { DsInput, DSButton } from '@testea/ui';
+
+import { PROJECT_SEARCH_EVENTS, track } from '@/shared/lib/analytics';
 import { useDebounce, useOutsideClick } from '@testea/lib';
+import { DSButton, DsInput } from '@testea/ui';
+
 import { searchProjects } from '../api/server-action';
-import { ProjectSearchAutocomplete } from './project-search-autocomplete';
 import type { ProjectSearchResult } from '../model/types';
-import { track, PROJECT_SEARCH_EVENTS } from '@/shared/lib/analytics';
+import { ProjectSearchAutocomplete } from './project-search-autocomplete';
 
 interface ProjectSearchFormProps {
   onSearch: (keyword: string) => Promise<void>;
@@ -68,6 +71,12 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
   // Handle click outside to close autocomplete
   useOutsideClick(containerRef, () => setShowAutocomplete(false));
 
+  // Handle project selection from autocomplete
+  const handleSelectProject = (project: ProjectSearchResult) => {
+    setShowAutocomplete(false);
+    router.push(`/projects/${encodeURIComponent(project.slug)}/access`);
+  };
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -86,15 +95,11 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev < suggestions.length - 1 ? prev + 1 : 0
-          );
+          setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev > 0 ? prev - 1 : suggestions.length - 1
-          );
+          setSelectedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
           break;
         case 'Enter':
           e.preventDefault();
@@ -117,12 +122,6 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
     },
     [showAutocomplete, suggestions, selectedIndex, inputValue, onSearch]
   );
-
-  // Handle project selection from autocomplete
-  const handleSelectProject = (project: ProjectSearchResult) => {
-    setShowAutocomplete(false);
-    router.push(`/projects/${project.slug}/access`);
-  };
 
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {

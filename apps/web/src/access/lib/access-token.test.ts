@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createProjectAccessToken,
-  verifyProjectAccessToken,
-  parseTokenPayload,
   getTokenRemainingTime,
+  parseTokenPayload,
+  verifyProjectAccessToken,
 } from './access-token';
 
 describe('접근 토큰 (access-token)', () => {

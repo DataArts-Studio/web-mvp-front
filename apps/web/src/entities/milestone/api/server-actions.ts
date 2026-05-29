@@ -1,6 +1,6 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
+import { requireProjectAccess } from '@/access/lib/require-access';
 import {
   CreateMilestone,
   Milestone,
@@ -9,12 +9,21 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
-import { getDatabase, milestones, milestoneTestCases, milestoneTestSuites, testRuns, testCaseRuns, testCases, testRunSuites } from '@testea/db';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import {
+  getDatabase,
+  milestoneTestCases,
+  milestoneTestSuites,
+  milestones,
+  testCaseRuns,
+  testCases,
+  testRunSuites,
+  testRuns,
+} from '@testea/db';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import { requireProjectAccess } from '@/access/lib/require-access';
-import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 
 type GetMilestonesParams = {
   projectId: string;
@@ -32,47 +41,64 @@ export const getMilestones = async ({
     const rows = await db
       .select()
       .from(milestones)
-      .where(
-        and(
-          eq(milestones.project_id, projectId),
-          eq(milestones.lifecycle_status, 'ACTIVE')
-        )
-      );
+      .where(and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'ACTIVE')));
 
     if (rows.length === 0) {
       return { success: true, data: [] };
     }
 
-    const milestoneIds = rows.map(r => r.id);
+    const milestoneIds = rows.map((r) => r.id);
 
     // 병렬 조회: 테스트 실행, 마일스톤-케이스, 마일스톤-스위트
     const [allRuns, allMtc, allMts] = await Promise.all([
-      db.select({ id: testRuns.id, milestone_id: testRuns.milestone_id })
+      db
+        .select({ id: testRuns.id, milestone_id: testRuns.milestone_id })
         .from(testRuns)
-        .where(and(inArray(testRuns.milestone_id, milestoneIds), eq(testRuns.lifecycle_status, 'ACTIVE'))),
-      db.select()
+        .where(
+          and(inArray(testRuns.milestone_id, milestoneIds), eq(testRuns.lifecycle_status, 'ACTIVE'))
+        ),
+      db
+        .select()
         .from(milestoneTestCases)
         .where(inArray(milestoneTestCases.milestone_id, milestoneIds)),
-      db.select()
+      db
+        .select()
         .from(milestoneTestSuites)
         .where(inArray(milestoneTestSuites.milestone_id, milestoneIds)),
     ]);
 
     // 스위트에 속한 케이스 조회
-    const allSuiteIds = [...new Set(allMts.map(m => m.test_suite_id).filter(Boolean))] as string[];
-    const suiteCases = allSuiteIds.length > 0
-      ? await db.select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
-          .from(testCases)
-          .where(and(inArray(testCases.test_suite_id, allSuiteIds), eq(testCases.lifecycle_status, 'ACTIVE')))
-      : [];
+    const allSuiteIds = [
+      ...new Set(allMts.map((m) => m.test_suite_id).filter(Boolean)),
+    ] as string[];
+    const suiteCases =
+      allSuiteIds.length > 0
+        ? await db
+            .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
+            .from(testCases)
+            .where(
+              and(
+                inArray(testCases.test_suite_id, allSuiteIds),
+                eq(testCases.lifecycle_status, 'ACTIVE')
+              )
+            )
+        : [];
 
     // 테스트 실행 결과 조회
-    const allRunIds = allRuns.map(r => r.id);
-    const allCaseRuns = allRunIds.length > 0
-      ? await db.select({ test_run_id: testCaseRuns.test_run_id, test_case_id: testCaseRuns.test_case_id, status: testCaseRuns.status })
-          .from(testCaseRuns)
-          .where(and(inArray(testCaseRuns.test_run_id, allRunIds), isNull(testCaseRuns.excluded_at)))
-      : [];
+    const allRunIds = allRuns.map((r) => r.id);
+    const allCaseRuns =
+      allRunIds.length > 0
+        ? await db
+            .select({
+              test_run_id: testCaseRuns.test_run_id,
+              test_case_id: testCaseRuns.test_case_id,
+              status: testCaseRuns.status,
+            })
+            .from(testCaseRuns)
+            .where(
+              and(inArray(testCaseRuns.test_run_id, allRunIds), isNull(testCaseRuns.excluded_at))
+            )
+        : [];
 
     // 마일스톤별 그룹핑
     const runsByMilestone = new Map<string, string[]>();
@@ -123,7 +149,7 @@ export const getMilestones = async ({
       const directCaseIds = new Set(mtcByMilestone.get(row.id) || []);
       const suiteIdsForMs = mtsByMilestone.get(row.id) || [];
       for (const sid of suiteIdsForMs) {
-        for (const cid of (casesBySuite.get(sid) || [])) {
+        for (const cid of casesBySuite.get(sid) || []) {
           directCaseIds.add(cid);
         }
       }
@@ -142,7 +168,9 @@ export const getMilestones = async ({
           }
         }
       }
-      const completedCases = Array.from(caseStatusMap.values()).filter(s => s !== 'untested').length;
+      const completedCases = Array.from(caseStatusMap.values()).filter(
+        (s) => s !== 'untested'
+      ).length;
 
       return {
         ...base,
@@ -256,7 +284,11 @@ export const updateMilestone = async (
     const { id, ...updateFields } = input;
 
     // 접근 권한 확인
-    const [existing] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, id)).limit(1);
+    const [existing] = await db
+      .select({ projectId: milestones.project_id })
+      .from(milestones)
+      .where(eq(milestones.id, id))
+      .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
@@ -322,7 +354,11 @@ export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: s
     const db = getDatabase();
 
     // 접근 권한 확인
-    const [existing] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, id)).limit(1);
+    const [existing] = await db
+      .select({ projectId: milestones.project_id })
+      .from(milestones)
+      .where(eq(milestones.id, id))
+      .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
@@ -374,7 +410,11 @@ export const addTestCasesToMilestone = async (
     const db = getDatabase();
 
     // 접근 권한 확인
-    const [ms] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, milestoneId)).limit(1);
+    const [ms] = await db
+      .select({ projectId: milestones.project_id })
+      .from(milestones)
+      .where(eq(milestones.id, milestoneId))
+      .limit(1);
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
@@ -384,10 +424,7 @@ export const addTestCasesToMilestone = async (
       test_case_id: testCaseId,
     }));
 
-    await db
-      .insert(milestoneTestCases)
-      .values(values)
-      .onConflictDoNothing();
+    await db.insert(milestoneTestCases).values(values).onConflictDoNothing();
 
     // Sync: add new cases to existing test runs linked to this milestone
     const linkedRuns = await db
@@ -400,10 +437,7 @@ export const addTestCasesToMilestone = async (
         .select({ test_case_id: testCaseRuns.test_case_id })
         .from(testCaseRuns)
         .where(
-          and(
-            eq(testCaseRuns.test_run_id, run.id),
-            inArray(testCaseRuns.test_case_id, testCaseIds)
-          )
+          and(eq(testCaseRuns.test_run_id, run.id), inArray(testCaseRuns.test_case_id, testCaseIds))
         );
       const existingSet = new Set(existingRows.map((r) => r.test_case_id));
       const newIds = testCaseIds.filter((id) => !existingSet.has(id));
@@ -449,7 +483,11 @@ export const removeTestCaseFromMilestone = async (
     const db = getDatabase();
 
     // 접근 권한 확인
-    const [ms] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, milestoneId)).limit(1);
+    const [ms] = await db
+      .select({ projectId: milestones.project_id })
+      .from(milestones)
+      .where(eq(milestones.id, milestoneId))
+      .limit(1);
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
@@ -488,7 +526,11 @@ export const addTestSuitesToMilestone = async (
     const db = getDatabase();
 
     // 접근 권한 확인
-    const [ms] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, milestoneId)).limit(1);
+    const [ms] = await db
+      .select({ projectId: milestones.project_id })
+      .from(milestones)
+      .where(eq(milestones.id, milestoneId))
+      .limit(1);
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
@@ -498,10 +540,7 @@ export const addTestSuitesToMilestone = async (
       test_suite_id: testSuiteId,
     }));
 
-    await db
-      .insert(milestoneTestSuites)
-      .values(values)
-      .onConflictDoNothing();
+    await db.insert(milestoneTestSuites).values(values).onConflictDoNothing();
 
     // Sync: resolve suite cases and add to existing test runs linked to this milestone
     const linkedRuns = await db
@@ -514,10 +553,12 @@ export const addTestSuitesToMilestone = async (
       for (const run of linkedRuns) {
         await db
           .insert(testRunSuites)
-          .values(testSuiteIds.map((suiteId) => ({
-            test_run_id: run.id,
-            test_suite_id: suiteId,
-          })))
+          .values(
+            testSuiteIds.map((suiteId) => ({
+              test_run_id: run.id,
+              test_suite_id: suiteId,
+            }))
+          )
           .onConflictDoNothing();
       }
 
@@ -547,10 +588,7 @@ export const addTestSuitesToMilestone = async (
             .select({ test_case_id: testCaseRuns.test_case_id })
             .from(testCaseRuns)
             .where(
-              and(
-                eq(testCaseRuns.test_run_id, run.id),
-                inArray(testCaseRuns.test_case_id, caseIds)
-              )
+              and(eq(testCaseRuns.test_run_id, run.id), inArray(testCaseRuns.test_case_id, caseIds))
             );
           const existingSet = new Set(existingRows.map((r) => r.test_case_id));
           const newCaseIds = caseIds.filter((id) => !existingSet.has(id));
@@ -598,7 +636,11 @@ export const removeTestSuiteFromMilestone = async (
     const db = getDatabase();
 
     // 접근 권한 확인
-    const [ms] = await db.select({ projectId: milestones.project_id }).from(milestones).where(eq(milestones.id, milestoneId)).limit(1);
+    const [ms] = await db
+      .select({ projectId: milestones.project_id })
+      .from(milestones)
+      .where(eq(milestones.id, milestoneId))
+      .limit(1);
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }

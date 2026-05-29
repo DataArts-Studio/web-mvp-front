@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react';
+
 import type { RecentVisit } from '../model/types';
 
 const MAX_RECENT = 10;
@@ -34,13 +35,10 @@ export const removeRecentVisit = (projectId: string, type: string, id: string) =
 };
 
 export const useRecentVisits = (projectId: string): RecentVisit[] => {
-  const subscribe = useCallback(
-    (callback: () => void) => {
-      listeners.add(callback);
-      return () => listeners.delete(callback);
-    },
-    [],
-  );
+  const subscribe = useCallback((callback: () => void) => {
+    listeners.add(callback);
+    return () => listeners.delete(callback);
+  }, []);
 
   const getSnapshot = useCallback(() => {
     return localStorage.getItem(getStorageKey(projectId)) ?? '[]';

@@ -1,11 +1,14 @@
 import React from 'react';
-import Link from 'next/link';
+
 import Image from 'next/image';
-import { ChevronRight, FileText, FolderOpen, Plus } from 'lucide-react';
-import { DSButton } from '@testea/ui';
-import { DashboardEmptyState } from './dashboard-empty-state';
-import { formatDateKR } from '@testea/util';
+import Link from 'next/link';
+
 import type { TestCaseListItem } from '@/entities/test-case';
+import { DSButton } from '@testea/ui';
+import { formatDateKR } from '@testea/util';
+import { ChevronRight, FileText, FolderOpen, Plus } from 'lucide-react';
+
+import { DashboardEmptyState } from './dashboard-empty-state';
 
 type TestSuite = {
   id: string;
@@ -21,16 +24,26 @@ type TestCasesSectionProps = {
   onCreateCase: () => void;
 };
 
-export const TestCasesSection = ({ slug, testCases, totalCount, onCreateCase }: TestCasesSectionProps) => (
+export const TestCasesSection = ({
+  slug,
+  testCases,
+  totalCount,
+  onCreateCase,
+}: TestCasesSectionProps) => (
   <>
     <div className="flex items-center justify-between">
-      <Link href={`/projects/${slug}/cases`} className="flex items-center gap-2 group">
+      <Link href={`/projects/${slug}/cases`} className="group flex items-center gap-2">
         <h2 className="typo-h2-heading text-text-1">테스트 케이스</h2>
         <span className="typo-body2-normal text-text-3">({totalCount})</span>
         <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
       </Link>
       {totalCount > 0 && (
-        <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={onCreateCase}>
+        <DSButton
+          variant="ghost"
+          size="small"
+          className="flex items-center gap-1"
+          onClick={onCreateCase}
+        >
           <Plus className="h-4 w-4" />
           <span>추가</span>
         </DSButton>
@@ -51,18 +64,28 @@ export const TestCasesSection = ({ slug, testCases, totalCount, onCreateCase }: 
           />
         }
         title="테스트 케이스를 생성해보세요!"
-        description={<>아직 생성된 테스트 케이스가 없습니다.<br />테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.</>}
+        description={
+          <>
+            아직 생성된 테스트 케이스가 없습니다.
+            <br />
+            테스트 케이스를 만들면 여기에서 빠르게 확인할 수 있어요.
+          </>
+        }
         buttonLabel="테스트 케이스 만들기"
         onAction={onCreateCase}
       />
     ) : (
-      <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
+      <div className="rounded-3 border-line-2 bg-bg-2 divide-line-2 flex flex-col divide-y border">
         {testCases.slice(0, 5).map((tc) => (
-          <Link key={tc.id} href={`/projects/${slug}/cases`} className="flex items-center gap-4 px-5 py-4 hover:bg-bg-3 transition-colors">
-            <div className="bg-primary/10 text-primary rounded-2 flex h-10 w-10 items-center justify-center shrink-0">
+          <Link
+            key={tc.id}
+            href={`/projects/${slug}/cases`}
+            className="hover:bg-bg-3 flex items-center gap-4 px-5 py-4 transition-colors"
+          >
+            <div className="bg-primary/10 text-primary rounded-2 flex h-10 w-10 shrink-0 items-center justify-center">
               <FileText className="h-5 w-5" />
             </div>
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="typo-caption text-text-3">{tc.caseKey}</span>
               <span className="typo-body2-heading text-text-1 truncate">{tc.title}</span>
             </div>
@@ -70,7 +93,10 @@ export const TestCasesSection = ({ slug, testCases, totalCount, onCreateCase }: 
           </Link>
         ))}
         {totalCount > 5 && (
-          <Link href={`/projects/${slug}/cases`} className="flex items-center justify-center gap-2 px-5 py-3 text-primary hover:bg-bg-3 transition-colors">
+          <Link
+            href={`/projects/${slug}/cases`}
+            className="text-primary hover:bg-bg-3 flex items-center justify-center gap-2 px-5 py-3 transition-colors"
+          >
             <span className="typo-body2-heading">전체 보기 ({totalCount}개)</span>
             <ChevronRight className="h-4 w-4" />
           </Link>
@@ -89,13 +115,18 @@ type TestSuitesSectionProps = {
 export const TestSuitesSection = ({ slug, testSuites, onCreateSuite }: TestSuitesSectionProps) => (
   <>
     <div className="flex items-center justify-between">
-      <Link href={`/projects/${slug}/suites`} className="flex items-center gap-2 group">
+      <Link href={`/projects/${slug}/suites`} className="group flex items-center gap-2">
         <h2 className="typo-h2-heading text-text-1">테스트 스위트</h2>
         <span className="typo-body2-normal text-text-3">({testSuites.length})</span>
         <ChevronRight className="text-text-3 group-hover:text-text-1 h-5 w-5 transition-colors" />
       </Link>
       {testSuites.length > 0 && (
-        <DSButton variant="ghost" size="small" className="flex items-center gap-1" onClick={onCreateSuite}>
+        <DSButton
+          variant="ghost"
+          size="small"
+          className="flex items-center gap-1"
+          onClick={onCreateSuite}
+        >
           <Plus className="h-4 w-4" />
           <span>추가</span>
         </DSButton>
@@ -106,28 +137,43 @@ export const TestSuitesSection = ({ slug, testSuites, onCreateSuite }: TestSuite
       <DashboardEmptyState
         icon={<FolderOpen className="h-6 w-6" strokeWidth={1.5} />}
         title="테스트 스위트를 생성해보세요!"
-        description={<>아직 생성된 테스트 스위트가 없습니다.<br />테스트 스위트로, 테스트 케이스를 더 쉽게 관리해보세요!</>}
+        description={
+          <>
+            아직 생성된 테스트 스위트가 없습니다.
+            <br />
+            테스트 스위트로, 테스트 케이스를 더 쉽게 관리해보세요!
+          </>
+        }
         buttonLabel="테스트 스위트 만들기"
         onAction={onCreateSuite}
       />
     ) : (
-      <div className="rounded-3 border-line-2 bg-bg-2 border flex flex-col divide-y divide-line-2">
+      <div className="rounded-3 border-line-2 bg-bg-2 divide-line-2 flex flex-col divide-y border">
         {testSuites.slice(0, 5).map((suite) => (
-          <Link key={suite.id} href={`/projects/${slug}/suites/${suite.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-bg-3 transition-colors">
-            <div className="bg-system-blue/10 text-system-blue rounded-2 flex h-10 w-10 items-center justify-center shrink-0">
+          <Link
+            key={suite.id}
+            href={`/projects/${slug}/suites/${suite.id}`}
+            className="hover:bg-bg-3 flex items-center gap-4 px-5 py-4 transition-colors"
+          >
+            <div className="bg-system-blue/10 text-system-blue rounded-2 flex h-10 w-10 shrink-0 items-center justify-center">
               <FolderOpen className="h-5 w-5" />
             </div>
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="typo-body2-heading text-text-1 truncate">{suite.name}</span>
               <span className="typo-caption text-text-3">{suite.description || '설명 없음'}</span>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="typo-caption text-text-3 bg-bg-3 px-2 py-1 rounded-1">케이스 {suite.case_count}개</span>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="typo-caption text-text-3 bg-bg-3 rounded-1 px-2 py-1">
+                케이스 {suite.case_count}개
+              </span>
             </div>
           </Link>
         ))}
         {testSuites.length > 5 && (
-          <Link href={`/projects/${slug}/suites`} className="flex items-center justify-center gap-2 px-5 py-3 text-primary hover:bg-bg-3 transition-colors">
+          <Link
+            href={`/projects/${slug}/suites`}
+            className="text-primary hover:bg-bg-3 flex items-center justify-center gap-2 px-5 py-3 transition-colors"
+          >
             <span className="typo-body2-heading">전체 보기 ({testSuites.length}개)</span>
             <ChevronRight className="h-4 w-4" />
           </Link>

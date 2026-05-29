@@ -1,11 +1,12 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 import {
-  getTrashedItems,
-  restoreItem,
-  permanentDeleteItem,
   emptyTrash,
+  getTrashedItems,
+  permanentDeleteItem,
+  restoreItem,
 } from '../api/trash-actions';
 import type { TrashCommand } from '../model/types';
 

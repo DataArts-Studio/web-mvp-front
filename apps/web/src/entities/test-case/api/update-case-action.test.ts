@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { updateTestCase } from './server-actions';
+
 vi.mock('server-only', () => ({}));
 
 // Mock for update chain
@@ -30,8 +32,6 @@ vi.mock('@testea/db', () => ({
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((a, b) => ({ field: a, value: b })),
 }));
-
-import { updateTestCase } from './server-actions';
 
 describe('updateTestCase', () => {
   const mockUpdatedRow = {
@@ -175,7 +175,9 @@ describe('updateTestCase', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._testCase).toContain('테스트케이스를 수정하는 도중 오류가 발생했습니다.');
+      expect(result.errors._testCase).toContain(
+        '테스트케이스를 수정하는 도중 오류가 발생했습니다.'
+      );
     }
     consoleErrorSpy.mockRestore();
   });

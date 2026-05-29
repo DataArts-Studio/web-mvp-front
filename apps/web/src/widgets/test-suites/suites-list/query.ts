@@ -4,8 +4,8 @@ import { queryOptions } from '@tanstack/react-query';
 
 export const testSuiteQueryKeys = {
   all: ['testSuites'] as const,
-  list: (projectId: string) => [...testSuiteQueryKeys.all, 'list', projectId] as const
-}
+  list: (projectId: string) => [...testSuiteQueryKeys.all, 'list', projectId] as const,
+};
 
 export const testSuitesQueryOptions = (projectId: string) =>
   queryOptions({

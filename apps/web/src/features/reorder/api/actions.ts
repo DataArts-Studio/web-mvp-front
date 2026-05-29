@@ -1,10 +1,10 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { eq, and, asc } from 'drizzle-orm';
-
-import { getDatabase, testCases, testSuites } from '@testea/db';
 import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { getDatabase, testCases, testSuites } from '@testea/db';
+import { and, asc, eq } from 'drizzle-orm';
+
 import { SORT_ORDER_GAP } from '../model/sort-utils';
 
 /**
@@ -12,7 +12,7 @@ import { SORT_ORDER_GAP } from '../model/sort-utils';
  */
 export async function reorderTestCase(
   id: string,
-  newSortOrder: number,
+  newSortOrder: number
 ): Promise<ActionResult<void>> {
   try {
     const db = getDatabase();
@@ -33,7 +33,7 @@ export async function reorderTestCase(
  */
 export async function reorderTestSuite(
   id: string,
-  newSortOrder: number,
+  newSortOrder: number
 ): Promise<ActionResult<void>> {
   try {
     const db = getDatabase();
@@ -54,7 +54,7 @@ export async function reorderTestSuite(
  */
 export async function moveTestCaseToSuite(
   caseId: string,
-  newSuiteId: string | null,
+  newSuiteId: string | null
 ): Promise<ActionResult<void>> {
   try {
     const db = getDatabase();
@@ -72,9 +72,10 @@ export async function moveTestCaseToSuite(
       .orderBy(asc(testCases.sort_order))
       .limit(1);
 
-    const maxOrder = lastCase.length > 0 && lastCase[0].sort_order
-      ? lastCase[0].sort_order + SORT_ORDER_GAP
-      : SORT_ORDER_GAP;
+    const maxOrder =
+      lastCase.length > 0 && lastCase[0].sort_order
+        ? lastCase[0].sort_order + SORT_ORDER_GAP
+        : SORT_ORDER_GAP;
 
     await db
       .update(testCases)
@@ -100,7 +101,7 @@ export async function moveTestCaseToSuite(
 export async function rebalanceSortOrder(
   entityType: 'testCase' | 'testSuite',
   scopeId: string,
-  orderedIds: string[],
+  orderedIds: string[]
 ): Promise<ActionResult<void>> {
   try {
     const db = getDatabase();
@@ -123,7 +124,9 @@ export async function rebalanceSortOrder(
 
     return { success: true, data: undefined };
   } catch (error) {
-    Sentry.captureException(error, { extra: { action: 'rebalanceSortOrder', entityType, scopeId } });
+    Sentry.captureException(error, {
+      extra: { action: 'rebalanceSortOrder', entityType, scopeId },
+    });
     return { success: false, errors: { _form: ['재정렬에 실패했습니다.'] } };
   }
 }
@@ -133,7 +136,7 @@ export async function rebalanceSortOrder(
  */
 export async function initializeSortOrders(
   projectId: string,
-  suiteId?: string,
+  suiteId?: string
 ): Promise<ActionResult<void>> {
   try {
     const db = getDatabase();

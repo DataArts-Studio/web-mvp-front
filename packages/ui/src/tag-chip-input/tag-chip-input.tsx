@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+
 import { cn } from '@testea/util';
-import { TagChip } from './tag-chip';
+
 import { TagAutocomplete } from './tag-autocomplete';
+import { TagChip } from './tag-chip';
 
 export interface TagChipInputProps {
   value: string[];
@@ -72,7 +74,7 @@ export const TagChipInput = ({
 
       onChange([...value, tag]);
     },
-    [value, onChange, maxTags, maxLength, triggerShake],
+    [value, onChange, maxTags, maxLength, triggerShake]
   );
 
   const addMultipleTags = useCallback(
@@ -85,14 +87,14 @@ export const TagChipInput = ({
       setShowAutocomplete(false);
       setHighlightedIndex(-1);
     },
-    [addTag],
+    [addTag]
   );
 
   const removeTag = useCallback(
     (index: number) => {
       onChange(value.filter((_, i) => i !== index));
     },
-    [value, onChange],
+    [value, onChange]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -106,7 +108,7 @@ export const TagChipInput = ({
       } else {
         addMultipleTags(inputValue);
       }
-    } else if (e.key === ',' ) {
+    } else if (e.key === ',') {
       e.preventDefault();
       addMultipleTags(inputValue);
     } else if (e.key === 'Tab' && filteredSuggestions.length > 0) {
@@ -171,10 +173,10 @@ export const TagChipInput = ({
           placeholder={value.length >= maxTags ? `최대 ${maxTags}개` : placeholder}
           disabled={disabled || value.length >= maxTags}
           className={cn(
-            'flex w-full items-center rounded-4 border bg-bg-1 outline-none transition-colors h-14 px-6 text-body2',
+            'rounded-4 bg-bg-1 text-body2 flex h-14 w-full items-center border px-6 transition-colors outline-none',
             'border-line-2 text-text-1 placeholder:text-text-2',
             'focus:border-primary',
-            disabled && 'border-line-3 bg-bg-3 text-line-3 cursor-not-allowed',
+            disabled && 'border-line-3 bg-bg-3 text-line-3 cursor-not-allowed'
           )}
         />
         {showAutocomplete && (

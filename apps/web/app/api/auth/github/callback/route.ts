@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         window.opener?.postMessage({ type: 'github-oauth', success: false, error: '${errorMsg}' }, '*');
         window.close();
       </script></body></html>`,
-      { headers: { 'Content-Type': 'text/html' } },
+      { headers: { 'Content-Type': 'text/html' } }
     );
   }
 
@@ -23,6 +23,6 @@ export async function GET(req: NextRequest) {
       window.opener?.postMessage({ type: 'github-oauth', success: true, code: '${code}', projectId: '${state}' }, '*');
       window.close();
     </script></body></html>`,
-    { headers: { 'Content-Type': 'text/html' } },
+    { headers: { 'Content-Type': 'text/html' } }
   );
 }

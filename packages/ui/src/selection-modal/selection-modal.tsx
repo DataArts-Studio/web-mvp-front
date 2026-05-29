@@ -1,12 +1,13 @@
 'use client';
 
-import React, { createContext, type ReactNode, useContext } from 'react';
+import React, { type ReactNode, createContext, useContext } from 'react';
 
-import { DSButton } from '../ds-button';
-import { DsCheckbox } from '../checkbox';
-import { LoadingSpinner } from '../loading-spinner';
 import { cn } from '@testea/util';
-import { ListChecks, Search, X, type LucideIcon } from 'lucide-react';
+import { ListChecks, type LucideIcon, Search, X } from 'lucide-react';
+
+import { DsCheckbox } from '../checkbox';
+import { DSButton } from '../ds-button';
+import { LoadingSpinner } from '../loading-spinner';
 
 // ─── Context ───────────────────────────────────────────────
 
@@ -34,11 +35,14 @@ interface SelectionModalRootProps {
 
 const Root = ({ children, onClose, isPending = false, className }: SelectionModalRootProps) => (
   <SelectionModalContext.Provider value={{ onClose, isPending }}>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
       <section
         className={cn(
           'bg-bg-1 rounded-4 relative flex max-h-[80vh] w-full max-w-[600px] flex-col overflow-hidden shadow-xl',
-          className,
+          className
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -61,8 +65,8 @@ const Loading = ({ text, className }: SelectionModalLoadingProps) => {
   return (
     <div
       className={cn(
-        'absolute inset-0 z-10 flex items-center justify-center rounded-4 bg-bg-1/80 backdrop-blur-sm',
-        className,
+        'rounded-4 bg-bg-1/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm',
+        className
       )}
     >
       <LoadingSpinner size="md" text={text} />
@@ -81,7 +85,12 @@ interface SelectionModalHeaderProps {
 const Header = ({ title, subtitle, className }: SelectionModalHeaderProps) => {
   const { onClose } = useSelectionModal();
   return (
-    <header className={cn('border-line-2 flex items-center justify-between border-b px-6 py-4', className)}>
+    <header
+      className={cn(
+        'border-line-2 flex items-center justify-between border-b px-6 py-4',
+        className
+      )}
+    >
       <div>
         <h2 className="text-text-1 text-lg font-bold">{title}</h2>
         {subtitle && <p className="text-text-3 mt-1 text-sm">{subtitle}</p>}
@@ -153,9 +162,24 @@ interface SelectionModalSelectAllProps {
   className?: string;
 }
 
-const SelectAll = ({ checked, onCheckedChange, selectedCount, totalCount, className }: SelectionModalSelectAllProps) => (
-  <div className={cn('border-line-2 bg-bg-2 sticky top-0 flex items-center gap-3 border-b px-6 py-2', className)}>
-    <DsCheckbox checked={checked} onCheckedChange={onCheckedChange} className="h-5 w-5 border-line-2 bg-bg-3" />
+const SelectAll = ({
+  checked,
+  onCheckedChange,
+  selectedCount,
+  totalCount,
+  className,
+}: SelectionModalSelectAllProps) => (
+  <div
+    className={cn(
+      'border-line-2 bg-bg-2 sticky top-0 flex items-center gap-3 border-b px-6 py-2',
+      className
+    )}
+  >
+    <DsCheckbox
+      checked={checked}
+      onCheckedChange={onCheckedChange}
+      className="border-line-2 bg-bg-3 h-5 w-5"
+    />
     <span className="text-text-2 text-sm">
       전체 선택 ({selectedCount}/{totalCount})
     </span>
@@ -185,9 +209,12 @@ interface SelectionModalItemProps {
 const Item = ({ checked, onToggle, children, className }: SelectionModalItemProps) => (
   <div
     onClick={onToggle}
-    className={cn('hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors', className)}
+    className={cn(
+      'hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors',
+      className
+    )}
   >
-    <DsCheckbox checked={checked} className="h-5 w-5 shrink-0 border-line-2 bg-bg-3" />
+    <DsCheckbox checked={checked} className="border-line-2 bg-bg-3 h-5 w-5 shrink-0" />
     <div className="min-w-0 flex-1">{children}</div>
   </div>
 );
@@ -213,7 +240,12 @@ const Footer = ({
 }: SelectionModalFooterProps) => {
   const { onClose, isPending } = useSelectionModal();
   return (
-    <div className={cn('border-line-2 flex items-center justify-between border-t px-6 py-4', className)}>
+    <div
+      className={cn(
+        'border-line-2 flex items-center justify-between border-t px-6 py-4',
+        className
+      )}
+    >
       <span className="text-text-3 text-sm">{selectedCount}개 선택됨</span>
       <div className="flex gap-3">
         <DSButton type="button" variant="ghost" onClick={onClose} disabled={isPending}>

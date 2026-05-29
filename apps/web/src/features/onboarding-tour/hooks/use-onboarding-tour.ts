@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
-import type { Driver } from 'driver.js';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { onboardingQueryOptions, onboardingQueryKeys } from '../api/query';
-import { completeOnboardingTour } from '../api/server-actions';
-import { TOUR_STEPS, TOTAL_STEPS } from '../config/tour-steps';
+import { useCallback, useEffect, useRef } from 'react';
+
 import { track } from '@/shared/lib/analytics';
 import { ONBOARDING_EVENTS } from '@/shared/lib/analytics';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Driver } from 'driver.js';
 
+import { onboardingQueryKeys, onboardingQueryOptions } from '../api/query';
+import { completeOnboardingTour } from '../api/server-actions';
+import { TOTAL_STEPS, TOUR_STEPS } from '../config/tour-steps';
 import '../styles/onboarding.css';
 
 type UseOnboardingTourParams = {
@@ -64,7 +65,7 @@ export function useOnboardingTour({ projectId, isDataLoaded }: UseOnboardingTour
         queryKey: onboardingQueryKeys.status(projectId),
       });
     },
-    [projectId, queryClient],
+    [projectId, queryClient]
   );
 
   const startTour = useCallback(async () => {

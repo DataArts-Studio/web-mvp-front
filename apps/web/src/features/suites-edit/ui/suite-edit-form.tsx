@@ -1,13 +1,14 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { TestSuite } from '@/entities/test-suite';
 import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
+import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import { useUpdateSuite } from '../hooks';
 import { UpdateTestSuite, UpdateTestSuiteSchema } from '../model';
-import { track, TESTSUITE_EVENTS } from '@/shared/lib/analytics';
 
 interface SuiteEditFormProps {
   suite: TestSuite;
@@ -38,7 +39,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
       onError: () => {
         track(TESTSUITE_EVENTS.UPDATE_FAIL, { suite_id: suite.id });
       },
-    })
+    });
   };
 
   const handleAbandon = () => {
@@ -46,15 +47,64 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
     onClose?.();
   };
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
+  // 모달 a11y: 진입 시 포커스 이동, 닫을 때 트리거로 포커스 복귀,
+  // ESC 닫기, Tab 포커스 트랩(모달 밖으로 못 나가게).
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const node = dialogRef.current;
+    node?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        handleAbandon();
+        return;
+      }
+      if (e.key !== 'Tab' || !node) return;
+      const focusables = node.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    node?.addEventListener('keydown', handleKeyDown);
+    return () => {
+      node?.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
+    // 마운트/언마운트 시 1회만 (handleAbandon 은 안정적)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <section
       id="edit-suite"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleAbandon}
     >
-      <div className="bg-bg-2 shadow-4 relative w-[600px] overflow-hidden rounded-xl p-8" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="bg-bg-2 shadow-4 relative w-[600px] overflow-hidden rounded-xl p-8 outline-none"
+        onClick={(e) => e.stopPropagation()}
+      >
         {isPending && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-bg-2/80 backdrop-blur-sm">
+          <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
             <LoadingSpinner size="md" text="테스트 스위트를 수정하고 있어요" />
           </div>
         )}
@@ -62,7 +112,9 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
           <input type="hidden" {...register('id')} />
           {/* Header */}
           <div className="border-line-1 border-b pb-6">
-            <h2 className="text-primary text-3xl">테스트 스위트 수정</h2>
+            <h2 id={titleId} className="text-primary text-3xl">
+              테스트 스위트 수정
+            </h2>
             <p className="mt-2 text-base text-neutral-400">
               테스트 스위트의 이름과 설명을 수정합니다.
             </p>
@@ -94,8 +146,8 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
                   },
                 })}
                 className={cn(
-                  'h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary',
-                  errors.title && 'border-system-red focus:border-system-red',
+                  'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                  errors.title && 'border-system-red focus:border-system-red'
                 )}
               />
               {errors.title && (
@@ -109,7 +161,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
                 type="text"
                 disabled={isPending}
                 {...register('description')}
-                className="h-[56px] w-full rounded-4 border border-line-2 bg-bg-1 px-6 text-base text-text-1 placeholder:text-text-2 outline-none transition-colors focus:border-primary"
+                className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
               />
             </FormField.Root>
           </div>
@@ -123,12 +175,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
             >
               취소
             </DSButton>
-            <DSButton
-              type="submit"
-              variant="solid"
-              className="w-full"
-              disabled={isPending}
-            >
+            <DSButton type="submit" variant="solid" className="w-full" disabled={isPending}>
               {isPending ? '수정 중...' : '수정'}
             </DSButton>
           </div>

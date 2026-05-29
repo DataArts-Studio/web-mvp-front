@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'sonner';
-import { Check, Loader2, Pencil } from 'lucide-react';
 
 import { ProjectSettingsFormSchema } from '@/entities/project';
 import type { ProjectSettingsForm } from '@/entities/project';
 import { useUpdateProject } from '@/features/project-settings';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { DSButton, DsFormField, DsInput, SettingsCard } from '@testea/ui';
+import { Check, Loader2, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ─── Section: General Settings ───────────────────────────────────────────────
 
@@ -56,7 +56,7 @@ export const GeneralSettingsSection = ({
               toast.error(Object.values(result.errors).flat().join(', '));
             }
           },
-        },
+        }
       );
     });
   };
@@ -96,13 +96,13 @@ export const GeneralSettingsSection = ({
         description="프로젝트의 기본 정보를 수정합니다."
       />
       <SettingsCard.Divider />
-      <div className="flex flex-col gap-0 divide-y divide-line-2">
+      <div className="divide-line-2 flex flex-col gap-0 divide-y">
         {fields.map(({ key, label, placeholder }) => (
           <SettingsCard.Row key={key}>
             <div className="w-28 shrink-0">
               <span className="typo-label-heading text-text-2">{label}</span>
             </div>
-            <DsFormField.Root error={errors[key]} className="!flex-row !items-center !gap-3 flex-1">
+            <DsFormField.Root error={errors[key]} className="flex-1 !flex-row !items-center !gap-3">
               <DsFormField.Control>
                 <DsInput {...register(key)} placeholder={placeholder} />
               </DsFormField.Control>

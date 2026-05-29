@@ -24,7 +24,7 @@ export function useSelectionSet() {
   const toggleGroup = useCallback((ids: string[]) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      const allSelected = ids.every(id => next.has(id));
+      const allSelected = ids.every((id) => next.has(id));
       if (allSelected) {
         for (const id of ids) next.delete(id);
       } else {
@@ -43,7 +43,7 @@ export function useSelectionSet() {
   const isAllSelected = useCallback(
     (filteredItems: { id: string }[]) =>
       filteredItems.length > 0 && selectedIds.size === filteredItems.length,
-    [selectedIds],
+    [selectedIds]
   );
 
   const clear = useCallback(() => setSelectedIds(new Set()), []);

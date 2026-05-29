@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { FileText, FolderOpen, Flag, Play } from 'lucide-react';
-import type { CommandItem } from '../model/types';
+
 import type { ActionResult } from '@/shared/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { FileText, Flag, FolderOpen, Play } from 'lucide-react';
+
+import type { CommandItem } from '../model/types';
 
 type CacheTestCase = {
   id: string;
@@ -44,7 +46,7 @@ const matchScore = (text: string, query: string): number => {
 export const useCommandSearch = (
   query: string,
   projectSlug: string,
-  projectId: string | undefined,
+  projectId: string | undefined
 ): CommandItem[] => {
   const queryClient = useQueryClient();
 
@@ -60,12 +62,15 @@ export const useCommandSearch = (
       queryKey: ['testCases', 'list', projectId],
     });
     const testCases = tcData.flatMap(([, data]) =>
-      data?.success && data.data?.items ? data.data.items : [],
+      data?.success && data.data?.items ? data.data.items : []
     );
     const matchedTCs = testCases
       .map((tc) => ({
         tc,
-        score: Math.max(matchScore(tc.title, q), matchScore(tc.caseKey, q) + (tc.caseKey.toLowerCase() === q.toLowerCase() ? 5 : 0)),
+        score: Math.max(
+          matchScore(tc.title, q),
+          matchScore(tc.caseKey, q) + (tc.caseKey.toLowerCase() === q.toLowerCase() ? 5 : 0)
+        ),
       }))
       .filter(({ score }) => score > 0)
       .sort((a, b) => b.score - a.score)
@@ -86,9 +91,7 @@ export const useCommandSearch = (
     const suiteData = queryClient.getQueriesData<ActionResult<CacheTestSuite[]>>({
       queryKey: ['testSuites', projectId],
     });
-    const suites = suiteData.flatMap(([, data]) =>
-      data?.success && data.data ? data.data : [],
-    );
+    const suites = suiteData.flatMap(([, data]) => (data?.success && data.data ? data.data : []));
     const matchedSuites = suites
       .map((s) => ({ s, score: matchScore(s.title, q) }))
       .filter(({ score }) => score > 0)
@@ -110,9 +113,7 @@ export const useCommandSearch = (
     const msData = queryClient.getQueriesData<ActionResult<CacheMilestone[]>>({
       queryKey: ['milestones', projectId],
     });
-    const milestones = msData.flatMap(([, data]) =>
-      data?.success && data.data ? data.data : [],
-    );
+    const milestones = msData.flatMap(([, data]) => (data?.success && data.data ? data.data : []));
     const matchedMs = milestones
       .map((m) => ({ m, score: matchScore(m.title, q) }))
       .filter(({ score }) => score > 0)
@@ -134,9 +135,7 @@ export const useCommandSearch = (
     const runData = queryClient.getQueriesData<ActionResult<CacheTestRun[]>>({
       queryKey: ['testRuns', projectId],
     });
-    const runs = runData.flatMap(([, data]) =>
-      data?.success && data.data ? data.data : [],
-    );
+    const runs = runData.flatMap(([, data]) => (data?.success && data.data ? data.data : []));
     const matchedRuns = runs
       .map((r) => ({ r, score: matchScore(r.name, q) }))
       .filter(({ score }) => score > 0)

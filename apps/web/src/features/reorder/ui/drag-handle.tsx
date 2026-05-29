@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { GripVertical } from 'lucide-react';
+
 import { cn } from '@testea/util';
+import { GripVertical } from 'lucide-react';
 
 interface DragHandleProps {
-  listeners?: Record<string, Function>;
+  listeners?: Record<string, (event: unknown) => void>;
   attributes?: Record<string, unknown>;
   className?: string;
 }
@@ -15,8 +16,8 @@ export const DragHandle = ({ listeners, attributes, className }: DragHandleProps
     <button
       type="button"
       className={cn(
-        'flex h-6 w-6 shrink-0 cursor-grab items-center justify-center rounded-1 text-text-4 transition-colors hover:bg-bg-4 hover:text-text-2 active:cursor-grabbing',
-        className,
+        'rounded-1 text-text-4 hover:bg-bg-4 hover:text-text-2 flex h-6 w-6 shrink-0 cursor-grab items-center justify-center transition-colors active:cursor-grabbing',
+        className
       )}
       {...attributes}
       {...listeners}

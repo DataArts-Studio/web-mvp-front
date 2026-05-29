@@ -1,6 +1,7 @@
 'use client';
 
 import { CheckCircle, XCircle } from 'lucide-react';
+
 import type { ImportResult } from '../model/schema';
 
 interface ImportResultViewProps {
@@ -31,14 +32,10 @@ export function ImportResultView({ result, onClose }: ImportResultViewProps) {
           {result.success}건의 테스트케이스가 성공적으로 가져와졌습니다.
         </p>
         {result.failed > 0 && (
-          <p className="typo-body2-normal text-red-400">
-            {result.failed}건 실패
-          </p>
+          <p className="typo-body2-normal text-red-400">{result.failed}건 실패</p>
         )}
         {result.skipped > 0 && (
-          <p className="typo-body2-normal text-text-3">
-            {result.skipped}건 건너뜀 (빈 행)
-          </p>
+          <p className="typo-body2-normal text-text-3">{result.skipped}건 건너뜀 (빈 행)</p>
         )}
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const useCommandPalette = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,7 +13,9 @@ export const useCommandPalette = () => {
         e.preventDefault();
 
         // 다른 모달이 열려있으면 무시
-        const existingDialog = document.querySelector('[role="dialog"]:not([data-command-palette])');
+        const existingDialog = document.querySelector(
+          '[role="dialog"]:not([data-command-palette])'
+        );
         if (existingDialog) return;
 
         toggle();

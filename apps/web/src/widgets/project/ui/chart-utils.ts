@@ -40,15 +40,13 @@ export const VIEW_SIZE = RADIUS * 2;
 export const GAP_DEGREES = 0;
 
 export function buildSegments(data: TestStatusData, total: number): ChartSegment[] {
-  return STATUS_KEYS
-    .map((key) => ({
-      key,
-      value: data[key],
-      color: STATUS_COLORS[key],
-      label: STATUS_LABELS[key],
-      percentage: total > 0 ? (data[key] / total) * 100 : 0,
-    }))
-    .filter((s) => s.value > 0);
+  return STATUS_KEYS.map((key) => ({
+    key,
+    value: data[key],
+    color: STATUS_COLORS[key],
+    label: STATUS_LABELS[key],
+    percentage: total > 0 ? (data[key] / total) * 100 : 0,
+  })).filter((s) => s.value > 0);
 }
 
 export function buildArcs(segments: ChartSegment[], total: number): ArcSegment[] {

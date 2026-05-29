@@ -22,8 +22,10 @@ const useCheckboxContext = () => {
 // ------------------------------------------------------------------
 // Root Component (Provider)
 // ------------------------------------------------------------------
-interface CheckboxRootProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onChange' | 'type'> {
+interface CheckboxRootProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'onChange' | 'type'
+> {
   checked?: CheckedState;
   defaultChecked?: boolean;
   onCheckedChange?: (checked: CheckedState) => void;

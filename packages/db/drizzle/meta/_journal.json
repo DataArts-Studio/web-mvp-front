@@ -15,6 +15,55 @@
       "when": 1777048118697,
       "tag": "0001_nullable_repo_full_name",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779234863628,
+      "tag": "0002_default_now_timestamps",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779594932477,
+      "tag": "0003_dapper_strong_guy",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779606707488,
+      "tag": "0004_curved_ink",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779975860921,
+      "tag": "0005_damp_colossus",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779983675139,
+      "tag": "0006_unusual_chronomancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779986426610,
+      "tag": "0007_naive_gertrude_yorkes",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779988038373,
+      "tag": "0008_unusual_stark_industries",
+      "breakpoints": true
     }
   ]
 }

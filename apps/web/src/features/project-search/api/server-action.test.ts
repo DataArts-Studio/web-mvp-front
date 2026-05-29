@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { searchProjects } from './server-action';
+
 vi.mock('server-only', () => ({}));
 
 // Chainable mock
@@ -30,8 +32,6 @@ vi.mock('drizzle-orm', () => ({
   and: vi.fn((...conditions) => ({ and: conditions })),
   desc: vi.fn((field) => ({ desc: field })),
 }));
-
-import { searchProjects } from './server-action';
 
 describe('searchProjects', () => {
   const mockProjectRows = [

@@ -1,16 +1,19 @@
 'use server';
 
-import * as Sentry from '@sentry/nextjs';
-import { getDatabase, checklists, checklistItems } from '@testea/db';
-import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
 import type { ActionResult } from '@/shared/types';
+import * as Sentry from '@sentry/nextjs';
+import { checklistItems, checklists, getDatabase } from '@testea/db';
+import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
+
+import { AddChecklistItemSchema, CreateChecklistSchema } from '../model/schema';
 import type { ChecklistWithItems, ChecklistWithProgress } from '../model/types';
-import { CreateChecklistSchema, AddChecklistItemSchema } from '../model/schema';
 
 // --- 생성 ---
-export const createChecklist = async (
-  input: { projectId: string; title: string; items: { content: string }[] },
-): Promise<ActionResult<{ id: string }>> => {
+export const createChecklist = async (input: {
+  projectId: string;
+  title: string;
+  items: { content: string }[];
+}): Promise<ActionResult<{ id: string }>> => {
   try {
     const parsed = CreateChecklistSchema.safeParse(input);
     if (!parsed.success) {
@@ -31,7 +34,7 @@ export const createChecklist = async (
           checklist_id: checklist.id,
           content: item.content,
           sort_order: idx * 1000,
-        })),
+        }))
       );
     }
 
@@ -44,7 +47,7 @@ export const createChecklist = async (
 
 // --- 목록 조회 ---
 export const getChecklistsByProjectId = async (
-  projectId: string,
+  projectId: string
 ): Promise<ActionResult<ChecklistWithProgress[]>> => {
   try {
     const db = getDatabase();
@@ -64,12 +67,7 @@ export const getChecklistsByProjectId = async (
       })
       .from(checklists)
       .leftJoin(checklistItems, eq(checklistItems.checklist_id, checklists.id))
-      .where(
-        and(
-          eq(checklists.project_id, projectId),
-          eq(checklists.lifecycle_status, 'ACTIVE'),
-        ),
-      )
+      .where(and(eq(checklists.project_id, projectId), eq(checklists.lifecycle_status, 'ACTIVE')))
       .groupBy(checklists.id)
       .orderBy(checklists.updated_at);
 
@@ -89,22 +87,21 @@ export const getChecklistsByProjectId = async (
     return { success: true, data };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getChecklistsByProjectId' } });
-    return { success: false, errors: { _checklist: ['체크리스트 목록을 불러오는 데 실패했습니다.'] } };
+    return {
+      success: false,
+      errors: { _checklist: ['체크리스트 목록을 불러오는 데 실패했습니다.'] },
+    };
   }
 };
 
 // --- 상세 조회 ---
 export const getChecklistById = async (
-  checklistId: string,
+  checklistId: string
 ): Promise<ActionResult<ChecklistWithItems>> => {
   try {
     const db = getDatabase();
 
-    const [row] = await db
-      .select()
-      .from(checklists)
-      .where(eq(checklists.id, checklistId))
-      .limit(1);
+    const [row] = await db.select().from(checklists).where(eq(checklists.id, checklistId)).limit(1);
 
     if (!row) {
       return { success: false, errors: { _checklist: ['체크리스트를 찾을 수 없습니다.'] } };
@@ -146,7 +143,7 @@ export const getChecklistById = async (
 // --- 항목 체크/언체크 ---
 export const toggleChecklistItem = async (
   itemId: string,
-  isChecked: boolean,
+  isChecked: boolean
 ): Promise<ActionResult<{ checklistStatus: string }>> => {
   try {
     const db = getDatabase();
@@ -202,10 +199,7 @@ export const toggleChecklistItem = async (
       updateData.started_at = new Date();
     }
 
-    await db
-      .update(checklists)
-      .set(updateData)
-      .where(eq(checklists.id, updated.checklist_id));
+    await db.update(checklists).set(updateData).where(eq(checklists.id, updated.checklist_id));
 
     return { success: true, data: { checklistStatus: newStatus } };
   } catch (error) {
@@ -215,9 +209,10 @@ export const toggleChecklistItem = async (
 };
 
 // --- 항목 추가 ---
-export const addChecklistItem = async (
-  input: { checklistId: string; content: string },
-): Promise<ActionResult<{ id: string }>> => {
+export const addChecklistItem = async (input: {
+  checklistId: string;
+  content: string;
+}): Promise<ActionResult<{ id: string }>> => {
   try {
     const parsed = AddChecklistItemSchema.safeParse(input);
     if (!parsed.success) {
@@ -245,12 +240,7 @@ export const addChecklistItem = async (
     await db
       .update(checklists)
       .set({ status: 'open', completed_at: null, updated_at: new Date() })
-      .where(
-        and(
-          eq(checklists.id, parsed.data.checklistId),
-          eq(checklists.status, 'completed'),
-        ),
-      );
+      .where(and(eq(checklists.id, parsed.data.checklistId), eq(checklists.status, 'completed')));
 
     return { success: true, data: { id: item.id } };
   } catch (error) {
@@ -260,9 +250,7 @@ export const addChecklistItem = async (
 };
 
 // --- 항목 삭제 ---
-export const deleteChecklistItem = async (
-  itemId: string,
-): Promise<ActionResult<null>> => {
+export const deleteChecklistItem = async (itemId: string): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
     await db.delete(checklistItems).where(eq(checklistItems.id, itemId));
@@ -274,9 +262,7 @@ export const deleteChecklistItem = async (
 };
 
 // --- 체크리스트 삭제 (소프트) ---
-export const archiveChecklist = async (
-  checklistId: string,
-): Promise<ActionResult<null>> => {
+export const archiveChecklist = async (checklistId: string): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
     await db
@@ -298,7 +284,7 @@ export const archiveChecklist = async (
 // --- 항목 순서 변경 ---
 export const reorderChecklistItems = async (
   checklistId: string,
-  orderedIds: string[],
+  orderedIds: string[]
 ): Promise<ActionResult<null>> => {
   try {
     const db = getDatabase();
@@ -308,13 +294,8 @@ export const reorderChecklistItems = async (
         db
           .update(checklistItems)
           .set({ sort_order: idx * 1000 })
-          .where(
-            and(
-              eq(checklistItems.id, id),
-              eq(checklistItems.checklist_id, checklistId),
-            ),
-          ),
-      ),
+          .where(and(eq(checklistItems.id, id), eq(checklistItems.checklist_id, checklistId)))
+      )
     );
 
     return { success: true, data: null };
@@ -329,7 +310,7 @@ export const convertChecklistToTestCases = async (
   checklistId: string,
   itemIds: string[],
   projectId: string,
-  suiteId?: string,
+  suiteId?: string
 ): Promise<ActionResult<{ count: number }>> => {
   try {
     const db = getDatabase();
@@ -337,12 +318,7 @@ export const convertChecklistToTestCases = async (
     const items = await db
       .select()
       .from(checklistItems)
-      .where(
-        and(
-          eq(checklistItems.checklist_id, checklistId),
-          inArray(checklistItems.id, itemIds),
-        ),
-      )
+      .where(and(eq(checklistItems.checklist_id, checklistId), inArray(checklistItems.id, itemIds)))
       .orderBy(asc(checklistItems.sort_order));
 
     if (items.length === 0) {
@@ -359,6 +335,7 @@ export const convertChecklistToTestCases = async (
       .where(eq(testCases.project_id, projectId));
 
     let nextDisplayId = (maxDisplayId?.max ?? 0) + 1;
+    const now = new Date();
 
     await db.insert(testCases).values(
       items.map((item) => ({
@@ -368,7 +345,11 @@ export const convertChecklistToTestCases = async (
         test_suite_id: suiteId ?? null,
         display_id: nextDisplayId++,
         sort_order: 0,
-      })),
+        // DB 컬럼에 DEFAULT now() 가 없어 drizzle 의 DEFAULT 키워드만으로는
+        // NOT NULL 제약에서 막힌다. 값을 명시한다.
+        created_at: now,
+        updated_at: now,
+      }))
     );
 
     return { success: true, data: { count: items.length } };

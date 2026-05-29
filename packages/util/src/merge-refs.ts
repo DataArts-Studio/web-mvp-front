@@ -1,7 +1,7 @@
 import React from 'react';
 
 const mergeRefs =
-  <T,>(...refs: (React.Ref<T> | undefined)[]) =>
+  <T>(...refs: (React.Ref<T> | undefined)[]) =>
   (node: T | null) =>
     refs.forEach((ref) => {
       if (!ref) return;

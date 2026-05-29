@@ -1,10 +1,10 @@
 'use server';
 
+import { requireProjectAccess } from '@/access/lib/require-access';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testRuns } from '@testea/db';
-import { eq, and, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import { requireProjectAccess } from '@/access/lib/require-access';
 
 type AddCasesToRunResult =
   | { success: true; addedCount: number }
@@ -21,7 +21,11 @@ export async function addCasesToRunAction(
   const db = getDatabase();
 
   // 접근 권한 확인
-  const [run] = await db.select({ projectId: testRuns.project_id }).from(testRuns).where(eq(testRuns.id, runId)).limit(1);
+  const [run] = await db
+    .select({ projectId: testRuns.project_id })
+    .from(testRuns)
+    .where(eq(testRuns.id, runId))
+    .limit(1);
   if (!run?.projectId || !(await requireProjectAccess(run.projectId))) {
     return { success: false, error: '접근 권한이 없습니다.' };
   }
@@ -33,10 +37,7 @@ export async function addCasesToRunAction(
         .select({ test_case_id: testCaseRuns.test_case_id })
         .from(testCaseRuns)
         .where(
-          and(
-            eq(testCaseRuns.test_run_id, runId),
-            inArray(testCaseRuns.test_case_id, caseIds)
-          )
+          and(eq(testCaseRuns.test_run_id, runId), inArray(testCaseRuns.test_case_id, caseIds))
         );
 
       const existingCaseIds = new Set(existingRows.map((r) => r.test_case_id));

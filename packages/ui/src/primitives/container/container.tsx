@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Slot } from '../../slot';
 
 interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -7,9 +8,13 @@ interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   asChild?: boolean;
 }
 
-const Container = ({children, className, asChild, ...props}: ContainerProps) => {
+const Container = ({ children, className, asChild, ...props }: ContainerProps) => {
   const Comp: any = asChild ? Slot : 'div';
-  return <Comp className={className} {...props}>{children}</Comp>;
+  return (
+    <Comp className={className} {...props}>
+      {children}
+    </Comp>
+  );
 };
 
 export { Container };

@@ -1,4 +1,5 @@
 import type { SupabaseClientOptions } from '@supabase/supabase-js';
+
 import { Database } from './types';
 
 // Supabase 옵션 전체를 상수로 관리하고 싶으면 이 타입 이용

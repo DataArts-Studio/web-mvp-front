@@ -1,22 +1,21 @@
 import type { Metadata } from 'next';
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import { TestSuitesView } from '@/view';
+
 import { projectIdQueryOptions } from '@/entities/project/api/query';
 import { testSuitesQueryOptions } from '@/entities/test-suite/api/query';
 import { cachedGetProjectId, cachedGetTestSuites } from '@/shared/lib/cache';
+import { TestSuitesView } from '@/view';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 export const metadata: Metadata = {
   title: '테스트 스위트',
   description: '테스트 스위트를 관리하고 케이스를 그룹별로 구성합니다.',
 };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 60 * 1000 } },
+  });
 
   try {
     const result = await queryClient.fetchQuery({

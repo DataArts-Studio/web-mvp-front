@@ -1,5 +1,6 @@
 import type { z } from 'zod';
-import type { SearchKeywordSchema, ProjectSearchResultSchema } from './schema';
+
+import type { ProjectSearchResultSchema, SearchKeywordSchema } from './schema';
 
 export type SearchKeyword = z.infer<typeof SearchKeywordSchema>;
 

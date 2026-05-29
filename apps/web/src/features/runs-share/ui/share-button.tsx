@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { Share2 } from 'lucide-react';
+
 import { ShareModal } from './share-modal';
 
 interface ShareButtonProps {

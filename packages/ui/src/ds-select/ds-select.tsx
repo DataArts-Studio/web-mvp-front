@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+
 import { cn } from '@testea/util';
+import { ChevronDown } from 'lucide-react';
+
 import { dsSelectVariants } from './select.variable';
 import type { DsSelectProps } from './types';
 
@@ -100,13 +102,11 @@ export const DsSelect = ({
         onKeyDown={handleKeyDown}
         className={dsSelectVariants({ variant: disabled ? 'disabled' : 'default' })}
       >
-        <span className={cn(!selectedLabel && 'text-text-2')}>
-          {selectedLabel ?? placeholder}
-        </span>
+        <span className={cn(!selectedLabel && 'text-text-2')}>{selectedLabel ?? placeholder}</span>
         <ChevronDown
           className={cn(
-            'h-5 w-5 shrink-0 text-text-3 transition-transform',
-            isOpen && 'rotate-180',
+            'text-text-3 h-5 w-5 shrink-0 transition-transform',
+            isOpen && 'rotate-180'
           )}
         />
       </button>
@@ -115,7 +115,7 @@ export const DsSelect = ({
         <ul
           ref={listRef}
           role="listbox"
-          className="absolute z-50 mt-1 max-h-[240px] w-full overflow-y-auto rounded-4 border border-line-2 bg-bg-1 py-1 shadow-4"
+          className="rounded-4 border-line-2 bg-bg-1 shadow-4 absolute z-50 mt-1 max-h-[240px] w-full overflow-y-auto border py-1"
         >
           {options.map((option, index) => (
             <li
@@ -125,9 +125,9 @@ export const DsSelect = ({
               onClick={() => handleSelect(option.value)}
               onMouseEnter={() => setHighlightedIndex(index)}
               className={cn(
-                'flex cursor-pointer items-center px-6 py-3 text-body2 transition-colors',
+                'text-body2 flex cursor-pointer items-center px-6 py-3 transition-colors',
                 option.value === value && 'text-primary font-medium',
-                highlightedIndex === index && 'bg-bg-3',
+                highlightedIndex === index && 'bg-bg-3'
               )}
             >
               {option.label}
