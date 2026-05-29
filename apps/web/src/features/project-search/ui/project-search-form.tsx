@@ -146,8 +146,10 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
-    // 제출한 검색어와 다른 새 입력일 때만 자동완성을 다시 연다.
-    if (value.trim().length >= 2 && lastSubmittedRef.current !== value.trim()) {
+    // 입력이 바뀌면 "방금 제출" 가드를 해제한다. 그래야 같은 키워드로 되돌아와도
+    // 자동완성이 다시 정상 동작한다(가드는 제출 직후 대기 중인 디바운스에만 적용).
+    lastSubmittedRef.current = null;
+    if (value.trim().length >= 2) {
       setShowAutocomplete(true);
     }
   };
