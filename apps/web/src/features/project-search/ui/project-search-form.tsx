@@ -74,7 +74,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
   // Handle project selection from autocomplete
   const handleSelectProject = (project: ProjectSearchResult) => {
     setShowAutocomplete(false);
-    router.push(`/projects/${project.slug}/access`);
+    router.push(`/projects/${encodeURIComponent(project.slug)}/access`);
   };
 
   // Handle keyboard navigation
