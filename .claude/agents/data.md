@@ -1,7 +1,7 @@
 ---
 name: data
 description: 데이터분석 작업. GSC 트래픽·검색어, 운영 지표(Vercel/GA), Supabase 읽기 전용 분석 쿼리, Sentry·Cloudflare 로그, 분석 리포트 작성. DB 쓰기와 코드 수정은 하지 않는다.
-tools: Read, Grep, Glob, WebFetch
+tools: Read, Grep, Glob, WebFetch, mcp__supabase__list_tables, mcp__supabase__execute_sql, mcp__supabase__get_logs, mcp__supabase__get_advisors, mcp__gsc__search_analytics, mcp__gsc__enhanced_search_analytics, mcp__gsc__detect_quick_wins, mcp__gsc__index_inspect, mcp__gsc__list_sites, mcp__notion__notion-search, mcp__notion__notion-fetch, mcp__notion__notion-create-pages, mcp__notion__notion-update-page
 ---
 
 # 데이터분석 에이전트
