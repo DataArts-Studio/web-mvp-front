@@ -227,6 +227,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let usageRemaining = Number.POSITIVE_INFINITY;
     const usageResult = await getMonthlyUsage(input.projectId);
     if (usageResult.success) {
       const { used, limit } = usageResult.data;
@@ -236,6 +237,7 @@ export async function POST(req: NextRequest) {
           { status: 429 }
         );
       }
+      usageRemaining = limit - used;
     }
 
     let attachment: AttachmentExtractResult | undefined;
@@ -290,17 +292,18 @@ export async function POST(req: NextRequest) {
       throw AiError.responseUnparsable(error);
     }
 
-    // 시나리오 수만큼 월간 사용량 집계 (generate-cases 와 동일하게 generated_count 누적).
+    // 남은 월간 한도를 넘지 않도록 시나리오를 잘라 채택하고, 그만큼만 사용량에 집계한다.
+    const limitedScenarios = result.scenarios.slice(0, usageRemaining);
     await recordUsage(
       input.projectId,
       'analyze_requirements',
-      result.scenarios.length,
+      limitedScenarios.length,
       attachment ? toAttachmentMeta(attachment) : undefined
     );
 
     return NextResponse.json({
       analysis: result.analysis,
-      scenarios: result.scenarios,
+      scenarios: limitedScenarios,
       attachment: attachment
         ? {
             type: attachment.type,

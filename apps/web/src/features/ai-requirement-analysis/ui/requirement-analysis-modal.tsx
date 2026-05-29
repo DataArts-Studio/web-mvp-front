@@ -103,7 +103,9 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
       if (!analysis) throw new Error('분석 결과가 없습니다.');
       return saveRequirementAnalysis({
         projectId,
-        sourceInput: description,
+        // 첨부만 있고 설명이 비면(생성은 허용) 저장 스키마 sourceInput min(1) 위반이라, 첨부 기반 마커로 채운다.
+        sourceInput:
+          description.trim() || `첨부 문서 기반 분석${attachment ? ` (${attachment.name})` : ''}`,
         language,
         analysis,
         scenarios,
@@ -115,7 +117,8 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
       if (result.success) {
         toast.success(`${result.data.suiteCount}개의 시나리오가 스위트로 저장되었습니다.`);
         queryClient.invalidateQueries({ queryKey: ['requirementAnalyses', projectId] });
-        queryClient.invalidateQueries({ queryKey: ['testSuites', projectId] });
+        // 스위트 목록 쿼리 키는 ['testSuites', 'list', projectId] (testSuiteQueryKeys.list).
+        queryClient.invalidateQueries({ queryKey: ['testSuites', 'list', projectId] });
         queryClient.invalidateQueries({ queryKey: ['testCases'] });
         onClose();
       } else {

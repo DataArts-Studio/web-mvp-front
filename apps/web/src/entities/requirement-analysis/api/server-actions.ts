@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -53,6 +54,10 @@ export const saveRequirementAnalysis = async (input: {
     if (!(await requireProjectAccess(projectId))) {
       return { success: false, errors: { _ai: ['프로젝트 접근 권한이 없습니다.'] } };
     }
+
+    // 스위트 생성 경로(createTestSuite)와 동일하게 용량 한도를 먼저 가드한다.
+    const storageError = await checkStorageLimit(projectId);
+    if (storageError) return storageError;
 
     const document: RequirementAnalysisDocument = { ...analysis, scenarios };
 
@@ -121,6 +126,11 @@ export const getRequirementAnalyses = async (
   projectId: string
 ): Promise<ActionResult<RequirementAnalysisListItem[]>> => {
   try {
+    // 프로젝트 내부 산출물(원본 입력·요약·시나리오 수)을 노출하므로 조회도 접근 가드.
+    if (!(await requireProjectAccess(projectId))) {
+      return { success: false, errors: { _ai: ['프로젝트 접근 권한이 없습니다.'] } };
+    }
+
     const db = getDatabase();
 
     const rows = await db
