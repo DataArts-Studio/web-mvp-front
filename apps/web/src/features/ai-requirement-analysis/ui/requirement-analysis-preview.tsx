@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import type { GeneratedScenario, RequirementAnalysis } from '@/entities/requirement-analysis';
 import { cn } from '@testea/util';
 import { CheckSquare, Square } from 'lucide-react';
@@ -18,7 +20,7 @@ const TYPE_LABEL: Record<string, { text: string; cls: string }> = {
   edge_case: { text: 'Edge Case', cls: 'bg-yellow-500/10 text-yellow-400' },
 };
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <div className="flex flex-col gap-2">
     <h4 className="typo-label-heading text-text-2">{title}</h4>
     {children}
@@ -116,6 +118,9 @@ export const RequirementAnalysisPreview = ({
         <button
           type="button"
           onClick={onToggleAll}
+          aria-label={
+            selected.size === scenarios.length ? '시나리오 전체 선택 해제' : '시나리오 전체 선택'
+          }
           className="text-text-3 hover:text-text-1 transition-colors"
         >
           {selected.size === scenarios.length ? (
@@ -141,7 +146,16 @@ export const RequirementAnalysisPreview = ({
               )}
             >
               <div className="flex items-start gap-3">
-                <button type="button" onClick={() => onToggleOne(idx)} className="mt-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onToggleOne(idx)}
+                  aria-label={
+                    selected.has(idx)
+                      ? `시나리오 선택 해제: ${scenario.name}`
+                      : `시나리오 선택: ${scenario.name}`
+                  }
+                  className="mt-0.5 shrink-0"
+                >
                   {selected.has(idx) ? (
                     <CheckSquare className="text-primary h-4.5 w-4.5" />
                   ) : (

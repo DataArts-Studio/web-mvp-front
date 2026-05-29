@@ -53,7 +53,7 @@ async function callOpenAI(apiKey: string, model: string, systemPrompt: string, u
   }
 
   const data = await res.json();
-  return data.choices[0]?.message?.content || '';
+  return data.choices?.[0]?.message?.content || '';
 }
 
 async function callAnthropic(

@@ -15,4 +15,6 @@ CREATE TABLE "ai_requirement_analyses" (
 --> statement-breakpoint
 ALTER TABLE "test_suites" ADD COLUMN "requirement_analysis_id" uuid;--> statement-breakpoint
 ALTER TABLE "ai_requirement_analyses" ADD CONSTRAINT "ai_requirement_analyses_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "test_suites" ADD CONSTRAINT "test_suites_requirement_analysis_id_ai_requirement_analyses_id_fk" FOREIGN KEY ("requirement_analysis_id") REFERENCES "public"."ai_requirement_analyses"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "test_suites" ADD CONSTRAINT "test_suites_requirement_analysis_id_ai_requirement_analyses_id_fk" FOREIGN KEY ("requirement_analysis_id") REFERENCES "public"."ai_requirement_analyses"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ai_requirement_analyses" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "ai_requirement_analyses" FORCE ROW LEVEL SECURITY;

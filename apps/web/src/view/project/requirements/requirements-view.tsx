@@ -103,10 +103,23 @@ export const RequirementsView = () => {
                 <FileSearch className="h-6 w-6" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-1">
-                <p className="typo-h3-heading text-text-1">아직 생성한 요구사항 분석이 없습니다.</p>
-                <p className="typo-body2-normal text-text-3">
-                  요구사항을 입력해 분석서와 테스트 시나리오를 만들어보세요.
-                </p>
+                {searchQuery.trim() ? (
+                  <>
+                    <p className="typo-h3-heading text-text-1">검색 결과가 없습니다.</p>
+                    <p className="typo-body2-normal text-text-3">
+                      다른 키워드로 다시 검색해보세요.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="typo-h3-heading text-text-1">
+                      아직 생성한 요구사항 분석이 없습니다.
+                    </p>
+                    <p className="typo-body2-normal text-text-3">
+                      요구사항을 입력해 분석서와 테스트 시나리오를 만들어보세요.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           ) : (

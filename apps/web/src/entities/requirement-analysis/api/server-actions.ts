@@ -37,7 +37,10 @@ export const saveRequirementAnalysis = async (input: {
   try {
     const parsed = SaveRequirementAnalysisSchema.safeParse(input);
     if (!parsed.success) {
-      return { success: false, errors: { _ai: [parsed.error.errors[0].message] } };
+      return {
+        success: false,
+        errors: { _ai: [parsed.error.issues[0]?.message ?? '입력 값이 올바르지 않습니다.'] },
+      };
     }
 
     const {
@@ -61,7 +64,8 @@ export const saveRequirementAnalysis = async (input: {
 
     const document: RequirementAnalysisDocument = { ...analysis, scenarios };
 
-    const indices = selectedScenarioIndices ?? scenarios.map((_, i) => i);
+    // 중복 인덱스가 오면 같은 시나리오가 여러 스위트로 생성되므로 set 으로 한 번 걸러낸다.
+    const indices = [...new Set(selectedScenarioIndices ?? scenarios.map((_, i) => i))];
     const selectedScenarios = indices
       .filter((i) => i >= 0 && i < scenarios.length)
       .map((i) => scenarios[i]);

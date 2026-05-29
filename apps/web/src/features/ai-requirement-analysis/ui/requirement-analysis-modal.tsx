@@ -160,6 +160,7 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
               <button
                 type="button"
                 onClick={onClose}
+                aria-label="닫기"
                 className="text-text-4 hover:text-text-2 transition-colors"
               >
                 <X className="h-5 w-5" />
