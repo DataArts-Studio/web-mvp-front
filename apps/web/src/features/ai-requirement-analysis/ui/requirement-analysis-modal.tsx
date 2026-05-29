@@ -117,8 +117,9 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
       if (result.success) {
         toast.success(`${result.data.suiteCount}개의 시나리오가 스위트로 저장되었습니다.`);
         queryClient.invalidateQueries({ queryKey: ['requirementAnalyses', projectId] });
-        // 스위트 목록 쿼리 키는 ['testSuites', 'list', projectId] (testSuiteQueryKeys.list).
-        queryClient.invalidateQueries({ queryKey: ['testSuites', 'list', projectId] });
+        // 스위트 쿼리는 위젯(['testSuites','list',projectId])과 엔티티(['testSuites',projectId]) 키가 달라
+        // 공통 prefix 로 한 번에 무효화한다. (test-cases-view 도 갱신)
+        queryClient.invalidateQueries({ queryKey: ['testSuites'] });
         queryClient.invalidateQueries({ queryKey: ['testCases'] });
         onClose();
       } else {
