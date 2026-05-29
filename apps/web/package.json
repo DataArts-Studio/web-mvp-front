@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "test:coverage:ui": "vitest --coverage --ui",
     "e2e": "playwright test",
+    "e2e:smoke": "playwright test smoke",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
     "e2e:report": "playwright show-report",
