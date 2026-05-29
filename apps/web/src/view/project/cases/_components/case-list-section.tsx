@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useId, useState } from 'react';
 
 import { TestCaseCard, TestCaseCardType, duplicateTestCase } from '@/entities/test-case';
 import { testCaseQueryKeys } from '@/features/cases-list';
@@ -63,6 +63,9 @@ export const CaseListSection = ({
   const isCustomSort = sortOption === 'custom';
 
   // D&D
+  // DndContext 에 안정적인 id 를 주지 않으면 dnd-kit 가 내부 카운터로 접근성 id(DndDescribedBy-N)를
+  // 생성해 SSR/CSR 값이 어긋나며 hydration 불일치가 난다. useId 로 서버·클라이언트 동일 id 를 보장한다.
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
@@ -161,6 +164,7 @@ export const CaseListSection = ({
           </div>
         ) : (
           <DndContext
+            id={dndId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
