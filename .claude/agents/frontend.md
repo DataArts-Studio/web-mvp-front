@@ -28,7 +28,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 3. `Overlay`/`Content` 등 Dialog Primitive 에 `style` 전달 시 position/top/left/transform 기본값을 직접 명시.
 4. 행 내부 absolute 드롭다운은 `createPortal` + `fixed` + 양쪽 ref outside-click.
 5. 클라 훅 사용 전 파일 최상단 `'use client'` 선언 확인.
-6. 신규 패키지·라우트 추가 시 `apps/*/src/app/globals.css` 의 `@source` 등록 확인 (Tailwind v4 content scan).
+6. 신규 패키지·라우트 추가 시 전역 스타일의 `@source` 등록 확인 (Tailwind v4 content scan). 경로는 web `apps/web/src/app-shell/styles/globals.css`, back-office `apps/back-office/src/app-shell/globals.css`.
 7. 변경 후 dev 서버 또는 Storybook 에서 실제 동작 확인. 타입체크·테스트 통과로 충분하다고 보고하지 않는다.
 
 ## 보고 형식
