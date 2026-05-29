@@ -16,6 +16,17 @@ export const createAsideMenus = (projectSlug: string) => {
   return {
     sections: [
       {
+        title: '요구사항',
+        items: [
+          {
+            label: '요구사항 생성',
+            href: `${basePath}/requirements`,
+            icon: FileText,
+            matchPath: `${basePath}/requirements`,
+          },
+        ],
+      },
+      {
         title: '테스트 관리',
         items: [
           {

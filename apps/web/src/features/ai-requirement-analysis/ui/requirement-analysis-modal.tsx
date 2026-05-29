@@ -3,38 +3,39 @@
 import { useState } from 'react';
 
 import { aiConfigQueryOptions } from '@/entities/ai-config';
-import type { GeneratedTestCase } from '@/entities/ai-config';
-import { saveGeneratedCases } from '@/entities/ai-config/api/server-actions';
 import { aiUsageQueryOptions } from '@/entities/ai-usage';
+import type { GeneratedScenario, RequirementAnalysis } from '@/entities/requirement-analysis';
+import { saveRequirementAnalysis } from '@/entities/requirement-analysis/api/server-actions';
 import { AttachmentDropzone } from '@/shared/ui';
-import { testSuitesQueryOptions } from '@/widgets';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog } from '@testea/ui';
 import { DSButton } from '@testea/ui';
 import { Bot, Loader2, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { AiCasePreviewList } from './ai-case-preview-list';
-import { AiGenerateForm } from './ai-generate-form';
-import { AiGeneratingSpinner } from './ai-generating-spinner';
+import { RequirementAnalysisForm } from './requirement-analysis-form';
+import { RequirementAnalysisPreview } from './requirement-analysis-preview';
+import { RequirementAnalysisSpinner } from './requirement-analysis-spinner';
 
 type Props = {
   projectId: string;
-  slug: string;
   onClose: () => void;
 };
 
 type Step = 'input' | 'loading' | 'preview';
 
-export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
+type AttachmentMeta = { type: 'pdf' | 'markdown'; charCount: number };
+
+export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('input');
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState<'ko' | 'en'>('ko');
   const [attachment, setAttachment] = useState<File | null>(null);
-  const [cases, setCases] = useState<GeneratedTestCase[]>([]);
+  const [analysis, setAnalysis] = useState<RequirementAnalysis | null>(null);
+  const [scenarios, setScenarios] = useState<GeneratedScenario[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [suiteId, setSuiteId] = useState<string>('');
+  const [attachmentMeta, setAttachmentMeta] = useState<AttachmentMeta | null>(null);
 
   const { data: configData } = useQuery(aiConfigQueryOptions(projectId));
   const hasConfig = configData?.success && !!configData.data;
@@ -43,19 +44,12 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
   const usage = usageData?.success ? usageData.data : null;
   const isLimitExceeded = usage ? usage.used >= usage.limit : false;
 
-  const { data: suitesData } = useQuery({
-    ...testSuitesQueryOptions(projectId),
-    enabled: !!projectId,
-  });
-  const suites = suitesData?.success ? suitesData.data : [];
-
-  // AI 생성 요청 (첨부가 있으면 multipart, 없으면 기존 JSON 경로)
+  // 분석 요청 (첨부가 있으면 multipart, 없으면 JSON)
   const generateMutation = useMutation({
     mutationFn: async () => {
       const res = attachment
-        ? await fetch('/api/ai/generate-cases', {
+        ? await fetch('/api/ai/analyze-requirements', {
             method: 'POST',
-            // FormData 사용 시 Content-Type 은 브라우저가 boundary 와 함께 자동 세팅 — 직접 지정 금지
             body: (() => {
               const fd = new FormData();
               fd.set('projectId', projectId);
@@ -65,15 +59,16 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
               return fd;
             })(),
           })
-        : await fetch('/api/ai/generate-cases', {
+        : await fetch('/api/ai/analyze-requirements', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ projectId, description, language }),
           });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '생성에 실패했습니다.');
+      if (!res.ok) throw new Error(data.error || '분석에 실패했습니다.');
       return {
-        cases: data.cases as GeneratedTestCase[],
+        analysis: data.analysis as RequirementAnalysis,
+        scenarios: data.scenarios as GeneratedScenario[],
         attachment: data.attachment as {
           type: 'pdf' | 'markdown';
           truncated: boolean;
@@ -82,17 +77,18 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
       };
     },
     onMutate: () => setStep('loading'),
-    onSuccess: ({ cases: result, attachment: attachmentMeta }) => {
-      setCases(result);
-      setSelected(new Set(result.map((_, i) => i)));
-      // 응답이 잘림을 알려주면 사용자에게 명시한다. 안 그러면 긴 문서 뒷부분의 요구사항이 누락된 채
-      // 생성이 끝난 줄 알게 됨.
-      if (attachmentMeta?.truncated) {
-        const typeLabel = attachmentMeta.type === 'pdf' ? 'PDF' : 'Markdown';
+    onSuccess: ({ analysis: resultAnalysis, scenarios: resultScenarios, attachment: meta }) => {
+      setAnalysis(resultAnalysis);
+      setScenarios(resultScenarios);
+      setSelected(new Set(resultScenarios.map((_, i) => i)));
+      setAttachmentMeta(meta ? { type: meta.type, charCount: meta.charCount } : null);
+      if (meta?.truncated) {
+        const typeLabel = meta.type === 'pdf' ? 'PDF' : 'Markdown';
         toast.warning(
-          `${typeLabel} 첨부가 ${attachmentMeta.charCount.toLocaleString()}자에서 잘려 뒷부분은 분석되지 않았어요.`
+          `${typeLabel} 첨부가 ${meta.charCount.toLocaleString()}자에서 잘려 뒷부분은 분석되지 않았어요.`
         );
       }
+      queryClient.invalidateQueries({ queryKey: ['ai-usage'] });
       setStep('preview');
     },
     onError: (error: Error) => {
@@ -101,21 +97,30 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
     },
   });
 
-  // TC 저장
+  // 분석서 + 선택 시나리오 저장
   const saveMutation = useMutation({
     mutationFn: () => {
-      const selectedCases = cases.filter((_, i) => selected.has(i));
-      return saveGeneratedCases({
+      if (!analysis) throw new Error('분석 결과가 없습니다.');
+      return saveRequirementAnalysis({
         projectId,
-        suiteId: suiteId || undefined,
-        cases: selectedCases,
+        // 첨부만 있고 설명이 비면(생성은 허용) 저장 스키마 sourceInput min(1) 위반이라, 첨부 기반 마커로 채운다.
+        sourceInput:
+          description.trim() || `첨부 문서 기반 분석${attachment ? ` (${attachment.name})` : ''}`,
+        language,
+        analysis,
+        scenarios,
+        selectedScenarioIndices: Array.from(selected),
+        attachment: attachmentMeta,
       });
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success(`${result.data.count}건의 테스트 케이스가 저장되었습니다.`);
+        toast.success(`${result.data.suiteCount}개의 시나리오가 스위트로 저장되었습니다.`);
+        queryClient.invalidateQueries({ queryKey: ['requirementAnalyses', projectId] });
+        // 스위트 쿼리는 위젯(['testSuites','list',projectId])과 엔티티(['testSuites',projectId]) 키가 달라
+        // 공통 prefix 로 한 번에 무효화한다. (test-cases-view 도 갱신)
+        queryClient.invalidateQueries({ queryKey: ['testSuites'] });
         queryClient.invalidateQueries({ queryKey: ['testCases'] });
-        queryClient.invalidateQueries({ queryKey: ['ai-usage'] });
         onClose();
       } else {
         const msg = Object.values(result.errors).flat().join(', ');
@@ -123,15 +128,15 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'TC 저장 중 오류가 발생했습니다.');
+      toast.error(error.message || '저장 중 오류가 발생했습니다.');
     },
   });
 
   const toggleAll = () => {
-    if (selected.size === cases.length) {
+    if (selected.size === scenarios.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(cases.map((_, i) => i)));
+      setSelected(new Set(scenarios.map((_, i) => i)));
     }
   };
 
@@ -144,10 +149,6 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
     });
   };
 
-  const handleUpdateCase = (idx: number, updated: GeneratedTestCase) => {
-    setCases((prev) => prev.map((c, i) => (i === idx ? updated : c)));
-  };
-
   return (
     <Dialog.Root defaultOpen>
       <Dialog.Portal>
@@ -155,15 +156,12 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
         <Dialog.Content className="bg-bg-2 border-line-2 rounded-5 flex max-h-[85vh] w-full max-w-[720px] flex-col border p-0">
           {/* 헤더 */}
           <div className="border-line-2 flex items-center justify-between border-b px-6 py-4">
-            <div className="flex items-center gap-3">
-              <Dialog.Title className="typo-h2-heading text-text-1">
-                AI 테스트 케이스 생성
-              </Dialog.Title>
-            </div>
+            <Dialog.Title className="typo-h2-heading text-text-1">AI 요구사항 분석</Dialog.Title>
             {step !== 'loading' && (
               <button
                 type="button"
                 onClick={onClose}
+                aria-label="닫기"
                 className="text-text-4 hover:text-text-2 transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -207,7 +205,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                     </p>
                   </div>
                 )}
-                <AiGenerateForm
+                <RequirementAnalysisForm
                   description={description}
                   onDescriptionChange={setDescription}
                   language={language}
@@ -224,19 +222,16 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                 </div>
               </>
             ) : step === 'loading' ? (
-              <AiGeneratingSpinner />
-            ) : (
-              <AiCasePreviewList
-                cases={cases}
+              <RequirementAnalysisSpinner />
+            ) : analysis ? (
+              <RequirementAnalysisPreview
+                analysis={analysis}
+                scenarios={scenarios}
                 selected={selected}
                 onToggleAll={toggleAll}
                 onToggleOne={toggleOne}
-                onUpdateCase={handleUpdateCase}
-                suiteId={suiteId}
-                onSuiteIdChange={setSuiteId}
-                suites={suites}
               />
-            )}
+            ) : null}
           </div>
 
           {/* 푸터 */}
@@ -262,7 +257,6 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                     size="small"
                     onClick={() => generateMutation.mutate()}
                     disabled={
-                      // 첨부 없으면 V1과 동일하게 최소 20자, 첨부가 있으면 설명은 비워도 OK
                       (!attachment && description.trim().length < 20) ||
                       generateMutation.isPending ||
                       isLimitExceeded
@@ -270,7 +264,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                   >
                     <span className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4" />
-                      생성하기
+                      분석하기
                     </span>
                   </DSButton>
                 ) : step === 'preview' ? (
@@ -283,7 +277,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                     {saveMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      `${selected.size}개 저장하기`
+                      `${selected.size}개 스위트로 저장`
                     )}
                   </DSButton>
                 ) : null}

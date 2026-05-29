@@ -3,6 +3,7 @@ export { LendingView } from '@/view/lending';
 export { LegalView } from '@/view/legal';
 export { ProjectDashboardContent, DashboardHeader } from '@/view/project/dashboard';
 export { TestCasesView, TestCaseDetailView } from '@/view/project/cases';
+export { RequirementsView } from '@/view/project/requirements';
 export { TestSuitesView } from '@/view/project/suites';
 export { TestRunsListView, TestRunDetailView } from '@/view/project/runs';
 export { MilestonesView, MilestoneDetailView } from '@/view/project/milestones';
