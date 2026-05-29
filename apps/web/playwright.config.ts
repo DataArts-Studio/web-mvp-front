@@ -46,6 +46,9 @@ export default defineConfig({
         '**/scenario/access/**/*.spec.ts',
         '**/scenario/project/**/*.spec.ts',
         '**/smoke/**/*.spec.ts',
+        // 레거시(POM 이관 전) 미인증 플로우도 baseline 측정 대상에 포함한다.
+        '**/create-project/**/*.spec.ts',
+        '**/project-search/**/*.spec.ts',
       ],
     },
     // 인증 필요

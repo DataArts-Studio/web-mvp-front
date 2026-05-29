@@ -13,6 +13,7 @@ import { ProjectErrorFallback } from '@testea/ui';
 import { formatDateKR } from '@testea/util';
 import { Settings } from 'lucide-react';
 
+import { AutomationTokenSection } from './_components/automation-token-section';
 import { DangerZoneSection } from './_components/danger-zone-section';
 import { GeneralSettingsSection } from './_components/general-settings-section';
 import { SecuritySection } from './_components/security-section';
@@ -76,7 +77,10 @@ export const SettingsView = () => {
       {/* Section 4: GitHub Integration */}
       <GithubConnectCard projectId={projectId} />
 
-      {/* Section 5: Storage */}
+      {/* Section 5: Automation Token (FDD-TR09 V1) */}
+      <AutomationTokenSection projectId={projectId} />
+
+      {/* Section 6: Storage */}
       {storageData?.success && (
         <StorageSection
           usedBytes={storageData.data.usedBytes}

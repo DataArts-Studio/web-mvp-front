@@ -66,8 +66,12 @@ test.describe('커맨드 팔레트 - 검색 후 이동할 수 있다.', () => {
     await dashboardPage.expectSearchBarVisible();
   });
 
-  test('검색어를 입력후 이동할 수 있다.', async ({ dashboardPage }) => {});
-  test('빠른액션을 통해 이동할 수 있다.', async ({ dashboardPage }) => {});
+  test.fixme('검색어를 입력후 이동할 수 있다.', async ({
+    dashboardPage,
+  }) => {});
+  test.fixme('빠른액션을 통해 이동할 수 있다.', async ({
+    dashboardPage,
+  }) => {});
 });
 
 // 시드 데이터 + teardown 필요 (생성이 대시보드에 반영되는 통합 흐름)
