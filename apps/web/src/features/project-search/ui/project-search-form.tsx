@@ -71,6 +71,12 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
   // Handle click outside to close autocomplete
   useOutsideClick(containerRef, () => setShowAutocomplete(false));
 
+  // Handle project selection from autocomplete
+  const handleSelectProject = (project: ProjectSearchResult) => {
+    setShowAutocomplete(false);
+    router.push(`/projects/${encodeURIComponent(project.slug)}/access`);
+  };
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -116,12 +122,6 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
     },
     [showAutocomplete, suggestions, selectedIndex, inputValue, onSearch]
   );
-
-  // Handle project selection from autocomplete
-  const handleSelectProject = (project: ProjectSearchResult) => {
-    setShowAutocomplete(false);
-    router.push(`/projects/${project.slug}/access`);
-  };
 
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {

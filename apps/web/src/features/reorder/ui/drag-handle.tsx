@@ -6,7 +6,7 @@ import { cn } from '@testea/util';
 import { GripVertical } from 'lucide-react';
 
 interface DragHandleProps {
-  listeners?: Record<string, Function>;
+  listeners?: Record<string, (event: unknown) => void>;
   attributes?: Record<string, unknown>;
   className?: string;
 }

@@ -93,6 +93,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               >
                 다시 시도
               </button>
+              {/* root error boundary 는 React tree 가 깨진 상태이므로 next/link 대신 anchor 로 강제 새로고침 이동 */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a
                 href="/"
                 style={{

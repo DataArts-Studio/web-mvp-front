@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 
+import Link from 'next/link';
+
 import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle } from 'lucide-react';
 
@@ -32,12 +34,12 @@ export default function MilestonesError({ error, reset }: ErrorProps) {
         >
           다시 시도
         </button>
-        <a
+        <Link
           href="/"
           className="rounded-4 border-line-2 text-text-1 hover:bg-bg-3 inline-flex items-center border px-5 py-2.5 text-sm font-semibold transition-colors"
         >
           홈으로 돌아가기
-        </a>
+        </Link>
       </div>
     </div>
   );
