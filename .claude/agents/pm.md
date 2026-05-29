@@ -1,7 +1,7 @@
 ---
 name: pm
 description: PM 작업. GitHub 이슈/PR 라이프사이클, 마일스톤·일정, 진행 상태 추적, 회고 노트 작성, 작업 분배·우선순위 조율. 코드 변경은 하지 않는다.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash, Edit, Write, mcp__github__issue_read, mcp__github__issue_write, mcp__github__list_issues, mcp__github__pull_request_read, mcp__github__list_pull_requests, mcp__github__update_pull_request, mcp__github__add_issue_comment, mcp__github__sub_issue_write
 ---
 
 # PM 에이전트
