@@ -20,7 +20,7 @@ export const projectAutomationTokens = pgTable(
       .references(() => projects.id, { onDelete: 'cascade' }),
     /** 사용자 식별·표시용 prefix (예: `testea_pk_AbCd`). 본체는 노출하지 않음. */
     token_prefix: text('token_prefix').notNull(),
-    /** 토큰 본체의 hash (argon2id 또는 bcrypt). 평문 미저장. */
+    /** 토큰 본체의 hash (SHA-256 hex). 평문 미저장. 토큰이 256-bit 랜덤이라 salt 불필요. */
     token_hash: text('token_hash').notNull(),
     last_used_at: timestamp('last_used_at', { withTimezone: true }),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
