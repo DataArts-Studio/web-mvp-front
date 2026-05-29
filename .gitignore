@@ -33,6 +33,7 @@ dist
 .DS_Store
 *.pem
 *.log
+.tmp/
 
 # debug
 npm-debug.log*
