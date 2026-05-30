@@ -211,6 +211,13 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
                   language={language}
                   onLanguageChange={setLanguage}
                   hasAttachment={!!attachment}
+                  onSubmit={() => {
+                    const ok =
+                      !generateMutation.isPending &&
+                      !isLimitExceeded &&
+                      (!!attachment || description.trim().length >= 20);
+                    if (ok) generateMutation.mutate();
+                  }}
                 />
                 <div className="mt-4 flex flex-col gap-2">
                   <label className="typo-label-heading text-text-2">참고 문서 첨부 (선택)</label>

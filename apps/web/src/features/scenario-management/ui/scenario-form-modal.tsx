@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { type KeyboardEvent, useState } from 'react';
 
 import {
   type ScenarioListItem,
@@ -9,6 +9,7 @@ import {
   createScenario,
   updateScenario,
 } from '@/entities/test-scenario';
+import { PromptTextarea } from '@/shared/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DSButton, Dialog } from '@testea/ui';
 import { cn } from '@testea/util';
@@ -118,6 +119,15 @@ export const ScenarioFormModal = ({
   });
 
   const canSubmit = name.trim().length > 0 && !mutation.isPending;
+  const submit = () => {
+    if (canSubmit) mutation.mutate();
+  };
+  const onInputEnter = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submit();
+    }
+  };
 
   return (
     <Dialog.Root defaultOpen>
@@ -144,6 +154,7 @@ export const ScenarioFormModal = ({
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={onInputEnter}
                 placeholder="예: 이메일로 정상 회원가입"
                 maxLength={200}
                 className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-3 border-line-2 focus:border-primary border p-3 focus:outline-none"
@@ -153,13 +164,14 @@ export const ScenarioFormModal = ({
 
             <div className="flex flex-col gap-2">
               <label className="typo-label-heading text-text-2">설명</label>
-              <textarea
+              <PromptTextarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onValueChange={setDescription}
+                onSubmit={submit}
                 placeholder="시나리오 흐름·상황을 설명하세요. (선택)"
-                rows={5}
+                minRows={4}
                 maxLength={2000}
-                className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-3 border-line-2 focus:border-primary resize-none border p-3 focus:outline-none"
+                aria-label="시나리오 설명"
               />
             </div>
 
@@ -178,6 +190,7 @@ export const ScenarioFormModal = ({
               <input
                 value={relatedInput}
                 onChange={(e) => setRelatedInput(e.target.value)}
+                onKeyDown={onInputEnter}
                 placeholder="쉼표로 구분. 예: FR-1, FR-2"
                 className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-3 border-line-2 focus:border-primary border p-3 focus:outline-none"
               />

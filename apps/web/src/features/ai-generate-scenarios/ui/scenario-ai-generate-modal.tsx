@@ -7,7 +7,7 @@ import { aiUsageQueryOptions } from '@/entities/ai-usage';
 import type { GeneratedScenario } from '@/entities/requirement-analysis';
 import { saveGeneratedScenarios } from '@/entities/test-scenario';
 import { SCENARIO_TYPE_META } from '@/features/scenario-management';
-import { AttachmentDropzone } from '@/shared/ui';
+import { AttachmentDropzone, PromptTextarea } from '@/shared/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DSButton, Dialog } from '@testea/ui';
 import { cn } from '@testea/util';
@@ -104,6 +104,11 @@ export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
     onError: (error: Error) => toast.error(error.message || '저장 중 오류가 발생했습니다.'),
   });
 
+  const canGenerate =
+    !generateMutation.isPending &&
+    !isLimitExceeded &&
+    (!!attachment || description.trim().length >= 20);
+
   const toggleAll = () =>
     setSelected((prev) =>
       prev.size === scenarios.length ? new Set() : new Set(scenarios.map((_, i) => i))
@@ -173,35 +178,36 @@ export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
                 )}
                 <div className="flex flex-col gap-2">
                   <label className="typo-label-heading text-text-2">요구사항 · 맥락</label>
-                  <textarea
+                  <PromptTextarea
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onValueChange={setDescription}
+                    onSubmit={() => {
+                      if (canGenerate) generateMutation.mutate();
+                    }}
                     placeholder="시나리오를 만들고 싶은 기능·요구사항을 입력하세요. 예: 사용자는 이메일로 회원가입하고, 가입 후 프로필을 설정할 수 있어야 한다..."
-                    rows={8}
+                    minLength={attachment ? undefined : 20}
                     maxLength={5000}
-                    className="typo-body2-normal bg-bg-1 text-text-1 placeholder:text-text-4 rounded-3 border-line-2 focus:border-primary resize-none border p-4 focus:outline-none"
+                    disabled={generateMutation.isPending}
+                    aria-label="요구사항 입력"
                     autoFocus
                   />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="typo-caption text-text-4">생성 언어:</span>
-                      {(['ko', 'en'] as const).map((l) => (
-                        <button
-                          key={l}
-                          type="button"
-                          onClick={() => setLanguage(l)}
-                          className={cn(
-                            'typo-caption rounded-full px-2.5 py-0.5 transition-colors',
-                            language === l
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-bg-3 text-text-3 hover:text-text-1'
-                          )}
-                        >
-                          {l === 'ko' ? '한국어' : 'English'}
-                        </button>
-                      ))}
-                    </div>
-                    <span className="typo-caption text-text-4">{description.length}/5,000</span>
+                  <div className="flex items-center gap-2">
+                    <span className="typo-caption text-text-4">생성 언어:</span>
+                    {(['ko', 'en'] as const).map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setLanguage(l)}
+                        className={cn(
+                          'typo-caption rounded-full px-2.5 py-0.5 transition-colors',
+                          language === l
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-bg-3 text-text-3 hover:text-text-1'
+                        )}
+                      >
+                        {l === 'ko' ? '한국어' : 'English'}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -325,11 +331,7 @@ export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
                     variant="solid"
                     size="small"
                     onClick={() => generateMutation.mutate()}
-                    disabled={
-                      (!attachment && description.trim().length < 20) ||
-                      generateMutation.isPending ||
-                      isLimitExceeded
-                    }
+                    disabled={!canGenerate}
                   >
                     <span className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4" />
