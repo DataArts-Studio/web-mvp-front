@@ -4,6 +4,7 @@ export { LegalView } from '@/view/legal';
 export { ProjectDashboardContent, DashboardHeader } from '@/view/project/dashboard';
 export { TestCasesView, TestCaseDetailView } from '@/view/project/cases';
 export { RequirementsView } from '@/view/project/requirements';
+export { ScenariosView } from '@/view/project/scenarios';
 export { TestSuitesView } from '@/view/project/suites';
 export { TestRunsListView, TestRunDetailView } from '@/view/project/runs';
 export { MilestonesView, MilestoneDetailView } from '@/view/project/milestones';
