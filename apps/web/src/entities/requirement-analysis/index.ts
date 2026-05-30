@@ -2,6 +2,7 @@ export type {
   RequirementAnalysis,
   GeneratedScenario,
   RequirementAnalysisResult,
+  CreateFeatureInput,
 } from './model/schema';
 export {
   RequirementAnalysisSchema,
@@ -9,7 +10,8 @@ export {
   RequirementAnalysisResultSchema,
   AnalyzeRequirementsSchema,
   SaveRequirementAnalysisSchema,
+  CreateFeatureSchema,
 } from './model/schema';
 export type { RequirementAnalysisListItem } from './model/types';
-export { getRequirementAnalyses } from './api/server-actions';
+export { getRequirementAnalyses, createFeature } from './api/server-actions';
 export { requirementAnalysisQueryKeys, requirementAnalysesQueryOptions } from './api/query';

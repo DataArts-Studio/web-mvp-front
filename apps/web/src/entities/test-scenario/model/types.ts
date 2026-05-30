@@ -22,6 +22,21 @@ export interface ScenarioListItem {
 /** 목록 조회 필터. */
 export interface ScenarioListFilter {
   requirementAnalysisId?: string;
+  /** true 면 출처 분석서가 없는(수동) 시나리오만. */
+  manual?: boolean;
   type?: ScenarioType;
   status?: ScenarioStatus;
+}
+
+/** 시나리오 관리 마스터의 기능(요구사항) 한 항목. id=null 은 수동 버킷. */
+export interface ScenarioFeatureListItem {
+  /** 요구사항 분석 id. 수동 버킷이면 null. */
+  id: string | null;
+  title: string;
+  summary: string;
+  isManual: boolean;
+  scenarioCount: number;
+  statusCounts: Record<ScenarioStatus, number>;
+  /** 수동 버킷은 null. */
+  createdAt: string | null;
 }

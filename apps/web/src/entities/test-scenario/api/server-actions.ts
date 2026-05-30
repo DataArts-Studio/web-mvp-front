@@ -5,7 +5,7 @@ import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { aiRequirementAnalyses, getDatabase, testScenarios, testSuites } from '@testea/db';
-import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import {
   type CreateScenarioInput,
@@ -14,10 +14,11 @@ import {
   ReorderScenariosSchema,
   type SaveGeneratedScenariosInput,
   SaveGeneratedScenariosSchema,
+  type ScenarioStatus,
   type UpdateScenarioInput,
   UpdateScenarioSchema,
 } from '../model/schema';
-import type { ScenarioListFilter, ScenarioListItem } from '../model/types';
+import type { ScenarioFeatureListItem, ScenarioListFilter, ScenarioListItem } from '../model/types';
 
 const accessDenied = (): ActionResult<never> => ({
   success: false,
@@ -48,6 +49,9 @@ export const getScenarios = async (
     ];
     if (filter?.requirementAnalysisId) {
       conditions.push(eq(testScenarios.requirement_analysis_id, filter.requirementAnalysisId));
+    }
+    if (filter?.manual) {
+      conditions.push(isNull(testScenarios.requirement_analysis_id));
     }
     if (filter?.type) conditions.push(eq(testScenarios.type, filter.type));
     if (filter?.status) conditions.push(eq(testScenarios.status, filter.status));
@@ -109,6 +113,100 @@ export const getScenarios = async (
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getScenarios' } });
     return { success: false, errors: { _scenario: ['시나리오 목록을 불러오지 못했습니다.'] } };
+  }
+};
+
+const MANUAL_KEY = '__manual__';
+const emptyStatusCounts = (): Record<ScenarioStatus, number> => ({
+  DRAFT: 0,
+  REVIEW: 0,
+  CONFIRMED: 0,
+});
+
+/**
+ * 시나리오 관리 마스터: 기능(요구사항 분석) 목록 + 각 기능의 영속 시나리오 수·상태 롤업.
+ * 시나리오 0개 기능도 포함하고, 출처 없는(수동) 시나리오가 있으면 수동 버킷을 덧붙인다.
+ */
+export const getScenarioFeatures = async (
+  projectId: string
+): Promise<ActionResult<ScenarioFeatureListItem[]>> => {
+  try {
+    if (!(await requireProjectAccess(projectId))) return accessDenied();
+
+    const db = getDatabase();
+
+    const analyses = await db
+      .select({
+        id: aiRequirementAnalyses.id,
+        title: aiRequirementAnalyses.title,
+        analysis: aiRequirementAnalyses.analysis,
+        createdAt: aiRequirementAnalyses.created_at,
+      })
+      .from(aiRequirementAnalyses)
+      .where(
+        and(
+          eq(aiRequirementAnalyses.project_id, projectId),
+          eq(aiRequirementAnalyses.lifecycle_status, 'ACTIVE')
+        )
+      )
+      .orderBy(desc(aiRequirementAnalyses.created_at));
+
+    // 기능별 시나리오 수·상태 롤업(ACTIVE). requirement_analysis_id 가 NULL 이면 수동 버킷.
+    const grouped = await db
+      .select({
+        raid: testScenarios.requirement_analysis_id,
+        status: testScenarios.status,
+        cnt: count(),
+      })
+      .from(testScenarios)
+      .where(
+        and(eq(testScenarios.project_id, projectId), eq(testScenarios.lifecycle_status, 'ACTIVE'))
+      )
+      .groupBy(testScenarios.requirement_analysis_id, testScenarios.status);
+
+    const rollup = new Map<string, { total: number; counts: Record<ScenarioStatus, number> }>();
+    for (const g of grouped) {
+      const key = g.raid ?? MANUAL_KEY;
+      let entry = rollup.get(key);
+      if (!entry) {
+        entry = { total: 0, counts: emptyStatusCounts() };
+        rollup.set(key, entry);
+      }
+      const n = Number(g.cnt);
+      entry.total += n;
+      entry.counts[g.status] += n;
+    }
+
+    const features: ScenarioFeatureListItem[] = analyses.map((a) => {
+      const entry = rollup.get(a.id);
+      return {
+        id: a.id,
+        title: a.title,
+        summary: a.analysis?.summary ?? '',
+        isManual: false,
+        scenarioCount: entry?.total ?? 0,
+        statusCounts: entry?.counts ?? emptyStatusCounts(),
+        createdAt: a.createdAt.toISOString(),
+      };
+    });
+
+    const manual = rollup.get(MANUAL_KEY);
+    if (manual && manual.total > 0) {
+      features.push({
+        id: null,
+        title: '수동 작성',
+        summary: '',
+        isManual: true,
+        scenarioCount: manual.total,
+        statusCounts: manual.counts,
+        createdAt: null,
+      });
+    }
+
+    return { success: true, data: features };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'getScenarioFeatures' } });
+    return { success: false, errors: { _scenario: ['기능 목록을 불러오지 못했습니다.'] } };
   }
 };
 

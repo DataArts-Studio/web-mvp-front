@@ -14,6 +14,7 @@ import {
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import {
+  CreateFeatureSchema,
   type GeneratedScenario,
   type RequirementAnalysis,
   SaveRequirementAnalysisSchema,
@@ -151,6 +152,52 @@ export const saveRequirementAnalysis = async (input: {
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'saveRequirementAnalysis' } });
     return { success: false, errors: { _ai: ['요구사항 분석 저장에 실패했습니다.'] } };
+  }
+};
+
+/**
+ * 빈 기능(요구사항) 생성. AI 분석 없이 제목만으로 시나리오를 담을 컨테이너를 만든다.
+ * analysis JSONB 는 빈 문서로 채운다.
+ */
+export const createFeature = async (input: {
+  projectId: string;
+  title: string;
+}): Promise<ActionResult<{ id: string }>> => {
+  try {
+    const parsed = CreateFeatureSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        errors: { _ai: [parsed.error.issues[0]?.message ?? '입력 값이 올바르지 않습니다.'] },
+      };
+    }
+    const { projectId, title } = parsed.data;
+
+    if (!(await requireProjectAccess(projectId))) {
+      return { success: false, errors: { _ai: ['프로젝트 접근 권한이 없습니다.'] } };
+    }
+
+    const document: RequirementAnalysisDocument = {
+      title,
+      summary: '',
+      functionalRequirements: [],
+      nonFunctionalRequirements: [],
+      constraints: [],
+      assumptions: [],
+      openQuestions: [],
+      scenarios: [],
+    };
+
+    const db = getDatabase();
+    const [row] = await db
+      .insert(aiRequirementAnalyses)
+      .values({ project_id: projectId, title, source_input: title, analysis: document })
+      .returning({ id: aiRequirementAnalyses.id });
+
+    return { success: true, data: { id: row.id } };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'createFeature' } });
+    return { success: false, errors: { _ai: ['기능 생성에 실패했습니다.'] } };
   }
 };
 

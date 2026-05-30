@@ -14,9 +14,10 @@ export {
   ReorderScenariosSchema,
   SaveGeneratedScenariosSchema,
 } from './model/schema';
-export type { ScenarioListItem, ScenarioListFilter } from './model/types';
+export type { ScenarioListItem, ScenarioListFilter, ScenarioFeatureListItem } from './model/types';
 export {
   getScenarios,
+  getScenarioFeatures,
   createScenario,
   updateScenario,
   deleteScenario,
@@ -24,4 +25,9 @@ export {
   generateSuiteFromScenario,
   saveGeneratedScenarios,
 } from './api/server-actions';
-export { scenarioQueryKeys, scenariosQueryOptions } from './api/query';
+export {
+  scenarioQueryKeys,
+  scenariosQueryOptions,
+  scenarioFeatureQueryKeys,
+  scenarioFeaturesQueryOptions,
+} from './api/query';
