@@ -1,0 +1,43 @@
+import { z } from 'zod';
+
+export const ScenarioTypeSchema = z.enum(['positive', 'negative', 'edge_case']);
+export const ScenarioStatusSchema = z.enum(['DRAFT', 'REVIEW', 'CONFIRMED']);
+
+/** 시나리오 본문 필드(생성·수정 공통). */
+const ScenarioFields = {
+  name: z.string().min(1, '시나리오 이름을 입력해주세요').max(200),
+  description: z.string().max(2000).optional().default(''),
+  type: ScenarioTypeSchema.default('positive'),
+  relatedRequirementIds: z.array(z.string().max(20)).max(20).optional().default([]),
+  status: ScenarioStatusSchema.default('DRAFT'),
+};
+
+/** 수동 추가. requirementAnalysisId 는 선택(출처 분석서가 있으면 연결). */
+export const CreateScenarioSchema = z.object({
+  projectId: z.string().uuid(),
+  requirementAnalysisId: z.string().uuid().nullable().optional(),
+  ...ScenarioFields,
+});
+
+/** 부분 수정. 전달된 필드만 갱신한다. */
+export const UpdateScenarioSchema = z.object({
+  projectId: z.string().uuid(),
+  id: z.string().uuid(),
+  name: ScenarioFields.name.optional(),
+  description: ScenarioFields.description,
+  type: ScenarioTypeSchema.optional(),
+  relatedRequirementIds: ScenarioFields.relatedRequirementIds,
+  status: ScenarioStatusSchema.optional(),
+});
+
+/** 드래그 재정렬. 화면 순서대로 id 와 sortOrder 쌍을 전달. */
+export const ReorderScenariosSchema = z.object({
+  projectId: z.string().uuid(),
+  orders: z.array(z.object({ id: z.string().uuid(), sortOrder: z.number().int().min(0) })).max(500),
+});
+
+export type ScenarioType = z.infer<typeof ScenarioTypeSchema>;
+export type ScenarioStatus = z.infer<typeof ScenarioStatusSchema>;
+export type CreateScenarioInput = z.infer<typeof CreateScenarioSchema>;
+export type UpdateScenarioInput = z.infer<typeof UpdateScenarioSchema>;
+export type ReorderScenariosInput = z.infer<typeof ReorderScenariosSchema>;
