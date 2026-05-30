@@ -16,12 +16,14 @@ import { toast } from 'sonner';
 
 type Props = {
   projectId: string;
+  /** 생성된 시나리오를 귀속시킬 기능(요구사항). 없으면 수동 버킷. */
+  requirementAnalysisId?: string | null;
   onClose: () => void;
 };
 
 type Step = 'input' | 'loading' | 'preview';
 
-export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
+export const ScenarioAiGenerateModal = ({ projectId, requirementAnalysisId, onClose }: Props) => {
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('input');
   const [description, setDescription] = useState('');
@@ -90,12 +92,13 @@ export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
   const saveMutation = useMutation({
     mutationFn: () => {
       const picked = scenarios.filter((_, i) => selected.has(i));
-      return saveGeneratedScenarios({ projectId, scenarios: picked });
+      return saveGeneratedScenarios({ projectId, requirementAnalysisId, scenarios: picked });
     },
     onSuccess: (result) => {
       if (result.success) {
         toast.success(`${result.data.count}개의 시나리오를 저장했습니다.`);
         queryClient.invalidateQueries({ queryKey: ['scenarios'] });
+        queryClient.invalidateQueries({ queryKey: ['scenarioFeatures'] });
         onClose();
       } else {
         toast.error(Object.values(result.errors).flat().join(', '));

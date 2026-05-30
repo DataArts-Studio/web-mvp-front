@@ -109,6 +109,7 @@ export const ScenarioFormModal = ({
       if (result.success) {
         toast.success(isEdit ? '시나리오를 수정했습니다.' : '시나리오를 추가했습니다.');
         queryClient.invalidateQueries({ queryKey: ['scenarios'] });
+        queryClient.invalidateQueries({ queryKey: ['scenarioFeatures'] });
         onSaved();
         onClose();
       } else {
