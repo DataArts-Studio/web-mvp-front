@@ -7,6 +7,7 @@ import { aiUsageQueryOptions } from '@/entities/ai-usage';
 import type { GeneratedScenario } from '@/entities/requirement-analysis';
 import { saveGeneratedScenarios } from '@/entities/test-scenario';
 import { SCENARIO_TYPE_META } from '@/features/scenario-management';
+import { AttachmentDropzone } from '@/shared/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DSButton, Dialog } from '@testea/ui';
 import { cn } from '@testea/util';
@@ -27,6 +28,7 @@ export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
   const [language, setLanguage] = useState<'ko' | 'en'>('ko');
   const [scenarios, setScenarios] = useState<GeneratedScenario[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [attachment, setAttachment] = useState<File | null>(null);
 
   const { data: configData } = useQuery(aiConfigQueryOptions(projectId));
   const hasConfig = configData?.success && !!configData.data;
@@ -37,19 +39,45 @@ export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/ai/generate-scenarios', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, description, language }),
-      });
+      // 첨부가 있으면 multipart, 없으면 JSON.
+      const res = attachment
+        ? await fetch('/api/ai/generate-scenarios', {
+            method: 'POST',
+            body: (() => {
+              const fd = new FormData();
+              fd.set('projectId', projectId);
+              fd.set('description', description);
+              fd.set('language', language);
+              fd.set('file', attachment);
+              return fd;
+            })(),
+          })
+        : await fetch('/api/ai/generate-scenarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId, description, language }),
+          });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '시나리오 생성에 실패했습니다.');
-      return data.scenarios as GeneratedScenario[];
+      return {
+        scenarios: data.scenarios as GeneratedScenario[],
+        attachment: data.attachment as {
+          type: 'pdf' | 'markdown';
+          truncated: boolean;
+          charCount: number;
+        } | null,
+      };
     },
     onMutate: () => setStep('loading'),
-    onSuccess: (result) => {
+    onSuccess: ({ scenarios: result, attachment: meta }) => {
       setScenarios(result);
       setSelected(new Set(result.map((_, i) => i)));
+      if (meta?.truncated) {
+        const typeLabel = meta.type === 'pdf' ? 'PDF' : 'Markdown';
+        toast.warning(
+          `${typeLabel} 첨부가 ${meta.charCount.toLocaleString()}자에서 잘려 뒷부분은 반영되지 않았어요.`
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ['ai-usage'] });
       setStep('preview');
     },
@@ -176,6 +204,14 @@ export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
                     <span className="typo-caption text-text-4">{description.length}/5,000</span>
                   </div>
                 </div>
+                <div className="flex flex-col gap-2">
+                  <label className="typo-label-heading text-text-2">참고 문서 첨부 (선택)</label>
+                  <AttachmentDropzone
+                    file={attachment}
+                    onChange={setAttachment}
+                    disabled={generateMutation.isPending}
+                  />
+                </div>
               </div>
             ) : step === 'loading' ? (
               <div className="flex flex-col items-center gap-4 py-16">
@@ -290,7 +326,7 @@ export const ScenarioAiGenerateModal = ({ projectId, onClose }: Props) => {
                     size="small"
                     onClick={() => generateMutation.mutate()}
                     disabled={
-                      description.trim().length < 20 ||
+                      (!attachment && description.trim().length < 20) ||
                       generateMutation.isPending ||
                       isLimitExceeded
                     }

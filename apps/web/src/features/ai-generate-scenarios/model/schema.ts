@@ -11,6 +11,17 @@ export const GenerateScenariosSchema = z.object({
   language: z.enum(['ko', 'en']).default('ko'),
 });
 
+/** 멀티파트(첨부 동반) 요청. 첨부가 있으면 description 최소 길이 제약을 푼다. */
+export const GenerateScenariosMultipartSchema = z.object({
+  projectId: z.string().uuid(),
+  description: z
+    .string()
+    .max(5000, '요구사항은 5,000자를 초과할 수 없습니다')
+    .optional()
+    .default(''),
+  language: z.enum(['ko', 'en']).default('ko'),
+});
+
 /** LLM 응답 계약 (시나리오 배열만). */
 export const GenerateScenariosResultSchema = z.object({
   scenarios: z.array(GeneratedScenarioSchema).min(1).max(20),
