@@ -117,6 +117,9 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
       if (result.success) {
         toast.success(`${result.data.suiteCount}개의 시나리오가 스위트로 저장되었습니다.`);
         queryClient.invalidateQueries({ queryKey: ['requirementAnalyses', projectId] });
+        // 이 저장 경로는 시나리오도 영속화하므로 시나리오 관리 캐시도 무효화한다.
+        queryClient.invalidateQueries({ queryKey: ['scenarios'] });
+        queryClient.invalidateQueries({ queryKey: ['scenarioFeatures'] });
         // 스위트 쿼리는 위젯(['testSuites','list',projectId])과 엔티티(['testSuites',projectId]) 키가 달라
         // 공통 prefix 로 한 번에 무효화한다. (test-cases-view 도 갱신)
         queryClient.invalidateQueries({ queryKey: ['testSuites'] });
@@ -211,6 +214,13 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
                   language={language}
                   onLanguageChange={setLanguage}
                   hasAttachment={!!attachment}
+                  onSubmit={() => {
+                    const ok =
+                      !generateMutation.isPending &&
+                      !isLimitExceeded &&
+                      (!!attachment || description.trim().length >= 20);
+                    if (ok) generateMutation.mutate();
+                  }}
                 />
                 <div className="mt-4 flex flex-col gap-2">
                   <label className="typo-label-heading text-text-2">참고 문서 첨부 (선택)</label>

@@ -24,4 +24,5 @@ export * from './ai-usage-logs';
 export * from './announcements';
 export * from './project-automation-tokens';
 export * from './ai-requirement-analyses';
+export * from './test-scenarios';
 export * from './relations';

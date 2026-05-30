@@ -76,6 +76,13 @@ export const SaveRequirementAnalysisSchema = z.object({
     .optional(),
 });
 
+/** 빈 기능(요구사항) 생성. 제목만 받아 분석 없는 컨테이너를 만든다. */
+export const CreateFeatureSchema = z.object({
+  projectId: z.string().uuid(),
+  title: z.string().min(1, '기능 이름을 입력해주세요').max(200),
+});
+
 export type RequirementAnalysis = z.infer<typeof RequirementAnalysisSchema>;
 export type GeneratedScenario = z.infer<typeof GeneratedScenarioSchema>;
 export type RequirementAnalysisResult = z.infer<typeof RequirementAnalysisResultSchema>;
+export type CreateFeatureInput = z.infer<typeof CreateFeatureSchema>;

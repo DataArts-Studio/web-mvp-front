@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { projectIdQueryOptions } from '@/entities/project';
@@ -124,9 +125,10 @@ export const RequirementsView = () => {
             </div>
           ) : (
             analyses.map((a) => (
-              <div
+              <Link
                 key={a.id}
-                className="rounded-3 border-line-2 bg-bg-2 flex flex-col gap-2.5 border px-5 py-4"
+                href={`/projects/${slug}/scenarios/${a.id}`}
+                className="rounded-3 border-line-2 bg-bg-2 hover:border-primary/40 flex flex-col gap-2.5 border px-5 py-4 transition-colors"
               >
                 <div className="flex items-start gap-3">
                   <div className="min-w-0 flex-1">
@@ -154,7 +156,7 @@ export const RequirementsView = () => {
                     {LANGUAGE_LABEL[a.language] ?? a.language}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))
           )}
         </div>

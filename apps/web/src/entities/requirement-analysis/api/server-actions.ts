@@ -8,11 +8,13 @@ import {
   type RequirementAnalysisDocument,
   aiRequirementAnalyses,
   getDatabase,
+  testScenarios,
   testSuites,
 } from '@testea/db';
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import {
+  CreateFeatureSchema,
   type GeneratedScenario,
   type RequirementAnalysis,
   SaveRequirementAnalysisSchema,
@@ -33,7 +35,7 @@ export const saveRequirementAnalysis = async (input: {
   scenarios: GeneratedScenario[];
   selectedScenarioIndices?: number[];
   attachment?: { type: 'pdf' | 'markdown'; charCount: number } | null;
-}): Promise<ActionResult<{ analysisId: string; suiteCount: number }>> => {
+}): Promise<ActionResult<{ analysisId: string; scenarioCount: number; suiteCount: number }>> => {
   try {
     const parsed = SaveRequirementAnalysisSchema.safeParse(input);
     if (!parsed.success) {
@@ -65,10 +67,17 @@ export const saveRequirementAnalysis = async (input: {
     const document: RequirementAnalysisDocument = { ...analysis, scenarios };
 
     // 중복 인덱스가 오면 같은 시나리오가 여러 스위트로 생성되므로 set 으로 한 번 걸러낸다.
-    const indices = [...new Set(selectedScenarioIndices ?? scenarios.map((_, i) => i))];
-    const selectedScenarios = indices
+    const selectedIndices = [...new Set(selectedScenarioIndices ?? scenarios.map((_, i) => i))]
       .filter((i) => i >= 0 && i < scenarios.length)
-      .map((i) => scenarios[i]);
+      .sort((a, b) => a - b);
+
+    // 범위를 벗어난 인덱스가 섞여 있으면 조용히 버리지 않고 입력 오류로 실패시킨다.
+    if (
+      selectedScenarioIndices &&
+      selectedIndices.length !== new Set(selectedScenarioIndices).size
+    ) {
+      return { success: false, errors: { _ai: ['선택한 시나리오 인덱스가 올바르지 않습니다.'] } };
+    }
 
     const db = getDatabase();
     const now = new Date();
@@ -89,22 +98,50 @@ export const saveRequirementAnalysis = async (input: {
 
       const analysisId = analysisRow.id;
 
-      if (selectedScenarios.length > 0) {
-        const [maxSort] = await tx
+      // 생성된 모든 시나리오를 1급 엔티티(test_scenarios)로 영속화한다.
+      // 입력 순서대로 insert → returning 도 같은 순서이므로 인덱스로 행 id 를 매핑한다.
+      const [maxScenarioSort] = await tx
+        .select({ max: sql<number>`COALESCE(MAX(${testScenarios.sort_order}), 0)` })
+        .from(testScenarios)
+        .where(eq(testScenarios.project_id, projectId));
+      let nextScenarioSort = (maxScenarioSort?.max ?? 0) + 1;
+
+      const insertedScenarios = await tx
+        .insert(testScenarios)
+        .values(
+          scenarios.map((scenario) => ({
+            project_id: projectId,
+            requirement_analysis_id: analysisId,
+            name: scenario.name,
+            description: scenario.description || null,
+            type: scenario.type,
+            related_requirement_ids: scenario.relatedRequirementIds ?? [],
+            status: 'DRAFT' as const,
+            sort_order: nextScenarioSort++,
+            created_at: now,
+            updated_at: now,
+          }))
+        )
+        .returning({ id: testScenarios.id });
+
+      // 선택한 시나리오는 하위호환을 위해 즉시 스위트로도 변환하고, 출처 시나리오를 잇는다.
+      if (selectedIndices.length > 0) {
+        const [maxSuiteSort] = await tx
           .select({ max: sql<number>`COALESCE(MAX(${testSuites.sort_order}), 0)` })
           .from(testSuites)
           .where(eq(testSuites.project_id, projectId));
 
-        let nextSort = (maxSort?.max ?? 0) + 1;
+        let nextSuiteSort = (maxSuiteSort?.max ?? 0) + 1;
 
         await tx.insert(testSuites).values(
-          selectedScenarios.map((scenario) => ({
+          selectedIndices.map((i) => ({
             id: crypto.randomUUID(),
             project_id: projectId,
-            name: scenario.name,
-            description: scenario.description || null,
+            name: scenarios[i].name,
+            description: scenarios[i].description || null,
             requirement_analysis_id: analysisId,
-            sort_order: nextSort++,
+            test_scenario_id: insertedScenarios[i].id,
+            sort_order: nextSuiteSort++,
             lifecycle_status: 'ACTIVE' as const,
             created_at: now,
             updated_at: now,
@@ -112,13 +149,63 @@ export const saveRequirementAnalysis = async (input: {
         );
       }
 
-      return { analysisId, suiteCount: selectedScenarios.length };
+      return {
+        analysisId,
+        scenarioCount: insertedScenarios.length,
+        suiteCount: selectedIndices.length,
+      };
     });
 
     return { success: true, data: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'saveRequirementAnalysis' } });
     return { success: false, errors: { _ai: ['요구사항 분석 저장에 실패했습니다.'] } };
+  }
+};
+
+/**
+ * 빈 기능(요구사항) 생성. AI 분석 없이 제목만으로 시나리오를 담을 컨테이너를 만든다.
+ * analysis JSONB 는 빈 문서로 채운다.
+ */
+export const createFeature = async (input: {
+  projectId: string;
+  title: string;
+}): Promise<ActionResult<{ id: string }>> => {
+  try {
+    const parsed = CreateFeatureSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        errors: { _ai: [parsed.error.issues[0]?.message ?? '입력 값이 올바르지 않습니다.'] },
+      };
+    }
+    const { projectId, title } = parsed.data;
+
+    if (!(await requireProjectAccess(projectId))) {
+      return { success: false, errors: { _ai: ['프로젝트 접근 권한이 없습니다.'] } };
+    }
+
+    const document: RequirementAnalysisDocument = {
+      title,
+      summary: '',
+      functionalRequirements: [],
+      nonFunctionalRequirements: [],
+      constraints: [],
+      assumptions: [],
+      openQuestions: [],
+      scenarios: [],
+    };
+
+    const db = getDatabase();
+    const [row] = await db
+      .insert(aiRequirementAnalyses)
+      .values({ project_id: projectId, title, source_input: title, analysis: document })
+      .returning({ id: aiRequirementAnalyses.id });
+
+    return { success: true, data: { id: row.id } };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'createFeature' } });
+    return { success: false, errors: { _ai: ['기능 생성에 실패했습니다.'] } };
   }
 };
 

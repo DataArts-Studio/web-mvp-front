@@ -71,6 +71,13 @@
       "when": 1780020306276,
       "tag": "0009_normal_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780150290899,
+      "tag": "0010_first_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }
