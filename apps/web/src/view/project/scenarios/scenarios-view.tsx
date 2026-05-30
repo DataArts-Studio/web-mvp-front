@@ -26,20 +26,18 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDisclosure } from '@testea/lib';
 import { MainContainer, ProjectErrorFallback, Skeleton } from '@testea/ui';
-import { ListChecks } from 'lucide-react';
+import { ChevronsDownUp, ChevronsUpDown, ListChecks } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { ScenarioRow } from './_components/scenario-row';
+import { ScenarioGroup } from './_components/scenario-group';
 import {
   ScenariosToolbar,
   type StatusFilter,
   type TypeFilter,
 } from './_components/scenarios-toolbar';
-import { SortableScenarioRow } from './_components/sortable-scenario-row';
 
 export const ScenariosView = () => {
   const params = useParams();
@@ -114,6 +112,42 @@ export const ScenariosView = () => {
 
   const displayItems = isFiltering ? filtered : (localItems ?? allScenarios);
 
+  // 출처 피쳐(요구사항 분석)별 그룹. 수동 작성은 별도 그룹. sort_order 기준 정렬 후 등장 순서로 묶는다.
+  const groups = useMemo(() => {
+    const sorted = [...displayItems].sort((a, b) => a.sortOrder - b.sortOrder);
+    const map = new Map<
+      string,
+      { key: string; title: string; isManual: boolean; items: ScenarioListItem[] }
+    >();
+    for (const s of sorted) {
+      const key = s.requirementAnalysisId ?? '__manual__';
+      let g = map.get(key);
+      if (!g) {
+        g = {
+          key,
+          title: s.analysisTitle ?? '수동 작성',
+          isManual: !s.requirementAnalysisId,
+          items: [],
+        };
+        map.set(key, g);
+      }
+      g.items.push(s);
+    }
+    return [...map.values()];
+  }, [displayItems]);
+
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const allCollapsed = groups.length > 0 && groups.every((g) => collapsed.has(g.key));
+  const toggleAllGroups = () =>
+    setCollapsed(allCollapsed ? new Set() : new Set(groups.map((g) => g.key)));
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
@@ -135,17 +169,34 @@ export const ScenariosView = () => {
     },
   });
 
+  // 드래그는 같은 그룹 안에서만. 그룹이 점유한 sort_order 슬롯을 새 순서대로 재배정해
+  // 다른 그룹의 순서를 건드리지 않는다.
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
       const current = localItems ?? allScenarios;
-      const oldIndex = current.findIndex((s) => s.id === active.id);
-      const newIndex = current.findIndex((s) => s.id === over.id);
+      const activeItem = current.find((s) => s.id === active.id);
+      const overItem = current.find((s) => s.id === over.id);
+      if (!activeItem || !overItem) return;
+      const keyOf = (s: ScenarioListItem) => s.requirementAnalysisId ?? '__manual__';
+      if (keyOf(activeItem) !== keyOf(overItem)) return; // 그룹 간 이동 금지
+
+      const groupItems = current
+        .filter((s) => keyOf(s) === keyOf(activeItem))
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+      const oldIndex = groupItems.findIndex((s) => s.id === active.id);
+      const newIndex = groupItems.findIndex((s) => s.id === over.id);
       if (oldIndex === -1 || newIndex === -1) return;
-      const reordered = arrayMove(current, oldIndex, newIndex);
-      setLocalItems(reordered);
-      reorderMutation.mutate(reordered.map((s, idx) => ({ id: s.id, sortOrder: idx + 1 })));
+
+      const reorderedGroup = arrayMove(groupItems, oldIndex, newIndex);
+      const slots = groupItems.map((s) => s.sortOrder).sort((a, b) => a - b);
+      const newSort = new Map(reorderedGroup.map((s, idx) => [s.id, slots[idx]]));
+
+      setLocalItems(
+        current.map((s) => (newSort.has(s.id) ? { ...s, sortOrder: newSort.get(s.id)! } : s))
+      );
+      reorderMutation.mutate(reorderedGroup.map((s, idx) => ({ id: s.id, sortOrder: slots[idx] })));
     },
     [localItems, allScenarios, reorderMutation]
   );
@@ -267,39 +318,49 @@ export const ScenariosView = () => {
               </div>
             </div>
           ) : (
-            <div className="rounded-3 border-line-2 bg-bg-2 border">
-              <DndContext
-                id={dndId}
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={displayItems.map((s) => s.id)}
-                  strategy={verticalListSortingStrategy}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="typo-caption text-text-4">
+                  피쳐 {groups.length}개 · 시나리오 {displayItems.length}개
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleAllGroups}
+                  className="typo-caption text-text-3 hover:text-text-1 flex items-center gap-1 transition-colors"
                 >
-                  <div className="divide-line-2 divide-y">
-                    {displayItems.map((scenario) => (
-                      <SortableScenarioRow
-                        key={scenario.id}
-                        id={scenario.id}
-                        disabled={isFiltering}
-                      >
-                        <ScenarioRow
-                          scenario={scenario}
-                          busy={pendingId === scenario.id}
-                          onEdit={setEditing}
-                          onStatusChange={(s, status) =>
-                            statusMutation.mutate({ id: s.id, status })
-                          }
-                          onGenerateSuite={(s) => generateSuiteMutation.mutate(s.id)}
-                          onDelete={handleDelete}
-                        />
-                      </SortableScenarioRow>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+                  {allCollapsed ? (
+                    <ChevronsUpDown className="h-3.5 w-3.5" aria-hidden="true" />
+                  ) : (
+                    <ChevronsDownUp className="h-3.5 w-3.5" aria-hidden="true" />
+                  )}
+                  {allCollapsed ? '모두 펼치기' : '모두 접기'}
+                </button>
+              </div>
+              <div className="rounded-3 border-line-2 bg-bg-2 divide-line-2 divide-y border">
+                <DndContext
+                  id={dndId}
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  {groups.map((group) => (
+                    <ScenarioGroup
+                      key={group.key}
+                      title={group.title}
+                      isManual={group.isManual}
+                      items={group.items}
+                      collapsed={collapsed.has(group.key)}
+                      onToggle={() => toggleGroup(group.key)}
+                      dragDisabled={isFiltering}
+                      pendingId={pendingId}
+                      onEdit={setEditing}
+                      onStatusChange={(s, status) => statusMutation.mutate({ id: s.id, status })}
+                      onGenerateSuite={(s) => generateSuiteMutation.mutate(s.id)}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </DndContext>
+              </div>
             </div>
           )}
         </div>
