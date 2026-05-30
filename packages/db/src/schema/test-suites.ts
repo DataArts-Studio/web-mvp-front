@@ -2,6 +2,7 @@ import { integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg
 
 import { aiRequirementAnalyses } from './ai-requirement-analyses';
 import { LifecycleStatus, projects } from './projects';
+import { testScenarios } from './test-scenarios';
 
 export const testSuites = pgTable('test_suites', {
   id: uuid('id').primaryKey(),
@@ -13,6 +14,10 @@ export const testSuites = pgTable('test_suites', {
     () => aiRequirementAnalyses.id,
     { onDelete: 'set null' }
   ),
+  /** 이 스위트가 파생된 시나리오. 시나리오에서 만들지 않은 스위트는 NULL. */
+  test_scenario_id: uuid('test_scenario_id').references(() => testScenarios.id, {
+    onDelete: 'set null',
+  }),
   sort_order: integer('sort_order'),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
