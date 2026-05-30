@@ -14,6 +14,7 @@ import {
   scenariosQueryOptions,
   updateScenario,
 } from '@/entities/test-scenario';
+import { ScenarioAiGenerateModal } from '@/features/ai-generate-scenarios';
 import { arrayMove } from '@/features/reorder';
 import { ScenarioFormModal } from '@/features/scenario-management';
 import {
@@ -47,6 +48,7 @@ export const ScenariosView = () => {
   const dndId = useId();
 
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
+  const { isOpen: isAiOpen, onOpen: onAiOpen, onClose: onAiClose } = useDisclosure();
   const [editing, setEditing] = useState<ScenarioListItem | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -235,6 +237,7 @@ export const ScenariosView = () => {
         onAnalysisChange={setAnalysisFilter}
         analysisOptions={analysisOptions}
         onNew={onCreateOpen}
+        onAiGenerate={onAiOpen}
         disabled={!projectId}
       />
 
@@ -302,6 +305,9 @@ export const ScenariosView = () => {
         </div>
       </section>
 
+      {isAiOpen && projectId && (
+        <ScenarioAiGenerateModal projectId={projectId} onClose={onAiClose} />
+      )}
       {isCreateOpen && projectId && (
         <ScenarioFormModal
           projectId={projectId}

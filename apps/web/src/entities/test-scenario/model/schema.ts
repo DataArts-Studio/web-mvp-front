@@ -36,8 +36,26 @@ export const ReorderScenariosSchema = z.object({
   orders: z.array(z.object({ id: z.string().uuid(), sortOrder: z.number().int().min(0) })).max(500),
 });
 
+/** AI 가 생성한 시나리오를 한 번에 저장(벌크). 모두 DRAFT 로 들어간다. */
+export const SaveGeneratedScenariosSchema = z.object({
+  projectId: z.string().uuid(),
+  requirementAnalysisId: z.string().uuid().nullable().optional(),
+  scenarios: z
+    .array(
+      z.object({
+        name: ScenarioFields.name,
+        description: ScenarioFields.description,
+        type: ScenarioTypeSchema.default('positive'),
+        relatedRequirementIds: ScenarioFields.relatedRequirementIds,
+      })
+    )
+    .min(1)
+    .max(50),
+});
+
 export type ScenarioType = z.infer<typeof ScenarioTypeSchema>;
 export type ScenarioStatus = z.infer<typeof ScenarioStatusSchema>;
 export type CreateScenarioInput = z.infer<typeof CreateScenarioSchema>;
 export type UpdateScenarioInput = z.infer<typeof UpdateScenarioSchema>;
 export type ReorderScenariosInput = z.infer<typeof ReorderScenariosSchema>;
+export type SaveGeneratedScenariosInput = z.infer<typeof SaveGeneratedScenariosSchema>;

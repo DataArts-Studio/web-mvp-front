@@ -12,6 +12,8 @@ import {
   CreateScenarioSchema,
   type ReorderScenariosInput,
   ReorderScenariosSchema,
+  type SaveGeneratedScenariosInput,
+  SaveGeneratedScenariosSchema,
   type UpdateScenarioInput,
   UpdateScenarioSchema,
 } from '../model/schema';
@@ -158,6 +160,52 @@ export const createScenario = async (
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'createScenario' } });
     return { success: false, errors: { _scenario: ['시나리오 생성에 실패했습니다.'] } };
+  }
+};
+
+/** AI 생성 시나리오 벌크 저장. 모두 DRAFT 로, sort_order 는 MAX+1 부터 순차. */
+export const saveGeneratedScenarios = async (
+  input: SaveGeneratedScenariosInput
+): Promise<ActionResult<{ count: number }>> => {
+  try {
+    const parsed = SaveGeneratedScenariosSchema.safeParse(input);
+    if (!parsed.success) return invalidInput(parsed.error.issues[0]?.message);
+
+    const { projectId, requirementAnalysisId, scenarios } = parsed.data;
+
+    if (!(await requireProjectAccess(projectId))) return accessDenied();
+
+    const storageError = await checkStorageLimit(projectId);
+    if (storageError) return storageError;
+
+    const db = getDatabase();
+    const now = new Date();
+
+    const [maxSort] = await db
+      .select({ max: sql<number>`COALESCE(MAX(${testScenarios.sort_order}), 0)` })
+      .from(testScenarios)
+      .where(eq(testScenarios.project_id, projectId));
+    let nextSort = (maxSort?.max ?? 0) + 1;
+
+    await db.insert(testScenarios).values(
+      scenarios.map((scenario) => ({
+        project_id: projectId,
+        requirement_analysis_id: requirementAnalysisId ?? null,
+        name: scenario.name,
+        description: scenario.description || null,
+        type: scenario.type,
+        related_requirement_ids: scenario.relatedRequirementIds,
+        status: 'DRAFT' as const,
+        sort_order: nextSort++,
+        created_at: now,
+        updated_at: now,
+      }))
+    );
+
+    return { success: true, data: { count: scenarios.length } };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'saveGeneratedScenarios' } });
+    return { success: false, errors: { _scenario: ['시나리오 저장에 실패했습니다.'] } };
   }
 };
 

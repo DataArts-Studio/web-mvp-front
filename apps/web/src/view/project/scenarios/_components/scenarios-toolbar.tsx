@@ -3,7 +3,7 @@
 import type { ScenarioStatus, ScenarioType } from '@/entities/test-scenario';
 import { SCENARIO_STATUS_OPTIONS, SCENARIO_TYPE_OPTIONS } from '@/features/scenario-management';
 import { ActionToolbar } from '@/widgets';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 
 export type TypeFilter = ScenarioType | 'all';
 export type StatusFilter = ScenarioStatus | 'all';
@@ -19,6 +19,7 @@ type Props = {
   onAnalysisChange: (v: string) => void;
   analysisOptions: { id: string; title: string }[];
   onNew: () => void;
+  onAiGenerate: () => void;
   disabled?: boolean;
 };
 
@@ -36,6 +37,7 @@ export const ScenariosToolbar = ({
   onAnalysisChange,
   analysisOptions,
   onNew,
+  onAiGenerate,
   disabled,
 }: Props) => (
   <ActionToolbar.Root ariaLabel="시나리오 관리 컨트롤">
@@ -88,15 +90,27 @@ export const ScenariosToolbar = ({
         </select>
       )}
     </ActionToolbar.Group>
-    <ActionToolbar.Action
-      size="small"
-      type="button"
-      variant="solid"
-      onClick={onNew}
-      disabled={disabled}
-    >
-      <Plus className="h-4 w-4" />
-      <span className="leading-none">새 시나리오</span>
-    </ActionToolbar.Action>
+    <div className="flex shrink-0 items-center gap-2">
+      <ActionToolbar.Action
+        size="small"
+        type="button"
+        variant="ghost"
+        onClick={onAiGenerate}
+        disabled={disabled}
+      >
+        <Sparkles className="h-4 w-4" />
+        <span className="leading-none">AI 생성</span>
+      </ActionToolbar.Action>
+      <ActionToolbar.Action
+        size="small"
+        type="button"
+        variant="solid"
+        onClick={onNew}
+        disabled={disabled}
+      >
+        <Plus className="h-4 w-4" />
+        <span className="leading-none">새 시나리오</span>
+      </ActionToolbar.Action>
+    </div>
   </ActionToolbar.Root>
 );
