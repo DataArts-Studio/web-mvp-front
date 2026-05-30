@@ -71,6 +71,14 @@ export const saveRequirementAnalysis = async (input: {
       .filter((i) => i >= 0 && i < scenarios.length)
       .sort((a, b) => a - b);
 
+    // 범위를 벗어난 인덱스가 섞여 있으면 조용히 버리지 않고 입력 오류로 실패시킨다.
+    if (
+      selectedScenarioIndices &&
+      selectedIndices.length !== new Set(selectedScenarioIndices).size
+    ) {
+      return { success: false, errors: { _ai: ['선택한 시나리오 인덱스가 올바르지 않습니다.'] } };
+    }
+
     const db = getDatabase();
     const now = new Date();
 

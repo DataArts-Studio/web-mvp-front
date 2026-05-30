@@ -37,6 +37,8 @@ export async function getProjectStorageBytes(projectId: string): Promise<number>
       SELECT SUM(pg_column_size(pp.*)) AS size FROM project_preferences pp WHERE pp.project_id = ${projectId}
       UNION ALL
       SELECT SUM(pg_column_size(ra.*)) AS size FROM ai_requirement_analyses ra WHERE ra.project_id = ${projectId}
+      UNION ALL
+      SELECT SUM(pg_column_size(ts.*)) AS size FROM test_scenarios ts WHERE ts.project_id = ${projectId}
     ) sub
   `);
 

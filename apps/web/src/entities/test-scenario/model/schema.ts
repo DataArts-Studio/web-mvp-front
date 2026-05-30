@@ -19,14 +19,18 @@ export const CreateScenarioSchema = z.object({
   ...ScenarioFields,
 });
 
-/** 부분 수정. 전달된 필드만 갱신한다. */
+/**
+ * 부분 수정. 전달된 필드만 갱신한다.
+ * 생성용 필드의 .default() 를 재사용하면 미전달 필드가 빈 값으로 채워져 덮어쓰므로,
+ * 여기서는 기본값 없는 optional 로 둬서 undefined 인 필드는 패치 대상에서 빠지게 한다.
+ */
 export const UpdateScenarioSchema = z.object({
   projectId: z.string().uuid(),
   id: z.string().uuid(),
-  name: ScenarioFields.name.optional(),
-  description: ScenarioFields.description,
+  name: z.string().min(1, '시나리오 이름을 입력해주세요').max(200).optional(),
+  description: z.string().max(2000).optional(),
   type: ScenarioTypeSchema.optional(),
-  relatedRequirementIds: ScenarioFields.relatedRequirementIds,
+  relatedRequirementIds: z.array(z.string().max(20)).max(20).optional(),
   status: ScenarioStatusSchema.optional(),
 });
 

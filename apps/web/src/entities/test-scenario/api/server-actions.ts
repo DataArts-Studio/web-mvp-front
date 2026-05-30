@@ -31,6 +31,28 @@ const invalidInput = (message?: string): ActionResult<never> => ({
 });
 
 /**
+ * 전달된 분석서(기능) id 가 해당 프로젝트 소유인지 확인한다.
+ * 다른 프로젝트의 분석서 UUID 로 시나리오를 연결하지 못하도록 저장 전 검증용.
+ */
+const analysisBelongsToProject = async (
+  db: ReturnType<typeof getDatabase>,
+  projectId: string,
+  requirementAnalysisId: string
+): Promise<boolean> => {
+  const [row] = await db
+    .select({ id: aiRequirementAnalyses.id })
+    .from(aiRequirementAnalyses)
+    .where(
+      and(
+        eq(aiRequirementAnalyses.id, requirementAnalysisId),
+        eq(aiRequirementAnalyses.project_id, projectId)
+      )
+    )
+    .limit(1);
+  return !!row;
+};
+
+/**
  * 프로젝트의 ACTIVE 시나리오 목록. sort_order 오름차순(동률 시 최신순).
  * 분석서 제목과 파생 스위트 수를 함께 집계한다. 선택적으로 분석서/타입/상태로 필터링.
  */
@@ -235,6 +257,13 @@ export const createScenario = async (
 
     const db = getDatabase();
 
+    if (
+      requirementAnalysisId &&
+      !(await analysisBelongsToProject(db, projectId, requirementAnalysisId))
+    ) {
+      return invalidInput('대상 기능을 찾을 수 없습니다.');
+    }
+
     const [maxSort] = await db
       .select({ max: sql<number>`COALESCE(MAX(${testScenarios.sort_order}), 0)` })
       .from(testScenarios)
@@ -278,6 +307,13 @@ export const saveGeneratedScenarios = async (
 
     const db = getDatabase();
     const now = new Date();
+
+    if (
+      requirementAnalysisId &&
+      !(await analysisBelongsToProject(db, projectId, requirementAnalysisId))
+    ) {
+      return invalidInput('대상 기능을 찾을 수 없습니다.');
+    }
 
     const [maxSort] = await db
       .select({ max: sql<number>`COALESCE(MAX(${testScenarios.sort_order}), 0)` })
@@ -383,6 +419,23 @@ export const reorderScenarios = async (
 
     const db = getDatabase();
     const now = new Date();
+
+    // 부분 성공 방지: 전달된 id 가 모두 이 프로젝트의 ACTIVE 시나리오인지 먼저 확인한다.
+    // (삭제됐거나 다른 프로젝트의 id 가 섞이면 일부만 갱신돼 순서가 중복/누락될 수 있음)
+    const ids = [...new Set(orders.map((o) => o.id))];
+    const existing = await db
+      .select({ id: testScenarios.id })
+      .from(testScenarios)
+      .where(
+        and(
+          eq(testScenarios.project_id, projectId),
+          eq(testScenarios.lifecycle_status, 'ACTIVE'),
+          inArray(testScenarios.id, ids)
+        )
+      );
+    if (existing.length !== ids.length) {
+      return invalidInput('재정렬 대상 시나리오를 찾을 수 없습니다.');
+    }
 
     await db.transaction(async (tx) => {
       for (const { id, sortOrder } of orders) {
