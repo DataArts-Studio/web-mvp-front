@@ -16,11 +16,11 @@ const siteUrl = 'https://gettestea.com';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
+    default: '테스티아(Testea) - AI 기반 무료 QA 도구 · 테스트 관리 플랫폼',
     template: '%s | 테스티아(Testea)',
   },
   description:
-    '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서. 소프트웨어 테스트 관리 도구.',
+    '요구사항 기반 AI 테스트 시나리오·케이스 생성, 실행, 결과 추적을 한 곳에서. 무료 QA 도구 테스티아.',
   keywords: [
     '테스트 관리',
     '테스트 관리 도구',
@@ -47,6 +47,19 @@ export const metadata: Metadata = {
     '테스트 플랫폼',
     '무료 QA 도구',
     '무료 테스트 도구',
+    '테스트 시나리오',
+    '테스트 시나리오 관리',
+    '테스트 시나리오 작성',
+    '요구사항 기반 테스트',
+    'AI 테스트 케이스 생성',
+    'AI 테스트 시나리오 생성',
+    '테스트 케이스 작성',
+    'QA 협업 도구',
+    '테스트 케이스 템플릿',
+    '테스트 관리 시스템',
+    '테스트 케이스 작성법',
+    '요구사항 관리',
+    '버그 추적',
     'Testea',
     '테스티아',
   ],
@@ -65,9 +78,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
+    title: '테스티아(Testea) - AI 기반 무료 QA 도구 · 테스트 관리 플랫폼',
     description:
-      '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+      '요구사항 기반 AI 테스트 시나리오·케이스 생성, 실행, 결과 추적을 한 곳에서. 무료 QA 도구 테스티아.',
     url: siteUrl,
     type: 'website',
     locale: 'ko_KR',
@@ -83,9 +96,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
+    title: '테스티아(Testea) - AI 기반 무료 QA 도구 · 테스트 관리 플랫폼',
     description:
-      '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+      '요구사항 기반 AI 테스트 시나리오·케이스 생성, 실행, 결과 추적을 한 곳에서. 무료 QA 도구 테스티아.',
     creator: '@testea',
     images: ['/opengraph-image'],
   },
@@ -133,8 +146,10 @@ const jsonLd = {
       alternateName: '테스티아',
       applicationCategory: 'DeveloperApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ko-KR',
+      keywords: 'AI QA 도구, 테스트 시나리오 관리, 요구사항 기반 테스트, 무료 테스트 관리',
       description:
-        '무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서. 소프트웨어 테스트 관리 도구.',
+        '요구사항 기반 AI 테스트 시나리오·케이스 생성부터 실행, 결과 추적까지. 무료 QA 도구 · 소프트웨어 테스트 관리 플랫폼.',
       url: siteUrl,
       offers: {
         '@type': 'Offer',
@@ -143,10 +158,14 @@ const jsonLd = {
         availability: 'https://schema.org/InStock',
       },
       featureList: [
+        '요구사항 기반 테스트 시나리오 관리',
+        'AI 테스트 시나리오·케이스 자동 생성',
+        '시나리오 기반 테스트 스위트 파생',
         '테스트 케이스 관리',
         '테스트 스위트 관리',
         '테스트 실행 추적',
         '마일스톤 관리',
+        '테스트 케이스 템플릿',
         '프로젝트 구조화',
       ],
     },
