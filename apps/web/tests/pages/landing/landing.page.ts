@@ -67,7 +67,9 @@ export class LandingPage extends BasePage {
     this.formPrivacyCheckbox = page
       .locator('label', { hasText: '만 14세 이상' })
       .getByRole('checkbox');
-    this.formStartButton = page.getByRole('button', {
+    // 모달 버튼은 모달 스코프로 한정한다. page 전역이면 랜딩 진입 버튼의
+    // aria-label("무료로 프로젝트 생성 시작하기")과 부분 매칭돼 strict mode 위반이 난다.
+    this.formStartButton = this.modal.getByRole('button', {
       name: '프로젝트 생성 시작',
     });
 
@@ -80,7 +82,7 @@ export class LandingPage extends BasePage {
     // 식별번호 입력 (type=password → textbox role 없음 → srOnly label 사용)
     this.formPasswordInput = page.getByLabel(/프로젝트 식별번호/);
     this.formPasswordConfirmInput = page.getByLabel(/식별번호 재확인/);
-    this.formStepTwoButton = page.getByRole('button', {
+    this.formStepTwoButton = this.modal.getByRole('button', {
       name: '프로젝트 생성하기',
     });
 
@@ -89,7 +91,7 @@ export class LandingPage extends BasePage {
       name: '프로젝트를 생성하시겠습니까?',
     });
     this.step3CancelButton = this.modal.getByRole('button', { name: '취소' });
-    this.formSubmitButton = page.getByRole('button', {
+    this.formSubmitButton = this.modal.getByRole('button', {
       name: '생성하기',
       exact: true,
     });
@@ -98,10 +100,10 @@ export class LandingPage extends BasePage {
     this.successHeading = this.modal.getByRole('heading', {
       name: '프로젝트 생성 완료!',
     });
-    this.formProjectUrlCopyButton = page.getByRole('button', {
+    this.formProjectUrlCopyButton = this.modal.getByRole('button', {
       name: '링크 복사',
     });
-    this.startButton = page.getByRole('button', { name: '시작하기' });
+    this.startButton = this.modal.getByRole('button', { name: '시작하기' });
   }
 
   // --- 네비게이션 ---------------------------------------------------------
