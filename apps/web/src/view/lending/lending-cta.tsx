@@ -12,10 +12,11 @@ const ProjectCreateForm = dynamic(
   { ssr: false }
 );
 
-const BetaNoticePopup = dynamic(
-  () => import('@/features/beta-notice').then((mod) => ({ default: mod.BetaNoticePopup })),
-  { ssr: false }
-);
+// 베타 안내 팝업 비활성화. 향후 동일 공지 필요 시 주석 해제.
+// const BetaNoticePopup = dynamic(
+//   () => import('@/features/beta-notice').then((mod) => ({ default: mod.BetaNoticePopup })),
+//   { ssr: false }
+// );
 
 // DB 장애 복구 완료로 공지 비활성화. 향후 동일 공지 필요 시 주석 해제.
 // const DbOutageNoticePopup = dynamic(
@@ -42,7 +43,7 @@ export const LendingCta = () => {
         </DSButton>
       </section>
       {isCreateModalOpen && <ProjectCreateForm onClick={() => setIsCreateModalOpen(false)} />}
-      <BetaNoticePopup />
+      {/* <BetaNoticePopup /> */}
       {/* <DbOutageNoticePopup /> */}
     </>
   );
