@@ -124,7 +124,8 @@ export const ScenarioFormModal = ({
     if (canSubmit) mutation.mutate();
   };
   const onInputEnter = (e: KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    // 한글 IME 조합 확정용 Enter 는 제출로 보지 않는다 (미완성 이름 조기 제출 방지).
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit();
     }

@@ -24,7 +24,7 @@ type Props = {
 };
 
 const selectCls =
-  'typo-body2-normal rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 cursor-pointer border px-3 py-2 focus:outline-none';
+  'typo-body2-normal rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 focus:border-primary cursor-pointer border px-3 py-2 focus:outline-none';
 
 export const ScenariosToolbar = ({
   searchQuery,

@@ -29,9 +29,13 @@ import * as Sentry from '@sentry/nextjs';
  */
 const MAX_MULTIPART_BYTES = 12 * 1024 * 1024;
 
+/** LLM 호출 전체 타임아웃. 프로바이더 응답이 지연·중단돼도 라우트가 무한 대기하지 않도록 한다. */
+const LLM_TIMEOUT_MS = 120_000;
+
 async function callOpenAI(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
+    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
@@ -64,6 +68,7 @@ async function callAnthropic(
 ) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
     headers: {
       'x-api-key': apiKey,
       'Content-Type': 'application/json',
@@ -93,6 +98,7 @@ async function callGemini(apiKey: string, model: string, systemPrompt: string, u
     `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
+      signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },

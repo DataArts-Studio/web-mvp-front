@@ -163,7 +163,9 @@ export const AttachmentDropzone = ({ file, onChange, disabled }: Props) => {
           id={inputId}
           type="file"
           accept={ACCEPT_ATTR}
-          className="hidden"
+          // display:none(hidden)은 탭 순서에서 빠져 키보드로 파일 첨부가 불가능하다.
+          // sr-only 로 시각적으로만 숨기고 포커스는 유지한다.
+          className="sr-only"
           onChange={handleFileInput}
           disabled={disabled}
         />

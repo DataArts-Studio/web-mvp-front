@@ -32,7 +32,9 @@ export const ScenarioAiGenerateModal = ({ projectId, requirementAnalysisId, onCl
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [attachment, setAttachment] = useState<File | null>(null);
 
-  const { data: configData } = useQuery(aiConfigQueryOptions(projectId));
+  const { data: configData, isLoading: isConfigLoading } = useQuery(
+    aiConfigQueryOptions(projectId)
+  );
   const hasConfig = configData?.success && !!configData.data;
 
   const { data: usageData } = useQuery(aiUsageQueryOptions(projectId));
@@ -145,7 +147,12 @@ export const ScenarioAiGenerateModal = ({ projectId, requirementAnalysisId, onCl
           </div>
 
           <div className="flex-1 overflow-y-auto p-6">
-            {!hasConfig ? (
+            {isConfigLoading ? (
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <Loader2 className="text-text-3 h-6 w-6 animate-spin" />
+                <p className="typo-body2-normal text-text-3">설정을 불러오는 중입니다.</p>
+              </div>
+            ) : !hasConfig ? (
               <div className="flex flex-col items-center gap-4 py-10 text-center">
                 <div className="bg-primary/10 flex h-14 w-14 items-center justify-center rounded-full">
                   <Bot className="text-primary h-7 w-7" />

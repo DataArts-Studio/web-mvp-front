@@ -41,7 +41,11 @@ export const RequirementsView = () => {
   );
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
-  const { data: analysesData, isLoading: isLoadingAnalyses } = useQuery({
+  const {
+    data: analysesData,
+    isLoading: isLoadingAnalyses,
+    isError: isAnalysesError,
+  } = useQuery({
     ...requirementAnalysesQueryOptions(projectId!),
     enabled: !!projectId,
   });
@@ -73,6 +77,11 @@ export const RequirementsView = () => {
   }
 
   if (!projectIdData?.success) return <ProjectErrorFallback />;
+
+  // 요구사항 목록 조회 실패를 "요구사항 없음"으로 위장하지 않고 에러 폴백으로 표시.
+  if (isAnalysesError || (analysesData && !analysesData.success)) {
+    return <ProjectErrorFallback />;
+  }
 
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-4 overflow-hidden px-10 py-8">

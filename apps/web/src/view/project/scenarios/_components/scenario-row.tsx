@@ -63,7 +63,7 @@ export const ScenarioRow = ({
           aria-label={`상태 변경: ${scenario.name}`}
           value={scenario.status}
           onChange={(e) => onStatusChange(scenario, e.target.value as ScenarioStatus)}
-          className="typo-caption rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 cursor-pointer border px-2 py-1 focus:outline-none"
+          className="typo-caption rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 focus:border-primary cursor-pointer border px-2 py-1 focus:outline-none"
         >
           {SCENARIO_STATUS_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
