@@ -47,7 +47,7 @@ export const MoreActionsMenu = ({
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative self-stretch">
       <button
         type="button"
         aria-label="더 보기"
@@ -55,7 +55,7 @@ export const MoreActionsMenu = ({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex cursor-pointer items-center justify-center border px-2.5 py-2 transition-colors',
+          'typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex aspect-square h-full cursor-pointer items-center justify-center border transition-colors',
           open && 'bg-bg-3'
         )}
       >
