@@ -4,7 +4,6 @@ import type { FetchedTestRun } from '@/entities/test-run';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
-  TestRunStatus,
   getDatabase,
   milestones,
   testCaseRuns,
@@ -31,44 +30,41 @@ export async function getTestRunsByProjectId(
     }
 
     const runIds = runs.map((r) => r.id);
-
-    // 2. 테스트 실행-스위트 연결 조회 (논리 삭제 제외)
-    const runSuiteRows = await db
-      .select()
-      .from(testRunSuites)
-      .where(and(inArray(testRunSuites.test_run_id, runIds), isNull(testRunSuites.excluded_at)));
-
-    // 3. 스위트 이름 조회
-    const suiteIds = [
-      ...new Set(runSuiteRows.map((rs) => rs.test_suite_id).filter(Boolean)),
-    ] as string[];
-    const suiteRows =
-      suiteIds.length > 0
-        ? await db
-            .select({ id: testSuites.id, name: testSuites.name })
-            .from(testSuites)
-            .where(inArray(testSuites.id, suiteIds))
-        : [];
-    const suiteMap = new Map(suiteRows.map((s) => [s.id, s.name]));
-
-    // 4. 마일스톤 이름 조회 (ACTIVE만)
     const milestoneIds = [...new Set(runs.map((r) => r.milestone_id).filter(Boolean))] as string[];
-    const milestoneRows =
+
+    // 독립 쿼리 3개를 병렬 실행 (직렬 5쿼리 → runs 이후 2 라운드트립).
+    // 스위트 이름은 별도 조회 대신 JOIN으로 합쳐 라운드트립 1회 추가 제거.
+    const [runSuiteRows, milestoneRows, allCaseRuns] = await Promise.all([
+      // 실행-스위트 연결 + 스위트 이름 (논리 삭제 제외)
+      db
+        .select({
+          test_run_id: testRunSuites.test_run_id,
+          test_suite_id: testRunSuites.test_suite_id,
+          suiteName: testSuites.name,
+        })
+        .from(testRunSuites)
+        .innerJoin(testSuites, eq(testSuites.id, testRunSuites.test_suite_id))
+        .where(and(inArray(testRunSuites.test_run_id, runIds), isNull(testRunSuites.excluded_at))),
+
+      // 마일스톤 이름 (ACTIVE만)
       milestoneIds.length > 0
-        ? await db
+        ? db
             .select({ id: milestones.id, name: milestones.name })
             .from(milestones)
             .where(
               and(inArray(milestones.id, milestoneIds), eq(milestones.lifecycle_status, 'ACTIVE'))
             )
-        : [];
-    const milestoneMap = new Map(milestoneRows.map((m) => [m.id, m.name]));
+        : Promise.resolve([] as { id: string; name: string }[]),
 
-    // 5. 테스트 케이스 실행 결과 조회 (논리 삭제 제외)
-    const allCaseRuns = await db
-      .select()
-      .from(testCaseRuns)
-      .where(and(inArray(testCaseRuns.test_run_id, runIds), isNull(testCaseRuns.excluded_at)));
+      // 테스트 케이스 실행 결과 (논리 삭제 제외)
+      db
+        .select()
+        .from(testCaseRuns)
+        .where(and(inArray(testCaseRuns.test_run_id, runIds), isNull(testCaseRuns.excluded_at))),
+    ]);
+
+    const suiteMap = new Map(runSuiteRows.map((rs) => [rs.test_suite_id, rs.suiteName] as const));
+    const milestoneMap = new Map(milestoneRows.map((m) => [m.id, m.name]));
 
     // 실행별 케이스 실행 그룹핑
     const caseRunsByRunId = new Map<string, typeof allCaseRuns>();
