@@ -199,7 +199,7 @@ export const ScenarioFeatureDetailView = () => {
     onMutate: (id) => setPendingId(id),
     onSuccess: (result) => {
       if (result.success) {
-        toast.success('시나리오에서 스위트를 생성했습니다.');
+        toast.success(result.message ?? '시나리오에서 스위트를 생성했습니다.');
         queryClient.invalidateQueries({ queryKey: ['scenarios'] });
         queryClient.invalidateQueries({ queryKey: ['testSuites'] });
       } else {

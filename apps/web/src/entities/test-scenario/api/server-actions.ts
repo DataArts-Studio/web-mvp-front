@@ -480,6 +480,23 @@ export const generateSuiteFromScenario = async (
 
     if (!scenario) return invalidInput('대상 시나리오를 찾을 수 없습니다.');
 
+    // 멱등: 이미 이 시나리오에서 파생된 ACTIVE 스위트가 있으면 중복 생성하지 않고 기존 것을 반환.
+    const [existingSuite] = await db
+      .select({ id: testSuites.id })
+      .from(testSuites)
+      .where(
+        and(eq(testSuites.test_scenario_id, scenario.id), eq(testSuites.lifecycle_status, 'ACTIVE'))
+      )
+      .limit(1);
+
+    if (existingSuite) {
+      return {
+        success: true,
+        data: { suiteId: existingSuite.id },
+        message: '이미 이 시나리오에서 생성한 스위트가 있습니다.',
+      };
+    }
+
     const suiteId = await db.transaction(async (tx) => {
       const [maxSort] = await tx
         .select({ max: sql<number>`COALESCE(MAX(${testSuites.sort_order}), 0)` })
@@ -503,7 +520,11 @@ export const generateSuiteFromScenario = async (
       return newSuiteId;
     });
 
-    return { success: true, data: { suiteId } };
+    return {
+      success: true,
+      data: { suiteId },
+      message: '시나리오에서 스위트를 생성했습니다.',
+    };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'generateSuiteFromScenario' } });
     return { success: false, errors: { _scenario: ['스위트 생성에 실패했습니다.'] } };
