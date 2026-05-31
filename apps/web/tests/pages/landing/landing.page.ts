@@ -2,6 +2,10 @@ import { type Locator, type Page, expect } from '@playwright/test';
 
 import { BasePage } from '../base.page';
 
+/** 정규식 메타문자를 이스케이프한다. URL 경로를 RegExp 로 단언할 때 프로젝트 이름의 특수문자가 패턴으로 새는 것을 막는다. */
+const escapeRegExp = (s: string): string =>
+  s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * 랜딩(`/`) + 랜딩에서 열리는 프로젝트 생성 모달(`#create-project`) POM.
  *
@@ -236,7 +240,9 @@ export class LandingPage extends BasePage {
   /** 생성한 프로젝트 대시보드(`/projects/{slug}`)로 도착했다. */
   async expectDashboardLoaded(projectName: string): Promise<void> {
     await expect(this.page).toHaveURL(
-      new RegExp(`/projects/${encodeURIComponent(projectName)}(/.*)?$`),
+      new RegExp(
+        `/projects/${escapeRegExp(encodeURIComponent(projectName))}(/.*)?$`
+      ),
       { timeout: 30_000 }
     );
     await expect(this.page.getByText(projectName).first()).toBeVisible({
