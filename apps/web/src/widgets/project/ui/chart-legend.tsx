@@ -28,11 +28,10 @@ export const ChartLegend = ({ data, total }: ChartLegendProps) => {
             />
             <div className="flex flex-col gap-0.5">
               <span className="typo-body2-heading text-text-1">
-                {String(percentage).padStart(2, '0')}% {item.label}
+                {percentage}% {item.label}
               </span>
               <span className="typo-label-normal text-text-3">
-                <span className="text-primary">{String(item.value).padStart(3, '0')}</span>
-                개의 케이스
+                <span className="text-primary">{item.value}</span>개의 케이스
               </span>
             </div>
           </div>

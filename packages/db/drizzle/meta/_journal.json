@@ -78,6 +78,13 @@
       "when": 1780150290899,
       "tag": "0010_first_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1780165371948,
+      "tag": "0011_redundant_shen",
+      "breakpoints": true
     }
   ]
 }

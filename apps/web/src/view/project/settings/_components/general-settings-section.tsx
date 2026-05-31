@@ -103,7 +103,7 @@ export const GeneralSettingsSection = ({
               <span className="typo-label-heading text-text-2">{label}</span>
             </div>
             <DsFormField.Root error={errors[key]} className="flex-1 !flex-row !items-center !gap-3">
-              <DsFormField.Control>
+              <DsFormField.Control asChild>
                 <DsInput {...register(key)} placeholder={placeholder} />
               </DsFormField.Control>
               <DsFormField.Message>{errors[key]?.message}</DsFormField.Message>

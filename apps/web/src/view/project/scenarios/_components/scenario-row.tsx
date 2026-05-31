@@ -74,10 +74,15 @@ export const ScenarioRow = ({
 
         <button
           type="button"
-          aria-label="시나리오에서 스위트 생성"
-          title="스위트 생성"
+          aria-label={
+            scenario.derivedSuiteCount > 0 ? '이미 스위트 생성됨' : '시나리오에서 스위트 생성'
+          }
+          title={scenario.derivedSuiteCount > 0 ? '이미 스위트 생성됨' : '스위트 생성'}
           onClick={() => onGenerateSuite(scenario)}
-          className="text-text-4 hover:text-text-1 hover:bg-bg-3 rounded-2 flex h-7 w-7 items-center justify-center transition-colors"
+          className={cn(
+            'hover:text-text-1 hover:bg-bg-3 rounded-2 flex h-7 w-7 items-center justify-center transition-colors',
+            scenario.derivedSuiteCount > 0 ? 'text-system-green' : 'text-text-4'
+          )}
         >
           <FolderPlus className="h-4 w-4" aria-hidden="true" />
         </button>

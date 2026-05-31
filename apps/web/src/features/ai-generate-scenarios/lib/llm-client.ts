@@ -5,9 +5,13 @@ import { AiError } from '@/entities/ai-config/model/ai-error';
  * 시나리오 생성 라우트에서 재사용하기 위해 한곳으로 모은 것. (기존 두 라우트는 자체 사본 유지)
  */
 
+/** LLM 호출 전체 타임아웃. 응답이 지연·중단돼도 요청이 무한 대기하지 않도록 한다. */
+const LLM_TIMEOUT_MS = 120_000;
+
 async function callOpenAI(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
+    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
@@ -40,6 +44,7 @@ async function callAnthropic(
 ) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
     headers: {
       'x-api-key': apiKey,
       'Content-Type': 'application/json',
@@ -69,6 +74,7 @@ async function callGemini(apiKey: string, model: string, systemPrompt: string, u
     `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
+      signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },

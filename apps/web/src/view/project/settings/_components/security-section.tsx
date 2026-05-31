@@ -102,7 +102,7 @@ export const SecuritySection = ({ projectId }: { projectId: string }) => {
               <DsFormField.Label className="typo-label-heading text-text-2">
                 현재 비밀번호
               </DsFormField.Label>
-              <DsFormField.Control>
+              <DsFormField.Control asChild>
                 <DsInput
                   {...register('currentPassword')}
                   type="password"
@@ -120,7 +120,7 @@ export const SecuritySection = ({ projectId }: { projectId: string }) => {
               <DsFormField.Label className="typo-label-heading text-text-2">
                 새 비밀번호
               </DsFormField.Label>
-              <DsFormField.Control>
+              <DsFormField.Control asChild>
                 <DsInput
                   {...register('newPassword')}
                   type="password"
@@ -135,7 +135,7 @@ export const SecuritySection = ({ projectId }: { projectId: string }) => {
               <DsFormField.Label className="typo-label-heading text-text-2">
                 새 비밀번호 확인
               </DsFormField.Label>
-              <DsFormField.Control>
+              <DsFormField.Control asChild>
                 <DsInput
                   {...register('confirmPassword')}
                   type="password"

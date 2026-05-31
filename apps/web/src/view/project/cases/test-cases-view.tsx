@@ -54,6 +54,13 @@ export const TestCasesView = () => {
   const [selectedSuiteId, setSelectedSuiteId] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
+  // 클라이언트 hydration 완료 전까지 서버와 동일 출력(스켈레톤) 보장 → SSR↔CSR 미스매치 방지
+  const [hydrated, setHydrated] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection requires effect
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
   const slug = params.slug as string;
 
   // 검색어 debounce
@@ -162,8 +169,8 @@ export const TestCasesView = () => {
         ? '미분류'
         : suiteMap.get(selectedSuiteId) || '테스트 케이스';
 
-  // Loading
-  if (isLoadingProject || (isLoadingCases && !testCasesData)) {
+  // Loading (hydration 전에는 서버와 동일하게 스켈레톤 유지)
+  if (!hydrated || isLoadingProject || (isLoadingCases && !testCasesData)) {
     return <CasesLoadingSkeleton />;
   }
 

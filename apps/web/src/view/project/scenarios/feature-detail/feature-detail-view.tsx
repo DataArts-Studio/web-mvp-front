@@ -73,7 +73,11 @@ export const ScenarioFeatureDetailView = () => {
     [isManual, featureId]
   );
 
-  const { data: scenariosData, isLoading: isLoadingScenarios } = useQuery({
+  const {
+    data: scenariosData,
+    isLoading: isLoadingScenarios,
+    isError: isScenariosError,
+  } = useQuery({
     ...scenariosQueryOptions(projectId!, filter),
     enabled: !!projectId,
   });
@@ -199,7 +203,7 @@ export const ScenarioFeatureDetailView = () => {
     onMutate: (id) => setPendingId(id),
     onSuccess: (result) => {
       if (result.success) {
-        toast.success('시나리오에서 스위트를 생성했습니다.');
+        toast.success(result.message ?? '시나리오에서 스위트를 생성했습니다.');
         queryClient.invalidateQueries({ queryKey: ['scenarios'] });
         queryClient.invalidateQueries({ queryKey: ['testSuites'] });
       } else {
@@ -235,6 +239,11 @@ export const ScenarioFeatureDetailView = () => {
   }
 
   if (!projectIdData?.success) return <ProjectErrorFallback />;
+
+  // 시나리오 조회 실패를 "데이터 없음"으로 위장하지 않고 에러 폴백으로 표시.
+  if (isScenariosError || (scenariosData && !scenariosData.success)) {
+    return <ProjectErrorFallback />;
+  }
 
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-4 overflow-hidden px-10 py-8">

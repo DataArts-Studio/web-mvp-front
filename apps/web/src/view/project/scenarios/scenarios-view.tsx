@@ -36,7 +36,11 @@ export const ScenarioFeaturesView = () => {
   );
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
-  const { data: featuresData, isLoading: isLoadingFeatures } = useQuery({
+  const {
+    data: featuresData,
+    isLoading: isLoadingFeatures,
+    isError: isFeaturesError,
+  } = useQuery({
     ...scenarioFeaturesQueryOptions(projectId!),
     enabled: !!projectId,
   });
@@ -69,6 +73,11 @@ export const ScenarioFeaturesView = () => {
   }
 
   if (!projectIdData?.success) return <ProjectErrorFallback />;
+
+  // 기능 목록 조회 실패를 "기능 없음"으로 위장하지 않고 에러 폴백으로 표시.
+  if (isFeaturesError || (featuresData && !featuresData.success)) {
+    return <ProjectErrorFallback />;
+  }
 
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-4 overflow-hidden px-10 py-8">

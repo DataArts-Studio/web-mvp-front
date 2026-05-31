@@ -99,30 +99,31 @@ export const saveRequirementAnalysis = async (input: {
       const analysisId = analysisRow.id;
 
       // 생성된 모든 시나리오를 1급 엔티티(test_scenarios)로 영속화한다.
-      // 입력 순서대로 insert → returning 도 같은 순서이므로 인덱스로 행 id 를 매핑한다.
+      // id 를 미리 생성해 명시적으로 넣음으로써, INSERT ... RETURNING 의 행 순서에 의존하지
+      // 않고 인덱스→id 매핑을 보장한다(PostgreSQL 은 RETURNING 순서를 보장하지 않음).
       const [maxScenarioSort] = await tx
         .select({ max: sql<number>`COALESCE(MAX(${testScenarios.sort_order}), 0)` })
         .from(testScenarios)
         .where(eq(testScenarios.project_id, projectId));
       let nextScenarioSort = (maxScenarioSort?.max ?? 0) + 1;
 
-      const insertedScenarios = await tx
-        .insert(testScenarios)
-        .values(
-          scenarios.map((scenario) => ({
-            project_id: projectId,
-            requirement_analysis_id: analysisId,
-            name: scenario.name,
-            description: scenario.description || null,
-            type: scenario.type,
-            related_requirement_ids: scenario.relatedRequirementIds ?? [],
-            status: 'DRAFT' as const,
-            sort_order: nextScenarioSort++,
-            created_at: now,
-            updated_at: now,
-          }))
-        )
-        .returning({ id: testScenarios.id });
+      const scenarioIds = scenarios.map(() => crypto.randomUUID());
+
+      await tx.insert(testScenarios).values(
+        scenarios.map((scenario, idx) => ({
+          id: scenarioIds[idx],
+          project_id: projectId,
+          requirement_analysis_id: analysisId,
+          name: scenario.name,
+          description: scenario.description || null,
+          type: scenario.type,
+          related_requirement_ids: scenario.relatedRequirementIds ?? [],
+          status: 'DRAFT' as const,
+          sort_order: nextScenarioSort++,
+          created_at: now,
+          updated_at: now,
+        }))
+      );
 
       // 선택한 시나리오는 하위호환을 위해 즉시 스위트로도 변환하고, 출처 시나리오를 잇는다.
       if (selectedIndices.length > 0) {
@@ -140,7 +141,7 @@ export const saveRequirementAnalysis = async (input: {
             name: scenarios[i].name,
             description: scenarios[i].description || null,
             requirement_analysis_id: analysisId,
-            test_scenario_id: insertedScenarios[i].id,
+            test_scenario_id: scenarioIds[i],
             sort_order: nextSuiteSort++,
             lifecycle_status: 'ACTIVE' as const,
             created_at: now,
@@ -151,7 +152,7 @@ export const saveRequirementAnalysis = async (input: {
 
       return {
         analysisId,
-        scenarioCount: insertedScenarios.length,
+        scenarioCount: scenarioIds.length,
         suiteCount: selectedIndices.length,
       };
     });
@@ -184,6 +185,10 @@ export const createFeature = async (input: {
     if (!(await requireProjectAccess(projectId))) {
       return { success: false, errors: { _ai: ['프로젝트 접근 권한이 없습니다.'] } };
     }
+
+    // saveRequirementAnalysis·스위트 생성 경로와 동일하게 용량 한도를 먼저 가드한다.
+    const storageError = await checkStorageLimit(projectId);
+    if (storageError) return storageError;
 
     const document: RequirementAnalysisDocument = {
       title,

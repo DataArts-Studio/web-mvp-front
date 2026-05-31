@@ -278,6 +278,40 @@ export const restoreItem = async (
         };
       }
       case 'suite': {
+        // 시나리오 파생 스위트는 한 시나리오당 ACTIVE 1건만 허용(유니크 인덱스).
+        // 삭제 후 같은 시나리오로 새 스위트를 만든 상태에서 옛 스위트를 복원하면 제약 위반이
+        // 나므로, 충돌이 있으면 23505 크래시 대신 명확한 안내로 막는다.
+        const [target] = await db
+          .select({ scenarioId: testSuites.test_scenario_id })
+          .from(testSuites)
+          .where(and(eq(testSuites.id, targetId), eq(testSuites.lifecycle_status, 'DELETED')))
+          .limit(1);
+        if (!target) {
+          return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
+        }
+        if (target.scenarioId) {
+          const [conflict] = await db
+            .select({ id: testSuites.id })
+            .from(testSuites)
+            .where(
+              and(
+                eq(testSuites.test_scenario_id, target.scenarioId),
+                eq(testSuites.lifecycle_status, 'ACTIVE')
+              )
+            )
+            .limit(1);
+          if (conflict) {
+            return {
+              success: false,
+              errors: {
+                _trash: [
+                  '같은 시나리오에서 생성된 활성 스위트가 이미 있어 복원할 수 없습니다. 기존 스위트를 삭제한 뒤 다시 시도해주세요.',
+                ],
+              },
+            };
+          }
+        }
+
         const [restored] = await db
           .update(testSuites)
           .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
