@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -31,6 +31,13 @@ export const ScenarioFeaturesView = () => {
   const { isOpen: isAiOpen, onOpen: onAiOpen, onClose: onAiClose } = useDisclosure();
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 클라이언트 hydration 완료 전까지 서버와 동일 출력(스켈레톤) 보장 → SSR↔CSR 미스매치 방지
+  const [hydrated, setHydrated] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection requires effect
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
   const { data: projectIdData, isLoading: isLoadingProject } = useQuery(
     projectIdQueryOptions(slug)
   );
@@ -56,7 +63,7 @@ export const ScenarioFeaturesView = () => {
   const hrefFor = (f: ScenarioFeatureListItem) =>
     `/projects/${slug}/scenarios/${f.isManual ? 'manual' : f.id}`;
 
-  if (isLoadingProject || isLoadingFeatures) {
+  if (!hydrated || isLoadingProject || isLoadingFeatures) {
     return (
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         <header className="col-span-6 flex flex-col gap-2">
