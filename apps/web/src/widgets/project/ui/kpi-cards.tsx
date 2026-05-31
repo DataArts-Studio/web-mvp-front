@@ -76,7 +76,10 @@ const KPICard = ({
 };
 
 export const KPICards = React.memo(({ data, projectTotalCases }: KPICardsProps) => {
+  // 프로젝트 전체 케이스 수(헤더·Total Cases 카드 공통 기준). run 선택 여부와 무관.
   const displayTotal = projectTotalCases ?? data.totalCases;
+  const hasProjectCases = displayTotal > 0;
+  // 선택된 실행 기준 지표(Pass Rate·Critical·Untested 빈 상태 판단용).
   const total = data.totalCases;
   const hasData = total > 0;
 
@@ -105,11 +108,11 @@ export const KPICards = React.memo(({ data, projectTotalCases }: KPICardsProps) 
         {/* Total Cases */}
         <KPICard
           label="Total Cases"
-          value={data.totalCases}
+          value={displayTotal}
           icon={<FileText className="h-4 w-4" />}
           decorativeIcon={<FileText className="h-[135px] w-[135px]" strokeWidth={1} />}
-          variant={hasData ? 'default' : 'muted'}
-          isEmpty={!hasData}
+          variant={hasProjectCases ? 'default' : 'muted'}
+          isEmpty={!hasProjectCases}
           isHighlighted
         />
 
