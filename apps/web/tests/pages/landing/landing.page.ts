@@ -45,8 +45,10 @@ export class LandingPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.heading = page.getByLabel('Testea 홈으로 이동');
+    // 버튼의 접근성 이름은 aria-label("무료로 프로젝트 생성 시작하기")이라 표시 텍스트가 아닌
+    // aria-label 로 매칭해야 한다. (표시 텍스트는 "무료로 시작하기")
     this.openModalButton = page.getByRole('button', {
-      name: '무료로 시작하기',
+      name: '무료로 프로젝트 생성 시작하기',
     });
 
     // 모달 본체 — 레거시 locators.ts 의 검증된 셀렉터.
