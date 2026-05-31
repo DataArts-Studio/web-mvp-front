@@ -6,6 +6,7 @@ import { aiConfigQueryOptions } from '@/entities/ai-config';
 import type { GeneratedTestCase } from '@/entities/ai-config';
 import { saveGeneratedCases } from '@/entities/ai-config/api/server-actions';
 import { aiUsageQueryOptions } from '@/entities/ai-usage';
+import { AttachmentDropzone } from '@/shared/ui';
 import { testSuitesQueryOptions } from '@/widgets';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog } from '@testea/ui';
@@ -30,6 +31,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
   const [step, setStep] = useState<Step>('input');
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState<'ko' | 'en'>('ko');
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [cases, setCases] = useState<GeneratedTestCase[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [suiteId, setSuiteId] = useState<string>('');
@@ -47,22 +49,50 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
   });
   const suites = suitesData?.success ? suitesData.data : [];
 
-  // AI 생성 요청
+  // AI 생성 요청 (첨부가 있으면 multipart, 없으면 기존 JSON 경로)
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/ai/generate-cases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, description, language }),
-      });
+      const res = attachment
+        ? await fetch('/api/ai/generate-cases', {
+            method: 'POST',
+            // FormData 사용 시 Content-Type 은 브라우저가 boundary 와 함께 자동 세팅 — 직접 지정 금지
+            body: (() => {
+              const fd = new FormData();
+              fd.set('projectId', projectId);
+              fd.set('description', description);
+              fd.set('language', language);
+              fd.set('file', attachment);
+              return fd;
+            })(),
+          })
+        : await fetch('/api/ai/generate-cases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId, description, language }),
+          });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '생성에 실패했습니다.');
-      return data.cases as GeneratedTestCase[];
+      return {
+        cases: data.cases as GeneratedTestCase[],
+        attachment: data.attachment as {
+          type: 'pdf' | 'markdown';
+          truncated: boolean;
+          charCount: number;
+        } | null,
+      };
     },
     onMutate: () => setStep('loading'),
-    onSuccess: (result) => {
+    onSuccess: ({ cases: result, attachment: attachmentMeta }) => {
       setCases(result);
       setSelected(new Set(result.map((_, i) => i)));
+      // 응답이 잘림을 알려주면 사용자에게 명시한다. 안 그러면 긴 문서 뒷부분의 요구사항이 누락된 채
+      // 생성이 끝난 줄 알게 됨.
+      if (attachmentMeta?.truncated) {
+        const typeLabel = attachmentMeta.type === 'pdf' ? 'PDF' : 'Markdown';
+        toast.warning(
+          `${typeLabel} 첨부가 ${attachmentMeta.charCount.toLocaleString()}자에서 잘려 뒷부분은 분석되지 않았어요.`
+        );
+      }
       setStep('preview');
     },
     onError: (error: Error) => {
@@ -182,7 +212,16 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                   onDescriptionChange={setDescription}
                   language={language}
                   onLanguageChange={setLanguage}
+                  hasAttachment={!!attachment}
                 />
+                <div className="mt-4 flex flex-col gap-2">
+                  <label className="typo-label-heading text-text-2">참고 문서 첨부 (선택)</label>
+                  <AttachmentDropzone
+                    file={attachment}
+                    onChange={setAttachment}
+                    disabled={generateMutation.isPending}
+                  />
+                </div>
               </>
             ) : step === 'loading' ? (
               <AiGeneratingSpinner />
@@ -223,7 +262,8 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                     size="small"
                     onClick={() => generateMutation.mutate()}
                     disabled={
-                      description.trim().length < 20 ||
+                      // 첨부 없으면 V1과 동일하게 최소 20자, 첨부가 있으면 설명은 비워도 OK
+                      (!attachment && description.trim().length < 20) ||
                       generateMutation.isPending ||
                       isLimitExceeded
                     }

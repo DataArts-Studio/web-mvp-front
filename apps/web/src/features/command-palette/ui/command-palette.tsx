@@ -5,8 +5,8 @@ import ReactDOM from 'react-dom';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { dashboardQueryKeys } from '@/features/dashboard';
-import { useQueryClient } from '@tanstack/react-query';
+import { projectIdQueryOptions } from '@/entities/project';
+import { useQuery } from '@tanstack/react-query';
 import { FileText, Flag, FolderOpen, Play } from 'lucide-react';
 
 import { useCommandNavigation } from '../hooks/use-command-navigation';
@@ -33,16 +33,15 @@ export const CommandPalette = () => {
   const listRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const params = useParams();
-  const queryClient = useQueryClient();
 
   const projectSlug = params.slug as string;
 
-  // dashboard 캐시에서 projectId 가져오기
-  const statsData = queryClient.getQueryData<{
-    success: boolean;
-    data: { project: { id: string } };
-  }>(dashboardQueryKeys.stats(projectSlug));
-  const projectId = statsData?.success ? statsData.data.project.id : undefined;
+  // 어느 프로젝트 페이지에서든 채워지는 projectId 캐시 사용(없으면 fetch). 대시보드 방문 여부와 무관.
+  const { data: projectIdData } = useQuery({
+    ...projectIdQueryOptions(projectSlug),
+    enabled: !!projectSlug,
+  });
+  const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
   const searchResults = useCommandSearch(
     query.startsWith('>') ? '' : query,

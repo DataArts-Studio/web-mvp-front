@@ -39,6 +39,11 @@ export class ProjectTestcasePage extends BasePage {
     await this.open(`/projects/${slug}/cases`);
   }
 
+  /** 영속 확인용 새로고침. (optimistic 이 아닌 실제 저장 여부 단언) */
+  async reload(): Promise<void> {
+    await this.page.reload();
+  }
+
   async openCreateForm(): Promise<void> {
     await this.createButton.click();
   }

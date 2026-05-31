@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { projects } from './projects';
 
@@ -12,14 +12,21 @@ import { projects } from './projects';
  *
  * 자세한 명세: Notion FDD-TR09 V1 MVP 섹션.
  */
-export const projectAutomationTokens = pgTable('project_automation_tokens', {
-  project_id: uuid('project_id')
-    .primaryKey()
-    .references(() => projects.id, { onDelete: 'cascade' }),
-  /** 사용자 식별·표시용 prefix (예: `testea_pk_AbCd`). 본체는 노출하지 않음. */
-  token_prefix: text('token_prefix').notNull(),
-  /** 토큰 본체의 hash (argon2id 또는 bcrypt). 평문 미저장. */
-  token_hash: text('token_hash').notNull(),
-  last_used_at: timestamp('last_used_at', { withTimezone: true }),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+export const projectAutomationTokens = pgTable(
+  'project_automation_tokens',
+  {
+    project_id: uuid('project_id')
+      .primaryKey()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    /** 사용자 식별·표시용 prefix (예: `testea_pk_AbCd`). 본체는 노출하지 않음. */
+    token_prefix: text('token_prefix').notNull(),
+    /** 토큰 본체의 hash (SHA-256 hex). 평문 미저장. 토큰이 256-bit 랜덤이라 salt 불필요. */
+    token_hash: text('token_hash').notNull(),
+    last_used_at: timestamp('last_used_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    // 자동화 결과 수신 인증의 핵심 경로(token_hash 동등 조회) 인덱스. 토큰 hash 는 전역 유일.
+    tokenHashIdx: uniqueIndex('project_automation_tokens_token_hash_unq').on(t.token_hash),
+  })
+);

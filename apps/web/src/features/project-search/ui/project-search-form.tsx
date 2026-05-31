@@ -21,6 +21,8 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // 방금 엔터·검색 버튼으로 제출한 검색어. 이 값에 대해선 자동완성을 다시 열지 않는다.
+  const lastSubmittedRef = useRef<string | null>(null);
 
   // Input state
   const [inputValue, setInputValue] = useState('');
@@ -42,6 +44,9 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
         setShowAutocomplete(false);
         return;
       }
+
+      // 제출 직후 남아 있던 디바운스가 드롭다운을 다시 여는 레이스를 막는다.
+      if (lastSubmittedRef.current === trimmed) return;
 
       setIsAutocompleteLoading(true);
       setShowAutocomplete(true);
@@ -71,6 +76,12 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
   // Handle click outside to close autocomplete
   useOutsideClick(containerRef, () => setShowAutocomplete(false));
 
+  // Handle project selection from autocomplete
+  const handleSelectProject = (project: ProjectSearchResult) => {
+    setShowAutocomplete(false);
+    router.push(`/projects/${encodeURIComponent(project.slug)}/access`);
+  };
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -79,6 +90,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
           e.preventDefault();
           const trimmed = inputValue.trim();
           if (trimmed.length >= 2) {
+            lastSubmittedRef.current = trimmed;
             setShowAutocomplete(false);
             onSearch(trimmed);
           }
@@ -103,6 +115,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
           } else {
             const trimmed = inputValue.trim();
             if (trimmed.length >= 2) {
+              lastSubmittedRef.current = trimmed;
               setShowAutocomplete(false);
               onSearch(trimmed);
             }
@@ -117,18 +130,13 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
     [showAutocomplete, suggestions, selectedIndex, inputValue, onSearch]
   );
 
-  // Handle project selection from autocomplete
-  const handleSelectProject = (project: ProjectSearchResult) => {
-    setShowAutocomplete(false);
-    router.push(`/projects/${project.slug}/access`);
-  };
-
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputValue.trim();
     if (trimmed.length >= 2) {
       track(PROJECT_SEARCH_EVENTS.SUBMIT, { keyword: trimmed });
+      lastSubmittedRef.current = trimmed;
       setShowAutocomplete(false);
       onSearch(trimmed);
     }
@@ -136,8 +144,12 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    if (e.target.value.trim().length >= 2) {
+    const value = e.target.value;
+    setInputValue(value);
+    // 입력이 바뀌면 "방금 제출" 가드를 해제한다. 그래야 같은 키워드로 되돌아와도
+    // 자동완성이 다시 정상 동작한다(가드는 제출 직후 대기 중인 디바운스에만 적용).
+    lastSubmittedRef.current = null;
+    if (value.trim().length >= 2) {
       setShowAutocomplete(true);
     }
   };

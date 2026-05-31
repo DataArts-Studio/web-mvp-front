@@ -102,6 +102,11 @@ export class ProjectAccessPage extends BasePage {
 
   // --- 단언 ---------------------------------------------------------------
 
+  /** 입력란에 남아있는 값이 기대값과 같은지 단언한다 (실패 후 입력값 보존 검증). */
+  async expectCodeValue(expected: string): Promise<void> {
+    await expect(this.codeInput).toHaveValue(expected);
+  }
+
   /** 접근 게이트 화면(URL + 헤딩)에 있는지 단언한다. */
   async expectAtGate(slug: string): Promise<void> {
     await expect(this.page).toHaveURL(new RegExp(`/projects/${slug}/access`));

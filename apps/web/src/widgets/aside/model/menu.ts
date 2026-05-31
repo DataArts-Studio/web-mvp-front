@@ -4,6 +4,7 @@ import {
   Flag,
   FolderOpen,
   HelpCircle,
+  ListChecks,
   Play,
   Settings,
   Trash2,
@@ -15,6 +16,23 @@ export const createAsideMenus = (projectSlug: string) => {
 
   return {
     sections: [
+      {
+        title: '요구사항',
+        items: [
+          {
+            label: '요구사항 생성',
+            href: `${basePath}/requirements`,
+            icon: FileText,
+            matchPath: `${basePath}/requirements`,
+          },
+          {
+            label: '시나리오 관리',
+            href: `${basePath}/scenarios`,
+            icon: ListChecks,
+            matchPath: `${basePath}/scenarios`,
+          },
+        ],
+      },
       {
         title: '테스트 관리',
         items: [

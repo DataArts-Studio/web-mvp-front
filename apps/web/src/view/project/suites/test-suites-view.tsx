@@ -59,9 +59,11 @@ export const TestSuitesView = () => {
       );
     }
 
-    // 타입 필터링 (향후 tag 기반 필터링 확장 가능)
-    if (filterType !== '전체') {
-      result = result.filter((suite) => suite.tag.label === filterType);
+    // 출처 기반 필터링: 기능별 = 요구사항 분석서 파생, 시나리오 = 시나리오 파생
+    if (filterType === '기능별') {
+      result = result.filter((suite) => suite.requirementAnalysisId != null);
+    } else if (filterType === '시나리오') {
+      result = result.filter((suite) => suite.testScenarioId != null);
     }
 
     return result;

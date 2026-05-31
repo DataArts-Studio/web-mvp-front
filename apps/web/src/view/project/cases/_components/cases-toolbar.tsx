@@ -29,6 +29,7 @@ interface CasesToolbarProps {
   onSortChange: (value: string) => void;
   onCreateClick: () => void;
   onAiGenerate: () => void;
+  onAiAnalyze: () => void;
   onImport: () => void;
   onExport: () => void;
 }
@@ -42,6 +43,7 @@ export const CasesToolbar = ({
   onSortChange,
   onCreateClick,
   onAiGenerate,
+  onAiAnalyze,
   onImport,
   onExport,
 }: CasesToolbarProps) => {
@@ -106,7 +108,12 @@ export const CasesToolbar = ({
           </Select.Content>
         </Select.Root>
 
-        <MoreActionsMenu onAiGenerate={onAiGenerate} onImport={onImport} onExport={onExport} />
+        <MoreActionsMenu
+          onAiGenerate={onAiGenerate}
+          onAiAnalyze={onAiAnalyze}
+          onImport={onImport}
+          onExport={onExport}
+        />
       </div>
     </div>
   );

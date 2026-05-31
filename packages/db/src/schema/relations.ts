@@ -1,6 +1,7 @@
 // src/shared/lib/db/schema/relations.ts
 import { relations } from 'drizzle-orm';
 
+import { aiRequirementAnalyses } from './ai-requirement-analyses';
 import { aiUsageLogs } from './ai-usage-logs';
 import { checklistItems } from './checklist-items';
 import { checklists } from './checklists';
@@ -19,6 +20,7 @@ import { testCases } from './test-cases';
 import { testRunMilestones } from './test-run-milestones';
 import { testRunSuites } from './test-run-suites';
 import { testRuns } from './test-runs';
+import { testScenarios } from './test-scenarios';
 import { testSuiteSections } from './test-suite-sections';
 import { testSuites } from './test-suites';
 
@@ -33,6 +35,8 @@ export const projectRelations = relations(projects, ({ many }) => ({
   githubConnection: many(githubConnections),
   aiConfig: many(projectAiConfigs),
   aiUsageLogs: many(aiUsageLogs),
+  aiRequirementAnalyses: many(aiRequirementAnalyses),
+  testScenarios: many(testScenarios),
 }));
 
 // Project Preferences Relations
@@ -54,6 +58,14 @@ export const testSuiteRelations = relations(testSuites, ({ one, many }) => ({
   testRunSuites: many(testRunSuites),
   suiteTestCases: many(suiteTestCases),
   milestoneTestSuites: many(milestoneTestSuites),
+  requirementAnalysis: one(aiRequirementAnalyses, {
+    fields: [testSuites.requirement_analysis_id],
+    references: [aiRequirementAnalyses.id],
+  }),
+  testScenario: one(testScenarios, {
+    fields: [testSuites.test_scenario_id],
+    references: [testScenarios.id],
+  }),
 }));
 
 // Test Suite Section Relations
@@ -224,6 +236,29 @@ export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
     fields: [aiUsageLogs.project_id],
     references: [projects.id],
   }),
+}));
+
+// AI Requirement Analyses Relations
+export const aiRequirementAnalysesRelations = relations(aiRequirementAnalyses, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [aiRequirementAnalyses.project_id],
+    references: [projects.id],
+  }),
+  testSuites: many(testSuites),
+  testScenarios: many(testScenarios),
+}));
+
+// Test Scenario Relations
+export const testScenarioRelations = relations(testScenarios, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [testScenarios.project_id],
+    references: [projects.id],
+  }),
+  requirementAnalysis: one(aiRequirementAnalyses, {
+    fields: [testScenarios.requirement_analysis_id],
+    references: [aiRequirementAnalyses.id],
+  }),
+  testSuites: many(testSuites),
 }));
 
 // GitHub Connection Relations

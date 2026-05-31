@@ -1,3 +1,5 @@
+import { connection } from 'next/server';
+
 import { getCriticalAnnouncement } from '@testea/db';
 
 import { CriticalBannerClient } from './critical-banner-client';
@@ -9,6 +11,10 @@ import { CriticalBannerClient } from './critical-banner-client';
  * 닫기 / 세션 상태는 클라이언트 컴포넌트(`CriticalBannerClient`) 에서 처리.
  */
 export async function CriticalBanner() {
+  // 정적 프리렌더에 배너 상태가 빌드 시점으로 고정되지 않도록 요청 단위 동적 렌더링을
+  // 강제한다. 새 critical 공지 등록·만료가 다음 배포 전에도 즉시 반영된다.
+  await connection();
+
   let announcement: Awaited<ReturnType<typeof getCriticalAnnouncement>> = null;
   try {
     announcement = await getCriticalAnnouncement();

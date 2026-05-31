@@ -537,6 +537,8 @@ export const getTestSuitesWithStats = async ({
         archivedAt: row.archived_at ?? null,
         lifecycleStatus: row.lifecycle_status,
         tag: { label: '기본', tone: 'neutral' as const },
+        requirementAnalysisId: row.requirement_analysis_id ?? null,
+        testScenarioId: row.test_scenario_id ?? null,
         includedPaths,
         caseCount,
         linkedMilestone,

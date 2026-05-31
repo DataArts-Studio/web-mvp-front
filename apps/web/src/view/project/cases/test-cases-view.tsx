@@ -9,6 +9,7 @@ import { projectIdQueryOptions } from '@/entities/project';
 import { TestCaseCardType } from '@/entities/test-case';
 import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { AiGenerateModal } from '@/features/ai-generate';
+import { RequirementAnalysisModal } from '@/features/ai-requirement-analysis';
 import { TestCaseDetailForm } from '@/features/cases-create';
 import { exportTestCasesToCSV } from '@/features/cases-export';
 import { testCasesQueryOptions } from '@/features/cases-list';
@@ -38,7 +39,7 @@ const AnimatePresence = dynamic(
 
 const PAGE_SIZE = 15;
 
-type ModalType = 'create' | 'detail' | 'import' | 'ai-generate';
+type ModalType = 'create' | 'detail' | 'import' | 'ai-generate' | 'ai-requirement-analysis';
 
 export const TestCasesView = () => {
   const params = useParams();
@@ -52,6 +53,13 @@ export const TestCasesView = () => {
   const [sortOption, setSortOption] = useState<SortValue>('custom');
   const [selectedSuiteId, setSelectedSuiteId] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // 클라이언트 hydration 완료 전까지 서버와 동일 출력(스켈레톤) 보장 → SSR↔CSR 미스매치 방지
+  const [hydrated, setHydrated] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection requires effect
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const slug = params.slug as string;
 
@@ -161,8 +169,8 @@ export const TestCasesView = () => {
         ? '미분류'
         : suiteMap.get(selectedSuiteId) || '테스트 케이스';
 
-  // Loading
-  if (isLoadingProject || (isLoadingCases && !testCasesData)) {
+  // Loading (hydration 전에는 서버와 동일하게 스켈레톤 유지)
+  if (!hydrated || isLoadingProject || (isLoadingCases && !testCasesData)) {
     return <CasesLoadingSkeleton />;
   }
 
@@ -191,6 +199,7 @@ export const TestCasesView = () => {
               onOpen('create');
             }}
             onAiGenerate={() => onOpen('ai-generate')}
+            onAiAnalyze={() => onOpen('ai-requirement-analysis')}
             onImport={() => {
               track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
               onOpen('import');
@@ -237,6 +246,9 @@ export const TestCasesView = () => {
       {isActiveType('import') && <ImportWizardModal projectId={projectId!} onClose={onClose} />}
       {isActiveType('ai-generate') && projectId && (
         <AiGenerateModal projectId={projectId} slug={slug} onClose={onClose} />
+      )}
+      {isActiveType('ai-requirement-analysis') && projectId && (
+        <RequirementAnalysisModal projectId={projectId} onClose={onClose} />
       )}
       <AnimatePresence>
         {isActiveType('detail') && selectedTestCaseId && (

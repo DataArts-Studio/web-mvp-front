@@ -47,3 +47,123 @@ jobs:
           echo "$changed"
           # 명시 경로로 넘겨도 prettier 는 .prettierignore 를 그대로 존중함
           echo "$changed" | xargs -d '\n' pnpm exec prettier --check
+
+  # PR 게이트: smoke 만 (tests/smoke/**). 골든패스+핵심 예외라 수 분 내 끝나야 한다.
+  # 전체 회귀는 머지 후 e2e-full 에서 돈다.
+  e2e-smoke:
+    name: e2e smoke (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      # 시드된 sample-project 가 있는 dev DB 그대로 사용
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+      # GitHub 은 secret 이름의 GITHUB_ prefix 를 예약·차단한다.
+      # 앱·로컬·Vercel 은 GITHUB_ 그대로 두고, CI 매핑만 secret(GH_)←→env(GITHUB_) 로 우회.
+      GITHUB_TOKEN_ENCRYPTION_KEY: ${{ secrets.GH_TOKEN_ENCRYPTION_KEY }}
+      # Cloudflare 공식 always-pass 테스트 키 (실제 키 비노출)
+      NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      # AI config 진입 spec 이 있어 필요 (없으면 일부 spec 만 영향)
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Playwright 브라우저 바이너리는 무겁다. 의존성 hash 기반으로 캐시.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: pw-${{ runner.os }}-
+
+      - name: Install Playwright (chromium only)
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      # webServer 는 playwright.config.ts 가 자동 기동 (pnpm --filter web dev)
+      - name: Run E2E smoke
+        run: pnpm --filter web e2e:smoke
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-smoke
+          path: apps/web/playwright-report
+          retention-days: 7
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-smoke
+          path: apps/web/test-results
+          retention-days: 7
+
+  # 머지 후 회귀: dev/main push 에서 전체 스위트. PR 은 막지 않는다(baseline·회귀 추적용).
+  e2e-full:
+    name: e2e full (regression)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+      GITHUB_TOKEN_ENCRYPTION_KEY: ${{ secrets.GH_TOKEN_ENCRYPTION_KEY }}
+      NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: pw-${{ runner.os }}-
+
+      - name: Install Playwright (chromium only)
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Run E2E (전체 scenario)
+        run: pnpm --filter web e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-full
+          path: apps/web/playwright-report
+          retention-days: 7
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-full
+          path: apps/web/test-results
+          retention-days: 7
