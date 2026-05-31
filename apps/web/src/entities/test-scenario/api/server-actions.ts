@@ -480,45 +480,74 @@ export const generateSuiteFromScenario = async (
 
     if (!scenario) return invalidInput('대상 시나리오를 찾을 수 없습니다.');
 
-    // 멱등: 이미 이 시나리오에서 파생된 ACTIVE 스위트가 있으면 중복 생성하지 않고 기존 것을 반환.
-    const [existingSuite] = await db
-      .select({ id: testSuites.id })
-      .from(testSuites)
-      .where(
-        and(eq(testSuites.test_scenario_id, scenario.id), eq(testSuites.lifecycle_status, 'ACTIVE'))
-      )
-      .limit(1);
+    // 이 시나리오에서 파생된 ACTIVE 스위트 1건 조회(멱등 처리용).
+    const findExistingActiveSuiteId = async (): Promise<string | undefined> => {
+      const [row] = await db
+        .select({ id: testSuites.id })
+        .from(testSuites)
+        .where(
+          and(
+            eq(testSuites.test_scenario_id, scenario.id),
+            eq(testSuites.lifecycle_status, 'ACTIVE')
+          )
+        )
+        .limit(1);
+      return row?.id;
+    };
 
-    if (existingSuite) {
+    // 멱등: 이미 파생된 ACTIVE 스위트가 있으면 중복 생성하지 않고 기존 것을 반환.
+    const existingId = await findExistingActiveSuiteId();
+    if (existingId) {
       return {
         success: true,
-        data: { suiteId: existingSuite.id },
+        data: { suiteId: existingId },
         message: '이미 이 시나리오에서 생성한 스위트가 있습니다.',
       };
     }
 
-    const suiteId = await db.transaction(async (tx) => {
-      const [maxSort] = await tx
-        .select({ max: sql<number>`COALESCE(MAX(${testSuites.sort_order}), 0)` })
-        .from(testSuites)
-        .where(eq(testSuites.project_id, projectId));
+    let suiteId: string;
+    try {
+      suiteId = await db.transaction(async (tx) => {
+        const [maxSort] = await tx
+          .select({ max: sql<number>`COALESCE(MAX(${testSuites.sort_order}), 0)` })
+          .from(testSuites)
+          .where(eq(testSuites.project_id, projectId));
 
-      const newSuiteId = crypto.randomUUID();
-      const now = new Date();
-      await tx.insert(testSuites).values({
-        id: newSuiteId,
-        project_id: projectId,
-        name: scenario.name,
-        description: scenario.description || null,
-        requirement_analysis_id: scenario.requirement_analysis_id,
-        test_scenario_id: scenario.id,
-        sort_order: (maxSort?.max ?? 0) + 1,
-        lifecycle_status: 'ACTIVE' as const,
-        created_at: now,
-        updated_at: now,
+        const newSuiteId = crypto.randomUUID();
+        const now = new Date();
+        await tx.insert(testSuites).values({
+          id: newSuiteId,
+          project_id: projectId,
+          name: scenario.name,
+          description: scenario.description || null,
+          requirement_analysis_id: scenario.requirement_analysis_id,
+          test_scenario_id: scenario.id,
+          sort_order: (maxSort?.max ?? 0) + 1,
+          lifecycle_status: 'ACTIVE' as const,
+          created_at: now,
+          updated_at: now,
+        });
+        return newSuiteId;
       });
-      return newSuiteId;
-    });
+    } catch (error) {
+      // 동시 호출(TOCTOU)로 유니크 인덱스(test_suites_active_scenario_unq) 위반 시,
+      // 먼저 만들어진 스위트를 재조회해 멱등하게 반환한다.
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? (error as { code?: string }).code
+          : undefined;
+      if (code === '23505') {
+        const racedId = await findExistingActiveSuiteId();
+        if (racedId) {
+          return {
+            success: true,
+            data: { suiteId: racedId },
+            message: '이미 이 시나리오에서 생성한 스위트가 있습니다.',
+          };
+        }
+      }
+      throw error;
+    }
 
     return {
       success: true,
