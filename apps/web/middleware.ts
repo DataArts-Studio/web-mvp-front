@@ -5,8 +5,14 @@
  * /projects/[slug]/* 경로에 대해 접근 토큰을 검증하고,
  * 토큰이 없거나 유효하지 않으면 접근 페이지로 리다이렉트.
  */
+import createMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+
+import { routing } from '@/i18n/routing';
+
+// next-intl 라우팅 미들웨어 (마케팅 + /en 접두 경로에만 적용)
+const intlMiddleware = createMiddleware(routing);
 
 // 상수 직접 정의 (import 문제 방지)
 const COOKIE_PREFIX = 'project_access';
@@ -111,22 +117,38 @@ function isBlockedInProduction(pathname: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // console.log('[Middleware] Running for:', pathname);
-
-  // 프로덕션 환경에서 개발/테스트 경로 차단
+  // 프로덕션 환경에서 개발/테스트 경로 차단 (최우선)
   if (process.env.NODE_ENV === 'production' && isBlockedInProduction(pathname)) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
+  // 제품/공유/api 라우트는 next-intl 로케일 처리를 거치지 않고 기존 접근 가드만 적용한다.
+  // (제품 화면은 /en 접두를 쓰지 않으므로 로케일 rewrite 대상에서 제외)
+  if (
+    pathname.startsWith('/projects') ||
+    pathname.startsWith('/share') ||
+    pathname.startsWith('/api')
+  ) {
+    return runAccessGuard(request);
+  }
+
+  // 그 밖(마케팅 + /en 접두)은 next-intl 미들웨어가 rewrite/redirect 처리
+  return intlMiddleware(request);
+}
+
+/**
+ * 프로젝트 접근 토큰 가드 (기존 로직).
+ */
+function runAccessGuard(request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl;
+
   // 공개 경로는 통과
   if (isPublicPath(pathname)) {
-    // console.log('[Middleware] Public path, passing through');
     return NextResponse.next();
   }
 
   // 보호된 경로가 아니면 통과
   if (!isProtectedPath(pathname)) {
-    // console.log('[Middleware] Not protected, passing through');
     return NextResponse.next();
   }
 
@@ -202,5 +224,8 @@ export function middleware(request: NextRequest) {
  * 미들웨어가 적용될 경로 패턴
  */
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // _next/_vercel 내부, Sentry 터널(/monitoring), 확장자 있는 정적자산을 제외한 모든 경로.
+  // /api·/projects·/share 도 포함되지만 middleware() 함수가 next-intl 을 우회시키고
+  // 기존 접근 가드·프로덕션 차단만 적용한다. (next-intl 은 마케팅 경로에만 동작)
+  matcher: ['/((?!_next|_vercel|monitoring|.*\\..*).*)'],
 };
