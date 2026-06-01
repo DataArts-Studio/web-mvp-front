@@ -94,7 +94,7 @@ describe('getTestSuiteById', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain('테스트 스위트를 찾을 수 없습니다.');
+        expect(result.errors._testSuite).toContain('NOT_FOUND');
       }
     });
 
@@ -107,9 +107,7 @@ describe('getTestSuiteById', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain(
-          '테스트 스위트를 불러오는 도중 오류가 발생했습니다.'
-        );
+        expect(result.errors._testSuite).toContain('LOAD_FAILED');
       }
     });
   });

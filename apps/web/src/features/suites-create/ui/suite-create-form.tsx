@@ -2,6 +2,8 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { useTranslations } from 'next-intl';
+
 import { CreateTestSuiteSchema } from '@/entities/test-suite';
 import type { CreateTestSuite } from '@/entities/test-suite';
 import { useCreateSuite } from '@/features/suites-create';
@@ -17,6 +19,7 @@ interface SuiteCreateFormProps {
 }
 
 export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) => {
+  const t = useTranslations('suites');
   const { mutate, isPending } = useCreateSuite();
   const {
     register,
@@ -107,15 +110,15 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
       >
         {isPending && (
           <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
-            <LoadingSpinner size="md" text="테스트 스위트를 생성하고 있어요" />
+            <LoadingSpinner size="md" text={t('ui.creating')} />
           </div>
         )}
         {/* Header */}
         <div className="border-line-2 shrink-0 border-b px-6 py-5">
           <h2 id={titleId} className="text-text-1 text-lg font-bold">
-            테스트 스위트 생성
+            {t('ui.createTitle')}
           </h2>
-          <p className="text-text-3 mt-1 text-sm">필요한 테스트들을 한 곳에 모아 관리해요</p>
+          <p className="text-text-3 mt-1 text-sm">{t('ui.createSubtitle')}</p>
         </div>
 
         {/* Body */}
@@ -128,26 +131,26 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
           <input type="hidden" {...register('projectId')} />
           <FormField.Root className="flex flex-col gap-2">
             <FormField.Label className="text-text-1 font-medium">
-              스위트 이름 <span className="text-primary">*</span>
+              {t('ui.nameLabel')} <span className="text-primary">*</span>
             </FormField.Label>
             <FormField.Control
-              placeholder="스위트 이름을 입력해 주세요."
+              placeholder={t('ui.namePlaceholder')}
               type="text"
               disabled={isPending}
               {...register('title', {
-                required: '유효한 이름을 입력해주세요.',
+                required: t('ui.nameRequired'),
                 minLength: {
                   value: 3,
-                  message: '스위트 이름은 최소 3자 이상이어야 합니다.',
+                  message: t('ui.nameMin'),
                 },
                 maxLength: {
                   value: 50,
-                  message: '스위트 이름은 50자를 초과할 수 없습니다.',
+                  message: t('ui.nameMax'),
                 },
-                validate: (value) => !!value.trim() || '공백만으로는 이름을 생성할 수 없습니다.',
+                validate: (value) => !!value.trim() || t('ui.nameBlank'),
                 pattern: {
                   value: /^[a-zA-Z0-9가-힣\s._-]+$/,
-                  message: '특수문자는 사용할 수 없습니다. (-, _, ., 공백만 허용)',
+                  message: t('ui.namePattern'),
                 },
               })}
               className={cn(
@@ -160,9 +163,11 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
             )}
           </FormField.Root>
           <FormField.Root className="flex flex-col gap-2">
-            <FormField.Label className="text-text-1 font-medium">설명 (선택)</FormField.Label>
+            <FormField.Label className="text-text-1 font-medium">
+              {t('ui.descriptionLabel')}
+            </FormField.Label>
             <FormField.Control
-              placeholder="이 스위트에 대한 간략한 설명을 입력해주세요."
+              placeholder={t('ui.descriptionPlaceholder')}
               type="text"
               disabled={isPending}
               {...register('description')}
@@ -180,7 +185,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
             disabled={isPending}
             onClick={handleAbandon}
           >
-            취소
+            {t('ui.cancel')}
           </DSButton>
           <DSButton
             type="submit"
@@ -189,7 +194,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
             className="w-full"
             disabled={isPending}
           >
-            {isPending ? '생성 중...' : '생성'}
+            {isPending ? t('ui.creatingShort') : t('ui.create')}
           </DSButton>
         </div>
       </div>

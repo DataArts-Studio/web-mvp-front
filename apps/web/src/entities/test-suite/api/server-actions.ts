@@ -3,6 +3,7 @@
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
+import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -28,7 +29,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
   try {
     const hasAccess = await requireProjectAccess(input.projectId);
     if (!hasAccess) {
-      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
     const storageError = await checkStorageLimit(input.projectId);
@@ -56,7 +57,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     if (!inserted) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트를 생성하는 도중 오류가 발생했습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.CREATE_FAILED] },
       };
     }
 
@@ -75,13 +76,13 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     return {
       success: true,
       data: result,
-      message: '테스트 스위트를 생성하였습니다.',
+      message: SUITE_MESSAGE_CODES.SUITE_CREATED,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'createTestSuite' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 생성하는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.CREATE_FAILED] },
     };
   }
 };
@@ -107,7 +108,7 @@ export const getTestSuites = async ({
     if (!rows) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트가 존재하지 않습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -131,7 +132,7 @@ export const getTestSuites = async ({
     Sentry.captureException(error, { extra: { action: 'getTestSuites' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -144,7 +145,7 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
     if (!row) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -168,7 +169,7 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
     Sentry.captureException(error, { extra: { action: 'getTestSuiteById' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -184,7 +185,7 @@ export const getTestSuiteByIdWithStats = async (
 
     const [row] = await db.select().from(testSuites).where(eq(testSuites.id, id));
     if (!row) {
-      return { success: false, errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] } };
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] } };
     }
 
     const result = await getTestSuitesWithStats({
@@ -221,7 +222,7 @@ export const getTestSuiteByIdWithStats = async (
     Sentry.captureException(error, { extra: { action: 'getTestSuiteByIdWithStats' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -247,7 +248,7 @@ export const updateTestSuite = async (
       .where(eq(testSuites.id, id))
       .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
-      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
     const updateData: Record<string, unknown> = {
@@ -273,7 +274,7 @@ export const updateTestSuite = async (
     if (!updated) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -292,13 +293,13 @@ export const updateTestSuite = async (
     return {
       success: true,
       data: result,
-      message: '테스트 스위트를 수정하였습니다.',
+      message: SUITE_MESSAGE_CODES.SUITE_UPDATED,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'updateTestSuite' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 수정하는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.UPDATE_FAILED] },
     };
   }
 };
@@ -553,7 +554,7 @@ export const getTestSuitesWithStats = async ({
     Sentry.captureException(error, { extra: { action: 'getTestSuitesWithStats' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -572,7 +573,7 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       .where(eq(testSuites.id, id))
       .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
-      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
     const now = new Date();
@@ -590,7 +591,7 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
     if (!archived) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -607,13 +608,13 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
     return {
       success: true,
       data: { id: archived.id },
-      message: '테스트 스위트가 휴지통으로 이동되었습니다.',
+      message: SUITE_MESSAGE_CODES.SUITE_ARCHIVED,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveTestSuite' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 삭제하는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.ARCHIVE_FAILED] },
     };
   }
 };

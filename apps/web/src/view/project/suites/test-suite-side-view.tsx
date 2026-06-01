@@ -1,6 +1,8 @@
 'use client';
 import React, { useEffect, useId, useRef } from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import { TestSuiteCard } from '@/entities/test-suite';
 import { DSButton } from '@testea/ui';
 import { cn } from '@testea/util';
@@ -64,7 +66,16 @@ export const TestSuiteSideView = ({
   onEdit,
   onDelete,
 }: TestSuiteSideViewProps) => {
+  const t = useTranslations('suites');
   const tagStyle = TAG_TONE_STYLES[suite.tag.tone] || TAG_TONE_STYLES.neutral;
+  const tagToneLabelKey: Record<string, string> = {
+    neutral: 'ui.tagNeutral',
+    info: 'ui.tagInfo',
+    success: 'ui.tagSuccess',
+    warning: 'ui.tagWarning',
+    danger: 'ui.tagDanger',
+  };
+  const tagLabel = t(tagToneLabelKey[suite.tag.tone] ?? 'ui.tagNeutral');
 
   const dialogRef = useRef<HTMLElement>(null);
   const titleId = useId();
@@ -128,7 +139,7 @@ export const TestSuiteSideView = ({
                 variant="ghost"
                 className="px-2"
                 onClick={onClose}
-                aria-label="닫기"
+                aria-label={t('ui.close')}
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </DSButton>
@@ -139,7 +150,7 @@ export const TestSuiteSideView = ({
                 onClick={onEdit}
               >
                 <Edit2 className="h-4 w-4" aria-hidden="true" />
-                <span>수정</span>
+                <span>{t('ui.edit')}</span>
               </DSButton>
             </div>
 
@@ -148,7 +159,7 @@ export const TestSuiteSideView = ({
                 {suite.title}
               </h2>
               <span className={cn('rounded-full px-3 py-1 text-sm font-medium', tagStyle)}>
-                {suite.tag.label}
+                {tagLabel}
               </span>
             </div>
 
@@ -165,9 +176,9 @@ export const TestSuiteSideView = ({
 
           {/* 설명 */}
           <div className="flex flex-col gap-2">
-            <h3 className="text-text-3 text-lg font-semibold">설명</h3>
+            <h3 className="text-text-3 text-lg font-semibold">{t('ui.description')}</h3>
             <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-              <p className="text-text-2">{suite.description || '설명이 없습니다.'}</p>
+              <p className="text-text-2">{suite.description || t('ui.noDescription')}</p>
             </div>
           </div>
 
@@ -176,24 +187,28 @@ export const TestSuiteSideView = ({
             <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
               <div className="text-text-3 flex items-center gap-1.5 text-sm">
                 <ListChecks className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-                <span>테스트 케이스</span>
+                <span>{t('ui.testCases')}</span>
               </div>
-              <span className="text-text-1 text-xl font-bold">{suite.caseCount}개</span>
+              <span className="text-text-1 text-xl font-bold">
+                {t('count.cases', { count: suite.caseCount })}
+              </span>
             </div>
 
             <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
               <div className="text-text-3 flex items-center gap-1.5 text-sm">
                 <History className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-                <span>실행 이력</span>
+                <span>{t('ui.executionHistory')}</span>
               </div>
-              <span className="text-text-1 text-xl font-bold">{suite.executionHistoryCount}회</span>
+              <span className="text-text-1 text-xl font-bold">
+                {t('count.runs', { count: suite.executionHistoryCount })}
+              </span>
             </div>
           </div>
 
           {/* 마지막 실행 결과 */}
           {suite.lastRun && (
             <div className="flex flex-col gap-3">
-              <h3 className="text-text-3 text-lg font-semibold">마지막 실행 결과</h3>
+              <h3 className="text-text-3 text-lg font-semibold">{t('ui.lastRunResult')}</h3>
               <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-text-3 text-sm">{formatDate(suite.lastRun.runAt)}</span>
@@ -240,7 +255,7 @@ export const TestSuiteSideView = ({
           {/* 최근 실행 이력 미니 그래프 */}
           {suite.recentRuns.length > 0 && (
             <div className="flex flex-col gap-3">
-              <h3 className="text-text-3 text-lg font-semibold">최근 실행 이력</h3>
+              <h3 className="text-text-3 text-lg font-semibold">{t('ui.recentRunsTitle')}</h3>
               <div className="flex gap-1">
                 {suite.recentRuns.slice(0, 5).map((run) => {
                   const passRate = run.total > 0 ? (run.passed / run.total) * 100 : 0;
@@ -248,7 +263,11 @@ export const TestSuiteSideView = ({
                     <div
                       key={run.runId}
                       className="bg-bg-2 border-line-2 flex-1 rounded border p-2 text-center"
-                      title={`${formatDate(run.runAt)} - ${run.passed}/${run.total} passed`}
+                      title={t('ui.runSummaryTitle', {
+                        date: formatDate(run.runAt),
+                        passed: run.passed,
+                        total: run.total,
+                      })}
                     >
                       <div
                         aria-hidden="true"
@@ -273,7 +292,7 @@ export const TestSuiteSideView = ({
           <div className="border-line-2 mt-auto flex gap-2 border-t pt-4">
             <DSButton className="flex flex-1 items-center justify-center gap-2" onClick={onRun}>
               <Play className="h-4 w-4" aria-hidden="true" />
-              테스트 실행
+              {t('ui.runTest')}
             </DSButton>
             <DSButton
               variant="ghost"
@@ -281,7 +300,7 @@ export const TestSuiteSideView = ({
               onClick={onDelete}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              삭제
+              {t('ui.delete')}
             </DSButton>
           </div>
         </div>
