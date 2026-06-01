@@ -1,5 +1,42 @@
 {
   "common": {},
+  "aside": {
+    "sections": {
+      "requirements": "요구사항",
+      "testManagement": "테스트 관리"
+    },
+    "items": {
+      "requirements": "요구사항 생성",
+      "scenarios": "시나리오 관리",
+      "cases": "테스트 케이스",
+      "suites": "테스트 스위트",
+      "milestones": "마일스톤",
+      "runs": "테스트 실행",
+      "checklists": "체크리스트",
+      "trash": "휴지통",
+      "settings": "설정",
+      "help": "도움말"
+    },
+    "dashboardAria": "대시보드로 이동",
+    "brand": "테스트 도구",
+    "search": "검색",
+    "comingSoon": "해당 기능은 준비중입니다."
+  },
+  "notifications": {
+    "category": {
+      "feature": "신규 기능",
+      "maintenance": "점검",
+      "policy": "정책",
+      "event": "이벤트",
+      "notice": "공지"
+    },
+    "severity": {
+      "info": "안내",
+      "warning": "주의",
+      "critical": "긴급"
+    },
+    "unread": "미읽음"
+  },
   "meta": {
     "landing": {
       "title": "테스티아(Testea) - AI 테스트 시나리오·케이스 생성 무료 QA 도구",

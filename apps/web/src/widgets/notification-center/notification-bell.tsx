@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import type { AnnouncementWithReadState } from '@testea/db';
 import { Bell } from 'lucide-react';
 
 import { AnnouncementDetailDialog } from './announcement-detail-dialog';
 import { useAnnouncementList, useUnreadCount } from './hooks';
-import { CATEGORY_LABEL, SEVERITY_LABEL } from './labels';
+import { useAnnouncementLabels } from './labels';
 
 /**
  * 헤더 우측 알림 벨 + 드롭다운 패널.
@@ -17,6 +19,8 @@ import { CATEGORY_LABEL, SEVERITY_LABEL } from './labels';
  * - 외부 클릭/ESC 로 드롭다운 닫힘.
  */
 export function NotificationBell() {
+  const t = useTranslations('notifications');
+  const labels = useAnnouncementLabels();
   const [isOpen, setIsOpen] = useState(false);
   const [activeAnnouncement, setActiveAnnouncement] = useState<AnnouncementWithReadState | null>(
     null
@@ -102,12 +106,12 @@ export function NotificationBell() {
                       <span className="flex items-center gap-2">
                         {!item.readAt && (
                           <span
-                            aria-label="미읽음"
+                            aria-label={t('unread')}
                             className="bg-primary inline-block h-2 w-2 shrink-0 rounded-full"
                           />
                         )}
                         <span className="typo-caption-heading bg-bg-3 text-text-2 rounded-full px-2 py-0.5">
-                          {CATEGORY_LABEL[item.category] ?? item.category}
+                          {labels.category(item.category)}
                         </span>
                         {item.severity !== 'info' && (
                           <span
@@ -117,7 +121,7 @@ export function NotificationBell() {
                                 : 'bg-amber-500/15 text-amber-400'
                             }`}
                           >
-                            {SEVERITY_LABEL[item.severity]}
+                            {labels.severity(item.severity)}
                           </span>
                         )}
                       </span>

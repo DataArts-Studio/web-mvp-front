@@ -1,18 +1,24 @@
 import { hasLocale } from 'next-intl';
 import { getRequestConfig } from 'next-intl/server';
+import { cookies } from 'next/headers';
 
-import { routing } from './routing';
+import { LOCALE_COOKIE, routing } from './routing';
 
 /**
  * 요청별 로케일·메시지 해석.
  *
- * [locale] 세그먼트 밖의 라우트(제품 `/projects`, `/share`, `/api` 등)는 유효 로케일이
- * 아니므로 `hasLocale` 가 실패하고 defaultLocale(ko) 로 폴백한다. 따라서 제품 화면은
- * 항상 ko 메시지·`lang="ko"` 로 동작해 회귀가 없다.
+ * 우선순위: (1) URL 세그먼트 로케일(마케팅 `[locale]`) → (2) `NEXT_LOCALE` 쿠키(제품 화면) →
+ * (3) defaultLocale(ko). 마케팅은 URL 접두가 항상 우선이라 쿠키와 충돌하지 않고, [locale]
+ * 밖의 제품(`/projects` 등)은 URL 로케일이 없어 쿠키로 언어를 정한다(쿠키 없으면 ko).
  */
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
-  const locale = hasLocale(routing.locales, requested) ? requested : routing.defaultLocale;
+  let locale = hasLocale(routing.locales, requested) ? requested : undefined;
+
+  if (!locale) {
+    const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
+    locale = hasLocale(routing.locales, cookieLocale) ? cookieLocale : routing.defaultLocale;
+  }
 
   return {
     locale,

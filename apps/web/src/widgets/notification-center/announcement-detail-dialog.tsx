@@ -6,7 +6,7 @@ import type { AnnouncementWithReadState } from '@testea/db';
 import { DSButton, Dialog } from '@testea/ui';
 
 import { useMarkRead } from './hooks';
-import { CATEGORY_LABEL, SEVERITY_LABEL } from './labels';
+import { useAnnouncementLabels } from './labels';
 
 interface AnnouncementDetailDialogProps {
   announcement: AnnouncementWithReadState | null;
@@ -19,6 +19,7 @@ interface AnnouncementDetailDialogProps {
  */
 export function AnnouncementDetailDialog({ announcement, onClose }: AnnouncementDetailDialogProps) {
   const markRead = useMarkRead();
+  const labels = useAnnouncementLabels();
 
   useEffect(() => {
     if (!announcement) return;
@@ -55,14 +56,14 @@ export function AnnouncementDetailDialog({ announcement, onClose }: Announcement
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <span className="bg-primary/15 text-primary typo-caption-heading rounded-full px-2.5 py-0.5">
-                {CATEGORY_LABEL[announcement.category] ?? announcement.category}
+                {labels.category(announcement.category)}
               </span>
               <span
                 className={`typo-caption-heading rounded-full px-2.5 py-0.5 ${severityClass(
                   announcement.severity
                 )}`}
               >
-                {SEVERITY_LABEL[announcement.severity]}
+                {labels.severity(announcement.severity)}
               </span>
               <time
                 dateTime={announcement.publishedAt}

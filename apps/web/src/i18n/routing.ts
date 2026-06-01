@@ -15,3 +15,9 @@ export const routing = defineRouting({
 });
 
 export type Locale = (typeof routing.locales)[number];
+
+/**
+ * 제품 화면(URL 접두 없는 비공개 영역)의 로케일을 담는 쿠키 이름.
+ * next-intl 기본 쿠키명과 동일하게 둬 호환성을 확보한다.
+ */
+export const LOCALE_COOKIE = 'NEXT_LOCALE';
