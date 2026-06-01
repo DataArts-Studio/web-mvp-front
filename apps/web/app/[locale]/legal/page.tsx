@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
 import { LegalView } from '@/view/legal';
 import { LegalMarkdownContent, slugify } from '@/view/legal/legal-markdown-content';
@@ -62,14 +63,33 @@ export default async function LegalPage({ searchParams }: LegalPageProps) {
   );
 }
 
-export const metadata: Metadata = {
-  title: '법적 고지',
-  description: 'Testea 개인정보 처리방침 및 서비스 이용약관을 확인하세요.',
-  alternates: {
-    canonical: '/legal',
-  },
-  robots: {
-    index: false,
-    follow: true,
-  },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'meta.legal' });
+
+  return {
+    title: t('title'),
+    description: t('description'),
+    alternates: {
+      canonical: locale === 'ko' ? '/legal' : '/en/legal',
+      languages: {
+        'ko-KR': '/legal',
+        'en-US': '/en/legal',
+        'x-default': '/legal',
+      },
+    },
+    openGraph: {
+      title: t('ogTitle'),
+      description: t('ogDescription'),
+      locale: locale === 'ko' ? 'ko_KR' : 'en_US',
+    },
+    robots: {
+      index: false,
+      follow: true,
+    },
+  };
+}

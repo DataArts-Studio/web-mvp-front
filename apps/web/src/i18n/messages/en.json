@@ -1,5 +1,31 @@
 {
   "common": {},
+  "meta": {
+    "landing": {
+      "title": "Testea - Free QA tool for AI test scenario and case generation",
+      "description": "A free QA tool that turns requirements into AI-generated test scenarios and cases. Derive test suites from scenarios and track runs and results, all in one place.",
+      "ogTitle": "Testea - Free QA tool for AI test scenario and case generation",
+      "ogDescription": "From requirement-based AI scenario generation to writing test cases, running tests, and tracking results. Manage testing in one place with Testea, the free QA tool."
+    },
+    "docs": {
+      "title": "User guide - How to write test cases and scenarios",
+      "description": "The Testea user guide. Step-by-step instructions for writing test cases, managing test scenarios, and handling suites, runs, and milestones.",
+      "ogTitle": "User guide - How to write test cases and scenarios | Testea",
+      "ogDescription": "The Testea user guide. Step-by-step instructions for writing test cases, managing test scenarios, and handling suites, runs, and milestones."
+    },
+    "legal": {
+      "title": "Legal",
+      "description": "Review Testea's privacy policy and terms of service.",
+      "ogTitle": "Legal | Testea",
+      "ogDescription": "Review Testea's privacy policy and terms of service."
+    },
+    "team": {
+      "title": "About the team",
+      "description": "Meet the people building Testea. We are working toward easier, more enjoyable test management.",
+      "ogTitle": "About the team | Testea",
+      "ogDescription": "Meet the people building Testea. We are working toward easier, more enjoyable test management."
+    }
+  },
   "header": {
     "ariaBanner": "Global header",
     "logoAria": "Go to Testea home",
