@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 
 import { Metadata } from 'next';
 
+import { buildLocaleMetadata } from '@/i18n/metadata';
 import { DocsView } from '@/view';
 import { DocsMarkdownContent, slugify } from '@/view/docs/docs-markdown-content';
 import type { DocHeading } from '@/view/docs/docs-view';
@@ -89,16 +90,11 @@ export default async function DocsPage({ searchParams }: DocsPageProps) {
   );
 }
 
-export const metadata: Metadata = {
-  title: '사용 가이드 - 테스트 케이스·시나리오 작성법',
-  description:
-    '테스티아 사용 가이드. 테스트 케이스 작성법, 테스트 시나리오 관리, 스위트·실행·마일스톤 관리 방법을 단계별로 안내합니다.',
-  alternates: {
-    canonical: '/docs',
-  },
-  openGraph: {
-    title: '사용 가이드 - 테스트 케이스·시나리오 작성법 | Testea',
-    description:
-      '테스티아 사용 가이드. 테스트 케이스 작성법, 테스트 시나리오 관리, 스위트·실행·마일스톤 관리 방법을 단계별로 안내합니다.',
-  },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return buildLocaleMetadata({ locale, namespace: 'meta.docs', path: '/docs' });
+}

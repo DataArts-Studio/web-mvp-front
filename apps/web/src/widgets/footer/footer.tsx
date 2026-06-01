@@ -1,45 +1,42 @@
 import React from 'react';
 
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
-import { SEO } from '@/shared/constants';
-
-const currentYear = new Date().getFullYear();
-const copyright = SEO.BRAND.COPYRIGHT.replace('testea.', `${currentYear} ${SEO.BRAND.NAME}.`);
+import { Link } from '@/i18n/navigation';
 
 export const Footer = () => {
+  const t = useTranslations('footer');
+  // 렌더 시점에 계산해 장수 프로세스에서도 연도가 갱신되도록 한다.
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer
       role="contentinfo"
-      aria-label="사이트 정보"
+      aria-label={t('ariaInfo')}
       className="bg-bg-1 w-full border-t border-neutral-800 py-4 text-center text-xs text-neutral-500"
     >
-      <span aria-label="저작권 정보">{copyright}</span>
+      <span aria-label={t('ariaCopyright')}>{t('copyright', { year: currentYear })}</span>
       <span aria-hidden="true" className="mx-2">
         {' '}
         |{' '}
       </span>
-      <nav aria-label="사이트 링크" className="inline">
-        <Link
-          href="/legal?tab=privacy"
-          aria-label="개인정보 처리방침"
-          className="hover:text-teal-400"
-        >
-          개인정보 처리방침
+      <nav aria-label={t('ariaLinks')} className="inline">
+        <Link href="/legal?tab=privacy" aria-label={t('privacy')} className="hover:text-teal-400">
+          {t('privacy')}
         </Link>
         <span aria-hidden="true" className="mx-2">
           {' '}
           |{' '}
         </span>
-        <Link href="/legal?tab=terms" aria-label="이용약관" className="hover:text-teal-400">
-          이용약관
+        <Link href="/legal?tab=terms" aria-label={t('terms')} className="hover:text-teal-400">
+          {t('terms')}
         </Link>
         <span aria-hidden="true" className="mx-2">
           {' '}
           |{' '}
         </span>
-        <Link href="/team" aria-label="팀 소개" className="hover:text-teal-400">
-          팀 테스티아
+        <Link href="/team" aria-label={t('teamAria')} className="hover:text-teal-400">
+          {t('team')}
         </Link>
       </nav>
     </footer>

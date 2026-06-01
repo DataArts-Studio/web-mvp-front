@@ -1,6 +1,8 @@
 import React, { ReactNode } from 'react';
 
 import type { Metadata, Viewport } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import Script from 'next/script';
 
 import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
@@ -75,6 +77,7 @@ export const metadata: Metadata = {
     canonical: '/',
     languages: {
       'ko-KR': '/',
+      'en-US': '/en',
     },
   },
   openGraph: {
@@ -186,13 +189,17 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  // [locale] 라우트에서는 ko|en, 그 밖(제품/공유/api)에서는 defaultLocale(ko) 로 폴백.
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="ko">
+    <html lang={locale}>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
@@ -225,13 +232,15 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <QueryProvider>
-          <CriticalBanner />
-          {children}
-        </QueryProvider>
-        <LazyToaster />
-        {/* 테스트용 컴포넌트 */}
-        <MvpBottomNavbarLazy />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <QueryProvider>
+            <CriticalBanner />
+            {children}
+          </QueryProvider>
+          <LazyToaster />
+          {/* 테스트용 컴포넌트 */}
+          <MvpBottomNavbarLazy />
+        </NextIntlClientProvider>
         <Script
           id="font-swap"
           strategy="afterInteractive"

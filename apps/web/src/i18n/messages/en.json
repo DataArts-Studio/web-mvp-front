@@ -1,0 +1,192 @@
+{
+  "common": {},
+  "meta": {
+    "landing": {
+      "title": "Testea - Free QA tool for AI test scenario and case generation",
+      "description": "A free QA tool that turns requirements into AI-generated test scenarios and cases. Derive test suites from scenarios and track runs and results, all in one place.",
+      "ogTitle": "Testea - Free QA tool for AI test scenario and case generation",
+      "ogDescription": "From requirement-based AI scenario generation to writing test cases, running tests, and tracking results. Manage testing in one place with Testea, the free QA tool."
+    },
+    "docs": {
+      "title": "User guide - How to write test cases and scenarios",
+      "description": "The Testea user guide. Step-by-step instructions for writing test cases, managing test scenarios, and handling suites, runs, and milestones.",
+      "ogTitle": "User guide - How to write test cases and scenarios | Testea",
+      "ogDescription": "The Testea user guide. Step-by-step instructions for writing test cases, managing test scenarios, and handling suites, runs, and milestones."
+    },
+    "legal": {
+      "title": "Legal",
+      "description": "Review Testea's privacy policy and terms of service.",
+      "ogTitle": "Legal | Testea",
+      "ogDescription": "Review Testea's privacy policy and terms of service."
+    },
+    "team": {
+      "title": "About the team",
+      "description": "Meet the people building Testea. We are working toward easier, more enjoyable test management.",
+      "ogTitle": "About the team | Testea",
+      "ogDescription": "Meet the people building Testea. We are working toward easier, more enjoyable test management."
+    }
+  },
+  "header": {
+    "ariaBanner": "Global header",
+    "logoAria": "Go to Testea home",
+    "logoAlt": "Testea logo",
+    "navAria": "Main navigation",
+    "docsLinkAria": "Go to docs page",
+    "docs": "User guide",
+    "searchAria": "Open my project search dialog",
+    "findProject": "Find my project"
+  },
+  "footer": {
+    "ariaInfo": "Site information",
+    "ariaCopyright": "Copyright information",
+    "copyright": "© {year} testea. All rights reserved.",
+    "ariaLinks": "Site links",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "team": "Team testea",
+    "teamAria": "About the team"
+  },
+  "lending": {
+    "documentAria": "Testea landing page",
+    "mainAria": "Main content",
+    "hero": {
+      "sectionAria": "Service description",
+      "titleLine1": "Write test cases",
+      "titleHighlight": "in just 5 minutes.",
+      "titleLine2": "",
+      "subtitle": "Still copy-pasting test cases into spreadsheets over and over? With testea, the free QA tool, generate and manage your test documents automatically in just a few clicks."
+    },
+    "cta": {
+      "sectionAria": "Get started",
+      "buttonAria": "Start creating a project for free",
+      "button": "Start for free"
+    },
+    "features": {
+      "sectionAria": "Introducing the testea QA tool",
+      "headingPrefix": "Why ",
+      "headingBrand": "testea",
+      "headingSuffix": "?",
+      "items": [
+        {
+          "title": "Test case management",
+          "description": "As a QA tool, testea lets you write and manage test cases systematically. Organize by section and see priorities and statuses at a glance."
+        },
+        {
+          "title": "Test run tracking",
+          "description": "Track QA progress in real time with testea's test runs. Record and share results such as pass, fail, and blocker instantly."
+        },
+        {
+          "title": "Project structure",
+          "description": "testea is a QA tool built for organized test management. Structure your tests by project, suite, and milestone, and manage them at a glance."
+        }
+      ]
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "items": [
+        {
+          "question": "What kind of QA tool is testea?",
+          "answer": "testea is a free QA tool that lets you write test cases, run tests, and track results in one place. Manage your test documents systematically with testea instead of Excel or spreadsheets."
+        },
+        {
+          "question": "Is testea free?",
+          "answer": "Yes, testea is a free QA tool. You can create a project and manage test cases right away, without signing up."
+        },
+        {
+          "question": "How is it different from other QA tools?",
+          "answer": "testea is a simple test management tool you can use right away without complex setup. Writing test cases, running tests, and tracking results: handle your QA work efficiently with an intuitive interface."
+        },
+        {
+          "question": "Why is software test management necessary?",
+          "answer": "Systematic test management is core to software quality assurance (QA). Documenting test cases and tracking run results helps you find bugs early and improve product quality."
+        },
+        {
+          "question": "Does testea generate test scenarios with AI?",
+          "answer": "Yes. Enter your requirements and testea AI generates a requirements analysis and a draft test scenario. You can derive test suites and cases directly from the generated scenario, greatly reducing QA preparation time."
+        },
+        {
+          "question": "Can I manage tests based on requirements?",
+          "answer": "testea groups test scenarios by feature (requirement). You can trace which requirement is verified by which scenario and test case, which is useful for coverage management."
+        }
+      ]
+    }
+  },
+  "docs": {
+    "headerLabel": "User guide",
+    "backHome": "Home",
+    "sidebarHeading": "Docs",
+    "tocHeading": "Contents",
+    "tabs": {
+      "getting-started": "Getting started",
+      "dashboard": "Dashboard",
+      "test-cases": "Test cases",
+      "test-suites": "Test suites",
+      "test-runs": "Test runs",
+      "milestones": "Milestones"
+    }
+  },
+  "legal": {
+    "headerLabel": "Legal",
+    "backHome": "Home",
+    "sidebarHeading": "Docs",
+    "tocHeading": "Contents",
+    "intro": "Review the terms and policies for using the service.",
+    "tabs": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service"
+    }
+  },
+  "team": {
+    "backHome": "Home",
+    "mascotAlt": "Testea mascot",
+    "title": "The people behind testea",
+    "subtitleLine1": "It started with one question: “Why is test management so complicated?”",
+    "subtitleLine2": "We are building easier, more enjoyable test management, free from spreadsheets.",
+    "story": {
+      "heading": "Our story",
+      "paragraph1Prefix": "testea is a test case management tool built by ",
+      "paragraph1Strong": "QA engineers and developers",
+      "paragraph1Suffix": " working together.",
+      "paragraph2": "We used to manage test cases in Google Sheets too. Version control was a mess, and tracking run results was even harder. “There must be a better way,” we thought.",
+      "paragraph3Prefix": "So we decided to build it ourselves:",
+      "paragraph3Strong": " a test management tool with less complexity, holding only what you need.",
+      "paragraph3Suffix": "",
+      "paragraph4Prefix": "Comfortable like tea time, with the ease of a cup of tea, we named it ",
+      "paragraph4Strong": "testea",
+      "paragraph4Suffix": "."
+    },
+    "valuesHeading": "What matters most to us",
+    "values": [
+      {
+        "title": "Simplicity",
+        "description": "Make the complex simple, and focus on the essence of test management."
+      },
+      {
+        "title": "User-centered",
+        "description": "We think and build from the perspective of QA engineers and developers."
+      },
+      {
+        "title": "Enjoyment",
+        "description": "Make even tedious test management enjoyable: relaxed, like tea time."
+      }
+    ],
+    "contact": {
+      "heading": "Let's talk",
+      "description": "Feedback, suggestions, or just a hello are all welcome!",
+      "emailButton": "Send an email"
+    }
+  },
+  "notFound": {
+    "title": "Oops! The page you're looking for isn't here.",
+    "description": "The address is wrong or the page no longer exists.",
+    "backHome": "Back to home",
+    "illustrationAlt": "Spilled teacup illustration"
+  },
+  "error": {
+    "title": "Oops! Something went wrong.",
+    "description": "Please try again in a moment.",
+    "retry": "Try again",
+    "backHome": "Back to home",
+    "illustrationAlt": "Spilled teacup illustration"
+  }
+}
