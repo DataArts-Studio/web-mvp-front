@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { Metadata } from 'next';
-import { getTranslations } from 'next-intl/server';
 
+import { buildLocaleMetadata } from '@/i18n/metadata';
 import { LegalView } from '@/view/legal';
 import { LegalMarkdownContent, slugify } from '@/view/legal/legal-markdown-content';
 import type { LegalHeading } from '@/view/legal/legal-markdown-content';
@@ -69,27 +69,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'meta.legal' });
-
-  return {
-    title: t('title'),
-    description: t('description'),
-    alternates: {
-      canonical: locale === 'ko' ? '/legal' : '/en/legal',
-      languages: {
-        'ko-KR': '/legal',
-        'en-US': '/en/legal',
-        'x-default': '/legal',
-      },
-    },
-    openGraph: {
-      title: t('ogTitle'),
-      description: t('ogDescription'),
-      locale: locale === 'ko' ? 'ko_KR' : 'en_US',
-    },
-    robots: {
-      index: false,
-      follow: true,
-    },
-  };
+  return buildLocaleMetadata({
+    locale,
+    namespace: 'meta.legal',
+    path: '/legal',
+    extra: { robots: { index: false, follow: true } },
+  });
 }

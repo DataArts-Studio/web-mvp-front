@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { useTranslations } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { Footer } from '@/widgets/footer';
 import { Logo } from '@testea/ui';
 import { cn } from '@testea/util';

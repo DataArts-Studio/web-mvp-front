@@ -132,8 +132,23 @@ export function middleware(request: NextRequest) {
     return runAccessGuard(request);
   }
 
+  // 확장자 없는 루트 메타데이터 라우트(/icon, /pwa-icon 등)는 [locale] 하위에 없으므로
+  // next-intl 로 넘기면 /ko/icon 으로 rewrite 돼 404 가 된다. 그대로 통과시킨다.
+  if (isNonLocalizedRoot(pathname)) {
+    return NextResponse.next();
+  }
+
   // 그 밖(마케팅 + /en 접두)은 next-intl 미들웨어가 rewrite/redirect 처리
   return intlMiddleware(request);
+}
+
+/**
+ * [locale] 하위에 두지 않는 루트 메타데이터/아이콘 라우트 (로케일 rewrite 금지).
+ * 확장자가 붙는 sitemap.xml·robots.txt·manifest.webmanifest·favicon.ico 는 matcher 에서 제외된다.
+ */
+function isNonLocalizedRoot(pathname: string): boolean {
+  const roots = ['/icon', '/apple-icon', '/pwa-icon', '/opengraph-image', '/twitter-image'];
+  return roots.some((r) => pathname === r || pathname.startsWith(r + '/'));
 }
 
 /**
@@ -224,8 +239,12 @@ function runAccessGuard(request: NextRequest): NextResponse {
  * 미들웨어가 적용될 경로 패턴
  */
 export const config = {
-  // _next/_vercel 내부, Sentry 터널(/monitoring), 확장자 있는 정적자산을 제외한 모든 경로.
-  // /api·/projects·/share 도 포함되지만 middleware() 함수가 next-intl 을 우회시키고
-  // 기존 접근 가드·프로덕션 차단만 적용한다. (next-intl 은 마케팅 경로에만 동작)
-  matcher: ['/((?!_next|_vercel|monitoring|.*\\..*).*)'],
+  // _next/_vercel 내부, Sentry 터널(/monitoring), 실제 정적자산 확장자(끝 고정)를 제외한 모든 경로.
+  // `.*\\..*` 처럼 점 전체를 제외하면 `/projects/acme.com` 같은 점 포함 프로젝트 경로가
+  // 미들웨어를 건너뛰어 접근 가드가 무력화되므로, 확장자는 끝($)에서만 좁게 제외한다.
+  // 추가로 /projects/:path* 를 명시해 점 유무와 무관하게 접근 가드가 항상 실행되도록 한다.
+  matcher: [
+    '/((?!_next|_vercel|monitoring|.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|webmanifest|txt|xml|js|css|map|woff2?)$).*)',
+    '/projects/:path*',
+  ],
 };

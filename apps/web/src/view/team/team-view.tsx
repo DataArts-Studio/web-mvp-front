@@ -80,7 +80,8 @@ export function TeamView() {
           <h2 className="typo-h2-heading text-text-1 mb-6 text-center">{t('valuesHeading')}</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {values.map((value, index) => {
-              const Icon = valueIcons[index];
+              // 번역 배열이 아이콘 개수를 초과해도 안전하도록 순환 매핑한다.
+              const Icon = valueIcons[index % valueIcons.length];
               return (
                 <div
                   key={value.title}

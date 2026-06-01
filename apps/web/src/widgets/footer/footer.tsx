@@ -4,10 +4,10 @@ import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
 
-const currentYear = new Date().getFullYear();
-
 export const Footer = () => {
   const t = useTranslations('footer');
+  // 렌더 시점에 계산해 장수 프로세스에서도 연도가 갱신되도록 한다.
+  const currentYear = new Date().getFullYear();
 
   return (
     <footer

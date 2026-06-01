@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { Suspense } from 'react';
 
 import { Metadata } from 'next';
-import { getTranslations } from 'next-intl/server';
 
+import { buildLocaleMetadata } from '@/i18n/metadata';
 import { DocsView } from '@/view';
 import { DocsMarkdownContent, slugify } from '@/view/docs/docs-markdown-content';
 import type { DocHeading } from '@/view/docs/docs-view';
@@ -96,23 +96,5 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'meta.docs' });
-
-  return {
-    title: t('title'),
-    description: t('description'),
-    alternates: {
-      canonical: locale === 'ko' ? '/docs' : '/en/docs',
-      languages: {
-        'ko-KR': '/docs',
-        'en-US': '/en/docs',
-        'x-default': '/docs',
-      },
-    },
-    openGraph: {
-      title: t('ogTitle'),
-      description: t('ogDescription'),
-      locale: locale === 'ko' ? 'ko_KR' : 'en_US',
-    },
-  };
+  return buildLocaleMetadata({ locale, namespace: 'meta.docs', path: '/docs' });
 }
