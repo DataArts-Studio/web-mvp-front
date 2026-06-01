@@ -2,6 +2,9 @@
 
 import React, { useRef } from 'react';
 
+import { useTranslations } from 'next-intl';
+
+import { translateCaseErrors } from '@/entities/test-case/lib/translate-message';
 import { useCreateCase } from '@/features/cases-create';
 import { Input } from '@testea/ui';
 import { Plus } from 'lucide-react';
@@ -15,6 +18,7 @@ interface QuickCreateRowProps {
 export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { mutate } = useCreateCase();
+  const t = useTranslations('cases');
 
   const handleCreate = () => {
     const title = inputRef.current?.value.trim();
@@ -30,7 +34,7 @@ export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowPro
       { title, projectId, ...(suiteId ? { testSuiteId: suiteId } : {}) },
       {
         onError: (error) => {
-          toast.error(error.message || '테스트 케이스 생성에 실패했습니다.');
+          toast.error(translateCaseErrors(t, error.message) || t('ui.createFailedFallback'));
         },
       }
     );
@@ -47,8 +51,8 @@ export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowPro
       <Input
         ref={inputRef}
         type="text"
-        aria-label="새 테스트 케이스 이름"
-        placeholder="새로운 테스트 케이스 이름을 입력하고 Enter를 누르세요..."
+        aria-label={t('ui.quickCreateAriaLabel')}
+        placeholder={t('ui.quickCreatePlaceholder')}
         className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent focus:outline-none"
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleCreate();

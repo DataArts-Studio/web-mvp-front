@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import type { TestCaseCardType, TestCaseResultStatus } from '@/entities/test-case';
 import { formatRelativeTime } from '@testea/util';
 import { cn } from '@testea/util';
@@ -43,6 +45,7 @@ interface TestCaseCardProps {
 }
 
 export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
+  const t = useTranslations('cases');
   const status = STATUS_CONFIG[testCase.resultStatus] ?? STATUS_CONFIG.untested;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -90,7 +93,7 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
       <div className="relative flex shrink-0 items-center pl-2">
         <button
           type="button"
-          aria-label="케이스 작업"
+          aria-label={t('ui.caseActions')}
           aria-haspopup="menu"
           aria-expanded={isMenuOpen}
           className="rounded-1 text-text-4 hover:bg-bg-4 hover:text-text-1 focus-visible:ring-primary cursor-pointer p-1 opacity-0 transition-all group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
@@ -113,7 +116,7 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
             />
             <div
               role="menu"
-              aria-label="케이스 작업"
+              aria-label={t('ui.caseActions')}
               className="bg-bg-2 border-line-2 rounded-2 absolute top-full right-0 z-50 mt-1 min-w-[120px] border py-1 shadow-lg"
             >
               <button
@@ -127,7 +130,7 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
                 }}
               >
                 <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                복제
+                {t('ui.duplicate')}
               </button>
             </div>
           </>

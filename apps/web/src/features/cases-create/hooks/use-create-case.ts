@@ -1,5 +1,6 @@
 import { CreateTestCase } from '@/entities';
 import { createTestCase } from '@/entities/test-case/api';
+import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import { testCaseQueryKeys } from '@/features/cases-list';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -13,7 +14,7 @@ export const useCreateCase = () => {
         const message =
           Object.values(result.errors ?? {})
             .flat()
-            .join(', ') || '테스트케이스를 생성하는 도중 오류가 발생했습니다.';
+            .join(', ') || CASE_MESSAGE_CODES.CREATE_FAILED;
         throw new Error(message);
       }
       return result;
