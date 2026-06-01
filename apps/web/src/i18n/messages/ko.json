@@ -34,7 +34,10 @@
     "docsLinkAria": "문서 페이지로 이동",
     "docs": "이용 가이드",
     "searchAria": "내 프로젝트 검색 모달 열기",
-    "findProject": "내 프로젝트 찾기"
+    "findProject": "내 프로젝트 찾기",
+    "langSwitcher": "언어 선택",
+    "langKo": "한국어",
+    "langEn": "English"
   },
   "footer": {
     "ariaInfo": "사이트 정보",

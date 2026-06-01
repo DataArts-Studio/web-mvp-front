@@ -12,15 +12,27 @@ import { join } from 'path';
 type TabType = 'privacy' | 'terms';
 
 interface LegalPageProps {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{
     tab?: TabType;
   }>;
 }
 
-async function getMarkdownContent(filename: string): Promise<string> {
-  const filePath = join(process.cwd(), 'content', 'legal', filename);
-  const content = await readFile(filePath, 'utf-8');
-  return content;
+async function getMarkdownContent(filename: string, locale: string): Promise<string> {
+  // ko 는 content/legal/, 그 외 로케일은 content/legal/<locale>/. 번역본이 없으면 ko 로 폴백.
+  // (법적 고지 영어판은 법무 검토 후 추가 예정 → 현재 en 은 ko 로 폴백)
+  const localizedPath =
+    locale === 'ko'
+      ? join(process.cwd(), 'content', 'legal', filename)
+      : join(process.cwd(), 'content', 'legal', locale, filename);
+  try {
+    return await readFile(localizedPath, 'utf-8');
+  } catch {
+    if (locale !== 'ko') {
+      return getMarkdownContent(filename, 'ko');
+    }
+    throw new Error(`legal content not found: ${filename}`);
+  }
 }
 
 function extractHeadings(markdown: string): LegalHeading[] {
@@ -36,12 +48,13 @@ function extractHeadings(markdown: string): LegalHeading[] {
   return headings;
 }
 
-export default async function LegalPage({ searchParams }: LegalPageProps) {
+export default async function LegalPage({ params, searchParams }: LegalPageProps) {
+  const { locale } = await params;
   const { tab } = await searchParams;
 
   const [privacyContent, termsContent] = await Promise.all([
-    getMarkdownContent('privacy.md'),
-    getMarkdownContent('terms.md'),
+    getMarkdownContent('privacy.md', locale),
+    getMarkdownContent('terms.md', locale),
   ]);
 
   const renderedContents: Record<TabType, ReactNode> = {
