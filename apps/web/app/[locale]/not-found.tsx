@@ -1,7 +1,11 @@
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import Link from 'next/link';
+
+import { Link } from '@/i18n/navigation';
 
 export default function NotFound() {
+  const t = useTranslations('notFound');
+
   return (
     <div className="bg-bg-1 relative flex min-h-screen flex-col">
       {/* 404 Background Text */}
@@ -17,16 +21,16 @@ export default function NotFound() {
         {/* Text Section */}
         <div className="flex flex-col gap-3 pt-32 lg:pt-0">
           <h1 className="text-text-1 text-[clamp(28px,5vw,48px)] leading-[1.4] font-bold tracking-[-0.04em]">
-            이런! 찾으시는 페이지가 없어요.
+            {t('title')}
           </h1>
           <p className="text-text-2 text-[clamp(16px,2vw,24px)] leading-[1.4] tracking-[-0.04em]">
-            주소가 잘못되었거나 사라진 페이지입니다.
+            {t('description')}
           </p>
           <Link
             href="/"
             className="rounded-4 bg-primary text-body2 text-bg-1 hover:bg-primary/90 mt-6 inline-flex w-fit items-center justify-center px-6 py-3 font-semibold transition-colors"
           >
-            홈으로 돌아가기
+            {t('backHome')}
           </Link>
         </div>
 
@@ -34,7 +38,7 @@ export default function NotFound() {
         <div className="relative mt-8 h-[300px] w-full max-w-[500px] self-center lg:mt-0 lg:h-[527px] lg:w-[613px]">
           <Image
             src="/teacup/tea-cup-dizzy.svg"
-            alt="엎질러진 찻잔 일러스트"
+            alt={t('illustrationAlt')}
             fill
             className="object-contain"
             priority

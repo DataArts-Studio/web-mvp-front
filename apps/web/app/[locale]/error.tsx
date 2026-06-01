@@ -2,9 +2,10 @@
 
 import { useEffect } from 'react';
 
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import Link from 'next/link';
 
+import { Link } from '@/i18n/navigation';
 import * as Sentry from '@sentry/nextjs';
 
 interface ErrorProps {
@@ -13,6 +14,8 @@ interface ErrorProps {
 }
 
 export default function Error({ error, reset }: ErrorProps) {
+  const t = useTranslations('error');
+
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
@@ -32,10 +35,10 @@ export default function Error({ error, reset }: ErrorProps) {
         {/* Text Section */}
         <div className="flex flex-col gap-3 pt-32 lg:pt-0">
           <h1 className="text-text-1 text-[clamp(28px,5vw,48px)] leading-[1.4] font-bold tracking-[-0.04em]">
-            앗! 문제가 발생했어요.
+            {t('title')}
           </h1>
           <p className="text-text-2 text-[clamp(16px,2vw,24px)] leading-[1.4] tracking-[-0.04em]">
-            잠시 후 다시 시도해 주세요.
+            {t('description')}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button
@@ -43,13 +46,13 @@ export default function Error({ error, reset }: ErrorProps) {
               onClick={reset}
               className="rounded-4 bg-primary text-body2 text-text-1 hover:bg-primary/90 inline-flex w-fit cursor-pointer items-center justify-center px-6 py-3 font-semibold transition-colors"
             >
-              다시 시도
+              {t('retry')}
             </button>
             <Link
               href="/"
               className="rounded-4 border-line-2 text-body2 text-text-1 hover:bg-bg-3 inline-flex w-fit items-center justify-center border px-6 py-3 font-semibold transition-colors"
             >
-              홈으로 돌아가기
+              {t('backHome')}
             </Link>
           </div>
         </div>
@@ -58,7 +61,7 @@ export default function Error({ error, reset }: ErrorProps) {
         <div className="relative mt-8 h-[300px] w-full max-w-[500px] self-center lg:mt-0 lg:h-[527px] lg:w-[613px]">
           <Image
             src="/teacup/tea-cup-dizzy.svg"
-            alt="엎질러진 찻잔 일러스트"
+            alt={t('illustrationAlt')}
             fill
             className="object-contain"
             priority
