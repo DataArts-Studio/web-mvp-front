@@ -2,6 +2,8 @@
 
 import React from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import type { TestCaseCardType } from '@/entities/test-case';
 import type { TestSuiteSection } from '@/entities/test-suite-section';
 import { ChevronDown, ChevronRight, Edit2, MoreHorizontal, Trash2 } from 'lucide-react';
@@ -43,6 +45,7 @@ export const SuiteSectionGroup = ({
   onDelete,
   onSelectTestCase,
 }: SuiteSectionGroupProps) => {
+  const t = useTranslations('suites');
   return (
     <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
       {/* 섹션 헤더 */}
@@ -50,7 +53,7 @@ export const SuiteSectionGroup = ({
         <button
           type="button"
           aria-expanded={!isCollapsed}
-          aria-label={`섹션 ${section.name} 펼치기/접기`}
+          aria-label={t('ui.sectionToggleAriaLabel', { name: section.name })}
           className="flex flex-1 items-center gap-2 text-left"
           onClick={() => onToggle(section.id)}
         >
@@ -63,7 +66,7 @@ export const SuiteSectionGroup = ({
             <input
               ref={editSectionInputRef}
               type="text"
-              aria-label="섹션 이름"
+              aria-label={t('ui.sectionRenameAriaLabel')}
               value={editingSectionName}
               onChange={(e) => onEditingSectionNameChange(e.target.value)}
               onKeyDown={(e) => {
@@ -89,12 +92,14 @@ export const SuiteSectionGroup = ({
               {section.name}
             </span>
           )}
-          <span className="text-text-3 text-xs">{sectionCases.length}개</span>
+          <span className="text-text-3 text-xs">
+            {t('count.cases', { count: sectionCases.length })}
+          </span>
         </button>
         <div className="relative">
           <button
             type="button"
-            aria-label="섹션 작업"
+            aria-label={t('ui.sectionActions')}
             aria-haspopup="menu"
             aria-expanded={isMenuOpen}
             className="text-text-3 hover:text-text-1 focus-visible:ring-primary rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
@@ -111,7 +116,7 @@ export const SuiteSectionGroup = ({
               />
               <div
                 role="menu"
-                aria-label="섹션 작업"
+                aria-label={t('ui.sectionActions')}
                 className="bg-bg-2 border-line-2 rounded-2 absolute top-full right-0 z-50 mt-1 min-w-[120px] border py-1 shadow-lg"
               >
                 <button
@@ -125,7 +130,7 @@ export const SuiteSectionGroup = ({
                   }}
                 >
                   <Edit2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  이름 수정
+                  {t('ui.sectionRename')}
                 </button>
                 <button
                   type="button"
@@ -137,7 +142,7 @@ export const SuiteSectionGroup = ({
                   }}
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  섹션 삭제
+                  {t('ui.sectionDelete')}
                 </button>
               </div>
             </>
@@ -149,9 +154,7 @@ export const SuiteSectionGroup = ({
       {!isCollapsed && (
         <div className="divide-line-2 divide-y">
           {sectionCases.length === 0 ? (
-            <div className="text-text-3 px-4 py-6 text-center text-sm">
-              이 섹션에 배정된 케이스가 없습니다.
-            </div>
+            <div className="text-text-3 px-4 py-6 text-center text-sm">{t('ui.sectionEmpty')}</div>
           ) : (
             sectionCases.map((testCase: TestCaseCardType) => (
               <TestCaseRow key={testCase.id} testCase={testCase} onSelect={onSelectTestCase} />

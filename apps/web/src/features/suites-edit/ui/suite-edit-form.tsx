@@ -2,6 +2,8 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { useTranslations } from 'next-intl';
+
 import { TestSuite } from '@/entities/test-suite';
 import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
 import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
@@ -16,6 +18,7 @@ interface SuiteEditFormProps {
 }
 
 export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
+  const t = useTranslations('suites');
   const { mutate, isPending } = useUpdateSuite();
   const {
     register,
@@ -105,7 +108,7 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
       >
         {isPending && (
           <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
-            <LoadingSpinner size="md" text="테스트 스위트를 수정하고 있어요" />
+            <LoadingSpinner size="md" text={t('ui.editLoading')} />
           </div>
         )}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8" noValidate>
@@ -113,36 +116,34 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
           {/* Header */}
           <div className="border-line-1 border-b pb-6">
             <h2 id={titleId} className="text-primary text-3xl">
-              테스트 스위트 수정
+              {t('ui.editTitle')}
             </h2>
-            <p className="mt-2 text-base text-neutral-400">
-              테스트 스위트의 이름과 설명을 수정합니다.
-            </p>
+            <p className="mt-2 text-base text-neutral-400">{t('ui.editSubtitle')}</p>
           </div>
           {/* Body */}
           <div className="flex flex-col gap-6">
             <FormField.Root className="flex flex-col gap-2">
               <FormField.Label className="text-text-1 font-medium">
-                스위트 이름 <span className="text-primary">*</span>
+                {t('ui.nameLabel')} <span className="text-primary">*</span>
               </FormField.Label>
               <FormField.Control
-                placeholder="스위트 이름을 입력해 주세요."
+                placeholder={t('ui.namePlaceholder')}
                 type="text"
                 disabled={isPending}
                 {...register('title', {
-                  required: '유효한 이름을 입력해주세요.',
+                  required: t('ui.nameRequired'),
                   minLength: {
                     value: 3,
-                    message: '스위트 이름은 최소 3자 이상이어야 합니다.',
+                    message: t('ui.nameMin'),
                   },
                   maxLength: {
                     value: 50,
-                    message: '스위트 이름은 50자를 초과할 수 없습니다.',
+                    message: t('ui.nameMax'),
                   },
-                  validate: (value) => !!value.trim() || '공백만으로는 이름을 생성할 수 없습니다.',
+                  validate: (value) => !!value.trim() || t('ui.nameBlank'),
                   pattern: {
                     value: /^[a-zA-Z0-9가-힣\s._-]+$/,
-                    message: '특수문자는 사용할 수 없습니다. (-, _, ., 공백만 허용)',
+                    message: t('ui.namePattern'),
                   },
                 })}
                 className={cn(
@@ -155,9 +156,11 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
               )}
             </FormField.Root>
             <FormField.Root className="flex flex-col gap-2">
-              <FormField.Label className="text-text-1 font-medium">설명 (선택)</FormField.Label>
+              <FormField.Label className="text-text-1 font-medium">
+                {t('ui.descriptionLabel')}
+              </FormField.Label>
               <FormField.Control
-                placeholder="이 스위트에 대한 간략한 설명을 입력해주세요."
+                placeholder={t('ui.descriptionPlaceholder')}
                 type="text"
                 disabled={isPending}
                 {...register('description')}
@@ -173,10 +176,10 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
               disabled={isPending}
               onClick={handleAbandon}
             >
-              취소
+              {t('ui.cancel')}
             </DSButton>
             <DSButton type="submit" variant="solid" className="w-full" disabled={isPending}>
-              {isPending ? '수정 중...' : '수정'}
+              {isPending ? t('ui.editingShort') : t('ui.edit')}
             </DSButton>
           </div>
         </form>

@@ -1,16 +1,43 @@
-import {
-  createMockTestSuiteRow,
-  mockGetDatabase,
-  resetMockDb,
-  setMockSelectReturn,
-} from '@/shared/test/__mocks__/db';
+import { createMockTestSuiteRow } from '@/shared/test/__mocks__/db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getTestSuites } from './server-actions';
 
-// DB 모듈 모킹
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+}));
+
+// getTestSuites 의 쿼리 체인:
+// db.select().from().where().$dynamic() → (limit().offset())? → await
+let mockRows: unknown = [];
+let throwOnGetDatabase = false;
+
+// $dynamic() 이후 limit/offset 가 붙어도, 안 붙어도 await 시 mockRows 로 resolve 되도록
+// then 을 가진 thenable 을 단계마다 반환한다.
+const makeThenable = (): any => ({
+  limit: vi.fn(() => makeThenable()),
+  offset: vi.fn(() => makeThenable()),
+  $dynamic: vi.fn(() => makeThenable()),
+  then: (resolve: (value: unknown) => void) => Promise.resolve(mockRows).then(resolve),
+});
+
+const mockDb = {
+  select: vi.fn(() => ({
+    from: vi.fn(() => ({
+      where: vi.fn(() => makeThenable()),
+    })),
+  })),
+};
+
+const mockGetDatabase = vi.fn(() => {
+  if (throwOnGetDatabase) {
+    throw new Error('DB 연결 오류');
+  }
+  return mockDb;
+});
+
 vi.mock('@testea/db', () => ({
-  getDatabase: mockGetDatabase,
+  getDatabase: () => mockGetDatabase(),
   testSuites: {
     id: 'id',
     project_id: 'project_id',
@@ -19,9 +46,14 @@ vi.mock('@testea/db', () => ({
   },
 }));
 
+const setMockRows = (rows: unknown) => {
+  mockRows = rows;
+};
+
 describe('getTestSuites', () => {
   beforeEach(() => {
-    resetMockDb();
+    mockRows = [];
+    throwOnGetDatabase = false;
   });
 
   afterEach(() => {
@@ -30,11 +62,11 @@ describe('getTestSuites', () => {
 
   describe('성공 케이스', () => {
     it('프로젝트 ID로 테스트 스위트 목록을 조회한다', async () => {
-      const mockRows = [
+      const mockRowList = [
         createMockTestSuiteRow({ id: 'suite-1', name: '스위트 1입니다 제목' }),
         createMockTestSuiteRow({ id: 'suite-2', name: '스위트 2입니다 제목' }),
       ];
-      setMockSelectReturn(mockRows);
+      setMockRows(mockRowList);
 
       const result = await getTestSuites({ projectId: 'project-123' });
 
@@ -47,7 +79,7 @@ describe('getTestSuites', () => {
     });
 
     it('빈 목록도 성공으로 반환한다', async () => {
-      setMockSelectReturn([]);
+      setMockRows([]);
 
       const result = await getTestSuites({ projectId: 'project-123' });
 
@@ -58,8 +90,7 @@ describe('getTestSuites', () => {
     });
 
     it('페이지네이션 파라미터가 적용된다', async () => {
-      const mockRows = [createMockTestSuiteRow()];
-      setMockSelectReturn(mockRows);
+      setMockRows([createMockTestSuiteRow()]);
 
       const result = await getTestSuites({
         projectId: 'project-123',
@@ -70,8 +101,7 @@ describe('getTestSuites', () => {
     });
 
     it('기본 페이지네이션 값이 적용된다 (offset: 0, limit: 10)', async () => {
-      const mockRows = [createMockTestSuiteRow()];
-      setMockSelectReturn(mockRows);
+      setMockRows([createMockTestSuiteRow()]);
 
       const result = await getTestSuites({ projectId: 'project-123' });
 
@@ -89,7 +119,7 @@ describe('getTestSuites', () => {
         updated_at: new Date('2024-01-16'),
         archived_at: null,
       });
-      setMockSelectReturn([mockRow]);
+      setMockRows([mockRow]);
 
       const result = await getTestSuites({ projectId: 'project-123' });
 
@@ -111,17 +141,13 @@ describe('getTestSuites', () => {
 
   describe('실패 케이스', () => {
     it('DB 에러가 발생하면 에러를 반환한다', async () => {
-      mockGetDatabase.mockImplementationOnce(() => {
-        throw new Error('DB 연결 오류');
-      });
+      throwOnGetDatabase = true;
 
       const result = await getTestSuites({ projectId: 'project-123' });
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain(
-          '테스트 스위트를 불러오는 도중 오류가 발생했습니다.'
-        );
+        expect(result.errors._testSuite).toContain('LOAD_FAILED');
       }
     });
   });

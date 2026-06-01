@@ -1,4 +1,7 @@
+'use client';
 import React, { useMemo } from 'react';
+
+import { useTranslations } from 'next-intl';
 
 import { TestSuiteCard } from '@/entities/test-suite';
 import { DSButton } from '@/shared';
@@ -11,31 +14,35 @@ interface SuiteCardProps {
   onEdit: () => void;
 }
 
-const tagToneText = (tone: TestSuiteCard['tag']['tone']) => {
-  switch (tone) {
-    case 'info':
-      return '정보';
-    case 'success':
-      return '성공';
-    case 'warning':
-      return '경고';
-    case 'danger':
-      return '위험';
-    default:
-      return '기본';
-  }
-};
-
 export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
+  const t = useTranslations('suites');
   const titleId = React.useId();
   const descId = React.useId();
+
+  const tagToneText = (tone: TestSuiteCard['tag']['tone']) => {
+    switch (tone) {
+      case 'info':
+        return t('ui.tagInfo');
+      case 'success':
+        return t('ui.tagSuccess');
+      case 'warning':
+        return t('ui.tagWarning');
+      case 'danger':
+        return t('ui.tagDanger');
+      default:
+        return t('ui.tagNeutral');
+    }
+  };
+
+  // 서버가 내려준 tag.label('기본') 대신 톤 기반 번역 라벨을 표시한다.
+  const tagLabel = tagToneText(suite.tag.tone);
 
   const primaryPath = suite.includedPaths?.[0] ?? '-';
   const milestoneText = suite.linkedMilestone
     ? `${suite.linkedMilestone.versionLabel} ${suite.linkedMilestone.title}`
-    : '없음';
+    : t('ui.none');
 
-  const lastRunDateText = suite.lastRun ? formatDate(suite.lastRun.runAt) : '없음';
+  const lastRunDateText = suite.lastRun ? formatDate(suite.lastRun.runAt) : t('ui.none');
 
   const failed = suite.lastRun?.counts.failed ?? 0;
   const blocked = suite.lastRun?.counts.blocked ?? 0;
@@ -43,9 +50,9 @@ export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
   const hasIssue = failed > 0 || blocked > 0;
   const issueText = suite.lastRun
     ? hasIssue
-      ? `실패 ${failed}개 · Blocked ${blocked}개`
-      : '이슈 없음'
-    : '최근 실행 없음';
+      ? t('count.issueSummary', { failed, blocked })
+      : t('ui.issueNone')
+    : t('ui.noLastRun');
 
   const issueIconClass = suite.lastRun
     ? hasIssue
@@ -64,23 +71,24 @@ export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
     }
   })();
 
-  const descriptionText = suite.description ?? '설명 없음';
+  const descriptionText = suite.description ?? t('ui.noDescription');
 
   const srSummary = useMemo(() => {
     return [
-      `테스트 스위트 ${suite.title}`,
-      `태그 ${suite.tag.label}`,
-      `태그 중요도 ${tagToneText(suite.tag.tone)}`,
-      `포함 경로 ${primaryPath}`,
-      `테스트 케이스 ${suite.caseCount}개`,
-      `마일스톤 ${milestoneText}`,
-      `최근 실행 ${lastRunDateText}`,
-      `최근 실행 결과 ${issueText}`,
-      `실행 히스토리 ${suite.executionHistoryCount}회`,
+      t('ui.srTestSuite', { title: suite.title }),
+      t('ui.srTag', { label: tagLabel }),
+      t('ui.srTagTone', { tone: tagToneText(suite.tag.tone) }),
+      t('ui.srPath', { path: primaryPath }),
+      t('ui.srCaseCount', { count: t('count.cases', { count: suite.caseCount }) }),
+      t('ui.srMilestone', { milestone: milestoneText }),
+      t('ui.srLastRun', { date: lastRunDateText }),
+      t('ui.srLastRunResult', { result: issueText }),
+      t('ui.srRunHistory', { count: t('count.runs', { count: suite.executionHistoryCount }) }),
     ].join('. ');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     suite.title,
-    suite.tag.label,
+    tagLabel,
     suite.tag.tone,
     primaryPath,
     suite.caseCount,
@@ -110,9 +118,12 @@ export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
           </h2>
           <span
             className={`typo-label-heading rounded-full px-3 py-1 ${tagToneClass}`}
-            aria-label={`태그 ${suite.tag.label}. 중요도 ${tagToneText(suite.tag.tone)}`}
+            aria-label={t('ui.tagAriaLabel', {
+              label: tagLabel,
+              tone: tagToneText(suite.tag.tone),
+            })}
           >
-            {suite.tag.label}
+            {tagLabel}
           </span>
           <DSButton variant="ghost" size="icon" onClick={handleEditClick}>
             <Edit className="h-3 w-3" />
@@ -125,46 +136,48 @@ export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
       <dl className="text-label-normal text-text-3 flex w-full flex-col gap-2 md:w-[30%]">
         <div className="flex items-center gap-1.5">
           <FolderTree aria-hidden="true" className="text-text-3 h-4 w-4" strokeWidth={1.5} />
-          <dt className="sr-only">포함 경로</dt>
-          <dd>포함 경로: {primaryPath}</dd>
+          <dt className="sr-only">{t('ui.includedPaths')}</dt>
+          <dd>{t('ui.pathLabel', { path: primaryPath })}</dd>
         </div>
         <div className="flex items-center gap-1.5">
           <FileText aria-hidden="true" className="text-text-3 h-4 w-4" strokeWidth={1.5} />
-          <dt className="sr-only">테스트 케이스</dt>
-          <dd>테스트 케이스 {suite.caseCount}개</dd>
+          <dt className="sr-only">{t('ui.testCases')}</dt>
+          <dd>
+            {t('ui.testCases')} {t('count.cases', { count: suite.caseCount })}
+          </dd>
         </div>
 
         <div className="flex items-center gap-1.5">
           <Layers aria-hidden="true" className="text-text-3 h-4 w-4" strokeWidth={1.5} />
-          <dt className="sr-only">연결된 마일스톤</dt>
-          <dd>연결된 마일스톤: {milestoneText}</dd>
+          <dt className="sr-only">{t('ui.milestoneTitle')}</dt>
+          <dd>{t('ui.milestoneLabel', { milestone: milestoneText })}</dd>
         </div>
       </dl>
       <dl className="text-label-normal text-text-3 flex w-full flex-col gap-1 md:w-[30%] md:items-end">
         <div className="flex items-center gap-1.5 md:justify-end">
           <PlayCircle aria-hidden="true" className="text-text-3 h-4 w-4" strokeWidth={1.5} />
-          <dt className="sr-only">최근 실행 날짜</dt>
-          <dd>최근 실행: {lastRunDateText}</dd>
+          <dt className="sr-only">{t('ui.lastRunDate')}</dt>
+          <dd>{t('ui.lastRunDateLabel', { date: lastRunDateText })}</dd>
         </div>
         <div className="flex items-center gap-1.5 md:justify-end">
           <AlertCircle
             className={`${issueIconClass} h-4 w-4`}
             strokeWidth={1.5}
             aria-label={
-              suite.lastRun
-                ? hasIssue
-                  ? '실패 또는 블록 이슈 존재'
-                  : '이슈 없음'
-                : '최근 실행 없음'
+              suite.lastRun ? (hasIssue ? t('ui.hasIssue') : t('ui.issueNone')) : t('ui.noLastRun')
             }
           />
-          <dt className="sr-only">최근 실행 결과</dt>
+          <dt className="sr-only">{t('ui.lastRunResultSr')}</dt>
           <dd>{issueText}</dd>
         </div>
         <div className="flex items-center gap-1.5 md:justify-end">
           <FileText aria-hidden="true" className="text-text-3 h-4 w-4" strokeWidth={1.5} />
-          <dt className="sr-only">실행 히스토리</dt>
-          <dd>실행 히스토리 {suite.executionHistoryCount}회</dd>
+          <dt className="sr-only">{t('ui.runHistory')}</dt>
+          <dd>
+            {t('ui.runHistoryLabel', {
+              count: t('count.runs', { count: suite.executionHistoryCount }),
+            })}
+          </dd>
         </div>
       </dl>
     </div>

@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -50,6 +51,7 @@ const TestCaseSideView = dynamic(
 const TestSuiteDetailView = () => {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('suites');
   const queryClient = useQueryClient();
   const suiteId = params.suiteId as string;
   const [isEditing, setIsEditing] = useState(false);
@@ -234,12 +236,12 @@ const TestSuiteDetailView = () => {
     return (
       <MainContainer className="flex flex-1 items-center justify-center">
         <div className="text-center">
-          <p className="text-text-1 font-semibold">테스트 스위트를 찾을 수 없습니다.</p>
+          <p className="text-text-1 font-semibold">{t('ui.notFound')}</p>
           <Link
             href={`/projects/${params.slug}/suites`}
             className="text-primary mt-4 inline-block hover:underline"
           >
-            스위트 목록으로 돌아가기
+            {t('ui.backToListLong')}
           </Link>
         </div>
       </MainContainer>
@@ -248,6 +250,14 @@ const TestSuiteDetailView = () => {
 
   const tagToneStyle =
     TAG_TONE_CONFIG[suite.tag?.tone ?? 'neutral']?.style ?? TAG_TONE_CONFIG.neutral.style;
+  const tagToneLabelKey: Record<string, string> = {
+    neutral: 'ui.tagNeutral',
+    info: 'ui.tagInfo',
+    success: 'ui.tagSuccess',
+    warning: 'ui.tagWarning',
+    danger: 'ui.tagDanger',
+  };
+  const tagLabel = t(tagToneLabelKey[suite.tag?.tone ?? 'neutral'] ?? 'ui.tagNeutral');
 
   return (
     <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
@@ -258,7 +268,7 @@ const TestSuiteDetailView = () => {
           className="text-text-3 hover:text-text-1 flex w-fit items-center gap-1 text-sm transition-colors"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          스위트 목록으로
+          {t('ui.backToList')}
         </Link>
 
         <div className="flex items-start justify-between">
@@ -267,14 +277,14 @@ const TestSuiteDetailView = () => {
               <h1 className="typo-title-heading">{suite.title}</h1>
               {suite.tag && (
                 <span className={cn('rounded-full px-3 py-1 text-sm font-medium', tagToneStyle)}>
-                  {suite.tag.label}
+                  {tagLabel}
                 </span>
               )}
             </div>
             <div className="text-text-3 flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-                <span>생성일: {formatDate(suite.createdAt)}</span>
+                <span>{t('ui.createdAt', { date: formatDate(suite.createdAt) })}</span>
               </div>
               {suite.linkedMilestone && (
                 <Link
@@ -297,7 +307,7 @@ const TestSuiteDetailView = () => {
               onClick={() => setIsEditing(true)}
             >
               <Edit2 className="h-4 w-4" aria-hidden="true" />
-              수정
+              {t('ui.edit')}
             </DSButton>
             <ArchiveButton
               targetType="suite"
@@ -311,7 +321,7 @@ const TestSuiteDetailView = () => {
       {/* 설명 */}
       <section className="col-span-6">
         <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-          <p className="text-text-2">{suite.description || '설명이 없습니다.'}</p>
+          <p className="text-text-2">{suite.description || t('ui.noDescription')}</p>
         </div>
       </section>
 
@@ -321,7 +331,7 @@ const TestSuiteDetailView = () => {
           <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
             <div className="mb-3 flex items-center gap-2">
               <FolderTree className="text-text-3 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-              <h3 className="text-text-3 font-semibold">포함된 경로</h3>
+              <h3 className="text-text-3 font-semibold">{t('ui.includedPaths')}</h3>
             </div>
             <div className="flex flex-wrap gap-2">
               {suite.includedPaths.map((path, index) => (
