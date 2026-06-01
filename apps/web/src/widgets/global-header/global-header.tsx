@@ -11,6 +11,7 @@ import { LANDING_EVENTS, NAVIGATION_EVENTS, track } from '@/shared/lib/analytics
 import { NotificationBell } from '@/widgets/notification-center';
 
 import { BetaBanner } from './beta-banner';
+import { LanguageSwitcher } from './language-switcher';
 import { useBetaBanner } from './use-beta-banner';
 
 const ProjectSearchModal = dynamic(
@@ -69,6 +70,7 @@ export const GlobalHeader = () => {
             {t('findProject')}
           </button>
           <NotificationBell />
+          <LanguageSwitcher />
         </nav>
       </header>
 

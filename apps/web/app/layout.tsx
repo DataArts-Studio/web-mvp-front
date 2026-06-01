@@ -88,14 +88,8 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ko_KR',
     siteName: '테스티아(Testea)',
-    images: [
-      {
-        url: '/opengraph-image',
-        width: 1200,
-        height: 630,
-        alt: 'Testea - 테스트 관리 플랫폼',
-      },
-    ],
+    // images 는 명시하지 않는다. Next 의 파일 컨벤션(opengraph-image)이 라우트 세그먼트별로
+    // 자동 매핑돼, [locale] 마케팅은 로케일별 OG, 루트(제품/공유)는 기본 OG 를 쓴다.
   },
   twitter: {
     card: 'summary_large_image',
@@ -103,7 +97,7 @@ export const metadata: Metadata = {
     description:
       '요구사항 기반 AI 테스트 시나리오·케이스 생성, 실행, 결과 추적을 한 곳에서. 무료 QA 도구 테스티아.',
     creator: '@testea',
-    images: ['/opengraph-image'],
+    // images 미지정: twitter-image 파일 컨벤션이 라우트별로 자동 매핑된다.
   },
   robots: {
     index: allowIndexing,

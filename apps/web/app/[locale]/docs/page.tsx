@@ -19,6 +19,7 @@ type DocTab =
   | 'milestones';
 
 interface DocsPageProps {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{
     tab?: DocTab;
   }>;
@@ -33,12 +34,18 @@ const docFiles: Record<DocTab, string> = {
   milestones: 'milestones.md',
 };
 
-async function getMarkdownContent(filename: string): Promise<string> {
-  const filePath = join(process.cwd(), 'content', 'docs', filename);
+async function getMarkdownContent(filename: string, locale: string): Promise<string> {
+  // ko 는 content/docs/, 그 외 로케일은 content/docs/<locale>/. 번역본이 없으면 ko 로 폴백.
+  const localizedPath =
+    locale === 'ko'
+      ? join(process.cwd(), 'content', 'docs', filename)
+      : join(process.cwd(), 'content', 'docs', locale, filename);
   try {
-    const content = await readFile(filePath, 'utf-8');
-    return content;
+    return await readFile(localizedPath, 'utf-8');
   } catch {
+    if (locale !== 'ko') {
+      return getMarkdownContent(filename, 'ko');
+    }
     return '# 문서를 찾을 수 없습니다\n\n요청한 문서가 존재하지 않습니다.';
   }
 }
@@ -56,19 +63,20 @@ function extractHeadings(markdown: string): DocHeading[] {
   return headings;
 }
 
-async function getAllContents(): Promise<Record<DocTab, string>> {
+async function getAllContents(locale: string): Promise<Record<DocTab, string>> {
   const entries = await Promise.all(
     Object.entries(docFiles).map(async ([key, filename]) => {
-      const content = await getMarkdownContent(filename);
+      const content = await getMarkdownContent(filename, locale);
       return [key, content] as [DocTab, string];
     })
   );
   return Object.fromEntries(entries) as Record<DocTab, string>;
 }
 
-export default async function DocsPage({ searchParams }: DocsPageProps) {
+export default async function DocsPage({ params, searchParams }: DocsPageProps) {
+  const { locale } = await params;
   const { tab } = await searchParams;
-  const contents = await getAllContents();
+  const contents = await getAllContents(locale);
 
   const validTab = tab && tab in docFiles ? tab : 'getting-started';
 
