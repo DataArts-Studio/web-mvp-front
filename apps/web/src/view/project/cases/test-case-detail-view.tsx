@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -34,6 +35,7 @@ type DetailTab = 'details' | 'versions';
 
 export const TestCaseDetailView = () => {
   const params = useParams();
+  const t = useTranslations('cases');
   const router = useRouter();
   const caseId = params.caseId as string;
   const projectSlug = params.slug as string;
@@ -74,9 +76,9 @@ export const TestCaseDetailView = () => {
       <MainContainer className="flex flex-1 items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <XCircle className="h-12 w-12 text-red-400" />
-          <p className="text-text-1 font-semibold">테스트 케이스를 불러올 수 없습니다.</p>
+          <p className="text-text-1 font-semibold">{t('ui.loadDetailFailed')}</p>
           <Link href={`/projects/${projectSlug}/cases`} className="text-primary hover:underline">
-            목록으로 돌아가기
+            {t('ui.backToList')}
           </Link>
         </div>
       </MainContainer>
@@ -92,7 +94,7 @@ export const TestCaseDetailView = () => {
           className="text-text-3 hover:text-text-1 flex w-fit items-center gap-1 text-sm transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          테스트 케이스 목록으로
+          {t('ui.backToCaseList')}
         </Link>
 
         <div className="flex items-start justify-between">
@@ -110,7 +112,7 @@ export const TestCaseDetailView = () => {
               onClick={() => setIsEditing(true)}
             >
               <Edit2 className="h-4 w-4" />
-              수정
+              {t('ui.edit')}
             </DSButton>
             <ArchiveButton
               targetType="case"
@@ -125,19 +127,21 @@ export const TestCaseDetailView = () => {
       <section className="col-span-6 flex flex-wrap items-center gap-4">
         <div className="text-text-3 flex items-center gap-1.5 text-sm">
           <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-          <span>{currentSuite?.title || '스위트 없음'}</span>
+          <span>{currentSuite?.title || t('ui.noSuite')}</span>
         </div>
         <div className="text-text-3 flex items-center gap-1.5 text-sm">
           <Flag className="h-4 w-4" strokeWidth={1.5} />
-          <span>{testCase.testType ? getTestTypeLabel(testCase.testType) : '-'}</span>
+          <span>
+            {testCase.testType ? getTestTypeLabel(testCase.testType) : t('ui.emptyValue')}
+          </span>
         </div>
         <div className="text-text-3 flex items-center gap-1.5 text-sm">
           <Calendar className="h-4 w-4" strokeWidth={1.5} />
-          <span>생성: {formatDateTime(testCase.createdAt)}</span>
+          <span>{t('ui.createdAt', { date: formatDateTime(testCase.createdAt) })}</span>
         </div>
         <div className="text-text-3 flex items-center gap-1.5 text-sm">
           <Clock className="h-4 w-4" strokeWidth={1.5} />
-          <span>수정: {formatDateTime(testCase.updatedAt)}</span>
+          <span>{t('ui.updatedAt', { date: formatDateTime(testCase.updatedAt) })}</span>
         </div>
       </section>
 
@@ -151,7 +155,7 @@ export const TestCaseDetailView = () => {
           }`}
           onClick={() => setActiveTab('details')}
         >
-          상세 정보
+          {t('ui.details')}
         </button>
         <button
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
@@ -162,7 +166,7 @@ export const TestCaseDetailView = () => {
           onClick={() => setActiveTab('versions')}
         >
           <History className="h-4 w-4" />
-          변경 이력
+          {t('ui.versionHistory')}
         </button>
       </nav>
 
@@ -182,26 +186,26 @@ export const TestCaseDetailView = () => {
                 </span>
               ))
             ) : (
-              <span className="text-text-3 text-sm">태그 없음</span>
+              <span className="text-text-3 text-sm">{t('ui.noTags')}</span>
             )}
           </section>
 
           {/* 전제 조건 */}
           <section className="col-span-6 flex flex-col gap-2">
-            <h2 className="typo-h2-heading">전제 조건</h2>
-            <StepsList steps={testCase.preCondition} emptyText="전제 조건이 없습니다." />
+            <h2 className="typo-h2-heading">{t('ui.preconditions')}</h2>
+            <StepsList steps={testCase.preCondition} emptyText={t('ui.noPreconditions')} />
           </section>
 
           {/* 테스트 단계 */}
           <section className="col-span-6 flex flex-col gap-2">
-            <h2 className="typo-h2-heading">테스트 단계</h2>
-            <StepsList steps={testCase.testSteps} emptyText="테스트 단계가 없습니다." />
+            <h2 className="typo-h2-heading">{t('ui.testSteps')}</h2>
+            <StepsList steps={testCase.testSteps} emptyText={t('ui.noTestSteps')} />
           </section>
 
           {/* 예상 결과 */}
           <section className="col-span-6 flex flex-col gap-2">
-            <h2 className="typo-h2-heading">예상 결과</h2>
-            <StepsList steps={testCase.expectedResult} emptyText="예상 결과가 없습니다." />
+            <h2 className="typo-h2-heading">{t('ui.expectedResults')}</h2>
+            <StepsList steps={testCase.expectedResult} emptyText={t('ui.noExpectedResults')} />
           </section>
 
           {/* 첨부파일 */}
@@ -222,7 +226,7 @@ export const TestCaseDetailView = () => {
           <section className="col-span-6">
             <DSButton className="flex items-center gap-2" onClick={handleRunTest}>
               <Play className="h-4 w-4" />
-              테스트 실행 생성
+              {t('ui.runTestCreate')}
             </DSButton>
           </section>
         </>

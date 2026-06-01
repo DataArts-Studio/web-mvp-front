@@ -2,6 +2,8 @@
 
 import React from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@testea/util';
@@ -14,6 +16,7 @@ interface SortableTestCaseRowProps {
 }
 
 export const SortableTestCaseRow = ({ id, children, disabled }: SortableTestCaseRowProps) => {
+  const t = useTranslations('cases');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     disabled,
@@ -36,7 +39,7 @@ export const SortableTestCaseRow = ({ id, children, disabled }: SortableTestCase
         {!disabled && (
           <button
             type="button"
-            aria-label="드래그하여 순서 변경"
+            aria-label={t('ui.dragToReorder')}
             className="text-text-4 hover:text-text-2 flex h-full w-6 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
             {...attributes}
             {...listeners}
