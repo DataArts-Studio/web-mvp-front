@@ -1,5 +1,42 @@
 {
   "common": {},
+  "aside": {
+    "sections": {
+      "requirements": "Requirements",
+      "testManagement": "Test Management"
+    },
+    "items": {
+      "requirements": "Requirements",
+      "scenarios": "Scenarios",
+      "cases": "Test Cases",
+      "suites": "Test Suites",
+      "milestones": "Milestones",
+      "runs": "Test Runs",
+      "checklists": "Checklists",
+      "trash": "Trash",
+      "settings": "Settings",
+      "help": "Help"
+    },
+    "dashboardAria": "Go to dashboard",
+    "brand": "Test Tools",
+    "search": "Search",
+    "comingSoon": "This feature is coming soon."
+  },
+  "notifications": {
+    "category": {
+      "feature": "New feature",
+      "maintenance": "Maintenance",
+      "policy": "Policy",
+      "event": "Event",
+      "notice": "Notice"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "unread": "Unread"
+  },
   "meta": {
     "landing": {
       "title": "Testea - Free QA tool for AI test scenario and case generation",
