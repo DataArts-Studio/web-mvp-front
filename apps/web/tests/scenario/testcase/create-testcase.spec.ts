@@ -16,7 +16,7 @@ test.describe('테스트 케이스 생성 시나리오', () => {
     await test.step('새로운 테스트 케이스 내용을 입력하고 제출한다.', async () => {
       await testCasePage.openCreateForm();
       await testCasePage.enterInput(testCaseTitle);
-      await testCasePage.submit();
+      await testCasePage.submitAndWaitForPersist();
     });
 
     await test.step('생성된 테스트 케이스가 목록에 정상적으로 반영되었는지 확인한다.', async () => {
