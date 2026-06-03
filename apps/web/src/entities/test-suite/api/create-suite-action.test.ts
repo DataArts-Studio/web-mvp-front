@@ -66,6 +66,7 @@ describe('createTestSuite', () => {
           updatedAt: mockRow.updated_at,
           archivedAt: mockRow.archived_at,
           lifecycleStatus: mockRow.lifecycle_status,
+          lastExecutedAt: null,
         });
         expect(result.message).toBe('SUITE_CREATED');
       }

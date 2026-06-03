@@ -11,7 +11,16 @@ import { useOutsideClick } from '@testea/lib';
 import { RUN_STATUS_CONFIG } from '@testea/ui';
 import { cn } from '@testea/util';
 import { formatDateKR } from '@testea/util';
-import { ArrowLeft, BarChart3, Check, ChevronDown, Keyboard, Pencil, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  BarChart3,
+  Check,
+  ChevronDown,
+  Keyboard,
+  Pencil,
+  RotateCcw,
+  X,
+} from 'lucide-react';
 
 import { SOURCE_TYPE_CONFIG } from './run-detail-constants';
 
@@ -24,6 +33,8 @@ interface RunDetailHeaderProps {
   onShowShortcuts: () => void;
   showCharts: boolean;
   onToggleCharts: () => void;
+  onRerun: () => void;
+  isRerunning: boolean;
 }
 
 export const RunDetailHeader = ({
@@ -35,6 +46,8 @@ export const RunDetailHeader = ({
   onShowShortcuts,
   showCharts,
   onToggleCharts,
+  onRerun,
+  isRerunning,
 }: RunDetailHeaderProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -148,6 +161,15 @@ export const RunDetailHeader = ({
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={onRerun}
+            disabled={isRerunning}
+            className="rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="다시 실행"
+            title="다시 실행"
+          >
+            <RotateCcw className={cn('h-4 w-4', isRerunning && 'animate-spin')} />
+          </button>
           <button
             onClick={onToggleCharts}
             className={cn(

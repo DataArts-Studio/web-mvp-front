@@ -27,6 +27,10 @@ export const mockDb: any = {
         limit: vi.fn(() => ({
           offset: vi.fn(() => Promise.resolve(mockReturnValue)),
         })),
+        groupBy: vi.fn(() => ({
+          then: (resolve: (value: unknown) => void) =>
+            Promise.resolve(mockReturnValue).then(resolve),
+        })),
         then: (resolve: (value: unknown) => void) => Promise.resolve(mockReturnValue).then(resolve),
       })),
       limit: vi.fn(() => ({

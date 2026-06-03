@@ -21,6 +21,7 @@ import { testSuiteByIdQueryOptions } from '@/entities/test-suite/api/query';
 import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { AddCasesToSuiteModal, SuiteEditForm } from '@/features/suites-edit';
 import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
+import { LastRunFreshnessLabel } from '@/shared/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MainContainer } from '@testea/ui';
 import { DSButton, LoadingSpinner } from '@testea/ui';
@@ -297,6 +298,7 @@ const TestSuiteDetailView = () => {
                   </span>
                 </Link>
               )}
+              <LastRunFreshnessLabel lastExecutedAt={suite.lastExecutedAt} />
             </div>
           </div>
 

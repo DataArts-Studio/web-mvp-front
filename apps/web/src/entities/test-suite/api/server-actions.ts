@@ -17,7 +17,7 @@ import {
   testRuns,
   testSuites,
 } from '@testea/db';
-import { and, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, isNull, max } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 type GetTestSuitesParams = {
@@ -71,6 +71,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
       updatedAt: inserted.updated_at,
       archivedAt: inserted.archived_at ?? null,
       lifecycleStatus: inserted.lifecycle_status,
+      lastExecutedAt: null,
     };
 
     return {
@@ -122,6 +123,7 @@ export const getTestSuites = async ({
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
       lifecycleStatus: row.lifecycle_status,
+      lastExecutedAt: null,
     }));
 
     return {
@@ -159,6 +161,7 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
       lifecycleStatus: row.lifecycle_status,
+      lastExecutedAt: null,
     };
 
     return {
@@ -208,6 +211,7 @@ export const getTestSuiteByIdWithStats = async (
           updatedAt: row.updated_at,
           archivedAt: row.archived_at ?? null,
           lifecycleStatus: row.lifecycle_status,
+          lastExecutedAt: null,
           tag: { label: '기본', tone: 'neutral' as const },
           includedPaths: [],
           caseCount: 0,
@@ -288,6 +292,7 @@ export const updateTestSuite = async (
       updatedAt: updated.updated_at,
       archivedAt: updated.archived_at ?? null,
       lifecycleStatus: updated.lifecycle_status,
+      lastExecutedAt: null,
     };
 
     return {
@@ -356,56 +361,84 @@ export const getTestSuitesWithStats = async ({
       }
     };
 
-    const [caseCountRows, testTypeRows, msRows, runCountRows, recentRunRows] = await Promise.all([
-      // Q2: 케이스 수 집계
-      db
-        .select({ suiteId: testCases.test_suite_id, cnt: count() })
-        .from(testCases)
-        .where(
-          and(eq(testCases.lifecycle_status, 'ACTIVE'), inArray(testCases.test_suite_id, suiteIds))
-        )
-        .groupBy(testCases.test_suite_id),
-      // Q3: 케이스 test_type 목록 (포함 경로용)
-      db
-        .select({ suiteId: testCases.test_suite_id, testType: testCases.test_type })
-        .from(testCases)
-        .where(
-          and(
-            eq(testCases.lifecycle_status, 'ACTIVE'),
-            inArray(testCases.test_suite_id, suiteIds),
-            isNotNull(testCases.test_type)
+    const [caseCountRows, testTypeRows, msRows, runCountRows, recentRunRows, lastExecRows] =
+      await Promise.all([
+        // Q2: 케이스 수 집계
+        db
+          .select({ suiteId: testCases.test_suite_id, cnt: count() })
+          .from(testCases)
+          .where(
+            and(
+              eq(testCases.lifecycle_status, 'ACTIVE'),
+              inArray(testCases.test_suite_id, suiteIds)
+            )
           )
-        ),
-      // Q4: 연결된 마일스톤
-      milestoneQueryFn(),
-      // Q5: 실행 이력 수 집계 (논리 삭제 제외)
-      db
-        .select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
-        .from(testRunSuites)
-        .where(
-          and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
-        )
-        .groupBy(testRunSuites.test_suite_id),
-      // Q6: 최근 실행 (스위트별 최신 run, 논리 삭제 제외)
-      db
-        .select({
-          suiteId: testRunSuites.test_suite_id,
-          runId: testRuns.id,
-          runStatus: testRuns.status,
-          runCreatedAt: testRuns.created_at,
-        })
-        .from(testRunSuites)
-        .innerJoin(
-          testRuns,
-          and(eq(testRunSuites.test_run_id, testRuns.id), eq(testRuns.lifecycle_status, 'ACTIVE'))
-        )
-        .where(
-          and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
-        )
-        .orderBy(desc(testRuns.created_at)),
-    ]);
+          .groupBy(testCases.test_suite_id),
+        // Q3: 케이스 test_type 목록 (포함 경로용)
+        db
+          .select({ suiteId: testCases.test_suite_id, testType: testCases.test_type })
+          .from(testCases)
+          .where(
+            and(
+              eq(testCases.lifecycle_status, 'ACTIVE'),
+              inArray(testCases.test_suite_id, suiteIds),
+              isNotNull(testCases.test_type)
+            )
+          ),
+        // Q4: 연결된 마일스톤
+        milestoneQueryFn(),
+        // Q5: 실행 이력 수 집계 (논리 삭제 제외)
+        db
+          .select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
+          .from(testRunSuites)
+          .where(
+            and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
+          )
+          .groupBy(testRunSuites.test_suite_id),
+        // Q6: 최근 실행 (스위트별 최신 run, 논리 삭제 제외)
+        db
+          .select({
+            suiteId: testRunSuites.test_suite_id,
+            runId: testRuns.id,
+            runStatus: testRuns.status,
+            runCreatedAt: testRuns.created_at,
+          })
+          .from(testRunSuites)
+          .innerJoin(
+            testRuns,
+            and(eq(testRunSuites.test_run_id, testRuns.id), eq(testRuns.lifecycle_status, 'ACTIVE'))
+          )
+          .where(
+            and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
+          )
+          .orderBy(desc(testRuns.created_at)),
+        // Q7: 스위트별 마지막 실행 시점 (FDD-TR12). 스위트 멤버 케이스의 모든 실행 기준으로 집계한다.
+        // source_type='suite' 로 좁히면 마일스톤 경유로 실행된 스위트 케이스가 누락되므로,
+        // 케이스 멤버십(test_suite_id)으로 조인해 출처와 무관하게 집계한다.
+        db
+          .select({
+            suiteId: testCases.test_suite_id,
+            lastExecutedAt: max(testCaseRuns.executed_at),
+          })
+          .from(testCaseRuns)
+          .innerJoin(testCases, eq(testCaseRuns.test_case_id, testCases.id))
+          .where(
+            and(
+              inArray(testCases.test_suite_id, suiteIds),
+              eq(testCases.lifecycle_status, 'ACTIVE'),
+              isNull(testCaseRuns.excluded_at)
+            )
+          )
+          .groupBy(testCases.test_suite_id),
+      ]);
 
     const caseCountMap = new Map(caseCountRows.map((r) => [r.suiteId, Number(r.cnt)]));
+
+    const lastExecutedAtMap = new Map<string, Date | null>();
+    for (const r of lastExecRows) {
+      if (!r.suiteId) continue;
+      lastExecutedAtMap.set(r.suiteId, r.lastExecutedAt ? new Date(r.lastExecutedAt) : null);
+    }
 
     const testTypeMap = new Map<string, Set<string>>();
     for (const r of testTypeRows) {
@@ -537,6 +570,7 @@ export const getTestSuitesWithStats = async ({
         updatedAt: row.updated_at,
         archivedAt: row.archived_at ?? null,
         lifecycleStatus: row.lifecycle_status,
+        lastExecutedAt: lastExecutedAtMap.get(row.id) ?? null,
         tag: { label: '기본', tone: 'neutral' as const },
         requirementAnalysisId: row.requirement_analysis_id ?? null,
         testScenarioId: row.test_scenario_id ?? null,

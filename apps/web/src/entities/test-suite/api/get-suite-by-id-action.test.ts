@@ -69,6 +69,7 @@ describe('getTestSuiteById', () => {
           updatedAt: new Date('2024-02-02'),
           archivedAt: null,
           lifecycleStatus: 'ACTIVE',
+          lastExecutedAt: null,
         });
       }
     });
