@@ -1,0 +1,2 @@
+ALTER TABLE "test_cases" ADD COLUMN "automation_status" varchar(20) DEFAULT 'manual' NOT NULL;--> statement-breakpoint
+ALTER TABLE "test_cases" ADD CONSTRAINT "test_cases_automation_status_check" CHECK ("test_cases"."automation_status" in ('manual', 'candidate', 'automated'));

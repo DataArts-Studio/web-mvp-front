@@ -1,4 +1,5 @@
 import {
+  Bot,
   CheckSquare,
   FileText,
   Flag,
@@ -67,6 +68,12 @@ export const createAsideMenus = (projectSlug: string) => {
             href: `${basePath}/checklists`,
             icon: CheckSquare,
             matchPath: `${basePath}/checklists`,
+          },
+          {
+            label: 'items.automation',
+            href: `${basePath}/automation`,
+            icon: Bot,
+            matchPath: `${basePath}/automation`,
           },
         ],
       },

@@ -85,6 +85,13 @@
       "when": 1780165371948,
       "tag": "0011_redundant_shen",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1780412332136,
+      "tag": "0012_automation_status",
+      "breakpoints": true
     }
   ]
 }
