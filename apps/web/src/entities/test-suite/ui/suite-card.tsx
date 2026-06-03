@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { TestSuiteCard } from '@/entities/test-suite';
-import { DSButton } from '@/shared';
+import { DSButton, LastRunFreshnessLabel } from '@/shared';
 import { formatDate } from '@testea/util';
 import { AlertCircle, FileText, FolderTree, Layers, PlayCircle } from 'lucide-react';
 import { Edit } from 'lucide-react';
@@ -177,6 +177,12 @@ export const SuiteCard = ({ suite, onEdit }: SuiteCardProps) => {
             {t('ui.runHistoryLabel', {
               count: t('count.runs', { count: suite.executionHistoryCount }),
             })}
+          </dd>
+        </div>
+        <div className="flex items-center gap-1.5 md:justify-end">
+          <dt className="sr-only">마지막 실행 경과</dt>
+          <dd>
+            <LastRunFreshnessLabel lastExecutedAt={suite.lastExecutedAt} className="text-sm" />
           </dd>
         </div>
       </dl>

@@ -24,6 +24,8 @@ export const toTestSuite = (dto: TestSuiteDTO): TestSuite => {
     updatedAt: dto.updated_at,
     archivedAt: dto.archived_at,
     lifecycleStatus: dto.lifecycle_status,
+    // 실행 집계는 query 레이어에서 계산해 override 한다. 매퍼 단독으로는 null.
+    lastExecutedAt: null,
   };
 };
 

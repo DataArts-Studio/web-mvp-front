@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { projectIdQueryOptions } from '@/entities/project';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { deleteTestRun, testRunsQueryOptions } from '@/features/runs';
+import { useRerunRun } from '@/features/runs-edit';
 import { TESTRUN_EVENTS, track } from '@/shared/lib/analytics';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MainContainer } from '@testea/ui';
@@ -14,6 +15,7 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { DeleteRunDialog } from './_components/delete-run-dialog';
+import { RerunRunDialog } from './_components/rerun-run-dialog';
 import {
   type ITestRun,
   PAGE_SIZE,
@@ -42,6 +44,8 @@ export const TestRunsListView = () => {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   // 삭제 확인 다이얼로그 상태
   const [deleteTarget, setDeleteTarget] = useState<ITestRun | null>(null);
+  // 다시 실행 확인 다이얼로그 상태
+  const [rerunTarget, setRerunTarget] = useState<ITestRun | null>(null);
   const queryClient = useQueryClient();
 
   // slug → projectId
@@ -80,6 +84,23 @@ export const TestRunsListView = () => {
       setDeleteTarget(null);
     },
   });
+
+  const rerunMutation = useRerunRun();
+
+  const handleRerunConfirm = () => {
+    if (!rerunTarget) return;
+    rerunMutation.mutate(rerunTarget.id, {
+      onSuccess: (result) => {
+        toast.success('회귀 재실행이 생성되었습니다.');
+        setRerunTarget(null);
+        router.push(`/projects/${projectSlug}/runs/${result.testRun.id}`);
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : '회귀 재실행 생성에 실패했습니다.');
+        setRerunTarget(null);
+      },
+    });
+  };
 
   // 테스트 실행 목록 View 이벤트
   useEffect(() => {
@@ -192,6 +213,8 @@ export const TestRunsListView = () => {
           onPageChange={setCurrentPage}
           onRunClick={handleRunClick}
           onDeleteClick={setDeleteTarget}
+          onRerunClick={setRerunTarget}
+          rerunPendingId={rerunMutation.isPending ? (rerunTarget?.id ?? null) : null}
           onRefetch={() => refetchRuns()}
           onResetFilters={handleResetFilters}
           onCreateRun={() => router.push(`/projects/${projectSlug}/runs/create`)}
@@ -204,6 +227,15 @@ export const TestRunsListView = () => {
           isPending={deleteMutation.isPending}
           onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {rerunTarget && (
+        <RerunRunDialog
+          runName={rerunTarget.name}
+          isPending={rerunMutation.isPending}
+          onConfirm={handleRerunConfirm}
+          onCancel={() => setRerunTarget(null)}
         />
       )}
     </>
