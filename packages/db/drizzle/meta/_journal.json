@@ -92,6 +92,13 @@
       "when": 1780412332136,
       "tag": "0012_automation_status",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780542183294,
+      "tag": "0013_target_sites",
+      "breakpoints": true
     }
   ]
 }

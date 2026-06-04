@@ -19,6 +19,7 @@ import { GeneralSettingsSection } from './_components/general-settings-section';
 import { SecuritySection } from './_components/security-section';
 import { SettingsLoadingSkeleton } from './_components/settings-loading-skeleton';
 import { StorageSection } from './_components/storage-section';
+import { TargetSitesSection } from './_components/target-sites-section';
 
 // ─── Main View ───────────────────────────────────────────────────────────────
 
@@ -79,6 +80,9 @@ export const SettingsView = () => {
 
       {/* Section 5: Automation Token (FDD-TR09 V1) */}
       <AutomationTokenSection projectId={projectId} />
+
+      {/* Section 5b: Target Sites (#188) */}
+      <TargetSitesSection projectId={projectId} />
 
       {/* Section 6: Storage */}
       {storageData?.success && (
