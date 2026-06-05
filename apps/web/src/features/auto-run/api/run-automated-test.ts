@@ -21,7 +21,7 @@ import { captureSnapshot, runSpecOnRunner } from './runner-client';
  *   2) 케이스 조회(steps, case_key)
  *   3) target_sites 복호화(baseUrl + auth → storageState)
  *   4) 러너 /capture → 접근성 스냅샷
- *   5) Gemini(2.5-flash-lite) → Playwright spec
+ *   5) OpenAI(gpt-4o-mini) → Playwright spec
  *   6) 러너 /run → pass/fail
  *   7) TR09 방식 결과 기록(result_source='auto')
  *
@@ -123,7 +123,7 @@ export async function runAutomatedTest(
       return fail(`대상 페이지 캡처 실패: ${captured.errorMessage ?? '알 수 없는 오류'}`);
     }
 
-    // 5) Gemini → Playwright spec
+    // 5) OpenAI → Playwright spec
     const spec = await generateSpec({
       steps: testCase.steps,
       snapshot: captured.snapshot,
