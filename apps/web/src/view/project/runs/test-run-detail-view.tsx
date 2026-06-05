@@ -22,6 +22,7 @@ import { MainContainer } from '@testea/ui';
 import { toast } from 'sonner';
 
 import {
+  AutoRunDialog,
   type GroupedCases,
   KeyboardShortcutsModal,
   RemoveSuiteDialog,
@@ -98,6 +99,7 @@ export const TestRunDetailView = () => {
     null
   );
   const [showRerunDialog, setShowRerunDialog] = useState(false);
+  const [showAutoRunDialog, setShowAutoRunDialog] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
   const statusFilterRef = React.useRef<HTMLDivElement>(null);
@@ -367,6 +369,7 @@ export const TestRunDetailView = () => {
         onToggleCharts={() => setShowCharts((prev) => !prev)}
         onRerun={() => setShowRerunDialog(true)}
         isRerunning={rerunMutation.isPending}
+        onAutoRun={() => setShowAutoRunDialog(true)}
       />
 
       <RunSummaryBar stats={testRun.stats} />
@@ -442,6 +445,21 @@ export const TestRunDetailView = () => {
           isPending={rerunMutation.isPending}
           onConfirm={handleRerunConfirm}
           onCancel={() => setShowRerunDialog(false)}
+        />
+      )}
+
+      {showAutoRunDialog && (
+        <AutoRunDialog
+          projectId={projectId}
+          projectSlug={projectSlug}
+          runId={testRunId}
+          cases={testRun.testCaseRuns.map((tc) => ({
+            testCaseId: tc.testCaseId,
+            code: tc.code,
+            title: tc.title,
+          }))}
+          initialCaseId={selectedCaseId ?? undefined}
+          onClose={() => setShowAutoRunDialog(false)}
         />
       )}
     </MainContainer>
