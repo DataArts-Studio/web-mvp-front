@@ -3,9 +3,7 @@ import 'server-only';
 /**
  * 케이스 자연어 steps + 대상 페이지 접근성 트리 → Playwright spec 코드 LLM 생성.
  *
- * PoC(2026-06-04)에서 확정한 레시피를 그대로 쓴다:
- * - 모델: gemini-2.5-flash-lite (REST generateContent). gemini-2.0-flash 는 이 키에서
- *   free quota 0(429) 이라 사용 금지. runs-share 의 요약과 동일 모델.
+ * - 모델: OpenAI gpt-4o-mini (chat completions). 기존 Gemini 키 만료로 전환했다.
  * - 입력: steps + 실시간 접근성 트리(role/name/level).
  * - 규칙 프롬프트: 트리에 있는 role/name 만 getByRole, 추측 금지, 로딩 대비 첫 단언
  *   timeout 30s, 마크다운 펜스 금지.
@@ -47,9 +45,9 @@ export async function generateSpec(input: {
   /** 케이스가 가리키는 경로(상대). 없으면 모델이 트리 기준으로 판단. */
   path?: string;
 }): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new SpecGenerationError('GEMINI_API_KEY is not set.');
+    throw new SpecGenerationError('OPENAI_API_KEY is not set.');
   }
 
   const userPrompt = [
@@ -67,33 +65,34 @@ export async function generateSpec(input: {
 
   let res: Response;
   try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SPEC_SYSTEM_PROMPT }] },
-          contents: [{ parts: [{ text: userPrompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-        }),
-        cache: 'no-store',
-      }
-    );
+    res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SPEC_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 2048,
+      }),
+      cache: 'no-store',
+    });
   } catch (error) {
     throw new SpecGenerationError(
-      `Gemini request failed: ${error instanceof Error ? error.message : String(error)}`
+      `OpenAI request failed: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 
   if (!res.ok) {
-    throw new SpecGenerationError(`Gemini responded ${res.status}.`);
+    throw new SpecGenerationError(`OpenAI responded ${res.status}.`);
   }
 
   const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text: string | undefined = data?.choices?.[0]?.message?.content;
   if (!text || !text.trim()) {
-    throw new SpecGenerationError('Gemini returned empty spec.');
+    throw new SpecGenerationError('OpenAI returned empty spec.');
   }
 
   const spec = stripCodeFence(text);
