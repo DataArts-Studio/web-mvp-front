@@ -1,6 +1,8 @@
 export { DocsView } from '@/view/docs';
 export { LendingView } from '@/view/lending';
 export { LegalView } from '@/view/legal';
+export { PostListView, PostDetailView, extractHeadings } from '@/view/blog';
+export type { PostHeading } from '@/view/blog';
 export { ProjectDashboardContent, DashboardHeader } from '@/view/project/dashboard';
 export { TestCasesView, TestCaseDetailView } from '@/view/project/cases';
 export { RequirementsView } from '@/view/project/requirements';
