@@ -102,8 +102,12 @@ export const AutoRunDialog = ({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay />
-        <Dialog.Content className="bg-bg-1 rounded-8 max-h-[85vh] w-full max-w-lg overflow-y-auto p-6 shadow-xl">
+        {/* 자동 실행 중 실수로 바깥을 클릭해 실행이 끊기지 않도록 오버레이 클릭 닫힘을 막는다. */}
+        <Dialog.Overlay onClick={(e) => e.stopPropagation()} />
+        <Dialog.Content
+          closeOnEscape={false}
+          className="bg-bg-1 rounded-8 max-h-[85vh] w-full max-w-lg overflow-y-auto p-6 shadow-xl"
+        >
           <Dialog.Title className="text-text-1 text-lg font-semibold">자동 실행</Dialog.Title>
           <Dialog.Description className="text-text-3 mt-2 text-sm">
             등록된 테스트 대상에 대해 케이스 단계를 자동으로 실행하고 결과를 이 실행에 기록합니다.
