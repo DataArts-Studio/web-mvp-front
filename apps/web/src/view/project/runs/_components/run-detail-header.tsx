@@ -20,6 +20,7 @@ import {
   Pencil,
   RotateCcw,
   X,
+  Zap,
 } from 'lucide-react';
 
 import { SOURCE_TYPE_CONFIG } from './run-detail-constants';
@@ -35,6 +36,7 @@ interface RunDetailHeaderProps {
   onToggleCharts: () => void;
   onRerun: () => void;
   isRerunning: boolean;
+  onAutoRun: () => void;
 }
 
 export const RunDetailHeader = ({
@@ -48,6 +50,7 @@ export const RunDetailHeader = ({
   onToggleCharts,
   onRerun,
   isRerunning,
+  onAutoRun,
 }: RunDetailHeaderProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -161,6 +164,14 @@ export const RunDetailHeader = ({
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={onAutoRun}
+            className="rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors"
+            aria-label="자동 실행"
+            title="자동 실행"
+          >
+            <Zap className="h-4 w-4" />
+          </button>
           <button
             onClick={onRerun}
             disabled={isRerunning}
