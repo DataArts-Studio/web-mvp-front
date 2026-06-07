@@ -8,7 +8,6 @@ import Image from 'next/image';
 
 import { Link } from '@/i18n/navigation';
 import { LANDING_EVENTS, NAVIGATION_EVENTS, track } from '@/shared/lib/analytics';
-import { NotificationBell } from '@/widgets/notification-center';
 
 import { BetaBanner } from './beta-banner';
 import { LanguageSwitcher } from './language-switcher';
@@ -69,7 +68,6 @@ export const GlobalHeader = () => {
           >
             {t('findProject')}
           </button>
-          <NotificationBell />
           <LanguageSwitcher />
         </nav>
       </header>
