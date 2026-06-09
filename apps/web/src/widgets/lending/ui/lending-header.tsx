@@ -25,7 +25,15 @@ export const LendingHeader = async () => {
         aria-label={t('sectionAria')}
         className="animate-fade-in-up-delay text-text-2 text-sm leading-[160%] font-semibold sm:text-base md:text-lg"
       >
-        {t('subtitle')}
+        {t.rich('subtitle', {
+          br: () => <br />,
+          wbr: () => (
+            <>
+              <br className="sm:hidden" />
+              <span className="hidden sm:inline"> </span>
+            </>
+          ),
+        })}
       </p>
     </section>
   );
