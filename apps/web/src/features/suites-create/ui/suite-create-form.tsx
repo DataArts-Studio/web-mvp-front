@@ -24,6 +24,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<CreateTestSuite>({
     resolver: zodResolver(CreateTestSuiteSchema),
@@ -34,6 +35,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
       sortOrder: 0,
     },
   });
+  const titleLength = (watch('title') ?? '').length;
 
   const onSubmit = async (data: CreateTestSuite) => {
     mutate(data, {
@@ -129,9 +131,12 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
           noValidate
         >
           <input type="hidden" {...register('projectId')} />
-          <FormField.Root className="flex flex-col gap-2">
-            <FormField.Label className="text-text-1 font-medium">
-              {t('ui.nameLabel')} <span className="text-primary">*</span>
+          <FormField.Root className="flex flex-col gap-1.5">
+            <FormField.Label className="text-text-1 flex items-center text-sm font-medium">
+              <span>
+                {t('ui.nameLabel')} <span className="text-primary">*</span>
+              </span>
+              <span className="text-text-3 ml-auto text-xs tabular-nums">{titleLength}/50</span>
             </FormField.Label>
             <FormField.Control
               placeholder={t('ui.namePlaceholder')}
@@ -154,7 +159,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
                 },
               })}
               className={cn(
-                'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-11 w-full border px-3.5 text-sm transition-colors outline-none',
                 errors.title && 'border-system-red focus:border-system-red'
               )}
             />
@@ -162,36 +167,30 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
               <span className="text-system-red text-sm">{errors.title.message}</span>
             )}
           </FormField.Root>
-          <FormField.Root className="flex flex-col gap-2">
-            <FormField.Label className="text-text-1 font-medium">
+          <FormField.Root className="flex flex-col gap-1.5">
+            <FormField.Label className="text-text-1 text-sm font-medium">
               {t('ui.descriptionLabel')}
             </FormField.Label>
-            <FormField.Control
+            <textarea
               placeholder={t('ui.descriptionPlaceholder')}
-              type="text"
+              rows={3}
               disabled={isPending}
               {...register('description')}
-              className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
+              className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary min-h-[88px] w-full resize-none border px-3.5 py-2.5 text-sm leading-relaxed transition-colors outline-none"
             />
           </FormField.Root>
         </form>
 
         {/* Actions */}
-        <div className="border-line-2 flex shrink-0 gap-3 border-t px-6 py-4">
-          <DSButton
-            type="button"
-            variant="ghost"
-            className="w-full"
-            disabled={isPending}
-            onClick={handleAbandon}
-          >
+        <div className="border-line-2 flex shrink-0 justify-end gap-2 border-t px-6 py-4">
+          <DSButton type="button" variant="ghost" disabled={isPending} onClick={handleAbandon}>
             {t('ui.cancel')}
           </DSButton>
           <DSButton
             type="submit"
             form="suite-form"
             variant="solid"
-            className="w-full"
+            className="min-w-[120px]"
             disabled={isPending}
           >
             {isPending ? t('ui.creatingShort') : t('ui.create')}
