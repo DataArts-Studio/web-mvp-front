@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -29,6 +29,13 @@ export const TestSuitesView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterOption>('전체');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // 클라이언트 hydration 완료 전까지 서버와 동일 출력(스켈레톤) 보장 → SSR↔CSR 미스매치 방지
+  const [hydrated, setHydrated] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection requires effect
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   // slug → projectId를 가벼운 쿼리로 빠르게 획득 (워터폴 제거)
   const { data: projectIdData, isLoading: isLoadingProject } = useQuery(
@@ -103,7 +110,7 @@ export const TestSuitesView = () => {
   }, [suiteData?.success, projectId]);
 
   // 로딩 상태 — 스켈레톤 UI
-  if (isLoadingProject || isLoadingSuites) {
+  if (!hydrated || isLoadingProject || isLoadingSuites) {
     return (
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         {/* Header skeleton */}
