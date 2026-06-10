@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +24,13 @@ export const ChecklistsView = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 클라이언트 hydration 완료 전까지 서버와 동일 출력(스켈레톤) 보장 → SSR↔CSR 미스매치 방지
+  const [hydrated, setHydrated] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection requires effect
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const { data: projectIdData, isLoading: isLoadingProject } = useQuery(projectIdQueryOptions(slug));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
@@ -114,7 +121,7 @@ export const ChecklistsView = () => {
     return { label: '대기', cls: 'bg-text-4/15 text-text-3' };
   };
 
-  if (isLoadingProject || isLoadingChecklists) {
+  if (!hydrated || isLoadingProject || isLoadingChecklists) {
     return (
       <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         <header className="col-span-6 flex flex-col gap-2">
