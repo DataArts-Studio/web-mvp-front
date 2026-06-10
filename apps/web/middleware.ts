@@ -43,7 +43,75 @@ function base64UrlDecode(str: string): string {
 }
 
 /**
- * 토큰 페이로드 파싱 (검증 없이)
+ * 원시 바이트(ArrayBuffer) → Base64URL 문자열.
+ * Node 의 `hmac.digest('base64')` → base64url 변환과 동일한 결과를 만든다.
+ */
+function bytesToBase64Url(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/**
+ * 상수 시간 문자열 비교 (서명 비교 타이밍 사이드채널 완화).
+ * 길이는 비밀이 아니므로(서명 길이 고정) 길이 불일치는 즉시 false.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+/**
+ * 토큰 HMAC-SHA256 서명 검증 (Edge 런타임, Web Crypto 사용).
+ *
+ * `access-token.ts` 의 createSignature 와 동일한 스킴:
+ *   HMAC-SHA256(`<header>.<payload>`, ACCESS_TOKEN_SECRET) → base64 → base64url.
+ * 서명이 일치하지 않거나 시크릿이 없으면 false (fail-closed).
+ */
+async function verifyTokenSignature(token: string): Promise<boolean> {
+  const secret = process.env.ACCESS_TOKEN_SECRET;
+  if (!secret) {
+    // 시크릿 미설정 시 위조 토큰을 통과시키지 않도록 fail-closed
+    return false;
+  }
+
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return false;
+  }
+
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const signatureBuffer = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      new TextEncoder().encode(`${parts[0]}.${parts[1]}`)
+    );
+    const expected = bytesToBase64Url(signatureBuffer);
+    return timingSafeEqual(parts[2], expected);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 토큰 페이로드 파싱 (구조 파싱만 — 서명 검증은 verifyTokenSignature 가 선행되어야 함)
  */
 function parseTokenPayload(token: string): { projectName: string; expiresAt: number } | null {
   try {
@@ -114,7 +182,7 @@ function isBlockedInProduction(pathname: string): boolean {
   return blockedPaths.some((blocked) => pathname === blocked || pathname.startsWith(blocked + '/'));
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 프로덕션 환경에서 개발/테스트 경로 차단 (최우선)
@@ -154,7 +222,7 @@ function isNonLocalizedRoot(pathname: string): boolean {
 /**
  * 프로젝트 접근 토큰 가드 (기존 로직).
  */
-function runAccessGuard(request: NextRequest): NextResponse {
+async function runAccessGuard(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   // 공개 경로는 통과
@@ -193,7 +261,20 @@ function runAccessGuard(request: NextRequest): NextResponse {
     return NextResponse.redirect(accessUrl);
   }
 
-  // 토큰 페이로드 파싱
+  // HMAC 서명 검증 (C-1: 위조 토큰 차단). 서명이 유효하지 않으면 페이로드를 신뢰하지 않는다.
+  const signatureValid = await verifyTokenSignature(token);
+  if (!signatureValid) {
+    const response = NextResponse.redirect(
+      new URL(
+        `/projects/${encodeURIComponent(projectSlug)}/access?redirect=${encodeURIComponent(pathname)}`,
+        request.url
+      )
+    );
+    response.cookies.delete(cookieName);
+    return response;
+  }
+
+  // 토큰 페이로드 파싱 (서명 검증 통과 후)
   const payload = parseTokenPayload(token);
   if (!payload) {
     const response = NextResponse.redirect(
