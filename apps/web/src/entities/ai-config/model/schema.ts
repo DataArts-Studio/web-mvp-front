@@ -31,7 +31,12 @@ export const SaveAiConfigSchema = z
     projectId: z.string().uuid(),
     provider: z.enum(['openai', 'anthropic', 'gemini']),
     apiKey: z.string().min(1, 'API 키를 입력해주세요'),
-    model: z.string().optional(),
+    // model 은 요청 URL(예: Gemini models/<model>)에 보간되므로 경로·쿼리 조작 방지를 위해
+    // 안전 문자만 허용한다. (영숫자·점·하이픈·언더스코어, 빈 값은 기본 모델 사용)
+    model: z
+      .string()
+      .regex(/^[A-Za-z0-9._-]*$/, '허용되지 않은 모델 이름입니다.')
+      .optional(),
   })
   .superRefine((data, ctx) => {
     const rule = API_KEY_RULES[data.provider];
