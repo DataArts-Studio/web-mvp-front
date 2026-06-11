@@ -8,7 +8,11 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 function verifySignature(payload: string, signature: string, secret: string): boolean {
   const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(payload).digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  // 길이가 다르면 timingSafeEqual 이 throw 하므로 먼저 거부
+  if (expectedBuf.length !== signatureBuf.length) return false;
+  return crypto.timingSafeEqual(expectedBuf, signatureBuf);
 }
 
 // PR 본문에서 TC-XXX 패턴 파싱
@@ -57,12 +61,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'No matching project' }, { status: 200 });
     }
 
-    // Webhook 서명 검증
-    if (conn.webhook_secret) {
-      const secret = decrypt(conn.webhook_secret);
-      if (!verifySignature(rawBody, signature, secret)) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-      }
+    // Webhook 서명 검증 (시크릿 미설정 시 fail-closed: 미서명 페이로드 거부)
+    if (!conn.webhook_secret) {
+      return NextResponse.json({ error: 'Webhook not configured' }, { status: 401 });
+    }
+    const secret = decrypt(conn.webhook_secret);
+    if (!verifySignature(rawBody, signature, secret)) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
     const pr = payload.pull_request;
