@@ -55,7 +55,7 @@ export async function bulkUpdateTestCaseRunStatus(
 
     const now = new Date();
 
-    // 일괄 업데이트
+    // 일괄 업데이트 (IDOR 방지: 인가된 프로젝트에 속한 run 의 케이스 실행만 갱신)
     const updated = await db
       .update(testCaseRuns)
       .set({
@@ -64,7 +64,18 @@ export async function bulkUpdateTestCaseRunStatus(
         executed_at: input.status !== 'untested' ? now : null,
         updated_at: now,
       })
-      .where(inArray(testCaseRuns.id, input.testCaseRunIds))
+      .where(
+        and(
+          inArray(testCaseRuns.id, input.testCaseRunIds),
+          inArray(
+            testCaseRuns.test_run_id,
+            db
+              .select({ id: testRuns.id })
+              .from(testRuns)
+              .where(eq(testRuns.project_id, run.projectId))
+          )
+        )
+      )
       .returning({ id: testCaseRuns.id });
 
     // 테스트 실행 상태 갱신
