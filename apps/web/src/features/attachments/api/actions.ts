@@ -4,7 +4,7 @@ import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCaseAttachments } from '@testea/db';
+import { getDatabase, testCaseAttachments, testCases } from '@testea/db';
 import { createSupabaseServerClient } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -45,6 +45,17 @@ function getSupabaseUrl(): string {
 export async function getAttachments(testCaseId: string): Promise<ActionResult<Attachment[]>> {
   try {
     const db = getDatabase();
+
+    // 접근 권한 확인: 케이스의 프로젝트 권한이 없으면 첨부 메타·URL 노출 금지
+    const [tc] = await db
+      .select({ project_id: testCases.project_id })
+      .from(testCases)
+      .where(eq(testCases.id, testCaseId))
+      .limit(1);
+    if (!tc?.project_id || !(await requireProjectAccess(tc.project_id))) {
+      return { success: false, errors: { _attachment: ['접근 권한이 없습니다.'] } };
+    }
+
     const rows = await db
       .select()
       .from(testCaseAttachments)
