@@ -1,5 +1,6 @@
 'use server';
 
+import { requireProjectAccess } from '@/access/lib/require-access';
 import { decrypt, encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -60,6 +61,11 @@ export const connectGithub = async (input: {
     }
 
     const { projectId, code } = parsed.data;
+
+    if (!(await requireProjectAccess(projectId))) {
+      return { success: false, errors: { _github: ['접근 권한이 없습니다.'] } };
+    }
+
     const accessToken = await exchangeCodeForToken(code);
     const encryptedToken = encrypt(accessToken);
 
@@ -104,6 +110,10 @@ export const connectGithub = async (input: {
 // --- 저장소 목록 조회 ---
 export const getGithubRepos = async (projectId: string): Promise<ActionResult<GithubRepo[]>> => {
   try {
+    if (!(await requireProjectAccess(projectId))) {
+      return { success: false, errors: { _github: ['접근 권한이 없습니다.'] } };
+    }
+
     const db = getDatabase();
     const [conn] = await db
       .select()
@@ -137,6 +147,11 @@ export const selectGithubRepo = async (input: {
     }
 
     const { projectId, repoFullName } = parsed.data;
+
+    if (!(await requireProjectAccess(projectId))) {
+      return { success: false, errors: { _github: ['접근 권한이 없습니다.'] } };
+    }
+
     const db = getDatabase();
 
     const [conn] = await db
@@ -201,6 +216,10 @@ export const selectGithubRepo = async (input: {
 // --- 연결 해제 ---
 export const disconnectGithub = async (projectId: string): Promise<ActionResult<null>> => {
   try {
+    if (!(await requireProjectAccess(projectId))) {
+      return { success: false, errors: { _github: ['접근 권한이 없습니다.'] } };
+    }
+
     const db = getDatabase();
 
     const [conn] = await db
@@ -239,6 +258,10 @@ export const getGithubConnection = async (
   projectId: string
 ): Promise<ActionResult<GithubConnection | null>> => {
   try {
+    if (!(await requireProjectAccess(projectId))) {
+      return { success: false, errors: { _github: ['접근 권한이 없습니다.'] } };
+    }
+
     const db = getDatabase();
 
     const [conn] = await db
@@ -279,6 +302,15 @@ export const getExternalLinks = async (
 ): Promise<ActionResult<ExternalLink[]>> => {
   try {
     const db = getDatabase();
+
+    const [tc] = await db
+      .select({ project_id: testCases.project_id })
+      .from(testCases)
+      .where(eq(testCases.id, testCaseId))
+      .limit(1);
+    if (!tc?.project_id || !(await requireProjectAccess(tc.project_id))) {
+      return { success: false, errors: { _github: ['접근 권한이 없습니다.'] } };
+    }
 
     const links = await db
       .select()
@@ -334,6 +366,10 @@ export const createGithubIssue = async (input: {
 
     if (!tc?.project_id) {
       return { success: false, errors: { _github: ['테스트 케이스를 찾을 수 없습니다.'] } };
+    }
+
+    if (!(await requireProjectAccess(tc.project_id))) {
+      return { success: false, errors: { _github: ['접근 권한이 없습니다.'] } };
     }
 
     // GitHub 연결 확인
