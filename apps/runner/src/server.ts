@@ -1,13 +1,24 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import crypto from 'node:crypto';
 
 import { capture } from './capture.js';
 import { runSpec } from './run-spec.js';
+import { checkTargetUrl } from './url-guard.js';
 
 const app = new Hono();
 
 const PORT = Number(process.env.PORT ?? 8080);
 const SHARED_SECRET = process.env.RUNNER_SHARED_SECRET;
+
+/** 상수 시간 시크릿 비교 (타이밍 사이드채널 완화). */
+function secretsMatch(provided: string | undefined, expected: string): boolean {
+  if (!provided) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
 
 /**
  * 헬스체크. 인증 예외.
@@ -29,7 +40,7 @@ app.use('*', async (c, next) => {
   }
 
   const provided = c.req.header('X-Runner-Secret');
-  if (provided !== SHARED_SECRET) {
+  if (!secretsMatch(provided, SHARED_SECRET)) {
     return c.json({ ok: false, error: 'Unauthorized.' }, 401);
   }
 
@@ -64,6 +75,13 @@ app.post('/run', async (c) => {
 
   if (body.baseUrl !== undefined && typeof body.baseUrl !== 'string') {
     return c.json({ ok: false, error: 'Field "baseUrl" must be a string.' }, 400);
+  }
+
+  if (typeof body.baseUrl === 'string') {
+    const urlError = checkTargetUrl(body.baseUrl);
+    if (urlError) {
+      return c.json({ ok: false, error: `Field "baseUrl": ${urlError}` }, 400);
+    }
   }
 
   if (
@@ -107,6 +125,11 @@ app.post('/capture', async (c) => {
 
   if (typeof body.url !== 'string' || body.url.trim().length === 0) {
     return c.json({ ok: false, error: 'Field "url" (non-empty string) is required.' }, 400);
+  }
+
+  const urlError = checkTargetUrl(body.url);
+  if (urlError) {
+    return c.json({ ok: false, error: `Field "url": ${urlError}` }, 400);
   }
 
   if (
