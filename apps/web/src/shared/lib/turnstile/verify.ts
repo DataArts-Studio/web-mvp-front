@@ -15,8 +15,13 @@ export async function verifyTurnstileToken(token: string): Promise<boolean> {
     const secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
 
     if (!secretKey) {
-      if (process.env.NODE_ENV === 'development') return true;
-      Sentry.captureMessage('CLOUDFLARE_TURNSTILE_SECRET_KEY is not set', { level: 'warning' });
+      // 운영에선 시크릿 미설정 시 fail-closed (봇 검증 우회 금지). dev/preview 만 통과.
+      if (process.env.VERCEL_ENV === 'production') {
+        Sentry.captureMessage('CLOUDFLARE_TURNSTILE_SECRET_KEY is not set in production', {
+          level: 'error',
+        });
+        return false;
+      }
       return true;
     }
 
@@ -35,7 +40,7 @@ export async function verifyTurnstileToken(token: string): Promise<boolean> {
     return data.success === true;
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'verifyTurnstileToken' } });
-    // Graceful degradation: Turnstile 서비스 장애 시 통과 허용
-    return true;
+    // 운영에선 검증 실패 시 fail-closed; dev/preview 만 graceful degradation 통과.
+    return process.env.VERCEL_ENV !== 'production';
   }
 }

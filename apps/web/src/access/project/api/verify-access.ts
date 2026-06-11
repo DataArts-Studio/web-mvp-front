@@ -83,6 +83,28 @@ function clearFailedAttempts(key: string): void {
 }
 
 /**
+ * 신뢰 가능한 클라이언트 IP 추출 (rate limit 키용).
+ * x-forwarded-for 의 좌측 값은 클라이언트가 헤더로 조작 가능하므로 신뢰하지 않는다
+ * (헤더 회전으로 락아웃 우회 방지). 플랫폼이 설정하는 x-real-ip 를 우선하고,
+ * 없으면 XFF 의 우측(가장 가까운 신뢰 hop)을 사용한다.
+ */
+function getClientIp(headerStore: { get(name: string): string | null }): string {
+  const realIp = headerStore.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
+
+  const xff = headerStore.get('x-forwarded-for');
+  if (xff) {
+    const parts = xff
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1];
+  }
+
+  return 'unknown';
+}
+
+/**
  * 프로젝트 접근 정보 조회
  */
 async function getProjectAccessInfo(projectName: string): Promise<ProjectAccessInfo | null> {
@@ -142,7 +164,7 @@ export async function verifyProjectAccess(
 
     // 2. Rate limiting 체크 (프로젝트 + IP 기반)
     const headerStore = await headers();
-    const clientIp = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const clientIp = getClientIp(headerStore);
     const rateLimitKey = `project:${projectName}:ip:${clientIp}`;
     const rateLimit = checkRateLimit(rateLimitKey);
     if (!rateLimit.allowed) {
