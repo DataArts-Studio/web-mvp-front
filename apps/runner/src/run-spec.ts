@@ -42,6 +42,34 @@ export interface RunSpecResult {
 const DEFAULT_TIMEOUT_MS = 60_000;
 
 /**
+ * spec 자식 프로세스에 넘길 환경변수 allowlist.
+ * Playwright/Node 실행에 필요한 키만 통과시키고, RUNNER_SHARED_SECRET 등 시크릿은 제외한다.
+ */
+const ALLOWED_CHILD_ENV_KEYS = [
+  'PATH',
+  'HOME',
+  'TMPDIR',
+  'TEMP',
+  'TMP',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'NODE_PATH',
+  'PLAYWRIGHT_BROWSERS_PATH',
+  'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD',
+];
+
+function buildChildEnv(): NodeJS.ProcessEnv {
+  // 컨테이너 내장 브라우저 경로 재사용 (베이스 이미지 ms-playwright).
+  const env: NodeJS.ProcessEnv = { CI: '1' };
+  for (const key of ALLOWED_CHILD_ENV_KEYS) {
+    const value = process.env[key];
+    if (value !== undefined) env[key] = value;
+  }
+  return env;
+}
+
+/**
  * 러너 앱 루트 (이 모듈 기준 dist/ 또는 src/ 의 상위).
  * 임시 실행 디렉터리를 이 루트 아래에 만들어, 생성한 playwright config 가
  * @playwright/test 를 트리 상위 node_modules 에서 해석할 수 있게 한다.
@@ -163,11 +191,9 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
         cwd: dir,
         // stdout/stderr 버퍼 hang 회피: 결과는 reporter outputFile 로만 읽는다.
         stdio: 'ignore',
-        env: {
-          ...process.env,
-          // 컨테이너 내장 브라우저 경로 재사용 (베이스 이미지 ms-playwright).
-          CI: '1',
-        },
+        // 임의 코드(spec)에 전체 env 를 상속하지 않는다. RUNNER_SHARED_SECRET 등
+        // 시크릿 유출 방지를 위해 Playwright 실행에 필요한 키만 allowlist 로 전달한다.
+        env: buildChildEnv(),
       });
 
       const killer = setTimeout(() => {
