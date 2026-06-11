@@ -46,6 +46,17 @@ async function createSignature(data: string, secret: string): Promise<string> {
 }
 
 /**
+ * 상수 시간 문자열 비교 (서명 비교 타이밍 사이드채널 완화).
+ */
+async function timingSafeStringEqual(a: string, b: string): Promise<boolean> {
+  const { timingSafeEqual } = await import('crypto');
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
+/**
  * 토큰 시크릿 키 가져오기
  * 환경 변수에서 반드시 설정되어야 함 (모든 환경)
  */
@@ -119,7 +130,7 @@ export async function verifyProjectAccessToken(token: string): Promise<TokenVeri
       getTokenSecret()
     );
 
-    if (signature !== expectedSignature) {
+    if (!(await timingSafeStringEqual(signature, expectedSignature))) {
       return { valid: false, error: 'TOKEN_INVALID' };
     }
 
