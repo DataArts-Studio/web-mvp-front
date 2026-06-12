@@ -2,16 +2,15 @@
 import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { Milestone, MilestoneCard, MilestoneWithStats } from '@/entities/milestone';
 import { projectIdQueryOptions } from '@/entities/project';
-import { MilestoneCreateForm, milestonesQueryOptions } from '@/features/milestones-create';
+import { milestonesQueryOptions } from '@/features/milestones-create';
 import { MilestoneEditForm } from '@/features/milestones-edit';
 import { MILESTONE_EVENTS, track } from '@/shared/lib/analytics';
 import { ActionToolbar } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { useDisclosure } from '@testea/lib';
 import { MainContainer } from '@testea/ui';
 import { Pagination, ProjectErrorFallback, Skeleton } from '@testea/ui';
 import { FolderOpen } from 'lucide-react';
@@ -30,7 +29,7 @@ const FILTER_TO_STATUS: Record<FilterOption, string | null> = {
 
 export const MilestonesView = () => {
   const params = useParams();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const router = useRouter();
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
 
   // 필터링 상태
@@ -187,7 +186,12 @@ export const MilestonesView = () => {
             onChange={handleFilterChange}
           />
         </ActionToolbar.Group>
-        <ActionToolbar.Action size="small" type="button" variant="solid" onClick={() => onOpen()}>
+        <ActionToolbar.Action
+          size="small"
+          type="button"
+          variant="solid"
+          onClick={() => router.push(`/projects/${params.slug}/milestones/create`)}
+        >
           마일스톤 생성하기
         </ActionToolbar.Action>
       </ActionToolbar.Root>
@@ -260,7 +264,6 @@ export const MilestonesView = () => {
           onPageChange={setCurrentPage}
         />
       </section>
-      {isOpen && projectId && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
       {editingMilestone && (
         <MilestoneEditForm milestone={editingMilestone} onClose={handleCloseEdit} />
       )}

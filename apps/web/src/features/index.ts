@@ -72,7 +72,7 @@ export {
   milestonesQueryOptions,
   createMilestoneAction,
   useCreateMilestone,
-  MilestoneCreateForm,
+  DateDropdownSelect,
 } from '@/features/milestones-create';
 
 // milestones-edit
