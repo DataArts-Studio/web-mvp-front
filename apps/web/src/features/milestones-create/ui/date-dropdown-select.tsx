@@ -80,9 +80,9 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
   };
 
   const triggerClass = cn(
-    'flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors',
+    'flex h-11 w-full items-center justify-between rounded-5 border px-4 text-sm transition-colors',
     'border-line-2 bg-bg-1 text-text-1',
-    'hover:border-primary/50',
+    'hover:border-line-3',
     'data-[state=open]:border-primary',
     disabled && 'cursor-not-allowed opacity-50'
   );
