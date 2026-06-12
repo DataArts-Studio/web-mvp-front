@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { DSButton, LoadingSpinner } from '@testea/ui';
 import { FormField } from '@testea/ui';
 import { cn } from '@testea/util';
+import { Check, FolderPlus } from 'lucide-react';
 
 interface SuiteCreateFormProps {
   projectId: string;
@@ -107,27 +108,52 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="bg-bg-2 shadow-4 relative flex max-h-[85vh] w-full max-w-[480px] flex-col overflow-hidden rounded-xl outline-none"
+        className="bg-bg-2 shadow-4 border-line-2 relative flex max-h-[85vh] w-full max-w-[520px] flex-col overflow-hidden rounded-2xl border outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {isPending && (
-          <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
+          <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
             <LoadingSpinner size="md" text={t('ui.creating')} />
           </div>
         )}
-        {/* Header */}
-        <div className="border-line-2 shrink-0 border-b px-6 py-5">
-          <h2 id={titleId} className="text-text-1 text-lg font-bold">
-            {t('ui.createTitle')}
-          </h2>
-          <p className="text-text-3 mt-1 text-sm">{t('ui.createSubtitle')}</p>
-        </div>
+
+        {/* Hero header (top) */}
+        <header className="from-primary/12 via-bg-2 to-bg-2 relative shrink-0 overflow-hidden bg-gradient-to-b px-6 pt-6 pb-5 sm:px-7">
+          {/* soft accent glow */}
+          <div
+            aria-hidden
+            className="bg-primary/25 pointer-events-none absolute -top-16 -right-10 h-44 w-44 rounded-full blur-3xl"
+          />
+          <div className="relative flex items-start gap-4">
+            <div className="bg-primary/15 text-primary ring-primary/20 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1">
+              <FolderPlus className="h-5.5 w-5.5" strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0">
+              <h2 id={titleId} className="text-text-1 text-xl font-bold">
+                {t('ui.createTitle')}
+              </h2>
+              <p className="text-text-3 mt-1 text-sm leading-relaxed">{t('ui.createPanelBody')}</p>
+            </div>
+          </div>
+          <ul className="relative mt-4 flex flex-wrap gap-x-4 gap-y-2">
+            {[t('ui.createPanelPoint1'), t('ui.createPanelPoint2'), t('ui.createPanelPoint3')].map(
+              (point) => (
+                <li key={point} className="text-text-2 flex items-center gap-1.5 text-xs">
+                  <span className="bg-primary/15 text-primary flex h-4 w-4 shrink-0 items-center justify-center rounded-full">
+                    <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
+                  </span>
+                  <span>{point}</span>
+                </li>
+              )
+            )}
+          </ul>
+        </header>
 
         {/* Body */}
         <form
           id="suite-form"
           onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-1 flex-col gap-5 overflow-y-auto p-6"
+          className="flex flex-1 flex-col gap-5 overflow-y-auto p-6 sm:p-7"
           noValidate
         >
           <input type="hidden" {...register('projectId')} />
@@ -159,8 +185,8 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
                 },
               })}
               className={cn(
-                'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-11 w-full border px-3.5 text-sm transition-colors outline-none',
-                errors.title && 'border-system-red focus:border-system-red'
+                'rounded-5 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-3 hover:border-line-3 focus:border-primary focus:ring-primary/15 h-11 w-full border px-4 text-sm transition-colors outline-none focus:ring-4',
+                errors.title && 'border-system-red focus:border-system-red focus:ring-system-red/15'
               )}
             />
             {errors.title && (
@@ -176,21 +202,28 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
               rows={3}
               disabled={isPending}
               {...register('description')}
-              className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary min-h-[88px] w-full resize-none border px-3.5 py-2.5 text-sm leading-relaxed transition-colors outline-none"
+              className="rounded-5 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-3 hover:border-line-3 focus:border-primary focus:ring-primary/15 min-h-[88px] w-full resize-none border px-4 py-3 text-sm leading-relaxed transition-colors outline-none focus:ring-4"
             />
           </FormField.Root>
         </form>
 
         {/* Actions */}
-        <div className="border-line-2 flex shrink-0 justify-end gap-2 border-t px-6 py-4">
-          <DSButton type="button" variant="ghost" disabled={isPending} onClick={handleAbandon}>
+        <div className="flex shrink-0 items-center justify-end gap-1.5 px-6 pt-1 pb-6 sm:px-7">
+          <DSButton
+            type="button"
+            variant="text"
+            size="small"
+            disabled={isPending}
+            onClick={handleAbandon}
+          >
             {t('ui.cancel')}
           </DSButton>
           <DSButton
             type="submit"
             form="suite-form"
             variant="solid"
-            className="min-w-[120px]"
+            size="small"
+            className="min-w-[112px]"
             disabled={isPending}
           >
             {isPending ? t('ui.creatingShort') : t('ui.create')}
