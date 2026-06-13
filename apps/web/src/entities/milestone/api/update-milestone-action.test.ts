@@ -3,6 +3,7 @@ import {
   mockDb,
   mockGetDatabase,
   resetMockDb,
+  setMockSelectReturn,
   setMockUpdateReturn,
 } from '@/shared/test/__mocks__/db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,6 +18,8 @@ vi.mock('@testea/db', () => ({
 describe('updateMilestone', () => {
   beforeEach(() => {
     resetMockDb();
+    // 인가 프리플라이트 조회(대상 소유 프로젝트 확인)용 기본 반환
+    setMockSelectReturn([{ projectId: 'project-123', project_id: 'project-123' }]);
   });
 
   afterEach(() => {

@@ -61,6 +61,7 @@ describe('createMilestone', () => {
           updatedAt: mockRow.updated_at,
           archivedAt: mockRow.archived_at,
           lifecycleStatus: mockRow.lifecycle_status,
+          lastExecutedAt: null,
         });
         expect(result.message).toBe('마일스톤을 생성하였습니다.');
       }

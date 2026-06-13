@@ -33,7 +33,7 @@ describe('archiveProject', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe(projectId);
-      expect(result.message).toBe('프로젝트가 성공적으로 삭제되었습니다.');
+      expect(result.message).toBe('프로젝트가 휴지통으로 이동되었습니다.');
     }
   });
 
