@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+import { logAdminActivity } from '@/features/admin-log/log';
 import { assertAdminAction } from '@/features/auth-gate/lib/admin-gate';
 import {
   createAnnouncement,
@@ -28,7 +29,13 @@ export async function createNoticeAction(
   if (!parsed.ok) return { errors: parsed.errors };
 
   try {
-    await createAnnouncement(parsed.value);
+    const created = await createAnnouncement(parsed.value);
+    await logAdminActivity({
+      action: 'notice.create',
+      targetType: 'notice',
+      targetId: created.id,
+      targetLabel: created.title,
+    });
   } catch (error) {
     console.error('[notices] create failed', error);
     return { errors: { form: '저장 중 오류가 발생했습니다.' } };
@@ -52,6 +59,12 @@ export async function updateNoticeAction(
   try {
     const updated = await updateAnnouncement(id, parsed.value);
     if (!updated) return { errors: { form: '대상 공지를 찾을 수 없습니다.' } };
+    await logAdminActivity({
+      action: 'notice.update',
+      targetType: 'notice',
+      targetId: id,
+      targetLabel: updated.title,
+    });
   } catch (error) {
     console.error('[notices] update failed', error);
     return { errors: { form: '저장 중 오류가 발생했습니다.' } };
@@ -64,7 +77,13 @@ export async function updateNoticeAction(
 /** 활성/비활성 토글. 리스트의 인라인 액션에서 호출. */
 export async function toggleNoticeAction(id: string, active: boolean): Promise<void> {
   await assertAdminAction();
-  await setAnnouncementActive(id, active);
+  const updated = await setAnnouncementActive(id, active);
+  await logAdminActivity({
+    action: active ? 'notice.activate' : 'notice.deactivate',
+    targetType: 'notice',
+    targetId: id,
+    targetLabel: updated?.title ?? null,
+  });
   revalidatePath(LIST_PATH);
 }
 
@@ -72,5 +91,6 @@ export async function toggleNoticeAction(id: string, active: boolean): Promise<v
 export async function deleteNoticeAction(id: string): Promise<void> {
   await assertAdminAction();
   await deleteAnnouncement(id);
+  await logAdminActivity({ action: 'notice.delete', targetType: 'notice', targetId: id });
   revalidatePath(LIST_PATH);
 }

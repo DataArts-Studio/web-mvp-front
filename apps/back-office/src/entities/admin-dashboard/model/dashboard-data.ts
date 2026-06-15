@@ -1,4 +1,12 @@
-import { BarChart3, FolderKanban, LayoutDashboard, Megaphone, Settings, Users } from 'lucide-react';
+import {
+  BarChart3,
+  FolderKanban,
+  LayoutDashboard,
+  Megaphone,
+  ScrollText,
+  Settings,
+  Users,
+} from 'lucide-react';
 
 import type {
   AbuseSignal,
@@ -60,6 +68,11 @@ export const navItems: NavItem[] = [
     label: '공지 및 배너',
     icon: Megaphone,
     href: '/notices',
+  },
+  {
+    label: '관리자 로그',
+    icon: ScrollText,
+    href: '/logs',
   },
   {
     label: '사용자 관리',

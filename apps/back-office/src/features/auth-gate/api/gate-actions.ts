@@ -3,6 +3,8 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { logAdminActivity } from '@/features/admin-log/log';
+
 import { ADMIN_COOKIE, isValidSecret } from '../lib/admin-gate';
 
 export type GateState = { error?: string };
@@ -33,6 +35,8 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
     path: '/',
     maxAge: 60 * 60 * 8, // 8시간
   });
+
+  await logAdminActivity({ action: 'login' });
 
   redirect(safeRedirect(formData.get('redirect')));
 }

@@ -23,3 +23,9 @@ export {
   type AnnouncementInput,
   type AnnouncementStatus,
 } from './queries/admin-announcements';
+export {
+  recordAdminActivity,
+  listAdminActivity,
+  type AdminActivityInput,
+  type AdminActivityLog,
+} from './queries/admin-activity';
