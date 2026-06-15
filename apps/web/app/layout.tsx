@@ -9,6 +9,7 @@ import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
 import { CriticalBanner } from '@/widgets/announcement-banner';
+import { AnnouncementPopup } from '@/widgets/announcement-popup';
 import { MvpBottomNavbarLazy } from '@testea/ui';
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
@@ -229,6 +230,7 @@ export default async function RootLayout({
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
             <CriticalBanner />
+            <AnnouncementPopup />
             {children}
           </QueryProvider>
           <LazyToaster />

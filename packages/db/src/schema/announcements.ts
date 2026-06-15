@@ -62,6 +62,12 @@ export const announcements = pgTable(
       .default('info')
       .notNull(),
     pinned: t.boolean('pinned').default(false).notNull(),
+    /**
+     * 팝업 노출 여부. true 이면 활성 기간 동안 web 앱에서 모달 팝업으로도 노출한다.
+     * (상단 배너는 기존대로 severity='critical' 로 결정 — 둘은 독립적으로 조합 가능)
+     * 사용자는 팝업을 id 단위로 닫을 수 있고, dismiss 상태는 localStorage 에 저장된다.
+     */
+    show_as_popup: t.boolean('show_as_popup').default(false).notNull(),
     published_at: t.timestamp('published_at', { withTimezone: true }).notNull(),
     expires_at: t.timestamp('expires_at', { withTimezone: true }),
     created_by: t.uuid('created_by'),

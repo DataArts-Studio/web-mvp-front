@@ -1,0 +1,27 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+
+import { requireAdmin } from '@/features/auth-gate/lib/admin-gate';
+import { updateNoticeAction } from '@/features/notices/api/actions';
+import { NoticeForm } from '@/view/notices/notice-form';
+import { getAnnouncementById } from '@testea/db';
+
+export default async function EditNoticePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  await requireAdmin(`/notices/${id}/edit`);
+
+  const notice = await getAnnouncementById(id);
+  if (!notice) notFound();
+
+  return (
+    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-10">
+      <div className="flex flex-col gap-1">
+        <Link href="/notices" className="text-text-3 hover:text-text-1 text-sm">
+          ← 공지 목록
+        </Link>
+        <h1 className="text-text-1 text-2xl font-bold">공지 편집</h1>
+      </div>
+      <NoticeForm action={updateNoticeAction.bind(null, id)} initial={notice} submitLabel="저장" />
+    </main>
+  );
+}
