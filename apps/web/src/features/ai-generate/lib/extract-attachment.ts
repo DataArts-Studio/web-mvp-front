@@ -19,7 +19,7 @@ export const ATTACHMENT_LIMITS = {
   },
   markdown: {
     // text/plain 은 .txt 등 무관 파일까지 포함하는 너무 넓은 카테고리라 제외하고,
-    // 클라이언트 (ai-attachment-dropzone) 와 동일한 규칙으로 좁힌다.
+    // 클라이언트 (shared/ui/attachment-dropzone) 와 동일한 규칙으로 좁힌다.
     // .md 확장자에 text/plain MIME 이 붙는 흔한 케이스는 확장자 매칭으로 통과한다.
     maxBytes: 1 * ONE_MB,
     mimeTypes: ['text/markdown', 'text/x-markdown'] as readonly string[],

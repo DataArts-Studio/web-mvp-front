@@ -2,6 +2,8 @@
 
 import React from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import { cn } from '@testea/util';
 import { FolderClosed, FolderOpen, Inbox } from 'lucide-react';
 
@@ -32,58 +34,61 @@ export const SuiteSidebar = ({
   selectedSuiteId,
   totalItems,
   onSuiteChange,
-}: SuiteSidebarProps) => (
-  <nav
-    aria-label="스위트 필터"
-    className="border-line-2 bg-bg-1 sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r"
-  >
-    <div className="border-line-2 border-b px-4 py-3">
-      <h3 className="typo-body2-heading text-text-2">스위트</h3>
-    </div>
-    <div className="flex-1 overflow-y-auto py-1">
-      {/* 전체 */}
-      <button
-        type="button"
-        aria-pressed={selectedSuiteId === 'all'}
-        onClick={() => onSuiteChange('all')}
-        className={itemClass(selectedSuiteId === 'all')}
-      >
-        <Inbox className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span className="flex-1 truncate">전체 케이스</span>
-        {totalItems != null && <span className="text-text-3 text-xs">{totalItems}</span>}
-      </button>
+}: SuiteSidebarProps) => {
+  const t = useTranslations('cases');
+  return (
+    <nav
+      aria-label={t('ui.suiteFilterAriaLabel')}
+      className="border-line-2 bg-bg-1 sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r"
+    >
+      <div className="border-line-2 border-b px-4 py-3">
+        <h3 className="typo-body2-heading text-text-2">{t('ui.suites')}</h3>
+      </div>
+      <div className="flex-1 overflow-y-auto py-1">
+        {/* 전체 */}
+        <button
+          type="button"
+          aria-pressed={selectedSuiteId === 'all'}
+          onClick={() => onSuiteChange('all')}
+          className={itemClass(selectedSuiteId === 'all')}
+        >
+          <Inbox className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="flex-1 truncate">{t('ui.allCases')}</span>
+          {totalItems != null && <span className="text-text-3 text-xs">{totalItems}</span>}
+        </button>
 
-      {/* 스위트 목록 */}
-      {suites.map((suite) => {
-        const isSelected = selectedSuiteId === suite.id;
-        return (
-          <button
-            key={suite.id}
-            type="button"
-            aria-pressed={isSelected}
-            onClick={() => onSuiteChange(suite.id)}
-            className={itemClass(isSelected)}
-          >
-            {isSelected ? (
-              <FolderOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
-            ) : (
-              <FolderClosed className="h-4 w-4 shrink-0" aria-hidden="true" />
-            )}
-            <span className="flex-1 truncate">{suite.title}</span>
-          </button>
-        );
-      })}
+        {/* 스위트 목록 */}
+        {suites.map((suite) => {
+          const isSelected = selectedSuiteId === suite.id;
+          return (
+            <button
+              key={suite.id}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => onSuiteChange(suite.id)}
+              className={itemClass(isSelected)}
+            >
+              {isSelected ? (
+                <FolderOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
+              ) : (
+                <FolderClosed className="h-4 w-4 shrink-0" aria-hidden="true" />
+              )}
+              <span className="flex-1 truncate">{suite.title}</span>
+            </button>
+          );
+        })}
 
-      {/* 미분류 */}
-      <button
-        type="button"
-        aria-pressed={selectedSuiteId === '__uncategorized__'}
-        onClick={() => onSuiteChange('__uncategorized__')}
-        className={itemClass(selectedSuiteId === '__uncategorized__', true)}
-      >
-        <Inbox className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span className="flex-1 truncate">미분류</span>
-      </button>
-    </div>
-  </nav>
-);
+        {/* 미분류 */}
+        <button
+          type="button"
+          aria-pressed={selectedSuiteId === '__uncategorized__'}
+          onClick={() => onSuiteChange('__uncategorized__')}
+          className={itemClass(selectedSuiteId === '__uncategorized__', true)}
+        >
+          <Inbox className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="flex-1 truncate">{t('ui.uncategorized')}</span>
+        </button>
+      </div>
+    </nav>
+  );
+};

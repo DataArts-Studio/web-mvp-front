@@ -1,3 +1,6 @@
+'use client';
+import { useTranslations } from 'next-intl';
+
 import type { TestSuiteCard } from '@/entities/test-suite';
 import { cn } from '@testea/util';
 import { formatDateTime } from '@testea/util';
@@ -9,12 +12,13 @@ type SuiteLastRunSectionProps = {
 };
 
 export const SuiteLastRunSection = ({ lastRun }: SuiteLastRunSectionProps) => {
+  const t = useTranslations('suites');
   return (
     <section aria-labelledby="suite-last-run-heading" className="col-span-6">
       <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
         <div className="mb-4 flex items-center justify-between">
           <h3 id="suite-last-run-heading" className="text-text-1 font-semibold">
-            마지막 실행
+            {t('ui.lastRun')}
           </h3>
           <span
             className={cn(
@@ -27,7 +31,7 @@ export const SuiteLastRunSection = ({ lastRun }: SuiteLastRunSectionProps) => {
         </div>
         <div className="grid grid-cols-5 gap-4 text-center">
           <div>
-            <p className="text-text-3 text-sm">실행 일시</p>
+            <p className="text-text-3 text-sm">{t('ui.runDateTime')}</p>
             <p className="text-text-1 font-medium">{formatDateTime(lastRun.runAt)}</p>
           </div>
           <div>

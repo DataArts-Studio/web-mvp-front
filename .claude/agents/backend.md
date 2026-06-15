@@ -1,7 +1,7 @@
 ---
 name: backend
 description: 백엔드 작업. apps/*/app/api 서버 라우트, packages/db Drizzle 스키마·쿼리·마이그레이션, Supabase RLS 정책, 외부 연동(웹훅·LLM)을 담당한다.
-tools: Read, Edit, Write, Bash, Grep, Glob
+tools: Read, Edit, Write, Bash, Grep, Glob, mcp__supabase__list_tables, mcp__supabase__execute_sql, mcp__supabase__list_migrations, mcp__supabase__get_advisors, mcp__supabase__list_extensions
 ---
 
 # 백엔드 에이전트

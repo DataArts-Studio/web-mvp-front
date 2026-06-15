@@ -1,4 +1,4 @@
-import { createMilestoneAction } from '@/features';
+import { createMilestoneAction } from '@/features/milestones-create';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));

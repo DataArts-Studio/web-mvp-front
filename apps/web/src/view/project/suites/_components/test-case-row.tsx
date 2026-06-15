@@ -1,3 +1,6 @@
+'use client';
+import { useTranslations } from 'next-intl';
+
 import type { TestCaseCardType } from '@/entities/test-case';
 import { cn } from '@testea/util';
 
@@ -9,13 +12,18 @@ type TestCaseRowProps = {
 };
 
 export const TestCaseRow = ({ testCase, onSelect }: TestCaseRowProps) => {
+  const t = useTranslations('suites');
   const statusConfig = TEST_STATUS_CONFIG[testCase.resultStatus] ?? TEST_STATUS_CONFIG.untested;
 
   return (
     <button
       key={testCase.id}
       type="button"
-      aria-label={`테스트 케이스 ${testCase.caseKey} ${testCase.title}, 상태 ${statusConfig.label}`}
+      aria-label={t('ui.caseRowAriaLabel', {
+        caseKey: testCase.caseKey,
+        title: testCase.title,
+        status: statusConfig.label,
+      })}
       className={cn(
         'hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 text-left transition-colors',
         'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',

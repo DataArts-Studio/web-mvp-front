@@ -1,8 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useId, useState } from 'react';
+
+import { useTranslations } from 'next-intl';
 
 import { TestCaseCard, TestCaseCardType, duplicateTestCase } from '@/entities/test-case';
+import {
+  translateCaseErrors,
+  translateCaseMessage,
+} from '@/entities/test-case/lib/translate-message';
 import { testCaseQueryKeys } from '@/features/cases-list';
 import { arrayMove, useReorderCase } from '@/features/reorder';
 import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
@@ -60,9 +66,13 @@ export const CaseListSection = ({
   onSelectCase,
 }: CaseListSectionProps) => {
   const queryClient = useQueryClient();
+  const t = useTranslations('cases');
   const isCustomSort = sortOption === 'custom';
 
   // D&D
+  // DndContext 에 안정적인 id 를 주지 않으면 dnd-kit 가 내부 카운터로 접근성 id(DndDescribedBy-N)를
+  // 생성해 SSR/CSR 값이 어긋나며 hydration 불일치가 난다. useId 로 서버·클라이언트 동일 id 를 보장한다.
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
@@ -110,14 +120,14 @@ export const CaseListSection = ({
     mutationFn: (testCaseId: string) => duplicateTestCase(testCaseId),
     onSuccess: (result) => {
       if (result.success) {
-        toast.success('테스트 케이스가 복제되었습니다.');
+        toast.success(translateCaseMessage(t, 'CASE_DUPLICATED'));
         queryClient.invalidateQueries({ queryKey: testCaseQueryKeys.list(projectId) });
         queryClient.invalidateQueries({ queryKey: ['testSuites', projectId] });
       } else {
         const msg = Object.values(result.errors ?? {})
           .flat()
           .join(', ');
-        toast.error(msg || '복제에 실패했습니다.');
+        toast.error(translateCaseErrors(t, msg) || t('ui.duplicateFailedFallback'));
       }
     },
   });
@@ -134,7 +144,7 @@ export const CaseListSection = ({
   return (
     <div className="mx-auto w-full max-w-[1200px] flex-1 px-6 py-6 lg:px-10">
       <section
-        aria-label="테스트 케이스 목록"
+        aria-label={t('ui.listAriaLabel')}
         aria-busy={isFetching && hasData ? true : undefined}
         className={cn(
           'rounded-3 border-line-2 bg-bg-2 shadow-1 border transition-opacity',
@@ -146,21 +156,20 @@ export const CaseListSection = ({
         {isEmpty ? (
           <div role="status" className="flex flex-col items-center justify-center gap-2 py-12">
             <p className="typo-body2-normal text-text-3">
-              {debouncedSearch || selectedSuiteId !== 'all'
-                ? '검색 결과가 없습니다.'
-                : '테스트 케이스가 없습니다.'}
+              {debouncedSearch || selectedSuiteId !== 'all' ? t('ui.noResults') : t('ui.noCases')}
             </p>
             {(debouncedSearch || selectedSuiteId !== 'all') && (
               <button
                 onClick={onResetFilters}
                 className="typo-body2-normal text-primary hover:underline"
               >
-                필터 초기화
+                {t('ui.resetFilters')}
               </button>
             )}
           </div>
         ) : (
           <DndContext
+            id={dndId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
@@ -179,7 +188,10 @@ export const CaseListSection = ({
                     <div
                       role="button"
                       tabIndex={item.isOptimistic ? -1 : 0}
-                      aria-label={`테스트 케이스 ${item.caseKey} ${item.title}`}
+                      aria-label={t('ui.rowAriaLabel', {
+                        caseKey: item.caseKey,
+                        title: item.title,
+                      })}
                       className={cn(
                         'group hover:bg-bg-3 flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors',
                         'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',

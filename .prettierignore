@@ -3,3 +3,6 @@ node_modules
 dist
 build
 coverage
+
+# drizzle 생성물 (마이그레이션 SQL·스냅샷·저널) 은 도구가 관리하므로 포맷 검사 제외
+packages/db/drizzle

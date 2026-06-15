@@ -2,6 +2,8 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { useTranslations } from 'next-intl';
+
 import { CreateTestSuiteSchema } from '@/entities/test-suite';
 import type { CreateTestSuite } from '@/entities/test-suite';
 import { useCreateSuite } from '@/features/suites-create';
@@ -17,10 +19,12 @@ interface SuiteCreateFormProps {
 }
 
 export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) => {
+  const t = useTranslations('suites');
   const { mutate, isPending } = useCreateSuite();
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<CreateTestSuite>({
     resolver: zodResolver(CreateTestSuiteSchema),
@@ -31,6 +35,7 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
       sortOrder: 0,
     },
   });
+  const titleLength = (watch('title') ?? '').length;
 
   const onSubmit = async (data: CreateTestSuite) => {
     mutate(data, {
@@ -107,15 +112,15 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
       >
         {isPending && (
           <div className="bg-bg-2/80 absolute inset-0 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm">
-            <LoadingSpinner size="md" text="테스트 스위트를 생성하고 있어요" />
+            <LoadingSpinner size="md" text={t('ui.creating')} />
           </div>
         )}
         {/* Header */}
         <div className="border-line-2 shrink-0 border-b px-6 py-5">
           <h2 id={titleId} className="text-text-1 text-lg font-bold">
-            테스트 스위트 생성
+            {t('ui.createTitle')}
           </h2>
-          <p className="text-text-3 mt-1 text-sm">필요한 테스트들을 한 곳에 모아 관리해요</p>
+          <p className="text-text-3 mt-1 text-sm">{t('ui.createSubtitle')}</p>
         </div>
 
         {/* Body */}
@@ -126,32 +131,35 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
           noValidate
         >
           <input type="hidden" {...register('projectId')} />
-          <FormField.Root className="flex flex-col gap-2">
-            <FormField.Label className="text-text-1 font-medium">
-              스위트 이름 <span className="text-primary">*</span>
+          <FormField.Root className="flex flex-col gap-1.5">
+            <FormField.Label className="text-text-1 flex items-center text-sm font-medium">
+              <span>
+                {t('ui.nameLabel')} <span className="text-primary">*</span>
+              </span>
+              <span className="text-text-3 ml-auto text-xs tabular-nums">{titleLength}/50</span>
             </FormField.Label>
             <FormField.Control
-              placeholder="스위트 이름을 입력해 주세요."
+              placeholder={t('ui.namePlaceholder')}
               type="text"
               disabled={isPending}
               {...register('title', {
-                required: '유효한 이름을 입력해주세요.',
+                required: t('ui.nameRequired'),
                 minLength: {
                   value: 3,
-                  message: '스위트 이름은 최소 3자 이상이어야 합니다.',
+                  message: t('ui.nameMin'),
                 },
                 maxLength: {
                   value: 50,
-                  message: '스위트 이름은 50자를 초과할 수 없습니다.',
+                  message: t('ui.nameMax'),
                 },
-                validate: (value) => !!value.trim() || '공백만으로는 이름을 생성할 수 없습니다.',
+                validate: (value) => !!value.trim() || t('ui.nameBlank'),
                 pattern: {
                   value: /^[a-zA-Z0-9가-힣\s._-]+$/,
-                  message: '특수문자는 사용할 수 없습니다. (-, _, ., 공백만 허용)',
+                  message: t('ui.namePattern'),
                 },
               })}
               className={cn(
-                'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none',
+                'rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-11 w-full border px-3.5 text-sm transition-colors outline-none',
                 errors.title && 'border-system-red focus:border-system-red'
               )}
             />
@@ -159,37 +167,33 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
               <span className="text-system-red text-sm">{errors.title.message}</span>
             )}
           </FormField.Root>
-          <FormField.Root className="flex flex-col gap-2">
-            <FormField.Label className="text-text-1 font-medium">설명 (선택)</FormField.Label>
-            <FormField.Control
-              placeholder="이 스위트에 대한 간략한 설명을 입력해주세요."
-              type="text"
+          <FormField.Root className="flex flex-col gap-1.5">
+            <FormField.Label className="text-text-1 text-sm font-medium">
+              {t('ui.descriptionLabel')}
+            </FormField.Label>
+            <textarea
+              placeholder={t('ui.descriptionPlaceholder')}
+              rows={3}
               disabled={isPending}
               {...register('description')}
-              className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
+              className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary min-h-[88px] w-full resize-none border px-3.5 py-2.5 text-sm leading-relaxed transition-colors outline-none"
             />
           </FormField.Root>
         </form>
 
         {/* Actions */}
-        <div className="border-line-2 flex shrink-0 gap-3 border-t px-6 py-4">
-          <DSButton
-            type="button"
-            variant="ghost"
-            className="w-full"
-            disabled={isPending}
-            onClick={handleAbandon}
-          >
-            취소
+        <div className="border-line-2 flex shrink-0 justify-end gap-2 border-t px-6 py-4">
+          <DSButton type="button" variant="ghost" disabled={isPending} onClick={handleAbandon}>
+            {t('ui.cancel')}
           </DSButton>
           <DSButton
             type="submit"
             form="suite-form"
             variant="solid"
-            className="w-full"
+            className="min-w-[120px]"
             disabled={isPending}
           >
-            {isPending ? '생성 중...' : '생성'}
+            {isPending ? t('ui.creatingShort') : t('ui.create')}
           </DSButton>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import React, { ReactNode } from 'react';
 
 import type { Metadata, Viewport } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import Script from 'next/script';
 
 import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
@@ -16,11 +18,11 @@ const siteUrl = 'https://gettestea.com';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
+    default: '테스티아(Testea) - AI 기반 무료 QA 도구 · 테스트 관리 플랫폼',
     template: '%s | 테스티아(Testea)',
   },
   description:
-    '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서. 소프트웨어 테스트 관리 도구.',
+    '요구사항 기반 AI 테스트 시나리오·케이스 생성, 실행, 결과 추적을 한 곳에서. 무료 QA 도구 테스티아.',
   keywords: [
     '테스트 관리',
     '테스트 관리 도구',
@@ -47,6 +49,19 @@ export const metadata: Metadata = {
     '테스트 플랫폼',
     '무료 QA 도구',
     '무료 테스트 도구',
+    '테스트 시나리오',
+    '테스트 시나리오 관리',
+    '테스트 시나리오 작성',
+    '요구사항 기반 테스트',
+    'AI 테스트 케이스 생성',
+    'AI 테스트 시나리오 생성',
+    '테스트 케이스 작성',
+    'QA 협업 도구',
+    '테스트 케이스 템플릿',
+    '테스트 관리 시스템',
+    '테스트 케이스 작성법',
+    '요구사항 관리',
+    '버그 추적',
     'Testea',
     '테스티아',
   ],
@@ -62,32 +77,27 @@ export const metadata: Metadata = {
     canonical: '/',
     languages: {
       'ko-KR': '/',
+      'en-US': '/en',
     },
   },
   openGraph: {
-    title: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
+    title: '테스티아(Testea) - AI 기반 무료 QA 도구 · 테스트 관리 플랫폼',
     description:
-      '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+      '요구사항 기반 AI 테스트 시나리오·케이스 생성, 실행, 결과 추적을 한 곳에서. 무료 QA 도구 테스티아.',
     url: siteUrl,
     type: 'website',
     locale: 'ko_KR',
     siteName: '테스티아(Testea)',
-    images: [
-      {
-        url: '/opengraph-image',
-        width: 1200,
-        height: 630,
-        alt: 'Testea - 테스트 관리 플랫폼',
-      },
-    ],
+    // images 는 명시하지 않는다. Next 의 파일 컨벤션(opengraph-image)이 라우트 세그먼트별로
+    // 자동 매핑돼, [locale] 마케팅은 로케일별 OG, 루트(제품/공유)는 기본 OG 를 쓴다.
   },
   twitter: {
     card: 'summary_large_image',
-    title: '테스티아(Testea) - 무료 QA 도구 · 테스트 관리 플랫폼',
+    title: '테스티아(Testea) - AI 기반 무료 QA 도구 · 테스트 관리 플랫폼',
     description:
-      '테스티아(Testea) - 무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서.',
+      '요구사항 기반 AI 테스트 시나리오·케이스 생성, 실행, 결과 추적을 한 곳에서. 무료 QA 도구 테스티아.',
     creator: '@testea',
-    images: ['/opengraph-image'],
+    // images 미지정: twitter-image 파일 컨벤션이 라우트별로 자동 매핑된다.
   },
   robots: {
     index: allowIndexing,
@@ -133,8 +143,10 @@ const jsonLd = {
       alternateName: '테스티아',
       applicationCategory: 'DeveloperApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ko-KR',
+      keywords: 'AI QA 도구, 테스트 시나리오 관리, 요구사항 기반 테스트, 무료 테스트 관리',
       description:
-        '무료 QA 도구 · QA 툴. 테스트 케이스 작성, 실행, 결과 추적을 한 곳에서. 소프트웨어 테스트 관리 도구.',
+        '요구사항 기반 AI 테스트 시나리오·케이스 생성부터 실행, 결과 추적까지. 무료 QA 도구 · 소프트웨어 테스트 관리 플랫폼.',
       url: siteUrl,
       offers: {
         '@type': 'Offer',
@@ -143,10 +155,14 @@ const jsonLd = {
         availability: 'https://schema.org/InStock',
       },
       featureList: [
+        '요구사항 기반 테스트 시나리오 관리',
+        'AI 테스트 시나리오·케이스 자동 생성',
+        '시나리오 기반 테스트 스위트 파생',
         '테스트 케이스 관리',
         '테스트 스위트 관리',
         '테스트 실행 추적',
         '마일스톤 관리',
+        '테스트 케이스 템플릿',
         '프로젝트 구조화',
       ],
     },
@@ -167,13 +183,17 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  // [locale] 라우트에서는 ko|en, 그 밖(제품/공유/api)에서는 defaultLocale(ko) 로 폴백.
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="ko">
+    <html lang={locale}>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
@@ -206,13 +226,15 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <QueryProvider>
-          <CriticalBanner />
-          {children}
-        </QueryProvider>
-        <LazyToaster />
-        {/* 테스트용 컴포넌트 */}
-        <MvpBottomNavbarLazy />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <QueryProvider>
+            <CriticalBanner />
+            {children}
+          </QueryProvider>
+          <LazyToaster />
+          {/* 테스트용 컴포넌트 */}
+          <MvpBottomNavbarLazy />
+        </NextIntlClientProvider>
         <Script
           id="font-swap"
           strategy="afterInteractive"

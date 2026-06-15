@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- 테스트 mock 은 drizzle 쿼리 체인을 any 로 흉내낸다 */
+// eslint-disable-next-line no-restricted-imports -- 테스트 픽스처용 엔티티 타입 참조 (테스트 전용)
 import { CreateMilestone, MilestoneDTO } from '@/entities/milestone';
 import { type Mock, vi } from 'vitest';
 
@@ -20,12 +22,33 @@ let mockDeleteReturnValue: unknown = undefined;
 // ============================================================================
 // Mock Database Object
 // ============================================================================
+// drizzle `.$dynamic()` 체이닝 모킹: limit/offset 을 자유롭게 이어 붙일 수 있고
+// await 하면 mockReturnValue 를 돌려주는 thenable.
+const makeDynamicChain = (): any => {
+  const chain: any = {
+    limit: vi.fn(() => chain),
+    offset: vi.fn(() => chain),
+    where: vi.fn(() => chain),
+    orderBy: vi.fn(() => chain),
+    then: (resolve: (value: unknown) => void) => Promise.resolve(mockReturnValue).then(resolve),
+  };
+  return chain;
+};
+
 export const mockDb: any = {
   select: vi.fn(() => ({
     from: vi.fn(() => ({
       where: vi.fn(() => ({
+        $dynamic: vi.fn(() => makeDynamicChain()),
         limit: vi.fn(() => ({
           offset: vi.fn(() => Promise.resolve(mockReturnValue)),
+          // `.limit(n)` 으로 끝나는(offset 없는) 프리플라이트 조회도 await 가능하게.
+          then: (resolve: (value: unknown) => void) =>
+            Promise.resolve(mockReturnValue).then(resolve),
+        })),
+        groupBy: vi.fn(() => ({
+          then: (resolve: (value: unknown) => void) =>
+            Promise.resolve(mockReturnValue).then(resolve),
         })),
         then: (resolve: (value: unknown) => void) => Promise.resolve(mockReturnValue).then(resolve),
       })),

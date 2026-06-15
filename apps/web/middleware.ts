@@ -5,8 +5,14 @@
  * /projects/[slug]/* 경로에 대해 접근 토큰을 검증하고,
  * 토큰이 없거나 유효하지 않으면 접근 페이지로 리다이렉트.
  */
+import createMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+
+import { routing } from '@/i18n/routing';
+
+// next-intl 라우팅 미들웨어 (마케팅 + /en 접두 경로에만 적용)
+const intlMiddleware = createMiddleware(routing);
 
 // 상수 직접 정의 (import 문제 방지)
 const COOKIE_PREFIX = 'project_access';
@@ -52,6 +58,7 @@ function bytesToBase64Url(buf: ArrayBuffer): string {
 
 /**
  * 상수 시간 문자열 비교 (서명 비교 타이밍 사이드채널 완화).
+ * 길이는 비밀이 아니므로(서명 길이 고정) 길이 불일치는 즉시 false.
  */
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
@@ -74,6 +81,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 async function verifyTokenSignature(token: string): Promise<boolean> {
   const secret = process.env.ACCESS_TOKEN_SECRET;
   if (!secret) {
+    // 시크릿 미설정 시 위조 토큰을 통과시키지 않도록 fail-closed
     return false;
   }
 
@@ -177,22 +185,53 @@ function isBlockedInProduction(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // console.log('[Middleware] Running for:', pathname);
-
-  // 프로덕션 환경에서 개발/테스트 경로 차단
+  // 프로덕션 환경에서 개발/테스트 경로 차단 (최우선)
   if (process.env.NODE_ENV === 'production' && isBlockedInProduction(pathname)) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
+  // 제품/공유/api 라우트는 next-intl 로케일 처리를 거치지 않고 기존 접근 가드만 적용한다.
+  // (제품 화면은 /en 접두를 쓰지 않으므로 로케일 rewrite 대상에서 제외)
+  if (
+    pathname.startsWith('/projects') ||
+    pathname.startsWith('/share') ||
+    pathname.startsWith('/api')
+  ) {
+    return runAccessGuard(request);
+  }
+
+  // 확장자 없는 루트 메타데이터 라우트(/icon, /pwa-icon 등)는 [locale] 하위에 없으므로
+  // next-intl 로 넘기면 /ko/icon 으로 rewrite 돼 404 가 된다. 그대로 통과시킨다.
+  if (isNonLocalizedRoot(pathname)) {
+    return NextResponse.next();
+  }
+
+  // 그 밖(마케팅 + /en 접두)은 next-intl 미들웨어가 rewrite/redirect 처리
+  return intlMiddleware(request);
+}
+
+/**
+ * [locale] 하위에 두지 않는 루트 메타데이터/아이콘 라우트 (로케일 rewrite 금지).
+ * 확장자가 붙는 sitemap.xml·robots.txt·manifest.webmanifest·favicon.ico 는 matcher 에서 제외된다.
+ */
+function isNonLocalizedRoot(pathname: string): boolean {
+  const roots = ['/icon', '/apple-icon', '/pwa-icon', '/opengraph-image', '/twitter-image'];
+  return roots.some((r) => pathname === r || pathname.startsWith(r + '/'));
+}
+
+/**
+ * 프로젝트 접근 토큰 가드 (기존 로직).
+ */
+async function runAccessGuard(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+
   // 공개 경로는 통과
   if (isPublicPath(pathname)) {
-    // console.log('[Middleware] Public path, passing through');
     return NextResponse.next();
   }
 
   // 보호된 경로가 아니면 통과
   if (!isProtectedPath(pathname)) {
-    // console.log('[Middleware] Not protected, passing through');
     return NextResponse.next();
   }
 
@@ -281,5 +320,12 @@ export async function middleware(request: NextRequest) {
  * 미들웨어가 적용될 경로 패턴
  */
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // _next/_vercel 내부, Sentry 터널(/monitoring), 실제 정적자산 확장자(끝 고정)를 제외한 모든 경로.
+  // `.*\\..*` 처럼 점 전체를 제외하면 `/projects/acme.com` 같은 점 포함 프로젝트 경로가
+  // 미들웨어를 건너뛰어 접근 가드가 무력화되므로, 확장자는 끝($)에서만 좁게 제외한다.
+  // 추가로 /projects/:path* 를 명시해 점 유무와 무관하게 접근 가드가 항상 실행되도록 한다.
+  matcher: [
+    '/((?!_next|_vercel|monitoring|.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|webmanifest|txt|xml|js|css|map|woff2?)$).*)',
+    '/projects/:path*',
+  ],
 };

@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
 
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -16,18 +17,25 @@ import { useDisclosure } from '@testea/lib';
 import { MainContainer } from '@testea/ui';
 import { Pagination, ProjectErrorFallback, Skeleton } from '@testea/ui';
 
-const FILTER_OPTIONS = ['전체', '기능별', '시나리오'] as const;
+const FILTER_OPTIONS = ['all', 'feature', 'scenario'] as const;
 type FilterOption = (typeof FILTER_OPTIONS)[number];
 const PAGE_SIZE = 7;
 
 export const TestSuitesView = () => {
   const params = useParams();
+  const t = useTranslations('suites');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingSuite, setEditingSuite] = useState<TestSuiteCard | null>(null);
 
+  const filterLabels: Record<FilterOption, string> = {
+    all: t('ui.filterAll'),
+    feature: t('ui.filterByFeature'),
+    scenario: t('ui.filterByScenario'),
+  };
+
   // 검색어, 필터, 페이지 상태
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<FilterOption>('전체');
+  const [filterType, setFilterType] = useState<FilterOption>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
   // 클라이언트 hydration 완료 전까지 서버와 동일 출력(스켈레톤) 보장 → SSR↔CSR 미스매치 방지
@@ -66,9 +74,11 @@ export const TestSuitesView = () => {
       );
     }
 
-    // 타입 필터링 (향후 tag 기반 필터링 확장 가능)
-    if (filterType !== '전체') {
-      result = result.filter((suite) => suite.tag.label === filterType);
+    // 출처 기반 필터링: 기능별 = 요구사항 분석서 파생, 시나리오 = 시나리오 파생
+    if (filterType === 'feature') {
+      result = result.filter((suite) => suite.requirementAnalysisId != null);
+    } else if (filterType === 'scenario') {
+      result = result.filter((suite) => suite.testScenarioId != null);
     }
 
     return result;
@@ -88,9 +98,12 @@ export const TestSuitesView = () => {
     setCurrentPage(1);
   };
 
-  // 필터 변경 핸들러
-  const handleFilterChange = (value: string) => {
-    setFilterType(value as FilterOption);
+  // 필터 변경 핸들러 (표시 라벨 → 안정 키 역매핑)
+  const handleFilterChange = (label: string) => {
+    const matched = (Object.keys(filterLabels) as FilterOption[]).find(
+      (key) => filterLabels[key] === label
+    );
+    setFilterType(matched ?? 'all');
     setCurrentPage(1);
   };
 
@@ -168,23 +181,20 @@ export const TestSuitesView = () => {
       {/* 헤더 영역 */}
       <header className="col-span-6 flex w-full items-start justify-between gap-6">
         <div className="flex flex-col gap-2">
-          <h1 className="typo-title-heading">테스트 스위트 관리</h1>
-          <p className="typo-body1-normal text-text-3">
-            흩어진 테스트 케이스를 기능·시나리오 단위 스위트로 묶어 관리하고, 문서 복사 없이 같은
-            스위트를 반복 실행하세요.
-          </p>
+          <h1 className="typo-title-heading">{t('ui.pageTitle')}</h1>
+          <p className="typo-body1-normal text-text-3">{t('ui.pageSubtitle')}</p>
         </div>
       </header>
-      <ActionToolbar.Root ariaLabel="테스트 스위트 컨트롤">
+      <ActionToolbar.Root ariaLabel={t('ui.controlsAriaLabel')}>
         <ActionToolbar.Group>
           <ActionToolbar.Search
-            placeholder="스위트 이름 또는 키워드로 검색"
+            placeholder={t('ui.searchPlaceholder')}
             value={searchQuery}
             onChange={handleSearchChange}
           />
           <ActionToolbar.Filter
-            options={[...FILTER_OPTIONS]}
-            currentValue={filterType}
+            options={FILTER_OPTIONS.map((key) => filterLabels[key])}
+            currentValue={filterLabels[filterType]}
             onChange={handleFilterChange}
           />
         </ActionToolbar.Group>
@@ -197,13 +207,13 @@ export const TestSuitesView = () => {
             onOpen();
           }}
         >
-          테스트 스위트 생성하기
+          {t('ui.createSuite')}
         </ActionToolbar.Action>
       </ActionToolbar.Root>
-      <section aria-label="테스트 스위트 리스트" className="col-span-6 flex min-h-0 flex-col">
+      <section aria-label={t('ui.listAriaLabel')} className="col-span-6 flex min-h-0 flex-col">
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
-          {filteredSuites.length === 0 && (searchQuery || filterType !== '전체') ? (
-            <div className="text-text-3 py-8 text-center">검색 결과가 없습니다.</div>
+          {filteredSuites.length === 0 && (searchQuery || filterType !== 'all') ? (
+            <div className="text-text-3 py-8 text-center">{t('ui.noResults')}</div>
           ) : null}
           {paginatedSuites.map((suite) => (
             <Link key={suite.id} href={`/projects/${params.slug}/suites/${suite.id}`}>

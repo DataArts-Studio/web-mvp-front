@@ -22,7 +22,7 @@ import {
   testRunSuites,
   testRuns,
 } from '@testea/db';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, max } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 type GetMilestonesParams = {
@@ -49,8 +49,8 @@ export const getMilestones = async ({
 
     const milestoneIds = rows.map((r) => r.id);
 
-    // 병렬 조회: 테스트 실행, 마일스톤-케이스, 마일스톤-스위트
-    const [allRuns, allMtc, allMts] = await Promise.all([
+    // 병렬 조회: 테스트 실행, 마일스톤-케이스, 마일스톤-스위트, 마지막 실행 시점
+    const [allRuns, allMtc, allMts, lastExecRows] = await Promise.all([
       db
         .select({ id: testRuns.id, milestone_id: testRuns.milestone_id })
         .from(testRuns)
@@ -65,7 +65,28 @@ export const getMilestones = async ({
         .select()
         .from(milestoneTestSuites)
         .where(inArray(milestoneTestSuites.milestone_id, milestoneIds)),
+      // FDD-TR12: 마일스톤별 마지막 실행 시점 (source_type='milestone' 기준, 논리 삭제 제외)
+      db
+        .select({
+          milestoneId: testCaseRuns.source_id,
+          lastExecutedAt: max(testCaseRuns.executed_at),
+        })
+        .from(testCaseRuns)
+        .where(
+          and(
+            eq(testCaseRuns.source_type, 'milestone'),
+            inArray(testCaseRuns.source_id, milestoneIds),
+            isNull(testCaseRuns.excluded_at)
+          )
+        )
+        .groupBy(testCaseRuns.source_id),
     ]);
+
+    const lastExecutedAtMap = new Map<string, Date | null>();
+    for (const r of lastExecRows) {
+      if (!r.milestoneId) continue;
+      lastExecutedAtMap.set(r.milestoneId, r.lastExecutedAt ? new Date(r.lastExecutedAt) : null);
+    }
 
     // 스위트에 속한 케이스 조회
     const allSuiteIds = [
@@ -174,6 +195,7 @@ export const getMilestones = async ({
 
       return {
         ...base,
+        lastExecutedAt: lastExecutedAtMap.get(row.id) ?? null,
         totalCases,
         completedCases,
         progressRate: totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0,

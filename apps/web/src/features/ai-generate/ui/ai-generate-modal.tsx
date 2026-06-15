@@ -6,6 +6,7 @@ import { aiConfigQueryOptions } from '@/entities/ai-config';
 import type { GeneratedTestCase } from '@/entities/ai-config';
 import { saveGeneratedCases } from '@/entities/ai-config/api/server-actions';
 import { aiUsageQueryOptions } from '@/entities/ai-usage';
+import { AttachmentDropzone } from '@/shared/ui';
 import { testSuitesQueryOptions } from '@/widgets';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog } from '@testea/ui';
@@ -13,7 +14,6 @@ import { DSButton } from '@testea/ui';
 import { Bot, Loader2, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { AiAttachmentDropzone } from './ai-attachment-dropzone';
 import { AiCasePreviewList } from './ai-case-preview-list';
 import { AiGenerateForm } from './ai-generate-form';
 import { AiGeneratingSpinner } from './ai-generating-spinner';
@@ -216,7 +216,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
                 />
                 <div className="mt-4 flex flex-col gap-2">
                   <label className="typo-label-heading text-text-2">참고 문서 첨부 (선택)</label>
-                  <AiAttachmentDropzone
+                  <AttachmentDropzone
                     file={attachment}
                     onChange={setAttachment}
                     disabled={generateMutation.isPending}

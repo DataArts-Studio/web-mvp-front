@@ -3,6 +3,7 @@
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
+import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -16,7 +17,7 @@ import {
   testRuns,
   testSuites,
 } from '@testea/db';
-import { and, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, isNull, max } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 type GetTestSuitesParams = {
@@ -28,7 +29,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
   try {
     const hasAccess = await requireProjectAccess(input.projectId);
     if (!hasAccess) {
-      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
     const storageError = await checkStorageLimit(input.projectId);
@@ -56,7 +57,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     if (!inserted) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트를 생성하는 도중 오류가 발생했습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.CREATE_FAILED] },
       };
     }
 
@@ -70,18 +71,19 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
       updatedAt: inserted.updated_at,
       archivedAt: inserted.archived_at ?? null,
       lifecycleStatus: inserted.lifecycle_status,
+      lastExecutedAt: null,
     };
 
     return {
       success: true,
       data: result,
-      message: '테스트 스위트를 생성하였습니다.',
+      message: SUITE_MESSAGE_CODES.SUITE_CREATED,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'createTestSuite' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 생성하는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.CREATE_FAILED] },
     };
   }
 };
@@ -107,7 +109,7 @@ export const getTestSuites = async ({
     if (!rows) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트가 존재하지 않습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -121,6 +123,7 @@ export const getTestSuites = async ({
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
       lifecycleStatus: row.lifecycle_status,
+      lastExecutedAt: null,
     }));
 
     return {
@@ -131,7 +134,7 @@ export const getTestSuites = async ({
     Sentry.captureException(error, { extra: { action: 'getTestSuites' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -144,7 +147,7 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
     if (!row) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -158,6 +161,7 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
       lifecycleStatus: row.lifecycle_status,
+      lastExecutedAt: null,
     };
 
     return {
@@ -168,7 +172,7 @@ export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSui
     Sentry.captureException(error, { extra: { action: 'getTestSuiteById' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -184,7 +188,7 @@ export const getTestSuiteByIdWithStats = async (
 
     const [row] = await db.select().from(testSuites).where(eq(testSuites.id, id));
     if (!row) {
-      return { success: false, errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] } };
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] } };
     }
 
     const result = await getTestSuitesWithStats({
@@ -207,6 +211,7 @@ export const getTestSuiteByIdWithStats = async (
           updatedAt: row.updated_at,
           archivedAt: row.archived_at ?? null,
           lifecycleStatus: row.lifecycle_status,
+          lastExecutedAt: null,
           tag: { label: '기본', tone: 'neutral' as const },
           includedPaths: [],
           caseCount: 0,
@@ -221,7 +226,7 @@ export const getTestSuiteByIdWithStats = async (
     Sentry.captureException(error, { extra: { action: 'getTestSuiteByIdWithStats' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -247,7 +252,7 @@ export const updateTestSuite = async (
       .where(eq(testSuites.id, id))
       .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
-      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
     const updateData: Record<string, unknown> = {
@@ -273,7 +278,7 @@ export const updateTestSuite = async (
     if (!updated) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -287,18 +292,19 @@ export const updateTestSuite = async (
       updatedAt: updated.updated_at,
       archivedAt: updated.archived_at ?? null,
       lifecycleStatus: updated.lifecycle_status,
+      lastExecutedAt: null,
     };
 
     return {
       success: true,
       data: result,
-      message: '테스트 스위트를 수정하였습니다.',
+      message: SUITE_MESSAGE_CODES.SUITE_UPDATED,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'updateTestSuite' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 수정하는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.UPDATE_FAILED] },
     };
   }
 };
@@ -355,56 +361,84 @@ export const getTestSuitesWithStats = async ({
       }
     };
 
-    const [caseCountRows, testTypeRows, msRows, runCountRows, recentRunRows] = await Promise.all([
-      // Q2: 케이스 수 집계
-      db
-        .select({ suiteId: testCases.test_suite_id, cnt: count() })
-        .from(testCases)
-        .where(
-          and(eq(testCases.lifecycle_status, 'ACTIVE'), inArray(testCases.test_suite_id, suiteIds))
-        )
-        .groupBy(testCases.test_suite_id),
-      // Q3: 케이스 test_type 목록 (포함 경로용)
-      db
-        .select({ suiteId: testCases.test_suite_id, testType: testCases.test_type })
-        .from(testCases)
-        .where(
-          and(
-            eq(testCases.lifecycle_status, 'ACTIVE'),
-            inArray(testCases.test_suite_id, suiteIds),
-            isNotNull(testCases.test_type)
+    const [caseCountRows, testTypeRows, msRows, runCountRows, recentRunRows, lastExecRows] =
+      await Promise.all([
+        // Q2: 케이스 수 집계
+        db
+          .select({ suiteId: testCases.test_suite_id, cnt: count() })
+          .from(testCases)
+          .where(
+            and(
+              eq(testCases.lifecycle_status, 'ACTIVE'),
+              inArray(testCases.test_suite_id, suiteIds)
+            )
           )
-        ),
-      // Q4: 연결된 마일스톤
-      milestoneQueryFn(),
-      // Q5: 실행 이력 수 집계 (논리 삭제 제외)
-      db
-        .select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
-        .from(testRunSuites)
-        .where(
-          and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
-        )
-        .groupBy(testRunSuites.test_suite_id),
-      // Q6: 최근 실행 (스위트별 최신 run, 논리 삭제 제외)
-      db
-        .select({
-          suiteId: testRunSuites.test_suite_id,
-          runId: testRuns.id,
-          runStatus: testRuns.status,
-          runCreatedAt: testRuns.created_at,
-        })
-        .from(testRunSuites)
-        .innerJoin(
-          testRuns,
-          and(eq(testRunSuites.test_run_id, testRuns.id), eq(testRuns.lifecycle_status, 'ACTIVE'))
-        )
-        .where(
-          and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
-        )
-        .orderBy(desc(testRuns.created_at)),
-    ]);
+          .groupBy(testCases.test_suite_id),
+        // Q3: 케이스 test_type 목록 (포함 경로용)
+        db
+          .select({ suiteId: testCases.test_suite_id, testType: testCases.test_type })
+          .from(testCases)
+          .where(
+            and(
+              eq(testCases.lifecycle_status, 'ACTIVE'),
+              inArray(testCases.test_suite_id, suiteIds),
+              isNotNull(testCases.test_type)
+            )
+          ),
+        // Q4: 연결된 마일스톤
+        milestoneQueryFn(),
+        // Q5: 실행 이력 수 집계 (논리 삭제 제외)
+        db
+          .select({ suiteId: testRunSuites.test_suite_id, cnt: count() })
+          .from(testRunSuites)
+          .where(
+            and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
+          )
+          .groupBy(testRunSuites.test_suite_id),
+        // Q6: 최근 실행 (스위트별 최신 run, 논리 삭제 제외)
+        db
+          .select({
+            suiteId: testRunSuites.test_suite_id,
+            runId: testRuns.id,
+            runStatus: testRuns.status,
+            runCreatedAt: testRuns.created_at,
+          })
+          .from(testRunSuites)
+          .innerJoin(
+            testRuns,
+            and(eq(testRunSuites.test_run_id, testRuns.id), eq(testRuns.lifecycle_status, 'ACTIVE'))
+          )
+          .where(
+            and(inArray(testRunSuites.test_suite_id, suiteIds), isNull(testRunSuites.excluded_at))
+          )
+          .orderBy(desc(testRuns.created_at)),
+        // Q7: 스위트별 마지막 실행 시점 (FDD-TR12). 스위트 멤버 케이스의 모든 실행 기준으로 집계한다.
+        // source_type='suite' 로 좁히면 마일스톤 경유로 실행된 스위트 케이스가 누락되므로,
+        // 케이스 멤버십(test_suite_id)으로 조인해 출처와 무관하게 집계한다.
+        db
+          .select({
+            suiteId: testCases.test_suite_id,
+            lastExecutedAt: max(testCaseRuns.executed_at),
+          })
+          .from(testCaseRuns)
+          .innerJoin(testCases, eq(testCaseRuns.test_case_id, testCases.id))
+          .where(
+            and(
+              inArray(testCases.test_suite_id, suiteIds),
+              eq(testCases.lifecycle_status, 'ACTIVE'),
+              isNull(testCaseRuns.excluded_at)
+            )
+          )
+          .groupBy(testCases.test_suite_id),
+      ]);
 
     const caseCountMap = new Map(caseCountRows.map((r) => [r.suiteId, Number(r.cnt)]));
+
+    const lastExecutedAtMap = new Map<string, Date | null>();
+    for (const r of lastExecRows) {
+      if (!r.suiteId) continue;
+      lastExecutedAtMap.set(r.suiteId, r.lastExecutedAt ? new Date(r.lastExecutedAt) : null);
+    }
 
     const testTypeMap = new Map<string, Set<string>>();
     for (const r of testTypeRows) {
@@ -536,7 +570,10 @@ export const getTestSuitesWithStats = async ({
         updatedAt: row.updated_at,
         archivedAt: row.archived_at ?? null,
         lifecycleStatus: row.lifecycle_status,
+        lastExecutedAt: lastExecutedAtMap.get(row.id) ?? null,
         tag: { label: '기본', tone: 'neutral' as const },
+        requirementAnalysisId: row.requirement_analysis_id ?? null,
+        testScenarioId: row.test_scenario_id ?? null,
         includedPaths,
         caseCount,
         linkedMilestone,
@@ -551,7 +588,7 @@ export const getTestSuitesWithStats = async ({
     Sentry.captureException(error, { extra: { action: 'getTestSuitesWithStats' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -570,7 +607,7 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       .where(eq(testSuites.id, id))
       .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
-      return { success: false, errors: { _testSuite: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
     const now = new Date();
@@ -588,7 +625,7 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
     if (!archived) {
       return {
         success: false,
-        errors: { _testSuite: ['테스트 스위트를 찾을 수 없습니다.'] },
+        errors: { _testSuite: [SUITE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -605,13 +642,13 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
     return {
       success: true,
       data: { id: archived.id },
-      message: '테스트 스위트가 휴지통으로 이동되었습니다.',
+      message: SUITE_MESSAGE_CODES.SUITE_ARCHIVED,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveTestSuite' } });
     return {
       success: false,
-      errors: { _testSuite: ['테스트 스위트를 삭제하는 도중 오류가 발생했습니다.'] },
+      errors: { _testSuite: [SUITE_MESSAGE_CODES.ARCHIVE_FAILED] },
     };
   }
 };

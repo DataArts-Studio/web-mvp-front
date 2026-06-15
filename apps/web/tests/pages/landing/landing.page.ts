@@ -2,6 +2,10 @@ import { type Locator, type Page, expect } from '@playwright/test';
 
 import { BasePage } from '../base.page';
 
+/** 정규식 메타문자를 이스케이프한다. URL 경로를 RegExp 로 단언할 때 프로젝트 이름의 특수문자가 패턴으로 새는 것을 막는다. */
+const escapeRegExp = (s: string): string =>
+  s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * 랜딩(`/`) + 랜딩에서 열리는 프로젝트 생성 모달(`#create-project`) POM.
  *
@@ -45,8 +49,10 @@ export class LandingPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.heading = page.getByLabel('Testea 홈으로 이동');
+    // 버튼의 접근성 이름은 aria-label("무료로 프로젝트 생성 시작하기")이라 표시 텍스트가 아닌
+    // aria-label 로 매칭해야 한다. (표시 텍스트는 "무료로 시작하기")
     this.openModalButton = page.getByRole('button', {
-      name: '무료로 시작하기',
+      name: '무료로 프로젝트 생성 시작하기',
     });
 
     // 모달 본체 — 레거시 locators.ts 의 검증된 셀렉터.
@@ -65,7 +71,9 @@ export class LandingPage extends BasePage {
     this.formPrivacyCheckbox = page
       .locator('label', { hasText: '만 14세 이상' })
       .getByRole('checkbox');
-    this.formStartButton = page.getByRole('button', {
+    // 모달 버튼은 모달 스코프로 한정한다. page 전역이면 랜딩 진입 버튼의
+    // aria-label("무료로 프로젝트 생성 시작하기")과 부분 매칭돼 strict mode 위반이 난다.
+    this.formStartButton = this.modal.getByRole('button', {
       name: '프로젝트 생성 시작',
     });
 
@@ -78,7 +86,7 @@ export class LandingPage extends BasePage {
     // 식별번호 입력 (type=password → textbox role 없음 → srOnly label 사용)
     this.formPasswordInput = page.getByLabel(/프로젝트 식별번호/);
     this.formPasswordConfirmInput = page.getByLabel(/식별번호 재확인/);
-    this.formStepTwoButton = page.getByRole('button', {
+    this.formStepTwoButton = this.modal.getByRole('button', {
       name: '프로젝트 생성하기',
     });
 
@@ -87,7 +95,7 @@ export class LandingPage extends BasePage {
       name: '프로젝트를 생성하시겠습니까?',
     });
     this.step3CancelButton = this.modal.getByRole('button', { name: '취소' });
-    this.formSubmitButton = page.getByRole('button', {
+    this.formSubmitButton = this.modal.getByRole('button', {
       name: '생성하기',
       exact: true,
     });
@@ -96,10 +104,10 @@ export class LandingPage extends BasePage {
     this.successHeading = this.modal.getByRole('heading', {
       name: '프로젝트 생성 완료!',
     });
-    this.formProjectUrlCopyButton = page.getByRole('button', {
+    this.formProjectUrlCopyButton = this.modal.getByRole('button', {
       name: '링크 복사',
     });
-    this.startButton = page.getByRole('button', { name: '시작하기' });
+    this.startButton = this.modal.getByRole('button', { name: '시작하기' });
   }
 
   // --- 네비게이션 ---------------------------------------------------------
@@ -232,7 +240,9 @@ export class LandingPage extends BasePage {
   /** 생성한 프로젝트 대시보드(`/projects/{slug}`)로 도착했다. */
   async expectDashboardLoaded(projectName: string): Promise<void> {
     await expect(this.page).toHaveURL(
-      new RegExp(`/projects/${encodeURIComponent(projectName)}(/.*)?$`),
+      new RegExp(
+        `/projects/${escapeRegExp(encodeURIComponent(projectName))}(/.*)?$`
+      ),
       { timeout: 30_000 }
     );
     await expect(this.page.getByText(projectName).first()).toBeVisible({

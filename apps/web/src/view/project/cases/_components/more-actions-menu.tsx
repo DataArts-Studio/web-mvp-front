@@ -2,24 +2,34 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import { cn } from '@testea/util';
-import { Bot, Download, MoreVertical, Upload } from 'lucide-react';
+import { Bot, Download, FileSearch, MoreVertical, Upload } from 'lucide-react';
 
 const MORE_ACTIONS = [
-  { key: 'ai', icon: Bot, label: 'AI 생성' },
-  { key: 'import', icon: Upload, label: '가져오기' },
-  { key: 'export', icon: Download, label: '내보내기' },
+  { key: 'ai', icon: Bot, labelKey: 'aiGenerate' },
+  { key: 'ai-analyze', icon: FileSearch, labelKey: 'aiAnalyze' },
+  { key: 'import', icon: Upload, labelKey: 'import' },
+  { key: 'export', icon: Download, labelKey: 'export' },
 ] as const;
 
 type MoreActionsKey = (typeof MORE_ACTIONS)[number]['key'];
 
 interface MoreActionsMenuProps {
   onAiGenerate: () => void;
+  onAiAnalyze: () => void;
   onImport: () => void;
   onExport: () => void;
 }
 
-export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreActionsMenuProps) => {
+export const MoreActionsMenu = ({
+  onAiGenerate,
+  onAiAnalyze,
+  onImport,
+  onExport,
+}: MoreActionsMenuProps) => {
+  const t = useTranslations('cases');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -34,20 +44,21 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
 
   const handlers: Record<MoreActionsKey, () => void> = {
     ai: onAiGenerate,
+    'ai-analyze': onAiAnalyze,
     import: onImport,
     export: onExport,
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative self-stretch">
       <button
         type="button"
-        aria-label="더 보기"
+        aria-label={t('ui.moreActions')}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex cursor-pointer items-center justify-center border px-2.5 py-2 transition-colors',
+          'typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex aspect-square h-full cursor-pointer items-center justify-center border transition-colors',
           open && 'bg-bg-3'
         )}
       >
@@ -57,10 +68,10 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
       {open && (
         <div
           role="menu"
-          aria-label="더 보기"
+          aria-label={t('ui.moreActions')}
           className="rounded-2 border-line-2 bg-bg-2 absolute top-full right-0 z-50 mt-1 min-w-[160px] border py-1 shadow-lg"
         >
-          {MORE_ACTIONS.map(({ key, icon: Icon, label }) => (
+          {MORE_ACTIONS.map(({ key, icon: Icon, labelKey }) => (
             <button
               key={key}
               type="button"
@@ -72,7 +83,7 @@ export const MoreActionsMenu = ({ onAiGenerate, onImport, onExport }: MoreAction
               className="text-text-2 hover:bg-bg-3 hover:text-text-1 flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors"
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="typo-body2-normal">{label}</span>
+              <span className="typo-body2-normal">{t(`ui.moreMenu.${labelKey}`)}</span>
             </button>
           ))}
         </div>

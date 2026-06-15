@@ -1,7 +1,7 @@
 ---
 name: planner
 description: 기획 작업. 신규 기능 스펙(FDD) 작성, 시장조사, 도메인 명세, 사용자 흐름·수용 조건 정의. 코드 변경은 하지 않는다.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Grep, Glob, WebFetch, WebSearch, mcp__notion__notion-search, mcp__notion__notion-fetch, mcp__notion__notion-create-pages, mcp__notion__notion-update-page, mcp__notion__notion-create-database, mcp__notion__notion-update-view
 ---
 
 # 기획 에이전트

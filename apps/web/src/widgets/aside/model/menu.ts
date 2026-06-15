@@ -1,65 +1,97 @@
 import {
+  Bot,
   CheckSquare,
   FileText,
   Flag,
   FolderOpen,
   HelpCircle,
+  ListChecks,
   Play,
   Settings,
   Trash2,
 } from 'lucide-react';
 
-// 동적 경로를 위한 함수
+// 동적 경로를 위한 함수.
+// label/title 은 표시 텍스트가 아니라 `aside` 네임스페이스의 메시지 키다(소비처 aside.tsx 에서
+// useTranslations 로 번역). 안정적 식별자라 React key·tracking·prefetch 키로도 그대로 쓴다.
 export const createAsideMenus = (projectSlug: string) => {
   const basePath = `/projects/${projectSlug}`;
 
   return {
     sections: [
       {
-        title: '테스트 관리',
+        title: 'sections.requirements',
         items: [
           {
-            label: '테스트 케이스',
+            label: 'items.requirements',
+            href: `${basePath}/requirements`,
+            icon: FileText,
+            matchPath: `${basePath}/requirements`,
+          },
+          {
+            label: 'items.scenarios',
+            href: `${basePath}/scenarios`,
+            icon: ListChecks,
+            matchPath: `${basePath}/scenarios`,
+          },
+        ],
+      },
+      {
+        title: 'sections.testManagement',
+        items: [
+          {
+            label: 'items.cases',
             href: `${basePath}/cases`,
             icon: FileText,
             matchPath: `${basePath}/cases`,
           },
           {
-            label: '테스트 스위트',
+            label: 'items.suites',
             href: `${basePath}/suites`,
             icon: FolderOpen,
             matchPath: `${basePath}/suites`,
           },
           {
-            label: '마일스톤',
+            label: 'items.milestones',
             href: `${basePath}/milestones`,
             icon: Flag,
             matchPath: `${basePath}/milestones`,
           },
           {
-            label: '테스트 실행',
+            label: 'items.runs',
             href: `${basePath}/runs`,
             icon: Play,
             matchPath: `${basePath}/runs`,
           },
           {
-            label: '체크리스트',
+            label: 'items.checklists',
             href: `${basePath}/checklists`,
             icon: CheckSquare,
             matchPath: `${basePath}/checklists`,
+          },
+          {
+            label: 'items.automation',
+            href: `${basePath}/automation`,
+            icon: Bot,
+            matchPath: `${basePath}/automation`,
           },
         ],
       },
     ],
     bottom: [
-      { label: '휴지통', href: `${basePath}/trash`, icon: Trash2, matchPath: `${basePath}/trash` },
       {
-        label: '설정',
+        label: 'items.trash',
+        href: `${basePath}/trash`,
+        icon: Trash2,
+        matchPath: `${basePath}/trash`,
+      },
+      {
+        label: 'items.settings',
         href: `${basePath}/settings`,
         icon: Settings,
         matchPath: `${basePath}/settings`,
       },
-      { label: '도움말', href: '#', icon: HelpCircle, matchPath: '' },
+      { label: 'items.help', href: '#', icon: HelpCircle, matchPath: '' },
     ],
   };
 };
