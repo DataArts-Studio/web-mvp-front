@@ -1,8 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
 
+/** 알림 심각도. 색상에만 의존하지 않도록 텍스트 라벨의 근거로 쓴다 (WCAG 1.4.1). */
+export type AlertSeverity = 'critical' | 'warning' | 'info';
+
 export type Alert = {
   title: string;
   description: string;
+  severity: AlertSeverity;
   tone: string;
 };
 

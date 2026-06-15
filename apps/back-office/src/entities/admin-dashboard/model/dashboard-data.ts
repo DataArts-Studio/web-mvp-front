@@ -18,16 +18,19 @@ export const alerts: Alert[] = [
   {
     title: 'AI 비용 예산 초과 위험 (93% 사용)',
     description: '이번 달 AI 비용: $1,858 / 예산: $2,000 · 7일 남음',
+    severity: 'critical',
     tone: 'bg-red-50 text-red-700 border-red-200',
   },
   {
     title: 'Supabase 스토리지 한도 임박 (87%)',
     description: '현재 사용량: 8.7 GB / Free Tier 한도: 10 GB · 3개 프로젝트 정리 필요',
+    severity: 'warning',
     tone: 'bg-amber-50 text-amber-700 border-amber-200',
   },
   {
     title: '비정상 사용 패턴 감지 (3건)',
     description: 'AI 호출 과다 사용자 2명 · 동일 IP 다중 계정 1건 · 상세 확인',
+    severity: 'info',
     tone: 'bg-blue-50 text-blue-700 border-blue-200',
   },
 ];

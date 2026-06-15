@@ -10,32 +10,27 @@ export function MetricsSection({ metrics }: MetricsSectionProps) {
       <h2 id="metrics-title" className="tracking-zero mb-3 text-lg font-bold">
         주요 지표
       </h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map((metric, index) => {
-          const titleId = `metric-${index}-title`;
-
-          return (
-            <section
-              key={`${metric.label}-${index}`}
-              aria-labelledby={titleId}
-              className="border-border shadow-1 rounded-lg border bg-white p-5"
-            >
-              <h3 id={titleId} className="text-text-secondary text-sm font-medium">
-                {metric.label}
-              </h3>
-              <div className="mt-4 flex items-end gap-2">
+      <ul className="grid list-none gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric, index) => (
+          <li
+            key={`${metric.label}-${index}`}
+            className="border-border shadow-1 rounded-lg border bg-white p-5"
+          >
+            <dl>
+              <dt className="text-text-secondary text-sm font-medium">{metric.label}</dt>
+              <dd className="mt-4 flex items-end gap-2">
                 <span className="tracking-zero text-text-primary text-3xl font-bold">
                   {metric.value}
                 </span>
                 {metric.unit ? (
                   <span className="pb-1 text-sm font-semibold text-[#155DFC]">{metric.unit}</span>
                 ) : null}
-              </div>
-              <div className="text-text-secondary mt-3 text-sm">{metric.helper}</div>
-            </section>
-          );
-        })}
-      </div>
+              </dd>
+              <dd className="text-text-secondary mt-3 text-sm">{metric.helper}</dd>
+            </dl>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

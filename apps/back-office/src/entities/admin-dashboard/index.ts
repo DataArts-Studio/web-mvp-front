@@ -17,6 +17,7 @@ export type {
   AbuseSignal,
   AbuseSignalItem,
   Alert,
+  AlertSeverity,
   CostProject,
   FunnelStep,
   Metric,
