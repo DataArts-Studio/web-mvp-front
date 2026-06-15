@@ -1,10 +1,16 @@
-import type { AbuseSignal } from '@/entities/admin-dashboard';
+import type { AbuseSignal, RateLimitViolation, SignupMonitoring } from '@/entities/admin-dashboard';
 
 type AbuseMonitoringSectionProps = {
   abuseSignals: AbuseSignal[];
+  signupMonitoring: SignupMonitoring;
+  rateLimitViolation: RateLimitViolation;
 };
 
-export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionProps) {
+export function AbuseMonitoringSection({
+  abuseSignals,
+  signupMonitoring,
+  rateLimitViolation,
+}: AbuseMonitoringSectionProps) {
   return (
     <section aria-labelledby="abuse-monitoring-title" className="grid gap-6">
       <h2 id="abuse-monitoring-title" className="tracking-zero text-lg font-bold">
@@ -58,26 +64,35 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
                 <div>
                   <div className="text-text-secondary text-base">신규 가입 (24시간)</div>
                   <div className="mt-2 text-4xl font-bold">
-                    24 <span className="text-text-secondary text-base font-normal">평균: 18명</span>
+                    {signupMonitoring.newSignups.count}{' '}
+                    <span className="text-text-secondary text-base font-normal">
+                      {signupMonitoring.newSignups.average}
+                    </span>
                   </div>
                 </div>
-                <span className="rounded-md bg-green-100 px-3 py-1 text-sm font-bold text-green-700">
-                  정상
+                <span
+                  className={`rounded-md px-3 py-1 text-sm font-bold ${signupMonitoring.newSignups.status.tone}`}
+                >
+                  {signupMonitoring.newSignups.status.label}
                 </span>
               </div>
             </div>
             <div className="border-border border-t pt-5">
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-text-secondary text-base">동일 IP 다중 계정</div>
-                <span className="rounded-md bg-red-100 px-3 py-1 text-sm font-bold text-red-700">
-                  1건 감지
+                <span
+                  className={`rounded-md px-3 py-1 text-sm font-bold ${signupMonitoring.duplicateIp.status.tone}`}
+                >
+                  {signupMonitoring.duplicateIp.status.label}
                 </span>
               </div>
               <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                <div className="font-mono text-sm">203.0.113.45</div>
+                <div className="font-mono text-sm">{signupMonitoring.duplicateIp.ip}</div>
                 <div className="text-text-secondary mt-2 text-sm">
-                  5개 계정 · 최근 2시간 내 생성 ·{' '}
-                  <span className="font-semibold text-red-600">차단 필요</span>
+                  {signupMonitoring.duplicateIp.description} ·{' '}
+                  <span className="font-semibold text-red-600">
+                    {signupMonitoring.duplicateIp.action}
+                  </span>
                 </div>
               </div>
             </div>
@@ -94,18 +109,16 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
           <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-semibold">테스트 자동화 스크립트</div>
-                <div className="text-text-secondary mt-1 text-sm">최근 1시간</div>
+                <div className="font-semibold">{rateLimitViolation.source}</div>
+                <div className="text-text-secondary mt-1 text-sm">{rateLimitViolation.period}</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-orange-600">127회</div>
-                <div className="text-text-secondary text-sm">제한 초과</div>
+                <div className="text-xl font-bold text-orange-600">{rateLimitViolation.count}</div>
+                <div className="text-text-secondary text-sm">{rateLimitViolation.note}</div>
               </div>
             </div>
           </div>
-          <div className="text-text-secondary mt-5 text-sm">
-            API 호출 한도: 100회/분 · 현재 임시 차단: 0건
-          </div>
+          <div className="text-text-secondary mt-5 text-sm">{rateLimitViolation.footnote}</div>
         </section>
       </div>
     </section>

@@ -11,8 +11,11 @@ import {
   navItems,
   productivityTrend,
   projectTrend,
+  rateLimitViolation,
   resourceUsages,
+  signupMonitoring,
   storageProjects,
+  storageSummary,
   systemStatuses,
 } from '@/entities/admin-dashboard';
 import { BackOfficeLayout } from '@/widgets/back-office-layout';
@@ -42,8 +45,16 @@ export function DashboardPage() {
         />
         <CostSystemSection resourceUsages={resourceUsages} systemStatuses={systemStatuses} />
         <CostSpikeSection costProjects={costProjects} />
-        <AbuseMonitoringSection abuseSignals={abuseSignals} />
-        <AdditionalAnalysisSection funnel={funnel} storageProjects={storageProjects} />
+        <AbuseMonitoringSection
+          abuseSignals={abuseSignals}
+          signupMonitoring={signupMonitoring}
+          rateLimitViolation={rateLimitViolation}
+        />
+        <AdditionalAnalysisSection
+          funnel={funnel}
+          storageProjects={storageProjects}
+          storageSummary={storageSummary}
+        />
       </div>
     </BackOfficeLayout>
   );

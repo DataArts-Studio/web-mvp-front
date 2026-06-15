@@ -71,6 +71,47 @@ export type AbuseSignal = {
   footnote: string;
 };
 
-export type FunnelStep = [label: string, count: string, percent: string, churn: string];
+/** 상태 배지(텍스트 라벨 + 톤). 색상 단독 의존을 피하기 위해 라벨을 항상 동반한다. */
+export type StatusBadge = { label: string; tone: string };
 
-export type StorageProject = [name: string, usage: string, percent: number];
+/** 가입 및 IP 모니터링 카드 데이터. */
+export type SignupMonitoring = {
+  newSignups: { count: string; average: string; status: StatusBadge };
+  duplicateIp: { status: StatusBadge; ip: string; description: string; action: string };
+};
+
+/** Rate Limit 위반 카드 데이터. */
+export type RateLimitViolation = {
+  source: string;
+  period: string;
+  count: string;
+  note: string;
+  footnote: string;
+};
+
+export type FunnelStep = {
+  /** 단계 라벨 (예: '프로젝트 생성') */
+  label: string;
+  /** 도달 수 표시 (예: '1,520') */
+  count: string;
+  /** 전환율 표시 문자열 (예: '100.0%') */
+  rate: string;
+  /** 전환율 수치(0~100). aria-valuenow·막대 width 의 단일 출처. */
+  percent: number;
+  /** 이탈 안내 (예: '18.0% 이탈'). 없으면 빈 문자열. */
+  churn: string;
+};
+
+export type StorageProject = {
+  name: string;
+  /** 사용량 표시 (예: '3.62 GB') */
+  usage: string;
+  /** 사용률 수치(0~100). aria-valuenow·막대 width 의 단일 출처. */
+  percent: number;
+};
+
+/** 스토리지 사용량 요약(총 용량/총 Row). */
+export type StorageSummary = {
+  totalSize: string;
+  totalRows: string;
+};

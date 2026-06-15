@@ -9,8 +9,11 @@ export {
   navItems,
   productivityTrend,
   projectTrend,
+  rateLimitViolation,
   resourceUsages,
+  signupMonitoring,
   storageProjects,
+  storageSummary,
   systemStatuses,
 } from './model/dashboard-data';
 export type {
@@ -23,8 +26,12 @@ export type {
   Metric,
   NavItem,
   ProjectActivity,
+  RateLimitViolation,
   ResourceUsage,
+  SignupMonitoring,
+  StatusBadge,
   StorageProject,
+  StorageSummary,
   SystemStatus,
   TrendPoint,
 } from './model/types';

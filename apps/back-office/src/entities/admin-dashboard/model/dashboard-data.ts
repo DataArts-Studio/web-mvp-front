@@ -8,8 +8,11 @@ import type {
   Metric,
   NavItem,
   ProjectActivity,
+  RateLimitViolation,
   ResourceUsage,
+  SignupMonitoring,
   StorageProject,
+  StorageSummary,
   SystemStatus,
   TrendPoint,
 } from './types';
@@ -186,17 +189,44 @@ export const abuseSignals: AbuseSignal[] = [
   },
 ];
 
+export const signupMonitoring: SignupMonitoring = {
+  newSignups: {
+    count: '24',
+    average: '평균: 18명',
+    status: { label: '정상', tone: 'bg-green-100 text-green-700' },
+  },
+  duplicateIp: {
+    status: { label: '1건 감지', tone: 'bg-red-100 text-red-700' },
+    ip: '203.0.113.45',
+    description: '5개 계정 · 최근 2시간 내 생성',
+    action: '차단 필요',
+  },
+};
+
+export const rateLimitViolation: RateLimitViolation = {
+  source: '테스트 자동화 스크립트',
+  period: '최근 1시간',
+  count: '127회',
+  note: '제한 초과',
+  footnote: 'API 호출 한도: 100회/분 · 현재 임시 차단: 0건',
+};
+
 export const funnel: FunnelStep[] = [
-  ['프로젝트 생성', '1,520', '100.0%', ''],
-  ['첫 TC 작성', '1,247', '82.0%', '18.0% 이탈'],
-  ['첫 Run 실행', '1,089', '71.6%', '12.7% 이탈'],
-  ['결과 확인', '978', '64.3%', '10.2% 이탈'],
+  { label: '프로젝트 생성', count: '1,520', rate: '100.0%', percent: 100, churn: '' },
+  { label: '첫 TC 작성', count: '1,247', rate: '82.0%', percent: 82, churn: '18.0% 이탈' },
+  { label: '첫 Run 실행', count: '1,089', rate: '71.6%', percent: 71.6, churn: '12.7% 이탈' },
+  { label: '결과 확인', count: '978', rate: '64.3%', percent: 64.3, churn: '10.2% 이탈' },
 ];
 
+export const storageSummary: StorageSummary = {
+  totalSize: '14.76 GB',
+  totalRows: '4,559,234',
+};
+
 export const storageProjects: StorageProject[] = [
-  ['E-commerce Platform', '3.62 GB', 92],
-  ['Mobile App Backend', '2.65 GB', 72],
-  ['Payment Gateway', '2.07 GB', 58],
-  ['User Management', '1.48 GB', 44],
-  ['Analytics Dashboard', '1.33 GB', 39],
+  { name: 'E-commerce Platform', usage: '3.62 GB', percent: 92 },
+  { name: 'Mobile App Backend', usage: '2.65 GB', percent: 72 },
+  { name: 'Payment Gateway', usage: '2.07 GB', percent: 58 },
+  { name: 'User Management', usage: '1.48 GB', percent: 44 },
+  { name: 'Analytics Dashboard', usage: '1.33 GB', percent: 39 },
 ];
