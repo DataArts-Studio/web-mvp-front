@@ -2,6 +2,7 @@
 
 import { navItems } from '@/entities/admin-dashboard';
 import type { RealDashboardData } from '@/entities/admin-dashboard/api/get-dashboard-data';
+import { EmptyState } from '@/shared/ui';
 import { BackOfficeLayout } from '@/widgets/back-office-layout';
 import {
   AdditionalAnalysisSection,
@@ -21,7 +22,7 @@ function NoDataCard({ title }: { title: string }) {
   return (
     <section className="border-border grid gap-4 rounded-xl border bg-white p-6">
       <h2 className="tracking-zero text-lg font-bold">{title}</h2>
-      <p className="text-text-secondary py-8 text-center text-sm">없음</p>
+      <EmptyState message="데이터 없음" hint="연동 예정" />
     </section>
   );
 }
