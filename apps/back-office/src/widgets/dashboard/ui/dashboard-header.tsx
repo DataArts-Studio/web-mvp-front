@@ -12,7 +12,7 @@ export function DashboardHeader() {
     <header className="border-border sticky top-0 z-10 border-b bg-white/95 px-5 py-4 backdrop-blur lg:px-8">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <p className="text-xs font-semibold text-[#155DFC]">[BO02] 사용자 및 분석 대시보드</p>
+          <p className="text-xs font-semibold text-[#155DFC]">사용량 및 분석 대시보드</p>
           <h1
             id="dashboard-title"
             className="tracking-zero text-text-primary mt-1 text-2xl font-bold"
@@ -21,9 +21,6 @@ export function DashboardHeader() {
           </h1>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <span className="text-text-secondary text-sm" aria-live="polite">
-            마지막 갱신: 7분 전
-          </span>
           <div className="w-full sm:w-36">
             <Select.Root defaultValue="30d" size="md">
               <Select.Trigger aria-label="기간 선택" className={selectTriggerClassName}>
@@ -42,7 +39,8 @@ export function DashboardHeader() {
               </Select.Content>
             </Select.Root>
           </div>
-          <Button variant="outlined" className="bg-white">
+          {/* 내보내기 미구현: 동작 전까지 비활성으로 의도를 드러낸다. */}
+          <Button variant="outlined" className="bg-white" disabled title="준비 중">
             내보내기
           </Button>
         </div>

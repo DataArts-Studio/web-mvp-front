@@ -16,6 +16,10 @@ export type Metric = {
 export type NavItem = {
   label: string;
   icon: LucideIcon;
+  /** 구현된 메뉴의 경로. 미구현 메뉴는 비워 둔다(비활성 처리). */
+  href?: string;
+  /** 현재 활성 메뉴 여부. 라벨 문자열 비교 대신 데이터로 판별한다. */
+  current?: boolean;
 };
 
 export type TrendPoint = {

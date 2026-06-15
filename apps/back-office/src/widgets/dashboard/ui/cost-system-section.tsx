@@ -70,29 +70,33 @@ export function CostSystemSection({ resourceUsages, systemStatuses }: CostSystem
             </span>
           </div>
           <div className="space-y-6">
-            {resourceUsages.map((item) => (
-              <div key={item.label}>
-                <div className="mb-2 flex justify-between text-base">
-                  <span className="text-text-secondary">{item.label}</span>
-                  <span className="font-bold">{item.value}</span>
-                </div>
-                <div
-                  className="h-3 overflow-hidden rounded-full bg-gray-100"
-                  role="progressbar"
-                  aria-label={`${item.label} 사용률`}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={item.percent}
-                  aria-valuetext={item.value}
-                >
+            {resourceUsages.map((item) => {
+              // 비정상 입력으로 막대/aria 값이 깨지지 않도록 0~100 보정
+              const percent = Math.min(100, Math.max(0, item.percent));
+              return (
+                <div key={item.label}>
+                  <div className="mb-2 flex justify-between text-base">
+                    <span className="text-text-secondary">{item.label}</span>
+                    <span className="font-bold">{item.value}</span>
+                  </div>
                   <div
-                    className={`h-full rounded-full ${item.color}`}
-                    style={{ width: `${item.percent}%` }}
-                    aria-hidden="true"
-                  />
+                    className="h-3 overflow-hidden rounded-full bg-gray-100"
+                    role="progressbar"
+                    aria-label={`${item.label} 사용률`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={percent}
+                    aria-valuetext={item.value}
+                  >
+                    <div
+                      className={`h-full rounded-full ${item.color}`}
+                      style={{ width: `${percent}%` }}
+                      aria-hidden="true"
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

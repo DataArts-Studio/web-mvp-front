@@ -90,7 +90,7 @@ export function TrendAnalysisSection({
               콘텐츠 생산량
             </h3>
             <div className="w-32">
-              <Select.Root defaultValue="누적" size="md">
+              <Select.Root defaultValue="누적" size="md" disabled>
                 <Select.Trigger
                   aria-label="콘텐츠 생산량 집계 기준"
                   className={selectTriggerClassName}

@@ -43,6 +43,8 @@ export const navItems: NavItem[] = [
   {
     label: '대시보드',
     icon: LayoutDashboard,
+    href: '/',
+    current: true,
   },
   {
     label: '프로젝트 관리',
@@ -145,14 +147,14 @@ export const abuseSignals: AbuseSignal[] = [
     title: 'AI 호출 비정상 사용',
     items: [
       {
-        title: 'user-7f3k2@example.com',
+        title: 'user-7f3k2',
         description: '프로젝트: AI 챗봇 테스트',
         value: '47,234회',
         helper: '오늘',
         tone: 'border-red-200 bg-red-50 text-red-600',
       },
       {
-        title: 'admin@testcompany.io',
+        title: 'admin-ops-01',
         description: '프로젝트: E-commerce QA',
         value: '28,901회',
         helper: '오늘',

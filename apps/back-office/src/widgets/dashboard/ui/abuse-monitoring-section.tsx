@@ -16,7 +16,7 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
 
           return (
             <section
-              key={signal.title}
+              key={`${signal.title}-${index}`}
               aria-labelledby={titleId}
               className="border-border rounded-xl border bg-white p-6 xl:p-8"
             >
@@ -24,8 +24,11 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
                 {signal.title}
               </h3>
               <div className="mt-5 grid gap-4">
-                {signal.items.map((item) => (
-                  <div key={item.title} className={`rounded-lg border p-4 ${item.tone}`}>
+                {signal.items.map((item, itemIndex) => (
+                  <div
+                    key={`${item.title}-${itemIndex}`}
+                    className={`rounded-lg border p-4 ${item.tone}`}
+                  >
                     <div className="flex flex-col gap-2">
                       <div className="text-text-primary font-semibold">{item.title}</div>
                       <div className="text-text-secondary text-xs">{item.description}</div>
@@ -73,7 +76,8 @@ export function AbuseMonitoringSection({ abuseSignals }: AbuseMonitoringSectionP
               <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                 <div className="font-mono text-sm">203.0.113.45</div>
                 <div className="text-text-secondary mt-2 text-sm">
-                  5개 계정 · 최근 2시간 내 생성 · <b className="text-red-600 underline">차단</b>
+                  5개 계정 · 최근 2시간 내 생성 ·{' '}
+                  <span className="font-semibold text-red-600">차단 필요</span>
                 </div>
               </div>
             </div>

@@ -28,8 +28,7 @@ export function NewProjectsChart({ data }: ChartProps) {
         <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" vertical={false} />
         <XAxis dataKey="date" tick={axisStyle} tickLine={false} axisLine={{ stroke: '#6b7280' }} />
         <YAxis
-          domain={[0, 4]}
-          ticks={[0, 1, 2, 3, 4]}
+          domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
           tick={axisStyle}
           tickLine={false}
           axisLine={{ stroke: '#6b7280' }}
@@ -47,8 +46,7 @@ export function ActiveUsersChart({ data }: ChartProps) {
         <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" vertical={false} />
         <XAxis dataKey="date" tick={axisStyle} tickLine={false} axisLine={{ stroke: '#6b7280' }} />
         <YAxis
-          domain={[0, 14000]}
-          ticks={[0, 3500, 7000, 10500, 14000]}
+          domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
           tick={axisStyle}
           tickLine={false}
           axisLine={{ stroke: '#6b7280' }}
@@ -90,8 +88,7 @@ export function ProductivityChart({ data }: ChartProps) {
         <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" vertical={false} />
         <XAxis dataKey="date" tick={axisStyle} tickLine={false} axisLine={{ stroke: '#6b7280' }} />
         <YAxis
-          domain={[0, 12000]}
-          ticks={[0, 3000, 6000, 9000, 12000]}
+          domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
           tick={axisStyle}
           tickLine={false}
           axisLine={{ stroke: '#6b7280' }}
