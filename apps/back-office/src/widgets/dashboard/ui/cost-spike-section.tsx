@@ -51,6 +51,13 @@ export function CostSpikeSection({ costProjects }: CostSpikeSectionProps) {
                   ))}
                 </tr>
               ))}
+              {costProjects.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-text-secondary py-10 text-center">
+                    없음
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -83,6 +83,9 @@ export function AdditionalAnalysisSection({
             </div>
           </div>
           <div className="mt-5 space-y-4">
+            {storageProjects.length === 0 && (
+              <p className="text-text-secondary py-6 text-center text-sm">없음</p>
+            )}
             {storageProjects.map((project) => {
               const percent = clampPercent(project.percent);
               return (

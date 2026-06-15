@@ -164,6 +164,13 @@ export function TrendAnalysisSection({
                     <td className="px-5 py-3">{project[3]}</td>
                   </tr>
                 ))}
+                {activeProjects.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="text-text-secondary px-5 py-10 text-center">
+                      없음
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
