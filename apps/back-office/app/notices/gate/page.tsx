@@ -20,11 +20,12 @@ export default async function NoticeGatePage({
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6">
-      <div className="flex w-full max-w-sm flex-col items-center gap-6">
+    <main className="flex min-h-dvh items-center justify-center bg-gray-50 px-6">
+      <div className="border-border flex w-full max-w-sm flex-col items-center gap-6 rounded-2xl border bg-white p-8 shadow-sm">
         <div className="flex flex-col items-center gap-1.5 text-center">
-          <h1 className="text-text-1 text-xl font-bold">운영 공지 관리</h1>
-          <p className="text-text-3 text-sm">운영자 키를 입력해 입장하세요.</p>
+          <div className="tracking-zero text-text-primary text-xl font-bold">Testea</div>
+          <h1 className="text-text-primary text-lg font-bold">공지 및 배너 관리</h1>
+          <p className="text-text-secondary text-sm">운영자 키를 입력해 입장하세요.</p>
         </div>
         <GateForm redirectTo={redirectTo} />
       </div>

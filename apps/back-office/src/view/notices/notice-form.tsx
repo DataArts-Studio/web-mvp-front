@@ -11,14 +11,13 @@ import {
   NOTICE_SEVERITIES,
   SEVERITY_LABELS,
 } from '@/features/notices/model/validation';
-import { Button } from '@/shared/ui/button';
 import type { AdminAnnouncement } from '@testea/db';
 
 type NoticeAction = (prev: NoticeFormState, formData: FormData) => Promise<NoticeFormState>;
 
 const fieldClass =
-  'bg-bg-3 border-line-2 text-text-1 rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary';
-const labelClass = 'text-text-2 text-sm font-medium';
+  'border-border text-text-primary placeholder:text-text-secondary rounded-lg border bg-white px-3 py-2.5 text-sm outline-none focus:border-[#155DFC]';
+const labelClass = 'text-text-primary text-sm font-medium';
 
 /** ISO(UTC) → datetime-local 입력값(YYYY-MM-DDTHH:mm, 로컬). */
 function toLocalInput(iso: string | null | undefined): string {
@@ -42,11 +41,12 @@ export function NoticeForm({
   const errors = state.errors ?? {};
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form
+      action={formAction}
+      className="border-border flex flex-col gap-5 rounded-xl border bg-white p-6"
+    >
       {errors.form && (
-        <p className="bg-system-red/10 text-system-red rounded-lg px-3 py-2 text-sm">
-          {errors.form}
-        </p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{errors.form}</p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -61,7 +61,7 @@ export function NoticeForm({
           className={fieldClass}
           placeholder="공지 제목 (최대 80자)"
         />
-        {errors.title && <p className="text-system-red text-xs">{errors.title}</p>}
+        {errors.title && <p className="text-xs text-red-600">{errors.title}</p>}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -77,7 +77,7 @@ export function NoticeForm({
           className={`${fieldClass} resize-y`}
           placeholder="본문 (마크다운 지원, 최대 2000자)"
         />
-        {errors.body && <p className="text-system-red text-xs">{errors.body}</p>}
+        {errors.body && <p className="text-xs text-red-600">{errors.body}</p>}
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -97,7 +97,7 @@ export function NoticeForm({
               </option>
             ))}
           </select>
-          {errors.category && <p className="text-system-red text-xs">{errors.category}</p>}
+          {errors.category && <p className="text-xs text-red-600">{errors.category}</p>}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -116,7 +116,7 @@ export function NoticeForm({
               </option>
             ))}
           </select>
-          {errors.severity && <p className="text-system-red text-xs">{errors.severity}</p>}
+          {errors.severity && <p className="text-xs text-red-600">{errors.severity}</p>}
         </div>
       </div>
 
@@ -132,7 +132,7 @@ export function NoticeForm({
             defaultValue={toLocalInput(initial?.publishedAt)}
             className={fieldClass}
           />
-          <span className="text-text-3 text-xs">비우면 즉시 시작</span>
+          <span className="text-text-secondary text-xs">비우면 즉시 시작</span>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -146,45 +146,49 @@ export function NoticeForm({
             defaultValue={toLocalInput(initial?.expiresAt)}
             className={fieldClass}
           />
-          <span className="text-text-3 text-xs">비우면 무기한</span>
-          {errors.expiresAt && <p className="text-system-red text-xs">{errors.expiresAt}</p>}
+          <span className="text-text-secondary text-xs">비우면 무기한</span>
+          {errors.expiresAt && <p className="text-xs text-red-600">{errors.expiresAt}</p>}
         </div>
       </div>
 
       <div className="flex flex-col gap-3">
-        <label className="flex items-center gap-2 text-sm">
+        <label className="text-text-primary flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             name="showAsPopup"
             defaultChecked={initial?.showAsPopup ?? false}
-            className="size-4"
+            className="size-4 accent-[#2563eb]"
           />
-          <span className="text-text-2">팝업으로 노출 (첫 진입 시 모달)</span>
+          <span>팝업으로 노출 (첫 진입 시 모달)</span>
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="text-text-primary flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             name="pinned"
             defaultChecked={initial?.pinned ?? false}
-            className="size-4"
+            className="size-4 accent-[#2563eb]"
           />
-          <span className="text-text-2">알림센터 상단 고정</span>
+          <span>알림센터 상단 고정</span>
         </label>
-        <p className="text-text-3 text-xs">
+        <p className="text-text-secondary text-xs">
           상단 배너는 심각도 &lsquo;긴급&rsquo;을 선택하면 노출됩니다.
         </p>
       </div>
 
-      <div className="flex items-center justify-end gap-2 pt-2">
+      <div className="border-border flex items-center justify-end gap-2 border-t pt-5">
         <Link
           href="/notices"
-          className="text-text-2 hover:text-text-1 rounded-button px-4 py-2 text-sm"
+          className="text-text-secondary hover:text-text-primary rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-gray-100"
         >
           취소
         </Link>
-        <Button type="submit" disabled={pending}>
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-lg bg-[#2563eb] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1d4ed8] disabled:opacity-50"
+        >
           {pending ? '저장 중…' : submitLabel}
-        </Button>
+        </button>
       </div>
     </form>
   );

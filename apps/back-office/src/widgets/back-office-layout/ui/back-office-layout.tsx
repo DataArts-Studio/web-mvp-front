@@ -9,9 +9,11 @@ type BackOfficeLayoutProps = {
   children: ReactNode;
   /** 로그인 주체. 세션 미연동 단계면 생략하면 스켈레톤이 표시된다. */
   admin?: AdminInfo;
+  /** 현재 경로. 지정 시 item.href 와 비교해 현재 메뉴를 판별한다(item.current 보다 우선). */
+  activeHref?: string;
 };
 
-export function BackOfficeLayout({ navItems, children, admin }: BackOfficeLayoutProps) {
+export function BackOfficeLayout({ navItems, children, admin, activeHref }: BackOfficeLayoutProps) {
   return (
     <div className="text-text-primary min-h-dvh bg-gray-50 lg:pl-[240px]">
       <aside
@@ -25,10 +27,11 @@ export function BackOfficeLayout({ navItems, children, admin }: BackOfficeLayout
         <nav aria-label="Back office 주요 메뉴" className="flex flex-col gap-1 px-3 py-4 text-sm">
           {navItems.map((item) => {
             const Icon = item.icon;
-            // 현재 메뉴 판별을 라벨 문자열이 아니라 데이터(current)로 한다.
+            // 현재 메뉴 판별: activeHref 가 있으면 href 비교, 없으면 데이터(current).
+            const isCurrent = activeHref ? item.href === activeHref : Boolean(item.current);
             const baseClass = [
               'flex items-center gap-3 rounded-md px-3 py-2 font-medium transition-colors',
-              item.current
+              isCurrent
                 ? 'bg-[#155DFC]/10 text-[#155DFC]'
                 : 'text-text-secondary hover:text-text-primary hover:bg-gray-100',
             ].join(' ');
@@ -53,7 +56,7 @@ export function BackOfficeLayout({ navItems, children, admin }: BackOfficeLayout
               <a
                 key={item.label}
                 href={item.href}
-                aria-current={item.current ? 'page' : undefined}
+                aria-current={isCurrent ? 'page' : undefined}
                 className={baseClass}
               >
                 <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
