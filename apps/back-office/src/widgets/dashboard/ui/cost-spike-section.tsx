@@ -43,7 +43,7 @@ export function CostSpikeSection({ costProjects }: CostSpikeSectionProps) {
                 <tr key={project[0]}>
                   {project.map((value, index) => (
                     <td
-                      key={value}
+                      key={`${project[0]}-${index}`}
                       className={`py-3 ${index === 3 ? 'font-semibold text-red-700' : ''}`}
                     >
                       {value}

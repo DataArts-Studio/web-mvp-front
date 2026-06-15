@@ -16,7 +16,7 @@ export function MetricsSection({ metrics }: MetricsSectionProps) {
 
           return (
             <section
-              key={metric.label}
+              key={`${metric.label}-${index}`}
               aria-labelledby={titleId}
               className="border-border shadow-1 rounded-lg border bg-white p-5"
             >
