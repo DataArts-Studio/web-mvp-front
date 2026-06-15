@@ -77,7 +77,13 @@ export function TrendAnalysisSection({
             </h3>
           </div>
           <div className="h-72 w-full" role="img" aria-label="DAU, WAU, MAU 사용자 추이 차트">
-            <ActiveUsersChart data={activeUserTrend} />
+            {activeUserTrend.length === 0 ? (
+              <div className="text-text-secondary flex h-full items-center justify-center text-sm">
+                없음
+              </div>
+            ) : (
+              <ActiveUsersChart data={activeUserTrend} />
+            )}
           </div>
         </section>
 

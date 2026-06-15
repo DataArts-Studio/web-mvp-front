@@ -1,23 +1,11 @@
 'use client';
 
-import {
-  abuseSignals,
-  activeUserTrend,
-  alerts,
-  navItems,
-  rateLimitViolation,
-  resourceUsages,
-  signupMonitoring,
-  systemStatuses,
-} from '@/entities/admin-dashboard';
+import { navItems } from '@/entities/admin-dashboard';
 import type { RealDashboardData } from '@/entities/admin-dashboard/api/get-dashboard-data';
 import { BackOfficeLayout } from '@/widgets/back-office-layout';
 import {
-  AbuseMonitoringSection,
   AdditionalAnalysisSection,
-  AlertsSection,
   CostSpikeSection,
-  CostSystemSection,
   DashboardHeader,
   MetricsSection,
   TrendAnalysisSection,
@@ -25,16 +13,16 @@ import {
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 /**
- * 일부 지표는 데이터 원천이 없어 예시로 둔다(정직 표기):
- * - 활성 사용자 DAU/WAU/MAU, 가입·동일 IP, Rate Limit: 사용자/이벤트 추적 인프라 부재
- * - 인프라 사용량·시스템 헬스: Supabase/Sentry/Vercel 외부 지표
+ * 데이터 원천이 없는 지표는 가짜 예시 대신 "없음"으로 표기한다.
+ * - 활성 사용자 DAU/WAU/MAU·가입·어뷰징·Rate Limit: 사용자/이벤트 추적 인프라 부재
+ * - 인프라 사용량·시스템 헬스·임계치 알림: Supabase/Sentry/Vercel 외부 지표
  */
-function SampleDataNotice() {
+function NoDataCard({ title }: { title: string }) {
   return (
-    <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
-      활성 사용자·인프라·시스템 헬스·어뷰징 지표는 <strong>예시 데이터</strong>입니다. 이 제품은
-      사용자 계정이 없어, 해당 지표는 사용자·이벤트 추적 인프라 도입 후 연동됩니다.
-    </p>
+    <section className="border-border grid gap-4 rounded-xl border bg-white p-6">
+      <h2 className="tracking-zero text-lg font-bold">{title}</h2>
+      <p className="text-text-secondary py-8 text-center text-sm">없음</p>
+    </section>
   );
 }
 
@@ -60,15 +48,13 @@ export function DashboardPage({ data }: { data: RealDashboardData | null }) {
     <BackOfficeLayout navItems={navItems} admin={{ name: '관리자', email: 'admin@testea.com' }}>
       <DashboardHeader />
       <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-5 py-6 lg:px-8">
-        <SampleDataNotice />
-
         {/* 실데이터(DB). 실패 시 실패 UI 로 대체. */}
         {data ? (
           <>
             <MetricsSection metrics={data.metrics} />
             <TrendAnalysisSection
               projectTrend={data.projectTrend}
-              activeUserTrend={activeUserTrend}
+              activeUserTrend={[]}
               productivityTrend={data.productivityTrend}
               activeProjects={data.activeProjects}
             />
@@ -83,14 +69,10 @@ export function DashboardPage({ data }: { data: RealDashboardData | null }) {
           <DataLoadFailed />
         )}
 
-        {/* 예시(연동 예정) */}
-        <AlertsSection alerts={alerts} />
-        <CostSystemSection resourceUsages={resourceUsages} systemStatuses={systemStatuses} />
-        <AbuseMonitoringSection
-          abuseSignals={abuseSignals}
-          signupMonitoring={signupMonitoring}
-          rateLimitViolation={rateLimitViolation}
-        />
+        {/* 데이터 원천 없음 → 가짜 대신 "없음" */}
+        <NoDataCard title="주의 알림" />
+        <NoDataCard title="비용 및 시스템 상태" />
+        <NoDataCard title="어뷰징 및 이상 행동 모니터링" />
       </div>
     </BackOfficeLayout>
   );
