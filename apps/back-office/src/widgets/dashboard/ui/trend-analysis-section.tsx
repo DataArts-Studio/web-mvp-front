@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 
 import type { ProjectActivity, TrendPoint } from '@/entities/admin-dashboard';
-import { Select } from '@/shared/ui';
+import { EmptyState, Select } from '@/shared/ui';
 
 import {
   selectContentClassName,
@@ -77,7 +77,13 @@ export function TrendAnalysisSection({
             </h3>
           </div>
           <div className="h-72 w-full" role="img" aria-label="DAU, WAU, MAU 사용자 추이 차트">
-            <ActiveUsersChart data={activeUserTrend} />
+            {activeUserTrend.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <EmptyState message="데이터 없음" hint="연동 예정" />
+              </div>
+            ) : (
+              <ActiveUsersChart data={activeUserTrend} />
+            )}
           </div>
         </section>
 
@@ -164,6 +170,13 @@ export function TrendAnalysisSection({
                     <td className="px-5 py-3">{project[3]}</td>
                   </tr>
                 ))}
+                {activeProjects.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-5">
+                      <EmptyState size="sm" />
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

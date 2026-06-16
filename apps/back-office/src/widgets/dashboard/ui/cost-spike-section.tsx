@@ -1,4 +1,5 @@
 import type { CostProject } from '@/entities/admin-dashboard';
+import { EmptyState } from '@/shared/ui';
 
 type CostSpikeSectionProps = {
   costProjects: CostProject[];
@@ -51,6 +52,13 @@ export function CostSpikeSection({ costProjects }: CostSpikeSectionProps) {
                   ))}
                 </tr>
               ))}
+              {costProjects.length === 0 && (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState size="sm" />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
