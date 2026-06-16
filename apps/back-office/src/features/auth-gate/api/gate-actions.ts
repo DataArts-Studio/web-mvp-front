@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { logAdminActivity } from '@/features/admin-log/log';
+import { initCloudflareDb } from '@/shared/db/cloudflare-db';
 
 import { ADMIN_COOKIE, isValidSecret } from '../lib/admin-gate';
 
@@ -36,6 +37,7 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
     maxAge: 60 * 60 * 8, // 8시간
   });
 
+  initCloudflareDb();
   await logAdminActivity({ action: 'login' });
 
   redirect(safeRedirect(formData.get('redirect')));

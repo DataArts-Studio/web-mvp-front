@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { initCloudflareDb } from '@/shared/db/cloudflare-db';
 import { timingSafeEqual } from 'node:crypto';
 
 /**
@@ -42,6 +43,8 @@ export async function isAdminAuthed(): Promise<boolean> {
  * @param redirectTo 인증 후 돌아올 경로
  */
 export async function requireAdmin(redirectTo = '/notices'): Promise<void> {
+  // Cloudflare Workers 런타임이면 Hyperdrive DB 를 주입한다(다른 환경에선 no-op).
+  initCloudflareDb();
   if (!(await isAdminAuthed())) {
     redirect(`${GATE_PATH}?redirect=${encodeURIComponent(redirectTo)}`);
   }
@@ -52,6 +55,7 @@ export async function requireAdmin(redirectTo = '/notices'): Promise<void> {
  * 페이지 가드(requireAdmin)와 달리 리다이렉트 대신 예외로 mutation 을 막는다.
  */
 export async function assertAdminAction(): Promise<void> {
+  initCloudflareDb();
   if (!(await isAdminAuthed())) {
     throw new Error('UNAUTHORIZED: 운영자 인증이 필요합니다.');
   }
