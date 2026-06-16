@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "testea-back-office",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-04-01",
+  // nodejs_compat: node:crypto·node-postgres 등 Node API 사용에 필요
+  // global_fetch_strictly_public: 앱 내 fetch 가 공개 URL 로 나가도록
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "testea-back-office"
+    }
+  ],
+  // Supabase Postgres 앞단 Hyperdrive. CF 대시보드/`wrangler hyperdrive create` 로 만든 뒤
+  // 그 id 를 채운다. localConnectionString 은 `wrangler dev` 로컬 미리보기에서만 사용.
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "<HYPERDRIVE_ID_을_채우세요>",
+      "localConnectionString": "postgresql://user:pass@localhost:5432/postgres"
+    }
+  ]
+  // 이미지 최적화가 필요하면 아래 바인딩 추가 (https://opennext.js.org/cloudflare/howtos/image)
+  // "images": { "binding": "IMAGES" }
+}
