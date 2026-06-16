@@ -10,6 +10,8 @@ import { type AdminActivityAction, adminActivityLogs } from '../schema/admin-act
 
 export type AdminActivityInput = {
   action: AdminActivityAction;
+  /** 행위자(Cloudflare Access 인증 이메일). 공유키 게이트면 생략. */
+  actor?: string | null;
   targetType?: string | null;
   targetId?: string | null;
   targetLabel?: string | null;
@@ -22,6 +24,7 @@ export async function recordAdminActivity(input: AdminActivityInput): Promise<vo
   const db = getDatabase();
   await db.insert(adminActivityLogs).values({
     action: input.action,
+    actor: input.actor ?? null,
     target_type: input.targetType ?? null,
     target_id: input.targetId ?? null,
     target_label: input.targetLabel ?? null,
@@ -33,6 +36,7 @@ export async function recordAdminActivity(input: AdminActivityInput): Promise<vo
 export type AdminActivityLog = {
   id: string;
   action: AdminActivityAction;
+  actor: string | null;
   targetType: string | null;
   targetId: string | null;
   targetLabel: string | null;
@@ -77,6 +81,7 @@ export async function listAdminActivity(limit = 100): Promise<AdminActivityLog[]
   return rows.map((row) => ({
     id: row.id,
     action: row.action,
+    actor: row.actor,
     targetType: row.target_type,
     targetId: row.target_id,
     targetLabel: row.target_label,

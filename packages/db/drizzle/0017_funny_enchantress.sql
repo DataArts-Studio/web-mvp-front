@@ -1,0 +1,1 @@
+ALTER TABLE "admin_activity_logs" ADD COLUMN "actor" text;

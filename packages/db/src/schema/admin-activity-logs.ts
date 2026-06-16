@@ -30,6 +30,8 @@ export const adminActivityLogs = pgTable(
   'admin_activity_logs',
   (t) => ({
     id: t.uuid('id').primaryKey().defaultRandom(),
+    /** 행위자 식별(Cloudflare Access 인증 이메일). 공유키 게이트(로컬)면 NULL. */
+    actor: t.text('actor'),
     action: t.varchar('action', { length: 40 }).$type<AdminActivityAction>().notNull(),
     target_type: t.varchar('target_type', { length: 50 }),
     target_id: t.uuid('target_id'),
