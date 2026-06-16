@@ -1,0 +1,1 @@
+ALTER TABLE "announcements" ADD COLUMN "show_as_popup" boolean DEFAULT false NOT NULL;
