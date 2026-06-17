@@ -122,8 +122,10 @@ const DialogOverlay = ({ className, ...props }: DialogOverlayProps) => {
 interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
+  /** ESC 키로 닫기 허용 여부. 기본 true. 실행 중 실수 종료를 막아야 하는 모달은 false. */
+  closeOnEscape?: boolean;
 }
-const DialogContent = ({ className, ref, ...props }: DialogContentProps) => {
+const DialogContent = ({ className, ref, closeOnEscape = true, ...props }: DialogContentProps) => {
   const { titleId, descriptionId, onClose } = useDialogContext();
   const contentRef = React.useRef<HTMLDivElement>(null);
 
@@ -139,8 +141,10 @@ const DialogContent = ({ className, ref, ...props }: DialogContentProps) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // ESC 키로 닫기
       if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
+        if (closeOnEscape) {
+          e.preventDefault();
+          onClose();
+        }
         return;
       }
 
@@ -174,7 +178,7 @@ const DialogContent = ({ className, ref, ...props }: DialogContentProps) => {
       // 다이얼로그 닫힐 때 이전 포커스로 복원
       previousActiveElement?.focus();
     };
-  }, [onClose]);
+  }, [onClose, closeOnEscape]);
 
   return (
     <div
