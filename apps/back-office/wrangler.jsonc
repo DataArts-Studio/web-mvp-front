@@ -8,23 +8,16 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "testea-back-office"
-    }
+      "service": "testea-back-office",
+    },
   ],
-  // Supabase Postgres 앞단 Hyperdrive. CF 대시보드/`wrangler hyperdrive create` 로 만든 뒤
-  // 그 id 를 채운다. localConnectionString 은 `wrangler dev` 로컬 미리보기에서만 사용.
-  "hyperdrive": [
-    {
-      "binding": "HYPERDRIVE",
-      "id": "<HYPERDRIVE_ID_을_채우세요>",
-      "localConnectionString": "postgresql://user:pass@localhost:5432/postgres"
-    }
-  ]
-  // 이미지 최적화가 필요하면 아래 바인딩 추가 (https://opennext.js.org/cloudflare/howtos/image)
-  // "images": { "binding": "IMAGES" }
+  // DB 연결: Hyperdrive 대신 SUPABASE_DB_URL 시크릿으로 직결한다.
+  // 배포 환경에서 `wrangler secret put SUPABASE_DB_URL` (값=해당 환경 Supabase 연결 문자열,
+  // 서버리스엔 Supavisor 트랜잭션 풀러 URL 권장). postgres.js + nodejs_compat 로 직접 연결.
+  // 이미지 최적화가 필요하면 바인딩 추가 (https://opennext.js.org/cloudflare/howtos/image)
 }
