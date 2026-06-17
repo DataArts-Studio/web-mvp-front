@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "testea-back-office",
+  "name": "back-web-mvp-front",
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-09-23",
   // nodejs_compat: node:crypto·node:net(postgres.js) 등 Node API 사용에 필요
@@ -13,7 +13,7 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "testea-back-office",
+      "service": "back-web-mvp-front",
     },
   ],
   // DB 연결: Hyperdrive 대신 SUPABASE_DB_URL 시크릿으로 직결한다.
