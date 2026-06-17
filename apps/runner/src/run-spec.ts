@@ -194,11 +194,24 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
         // 임의 코드(spec)에 전체 env 를 상속하지 않는다. RUNNER_SHARED_SECRET 등
         // 시크릿 유출 방지를 위해 Playwright 실행에 필요한 키만 allowlist 로 전달한다.
         env: buildChildEnv(),
+        // 자체 프로세스 그룹으로 띄운다. 타임아웃 강제 종료 시 @playwright/test 가
+        // 띄운 Chromium 손자 프로세스까지 그룹 단위로 회수하기 위함이다. detached 는
+        // unref 가 아니므로 부모는 아래 close 까지 그대로 대기한다. (러너는 Linux 컨테이너 전제)
+        detached: true,
       });
 
-      const killer = setTimeout(() => {
-        child.kill('SIGKILL');
-      }, timeoutMs);
+      // 직접 자식(node CLI)만 죽이면 Chromium 손자 프로세스가 고아로 남아
+      // 메모리/CPU 를 누수한다. child.pid 를 음수로 넘겨 프로세스 그룹 전체를 종료한다.
+      const killGroup = () => {
+        if (child.pid === undefined) return;
+        try {
+          process.kill(-child.pid, 'SIGKILL');
+        } catch {
+          // 이미 종료됐거나(ESRCH) 그룹이 없으면 무시한다.
+        }
+      };
+
+      const killer = setTimeout(killGroup, timeoutMs);
 
       child.on('error', () => {
         clearTimeout(killer);
