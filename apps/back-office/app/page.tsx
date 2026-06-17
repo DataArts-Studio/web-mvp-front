@@ -2,11 +2,14 @@ import {
   type RealDashboardData,
   getDashboardData,
 } from '@/entities/admin-dashboard/api/get-dashboard-data';
+import { requireAdmin } from '@/features/auth-gate/lib/admin-gate';
 import { DashboardPage } from '@/pages/dashboard';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
+  await requireAdmin('/');
+
   let data: RealDashboardData | null = null;
   try {
     data = await getDashboardData();
