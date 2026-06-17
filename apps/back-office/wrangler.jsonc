@@ -2,8 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "testea-back-office",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2025-04-01",
-  // nodejs_compat: node:crypto·node-postgres 등 Node API 사용에 필요
+  "compatibility_date": "2025-09-23",
+  // nodejs_compat: node:crypto·node:net(postgres.js) 등 Node API 사용에 필요
   // global_fetch_strictly_public: 앱 내 fetch 가 공개 URL 로 나가도록
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
