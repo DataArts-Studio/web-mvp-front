@@ -13,6 +13,7 @@ import { projectAiConfigs } from './project-ai-configs';
 import { projectPreferences } from './project-preferences';
 import { projects } from './projects';
 import { suiteTestCases } from './suite-test-cases';
+import { targetSites } from './target-sites';
 import { testCaseExternalLinks } from './test-case-external-links';
 import { testCaseRuns } from './test-case-runs';
 import { testCaseVersions } from './test-case-versions';
@@ -37,6 +38,7 @@ export const projectRelations = relations(projects, ({ many }) => ({
   aiUsageLogs: many(aiUsageLogs),
   aiRequirementAnalyses: many(aiRequirementAnalyses),
   testScenarios: many(testScenarios),
+  targetSites: many(targetSites),
 }));
 
 // Project Preferences Relations
@@ -274,5 +276,13 @@ export const testCaseExternalLinksRelations = relations(testCaseExternalLinks, (
   testCase: one(testCases, {
     fields: [testCaseExternalLinks.test_case_id],
     references: [testCases.id],
+  }),
+}));
+
+// Target Site Relations
+export const targetSiteRelations = relations(targetSites, ({ one }) => ({
+  project: one(projects, {
+    fields: [targetSites.project_id],
+    references: [projects.id],
   }),
 }));

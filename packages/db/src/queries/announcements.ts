@@ -85,6 +85,50 @@ export async function getCriticalAnnouncement(): Promise<PublicAnnouncement | nu
   return first ?? null;
 }
 
+/**
+ * 현재 활성이면서 `show_as_popup = true` 인 공지 중 가장 최근 1건을 반환한다. 없으면 null.
+ * web 앱 첫 진입 팝업 모달에서 사용. severity 와 무관하게 popup 플래그로만 결정한다.
+ */
+export async function getActivePopupAnnouncement(): Promise<PublicAnnouncement | null> {
+  const db = getDatabase();
+  const now = sql`now()`;
+
+  const rows = await db
+    .select({
+      id: announcements.id,
+      title: announcements.title,
+      body: announcements.body,
+      category: announcements.category,
+      severity: announcements.severity,
+      pinned: announcements.pinned,
+      publishedAt: announcements.published_at,
+      expiresAt: announcements.expires_at,
+    })
+    .from(announcements)
+    .where(
+      and(
+        eq(announcements.show_as_popup, true),
+        lte(announcements.published_at, now),
+        or(isNull(announcements.expires_at), gt(announcements.expires_at, now))
+      )
+    )
+    .orderBy(desc(announcements.pinned), desc(announcements.published_at), asc(announcements.id))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    category: row.category,
+    severity: row.severity,
+    pinned: row.pinned,
+    publishedAt: row.publishedAt.toISOString(),
+    expiresAt: row.expiresAt ? row.expiresAt.toISOString() : null,
+  };
+}
+
 /** 활성 공지 1건 + 해당 user 의 읽음 시각(없으면 null). */
 export type AnnouncementWithReadState = PublicAnnouncement & {
   readAt: string | null;
