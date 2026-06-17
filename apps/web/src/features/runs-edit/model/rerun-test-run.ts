@@ -211,8 +211,7 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
     Sentry.captureException(error, {
       extra: { action: 'rerunTestRunAction', runId, project_id: projectId },
     });
-    const message = error instanceof Error ? error.message : '알 수 없는 오류';
-    return { success: false, error: `회귀 재실행 생성에 실패했습니다: ${message}` };
+    return { success: false, error: '회귀 재실행 생성에 실패했습니다. 잠시 후 다시 시도해주세요.' };
   }
 }
 

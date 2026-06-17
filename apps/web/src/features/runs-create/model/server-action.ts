@@ -162,11 +162,10 @@ export const createTestRunAction = async (input: CreateRunInput) => {
     Sentry.captureException(error, {
       extra: { action: 'createTestRunAction', project_id, milestone_id, name },
     });
-    const message = error instanceof Error ? error.message : '알 수 없는 오류';
     return {
       success: false,
       errors: {
-        formErrors: [`테스트 실행 생성에 실패했습니다: ${message}`],
+        formErrors: ['테스트 실행 생성에 실패했습니다. 잠시 후 다시 시도해주세요.'],
         fieldErrors: {},
       } as FlatErrors,
     };

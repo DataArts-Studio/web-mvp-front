@@ -184,10 +184,11 @@ export async function getMilestoneById(
     return { success: true, data: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getMilestoneById' } });
-    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _general: [`마일스톤을 불러오는 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: {
+        _general: ['마일스톤을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'],
+      },
     };
   }
 }
