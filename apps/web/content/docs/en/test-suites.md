@@ -67,7 +67,7 @@ Click the **"Test Suites"** menu in the project sidebar to view the full list of
 1. Select a suite when creating a test case
 2. The case is automatically added to that suite
 
-> **Note**: Cases not included in a suite can be found in the [Test Case List](/docs?tab=test-cases) using the **"Unassigned"** filter.
+> **Note**: Cases not included in a suite can be found in the [Test Case List](/docs/test-cases) using the **"Unassigned"** filter.
 
 ---
 
@@ -85,7 +85,7 @@ Click a suite to go to its detail screen.
 
 ## Creating a Test Run from a Suite
 
-You can create a [Test Run](/docs?tab=test-runs) directly from the suite detail screen. The test cases included in the suite are selected automatically.
+You can create a [Test Run](/docs/test-runs) directly from the suite detail screen. The test cases included in the suite are selected automatically.
 
 ---
 

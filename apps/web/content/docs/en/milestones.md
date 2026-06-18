@@ -88,7 +88,7 @@ You can add test suites and individual cases to a milestone.
 1. Click the **"Add Case"** button on the milestone detail screen
 2. Select the cases to add individually
 
-> **Note**: When you add a suite, it is managed as a suite unit, and you can check progress per suite under the milestone in the Gantt chart on the [Dashboard](/docs?tab=dashboard).
+> **Note**: When you add a suite, it is managed as a suite unit, and you can check progress per suite under the milestone in the Gantt chart on the [Dashboard](/docs/dashboard).
 
 ---
 

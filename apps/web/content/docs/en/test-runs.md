@@ -67,7 +67,7 @@ There are three ways to select cases when creating a test run.
 
 ### Creating Directly from a Milestone
 
-When you click the **"Create Test Run"** button on a [Milestone](/docs?tab=milestones) detail screen, a run is created with that milestone's cases selected automatically.
+When you click the **"Create Test Run"** button on a [Milestone](/docs/milestones) detail screen, a run is created with that milestone's cases selected automatically.
 
 ---
 
@@ -140,7 +140,7 @@ On the test run detail screen, you can quickly enter results using only the keyb
 
 ## Checking on the Dashboard
 
-You can also check test run results on the [Dashboard](/docs?tab=dashboard).
+You can also check test run results on the [Dashboard](/docs/dashboard).
 
 - **Test status chart**: Check the status distribution with a pie chart
 - **Milestone Gantt chart**: Check the progress timeline by milestone

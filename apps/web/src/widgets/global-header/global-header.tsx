@@ -49,7 +49,7 @@ export const GlobalHeader = () => {
         {/* Navigation */}
         <nav aria-label={t('navAria')} className="flex items-center gap-6">
           <Link
-            href="/docs?tab=getting-started"
+            href="/docs"
             aria-label={t('docsLinkAria')}
             className="text-body2 text-text-2 hover:text-primary transition-colors"
             onClick={() => track(NAVIGATION_EVENTS.DOCS_CLICK)}

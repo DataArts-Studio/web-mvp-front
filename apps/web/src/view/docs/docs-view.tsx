@@ -4,9 +4,8 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
 
-import { Link, useRouter } from '@/i18n/navigation';
+import { Link } from '@/i18n/navigation';
 import { Footer } from '@/widgets/footer';
 import { Logo } from '@testea/ui';
 import { cn } from '@testea/util';
@@ -33,9 +32,9 @@ type DocTab =
 export type DocHeading = { id: string; text: string; level: 2 | 3 };
 
 interface DocsViewProps {
-  renderedContents: Record<DocTab, ReactNode>;
-  headings: Record<DocTab, DocHeading[]>;
-  initialTab?: DocTab;
+  content: ReactNode;
+  headings: DocHeading[];
+  activeSlug: DocTab;
 }
 
 const docTabs: { id: DocTab; icon: React.ReactNode }[] = [
@@ -47,25 +46,14 @@ const docTabs: { id: DocTab; icon: React.ReactNode }[] = [
   { id: 'milestones', icon: <Flag className="h-4 w-4" /> },
 ];
 
-export function DocsView({
-  renderedContents,
-  headings,
-  initialTab = 'getting-started',
-}: DocsViewProps) {
+const tabHref = (slug: DocTab) => (slug === 'getting-started' ? '/docs' : `/docs/${slug}`);
+
+export function DocsView({ content, headings, activeSlug }: DocsViewProps) {
   const t = useTranslations('docs');
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get('tab') as DocTab | null;
-  const activeTab: DocTab = tabParam || initialTab;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const content = renderedContents[activeTab] || renderedContents['getting-started'];
-  const currentHeadings = headings[activeTab] || [];
-
-  const handleTabChange = (tab: DocTab) => {
-    setIsSidebarOpen(false);
-    router.push(`/docs?tab=${tab}`, { scroll: false });
-  };
+  const activeTab = activeSlug;
+  const currentHeadings = headings;
 
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-dvh flex-col font-sans">
@@ -112,9 +100,11 @@ export function DocsView({
           </p>
           <nav className="flex flex-col gap-1">
             {docTabs.map((tab) => (
-              <button
+              <Link
                 key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
+                href={tabHref(tab.id)}
+                onClick={() => setIsSidebarOpen(false)}
+                scroll={false}
                 className={cn(
                   'rounded-4 typo-label-normal flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors',
                   activeTab === tab.id
@@ -124,7 +114,7 @@ export function DocsView({
               >
                 {tab.icon}
                 {t(`tabs.${tab.id}`)}
-              </button>
+              </Link>
             ))}
           </nav>
         </aside>

@@ -81,7 +81,7 @@ Click the **"Test Cases"** menu in the project sidebar to view the full list of 
 | **Fail**     | Test failed          | Red    |
 | **Blocked**  | Cannot run (blocked) | Orange |
 
-> **Note**: A test case's status is updated automatically when you enter a result in a [Test Run](/docs?tab=test-runs).
+> **Note**: A test case's status is updated automatically when you enter a result in a [Test Run](/docs/test-runs).
 
 ---
 

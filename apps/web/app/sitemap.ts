@@ -29,6 +29,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
       alternates: { languages: localized('/docs') },
     },
+    ...['dashboard', 'test-cases', 'test-suites', 'test-runs', 'milestones'].map((slug) => ({
+      url: `${siteUrl}/docs/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+      alternates: { languages: localized(`/docs/${slug}`) },
+    })),
     {
       url: `${siteUrl}/team`,
       lastModified: new Date(),
