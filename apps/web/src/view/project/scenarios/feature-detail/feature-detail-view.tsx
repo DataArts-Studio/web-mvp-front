@@ -197,6 +197,8 @@ export const ScenarioFeatureDetailView = () => {
         toast.success('시나리오를 삭제했습니다.');
         queryClient.invalidateQueries({ queryKey: ['scenarios'] });
         queryClient.invalidateQueries({ queryKey: ['scenarioFeatures'] });
+        // 삭제된 시나리오는 휴지통에 노출되므로 trash 캐시도 갱신한다.
+        queryClient.invalidateQueries({ queryKey: ['trash'] });
       } else {
         toast.error(Object.values(result.errors).flat().join(', '));
       }

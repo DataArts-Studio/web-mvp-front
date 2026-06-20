@@ -6,7 +6,7 @@ import { AiError } from '@/entities/ai-config/model/ai-error';
 import {
   type AttachmentUsageMeta,
   getMonthlyUsage,
-  recordUsage,
+  recordUsageAtomic,
 } from '@/entities/ai-usage/api/server-actions';
 import {
   AnalyzeRequirementsMultipartSchema,
@@ -234,17 +234,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let usageRemaining = Number.POSITIVE_INFINITY;
+    // 낙관적 사전 검사: 이미 한도를 다 쓴 경우 LLM 호출 전에 빠르게 거절한다.
+    // 실제 한도 선점은 LLM 응답 후 recordUsageAtomic 이 원자적으로 처리한다.
+    // preRemaining 은 기록 트랜잭션이 실패했을 때 fail-open 을 막는 상한으로 쓴다.
+    let preRemaining = Number.POSITIVE_INFINITY;
     const usageResult = await getMonthlyUsage(input.projectId);
     if (usageResult.success) {
-      const { used, limit } = usageResult.data;
-      if (used >= limit) {
+      if (usageResult.data.used >= usageResult.data.limit) {
         return NextResponse.json(
-          { error: `이번 달 사용 한도(${limit}건)를 초과했습니다. 다음 달에 다시 이용해주세요.` },
+          {
+            error: `이번 달 사용 한도(${usageResult.data.limit}건)를 초과했습니다. 다음 달에 다시 이용해주세요.`,
+          },
           { status: 429 }
         );
       }
-      usageRemaining = limit - used;
+      preRemaining = usageResult.data.limit - usageResult.data.used;
     }
 
     let attachment: AttachmentExtractResult | undefined;
@@ -299,14 +303,26 @@ export async function POST(req: NextRequest) {
       throw AiError.responseUnparsable(error);
     }
 
-    // 남은 월간 한도를 넘지 않도록 시나리오를 잘라 채택하고, 그만큼만 사용량에 집계한다.
-    const limitedScenarios = result.scenarios.slice(0, usageRemaining);
-    await recordUsage(
+    // 한도 검사·기록을 원자적으로 처리(TOCTOU 방지)하고, 채택된 만큼만 잘라 반환한다.
+    const usage = await recordUsageAtomic(
       input.projectId,
       'analyze_requirements',
-      limitedScenarios.length,
+      result.scenarios.length,
       attachment ? toAttachmentMeta(attachment) : undefined
     );
+    if (usage.success && usage.data.granted === 0 && result.scenarios.length > 0) {
+      return NextResponse.json(
+        {
+          error: `이번 달 사용 한도(${usage.data.limit}건)를 초과했습니다. 다음 달에 다시 이용해주세요.`,
+        },
+        { status: 429 }
+      );
+    }
+    // 기록 트랜잭션이 실패하면 사용량 미집계 상태이므로, 사전 잔여량을 넘겨 반환하지 않는다(fail-open 방지).
+    const granted = usage.success
+      ? usage.data.granted
+      : Math.min(result.scenarios.length, preRemaining);
+    const limitedScenarios = result.scenarios.slice(0, granted);
 
     return NextResponse.json({
       analysis: result.analysis,

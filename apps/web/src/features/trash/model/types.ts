@@ -1,4 +1,4 @@
-export type TrashItemType = 'case' | 'suite' | 'milestone';
+export type TrashItemType = 'case' | 'suite' | 'milestone' | 'scenario';
 
 export interface TrashItem {
   id: string;

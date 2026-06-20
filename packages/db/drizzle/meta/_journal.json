@@ -127,6 +127,13 @@
       "when": 1781583348019,
       "tag": "0017_funny_enchantress",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1781966074579,
+      "tag": "0018_kind_gideon",
+      "breakpoints": true
     }
   ]
 }

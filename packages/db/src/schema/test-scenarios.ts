@@ -48,12 +48,14 @@ export const testScenarios = pgTable(
     /** 작성 상태: 초안 / 검토 / 확정. */
     status: varchar('status', { length: 20 }).$type<ScenarioStatus>().default('DRAFT').notNull(),
     sort_order: integer('sort_order').default(0).notNull(),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    /** 휴지통 진입(소프트 삭제) 시각. 잔여일·30일 자동 정리 계산의 기준. ACTIVE 면 NULL. */
+    archived_at: timestamp('archived_at', { withTimezone: true }),
     lifecycle_status: varchar('lifecycle_status', { length: 20 })
       .$type<LifecycleStatus>()
       .default('ACTIVE')
       .notNull(),
-    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
     // dev 는 pgEnum 대신 varchar+CHECK 채택(#150). ai_requirement_analyses 와 동일 방식.
