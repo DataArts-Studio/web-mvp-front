@@ -92,7 +92,6 @@ export async function addSuitesToRunAction(
     return { success: true, addedCount: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'addSuitesToRunAction' } });
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: `스위트 추가에 실패했습니다: ${message}` };
+    return { success: false, error: '스위트 추가에 실패했습니다. 잠시 후 다시 시도해주세요.' };
   }
 }

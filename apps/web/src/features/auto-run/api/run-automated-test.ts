@@ -161,7 +161,6 @@ export async function runAutomatedTest(
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'runAutomatedTest' } });
-    const message = error instanceof Error ? error.message : String(error);
-    return fail(`자동 실행 중 오류가 발생했습니다: ${message}`);
+    return fail('자동 실행 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
 }

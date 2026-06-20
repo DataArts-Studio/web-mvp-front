@@ -90,7 +90,6 @@ export async function addMilestonesToRunAction(
     return { success: true, addedCount: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'addMilestonesToRunAction' } });
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: `마일스톤 추가에 실패했습니다: ${message}` };
+    return { success: false, error: '마일스톤 추가에 실패했습니다. 잠시 후 다시 시도해주세요.' };
   }
 }
