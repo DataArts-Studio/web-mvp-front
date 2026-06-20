@@ -3,8 +3,15 @@
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { auditLogs, getDatabase, milestones, testCases, testSuites } from '@testea/db';
-import { and, eq, isNull, lt } from 'drizzle-orm';
+import {
+  auditLogs,
+  getDatabase,
+  milestones,
+  testCases,
+  testScenarios,
+  testSuites,
+} from '@testea/db';
+import { and, eq, lt } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 import type { TrashItem, TrashItemType } from '../model/types';
@@ -62,7 +69,7 @@ export const getTrashedItems = async (projectId: string): Promise<ActionResult<T
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - AUTO_DELETE_DAYS);
 
-    const [expiredCases, expiredSuites, expiredMilestones] = await Promise.all([
+    const [expiredCases, expiredSuites, expiredMilestones, expiredScenarios] = await Promise.all([
       db
         .select()
         .from(testCases)
@@ -93,6 +100,16 @@ export const getTrashedItems = async (projectId: string): Promise<ActionResult<T
             lt(milestones.archived_at, cutoff)
           )
         ),
+      db
+        .select()
+        .from(testScenarios)
+        .where(
+          and(
+            eq(testScenarios.project_id, projectId),
+            eq(testScenarios.lifecycle_status, 'DELETED'),
+            lt(testScenarios.archived_at, cutoff)
+          )
+        ),
     ]);
 
     // audit log 기록
@@ -118,6 +135,15 @@ export const getTrashedItems = async (projectId: string): Promise<ActionResult<T
       ...expiredMilestones.map((row) => ({
         projectId,
         entityType: 'milestone',
+        entityId: row.id,
+        entityName: row.name,
+        action: 'auto_cleanup' as AuditAction,
+        snapshot: row,
+        deletedAt: row.archived_at,
+      })),
+      ...expiredScenarios.map((row) => ({
+        projectId,
+        entityType: 'test_scenario',
         entityId: row.id,
         entityName: row.name,
         action: 'auto_cleanup' as AuditAction,
@@ -165,11 +191,22 @@ export const getTrashedItems = async (projectId: string): Promise<ActionResult<T
                 lt(milestones.archived_at, cutoff)
               )
             ),
+        expiredScenarios.length > 0 &&
+          db
+            .update(testScenarios)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(
+                eq(testScenarios.project_id, projectId),
+                eq(testScenarios.lifecycle_status, 'DELETED'),
+                lt(testScenarios.archived_at, cutoff)
+              )
+            ),
       ]);
     }
 
     // 남은 휴지통 항목 조회
-    const [trashedCases, trashedSuites, trashedMilestones] = await Promise.all([
+    const [trashedCases, trashedSuites, trashedMilestones, trashedScenarios] = await Promise.all([
       db
         .select({
           id: testCases.id,
@@ -198,6 +235,19 @@ export const getTrashedItems = async (projectId: string): Promise<ActionResult<T
         .where(
           and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))
         ),
+      db
+        .select({
+          id: testScenarios.id,
+          title: testScenarios.name,
+          deletedAt: testScenarios.archived_at,
+        })
+        .from(testScenarios)
+        .where(
+          and(
+            eq(testScenarios.project_id, projectId),
+            eq(testScenarios.lifecycle_status, 'DELETED')
+          )
+        ),
     ]);
 
     const now = new Date();
@@ -225,6 +275,13 @@ export const getTrashedItems = async (projectId: string): Promise<ActionResult<T
       ...trashedMilestones.map((row) => ({
         id: row.id,
         type: 'milestone' as TrashItemType,
+        title: row.title,
+        deletedAt: row.deletedAt ?? now,
+        daysRemaining: toDaysRemaining(row.deletedAt),
+      })),
+      ...trashedScenarios.map((row) => ({
+        id: row.id,
+        type: 'scenario' as TrashItemType,
         title: row.title,
         deletedAt: row.deletedAt ?? now,
         daysRemaining: toDaysRemaining(row.deletedAt),
@@ -343,6 +400,19 @@ export const restoreItem = async (
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
         }
         return { success: true, data: { id: restored.id }, message: '마일스톤이 복원되었습니다.' };
+      }
+      case 'scenario': {
+        // 시나리오 삭제는 파생 스위트를 건드리지 않으므로(스위트는 독립적으로 휴지통 관리),
+        // 복원도 시나리오만 ACTIVE 로 되돌리면 된다. 파생 스위트 유니크 제약과도 충돌하지 않는다.
+        const [restored] = await db
+          .update(testScenarios)
+          .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
+          .where(and(eq(testScenarios.id, targetId), eq(testScenarios.lifecycle_status, 'DELETED')))
+          .returning();
+        if (!restored) {
+          return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
+        }
+        return { success: true, data: { id: restored.id }, message: '시나리오가 복원되었습니다.' };
       }
       default:
         return { success: false, errors: { _trash: ['지원하지 않는 항목 유형입니다.'] } };
@@ -477,6 +547,32 @@ export const permanentDeleteItem = async (
         }
         break;
       }
+      case 'scenario': {
+        const [row] = await db
+          .select()
+          .from(testScenarios)
+          .where(
+            and(eq(testScenarios.id, targetId), eq(testScenarios.lifecycle_status, 'DELETED'))
+          );
+        if (row) {
+          await writeAuditLogs(db, [
+            {
+              projectId,
+              entityType: 'test_scenario',
+              entityId: row.id,
+              entityName: row.name,
+              action: 'permanent_delete',
+              snapshot: row,
+              deletedAt: row.archived_at,
+            },
+          ]);
+          await db
+            .update(testScenarios)
+            .set({ lifecycle_status: 'PURGED', updated_at: new Date() })
+            .where(eq(testScenarios.id, targetId));
+        }
+        break;
+      }
       default:
         return { success: false, errors: { _trash: ['지원하지 않는 항목 유형입니다.'] } };
     }
@@ -508,7 +604,7 @@ export const emptyTrash = async (projectId: string): Promise<ActionResult<{ coun
     const db = getDatabase();
 
     // 삭제 대상 전체 조회
-    const [allCases, allSuites, allMilestones] = await Promise.all([
+    const [allCases, allSuites, allMilestones, allScenarios] = await Promise.all([
       db
         .select()
         .from(testCases)
@@ -524,6 +620,15 @@ export const emptyTrash = async (projectId: string): Promise<ActionResult<{ coun
         .from(milestones)
         .where(
           and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))
+        ),
+      db
+        .select()
+        .from(testScenarios)
+        .where(
+          and(
+            eq(testScenarios.project_id, projectId),
+            eq(testScenarios.lifecycle_status, 'DELETED')
+          )
         ),
     ]);
 
@@ -550,6 +655,15 @@ export const emptyTrash = async (projectId: string): Promise<ActionResult<{ coun
       ...allMilestones.map((row) => ({
         projectId,
         entityType: 'milestone',
+        entityId: row.id,
+        entityName: row.name,
+        action: 'empty_trash' as AuditAction,
+        snapshot: row,
+        deletedAt: row.archived_at,
+      })),
+      ...allScenarios.map((row) => ({
+        projectId,
+        entityType: 'test_scenario',
         entityId: row.id,
         entityName: row.name,
         action: 'empty_trash' as AuditAction,
@@ -586,9 +700,20 @@ export const emptyTrash = async (projectId: string): Promise<ActionResult<{ coun
           .where(
             and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))
           ),
+      allScenarios.length > 0 &&
+        db
+          .update(testScenarios)
+          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+          .where(
+            and(
+              eq(testScenarios.project_id, projectId),
+              eq(testScenarios.lifecycle_status, 'DELETED')
+            )
+          ),
     ]);
 
-    const totalCount = allCases.length + allSuites.length + allMilestones.length;
+    const totalCount =
+      allCases.length + allSuites.length + allMilestones.length + allScenarios.length;
 
     return {
       success: true,

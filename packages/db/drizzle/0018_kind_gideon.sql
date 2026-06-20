@@ -1,0 +1,1 @@
+ALTER TABLE "test_scenarios" ADD COLUMN "archived_at" timestamp with time zone;
