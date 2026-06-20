@@ -78,8 +78,8 @@ The following specifications are provided per project.
 
 Once you have created a project, refer to the following guides.
 
-- [Dashboard](/docs?tab=dashboard)
-- [Test Case Management](/docs?tab=test-cases)
-- [Test Suite Management](/docs?tab=test-suites)
-- [Test Runs](/docs?tab=test-runs)
-- [Milestone Management](/docs?tab=milestones)
+- [Dashboard](/docs/dashboard)
+- [Test Case Management](/docs/test-cases)
+- [Test Suite Management](/docs/test-suites)
+- [Test Runs](/docs/test-runs)
+- [Milestone Management](/docs/milestones)

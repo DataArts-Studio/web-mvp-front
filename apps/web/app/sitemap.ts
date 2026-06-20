@@ -1,5 +1,7 @@
 import { MetadataRoute } from 'next';
 
+import { NESTED_DOC_SLUGS } from '@/view/docs/docs-loader';
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = 'https://gettestea.com';
 
@@ -29,6 +31,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
       alternates: { languages: localized('/docs') },
     },
+    ...NESTED_DOC_SLUGS.map((slug) => ({
+      url: `${siteUrl}/docs/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+      alternates: { languages: localized(`/docs/${slug}`) },
+    })),
     {
       url: `${siteUrl}/team`,
       lastModified: new Date(),

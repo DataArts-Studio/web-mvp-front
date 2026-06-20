@@ -189,7 +189,7 @@ These are the main actions you can perform directly from the dashboard.
 
 Once you have checked your project status on the dashboard, refer to the following guides.
 
-- [Test Case Management](/docs?tab=test-cases)
-- [Test Suite Management](/docs?tab=test-suites)
-- [Test Runs](/docs?tab=test-runs)
-- [Milestone Management](/docs?tab=milestones)
+- [Test Case Management](/docs/test-cases)
+- [Test Suite Management](/docs/test-suites)
+- [Test Runs](/docs/test-runs)
+- [Milestone Management](/docs/milestones)
