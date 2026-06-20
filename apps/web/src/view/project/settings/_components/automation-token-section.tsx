@@ -33,6 +33,10 @@ export const AutomationTokenSection = ({ projectId }: AutomationTokenSectionProp
 
   const status = statusQuery.data?.success ? statusQuery.data.data : null;
   const exists = !!status?.exists;
+  // 조회가 성공으로 확정되기 전(로딩·에러·실패)에는 발급을 막는다.
+  // 그 동안 status=null → exists=false 라 "토큰 없음"으로 보이는데, 이때 발급하면 upsert 가
+  // 기존 CI 토큰을 덮어써 현재 시크릿이 깨질 수 있다.
+  const statusSettled = statusQuery.isSuccess && !!statusQuery.data?.success;
 
   const handleIssue = () => {
     issueMutation.mutate(undefined, {
@@ -110,7 +114,7 @@ export const AutomationTokenSection = ({ projectId }: AutomationTokenSectionProp
               variant="solid"
               size="small"
               onClick={handleIssue}
-              disabled={issueMutation.isPending}
+              disabled={issueMutation.isPending || !statusSettled}
               className="shrink-0"
             >
               {issueMutation.isPending ? (
@@ -158,11 +162,17 @@ export const AutomationTokenSection = ({ projectId }: AutomationTokenSectionProp
       </SettingsCard.Root>
 
       {/* 발급 직후 평문 노출 모달 (1회만)
-          Dialog.Root 는 외부 onOpenChange 콜백을 지원하지 않으므로 외부 상태 정리는
-          명시 close 버튼에서 setIssuedPlaintext(null) 로 처리한다.
+          backdrop 클릭·Escape·명시 닫기 어느 경로로 닫혀도 onOpenChange 로 평문 상태를 정리해
+          메모리에 남거나 재오픈 시 이전 평문이 노출되지 않게 한다.
           `key={issuedPlaintext}` 로 재발급 시마다 강제 re-mount 해 defaultOpen 이 적용되도록 한다. */}
       {issuedPlaintext && (
-        <Dialog.Root key={issuedPlaintext} defaultOpen>
+        <Dialog.Root
+          key={issuedPlaintext}
+          defaultOpen
+          onOpenChange={(open) => {
+            if (!open) setIssuedPlaintext(null);
+          }}
+        >
           <Dialog.Portal>
             <Dialog.Overlay
               className="animate-in fade-in"
@@ -218,9 +228,15 @@ export const AutomationTokenSection = ({ projectId }: AutomationTokenSectionProp
         </Dialog.Root>
       )}
 
-      {/* 회수 확인 다이얼로그 */}
+      {/* 회수 확인 다이얼로그
+          backdrop·Escape 로 닫혀도 부모 confirmRevoke 를 false 로 되돌려, 이후 회수 버튼이 다시 열리도록 한다. */}
       {confirmRevoke && (
-        <Dialog.Root defaultOpen>
+        <Dialog.Root
+          defaultOpen
+          onOpenChange={(open) => {
+            if (!open) setConfirmRevoke(false);
+          }}
+        >
           <Dialog.Portal>
             <Dialog.Overlay
               className="animate-in fade-in"

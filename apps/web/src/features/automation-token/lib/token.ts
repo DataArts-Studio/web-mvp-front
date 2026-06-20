@@ -11,6 +11,12 @@ import { createHash, randomBytes } from 'node:crypto';
 const TOKEN_PREFIX = 'testea_pk_';
 const SECRET_BYTES = 32;
 const VISIBLE_PREFIX_LEN = TOKEN_PREFIX.length + 8;
+/** 32 bytes 를 base64url(패딩 없음)로 인코딩한 본체 길이. */
+const SECRET_BODY_LEN = 43;
+/** 평문 토큰 전체 길이: prefix(10) + 본체(43) = 53. */
+const TOKEN_TOTAL_LEN = TOKEN_PREFIX.length + SECRET_BODY_LEN;
+/** base64url 문자 집합으로 정확히 본체 길이만큼. */
+const TOKEN_BODY_PATTERN = new RegExp(`^[A-Za-z0-9_-]{${SECRET_BODY_LEN}}$`);
 
 export interface IssuedToken {
   /** UI 에 1회만 노출되는 평문. 저장 금지. */
@@ -38,7 +44,10 @@ export function extractTokenPrefix(plaintext: string): string {
 }
 
 export function isValidTokenFormat(value: string): boolean {
-  return value.startsWith(TOKEN_PREFIX) && value.length > VISIBLE_PREFIX_LEN;
+  // prefix + 최소 길이만 보면 임의의 긴 문자열도 통과한다. 정확 길이(53)와 base64url 본체(43자)까지 고정.
+  if (value.length !== TOKEN_TOTAL_LEN) return false;
+  if (!value.startsWith(TOKEN_PREFIX)) return false;
+  return TOKEN_BODY_PATTERN.test(value.slice(TOKEN_PREFIX.length));
 }
 
 export const AUTOMATION_TOKEN_PREFIX = TOKEN_PREFIX;

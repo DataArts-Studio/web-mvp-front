@@ -2,15 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { verifyAutomationTokenFromRequest } from '@/features/automation-token/lib/verify';
 import * as Sentry from '@sentry/nextjs';
-import {
-  type TestCaseRunResultSource,
-  type TestCaseRunStatus,
-  type TestRunStatus,
-  getDatabase,
-  testCaseRuns,
-  testCases,
-  testRuns,
-} from '@testea/db';
+import { type TestRunStatus, getDatabase, testCaseRuns, testCases, testRuns } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -48,7 +40,12 @@ const RequestSchema = z
   .object({
     results: z.array(ResultItemSchema).min(1).max(500),
   })
-  .strict();
+  .strict()
+  // 같은 caseKey 가 여러 번 오면 동일 row 를 반복 갱신하고 matched 카운트가 부풀려지므로 입력에서 거부.
+  .refine((data) => new Set(data.results.map((r) => r.caseKey)).size === data.results.length, {
+    message: 'duplicate caseKey in results',
+    path: ['results'],
+  });
 
 interface Params {
   params: Promise<{ projectName: string; runId: string }>;
@@ -134,37 +131,41 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     // 6) 결과 보충 (보수 정책: 매칭 row 만 UPDATE, 새 case_run 자동 생성 안 함)
+    // 7) Run 상태 재계산까지 한 트랜잭션으로 묶어, 중간 실패 시 일부만 반영된 채 500 으로 새지 않게 한다.
     const matched: string[] = [];
     const unmapped: string[] = [];
     const now = new Date();
 
-    for (const result of parsed.data.results) {
-      const target = caseKeyMap.get(result.caseKey);
-      if (!target) {
-        unmapped.push(result.caseKey);
-        continue;
-      }
+    await db.transaction(async (tx) => {
+      for (const result of parsed.data.results) {
+        const target = caseKeyMap.get(result.caseKey);
+        if (!target) {
+          unmapped.push(result.caseKey);
+          continue;
+        }
 
-      const automationMeta = buildAutomationMeta(result);
-      const commentValue = result.comment ?? result.errorMessage ?? null;
+        const automationMeta = buildAutomationMeta(result);
 
-      await db
-        .update(testCaseRuns)
-        .set({
-          status: result.status satisfies TestCaseRunStatus,
-          comment: commentValue,
+        const setValues: Partial<typeof testCaseRuns.$inferInsert> = {
+          status: result.status,
           executed_at: result.status !== 'untested' ? now : null,
-          result_source: 'auto' satisfies TestCaseRunResultSource,
+          result_source: 'auto',
           automation_meta: Object.keys(automationMeta).length ? automationMeta : null,
           updated_at: now,
-        })
-        .where(eq(testCaseRuns.id, target.caseRunId));
+        };
+        // comment / errorMessage 둘 다 미전송이면 기존(사용자 수동) 코멘트를 덮어쓰지 않는다.
+        if (result.comment !== undefined || result.errorMessage !== undefined) {
+          setValues.comment = result.comment ?? result.errorMessage ?? null;
+        }
 
-      matched.push(result.caseKey);
-    }
+        await tx.update(testCaseRuns).set(setValues).where(eq(testCaseRuns.id, target.caseRunId));
 
-    // 7) Run 상태 재계산 (untested 개수 기반 NOT_STARTED / IN_PROGRESS / COMPLETED)
-    await recalcRunStatus(db, runId);
+        matched.push(result.caseKey);
+      }
+
+      // untested 개수 기반 NOT_STARTED / IN_PROGRESS / COMPLETED 재계산
+      await recalcRunStatus(tx, runId);
+    });
 
     return NextResponse.json(
       { runId, matched: matched.length, unmapped },
@@ -186,7 +187,11 @@ function buildAutomationMeta(result: z.infer<typeof ResultItemSchema>): Record<s
   return meta;
 }
 
-async function recalcRunStatus(db: ReturnType<typeof getDatabase>, testRunId: string) {
+type DbClient = ReturnType<typeof getDatabase>;
+/** 트랜잭션 콜백 인자(tx)와 일반 db 를 모두 받기 위한 타입. */
+type DbOrTx = DbClient | Parameters<Parameters<DbClient['transaction']>[0]>[0];
+
+async function recalcRunStatus(db: DbOrTx, testRunId: string) {
   const rows = await db
     .select({ status: testCaseRuns.status })
     .from(testCaseRuns)

@@ -32,10 +32,29 @@ const useDialogContext = () => {
 interface DialogRootProps {
   children: React.ReactNode;
   defaultOpen?: boolean;
+  /**
+   * 열림/닫힘 상태가 바뀔 때 통지한다. backdrop 클릭·Escape 로 닫힐 때도 호출되므로,
+   * 소비처가 외부 상태(예: 발급 평문)를 함께 정리하는 데 쓸 수 있다. optional 이라 기존 사용처는 무영향.
+   */
+  onOpenChange?: (open: boolean) => void;
 }
 
-const DialogRoot = ({ children, defaultOpen = false }: DialogRootProps) => {
+const DialogRoot = ({ children, defaultOpen = false, onOpenChange }: DialogRootProps) => {
   const disclosure = useDisclosure(defaultOpen);
+
+  // 인라인 콜백이 매 렌더 새 참조여도 onOpen/onClose 가 재생성되지 않도록 ref 로 잡는다.
+  const onOpenChangeRef = React.useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+
+  const onOpen = React.useCallback(() => {
+    disclosure.onOpen();
+    onOpenChangeRef.current?.(true);
+  }, [disclosure.onOpen]);
+
+  const onClose = React.useCallback(() => {
+    disclosure.onClose();
+    onOpenChangeRef.current?.(false);
+  }, [disclosure.onClose]);
 
   // a11y
   const id = React.useId();
@@ -43,7 +62,9 @@ const DialogRoot = ({ children, defaultOpen = false }: DialogRootProps) => {
   const descriptionId = `description-${id}`;
 
   return (
-    <DialogContext.Provider value={{ ...disclosure, titleId, descriptionId }}>
+    <DialogContext.Provider
+      value={{ isOpen: disclosure.isOpen, onOpen, onClose, titleId, descriptionId }}
+    >
       {children}
     </DialogContext.Provider>
   );
