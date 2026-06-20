@@ -35,7 +35,8 @@ export const NESTED_DOC_SLUGS: Exclude<DocTab, 'getting-started'>[] = [
 ];
 
 export function isDocTab(value: string): value is DocTab {
-  return value in docFiles;
+  // `in` 은 프로토타입 체인까지 포함하므로 `toString` 등이 통과해 500 으로 샐 수 있다. 자체 키만 검사.
+  return Object.prototype.hasOwnProperty.call(docFiles, value);
 }
 
 /** ko 는 content/docs/, 그 외 로케일은 content/docs/<locale>/. 번역본이 없으면 ko 로 폴백. */
@@ -46,11 +47,14 @@ export async function getMarkdownContent(filename: string, locale: string): Prom
       : join(process.cwd(), 'content', 'docs', locale, filename);
   try {
     return await readFile(localizedPath, 'utf-8');
-  } catch {
-    if (locale !== 'ko') {
+  } catch (error) {
+    // 파일 부재(ENOENT)만 ko 로 폴백한다. 권한·배포 오류까지 정상 안내문으로 숨기면
+    // sitemap 에 실린 문서가 200 으로 깨진 콘텐츠를 노출하므로 그 외 오류는 그대로 드러낸다.
+    const isMissingFile = (error as NodeJS.ErrnoException).code === 'ENOENT';
+    if (locale !== 'ko' && isMissingFile) {
       return getMarkdownContent(filename, 'ko');
     }
-    return '# 문서를 찾을 수 없습니다\n\n요청한 문서가 존재하지 않습니다.';
+    throw error;
   }
 }
 
