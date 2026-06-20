@@ -7,12 +7,14 @@ import { and, eq, gte, sql } from 'drizzle-orm';
 
 const FREE_MONTHLY_LIMIT = 50;
 
-/** 이번 달 1일 00:00:00 (로컬). 사용량 합산의 하한 경계. 검사·기록이 같은 경계를 쓰도록 공유한다. */
+/**
+ * 이번 달 1일 00:00:00 UTC. 사용량 합산의 하한 경계. 검사·기록이 같은 경계를 쓰도록 공유한다.
+ * created_at 이 timestamptz(UTC) 이므로 경계도 UTC 로 잡아, 서버 로컬 타임존에 따라
+ * 월말 일부 기록이 누락/중복 집계되지 않게 한다.
+ */
 const startOfCurrentMonth = (): Date => {
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-  return startOfMonth;
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 };
 
 export const getMonthlyUsage = async (

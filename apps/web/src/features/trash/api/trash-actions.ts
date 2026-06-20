@@ -323,7 +323,13 @@ export const restoreItem = async (
         const [restored] = await db
           .update(testCases)
           .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
-          .where(and(eq(testCases.id, targetId), eq(testCases.lifecycle_status, 'DELETED')))
+          .where(
+            and(
+              eq(testCases.id, targetId),
+              eq(testCases.project_id, projectId),
+              eq(testCases.lifecycle_status, 'DELETED')
+            )
+          )
           .returning();
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
@@ -341,7 +347,13 @@ export const restoreItem = async (
         const [target] = await db
           .select({ scenarioId: testSuites.test_scenario_id })
           .from(testSuites)
-          .where(and(eq(testSuites.id, targetId), eq(testSuites.lifecycle_status, 'DELETED')))
+          .where(
+            and(
+              eq(testSuites.id, targetId),
+              eq(testSuites.project_id, projectId),
+              eq(testSuites.lifecycle_status, 'DELETED')
+            )
+          )
           .limit(1);
         if (!target) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
@@ -372,7 +384,13 @@ export const restoreItem = async (
         const [restored] = await db
           .update(testSuites)
           .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
-          .where(and(eq(testSuites.id, targetId), eq(testSuites.lifecycle_status, 'DELETED')))
+          .where(
+            and(
+              eq(testSuites.id, targetId),
+              eq(testSuites.project_id, projectId),
+              eq(testSuites.lifecycle_status, 'DELETED')
+            )
+          )
           .returning();
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
@@ -394,7 +412,13 @@ export const restoreItem = async (
         const [restored] = await db
           .update(milestones)
           .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
-          .where(and(eq(milestones.id, targetId), eq(milestones.lifecycle_status, 'DELETED')))
+          .where(
+            and(
+              eq(milestones.id, targetId),
+              eq(milestones.project_id, projectId),
+              eq(milestones.lifecycle_status, 'DELETED')
+            )
+          )
           .returning();
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
@@ -407,7 +431,13 @@ export const restoreItem = async (
         const [restored] = await db
           .update(testScenarios)
           .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
-          .where(and(eq(testScenarios.id, targetId), eq(testScenarios.lifecycle_status, 'DELETED')))
+          .where(
+            and(
+              eq(testScenarios.id, targetId),
+              eq(testScenarios.project_id, projectId),
+              eq(testScenarios.lifecycle_status, 'DELETED')
+            )
+          )
           .returning();
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
@@ -448,7 +478,13 @@ export const permanentDeleteItem = async (
         const [row] = await db
           .select()
           .from(testCases)
-          .where(and(eq(testCases.id, targetId), eq(testCases.lifecycle_status, 'DELETED')));
+          .where(
+            and(
+              eq(testCases.id, targetId),
+              eq(testCases.project_id, projectId),
+              eq(testCases.lifecycle_status, 'DELETED')
+            )
+          );
         if (row) {
           await writeAuditLogs(db, [
             {
@@ -464,16 +500,24 @@ export const permanentDeleteItem = async (
           await db
             .update(testCases)
             .set({ lifecycle_status: 'PURGED', updated_at: new Date() })
-            .where(eq(testCases.id, targetId));
+            .where(and(eq(testCases.id, targetId), eq(testCases.project_id, projectId)));
         }
         break;
       }
       case 'suite': {
-        // 스위트 + 하위 TC 모두 조회
+        // 스위트가 이 프로젝트 소속인지 먼저 확인한다. 아니면(부재/타 프로젝트) 하위 TC 까지 손대지 않는다.
         const [suiteRow] = await db
           .select()
           .from(testSuites)
-          .where(and(eq(testSuites.id, targetId), eq(testSuites.lifecycle_status, 'DELETED')));
+          .where(
+            and(
+              eq(testSuites.id, targetId),
+              eq(testSuites.project_id, projectId),
+              eq(testSuites.lifecycle_status, 'DELETED')
+            )
+          );
+        if (!suiteRow) break;
+
         const childCases = await db
           .select()
           .from(testCases)
@@ -481,9 +525,8 @@ export const permanentDeleteItem = async (
             and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED'))
           );
 
-        const entries = [];
-        if (suiteRow) {
-          entries.push({
+        const entries = [
+          {
             projectId,
             entityType: 'test_suite',
             entityId: suiteRow.id,
@@ -491,8 +534,8 @@ export const permanentDeleteItem = async (
             action: 'permanent_delete' as AuditAction,
             snapshot: suiteRow,
             deletedAt: suiteRow.archived_at,
-          });
-        }
+          },
+        ];
         for (const c of childCases) {
           entries.push({
             projectId,
@@ -505,11 +548,9 @@ export const permanentDeleteItem = async (
           });
         }
 
-        if (entries.length > 0) {
-          await writeAuditLogs(db, entries);
-        }
+        await writeAuditLogs(db, entries);
 
-        // 하위 TC + 스위트 PURGED 마킹
+        // 하위 TC + 스위트 PURGED 마킹 (스위트는 위에서 프로젝트 소속 확인됨)
         const purgedAt = new Date();
         await db
           .update(testCases)
@@ -520,14 +561,26 @@ export const permanentDeleteItem = async (
         await db
           .update(testSuites)
           .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-          .where(and(eq(testSuites.id, targetId), eq(testSuites.lifecycle_status, 'DELETED')));
+          .where(
+            and(
+              eq(testSuites.id, targetId),
+              eq(testSuites.project_id, projectId),
+              eq(testSuites.lifecycle_status, 'DELETED')
+            )
+          );
         break;
       }
       case 'milestone': {
         const [row] = await db
           .select()
           .from(milestones)
-          .where(and(eq(milestones.id, targetId), eq(milestones.lifecycle_status, 'DELETED')));
+          .where(
+            and(
+              eq(milestones.id, targetId),
+              eq(milestones.project_id, projectId),
+              eq(milestones.lifecycle_status, 'DELETED')
+            )
+          );
         if (row) {
           await writeAuditLogs(db, [
             {
@@ -543,7 +596,7 @@ export const permanentDeleteItem = async (
           await db
             .update(milestones)
             .set({ lifecycle_status: 'PURGED', updated_at: new Date() })
-            .where(eq(milestones.id, targetId));
+            .where(and(eq(milestones.id, targetId), eq(milestones.project_id, projectId)));
         }
         break;
       }
@@ -552,7 +605,11 @@ export const permanentDeleteItem = async (
           .select()
           .from(testScenarios)
           .where(
-            and(eq(testScenarios.id, targetId), eq(testScenarios.lifecycle_status, 'DELETED'))
+            and(
+              eq(testScenarios.id, targetId),
+              eq(testScenarios.project_id, projectId),
+              eq(testScenarios.lifecycle_status, 'DELETED')
+            )
           );
         if (row) {
           await writeAuditLogs(db, [
@@ -569,7 +626,7 @@ export const permanentDeleteItem = async (
           await db
             .update(testScenarios)
             .set({ lifecycle_status: 'PURGED', updated_at: new Date() })
-            .where(eq(testScenarios.id, targetId));
+            .where(and(eq(testScenarios.id, targetId), eq(testScenarios.project_id, projectId)));
         }
         break;
       }

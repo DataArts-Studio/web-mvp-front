@@ -247,7 +247,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 월간 사용량 체크
+    // 월간 사용량 체크 (preRemaining 은 기록 트랜잭션 실패 시 fail-open 을 막는 상한)
+    let preRemaining = Number.POSITIVE_INFINITY;
     const usageResult = await getMonthlyUsage(input.projectId);
     if (usageResult.success) {
       const { used, limit } = usageResult.data;
@@ -257,6 +258,7 @@ export async function POST(req: NextRequest) {
           { status: 429 }
         );
       }
+      preRemaining = limit - used;
     }
 
     // 한도/설정 가드 통과 후에 첨부 본문을 추출한다. 거부될 호출이 PDF 파싱 비용을 먼저 지불하지 않도록.
@@ -323,7 +325,10 @@ export async function POST(req: NextRequest) {
         { status: 429 }
       );
     }
-    const granted = usage.success ? usage.data.granted : limitedCases.length;
+    // 기록 트랜잭션이 실패하면 사용량 미집계 상태이므로, 사전 잔여량을 넘겨 반환하지 않는다(fail-open 방지).
+    const granted = usage.success
+      ? usage.data.granted
+      : Math.min(limitedCases.length, preRemaining);
     const acceptedCases = limitedCases.slice(0, granted);
 
     return NextResponse.json({
