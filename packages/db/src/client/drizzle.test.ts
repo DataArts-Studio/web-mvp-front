@@ -13,10 +13,12 @@ vi.mock('postgres', () => {
   };
 });
 
+// drizzle 인스턴스 생성 시 전달된 옵션(logger 등)을 캡처해 검증한다.
 vi.mock('drizzle-orm/postgres-js', () => ({
-  drizzle: vi.fn((client) => ({
+  drizzle: vi.fn((client, options) => ({
     execute: vi.fn().mockResolvedValue([{ health: 1 }]),
     _: { client },
+    __options: options,
   })),
 }));
 
@@ -44,7 +46,7 @@ describe('데이터베이스 연결 관리 (Database Connection)', () => {
     expect(db1).toBe(db2);
   });
 
-  it('개발 환경에서 올바른 설정값(Connection Pool 등)으로 클라이언트가 초기화되어야 한다', async () => {
+  it('서버리스 단일 커넥션 풀 설정(max/idle/ssl/prepare)으로 클라이언트가 초기화되어야 한다', async () => {
     const postgres = (await import('postgres')).default;
     getDatabase();
     expect(postgres).toHaveBeenCalledWith(
@@ -52,20 +54,29 @@ describe('데이터베이스 연결 관리 (Database Connection)', () => {
       expect.objectContaining({
         max: 1,
         idle_timeout: 20,
+        connect_timeout: 30,
+        ssl: 'require',
+        prepare: false,
       })
     );
   });
 
-  it('운영(Production) 환경 설정을 올바르게 반영해야 한다', async () => {
-    process.env.NODE_ENV = 'production';
-    const postgres = (await import('postgres')).default;
+  it('개발 환경에서는 쿼리 로거를 활성화한다', async () => {
+    const { drizzle } = await import('drizzle-orm/postgres-js');
     getDatabase();
-    expect(postgres).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        max: 5,
-        idle_timeout: 60,
-      })
+    expect(drizzle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ logger: true })
+    );
+  });
+
+  it('운영(Production) 환경에서는 쿼리 로거를 비활성화한다', async () => {
+    process.env.NODE_ENV = 'production';
+    const { drizzle } = await import('drizzle-orm/postgres-js');
+    getDatabase();
+    expect(drizzle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ logger: false })
     );
   });
 
