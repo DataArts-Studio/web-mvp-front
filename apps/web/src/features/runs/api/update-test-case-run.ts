@@ -4,7 +4,7 @@ import { requireProjectAccess } from '@/access/lib/require-access';
 import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { TestCaseRunStatus, TestRunStatus, getDatabase, testCaseRuns, testRuns } from '@testea/db';
+import { TestRunStatus, getDatabase, testCaseRuns, testRuns } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 
 export async function updateTestCaseRunStatus(
@@ -38,6 +38,8 @@ export async function updateTestCaseRunStatus(
         status: input.status,
         comment: input.comment ?? null,
         executed_at: input.status !== 'untested' ? now : null,
+        // 사용자가 수동으로 수정하면 자동(auto) 출처를 manual 로 되돌려 출처가 stale 해지지 않게 한다.
+        result_source: 'manual',
         updated_at: now,
       })
       .where(eq(testCaseRuns.id, input.testCaseRunId))

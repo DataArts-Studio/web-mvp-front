@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import type { AnnouncementWithReadState } from '@testea/db';
 import { DSButton, Dialog } from '@testea/ui';
@@ -21,12 +21,18 @@ export function AnnouncementDetailDialog({ announcement, onClose }: Announcement
   const markRead = useMarkRead();
   const labels = useAnnouncementLabels();
 
+  // mutation 상태 변경 리렌더마다 markRead/announcement 가 새 참조가 되어 effect 가 재실행되고
+  // 같은 공지에 읽음 POST 가 반복되던 문제를, 이미 호출한 id 를 ref 로 가드해 막는다.
+  // (deps 는 정직하게 채우고 중복은 가드로 차단)
+  const markedIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!announcement) return;
     if (announcement.readAt) return;
+    if (markedIdRef.current === announcement.id) return;
+    markedIdRef.current = announcement.id;
     markRead.mutate(announcement.id);
-    // mutate 는 안정 참조라 dep 에 넣지 않아도 동일 효과지만 lint 회피용으로 포함
-  }, [announcement?.id, announcement?.readAt, markRead, announcement]);
+  }, [announcement, markRead]);
 
   if (!announcement) return null;
 
