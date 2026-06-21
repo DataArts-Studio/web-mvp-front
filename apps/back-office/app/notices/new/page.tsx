@@ -1,17 +1,20 @@
 import Link from 'next/link';
 
 import { navItems } from '@/entities/admin-dashboard';
-import { getAdminInfo, requireAdmin } from '@/features/auth-gate/lib/admin-gate';
+import { requireAdmin } from '@/features/auth-gate/lib/admin-gate';
 import { createNoticeAction } from '@/features/notices/api/actions';
 import { NoticeForm } from '@/view/notices/notice-form';
 import { BackOfficeLayout } from '@/widgets/back-office-layout';
 
 export default async function NewNoticePage() {
   await requireAdmin('/notices/new');
-  const admin = await getAdminInfo();
 
   return (
-    <BackOfficeLayout navItems={navItems} activeHref="/notices" admin={admin}>
+    <BackOfficeLayout
+      navItems={navItems}
+      activeHref="/notices"
+      admin={{ name: '관리자', email: 'admin@testea.com' }}
+    >
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-8 py-8">
         <div className="flex flex-col gap-1">
           <Link href="/notices" className="text-text-secondary hover:text-text-primary text-sm">

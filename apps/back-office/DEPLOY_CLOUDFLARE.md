@@ -32,15 +32,6 @@ web 앱(Vercel)과 달리 백오피스는 Cloudflare 로 따로 배포한다.
 3. **커스텀 도메인** 연결: Workers 설정에서 `dev.back.gettestea.com`(dev) 등 라우트 추가.
    DNS 가 Cloudflare 라 바로 붙는다.
 
-4. **Cloudflare Access (인증)**: Zero Trust → Access → Applications 에서 백오피스 도메인을
-   Self-hosted 앱으로 추가하고, 정책(허용 이메일·구글 그룹 등)을 건다. 그러면 엣지에서
-   신원 확인이 끝난 사람만 도달하고, 앱은 키 입력 없이 인증된다.
-   - JWT 검증을 켜려면 워커 변수에 `CF_ACCESS_TEAM_DOMAIN`(예: `your-team.cloudflareaccess.com`)
-     과 `CF_ACCESS_AUD`(Access 앱의 Application Audience 태그)를 넣는다. 설정 시
-     `Cf-Access-Jwt-Assertion` 을 팀 JWKS 로 검증한다. 미설정이면 이메일 헤더만 신뢰.
-   - 인증 방식: CF Access 헤더가 있으면 그 이메일로 인증·행위자 기록. 없으면(로컬 등)
-     공유키 게이트로 폴백. 운영 도메인은 CF Access 로 보호하는 것을 전제로 한다.
-
 ## 빌드 / 배포
 
 ```
