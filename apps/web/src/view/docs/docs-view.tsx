@@ -3,9 +3,9 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
+import { Link } from '@/i18n/navigation';
 import { Footer } from '@/widgets/footer';
 import { Logo } from '@testea/ui';
 import { cn } from '@testea/util';
@@ -32,38 +32,28 @@ type DocTab =
 export type DocHeading = { id: string; text: string; level: 2 | 3 };
 
 interface DocsViewProps {
-  renderedContents: Record<DocTab, ReactNode>;
-  headings: Record<DocTab, DocHeading[]>;
-  initialTab?: DocTab;
+  content: ReactNode;
+  headings: DocHeading[];
+  activeSlug: DocTab;
 }
 
-const docTabs: { id: DocTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'getting-started', label: '시작하기', icon: <BookOpen className="h-4 w-4" /> },
-  { id: 'dashboard', label: '대시보드', icon: <LayoutDashboard className="h-4 w-4" /> },
-  { id: 'test-cases', label: '테스트 케이스', icon: <TestTube className="h-4 w-4" /> },
-  { id: 'test-suites', label: '테스트 스위트', icon: <FolderKanban className="h-4 w-4" /> },
-  { id: 'test-runs', label: '테스트 실행', icon: <Play className="h-4 w-4" /> },
-  { id: 'milestones', label: '마일스톤', icon: <Flag className="h-4 w-4" /> },
+const docTabs: { id: DocTab; icon: React.ReactNode }[] = [
+  { id: 'getting-started', icon: <BookOpen className="h-4 w-4" /> },
+  { id: 'dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
+  { id: 'test-cases', icon: <TestTube className="h-4 w-4" /> },
+  { id: 'test-suites', icon: <FolderKanban className="h-4 w-4" /> },
+  { id: 'test-runs', icon: <Play className="h-4 w-4" /> },
+  { id: 'milestones', icon: <Flag className="h-4 w-4" /> },
 ];
 
-export function DocsView({
-  renderedContents,
-  headings,
-  initialTab = 'getting-started',
-}: DocsViewProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get('tab') as DocTab | null;
-  const activeTab: DocTab = tabParam || initialTab;
+const tabHref = (slug: DocTab) => (slug === 'getting-started' ? '/docs' : `/docs/${slug}`);
+
+export function DocsView({ content, headings, activeSlug }: DocsViewProps) {
+  const t = useTranslations('docs');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const content = renderedContents[activeTab] || renderedContents['getting-started'];
-  const currentHeadings = headings[activeTab] || [];
-
-  const handleTabChange = (tab: DocTab) => {
-    setIsSidebarOpen(false);
-    router.push(`/docs?tab=${tab}`, { scroll: false });
-  };
+  const activeTab = activeSlug;
+  const currentHeadings = headings;
 
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-dvh flex-col font-sans">
@@ -74,7 +64,7 @@ export function DocsView({
             <Logo className="h-5 w-20" />
           </Link>
           <span className="text-text-4">/</span>
-          <span className="typo-label-heading text-text-2">사용 가이드</span>
+          <span className="typo-label-heading text-text-2">{t('headerLabel')}</span>
 
           <div className="flex-1" />
 
@@ -83,7 +73,7 @@ export function DocsView({
             className="rounded-4 text-text-3 hover:bg-bg-3 hover:text-text-1 typo-caption-normal hidden items-center gap-1 px-3 py-1.5 transition-colors lg:flex"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
-            홈으로
+            {t('backHome')}
           </Link>
 
           {/* 모바일 메뉴 토글 */}
@@ -106,13 +96,15 @@ export function DocsView({
           )}
         >
           <p className="typo-caption-heading text-text-3 mb-3 px-3 tracking-[0.18em] uppercase">
-            문서
+            {t('sidebarHeading')}
           </p>
           <nav className="flex flex-col gap-1">
             {docTabs.map((tab) => (
-              <button
+              <Link
                 key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
+                href={tabHref(tab.id)}
+                onClick={() => setIsSidebarOpen(false)}
+                scroll={false}
                 className={cn(
                   'rounded-4 typo-label-normal flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors',
                   activeTab === tab.id
@@ -121,8 +113,8 @@ export function DocsView({
                 )}
               >
                 {tab.icon}
-                {tab.label}
-              </button>
+                {t(`tabs.${tab.id}`)}
+              </Link>
             ))}
           </nav>
         </aside>
@@ -145,7 +137,7 @@ export function DocsView({
           <aside className="hidden w-52 shrink-0 xl:block">
             <div className="sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto px-4 py-8">
               <p className="typo-caption-heading text-text-3 mb-3 tracking-[0.18em] uppercase">
-                목차
+                {t('tocHeading')}
               </p>
               <nav className="flex flex-col gap-0.5">
                 {currentHeadings.map((heading) => (

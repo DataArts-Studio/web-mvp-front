@@ -11,6 +11,7 @@ import {
   PlayCircle,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Trash2,
 } from 'lucide-react';
@@ -35,6 +36,8 @@ interface RunsListTableProps {
   onPageChange: (page: number) => void;
   onRunClick: (runId: string) => void;
   onDeleteClick: (run: ITestRun) => void;
+  onRerunClick: (run: ITestRun) => void;
+  rerunPendingId: string | null;
   onRefetch: () => void;
   onResetFilters: () => void;
   onCreateRun: () => void;
@@ -63,6 +66,8 @@ export const RunsListTable = ({
   onPageChange,
   onRunClick,
   onDeleteClick,
+  onRerunClick,
+  rerunPendingId,
   onRefetch,
   onResetFilters,
   onCreateRun,
@@ -86,7 +91,7 @@ export const RunsListTable = ({
         <div className="typo-caption-heading text-text-3 uppercase">진행률 (완료/전체)</div>
         <div className="typo-caption-heading text-text-3 text-center uppercase">상태</div>
         <div className="typo-caption-heading text-text-3 text-right uppercase">마지막 업데이트</div>
-        <div className="w-9" />
+        <div className="w-20" />
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -203,16 +208,33 @@ export const RunsListTable = ({
                 </div>
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteClick(run);
-                }}
-                className="rounded-2 text-text-4 hover:bg-system-red/10 hover:text-system-red flex h-9 w-9 cursor-pointer items-center justify-center opacity-0 transition-all group-hover:opacity-100"
-                title="삭제"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRerunClick(run);
+                  }}
+                  disabled={rerunPendingId === run.id}
+                  className="rounded-2 text-text-4 hover:bg-primary/10 hover:text-primary flex h-9 w-9 cursor-pointer items-center justify-center opacity-0 transition-all group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="다시 실행"
+                  aria-label="다시 실행"
+                >
+                  <RotateCcw
+                    className={`h-4 w-4 ${rerunPendingId === run.id ? 'animate-spin' : ''}`}
+                  />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteClick(run);
+                  }}
+                  className="rounded-2 text-text-4 hover:bg-system-red/10 hover:text-system-red flex h-9 w-9 cursor-pointer items-center justify-center opacity-0 transition-all group-hover:opacity-100"
+                  title="삭제"
+                  aria-label="삭제"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           );
         })}

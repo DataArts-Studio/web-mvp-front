@@ -2,6 +2,8 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 
+import { useTranslations } from 'next-intl';
+
 import {
   BasicInfoFields,
   ScenarioFields,
@@ -10,6 +12,7 @@ import {
 } from '@/entities/test-case';
 import type { TestCase } from '@/entities/test-case';
 import { projectTagsQueryOptions } from '@/entities/test-case/api';
+import { translateCaseErrors } from '@/entities/test-case/lib/translate-message';
 import { DSButton } from '@/shared';
 import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
 import { testSuitesQueryOptions } from '@/widgets';
@@ -19,7 +22,7 @@ import { X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useUpdateCase } from '../hooks';
-import { UpdateTestCase, UpdateTestCaseSchema } from '../model';
+import { UpdateTestCase, createUpdateTestCaseSchema } from '../model';
 
 interface TestCaseEditFormProps {
   testCase: TestCase;
@@ -28,6 +31,7 @@ interface TestCaseEditFormProps {
 }
 
 export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditFormProps) => {
+  const t = useTranslations('cases');
   const { mutate } = useUpdateCase();
 
   const { data: suitesData } = useQuery({
@@ -47,7 +51,12 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
     setValue,
     control,
   } = useForm({
-    resolver: zodResolver(UpdateTestCaseSchema),
+    resolver: zodResolver(
+      createUpdateTestCaseSchema({
+        titleMin: t('ui.titleMin'),
+        titleMax: t('ui.titleMax'),
+      })
+    ),
     defaultValues: {
       id: testCase.id,
       title: testCase.title,
@@ -76,7 +85,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
       {
         onError: (error) => {
           track(TESTCASE_EVENTS.UPDATE_FAIL, { case_id: testCase.id });
-          toast.error(error.message || '테스트 케이스 수정에 실패했습니다.');
+          toast.error(translateCaseErrors(t, error.message) || t('ui.updateFailedFallback'));
         },
       }
     );
@@ -99,12 +108,16 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
         {/* Header */}
         <header className="border-line-2 flex shrink-0 items-center justify-between border-b px-6 py-5">
           <div>
-            <h2 className="text-text-1 typo-h2-heading">테스트 케이스 수정</h2>
-            <p className="text-text-3 typo-caption-normal mt-0.5">
-              테스트 시나리오의 상세 내용을 수정해주세요.
-            </p>
+            <h2 className="text-text-1 typo-h2-heading">{t('ui.editCase')}</h2>
+            <p className="text-text-3 typo-caption-normal mt-0.5">{t('ui.editSubtitle')}</p>
           </div>
-          <DSButton variant="ghost" size="small" onClick={handleAbandon} className="p-2">
+          <DSButton
+            variant="ghost"
+            size="small"
+            onClick={handleAbandon}
+            className="p-2"
+            aria-label={t('ui.close')}
+          >
             <X className="h-5 w-5" />
           </DSButton>
         </header>
@@ -137,10 +150,10 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
           {/* Actions */}
           <div className="border-line-2 flex justify-end gap-3 border-t pt-6">
             <DSButton type="button" variant="ghost" onClick={handleAbandon}>
-              취소
+              {t('ui.cancel')}
             </DSButton>
             <DSButton type="submit" variant="solid">
-              테스트 케이스 수정
+              {t('ui.editCase')}
             </DSButton>
           </div>
         </form>

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 
@@ -43,6 +44,7 @@ type ModalType = 'create' | 'detail' | 'import' | 'ai-generate' | 'ai-requiremen
 
 export const TestCasesView = () => {
   const params = useParams();
+  const t = useTranslations('cases');
   const listRef = useRef<HTMLDivElement>(null);
   const { onClose, onOpen, isActiveType } = useDisclosure<ModalType>();
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
@@ -164,10 +166,10 @@ export const TestCasesView = () => {
   // 타이틀 결정
   const title =
     selectedSuiteId === 'all'
-      ? '테스트 케이스'
+      ? t('ui.title')
       : selectedSuiteId === '__uncategorized__'
-        ? '미분류'
-        : suiteMap.get(selectedSuiteId) || '테스트 케이스';
+        ? t('ui.uncategorized')
+        : suiteMap.get(selectedSuiteId) || t('ui.title');
 
   // Loading (hydration 전에는 서버와 동일하게 스켈레톤 유지)
   if (!hydrated || isLoadingProject || (isLoadingCases && !testCasesData)) {

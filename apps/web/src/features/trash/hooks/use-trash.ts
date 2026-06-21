@@ -38,6 +38,8 @@ export const useRestoreItem = (projectId: string) => {
         queryClient.invalidateQueries({ queryKey: ['testCases'] }),
         queryClient.invalidateQueries({ queryKey: ['testSuites'] }),
         queryClient.invalidateQueries({ queryKey: ['milestones'] }),
+        queryClient.invalidateQueries({ queryKey: ['scenarios'] }),
+        queryClient.invalidateQueries({ queryKey: ['scenarioFeatures'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       ]).catch(() => {});
     },

@@ -1,5 +1,6 @@
 'use server';
 
+import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases } from '@testea/db';
@@ -24,7 +25,7 @@ export const getProjectTags = async (projectId: string): Promise<ActionResult<st
     Sentry.captureException(error, { extra: { action: 'getProjectTags' } });
     return {
       success: false,
-      errors: { _tags: ['태그를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _tags: [CASE_MESSAGE_CODES.TAGS_LOAD_FAILED] },
     };
   }
 };

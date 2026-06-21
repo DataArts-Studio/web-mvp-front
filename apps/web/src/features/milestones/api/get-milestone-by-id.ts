@@ -13,7 +13,7 @@ import {
   testRuns,
   testSuites,
 } from '@testea/db';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, max } from 'drizzle-orm';
 
 export async function getMilestoneById(
   milestoneId: string
@@ -31,8 +31,8 @@ export async function getMilestoneById(
       };
     }
 
-    // 2. 병렬 조회: 테스트 실행, 마일스톤 테스트 케이스, 마일스톤 테스트 스위트
-    const [relatedTestRuns, mtcRows, mtsRows] = await Promise.all([
+    // 2. 병렬 조회: 테스트 실행, 마일스톤 테스트 케이스, 마일스톤 테스트 스위트, 마지막 실행 시점
+    const [relatedTestRuns, mtcRows, mtsRows, lastExecRows] = await Promise.all([
       db
         .select({
           id: testRuns.id,
@@ -52,7 +52,21 @@ export async function getMilestoneById(
         .select({ test_suite_id: milestoneTestSuites.test_suite_id })
         .from(milestoneTestSuites)
         .where(eq(milestoneTestSuites.milestone_id, milestoneId)),
+      // FDD-TR12: 이 마일스톤의 마지막 실행 시점 (source_type='milestone' 기준, 논리 삭제 제외)
+      db
+        .select({ lastExecutedAt: max(testCaseRuns.executed_at) })
+        .from(testCaseRuns)
+        .where(
+          and(
+            eq(testCaseRuns.source_type, 'milestone'),
+            eq(testCaseRuns.source_id, milestoneId),
+            isNull(testCaseRuns.excluded_at)
+          )
+        ),
     ]);
+
+    const rawLastExecutedAt = lastExecRows[0]?.lastExecutedAt ?? null;
+    const lastExecutedAt = rawLastExecutedAt ? new Date(rawLastExecutedAt) : null;
 
     // 3. 병렬 조회: 테스트 케이스 실행 결과, 직접 연결된 케이스, ACTIVE 스위트 + 스위트 소속 케이스
     const testRunIds = relatedTestRuns.map((r) => r.id);
@@ -151,6 +165,7 @@ export async function getMilestoneById(
       updatedAt: dbMilestone.updated_at,
       archivedAt: dbMilestone.archived_at,
       lifecycleStatus: dbMilestone.lifecycle_status,
+      lastExecutedAt,
       ...stats,
       testCases: testCasesResult,
       testSuites: suites.map((s) => ({
@@ -169,10 +184,11 @@ export async function getMilestoneById(
     return { success: true, data: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getMilestoneById' } });
-    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _general: [`마일스톤을 불러오는 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: {
+        _general: ['마일스톤을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'],
+      },
     };
   }
 }

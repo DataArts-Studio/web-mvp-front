@@ -2,6 +2,7 @@ import {
   createMockMilestoneRow,
   mockGetDatabase,
   resetMockDb,
+  setMockSelectReturn,
   setMockUpdateReturn,
 } from '@/shared/test/__mocks__/db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,6 +17,8 @@ vi.mock('@testea/db', () => ({
 describe('deleteMilestone', () => {
   beforeEach(() => {
     resetMockDb();
+    // 인가 프리플라이트 조회(대상 소유 프로젝트 확인)용 기본 반환
+    setMockSelectReturn([{ projectId: 'project-123', project_id: 'project-123' }]);
   });
 
   afterEach(() => {
@@ -31,7 +34,7 @@ describe('deleteMilestone', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe(mockRow.id);
-      expect(result.message).toBe('마일스톤이 성공적으로 삭제되었습니다.');
+      expect(result.message).toBe('마일스톤이 휴지통으로 이동되었습니다.');
     }
   });
 
@@ -42,7 +45,7 @@ describe('deleteMilestone', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._milestone).toContain('마일스톤 아카이브에 실패했습니다.');
+      expect(result.errors._milestone).toContain('마일스톤을 찾을 수 없습니다.');
     }
   });
 });

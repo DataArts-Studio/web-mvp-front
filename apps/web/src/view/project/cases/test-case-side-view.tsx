@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
+import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 
 import { TestCase, parseSteps } from '@/entities/test-case';
@@ -34,6 +35,7 @@ interface TestCaseSideViewProps {
 }
 
 export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideViewProps) => {
+  const t = useTranslations('cases');
   // 목록 데이터에서 빠진 상세 필드(steps, preCondition, expectedResult)를 별도 조회
   const { data: detailData, isLoading: isDetailLoading } = useQuery({
     ...testCaseByIdQueryOptions(listItem?.id ?? ''),
@@ -106,7 +108,7 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
                     }
                   }}
                   disabled={!testCase}
-                  title="상세 페이지로 이동"
+                  title={t('ui.openDetailPage')}
                 >
                   <Maximize2 className="h-4 w-4" />
                 </DSButton>
@@ -118,24 +120,24 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
                   disabled={!testCase || isStepsLoading}
                 >
                   <Edit2 className="h-4 w-4" />
-                  <span>수정</span>
+                  <span>{t('ui.edit')}</span>
                 </DSButton>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-primary text-xl font-semibold">
-                {testCase?.caseKey || 'TC-0000'}
+                {testCase?.caseKey || t('ui.defaultCaseKey')}
               </span>
               <span className="flex items-center gap-1">
                 <Flag className="h-4 w-4" />
-                {testCase?.testType || '-'}
+                {testCase?.testType || t('ui.emptyValue')}
               </span>
             </div>
-            <h2 className="text-xl">{testCase?.title || '테스트 케이스'}</h2>
+            <h2 className="text-xl">{testCase?.title || t('ui.defaultCaseTitle')}</h2>
             <div className="flex flex-wrap gap-x-3 gap-y-1">
               <div className="text-text-3 flex items-center gap-1 text-sm">
                 <FolderOpen className="h-4 w-4" />
-                <span>{currentSuite?.title || '스위트 없음'}</span>
+                <span>{currentSuite?.title || t('ui.noSuite')}</span>
               </div>
               <div className="text-text-3 flex items-center gap-1 text-sm">
                 <Calendar className="h-4 w-4" />
@@ -144,7 +146,9 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
               {latestVersion && (
                 <div className="text-text-3 flex items-center gap-1 text-sm">
                   <History className="h-4 w-4" />
-                  <span>최근 수정: {formatRelativeTime(latestVersion.createdAt)}</span>
+                  <span>
+                    {t('ui.lastUpdated', { date: formatRelativeTime(latestVersion.createdAt) })}
+                  </span>
                   {versionCount > 0 && (
                     <span className="bg-primary/10 text-primary ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium">
                       v{latestVersion.versionNumber}
@@ -167,32 +171,32 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
                 </span>
               ))
             ) : (
-              <span className="text-text-3 text-sm">태그 없음</span>
+              <span className="text-text-3 text-sm">{t('ui.noTags')}</span>
             )}
           </div>
           {/* 사이드뷰 본문 */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <h3 className="text-text-3 text-lg font-semibold">전제 조건</h3>
+              <h3 className="text-text-3 text-lg font-semibold">{t('ui.preconditions')}</h3>
               <SideStepsList
                 steps={testCase?.preCondition}
-                emptyText="전제 조건이 없습니다."
+                emptyText={t('ui.noPreconditions')}
                 isLoading={isStepsLoading}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-text-3 text-lg font-semibold">테스트 단계</h3>
+              <h3 className="text-text-3 text-lg font-semibold">{t('ui.testSteps')}</h3>
               <SideStepsList
                 steps={testCase?.testSteps}
-                emptyText="테스트 단계가 없습니다."
+                emptyText={t('ui.noTestSteps')}
                 isLoading={isStepsLoading}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-text-3 text-lg font-semibold">예상 결과</h3>
+              <h3 className="text-text-3 text-lg font-semibold">{t('ui.expectedResults')}</h3>
               <SideStepsList
                 steps={testCase?.expectedResult}
-                emptyText="예상 결과가 없습니다."
+                emptyText={t('ui.noExpectedResults')}
                 isLoading={isStepsLoading}
               />
             </div>
@@ -200,14 +204,14 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
           {/* 테스트 정보 */}
           <div className="flex gap-2">
             <div className="bg-bg-2 border-line-2 rounded-4 flex-1 border p-4">
-              <h3 className="text-text-3 mb-1">테스트 유형</h3>
-              <p>{testCase?.testType || '-'}</p>
+              <h3 className="text-text-3 mb-1">{t('ui.testType')}</h3>
+              <p>{testCase?.testType || t('ui.emptyValue')}</p>
             </div>
             <div className="bg-bg-2 border-line-2 rounded-4 flex-1 border p-4">
-              <h3 className="text-text-3 mb-1">예상 소요 시간</h3>
+              <h3 className="text-text-3 mb-1">{t('ui.estimatedTime')}</h3>
               <div className="flex items-center gap-2">
                 <Clock className="text-primary h-4 w-4" />
-                <span>-</span>
+                <span>{t('ui.emptyValue')}</span>
               </div>
             </div>
           </div>
@@ -215,7 +219,7 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
           <div className="flex gap-2">
             <DSButton className="flex flex-1 items-center gap-2" onClick={handleRunTest}>
               <Play className="h-4 w-4" />
-              테스트 실행
+              {t('ui.runTest')}
             </DSButton>
             {/* TODO: 복사 기능 일시 비활성화
           <DSButton variant="ghost" className="flex items-center gap-2">

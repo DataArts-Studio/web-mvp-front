@@ -16,6 +16,7 @@ import {
   MilestoneEditForm,
 } from '@/features/milestones-edit';
 import { MILESTONE_EVENTS, track } from '@/shared/lib/analytics';
+import { LastRunFreshnessLabel } from '@/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import {
   DSButton,
@@ -203,11 +204,17 @@ export const MilestoneDetailView = () => {
               <h1 className="typo-title-heading">{milestone.title}</h1>
               <StatusBadge config={statusInfo} className="px-3 py-1 text-sm" />
             </div>
-            <div className="text-text-3 flex items-center gap-1.5 text-sm">
-              <Calendar className="h-4 w-4" strokeWidth={1.5} />
-              <span>
-                {formatDateTime(milestone.startDate)} ~ {formatDateTime(milestone.endDate)}
-              </span>
+            <div className="text-text-3 flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" strokeWidth={1.5} />
+                <span>
+                  {formatDateTime(milestone.startDate)} ~ {formatDateTime(milestone.endDate)}
+                </span>
+              </div>
+              <LastRunFreshnessLabel
+                lastExecutedAt={milestone.lastExecutedAt}
+                className="text-sm"
+              />
             </div>
           </div>
 

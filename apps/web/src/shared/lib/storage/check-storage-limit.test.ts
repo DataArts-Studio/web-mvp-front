@@ -2,9 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { checkStorageLimit } from './check-storage-limit';
 
+// 전역 setup 의 checkStorageLimit mock 을 이 파일에서는 해제하고 실제 구현을 검증한다.
+vi.unmock('@/shared/lib/storage/check-storage-limit');
+
 const mockGetProjectStorageBytes = vi.fn<() => Promise<number>>();
 
-vi.mock('./get-project-storage', () => ({
+// 실제 의존성: checkStorageLimit 은 @testea/db 의 getProjectStorageBytes 를 사용한다.
+vi.mock('@testea/db', () => ({
   getProjectStorageBytes: (...args: unknown[]) => mockGetProjectStorageBytes(...(args as [])),
 }));
 

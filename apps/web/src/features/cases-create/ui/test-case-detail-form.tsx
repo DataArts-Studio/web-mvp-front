@@ -2,9 +2,12 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { useTranslations } from 'next-intl';
+
 import type { CreateTestCase } from '@/entities/test-case';
 import { BasicInfoFields, ScenarioFields, TagsField } from '@/entities/test-case';
 import { projectTagsQueryOptions } from '@/entities/test-case/api';
+import { translateCaseErrors } from '@/entities/test-case/lib/translate-message';
 import { useCreateCase } from '@/features/cases-create/hooks';
 import { DSButton } from '@/shared';
 import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
@@ -15,18 +18,19 @@ import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-const CreateTestCaseFormSchema = z.object({
-  projectId: z.string().uuid(),
-  testSuiteId: z.string().uuid().nullable().optional(),
-  title: z.string().min(1, '테스트 케이스 제목을 입력해주세요.'),
-  testType: z.string().optional(),
-  tags: z.array(z.string().max(30)).max(10).optional(),
-  preCondition: z.string().optional(),
-  testSteps: z.string().optional(),
-  expectedResult: z.string().optional(),
-});
+const createTestCaseFormSchema = (titleRequiredMessage: string) =>
+  z.object({
+    projectId: z.string().uuid(),
+    testSuiteId: z.string().uuid().nullable().optional(),
+    title: z.string().min(1, titleRequiredMessage),
+    testType: z.string().optional(),
+    tags: z.array(z.string().max(30)).max(10).optional(),
+    preCondition: z.string().optional(),
+    testSteps: z.string().optional(),
+    expectedResult: z.string().optional(),
+  });
 
-type CreateTestCaseForm = z.infer<typeof CreateTestCaseFormSchema>;
+type CreateTestCaseForm = z.infer<ReturnType<typeof createTestCaseFormSchema>>;
 
 interface TestCaseDetailFormProps {
   projectId: string;
@@ -41,6 +45,7 @@ export const TestCaseDetailForm = ({
   onSuccess,
   defaultSuiteId,
 }: TestCaseDetailFormProps) => {
+  const t = useTranslations('cases');
   const { mutate } = useCreateCase();
 
   const { data: suitesData } = useQuery({
@@ -60,7 +65,7 @@ export const TestCaseDetailForm = ({
     setValue,
     control,
   } = useForm<CreateTestCaseForm>({
-    resolver: zodResolver(CreateTestCaseFormSchema),
+    resolver: zodResolver(createTestCaseFormSchema(t('ui.titleRequired'))),
     defaultValues: {
       projectId: projectId,
       testSuiteId: defaultSuiteId ?? null,
@@ -88,7 +93,7 @@ export const TestCaseDetailForm = ({
     mutate(payload, {
       onError: (error) => {
         track(TESTCASE_EVENTS.CREATE_FAIL, { project_id: projectId });
-        toast.error(error.message || '테스트 케이스 생성에 실패했습니다.');
+        toast.error(translateCaseErrors(t, error.message) || t('ui.createFailedFallback'));
       },
     });
   });
@@ -157,18 +162,16 @@ export const TestCaseDetailForm = ({
         <header className="border-line-2 flex shrink-0 items-center justify-between border-b px-6 py-5">
           <div>
             <h2 id={titleId} className="text-text-1 typo-h2-heading">
-              테스트 케이스 생성
+              {t('ui.createCase')}
             </h2>
-            <p className="text-text-3 typo-caption-normal mt-0.5">
-              테스트 시나리오의 상세 내용을 작성해주세요.
-            </p>
+            <p className="text-text-3 typo-caption-normal mt-0.5">{t('ui.createSubtitle')}</p>
           </div>
           <DSButton
             variant="ghost"
             size="small"
             onClick={handleAbandon}
             className="p-2"
-            aria-label="닫기"
+            aria-label={t('ui.close')}
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </DSButton>
@@ -204,10 +207,10 @@ export const TestCaseDetailForm = ({
         {/* Actions - 스크롤 영역 밖 */}
         <div className="border-line-2 flex shrink-0 justify-end gap-3 border-t px-6 py-4">
           <DSButton type="button" variant="ghost" onClick={handleAbandon}>
-            취소
+            {t('ui.cancel')}
           </DSButton>
           <DSButton type="submit" form="test-case-form" variant="solid">
-            테스트 케이스 생성
+            {t('ui.createCase')}
           </DSButton>
         </div>
       </section>

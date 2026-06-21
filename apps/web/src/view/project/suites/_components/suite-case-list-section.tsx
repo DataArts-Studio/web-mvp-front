@@ -2,6 +2,8 @@
 
 import React from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import type { TestCaseCardType } from '@/entities/test-case';
 import type { TestSuiteSection } from '@/entities/test-suite-section';
 import { DSButton, EmptyState } from '@testea/ui';
@@ -69,10 +71,14 @@ export const SuiteCaseListSection = ({
   onCancelCreateSection,
   onAddCases,
 }: SuiteCaseListSectionProps) => {
+  const t = useTranslations('suites');
   return (
-    <section aria-label="포함된 테스트 케이스" className="col-span-6 flex flex-col gap-4">
+    <section
+      aria-label={t('ui.includedTestCasesAriaLabel')}
+      className="col-span-6 flex flex-col gap-4"
+    >
       <div className="flex items-center justify-between">
-        <h2 className="typo-h2-heading">포함된 테스트 케이스</h2>
+        <h2 className="typo-h2-heading">{t('ui.includedTestCases')}</h2>
         <div className="flex items-center gap-2">
           <DSButton
             variant="ghost"
@@ -81,7 +87,7 @@ export const SuiteCaseListSection = ({
             onClick={onStartCreatingSection}
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-            섹션 추가
+            {t('ui.addSection')}
           </DSButton>
           {testCases.length > 0 && (
             <DSButton
@@ -91,7 +97,7 @@ export const SuiteCaseListSection = ({
               onClick={onAddCases}
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
-              케이스 추가
+              {t('ui.addCase')}
             </DSButton>
           )}
         </div>
@@ -101,12 +107,12 @@ export const SuiteCaseListSection = ({
         <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
           <EmptyState
             icon={<ListChecks className="h-8 w-8" aria-hidden="true" />}
-            title="포함된 테스트 케이스가 없습니다."
-            description="테스트 케이스를 추가하여 스위트 범위를 정의하세요."
+            title={t('ui.noTestCasesTitle')}
+            description={t('ui.noTestCasesDescription')}
             action={
               <DSButton variant="ghost" className="flex items-center gap-1" onClick={onAddCases}>
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                테스트 케이스 추가
+                {t('ui.addTestCase')}
               </DSButton>
             }
           />
@@ -143,14 +149,14 @@ export const SuiteCaseListSection = ({
                 <input
                   ref={newSectionInputRef}
                   type="text"
-                  aria-label="새 섹션 이름"
+                  aria-label={t('ui.newSectionAriaLabel')}
                   value={newSectionName}
                   onChange={(e) => onSetNewSectionName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') onCreateSection();
                     if (e.key === 'Escape') onCancelCreateSection();
                   }}
-                  placeholder="새 섹션 이름을 입력하세요"
+                  placeholder={t('ui.newSectionPlaceholder')}
                   className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent outline-none"
                   disabled={createSectionIsPending}
                 />
@@ -160,10 +166,10 @@ export const SuiteCaseListSection = ({
                   onClick={onCreateSection}
                   disabled={createSectionIsPending || !newSectionName.trim()}
                 >
-                  {createSectionIsPending ? '생성 중...' : '추가'}
+                  {createSectionIsPending ? t('ui.sectionCreating') : t('ui.sectionAdd')}
                 </DSButton>
                 <DSButton size="small" variant="ghost" onClick={onCancelCreateSection}>
-                  취소
+                  {t('ui.cancel')}
                 </DSButton>
               </div>
               {createSectionError && (
@@ -182,7 +188,7 @@ export const SuiteCaseListSection = ({
                   <button
                     type="button"
                     aria-expanded={!collapsedSections.has('__uncategorized__')}
-                    aria-label="미분류 케이스 펼치기/접기"
+                    aria-label={t('ui.uncategorizedToggleAriaLabel')}
                     className="flex flex-1 items-center gap-2 text-left"
                     onClick={() => onToggleSection('__uncategorized__')}
                   >
@@ -191,8 +197,10 @@ export const SuiteCaseListSection = ({
                     ) : (
                       <ChevronDown className="text-text-3 h-4 w-4 shrink-0" aria-hidden="true" />
                     )}
-                    <span className="typo-body2-heading text-text-3">미분류</span>
-                    <span className="text-text-3 text-xs">{uncategorizedCases.length}개</span>
+                    <span className="typo-body2-heading text-text-3">{t('ui.uncategorized')}</span>
+                    <span className="text-text-3 text-xs">
+                      {t('count.cases', { count: uncategorizedCases.length })}
+                    </span>
                   </button>
                 </div>
                 {!collapsedSections.has('__uncategorized__') && (
