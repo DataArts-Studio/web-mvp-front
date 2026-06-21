@@ -3,9 +3,10 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 
+import { Link, useRouter } from '@/i18n/navigation';
 import { Footer } from '@/widgets/footer';
 import { Logo } from '@testea/ui';
 import { cn } from '@testea/util';
@@ -21,12 +22,13 @@ interface LegalViewProps {
   initialTab?: TabType;
 }
 
-const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
-  { id: 'privacy', label: '개인정보 처리방침', icon: <Shield className="h-4 w-4" /> },
-  { id: 'terms', label: '이용약관', icon: <FileText className="h-4 w-4" /> },
+const tabs: { id: TabType; icon: React.ReactNode }[] = [
+  { id: 'privacy', icon: <Shield className="h-4 w-4" /> },
+  { id: 'terms', icon: <FileText className="h-4 w-4" /> },
 ];
 
 export function LegalView({ renderedContents, headings, initialTab = 'privacy' }: LegalViewProps) {
+  const t = useTranslations('legal');
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as TabType | null;
@@ -50,7 +52,7 @@ export function LegalView({ renderedContents, headings, initialTab = 'privacy' }
             <Logo className="h-5 w-20" />
           </Link>
           <span className="text-text-4">/</span>
-          <span className="typo-label-heading text-text-2">법적 고지</span>
+          <span className="typo-label-heading text-text-2">{t('headerLabel')}</span>
 
           <div className="flex-1" />
 
@@ -59,7 +61,7 @@ export function LegalView({ renderedContents, headings, initialTab = 'privacy' }
             className="rounded-4 text-text-3 hover:bg-bg-3 hover:text-text-1 typo-caption-normal hidden items-center gap-1 px-3 py-1.5 transition-colors lg:flex"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
-            홈으로
+            {t('backHome')}
           </Link>
 
           {/* 모바일 메뉴 토글 */}
@@ -82,7 +84,7 @@ export function LegalView({ renderedContents, headings, initialTab = 'privacy' }
           )}
         >
           <p className="typo-caption-heading text-text-3 mb-3 px-3 tracking-[0.18em] uppercase">
-            문서
+            {t('sidebarHeading')}
           </p>
           <nav className="flex flex-col gap-1">
             {tabs.map((tab) => (
@@ -97,7 +99,7 @@ export function LegalView({ renderedContents, headings, initialTab = 'privacy' }
                 )}
               >
                 {tab.icon}
-                {tab.label}
+                {t(`tabs.${tab.id}`)}
               </button>
             ))}
           </nav>
@@ -114,9 +116,7 @@ export function LegalView({ renderedContents, headings, initialTab = 'privacy' }
         {/* 메인 컨텐츠 */}
         <main className="min-w-0 flex-1 px-6 py-8 lg:px-10">
           <article className="legal-content mx-auto max-w-3xl">
-            <p className="typo-body2-normal text-text-3 mb-8">
-              서비스 이용에 관한 약관 및 정책을 확인하세요.
-            </p>
+            <p className="typo-body2-normal text-text-3 mb-8">{t('intro')}</p>
             {content}
           </article>
         </main>
@@ -126,7 +126,7 @@ export function LegalView({ renderedContents, headings, initialTab = 'privacy' }
           <aside className="hidden w-52 shrink-0 xl:block">
             <div className="sticky top-14 h-[calc(100dvh-3.5rem)] overflow-y-auto px-4 py-8">
               <p className="typo-caption-heading text-text-3 mb-3 tracking-[0.18em] uppercase">
-                목차
+                {t('tocHeading')}
               </p>
               <nav className="flex flex-col gap-0.5">
                 {currentHeadings.map((heading) => (

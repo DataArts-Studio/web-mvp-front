@@ -2,6 +2,7 @@
 
 import React from 'react';
 
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 
 import { LANDING_EVENTS, track } from '@/shared/lib/analytics';
@@ -25,11 +26,12 @@ const ProjectCreateForm = dynamic(
 // );
 
 export const LendingCta = () => {
+  const t = useTranslations('lending.cta');
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 
   return (
     <>
-      <section aria-label="시작하기" className="relative z-10">
+      <section aria-label={t('sectionAria')} className="relative z-10">
         <DSButton
           type="button"
           onClick={() => {
@@ -37,9 +39,9 @@ export const LendingCta = () => {
             setIsCreateModalOpen(true);
           }}
           className="flex h-16 w-80 min-w-[11.25rem] items-center justify-center gap-[0.63rem] p-5"
-          aria-label="무료로 프로젝트 생성 시작하기"
+          aria-label={t('buttonAria')}
         >
-          무료로 시작하기
+          {t('button')}
         </DSButton>
       </section>
       {isCreateModalOpen && <ProjectCreateForm onClick={() => setIsCreateModalOpen(false)} />}

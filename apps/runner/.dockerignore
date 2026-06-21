@@ -1,0 +1,10 @@
+node_modules
+dist
+.runs
+*.log
+.git
+.gitignore
+.dockerignore
+Dockerfile
+fly.toml
+README.md

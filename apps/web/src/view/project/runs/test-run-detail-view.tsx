@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { dashboardQueryOptions } from '@/features/dashboard';
 import {
@@ -13,6 +13,7 @@ import {
   updateTestCaseRunStatus,
   updateTestRunName,
 } from '@/features/runs';
+import { useRerunRun } from '@/features/runs-edit';
 import { TESTRUN_EVENTS, track } from '@/shared/lib/analytics';
 import { type TestStatusData } from '@/widgets/project';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,9 +22,11 @@ import { MainContainer } from '@testea/ui';
 import { toast } from 'sonner';
 
 import {
+  AutoRunDialog,
   type GroupedCases,
   KeyboardShortcutsModal,
   RemoveSuiteDialog,
+  RerunRunDialog,
   RunCaseDetailPanel,
   RunCaseListPanel,
   RunDetailCharts,
@@ -77,6 +80,7 @@ function applyOptimisticStatusUpdate(
 
 export const TestRunDetailView = () => {
   const params = useParams();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const testRunId = params.testRunId as string;
   const projectSlug = params.slug as string;
@@ -94,6 +98,8 @@ export const TestRunDetailView = () => {
   const [removeSuiteTarget, setRemoveSuiteTarget] = useState<{ id: string; name: string } | null>(
     null
   );
+  const [showRerunDialog, setShowRerunDialog] = useState(false);
+  const [showAutoRunDialog, setShowAutoRunDialog] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
   const statusFilterRef = React.useRef<HTMLDivElement>(null);
@@ -180,6 +186,22 @@ export const TestRunDetailView = () => {
       toast.error('제목 변경 중 오류가 발생했습니다.');
     },
   });
+
+  const rerunMutation = useRerunRun();
+
+  const handleRerunConfirm = useCallback(() => {
+    rerunMutation.mutate(testRunId, {
+      onSuccess: (result) => {
+        toast.success('회귀 재실행이 생성되었습니다.');
+        setShowRerunDialog(false);
+        router.push(`/projects/${projectSlug}/runs/${result.testRun.id}`);
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : '회귀 재실행 생성에 실패했습니다.');
+        setShowRerunDialog(false);
+      },
+    });
+  }, [rerunMutation, testRunId, router, projectSlug]);
 
   const bulkUpdateMutation = useMutation({
     mutationFn: bulkUpdateTestCaseRunStatus,
@@ -345,6 +367,9 @@ export const TestRunDetailView = () => {
         onShowShortcuts={() => setShowShortcuts(true)}
         showCharts={showCharts}
         onToggleCharts={() => setShowCharts((prev) => !prev)}
+        onRerun={() => setShowRerunDialog(true)}
+        isRerunning={rerunMutation.isPending}
+        onAutoRun={() => setShowAutoRunDialog(true)}
       />
 
       <RunSummaryBar stats={testRun.stats} />
@@ -411,6 +436,30 @@ export const TestRunDetailView = () => {
           isPending={removeSuiteMutation.isPending}
           onConfirm={(suiteId) => removeSuiteMutation.mutate({ suiteId })}
           onClose={() => setRemoveSuiteTarget(null)}
+        />
+      )}
+
+      {showRerunDialog && (
+        <RerunRunDialog
+          runName={testRun.name}
+          isPending={rerunMutation.isPending}
+          onConfirm={handleRerunConfirm}
+          onCancel={() => setShowRerunDialog(false)}
+        />
+      )}
+
+      {showAutoRunDialog && (
+        <AutoRunDialog
+          projectId={projectId}
+          projectSlug={projectSlug}
+          runId={testRunId}
+          cases={testRun.testCaseRuns.map((tc) => ({
+            testCaseId: tc.testCaseId,
+            code: tc.code,
+            title: tc.title,
+          }))}
+          initialCaseId={selectedCaseId ?? undefined}
+          onClose={() => setShowAutoRunDialog(false)}
         />
       )}
     </MainContainer>

@@ -1,0 +1,479 @@
+{
+  "common": {},
+  "aside": {
+    "sections": {
+      "requirements": "Requirements",
+      "testManagement": "Test Management"
+    },
+    "items": {
+      "requirements": "Requirements",
+      "scenarios": "Scenarios",
+      "cases": "Test Cases",
+      "suites": "Test Suites",
+      "milestones": "Milestones",
+      "runs": "Test Runs",
+      "checklists": "Checklists",
+      "automation": "Automation",
+      "trash": "Trash",
+      "settings": "Settings",
+      "help": "Help"
+    },
+    "dashboardAria": "Go to dashboard",
+    "brand": "Test Tools",
+    "search": "Search",
+    "comingSoon": "This feature is coming soon."
+  },
+  "notifications": {
+    "category": {
+      "feature": "New feature",
+      "maintenance": "Maintenance",
+      "policy": "Policy",
+      "event": "Event",
+      "notice": "Notice"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "unread": "Unread"
+  },
+  "meta": {
+    "landing": {
+      "title": "Testea - Free QA tool for AI test scenario and case generation",
+      "description": "A free QA tool that turns requirements into AI-generated test scenarios and cases. Derive test suites from scenarios and track runs and results, all in one place.",
+      "ogTitle": "Testea - Free QA tool for AI test scenario and case generation",
+      "ogDescription": "From requirement-based AI scenario generation to writing test cases, running tests, and tracking results. Manage testing in one place with Testea, the free QA tool."
+    },
+    "docs": {
+      "title": "User guide - How to write test cases and scenarios",
+      "description": "The Testea user guide. Step-by-step instructions for writing test cases, managing test scenarios, and handling suites, runs, and milestones.",
+      "ogTitle": "User guide - How to write test cases and scenarios | Testea",
+      "ogDescription": "The Testea user guide. Step-by-step instructions for writing test cases, managing test scenarios, and handling suites, runs, and milestones."
+    },
+    "legal": {
+      "title": "Legal",
+      "description": "Review Testea's privacy policy and terms of service.",
+      "ogTitle": "Legal | Testea",
+      "ogDescription": "Review Testea's privacy policy and terms of service."
+    },
+    "team": {
+      "title": "About the team",
+      "description": "Meet the people building Testea. We are working toward easier, more enjoyable test management.",
+      "ogTitle": "About the team | Testea",
+      "ogDescription": "Meet the people building Testea. We are working toward easier, more enjoyable test management."
+    }
+  },
+  "header": {
+    "ariaBanner": "Global header",
+    "logoAria": "Go to Testea home",
+    "logoAlt": "Testea logo",
+    "navAria": "Main navigation",
+    "docsLinkAria": "Go to docs page",
+    "docs": "User guide",
+    "searchAria": "Open my project search dialog",
+    "findProject": "Find my project",
+    "langSwitcher": "Select language",
+    "langKo": "한국어",
+    "langEn": "English"
+  },
+  "footer": {
+    "ariaInfo": "Site information",
+    "ariaCopyright": "Copyright information",
+    "copyright": "© {year} testea. All rights reserved.",
+    "ariaLinks": "Site links",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "team": "Team testea",
+    "teamAria": "About the team"
+  },
+  "lending": {
+    "documentAria": "Testea landing page",
+    "mainAria": "Main content",
+    "hero": {
+      "sectionAria": "Service description",
+      "titleLine1": "Write test cases",
+      "titleHighlight": "in just 5 minutes.",
+      "titleLine2": "",
+      "subtitle": "Still copy-pasting test cases into spreadsheets<wbr></wbr>over and over?<br></br>With testea, the free QA tool, generate and manage<wbr></wbr>your test documents automatically in just a few clicks."
+    },
+    "cta": {
+      "sectionAria": "Get started",
+      "buttonAria": "Start creating a project for free",
+      "button": "Start for free"
+    },
+    "features": {
+      "sectionAria": "Introducing the testea QA tool",
+      "headingPrefix": "Why ",
+      "headingBrand": "testea",
+      "headingSuffix": "?",
+      "items": [
+        {
+          "title": "Test case management",
+          "description": "As a QA tool, testea lets you write and manage test cases systematically. Organize by section and see priorities and statuses at a glance."
+        },
+        {
+          "title": "Test run tracking",
+          "description": "Track QA progress in real time with testea's test runs. Record and share results such as pass, fail, and blocker instantly."
+        },
+        {
+          "title": "Project structure",
+          "description": "testea is a QA tool built for organized test management. Structure your tests by project, suite, and milestone, and manage them at a glance."
+        }
+      ]
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "items": [
+        {
+          "question": "What kind of QA tool is testea?",
+          "answer": "testea is a free QA tool that lets you write test cases, run tests, and track results in one place. Manage your test documents systematically with testea instead of Excel or spreadsheets."
+        },
+        {
+          "question": "Is testea free?",
+          "answer": "Yes, testea is a free QA tool. You can create a project and manage test cases right away, without signing up."
+        },
+        {
+          "question": "How is it different from other QA tools?",
+          "answer": "testea is a simple test management tool you can use right away without complex setup. Writing test cases, running tests, and tracking results: handle your QA work efficiently with an intuitive interface."
+        },
+        {
+          "question": "Why is software test management necessary?",
+          "answer": "Systematic test management is core to software quality assurance (QA). Documenting test cases and tracking run results helps you find bugs early and improve product quality."
+        },
+        {
+          "question": "Does testea generate test scenarios with AI?",
+          "answer": "Yes. Enter your requirements and testea AI generates a requirements analysis and a draft test scenario. You can derive test suites and cases directly from the generated scenario, greatly reducing QA preparation time."
+        },
+        {
+          "question": "Can I manage tests based on requirements?",
+          "answer": "testea groups test scenarios by feature (requirement). You can trace which requirement is verified by which scenario and test case, which is useful for coverage management."
+        }
+      ]
+    }
+  },
+  "docs": {
+    "headerLabel": "User guide",
+    "backHome": "Home",
+    "sidebarHeading": "Docs",
+    "tocHeading": "Contents",
+    "tabs": {
+      "getting-started": "Getting started",
+      "dashboard": "Dashboard",
+      "test-cases": "Test cases",
+      "test-suites": "Test suites",
+      "test-runs": "Test runs",
+      "milestones": "Milestones"
+    }
+  },
+  "legal": {
+    "headerLabel": "Legal",
+    "backHome": "Home",
+    "sidebarHeading": "Docs",
+    "tocHeading": "Contents",
+    "intro": "Review the terms and policies for using the service.",
+    "tabs": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service"
+    }
+  },
+  "team": {
+    "backHome": "Home",
+    "mascotAlt": "Testea mascot",
+    "title": "The people behind testea",
+    "subtitleLine1": "It started with one question: “Why is test management so complicated?”",
+    "subtitleLine2": "We are building easier, more enjoyable test management, free from spreadsheets.",
+    "story": {
+      "heading": "Our story",
+      "paragraph1Prefix": "testea is a test case management tool built by ",
+      "paragraph1Strong": "QA engineers and developers",
+      "paragraph1Suffix": " working together.",
+      "paragraph2": "We used to manage test cases in Google Sheets too. Version control was a mess, and tracking run results was even harder. “There must be a better way,” we thought.",
+      "paragraph3Prefix": "So we decided to build it ourselves:",
+      "paragraph3Strong": " a test management tool with less complexity, holding only what you need.",
+      "paragraph3Suffix": "",
+      "paragraph4Prefix": "Comfortable like tea time, with the ease of a cup of tea, we named it ",
+      "paragraph4Strong": "testea",
+      "paragraph4Suffix": "."
+    },
+    "valuesHeading": "What matters most to us",
+    "values": [
+      {
+        "title": "Simplicity",
+        "description": "Make the complex simple, and focus on the essence of test management."
+      },
+      {
+        "title": "User-centered",
+        "description": "We think and build from the perspective of QA engineers and developers."
+      },
+      {
+        "title": "Enjoyment",
+        "description": "Make even tedious test management enjoyable: relaxed, like tea time."
+      }
+    ],
+    "contact": {
+      "heading": "Let's talk",
+      "description": "Feedback, suggestions, or just a hello are all welcome!",
+      "emailButton": "Send an email"
+    }
+  },
+  "notFound": {
+    "title": "Oops! The page you're looking for isn't here.",
+    "description": "The address is wrong or the page no longer exists.",
+    "backHome": "Back to home",
+    "illustrationAlt": "Spilled teacup illustration"
+  },
+  "error": {
+    "title": "Oops! Something went wrong.",
+    "description": "Please try again in a moment.",
+    "retry": "Try again",
+    "backHome": "Back to home",
+    "illustrationAlt": "Spilled teacup illustration"
+  },
+  "cases": {
+    "messages": {
+      "CASE_CREATED": "Test case created.",
+      "CASE_UPDATED": "Test case updated.",
+      "CASE_MOVED_TO_TRASH": "Test case moved to trash.",
+      "CASE_DUPLICATED": "Test case duplicated.",
+      "ACCESS_DENIED": "You do not have access.",
+      "LOAD_FAILED": "Something went wrong while loading test cases.",
+      "NOT_FOUND": "Test case not found.",
+      "ORIGINAL_NOT_FOUND": "Original test case not found.",
+      "CREATE_FAILED": "Something went wrong while creating the test case.",
+      "UPDATE_FAILED": "Something went wrong while updating the test case.",
+      "DELETE_FAILED": "Something went wrong while deleting the test case.",
+      "DUPLICATE_FAILED": "Something went wrong while duplicating the test case.",
+      "TAGS_LOAD_FAILED": "Something went wrong while loading tags."
+    },
+    "ui": {
+      "listAriaLabel": "Test case list",
+      "title": "Test Cases",
+      "uncategorized": "Uncategorized",
+      "createCase": "Create test case",
+      "newCase": "New case",
+      "editCase": "Edit test case",
+      "createSubtitle": "Fill in the details of the test scenario.",
+      "editSubtitle": "Edit the details of the test scenario.",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "close": "Close",
+      "duplicate": "Duplicate",
+      "search": "Search...",
+      "searchAriaLabel": "Search test cases",
+      "noResults": "No results found.",
+      "noCases": "No test cases yet.",
+      "resetFilters": "Reset filters",
+      "rowAriaLabel": "Test case {caseKey} {title}",
+      "dragToReorder": "Drag to reorder",
+      "caseActions": "Case actions",
+      "moreActions": "More",
+      "quickCreatePlaceholder": "Type a new test case name and press Enter...",
+      "quickCreateAriaLabel": "New test case name",
+      "createFailedFallback": "Failed to create the test case.",
+      "updateFailedFallback": "Failed to update the test case.",
+      "duplicateFailedFallback": "Failed to duplicate.",
+      "titleRequired": "Please enter a test case title.",
+      "titleMin": "The test case name must be at least 1 character.",
+      "titleMax": "The test case name cannot exceed 200 characters.",
+      "sortLabel": "Sort: {label}",
+      "sortShort": "Sort",
+      "sortAriaLabel": "Sort: {label}",
+      "sortOptions": {
+        "custom": "Custom order",
+        "updatedAtDesc": "Recently updated",
+        "updatedAtAsc": "Least recently updated",
+        "createdAtDesc": "Recently created",
+        "createdAtAsc": "Least recently created",
+        "titleAsc": "Title A to Z",
+        "titleDesc": "Title Z to A"
+      },
+      "moreMenu": {
+        "aiGenerate": "AI generate",
+        "aiAnalyze": "Analyze requirements",
+        "import": "Import",
+        "export": "Export"
+      },
+      "suiteFilterAriaLabel": "Suite filter",
+      "suites": "Suites",
+      "allCases": "All cases",
+      "noSuite": "No suite",
+      "loadDetailFailed": "Unable to load the test case.",
+      "backToList": "Back to list",
+      "backToCaseList": "Back to test cases",
+      "tags": "Tags",
+      "noTags": "No tags",
+      "preconditions": "Preconditions",
+      "testSteps": "Test steps",
+      "expectedResults": "Expected results",
+      "noPreconditions": "No preconditions.",
+      "noTestSteps": "No test steps.",
+      "noExpectedResults": "No expected results.",
+      "noItems": "No items.",
+      "details": "Details",
+      "versionHistory": "Change history",
+      "createdAt": "Created: {date}",
+      "updatedAt": "Updated: {date}",
+      "lastUpdated": "Last updated: {date}",
+      "runTestCreate": "Create test run",
+      "runTest": "Run test",
+      "openDetailPage": "Open detail page",
+      "defaultCaseTitle": "Test case",
+      "defaultCaseKey": "TC-0000",
+      "testType": "Test type",
+      "estimatedTime": "Estimated time",
+      "emptyValue": "-",
+      "basicInfo": "Basic info",
+      "scenario": "Test scenario",
+      "classification": "Classification",
+      "titleLabel": "Test case title",
+      "titlePlaceholder": "e.g. Sign up - invalid email format",
+      "suiteLabel": "Suite",
+      "suitePlaceholder": "Select a suite",
+      "suiteHelp": "Select the suite this test case belongs to.",
+      "testTypeLabel": "Test type",
+      "testTypePlaceholder": "Select a test type",
+      "testTypeNone": "None",
+      "tagsLabel": "Tags",
+      "tagsPlaceholder": "Type a tag and press Enter (e.g. smoke)",
+      "tagsHelp": "Press Enter to add a tag, or use commas (,) to add several at once.",
+      "preconditionsLabel": "Preconditions",
+      "testStepsLabel": "Test steps",
+      "expectedResultsLabel": "Expected results",
+      "addCondition": "Add condition",
+      "addResult": "Add result",
+      "preconditionPlaceholder": "Enter a condition that must be met",
+      "resultPlaceholder": "Enter the expected result"
+    },
+    "count": {
+      "cases": "{count, plural, other {# cases}}",
+      "items": "{count, plural, other {# items}}"
+    }
+  },
+  "suites": {
+    "messages": {
+      "SUITE_CREATED": "Test suite created.",
+      "SUITE_UPDATED": "Test suite updated.",
+      "SUITE_ARCHIVED": "Test suite moved to trash.",
+      "ACCESS_DENIED": "You do not have access.",
+      "NOT_FOUND": "Test suite not found.",
+      "LOAD_FAILED": "Something went wrong while loading test suites.",
+      "CREATE_FAILED": "Something went wrong while creating the test suite.",
+      "UPDATE_FAILED": "Something went wrong while updating the test suite.",
+      "ARCHIVE_FAILED": "Something went wrong while deleting the test suite."
+    },
+    "ui": {
+      "pageTitle": "Test Suites",
+      "pageSubtitle": "Group scattered test cases into suites by feature or scenario, and rerun the same suite without copying documents.",
+      "controlsAriaLabel": "Test suite controls",
+      "searchPlaceholder": "Search by suite name or keyword",
+      "listAriaLabel": "Test suite list",
+      "createSuite": "Create test suite",
+      "noResults": "No results found.",
+      "creating": "Creating the test suite",
+      "filterAll": "All",
+      "filterByFeature": "By feature",
+      "filterByScenario": "By scenario",
+      "createTitle": "Create test suite",
+      "createSubtitle": "Gather the tests you need in one place.",
+      "editTitle": "Edit test suite",
+      "editSubtitle": "Edit the name and description of the test suite.",
+      "editLoading": "Updating the test suite",
+      "nameLabel": "Suite name",
+      "namePlaceholder": "Enter a suite name.",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "Enter a short description of this suite.",
+      "nameRequired": "Please enter a valid name.",
+      "nameMin": "The suite name must be at least 3 characters.",
+      "nameMax": "The suite name cannot exceed 50 characters.",
+      "nameBlank": "A name cannot consist of spaces only.",
+      "namePattern": "Special characters are not allowed. (only -, _, ., and spaces)",
+      "cancel": "Cancel",
+      "create": "Create",
+      "creatingShort": "Creating...",
+      "edit": "Edit",
+      "editingShort": "Updating...",
+      "backToList": "Back to suites",
+      "backToListLong": "Back to suite list",
+      "notFound": "Test suite not found.",
+      "createdAt": "Created: {date}",
+      "noDescription": "No description.",
+      "includedPaths": "Included paths",
+      "statsAriaLabel": "Suite stats",
+      "testCases": "Test cases",
+      "executionHistory": "Run history",
+      "lastRunPassRate": "Last run pass rate",
+      "casesPassed": "{passed} / {total} cases passed",
+      "lastRun": "Last run",
+      "runDateTime": "Run date",
+      "includedTestCasesAriaLabel": "Included test cases",
+      "includedTestCases": "Included test cases",
+      "addSection": "Add section",
+      "addCase": "Add case",
+      "noTestCasesTitle": "No test cases included.",
+      "noTestCasesDescription": "Add test cases to define the scope of this suite.",
+      "addTestCase": "Add test case",
+      "newSectionAriaLabel": "New section name",
+      "newSectionPlaceholder": "Enter a new section name",
+      "sectionCreating": "Creating...",
+      "sectionAdd": "Add",
+      "uncategorized": "Uncategorized",
+      "sectionRenameAriaLabel": "Section name",
+      "sectionActions": "Section actions",
+      "sectionRename": "Rename",
+      "sectionDelete": "Delete section",
+      "sectionEmpty": "No cases assigned to this section.",
+      "recentRunsTitle": "Recent runs",
+      "noRecentRunsTitle": "No test runs yet.",
+      "noRecentRunsDescription": "Create a suite-based test run.",
+      "runTest": "Run test",
+      "delete": "Delete",
+      "close": "Close",
+      "description": "Description",
+      "lastRunResult": "Last run result",
+      "addCasesLoading": "Adding cases",
+      "addCaseSearchPlaceholder": "Search by case name, key, or tag...",
+      "noAvailableCases": "No test cases available to add.",
+      "tagNeutral": "Default",
+      "tagInfo": "Info",
+      "tagSuccess": "Success",
+      "tagWarning": "Warning",
+      "tagDanger": "Danger",
+      "none": "None",
+      "issueNone": "No issues",
+      "noLastRun": "No recent runs",
+      "hasIssue": "Has failed or blocked issues",
+      "srTestSuite": "Test suite {title}",
+      "srTag": "Tag {label}",
+      "srTagTone": "Tag importance {tone}",
+      "srPath": "Included path {path}",
+      "srCaseCount": "Test cases {count}",
+      "srMilestone": "Milestone {milestone}",
+      "srLastRun": "Last run {date}",
+      "srLastRunResult": "Last run result {result}",
+      "srRunHistory": "Run history {count}",
+      "tagAriaLabel": "Tag {label}. Importance {tone}",
+      "pathLabel": "Included path: {path}",
+      "milestoneLabel": "Linked milestone: {milestone}",
+      "sectionToggleAriaLabel": "Toggle section {name}",
+      "uncategorizedToggleAriaLabel": "Toggle uncategorized cases",
+      "caseRowAriaLabel": "Test case {caseKey} {title}, status {status}",
+      "passRateAriaLabel": "Pass rate {rate}%",
+      "lastRunPassRateAriaLabel": "Last run pass rate {rate}%",
+      "runSummaryTitle": "{date} - {passed}/{total} passed",
+      "milestoneTitle": "Linked milestone",
+      "lastRunDate": "Last run date",
+      "lastRunDateLabel": "Last run: {date}",
+      "lastRunResultSr": "Last run result",
+      "runHistory": "Run history",
+      "runHistoryLabel": "Run history {count}",
+      "addCasesSubtitle": "Select cases to add to the <highlight>{name}</highlight> suite."
+    },
+    "count": {
+      "cases": "{count, plural, other {# cases}}",
+      "runs": "{count, plural, other {# runs}}",
+      "issueSummary": "{failed, plural, other {# failed}} · Blocked {blocked, plural, other {#}}",
+      "addCases": "{count, plural, other {Add # cases}}"
+    }
+  }
+}

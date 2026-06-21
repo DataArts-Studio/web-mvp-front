@@ -10,6 +10,12 @@ export type TestSuite = {
   updatedAt: Date;
   archivedAt: Date | null;
   lifecycleStatus: LifecycleStatus;
+  /**
+   * 이 스위트 케이스들의 마지막 실행 시점 (FDD-TR12 회귀 환기용).
+   * test_case_runs.source_type='suite' AND source_id=<suite_id>, excluded_at IS NULL 의 max(executed_at).
+   * 실행 이력이 없으면 null. 경과일 계산·"N일 전" 포맷은 frontend 담당.
+   */
+  lastExecutedAt: Date | null;
 };
 
 export type SuiteTagTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';

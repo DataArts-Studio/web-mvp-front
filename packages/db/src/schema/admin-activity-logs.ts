@@ -4,10 +4,12 @@ import { index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-o
  * 백오피스 관리자 활동 로그 액션.
  *
  * - login: 운영자 게이트 통과(접속)
+ * - login.failed: 게이트 인증 실패(브루트포스 추적·락아웃 판단용)
  * - notice.*: 공지 생성·수정·활성/비활성·삭제
  */
 export const adminActivityActionEnum = [
   'login',
+  'login.failed',
   'notice.create',
   'notice.update',
   'notice.activate',
@@ -28,6 +30,8 @@ export const adminActivityLogs = pgTable(
   'admin_activity_logs',
   (t) => ({
     id: t.uuid('id').primaryKey().defaultRandom(),
+    /** 행위자 식별(Cloudflare Access 인증 이메일). 공유키 게이트(로컬)면 NULL. */
+    actor: t.text('actor'),
     action: t.varchar('action', { length: 40 }).$type<AdminActivityAction>().notNull(),
     target_type: t.varchar('target_type', { length: 50 }),
     target_id: t.uuid('target_id'),

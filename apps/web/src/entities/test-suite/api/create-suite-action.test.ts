@@ -9,6 +9,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createTestSuite } from './server-actions';
 
+// 접근 권한·저장 용량은 createTestSuite 의 부수 의존성이므로
+// 단위 테스트에서는 통과(권한 허용·용량 OK)로 고정한다.
+vi.mock('@/access/lib/require-access', () => ({
+  requireProjectAccess: vi.fn(() => Promise.resolve(true)),
+}));
+vi.mock('@/shared/lib/storage/check-storage-limit', () => ({
+  checkStorageLimit: vi.fn(() => Promise.resolve(null)),
+}));
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+}));
+
 // DB 모듈 모킹
 vi.mock('@testea/db', () => ({
   getDatabase: mockGetDatabase,
@@ -54,8 +66,9 @@ describe('createTestSuite', () => {
           updatedAt: mockRow.updated_at,
           archivedAt: mockRow.archived_at,
           lifecycleStatus: mockRow.lifecycle_status,
+          lastExecutedAt: null,
         });
-        expect(result.message).toBe('테스트 스위트를 생성하였습니다.');
+        expect(result.message).toBe('SUITE_CREATED');
       }
     });
 
@@ -95,9 +108,7 @@ describe('createTestSuite', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain(
-          '테스트 스위트를 생성하는 도중 오류가 발생했습니다.'
-        );
+        expect(result.errors._testSuite).toContain('CREATE_FAILED');
       }
     });
 
@@ -111,9 +122,7 @@ describe('createTestSuite', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain(
-          '테스트 스위트를 생성하는 도중 오류가 발생했습니다.'
-        );
+        expect(result.errors._testSuite).toContain('CREATE_FAILED');
       }
     });
   });

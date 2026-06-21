@@ -11,7 +11,7 @@ import {
 import {
   type AttachmentUsageMeta,
   getMonthlyUsage,
-  recordUsage,
+  recordUsageAtomic,
 } from '@/entities/ai-usage/api/server-actions';
 import {
   type AttachmentExtractResult,
@@ -247,7 +247,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 월간 사용량 체크
+    // 월간 사용량 체크 (preRemaining 은 기록 트랜잭션 실패 시 fail-open 을 막는 상한)
+    let preRemaining = Number.POSITIVE_INFINITY;
     const usageResult = await getMonthlyUsage(input.projectId);
     if (usageResult.success) {
       const { used, limit } = usageResult.data;
@@ -257,6 +258,7 @@ export async function POST(req: NextRequest) {
           { status: 429 }
         );
       }
+      preRemaining = limit - used;
     }
 
     // 한도/설정 가드 통과 후에 첨부 본문을 추출한다. 거부될 호출이 PDF 파싱 비용을 먼저 지불하지 않도록.
@@ -308,16 +310,29 @@ export async function POST(req: NextRequest) {
     // 1회 최대 건수 제한
     const limitedCases = cases.slice(0, MAX_CASES_PER_REQUEST);
 
-    // 사용량 기록 (첨부 메타 포함)
-    await recordUsage(
+    // 한도 검사·기록을 원자적으로 처리(TOCTOU 방지)하고, 남은 한도만큼만 채택해 반환한다.
+    const usage = await recordUsageAtomic(
       input.projectId,
       'generate_cases',
       limitedCases.length,
       attachment ? toAttachmentMeta(attachment) : undefined
     );
+    if (usage.success && usage.data.granted === 0 && limitedCases.length > 0) {
+      return NextResponse.json(
+        {
+          error: `이번 달 사용 한도(${usage.data.limit}건)를 초과했습니다. 다음 달에 다시 이용해주세요.`,
+        },
+        { status: 429 }
+      );
+    }
+    // 기록 트랜잭션이 실패하면 사용량 미집계 상태이므로, 사전 잔여량을 넘겨 반환하지 않는다(fail-open 방지).
+    const granted = usage.success
+      ? usage.data.granted
+      : Math.min(limitedCases.length, preRemaining);
+    const acceptedCases = limitedCases.slice(0, granted);
 
     return NextResponse.json({
-      cases: limitedCases,
+      cases: acceptedCases,
       attachment: attachment
         ? {
             type: attachment.type,

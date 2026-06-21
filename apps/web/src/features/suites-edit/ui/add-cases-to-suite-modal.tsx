@@ -1,6 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import type { TestCase } from '@/entities/test-case';
 import { updateTestCase } from '@/entities/test-case/api';
 import { SelectionModal } from '@/shared';
@@ -20,6 +22,7 @@ export const AddCasesToSuiteModal = ({
   availableCases,
   onClose,
 }: AddCasesToSuiteModalProps) => {
+  const t = useTranslations('suites');
   const selection = useSelectionSet();
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
@@ -55,29 +58,23 @@ export const AddCasesToSuiteModal = ({
 
   return (
     <SelectionModal.Root onClose={onClose} isPending={isPending}>
-      <SelectionModal.Loading text="케이스를 추가하고 있어요" />
+      <SelectionModal.Loading text={t('ui.addCasesLoading')} />
       <SelectionModal.Header
-        title="테스트 케이스 추가"
-        subtitle={
-          <>
-            <span className="text-primary font-medium">{suiteName}</span> 스위트에 추가할 케이스를
-            선택하세요.
-          </>
-        }
+        title={t('ui.addTestCase')}
+        subtitle={t.rich('ui.addCasesSubtitle', {
+          name: suiteName,
+          highlight: (chunks) => <span className="text-primary font-medium">{chunks}</span>,
+        })}
       />
       <SelectionModal.Search
         value={searchQuery}
         onChange={setSearchQuery}
-        placeholder="케이스 이름, 키, 태그로 검색..."
+        placeholder={t('ui.addCaseSearchPlaceholder')}
       />
       <SelectionModal.Body>
         {filteredCases.length === 0 ? (
           <SelectionModal.Empty
-            text={
-              availableCases.length === 0
-                ? '추가할 수 있는 테스트 케이스가 없습니다.'
-                : '검색 결과가 없습니다.'
-            }
+            text={availableCases.length === 0 ? t('ui.noAvailableCases') : t('ui.noResults')}
           />
         ) : (
           <>
@@ -118,7 +115,7 @@ export const AddCasesToSuiteModal = ({
       </SelectionModal.Body>
       <SelectionModal.Footer
         selectedCount={selection.count}
-        submitLabel={`${selection.count}개 케이스 추가`}
+        submitLabel={t('count.addCases', { count: selection.count })}
         onSubmit={handleSubmit}
       />
     </SelectionModal.Root>

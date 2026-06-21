@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { MilestoneWithStats } from '@/entities/milestone';
-import { DSButton, cn } from '@/shared';
+import { DSButton, LastRunFreshnessLabel, cn } from '@/shared';
 import { formatDate } from '@testea/util';
 import { Calendar, Check, Edit, Play, RotateCcw } from 'lucide-react';
 
@@ -145,6 +145,10 @@ export const MilestoneCard = ({ milestone, onEdit, onStatusChange }: MilestoneCa
             {formatDate(milestone.startDate)} ~ {formatDate(milestone.endDate)}
           </span>
         </div>
+        <LastRunFreshnessLabel
+          lastExecutedAt={milestone.lastExecutedAt}
+          className="text-label-normal"
+        />
       </div>
 
       {/* 통계 카드 + Quick Action 영역 */}

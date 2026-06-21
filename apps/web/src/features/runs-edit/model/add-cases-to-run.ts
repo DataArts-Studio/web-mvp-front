@@ -2,7 +2,7 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCaseRuns, testRuns } from '@testea/db';
+import { getDatabase, testCaseRuns, testCases, testRuns } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -40,8 +40,15 @@ export async function addCasesToRunAction(
           and(eq(testCaseRuns.test_run_id, runId), inArray(testCaseRuns.test_case_id, caseIds))
         );
 
+      // IDOR 방지: run 의 프로젝트에 속한 케이스만 추가 (타 프로젝트 caseId 차단)
+      const ownedRows = await tx
+        .select({ id: testCases.id })
+        .from(testCases)
+        .where(and(eq(testCases.project_id, run.projectId), inArray(testCases.id, caseIds)));
+      const ownedCaseIds = new Set(ownedRows.map((r) => r.id));
+
       const existingCaseIds = new Set(existingRows.map((r) => r.test_case_id));
-      const newCaseIds = caseIds.filter((id) => !existingCaseIds.has(id));
+      const newCaseIds = caseIds.filter((id) => ownedCaseIds.has(id) && !existingCaseIds.has(id));
 
       if (newCaseIds.length === 0) return 0;
 
@@ -64,7 +71,6 @@ export async function addCasesToRunAction(
     return { success: true, addedCount: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'addCasesToRunAction' } });
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: `케이스 추가에 실패했습니다: ${message}` };
+    return { success: false, error: '케이스 추가에 실패했습니다. 잠시 후 다시 시도해주세요.' };
   }
 }

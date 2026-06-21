@@ -7,6 +7,7 @@ import {
   detectChangedFields,
   generateChangeSummary,
 } from '@/entities/test-case-version/model/diff-utils';
+import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
@@ -36,8 +37,7 @@ export const getTestCases = async ({
       .select()
       .from(testCases)
       .where(and(eq(testCases.project_id, project_id), eq(testCases.lifecycle_status, 'ACTIVE')));
-    if (!rows)
-      return { success: false, errors: { _testCase: ['테스트 케이스가 존재하지 않습니다.'] } };
+    if (!rows) return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] } };
 
     const result: TestCase[] = rows.map((row) => ({
       id: row.id,
@@ -68,7 +68,7 @@ export const getTestCases = async ({
     Sentry.captureException(error, { extra: { action: 'getTestCases' } });
     return {
       success: false,
-      errors: { _testCase: ['테스트케이스를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testCase: [CASE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -207,7 +207,7 @@ export const getTestCasesList = async ({
     Sentry.captureException(error, { extra: { action: 'getTestCasesList' } });
     return {
       success: false,
-      errors: { _testCase: ['테스트케이스를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testCase: [CASE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -223,7 +223,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
     if (!row) {
       return {
         success: false,
-        errors: { _testCase: ['테스트 케이스를 찾을 수 없습니다.'] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -256,7 +256,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
     Sentry.captureException(error, { extra: { action: 'getTestCase' } });
     return {
       success: false,
-      errors: { _testCase: ['테스트케이스를 불러오는 도중 오류가 발생했습니다.'] },
+      errors: { _testCase: [CASE_MESSAGE_CODES.LOAD_FAILED] },
     };
   }
 };
@@ -268,7 +268,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
       checkStorageLimit(input.projectId),
     ]);
     if (!hasAccess) {
-      return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
     if (storageError) return storageError;
 
@@ -305,7 +305,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     if (!inserted) {
       return {
         success: false,
-        errors: { _testCase: ['테스트케이스를 생성하는 도중 오류가 발생했습니다.'] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.CREATE_FAILED] },
       };
     }
 
@@ -345,13 +345,13 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     return {
       success: true,
       data: result,
-      message: '테스트 케이스를 생성하였습니다.',
+      message: CASE_MESSAGE_CODES.CASE_CREATED,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'createTestCase' } });
     return {
       success: false,
-      errors: { _testCase: ['테스트케이스를 생성하는 도중 오류가 발생했습니다.'] },
+      errors: { _testCase: [CASE_MESSAGE_CODES.CREATE_FAILED] },
     };
   }
 };
@@ -460,7 +460,7 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
       .where(and(eq(testCases.id, testCaseId), eq(testCases.lifecycle_status, 'ACTIVE')));
 
     if (!original) {
-      return { success: false, errors: { _testCase: ['원본 테스트 케이스를 찾을 수 없습니다.'] } };
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ORIGINAL_NOT_FOUND] } };
     }
 
     const projectId = original.project_id!;
@@ -470,7 +470,7 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
       checkStorageLimit(projectId),
     ]);
     if (!hasAccess) {
-      return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
     if (storageError) return storageError;
 
@@ -514,7 +514,7 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
     if (!inserted) {
       return {
         success: false,
-        errors: { _testCase: ['테스트 케이스 복사 중 오류가 발생했습니다.'] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.DUPLICATE_FAILED] },
       };
     }
 
@@ -582,7 +582,7 @@ export const updateTestCase = async (
     // 접근 권한 확인: 전체 row 조회 (버전 스냅샷용)
     const [existing] = await db.select().from(testCases).where(eq(testCases.id, id)).limit(1);
     if (!existing?.project_id || !(await requireProjectAccess(existing.project_id))) {
-      return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
     const storageError = await checkStorageLimit(existing.project_id);
@@ -629,7 +629,7 @@ export const updateTestCase = async (
     if (!updated) {
       return {
         success: false,
-        errors: { _testCase: ['테스트케이스를 찾을 수 없습니다.'] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
@@ -676,13 +676,13 @@ export const updateTestCase = async (
     return {
       success: true,
       data: result,
-      message: '테스트케이스를 수정하였습니다.',
+      message: CASE_MESSAGE_CODES.CASE_UPDATED,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'updateTestCase' } });
     return {
       success: false,
-      errors: { _testCase: ['테스트케이스를 수정하는 도중 오류가 발생했습니다.'] },
+      errors: { _testCase: [CASE_MESSAGE_CODES.UPDATE_FAILED] },
     };
   }
 };
@@ -698,7 +698,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
       .where(eq(testCases.id, id))
       .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
-      return { success: false, errors: { _testCase: ['접근 권한이 없습니다.'] } };
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
     const [archived] = await db
@@ -714,20 +714,20 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
     if (!archived) {
       return {
         success: false,
-        errors: { _testCase: ['테스트케이스를 찾을 수 없습니다.'] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] },
       };
     }
 
     return {
       success: true,
       data: { id: archived.id },
-      message: '테스트케이스가 휴지통으로 이동되었습니다.',
+      message: CASE_MESSAGE_CODES.CASE_MOVED_TO_TRASH,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'archiveTestCase' } });
     return {
       success: false,
-      errors: { _testCase: ['테스트 케이스를 삭제하는 도중 오류가 발생했습니다.'] },
+      errors: { _testCase: [CASE_MESSAGE_CODES.DELETE_FAILED] },
     };
   }
 };

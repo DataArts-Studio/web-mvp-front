@@ -379,7 +379,7 @@ export const updateScenario = async (
   }
 };
 
-/** 시나리오 소프트 삭제(lifecycle_status='DELETED'). */
+/** 시나리오 소프트 삭제(lifecycle_status='DELETED'). archived_at 으로 휴지통 잔여일을 계산한다. */
 export const deleteScenario = async (
   projectId: string,
   id: string
@@ -388,10 +388,11 @@ export const deleteScenario = async (
     if (!(await requireProjectAccess(projectId))) return accessDenied();
 
     const db = getDatabase();
+    const now = new Date();
 
     const deleted = await db
       .update(testScenarios)
-      .set({ lifecycle_status: 'DELETED', updated_at: new Date() })
+      .set({ lifecycle_status: 'DELETED', archived_at: now, updated_at: now })
       .where(and(eq(testScenarios.id, id), eq(testScenarios.project_id, projectId)))
       .returning({ id: testScenarios.id });
 

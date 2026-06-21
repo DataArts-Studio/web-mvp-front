@@ -11,4 +11,5 @@ export { MilestonesView, MilestoneDetailView } from '@/view/project/milestones';
 export { SettingsView } from '@/view/project/settings';
 export { TrashView } from '@/view/project/trash';
 export { ChecklistsView, ChecklistDetailView } from '@/view/project/checklists';
+export { AutomationView } from '@/view/project/automation';
 export { TeamView } from '@/view/team';

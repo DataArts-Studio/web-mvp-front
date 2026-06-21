@@ -276,10 +276,9 @@ export async function generateShareLink(
   } catch (error) {
     console.error('[generateShareLink] error:', error);
     Sentry.captureException(error, { extra: { action: 'generateShareLink' } });
-    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _general: [`공유 링크 생성 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: { _general: ['공유 링크 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'] },
     };
   }
 }
@@ -313,10 +312,9 @@ export async function revokeShareLink(
   } catch (error) {
     console.error('[revokeShareLink] error:', error);
     Sentry.captureException(error, { extra: { action: 'revokeShareLink' } });
-    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _general: [`공유 해제 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: { _general: ['공유 해제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'] },
     };
   }
 }
@@ -454,10 +452,11 @@ export async function getSharedReport(token: string): Promise<ActionResult<Share
   } catch (error) {
     console.error('[getSharedReport] error:', error);
     Sentry.captureException(error, { extra: { action: 'getSharedReport' } });
-    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errors: { _general: [`리포트를 불러오는 중 오류가 발생했습니다: ${errorMessage}`] },
+      errors: {
+        _general: ['리포트를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'],
+      },
     };
   }
 }

@@ -17,6 +17,6 @@
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.8",
-    "vitest": "^4.0.15"
+    "vitest": "^4.1.7"
   }
 }

@@ -4,13 +4,48 @@ import { updateTestCase } from './server-actions';
 
 vi.mock('server-only', () => ({}));
 
-// Mock for update chain
+vi.mock('@/access/lib/require-access', () => ({
+  requireProjectAccess: vi.fn(() => Promise.resolve(true)),
+}));
+vi.mock('@/shared/lib/storage/check-storage-limit', () => ({
+  checkStorageLimit: vi.fn(() => Promise.resolve(null)),
+}));
+vi.mock('@/entities/test-case-version/api/actions', () => ({
+  createVersionSnapshot: vi.fn(() => Promise.resolve()),
+}));
+vi.mock('@/entities/test-case-version/model/diff-utils', () => ({
+  detectChangedFields: vi.fn(() => []),
+  generateChangeSummary: vi.fn(() => ''),
+}));
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+}));
+
+const mockExisting = {
+  id: 'tc-123',
+  project_id: 'proj-1',
+  name: '기존 테스트',
+  test_type: 'functional',
+  tags: ['tag1'],
+  pre_condition: '사전 조건',
+  steps: '스텝',
+  expected_result: '기대 결과',
+};
+
+// 접근 권한 확인용 select 체인 (existing row 반환)
+const mockSelectLimit = vi.fn(() => Promise.resolve([mockExisting]));
+const mockSelectWhere = vi.fn(() => ({ limit: mockSelectLimit }));
+const mockSelectFrom = vi.fn(() => ({ where: mockSelectWhere }));
+const mockSelect = vi.fn(() => ({ from: mockSelectFrom }));
+
+// update 체인
 const mockReturning = vi.fn();
 const mockWhere = vi.fn(() => ({ returning: mockReturning }));
 const mockSet = vi.fn(() => ({ where: mockWhere }));
 const mockUpdate = vi.fn(() => ({ set: mockSet }));
 
 const mockDb = {
+  select: mockSelect,
   update: mockUpdate,
 };
 
@@ -27,10 +62,25 @@ vi.mock('@testea/db', () => ({
     sort_order: 'sort_order',
     updated_at: 'updated_at',
   },
+  testCaseRuns: {},
+  testRunSuites: {},
+  testRuns: {},
+  milestoneTestSuites: {},
 }));
 
 vi.mock('drizzle-orm', () => ({
+  and: vi.fn((...args) => args),
+  asc: vi.fn(),
+  desc: vi.fn(),
   eq: vi.fn((a, b) => ({ field: a, value: b })),
+  ilike: vi.fn(),
+  inArray: vi.fn(),
+  or: vi.fn(),
+  sql: Object.assign(vi.fn(), { raw: vi.fn() }),
+}));
+
+vi.mock('uuid', () => ({
+  v7: vi.fn(() => '0193b5e0-0000-7000-8000-000000000001'),
 }));
 
 describe('updateTestCase', () => {
@@ -54,6 +104,7 @@ describe('updateTestCase', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSelectLimit.mockResolvedValue([mockExisting]);
     mockReturning.mockResolvedValue([mockUpdatedRow]);
   });
 
@@ -67,7 +118,7 @@ describe('updateTestCase', () => {
     if (result.success) {
       expect(result.data.id).toBe('tc-123');
       expect(result.data.title).toBe('수정된 테스트');
-      expect(result.message).toBe('테스트케이스를 수정하였습니다.');
+      expect(result.message).toBe('CASE_UPDATED');
     }
     expect(mockUpdate).toHaveBeenCalled();
     expect(mockSet).toHaveBeenCalled();
@@ -150,7 +201,7 @@ describe('updateTestCase', () => {
     );
   });
 
-  it('테스트 케이스가 존재하지 않으면 에러를 반환한다', async () => {
+  it('테스트 케이스가 존재하지 않으면 에러 코드를 반환한다', async () => {
     mockReturning.mockResolvedValue([]);
 
     const result = await updateTestCase({
@@ -160,12 +211,11 @@ describe('updateTestCase', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._testCase).toContain('테스트케이스를 찾을 수 없습니다.');
+      expect(result.errors._testCase).toContain('NOT_FOUND');
     }
   });
 
-  it('DB 에러 발생 시 에러 메시지를 반환한다', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('DB 에러 발생 시 에러 코드를 반환한다', async () => {
     mockReturning.mockRejectedValue(new Error('DB Error'));
 
     const result = await updateTestCase({
@@ -175,10 +225,7 @@ describe('updateTestCase', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._testCase).toContain(
-        '테스트케이스를 수정하는 도중 오류가 발생했습니다.'
-      );
+      expect(result.errors._testCase).toContain('UPDATE_FAILED');
     }
-    consoleErrorSpy.mockRestore();
   });
 });

@@ -1,5 +1,5 @@
 import type { TrashItemType } from '@/features/trash';
-import { FileText, Flag, FolderOpen } from 'lucide-react';
+import { FileText, Flag, FolderOpen, ListChecks } from 'lucide-react';
 
 export const TYPE_CONFIG: Record<
   TrashItemType,
@@ -23,6 +23,12 @@ export const TYPE_CONFIG: Record<
     color: 'text-amber-400',
     bgColor: 'bg-amber-500/10',
   },
+  scenario: {
+    label: '시나리오',
+    icon: ListChecks,
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/10',
+  },
 };
 
 export const FILTER_OPTIONS: { value: 'all' | TrashItemType; label: string }[] = [
@@ -30,6 +36,7 @@ export const FILTER_OPTIONS: { value: 'all' | TrashItemType; label: string }[] =
   { value: 'case', label: '테스트 케이스' },
   { value: 'suite', label: '테스트 스위트' },
   { value: 'milestone', label: '마일스톤' },
+  { value: 'scenario', label: '시나리오' },
 ];
 
 export function formatDeletedDate(date: Date): string {

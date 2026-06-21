@@ -189,7 +189,7 @@
 
 대시보드에서 프로젝트 현황을 확인했다면, 다음 가이드를 참고하세요.
 
-- [테스트 케이스 관리](/docs?tab=test-cases)
-- [테스트 스위트 관리](/docs?tab=test-suites)
-- [테스트 실행](/docs?tab=test-runs)
-- [마일스톤 관리](/docs?tab=milestones)
+- [테스트 케이스 관리](/docs/test-cases)
+- [테스트 스위트 관리](/docs/test-suites)
+- [테스트 실행](/docs/test-runs)
+- [마일스톤 관리](/docs/milestones)

@@ -1,16 +1,37 @@
-import {
-  createMockTestSuiteRow,
-  mockGetDatabase,
-  resetMockDb,
-  setMockUpdateReturn,
-} from '@/shared/test/__mocks__/db';
+import { createMockTestSuiteRow } from '@/shared/test/__mocks__/db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { updateTestSuite } from './server-actions';
 
-// DB 모듈 모킹
+// 접근 권한은 updateTestSuite 의 부수 의존성이므로 단위 테스트에서는 통과로 고정한다.
+vi.mock('@/access/lib/require-access', () => ({
+  requireProjectAccess: vi.fn(() => Promise.resolve(true)),
+}));
+vi.mock('@sentry/nextjs', () => ({
+  captureException: vi.fn(),
+}));
+
+// 접근 권한 확인용 select(.from().where().limit()) → projectId 보유 row
+const mockSelectLimit = vi.fn(() => Promise.resolve([{ projectId: 'project-123' }]));
+const mockSelectWhere = vi.fn(() => ({ limit: mockSelectLimit }));
+const mockSelectFrom = vi.fn(() => ({ where: mockSelectWhere }));
+const mockSelect = vi.fn(() => ({ from: mockSelectFrom }));
+
+// update(.set().where().returning())
+const mockReturning = vi.fn();
+const mockUpdateWhere = vi.fn(() => ({ returning: mockReturning }));
+const mockSet = vi.fn(() => ({ where: mockUpdateWhere }));
+const mockUpdate = vi.fn(() => ({ set: mockSet }));
+
+const mockDb = {
+  select: mockSelect,
+  update: mockUpdate,
+};
+
+const mockGetDatabase = vi.fn(() => mockDb);
+
 vi.mock('@testea/db', () => ({
-  getDatabase: mockGetDatabase,
+  getDatabase: () => mockGetDatabase(),
   testSuites: {
     id: 'id',
     project_id: 'project_id',
@@ -19,9 +40,15 @@ vi.mock('@testea/db', () => ({
   },
 }));
 
+const setMockUpdateReturn = (value: unknown) => {
+  mockReturning.mockResolvedValue(value ? [value] : [undefined]);
+};
+
 describe('updateTestSuite', () => {
   beforeEach(() => {
-    resetMockDb();
+    vi.clearAllMocks();
+    mockGetDatabase.mockReturnValue(mockDb);
+    mockSelectLimit.mockResolvedValue([{ projectId: 'project-123' }]);
   });
 
   afterEach(() => {
@@ -44,7 +71,7 @@ describe('updateTestSuite', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.title).toBe('수정된 제목입니다요');
-        expect(result.message).toBe('테스트 스위트를 수정하였습니다.');
+        expect(result.message).toBe('SUITE_UPDATED');
       }
     });
 
@@ -138,6 +165,7 @@ describe('updateTestSuite', () => {
           updatedAt: new Date('2024-03-01'),
           archivedAt: null,
           lifecycleStatus: 'ACTIVE',
+          lastExecutedAt: null,
         });
       }
     });
@@ -154,7 +182,7 @@ describe('updateTestSuite', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain('테스트 스위트를 찾을 수 없습니다.');
+        expect(result.errors._testSuite).toContain('NOT_FOUND');
       }
     });
 
@@ -170,9 +198,7 @@ describe('updateTestSuite', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.errors._testSuite).toContain(
-          '테스트 스위트를 수정하는 도중 오류가 발생했습니다.'
-        );
+        expect(result.errors._testSuite).toContain('UPDATE_FAILED');
       }
     });
   });
