@@ -1,5 +1,5 @@
 import { createMockTestSuiteRow } from '@/shared/test/__mocks__/db';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getTestSuites } from './server-actions';
 
@@ -15,9 +15,9 @@ let throwOnGetDatabase = false;
 // $dynamic() 이후 limit/offset 가 붙어도, 안 붙어도 await 시 mockRows 로 resolve 되도록
 // then 을 가진 thenable 을 단계마다 반환한다.
 type MockThenable = {
-  limit: ReturnType<typeof vi.fn>;
-  offset: ReturnType<typeof vi.fn>;
-  $dynamic: ReturnType<typeof vi.fn>;
+  limit: Mock<() => MockThenable>;
+  offset: Mock<() => MockThenable>;
+  $dynamic: Mock<() => MockThenable>;
   then: (resolve: (value: unknown) => void) => Promise<void>;
 };
 const makeThenable = (): MockThenable => ({

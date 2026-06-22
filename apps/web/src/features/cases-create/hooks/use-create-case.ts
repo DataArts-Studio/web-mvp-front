@@ -38,13 +38,10 @@ export const useCreateCase = () => {
       const now = new Date();
 
       // Optimistic item
-      const optimisticItem: Omit<TestCaseListItem, 'testSuiteId'> & {
-        testSuiteId: string | null;
-        isOptimistic: true;
-      } = {
+      const optimisticItem: TestCaseListItem & { isOptimistic: true } = {
         id: optimisticId,
         projectId: variables.projectId,
-        testSuiteId: variables.testSuiteId ?? null,
+        testSuiteId: variables.testSuiteId ?? undefined,
         sectionId: variables.sectionId ?? null,
         displayId: 0,
         caseKey: '...',
@@ -69,7 +66,7 @@ export const useCreateCase = () => {
             ...old,
             data: {
               ...old.data,
-              items: [optimisticItem as unknown as TestCaseListItem, ...old.data.items],
+              items: [optimisticItem, ...old.data.items],
               pagination: {
                 ...old.data.pagination,
                 totalItems: old.data.pagination.totalItems + 1,
