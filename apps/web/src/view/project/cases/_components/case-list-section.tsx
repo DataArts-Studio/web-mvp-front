@@ -80,8 +80,9 @@ export const CaseListSection = ({
   const reorderMutation = useReorderCase(projectId, queryParams);
   const [localItems, setLocalItems] = useState<TestCaseCardType[] | null>(null);
 
-  // 서버 데이터 변경 시 localItems 리셋
+  // 서버 데이터(items)가 갱신되면 드래그 정렬용 로컬 오버라이드를 비워 서버 순서로 되돌린다
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 외부(서버) 데이터 변경에 로컬 드래그 오버라이드를 동기화. items 참조가 바뀔 때만 1회 실행
     setLocalItems(null);
   }, [items]);
 

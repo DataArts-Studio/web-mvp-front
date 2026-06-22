@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // Cloudflare/OpenNext 빌드 산출물 (gitignore 대상). 소스가 아니므로 린트 제외.
+    '.open-next/**',
+    '.wrangler/**',
+    'worker-configuration.d.ts',
   ]),
 
   // [FSD 공통 규칙] shared는 절대 상위 레이어를 알면 안 됨

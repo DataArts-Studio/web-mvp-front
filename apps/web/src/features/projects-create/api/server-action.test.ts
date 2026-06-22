@@ -227,8 +227,8 @@ describe('checkProjectNameDuplicate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // checkProjectNameDuplicate는 다른 체인을 사용하므로 재설정
-    mockFrom.mockReturnValue({ where: mockWhere } as any);
-    mockWhere.mockReturnValue({ limit: mockLimit } as any);
+    mockFrom.mockReturnValue({ where: mockWhere } as unknown as ReturnType<typeof mockFrom>);
+    mockWhere.mockReturnValue({ limit: mockLimit } as unknown as ReturnType<typeof mockWhere>);
   });
 
   it('중복된 프로젝트명이 있으면 true를 반환한다', async () => {

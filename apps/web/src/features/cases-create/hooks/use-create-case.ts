@@ -1,8 +1,11 @@
 import { CreateTestCase } from '@/entities';
-import { createTestCase } from '@/entities/test-case/api';
+import type { TestCaseListItem } from '@/entities/test-case';
+import { createTestCase, getTestCasesList } from '@/entities/test-case/api';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import { testCaseQueryKeys } from '@/features/cases-list';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+type TestCasesListCache = Awaited<ReturnType<typeof getTestCasesList>>;
 
 export const useCreateCase = () => {
   const queryClient = useQueryClient();
@@ -27,7 +30,7 @@ export const useCreateCase = () => {
       });
 
       // Snapshot all matching list caches
-      const previousQueries = queryClient.getQueriesData<any>({
+      const previousQueries = queryClient.getQueriesData<TestCasesListCache>({
         queryKey: testCaseQueryKeys.list(variables.projectId),
       });
 
@@ -35,7 +38,10 @@ export const useCreateCase = () => {
       const now = new Date();
 
       // Optimistic item
-      const optimisticItem = {
+      const optimisticItem: Omit<TestCaseListItem, 'testSuiteId'> & {
+        testSuiteId: string | null;
+        isOptimistic: true;
+      } = {
         id: optimisticId,
         projectId: variables.projectId,
         testSuiteId: variables.testSuiteId ?? null,
@@ -46,24 +52,24 @@ export const useCreateCase = () => {
         testType: variables.testType ?? '',
         tags: variables.tags ?? [],
         sortOrder: 0,
-        resultStatus: 'untested' as const,
+        resultStatus: 'untested',
         createdAt: now,
         updatedAt: now,
         archivedAt: null,
-        lifecycleStatus: 'ACTIVE' as const,
+        lifecycleStatus: 'ACTIVE',
         isOptimistic: true,
       };
 
       // Prepend optimistic item to all matching list caches
-      queryClient.setQueriesData<any>(
+      queryClient.setQueriesData<TestCasesListCache>(
         { queryKey: testCaseQueryKeys.list(variables.projectId) },
-        (old: any) => {
+        (old) => {
           if (!old?.success) return old;
           return {
             ...old,
             data: {
               ...old.data,
-              items: [optimisticItem, ...old.data.items],
+              items: [optimisticItem as unknown as TestCaseListItem, ...old.data.items],
               pagination: {
                 ...old.data.pagination,
                 totalItems: old.data.pagination.totalItems + 1,

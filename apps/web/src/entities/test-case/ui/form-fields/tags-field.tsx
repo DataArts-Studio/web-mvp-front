@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { Controller } from 'react-hook-form';
-import type { Control } from 'react-hook-form';
+import type { Control, Path } from 'react-hook-form';
 
 import { useTranslations } from 'next-intl';
 
@@ -31,8 +31,8 @@ export const TagsField = <T extends TagsFieldForm>({ control, projectTags }: Tag
           {t('ui.tagsLabel')}
         </DsFormField.Label>
         <Controller
-          name={'tags' as any}
-          control={control as any}
+          name={'tags' as Path<T>}
+          control={control}
           render={({ field }) => (
             <TagChipInput
               value={Array.isArray(field.value) ? field.value : []}

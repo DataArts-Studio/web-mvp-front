@@ -44,6 +44,7 @@ export const RouteLoadingProvider = ({ children }: { children: ReactNode }) => {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 외부 시스템(라우터 pathname) 변화에 로딩 상태를 동기화. 네비게이션 완료 신호라 effect가 적절
     setIsLoading(false);
   }, [pathname]);
 

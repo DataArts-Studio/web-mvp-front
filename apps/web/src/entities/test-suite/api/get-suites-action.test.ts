@@ -14,7 +14,13 @@ let throwOnGetDatabase = false;
 
 // $dynamic() 이후 limit/offset 가 붙어도, 안 붙어도 await 시 mockRows 로 resolve 되도록
 // then 을 가진 thenable 을 단계마다 반환한다.
-const makeThenable = (): any => ({
+type MockThenable = {
+  limit: ReturnType<typeof vi.fn>;
+  offset: ReturnType<typeof vi.fn>;
+  $dynamic: ReturnType<typeof vi.fn>;
+  then: (resolve: (value: unknown) => void) => Promise<void>;
+};
+const makeThenable = (): MockThenable => ({
   limit: vi.fn(() => makeThenable()),
   offset: vi.fn(() => makeThenable()),
   $dynamic: vi.fn(() => makeThenable()),
