@@ -44,5 +44,5 @@ export type MilestoneWithStats = Milestone &
   MilestoneStats & {
     testCases?: Array<{ id: string; caseKey: string; title: string; lastStatus: string | null }>;
     testSuites?: Array<{ id: string; title: string; description: string | null }>;
-    testRuns?: Array<any>;
+    testRuns?: Array<{ id: string; name: string; status: string; updatedAt: Date }>;
   };

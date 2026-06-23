@@ -3,15 +3,15 @@ import { ENV } from '@/shared/constants';
 const LIB_PREFIX = '[TEST]';
 const isDev = ENV.CONFIG.IS_DEV;
 
-const info = (message: string, ...args: any[]) => {
+const info = (message: string, ...args: unknown[]) => {
   if (isDev) console.log(`%c${LIB_PREFIX}`, 'color: #00bcd4; font-weight: bold;', message, ...args);
 };
 
-const warn = (message: string, ...args: any[]) => {
+const warn = (message: string, ...args: unknown[]) => {
   if (isDev) console.warn(`${LIB_PREFIX}: ${message}`, ...args);
 };
 
-const error = (message: string, ...args: any[]) => {
+const error = (message: string, ...args: unknown[]) => {
   if (isDev) console.error(`${LIB_PREFIX}: ${message}`, ...args);
 };
 

@@ -74,6 +74,7 @@ export const StepRowMenu = ({
   }, [open]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 메뉴가 열릴 때 키보드 포커스 인덱스를 초기화하는 동기화. open 토글 시에만 실행
     if (open) setFocusIndex(-1);
   }, [open]);
 
