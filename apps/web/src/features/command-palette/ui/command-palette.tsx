@@ -129,12 +129,14 @@ export const CommandPalette = () => {
   // 열릴 때 초기화
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 팔레트가 열릴 때 검색어를 초기화하고 입력에 포커스. isOpen 토글에 대한 동기화
       setQuery('');
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [isOpen]);
 
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- createPortal 대상 마운트 가드(SSR 시 미렌더). mount-once 1회성
   useEffect(() => setMounted(true), []);
 
   if (!mounted || !isOpen) return null;

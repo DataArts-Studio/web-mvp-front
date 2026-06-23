@@ -4,6 +4,8 @@ import { Controller } from 'react-hook-form';
 import type {
   Control,
   FieldErrors,
+  Path,
+  PathValue,
   UseFormRegister,
   UseFormSetValue,
   UseFormWatch,
@@ -39,7 +41,7 @@ export const BasicInfoFields = <T extends BasicInfoFieldsForm>({
   suites,
 }: BasicInfoFieldsProps<T>) => {
   const t = useTranslations('cases');
-  const selectedSuiteId = watch('testSuiteId' as any);
+  const selectedSuiteId = watch('testSuiteId' as Path<T>);
 
   return (
     <fieldset className="flex flex-col gap-5">
@@ -55,7 +57,7 @@ export const BasicInfoFields = <T extends BasicInfoFieldsForm>({
         </DsFormField.Label>
         <DsFormField.Control asChild>
           <DsInput
-            {...register('title' as any)}
+            {...register('title' as Path<T>)}
             variant={errors.title ? 'error' : 'default'}
             placeholder={t('ui.titlePlaceholder')}
           />
@@ -72,7 +74,9 @@ export const BasicInfoFields = <T extends BasicInfoFieldsForm>({
         <DsSelect
           className="w-full"
           value={selectedSuiteId || ''}
-          onChange={(v: string) => setValue('testSuiteId' as any, (v || null) as any)}
+          onChange={(v: string) =>
+            setValue('testSuiteId' as Path<T>, (v || null) as PathValue<T, Path<T>>)
+          }
           options={[
             { value: '', label: t('ui.noSuite') },
             ...suites.map((suite) => ({ value: suite.id, label: suite.title })),
@@ -89,8 +93,8 @@ export const BasicInfoFields = <T extends BasicInfoFieldsForm>({
           {t('ui.testTypeLabel')}
         </DsFormField.Label>
         <Controller
-          name={'testType' as any}
-          control={control as any}
+          name={'testType' as Path<T>}
+          control={control}
           render={({ field }) => (
             <DsSelect
               className="w-full"

@@ -43,8 +43,8 @@ export const ProjectDashboardContent = ({
 
   // 클라이언트 hydration 완료 전까지 전체 페이지 스켈레톤 표시
   const [hydrated, setHydrated] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection requires effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 후 클라이언트 hydration 완료 표시(SSR 스켈레톤→실데이터 전환). mount-once 1회성이라 cascading render 비용 없음
     setHydrated(true);
   }, []);
 

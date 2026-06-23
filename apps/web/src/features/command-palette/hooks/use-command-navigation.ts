@@ -23,12 +23,14 @@ export const useCommandNavigation = ({
 
   // Reset index when query changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 검색어 변경 시 키보드 활성 인덱스를 첫 항목으로 동기화. query 변경 시에만 실행
     setActiveIndex(0);
   }, [query]);
 
   // Reset when palette opens
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 팔레트가 열릴 때 키보드 활성 인덱스를 첫 항목으로 초기화. isOpen 토글 동기화
       setActiveIndex(0);
     }
   }, [isOpen]);

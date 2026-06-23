@@ -142,16 +142,18 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
   const percent = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0;
   const isCompleted = totalItems > 0 && checkedItems === totalItems;
 
+  const startedAt = checklist?.startedAt;
+  const completedAt = checklist?.completedAt;
   const elapsedTime = useMemo(() => {
-    if (!checklist?.startedAt) return null;
-    const end = checklist.completedAt ? new Date(checklist.completedAt) : new Date();
-    const start = new Date(checklist.startedAt);
+    if (!startedAt) return null;
+    const end = completedAt ? new Date(completedAt) : new Date();
+    const start = new Date(startedAt);
     const diffMs = end.getTime() - start.getTime();
     const mins = Math.floor(diffMs / 60000);
     const secs = Math.floor((diffMs % 60000) / 1000);
     if (mins > 0) return `${mins}분 ${secs}초`;
     return `${secs}초`;
-  }, [checklist?.startedAt, checklist?.completedAt]);
+  }, [startedAt, completedAt]);
 
   if (isLoading) {
     return (

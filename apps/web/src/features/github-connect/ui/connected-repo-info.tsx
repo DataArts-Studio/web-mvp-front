@@ -2,13 +2,14 @@
 
 import React from 'react';
 
+import type { ActionResult } from '@/shared/types';
 import { type UseMutationResult } from '@tanstack/react-query';
 import { DSButton } from '@testea/ui';
 import { ExternalLink, Link2, Loader2, Unlink } from 'lucide-react';
 
 type ConnectedRepoInfoProps = {
   repoFullName: string;
-  disconnectMutation: UseMutationResult<any, Error, void, unknown>;
+  disconnectMutation: UseMutationResult<ActionResult<null>, Error, void, unknown>;
 };
 
 export const ConnectedRepoInfo = ({ repoFullName, disconnectMutation }: ConnectedRepoInfoProps) => {
