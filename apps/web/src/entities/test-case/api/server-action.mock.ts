@@ -15,12 +15,12 @@ type MockFlatErrors = {
   fieldErrors: { [key in keyof MockTestCaseData]?: string[] };
 };
 
-const createTestCase = async (data: any) => {
+const createTestCase = async (data: typeof testCases.$inferInsert) => {
   const db = getDatabase();
   return await db.insert(testCases).values(data).returning();
 };
 
-export const createTestCaseAction = async (formData: any) => {
+export const createTestCaseAction = async (formData: FormData) => {
   const data = Object.fromEntries(formData.entries());
   const validation = CreateTestCaseDtoSchema.safeParse(data);
   if (!validation.success) return { success: false, errors: z.flattenError(validation.error) };

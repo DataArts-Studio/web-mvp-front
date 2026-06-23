@@ -2,7 +2,8 @@
 
 import React from 'react';
 
-import type { GithubRepo } from '@/entities/github-connection';
+import type { GithubConnection, GithubRepo } from '@/entities/github-connection';
+import type { ActionResult } from '@/shared/types';
 import { type UseMutationResult } from '@tanstack/react-query';
 import { DSButton } from '@testea/ui';
 import { cn } from '@testea/util';
@@ -13,7 +14,12 @@ type RepoSelectorProps = {
   repoSearch: string;
   onRepoSearchChange: (value: string) => void;
   loadingRepos: boolean;
-  selectRepoMutation: UseMutationResult<any, Error, string, unknown>;
+  selectRepoMutation: UseMutationResult<
+    ActionResult<{ connection: GithubConnection }>,
+    Error,
+    string,
+    unknown
+  >;
   onCancel: () => void;
 };
 

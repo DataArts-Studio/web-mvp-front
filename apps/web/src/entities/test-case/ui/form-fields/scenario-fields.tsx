@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { Controller } from 'react-hook-form';
-import type { Control } from 'react-hook-form';
+import type { Control, Path } from 'react-hook-form';
 
 import { useTranslations } from 'next-intl';
 
@@ -39,8 +39,8 @@ export const ScenarioFields = <T extends ScenarioFieldsForm>({
           {t('ui.preconditionsLabel')}
         </DsFormField.Label>
         <Controller
-          name={'preCondition' as any}
-          control={control as any}
+          name={'preCondition' as Path<T>}
+          control={control}
           render={({ field }) => (
             <StepSectionEditor
               value={parseSteps(field.value ?? '')}
@@ -60,8 +60,8 @@ export const ScenarioFields = <T extends ScenarioFieldsForm>({
           {t('ui.testStepsLabel')}
         </DsFormField.Label>
         <Controller
-          name={'testSteps' as any}
-          control={control as any}
+          name={'testSteps' as Path<T>}
+          control={control}
           render={({ field }) => (
             <StepSectionEditor
               value={parseSteps(field.value ?? '')}
@@ -79,8 +79,8 @@ export const ScenarioFields = <T extends ScenarioFieldsForm>({
           {t('ui.expectedResultsLabel')}
         </DsFormField.Label>
         <Controller
-          name={'expectedResult' as any}
-          control={control as any}
+          name={'expectedResult' as Path<T>}
+          control={control}
           render={({ field }) => (
             <StepSectionEditor
               value={parseSteps(field.value ?? '')}

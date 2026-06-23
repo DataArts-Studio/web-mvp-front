@@ -2,11 +2,17 @@
 
 import React, { useCallback, useState } from 'react';
 
-import { stepsToText, textToSteps } from '@/entities/test-case';
 import { cn } from '@testea/util';
 import { AlignLeft, List } from 'lucide-react';
 
 import { StepBoxEditor, type StepBoxEditorProps } from './step-box-editor';
+
+// 단계 배열 ↔ 멀티라인 텍스트 변환 (textarea 모드 전환용 순수 헬퍼)
+const stepsToText = (steps: string[]): string => steps.join('\n');
+const textToSteps = (text: string): string[] => {
+  const lines = text.split('\n');
+  return lines.length > 0 ? lines : [''];
+};
 
 type Mode = 'stepbox' | 'textarea';
 

@@ -70,6 +70,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
 
   // Reset selected index when suggestions change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 자동완성 목록이 바뀌면 키보드 하이라이트 인덱스를 초기화하는 동기화. suggestions 변경 시에만 실행
     setSelectedIndex(-1);
   }, [suggestions]);
 
