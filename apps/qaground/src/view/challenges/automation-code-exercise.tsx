@@ -82,7 +82,7 @@ export const AutomationCodeExercise = ({
   };
 
   return (
-    <section className="border-line-2 bg-bg-2 mt-8 rounded-2xl border p-6">
+    <section className="border-line-2 bg-bg-2 rounded-2xl border p-6">
       <h2 className="text-base font-semibold">코드 작성 · 자동 채점</h2>
       <p className="text-text-2 mt-2 text-sm leading-relaxed">
         아래 에디터에 Playwright 테스트를 작성해 제출하면, 격리된 러너가 연습 대상에서 실행해
@@ -104,7 +104,7 @@ export const AutomationCodeExercise = ({
 
       <div className="border-line-2 mt-4 overflow-hidden rounded-xl border">
         <MonacoEditor
-          height="340px"
+          height="460px"
           defaultLanguage="typescript"
           theme="vs-dark"
           value={code}
