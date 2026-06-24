@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     root: repoRoot,
   },
   outputFileTracingRoot: repoRoot,
-  transpilePackages: ['@testea/lib', '@testea/ui', '@testea/util'],
+  transpilePackages: ['@testea/db', '@testea/lib', '@testea/ui', '@testea/util'],
 };
 
 export default nextConfig;

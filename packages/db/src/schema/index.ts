@@ -27,4 +27,5 @@ export * from './project-automation-tokens';
 export * from './ai-requirement-analyses';
 export * from './test-scenarios';
 export * from './target-sites';
+export * from './qaground-waitlist';
 export * from './relations';
