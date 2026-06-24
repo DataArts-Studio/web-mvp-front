@@ -9,6 +9,7 @@ import {
 } from '@/shared/challenges/registry';
 
 import { ApiTesterExercise } from './api-tester-exercise';
+import { AutomationCodeExercise } from './automation-code-exercise';
 import { DefectReportExercise } from './defect-report-exercise';
 import { PlaygroundHeader } from './playground-header';
 import { TestCaseExercise } from './test-case-exercise';
@@ -22,6 +23,9 @@ const METHOD_COLOR: Record<HttpMethod, string> = {
 };
 
 export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => {
+  const isAutomationCode =
+    challenge.track === 'automation' && !!challenge.sandboxSlug && !!challenge.selectors?.length;
+
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
       <PlaygroundHeader />
@@ -112,6 +116,13 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
           />
         ) : challenge.modelTestCases ? (
           <TestCaseExercise modelTestCases={challenge.modelTestCases} />
+        ) : isAutomationCode ? (
+          <AutomationCodeExercise
+            slug={challenge.slug}
+            sandboxSlug={challenge.sandboxSlug!}
+            selectors={challenge.selectors!}
+            starterSpec={challenge.starterSpec}
+          />
         ) : challenge.sandboxSlug ? (
           <section className="mt-8">
             <h2 className="text-lg font-semibold">연습 대상</h2>
@@ -150,18 +161,21 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
           </section>
         ) : null}
 
-        {!challenge.knownDefects && !challenge.modelTestCases && !challenge.endpoints && (
-          <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
-            <h2 className="text-base font-semibold">
-              {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
-            </h2>
-            <p className="text-text-3 mt-2 text-sm leading-relaxed">
-              {challenge.track === 'manual'
-                ? '작성한 테스트 케이스와 결함 리포트를 제출·리뷰하는 기능은 곧 제공됩니다.'
-                : '작성한 테스트를 제출하면 격리된 러너가 실행해 통과/실패를 채점합니다. 곧 제공됩니다.'}
-            </p>
-          </section>
-        )}
+        {!challenge.knownDefects &&
+          !challenge.modelTestCases &&
+          !challenge.endpoints &&
+          !isAutomationCode && (
+            <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
+              <h2 className="text-base font-semibold">
+                {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
+              </h2>
+              <p className="text-text-3 mt-2 text-sm leading-relaxed">
+                {challenge.track === 'manual'
+                  ? '작성한 테스트 케이스와 결함 리포트를 제출·리뷰하는 기능은 곧 제공됩니다.'
+                  : '작성한 테스트를 제출하면 격리된 러너가 실행해 통과/실패를 채점합니다. 곧 제공됩니다.'}
+              </p>
+            </section>
+          )}
       </main>
     </div>
   );
