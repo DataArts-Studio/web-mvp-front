@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { WaitlistForm } from './waitlist-form';
 
 export const BetaLandingView = () => {
@@ -43,6 +45,12 @@ export const BetaLandingView = () => {
           곧 공개됩니다. 가장 먼저 연습을 시작하고 싶다면 베타를 신청하세요.
         </p>
         <WaitlistForm />
+        <Link
+          href="/challenges"
+          className="text-text-3 hover:text-text-1 text-sm transition-colors"
+        >
+          또는 지금 연습 챌린지 둘러보기 →
+        </Link>
       </main>
 
       {/* 푸터 */}
