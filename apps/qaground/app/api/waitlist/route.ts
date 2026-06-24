@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { createMagicToken } from '@/shared/magic-link/token';
 import { getDatabase, qagroundWaitlist } from '@testea/db';
 import { z } from 'zod';
 
@@ -41,7 +42,18 @@ export async function POST(request: Request) {
       .onConflictDoNothing({ target: qagroundWaitlist.email })
       .returning({ id: qagroundWaitlist.id });
 
-    return NextResponse.json({ ok: true, alreadyJoined: inserted.length === 0 });
+    // 매직링크 토큰 발급. 메일 발송 인프라는 후속(#242) — 현재는 stub:
+    // 서버 로그에 링크를 남기고, 비프로덕션에서만 응답에 노출해 폐루프를 확인한다.
+    const token = await createMagicToken(parsed.data.email);
+    const origin = new URL(request.url).origin;
+    const magicLink = `${origin}/api/magic/verify?token=${token}`;
+    console.info('[waitlist] 매직링크(stub, 메일 발송 전):', magicLink);
+
+    return NextResponse.json({
+      ok: true,
+      alreadyJoined: inserted.length === 0,
+      ...(process.env.NODE_ENV !== 'production' ? { devMagicLink: magicLink } : {}),
+    });
   } catch (error) {
     console.error('[waitlist] 대기자 저장 실패', error);
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 });
