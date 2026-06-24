@@ -10,6 +10,7 @@ import {
 
 import { DefectReportExercise } from './defect-report-exercise';
 import { PlaygroundHeader } from './playground-header';
+import { TestCaseExercise } from './test-case-exercise';
 
 const METHOD_COLOR: Record<HttpMethod, string> = {
   GET: 'text-primary',
@@ -105,6 +106,8 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             sandboxSlug={challenge.sandboxSlug}
             knownDefects={challenge.knownDefects}
           />
+        ) : challenge.modelTestCases ? (
+          <TestCaseExercise modelTestCases={challenge.modelTestCases} />
         ) : challenge.sandboxSlug ? (
           <section className="mt-8">
             <h2 className="text-lg font-semibold">연습 대상</h2>
@@ -143,7 +146,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
           </section>
         ) : null}
 
-        {!challenge.knownDefects && (
+        {!challenge.knownDefects && !challenge.modelTestCases && (
           <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
             <h2 className="text-base font-semibold">
               {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
