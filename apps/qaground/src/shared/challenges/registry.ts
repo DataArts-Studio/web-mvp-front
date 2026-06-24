@@ -261,6 +261,39 @@ export const CHALLENGES: Challenge[] = [
     apiNote:
       '데모 계정 tester@qaground.dev / qaground123 로 로그인해 토큰을 받고, 보호된 요청에 Authorization: Bearer <token> 헤더를 붙이세요.',
   },
+  {
+    slug: 'bug-hunt-order',
+    title: '버그 찾기: 주문 폼',
+    track: 'manual',
+    category: 'forms',
+    difficulty: 'medium',
+    tools: ['Testea'],
+    summary:
+      '주문 폼에 의도적으로 심은 결함을 탐색적 테스트로 찾아내세요. 자동화가 아니라 직접 살펴보는 수동 테스트입니다.',
+    requirement: [
+      '합계 금액이 단가·수량·배송비와 맞는지 계산을 확인하세요.',
+      '수량 입력에 0이나 음수 같은 비정상 값을 넣어 보세요.',
+      '받는 사람을 비운 채로 주문이 완료되는지 확인하세요.',
+      '발견한 결함을 재현 절차·기대 결과·실제 결과로 정리해 보세요.',
+    ],
+    sandboxSlug: 'order-form',
+  },
+  {
+    slug: 'test-design-password-reset',
+    title: '테스트 케이스 설계: 비밀번호 재설정',
+    track: 'manual',
+    category: 'auth',
+    difficulty: 'medium',
+    tools: ['Testea'],
+    summary:
+      '비밀번호 재설정 기능의 테스트 케이스를 설계하세요. 정상·예외·경계 시나리오를 빠짐없이 도출하는 수동 테스트 연습입니다.',
+    requirement: [
+      '기능 규칙: 가입된 이메일로 재설정 링크를 발송하고, 링크는 24시간 동안만 유효하며, 새 비밀번호는 8자 이상이어야 한다.',
+      '정상 흐름과 함께 만료된 링크, 이미 사용한 링크, 미가입 이메일, 비밀번호 규칙 위반을 케이스로 도출하세요.',
+      '동등 분할과 경계값 분석을 적용해 입력 케이스를 정리하세요.',
+      '각 케이스를 사전 조건·절차·기대 결과로 작성해 보세요.',
+    ],
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {

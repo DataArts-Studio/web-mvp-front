@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { LandingAssessment } from './landing-assessment';
 import { LandingComparison } from './landing-comparison';
 import { LandingFooter } from './landing-footer';
@@ -27,12 +29,12 @@ export const LandingView = () => {
             <p className="text-text-2 text-sm leading-relaxed sm:text-base">
               연습 페이지를 고르고, 테스트를 작성해 제출하면 바로 채점 결과를 받습니다.
             </p>
-            <a
-              href="#playground"
+            <Link
+              href="/challenges"
               className="bg-primary rounded-button h-button-lg hover:bg-primary/90 active:bg-primary/80 inline-flex items-center justify-center px-8 font-medium text-white transition-colors"
             >
               연습 시작하기
-            </a>
+            </Link>
           </div>
         </section>
 

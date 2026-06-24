@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const DIFFERENTIATORS = [
   '연습 페이지 제공',
   '내 코드 실행',
@@ -35,12 +37,12 @@ export const LandingHero = () => {
         </p>
 
         <div className="animate-fade-in-up-delay-2 flex flex-col items-center gap-3 sm:flex-row">
-          <a
-            href="#playground"
+          <Link
+            href="/challenges"
             className="bg-primary rounded-button h-button-lg hover:bg-primary/90 active:bg-primary/80 inline-flex w-full items-center justify-center px-8 font-medium text-white transition-colors sm:w-auto"
           >
             연습 시작하기
-          </a>
+          </Link>
           <a
             href="#how"
             className="border-line-3 rounded-button h-button-lg text-text-1 hover:bg-bg-3 inline-flex w-full items-center justify-center border px-8 font-medium transition-colors sm:w-auto"

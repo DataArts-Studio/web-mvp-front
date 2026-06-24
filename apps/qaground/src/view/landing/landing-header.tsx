@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const NAV = [
   { label: '연습', href: '#playground' },
   { label: '작동 방식', href: '#how' },
@@ -32,12 +34,12 @@ export const LandingHeader = () => {
               {item.label}
             </a>
           ))}
-          <a
-            href="#playground"
+          <Link
+            href="/challenges"
             className="bg-primary rounded-button hover:bg-primary/90 active:bg-primary/80 ml-1 inline-flex h-9 items-center justify-center px-4 text-sm font-medium text-white transition-colors"
           >
             연습 시작하기
-          </a>
+          </Link>
         </nav>
       </div>
     </header>

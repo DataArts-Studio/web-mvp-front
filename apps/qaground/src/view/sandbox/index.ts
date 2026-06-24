@@ -6,6 +6,7 @@ import { DndSandbox } from './dnd-sandbox';
 import { FileUploadSandbox } from './file-upload-sandbox';
 import { LoginSandbox } from './login-sandbox';
 import { ModalSandbox } from './modal-sandbox';
+import { OrderFormSandbox } from './order-form-sandbox';
 import { SignupSandbox } from './signup-sandbox';
 
 /** 샌드박스 슬러그 → 테스트 대상 컴포넌트. 챌린지 레지스트리의 sandboxSlug 와 매칭. */
@@ -17,4 +18,5 @@ export const SANDBOXES: Record<string, ComponentType> = {
   modal: ModalSandbox,
   'drag-and-drop': DndSandbox,
   'file-upload': FileUploadSandbox,
+  'order-form': OrderFormSandbox,
 };
