@@ -57,6 +57,8 @@ export interface Challenge {
   knownDefects?: { title: string; detail: string }[];
   /** Manual(테스트 케이스 작성): 제출 후 공개할 모범 답안(핵심 케이스) 목록. */
   modelTestCases?: { title: string; detail: string }[];
+  /** Automation 코드 채점: 코드 에디터 초기 Playwright 스펙 템플릿. */
+  starterSpec?: string;
 }
 
 export const TRACK_LABEL: Record<ChallengeTrack, string> = {
@@ -112,6 +114,16 @@ export const CHALLENGES: Challenge[] = [
       { name: '성공 메시지', testid: 'login-success', desc: '로그인 성공 시 노출' },
       { name: '에러 메시지', testid: 'login-error', desc: '실패·검증 에러 시 노출' },
     ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});
+`,
   },
   {
     slug: 'signup-validation',
