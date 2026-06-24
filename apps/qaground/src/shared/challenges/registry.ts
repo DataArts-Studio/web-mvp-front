@@ -129,6 +129,64 @@ export const CHALLENGES: Challenge[] = [
       { name: '콘텐츠 목록', testid: 'loaded-content', desc: '로딩 완료 후 노출' },
     ],
   },
+  {
+    slug: 'modal',
+    title: '모달 다이얼로그 확인',
+    track: 'automation',
+    difficulty: 'easy',
+    tools: ['Playwright', 'Cypress', 'Selenium'],
+    summary: '열기·확인·취소가 있는 모달의 흐름을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '열기 버튼을 누르면 모달이 나타난다.',
+      '모달에서 취소를 누르면 모달이 닫히고 결과는 없다.',
+      '모달에서 삭제(확인)를 누르면 모달이 닫히고 완료 메시지가 보인다.',
+    ],
+    sandboxSlug: 'modal',
+    selectors: [
+      { name: '모달 열기', testid: 'modal-open', desc: '모달 여는 버튼' },
+      { name: '모달', testid: 'modal', desc: '모달 컨테이너' },
+      { name: '확인 버튼', testid: 'modal-confirm', desc: '모달 확인(삭제) 버튼' },
+      { name: '취소 버튼', testid: 'modal-cancel', desc: '모달 취소 버튼' },
+      { name: '결과 메시지', testid: 'modal-result', desc: '확인 후 노출' },
+    ],
+  },
+  {
+    slug: 'drag-and-drop',
+    title: '드래그앤드롭 배치',
+    track: 'automation',
+    difficulty: 'medium',
+    tools: ['Playwright', 'Cypress', 'Selenium'],
+    summary: 'HTML5 드래그앤드롭으로 위젯을 드롭존에 배치하는 동작을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '위젯을 드롭존으로 끌어다 놓으면 배치 완료 메시지가 보인다.',
+      '배치 후에는 드래그 가능한 위젯이 사라진다.',
+    ],
+    sandboxSlug: 'drag-and-drop',
+    selectors: [
+      { name: '드래그 항목', testid: 'drag-item', desc: '끌 수 있는 위젯' },
+      { name: '드롭존', testid: 'drop-zone', desc: '놓는 영역' },
+      { name: '배치 결과', testid: 'drop-result', desc: '배치 완료 시 노출' },
+    ],
+  },
+  {
+    slug: 'file-upload',
+    title: '파일 업로드',
+    track: 'automation',
+    difficulty: 'easy',
+    tools: ['Playwright', 'Cypress', 'Selenium'],
+    summary: '파일을 선택하고 업로드해 완료 상태를 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '파일을 선택하면 선택한 파일 이름이 보인다.',
+      '업로드 버튼을 누르면 업로드 완료 메시지가 보인다.',
+    ],
+    sandboxSlug: 'file-upload',
+    selectors: [
+      { name: '파일 입력', testid: 'file-input', desc: '파일 선택 input' },
+      { name: '파일 이름', testid: 'file-name', desc: '선택한 파일 이름' },
+      { name: '업로드 버튼', testid: 'upload-submit', desc: '업로드 제출 버튼' },
+      { name: '업로드 결과', testid: 'upload-result', desc: '업로드 완료 시 노출' },
+    ],
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {
