@@ -53,6 +53,8 @@ export interface Challenge {
   endpoints?: ApiEndpoint[];
   /** API 트랙: 데모 계정·토큰 등 안내. */
   apiNote?: string;
+  /** Manual(버그 찾기): 리포트 제출 후 공개할 정답(의도적으로 심은 결함) 목록. */
+  knownDefects?: { title: string; detail: string }[];
 }
 
 export const TRACK_LABEL: Record<ChallengeTrack, string> = {
@@ -277,14 +279,29 @@ export const CHALLENGES: Challenge[] = [
     difficulty: 'medium',
     tools: ['Testea'],
     summary:
-      '주문 폼에 의도적으로 심은 결함을 탐색적 테스트로 찾아내세요. 자동화가 아니라 직접 살펴보는 수동 테스트입니다.',
+      '주문 폼에 의도적으로 심은 결함을 탐색적 테스트로 찾고, 결함 리포트를 작성해 제출하세요. 제출하면 정답과 피드백을 보여줍니다.',
     requirement: [
       '합계 금액이 단가·수량·배송비와 맞는지 계산을 확인하세요.',
       '수량 입력에 0이나 음수 같은 비정상 값을 넣어 보세요.',
       '받는 사람을 비운 채로 주문이 완료되는지 확인하세요.',
-      '발견한 결함을 재현 절차·기대 결과·실제 결과로 정리해 보세요.',
+      '발견한 결함을 아래 양식(재현 절차·기대 결과·실제 결과)으로 작성해 제출하세요.',
     ],
     sandboxSlug: 'order-form',
+    knownDefects: [
+      {
+        title: '합계가 배송비를 더하지 않음',
+        detail:
+          '합계가 단가 × 수량만 계산하고 배송비(3,000원)를 빠뜨린다. 수량 1일 때 15,000원이어야 하지만 12,000원으로 표시된다.',
+      },
+      {
+        title: '수량에 0·음수 입력 허용',
+        detail: '수량 입력에 최소값 제한이 없어 0이나 음수를 넣을 수 있고, 합계가 음수가 된다.',
+      },
+      {
+        title: '받는 사람 필수 입력 검증 누락',
+        detail: '받는 사람을 비운 채로도 주문하기가 성공한다. 필수 입력 검증이 없다.',
+      },
+    ],
   },
   {
     slug: 'test-design-password-reset',
@@ -317,23 +334,6 @@ export const CHALLENGES: Challenge[] = [
       '경계값(19,999원·20,000원)을 분리해 케이스를 만드세요.',
       '각 케이스를 제목·사전조건·절차·입력·기대 결과로 정리하세요.',
     ],
-  },
-  {
-    slug: 'bug-report-order',
-    title: '버그 리포트 작성: 주문 폼',
-    track: 'manual',
-    category: 'fundamentals',
-    difficulty: 'easy',
-    tools: ['Testea'],
-    summary:
-      '주문 폼에서 발견한 결함 하나를 골라, 다른 사람이 그대로 재현할 수 있는 정식 버그 리포트로 작성하세요.',
-    requirement: [
-      '연습 대상에서 결함을 하나 재현하세요.',
-      '제목은 무엇이·어디서·어떻게 잘못되는지 한 줄로 요약하세요.',
-      '재현 절차를 번호로 적고, 기대 결과와 실제 결과를 분리해 작성하세요.',
-      '심각도·우선순위와 환경(브라우저·화면)을 덧붙이세요.',
-    ],
-    sandboxSlug: 'order-form',
   },
   {
     slug: 'exploratory-charter',

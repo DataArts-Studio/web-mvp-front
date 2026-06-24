@@ -8,6 +8,7 @@ import {
   TRACK_LABEL,
 } from '@/shared/challenges/registry';
 
+import { DefectReportExercise } from './defect-report-exercise';
 import { PlaygroundHeader } from './playground-header';
 
 const METHOD_COLOR: Record<HttpMethod, string> = {
@@ -99,56 +100,61 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
               </p>
             )}
           </section>
-        ) : (
-          challenge.sandboxSlug && (
-            <section className="mt-8">
-              <h2 className="text-lg font-semibold">연습 대상</h2>
-              <p className="text-text-2 mt-2 text-sm leading-relaxed">
-                {challenge.selectors?.length
-                  ? '아래 페이지를 열어 테스트를 작성하세요. 안정적인 셀렉터(data-testid)가 심어져 있습니다.'
-                  : '아래 페이지를 열어 직접 살펴보며 결함을 찾거나 테스트를 진행하세요.'}
-              </p>
-              <Link
-                href={`/sandbox/${challenge.sandboxSlug}`}
-                target="_blank"
-                className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-4 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors"
-              >
-                연습 대상 열기
-              </Link>
+        ) : challenge.knownDefects ? (
+          <DefectReportExercise
+            sandboxSlug={challenge.sandboxSlug}
+            knownDefects={challenge.knownDefects}
+          />
+        ) : challenge.sandboxSlug ? (
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold">연습 대상</h2>
+            <p className="text-text-2 mt-2 text-sm leading-relaxed">
+              {challenge.selectors?.length
+                ? '아래 페이지를 열어 테스트를 작성하세요. 안정적인 셀렉터(data-testid)가 심어져 있습니다.'
+                : '아래 페이지를 열어 직접 살펴보며 결함을 찾거나 테스트를 진행하세요.'}
+            </p>
+            <Link
+              href={`/sandbox/${challenge.sandboxSlug}`}
+              target="_blank"
+              className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-4 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors"
+            >
+              연습 대상 열기
+            </Link>
 
-              {challenge.selectors?.length ? (
-                <div className="border-line-2 bg-bg-2 mt-5 overflow-hidden rounded-xl border">
-                  <div className="border-line-2 text-text-3 grid grid-cols-[1fr_1.4fr] gap-4 border-b px-5 py-3 text-xs">
-                    <span>셀렉터</span>
-                    <span>설명</span>
-                  </div>
-                  {challenge.selectors.map((s) => (
-                    <div
-                      key={s.testid}
-                      className="border-line-2 grid grid-cols-[1fr_1.4fr] items-center gap-4 border-b px-5 py-3 text-sm last:border-b-0"
-                    >
-                      <code className="text-primary font-mono text-xs">
-                        [data-testid=&quot;{s.testid}&quot;]
-                      </code>
-                      <span className="text-text-2 text-sm">{s.desc}</span>
-                    </div>
-                  ))}
+            {challenge.selectors?.length ? (
+              <div className="border-line-2 bg-bg-2 mt-5 overflow-hidden rounded-xl border">
+                <div className="border-line-2 text-text-3 grid grid-cols-[1fr_1.4fr] gap-4 border-b px-5 py-3 text-xs">
+                  <span>셀렉터</span>
+                  <span>설명</span>
                 </div>
-              ) : null}
-            </section>
-          )
-        )}
+                {challenge.selectors.map((s) => (
+                  <div
+                    key={s.testid}
+                    className="border-line-2 grid grid-cols-[1fr_1.4fr] items-center gap-4 border-b px-5 py-3 text-sm last:border-b-0"
+                  >
+                    <code className="text-primary font-mono text-xs">
+                      [data-testid=&quot;{s.testid}&quot;]
+                    </code>
+                    <span className="text-text-2 text-sm">{s.desc}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
-        <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
-          <h2 className="text-base font-semibold">
-            {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
-          </h2>
-          <p className="text-text-3 mt-2 text-sm leading-relaxed">
-            {challenge.track === 'manual'
-              ? '작성한 테스트 케이스와 결함 리포트를 제출·리뷰하는 기능은 곧 제공됩니다.'
-              : '작성한 테스트를 제출하면 격리된 러너가 실행해 통과/실패를 채점합니다. 곧 제공됩니다.'}
-          </p>
-        </section>
+        {!challenge.knownDefects && (
+          <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
+            <h2 className="text-base font-semibold">
+              {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
+            </h2>
+            <p className="text-text-3 mt-2 text-sm leading-relaxed">
+              {challenge.track === 'manual'
+                ? '작성한 테스트 케이스와 결함 리포트를 제출·리뷰하는 기능은 곧 제공됩니다.'
+                : '작성한 테스트를 제출하면 격리된 러너가 실행해 통과/실패를 채점합니다. 곧 제공됩니다.'}
+            </p>
+          </section>
+        )}
       </main>
     </div>
   );
