@@ -9,7 +9,13 @@
 export type ChallengeTrack = 'automation' | 'manual' | 'api';
 export type ChallengeDifficulty = 'easy' | 'medium' | 'hard';
 /** 주제 카테고리. 트랙(테스트 방식)과 별개인 도메인 축. */
-export type ChallengeCategory = 'auth' | 'forms' | 'data' | 'interaction' | 'async';
+export type ChallengeCategory =
+  | 'auth'
+  | 'forms'
+  | 'data'
+  | 'interaction'
+  | 'async'
+  | 'fundamentals';
 
 export interface ChallengeSelector {
   name: string;
@@ -67,6 +73,7 @@ export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
   data: '데이터',
   interaction: '상호작용',
   async: '비동기',
+  fundamentals: '테스팅 기초',
 };
 
 /** 목록에 카테고리를 노출할 순서. */
@@ -76,6 +83,7 @@ export const CATEGORY_ORDER: ChallengeCategory[] = [
   'data',
   'interaction',
   'async',
+  'fundamentals',
 ];
 
 export const CHALLENGES: Challenge[] = [
@@ -265,7 +273,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'bug-hunt-order',
     title: '버그 찾기: 주문 폼',
     track: 'manual',
-    category: 'forms',
+    category: 'fundamentals',
     difficulty: 'medium',
     tools: ['Testea'],
     summary:
@@ -282,7 +290,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'test-design-password-reset',
     title: '테스트 케이스 설계: 비밀번호 재설정',
     track: 'manual',
-    category: 'auth',
+    category: 'fundamentals',
     difficulty: 'medium',
     tools: ['Testea'],
     summary:
@@ -292,6 +300,55 @@ export const CHALLENGES: Challenge[] = [
       '정상 흐름과 함께 만료된 링크, 이미 사용한 링크, 미가입 이메일, 비밀번호 규칙 위반을 케이스로 도출하세요.',
       '동등 분할과 경계값 분석을 적용해 입력 케이스를 정리하세요.',
       '각 케이스를 사전 조건·절차·기대 결과로 작성해 보세요.',
+    ],
+  },
+  {
+    slug: 'test-case-coupon',
+    title: '테스트 케이스 작성: 할인 쿠폰',
+    track: 'manual',
+    category: 'fundamentals',
+    difficulty: 'easy',
+    tools: ['Testea'],
+    summary:
+      '할인 쿠폰 적용 기능의 테스트 케이스를 작성하세요. 정상·예외·경계 시나리오를 표로 정리하는 연습입니다.',
+    requirement: [
+      '기능 규칙: 정액(3,000원)·정률(10%) 쿠폰이 있고, 최소 주문 금액 20,000원 이상에서만 적용되며, 만료된 쿠폰과 중복 사용은 거부된다.',
+      '유효한 쿠폰 적용, 최소 금액 미달, 만료 쿠폰, 존재하지 않는 코드, 중복 적용을 각각 케이스로 작성하세요.',
+      '경계값(19,999원·20,000원)을 분리해 케이스를 만드세요.',
+      '각 케이스를 제목·사전조건·절차·입력·기대 결과로 정리하세요.',
+    ],
+  },
+  {
+    slug: 'bug-report-order',
+    title: '버그 리포트 작성: 주문 폼',
+    track: 'manual',
+    category: 'fundamentals',
+    difficulty: 'easy',
+    tools: ['Testea'],
+    summary:
+      '주문 폼에서 발견한 결함 하나를 골라, 다른 사람이 그대로 재현할 수 있는 정식 버그 리포트로 작성하세요.',
+    requirement: [
+      '연습 대상에서 결함을 하나 재현하세요.',
+      '제목은 무엇이·어디서·어떻게 잘못되는지 한 줄로 요약하세요.',
+      '재현 절차를 번호로 적고, 기대 결과와 실제 결과를 분리해 작성하세요.',
+      '심각도·우선순위와 환경(브라우저·화면)을 덧붙이세요.',
+    ],
+    sandboxSlug: 'order-form',
+  },
+  {
+    slug: 'exploratory-charter',
+    title: '탐색적 테스트 차터 작성',
+    track: 'manual',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Testea'],
+    summary:
+      '주어진 기능의 탐색적 테스트 세션 차터를 작성하세요. 무엇을·왜·어떻게 탐색할지 한 세션 분량으로 설계하는 연습입니다.',
+    requirement: [
+      '대상 기능: 파일 업로드(형식·용량 제한, 진행률, 실패 재시도).',
+      '탐색 목표(미션)와 다룰 영역, 제외할 영역을 정하세요.',
+      '사용할 휴리스틱·아이디어(경계·중단·동시성 등)와 준비물(테스트 데이터)을 적으세요.',
+      '세션 시간(예: 60분)과 기록 방법, 발견 시 후속 처리를 정하세요.',
     ],
   },
 ];
