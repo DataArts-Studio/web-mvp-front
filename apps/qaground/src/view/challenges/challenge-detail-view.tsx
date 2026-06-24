@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import {
+  CATEGORY_LABEL,
   type Challenge,
   DIFFICULTY_LABEL,
   type HttpMethod,
@@ -32,6 +33,9 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
         <div className="mb-3 flex items-center gap-2">
           <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
             {TRACK_LABEL[challenge.track]}
+          </span>
+          <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+            {CATEGORY_LABEL[challenge.category]}
           </span>
           <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
             {DIFFICULTY_LABEL[challenge.difficulty]}
