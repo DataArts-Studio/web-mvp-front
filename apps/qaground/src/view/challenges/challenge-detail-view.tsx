@@ -8,6 +8,7 @@ import {
   TRACK_LABEL,
 } from '@/shared/challenges/registry';
 
+import { ApiTesterExercise } from './api-tester-exercise';
 import { DefectReportExercise } from './defect-report-exercise';
 import { PlaygroundHeader } from './playground-header';
 import { TestCaseExercise } from './test-case-exercise';
@@ -62,45 +63,48 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
         </section>
 
         {challenge.endpoints ? (
-          <section className="mt-8">
-            <h2 className="text-lg font-semibold">연습 대상 API</h2>
-            <p className="text-text-2 mt-2 text-sm leading-relaxed">
-              아래 엔드포인트에 HTTP 요청을 보내 응답 본문과 상태 코드를 검증하세요.
-            </p>
-            <p className="text-text-2 mt-3 text-sm">
-              베이스 경로{' '}
-              <code className="text-primary font-mono text-xs">{challenge.apiBase}</code>
-            </p>
-
-            <div className="border-line-2 bg-bg-2 mt-4 overflow-hidden rounded-xl border">
-              <div className="border-line-2 text-text-3 grid grid-cols-[3.5rem_1fr_2.5rem] gap-3 border-b px-5 py-3 text-xs">
-                <span>메서드</span>
-                <span>경로</span>
-                <span>인증</span>
-              </div>
-              {challenge.endpoints.map((ep) => (
-                <div
-                  key={`${ep.method} ${ep.path}`}
-                  className="border-line-2 grid grid-cols-[3.5rem_1fr_2.5rem] items-start gap-3 border-b px-5 py-3 text-sm last:border-b-0"
-                >
-                  <span className={`font-mono text-xs font-semibold ${METHOD_COLOR[ep.method]}`}>
-                    {ep.method}
-                  </span>
-                  <span className="flex flex-col gap-1">
-                    <code className="text-text-1 font-mono text-xs break-all">{ep.path}</code>
-                    <span className="text-text-3 text-xs">{ep.desc}</span>
-                  </span>
-                  <span className="text-text-3 text-xs">{ep.auth ? '필요' : '-'}</span>
-                </div>
-              ))}
-            </div>
-
-            {challenge.apiNote && (
-              <p className="border-line-2 bg-bg-2 text-text-2 mt-4 rounded-xl border px-4 py-3 text-xs leading-relaxed">
-                {challenge.apiNote}
+          <>
+            <section className="mt-8">
+              <h2 className="text-lg font-semibold">연습 대상 API</h2>
+              <p className="text-text-2 mt-2 text-sm leading-relaxed">
+                아래 엔드포인트에 HTTP 요청을 보내 응답 본문과 상태 코드를 검증하세요.
               </p>
-            )}
-          </section>
+              <p className="text-text-2 mt-3 text-sm">
+                베이스 경로{' '}
+                <code className="text-primary font-mono text-xs">{challenge.apiBase}</code>
+              </p>
+
+              <div className="border-line-2 bg-bg-2 mt-4 overflow-hidden rounded-xl border">
+                <div className="border-line-2 text-text-3 grid grid-cols-[3.5rem_1fr_2.5rem] gap-3 border-b px-5 py-3 text-xs">
+                  <span>메서드</span>
+                  <span>경로</span>
+                  <span>인증</span>
+                </div>
+                {challenge.endpoints.map((ep) => (
+                  <div
+                    key={`${ep.method} ${ep.path}`}
+                    className="border-line-2 grid grid-cols-[3.5rem_1fr_2.5rem] items-start gap-3 border-b px-5 py-3 text-sm last:border-b-0"
+                  >
+                    <span className={`font-mono text-xs font-semibold ${METHOD_COLOR[ep.method]}`}>
+                      {ep.method}
+                    </span>
+                    <span className="flex flex-col gap-1">
+                      <code className="text-text-1 font-mono text-xs break-all">{ep.path}</code>
+                      <span className="text-text-3 text-xs">{ep.desc}</span>
+                    </span>
+                    <span className="text-text-3 text-xs">{ep.auth ? '필요' : '-'}</span>
+                  </div>
+                ))}
+              </div>
+
+              {challenge.apiNote && (
+                <p className="border-line-2 bg-bg-2 text-text-2 mt-4 rounded-xl border px-4 py-3 text-xs leading-relaxed">
+                  {challenge.apiNote}
+                </p>
+              )}
+            </section>
+            {challenge.apiBase && <ApiTesterExercise apiBase={challenge.apiBase} />}
+          </>
         ) : challenge.knownDefects ? (
           <DefectReportExercise
             sandboxSlug={challenge.sandboxSlug}
@@ -146,7 +150,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
           </section>
         ) : null}
 
-        {!challenge.knownDefects && !challenge.modelTestCases && (
+        {!challenge.knownDefects && !challenge.modelTestCases && !challenge.endpoints && (
           <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
             <h2 className="text-base font-semibold">
               {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
