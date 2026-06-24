@@ -81,7 +81,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6">
           {backLink}
           <ChallengeMeta challenge={challenge} />
-          <div className="mt-8 grid gap-8 lg:grid-cols-[20rem_1fr] lg:gap-10">
+          <div className="mt-8 grid gap-8 lg:grid-cols-[4fr_6fr] lg:gap-10">
             <div className="lg:sticky lg:top-24 lg:self-start">
               <h2 className="text-lg font-semibold">요구사항</h2>
               <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
