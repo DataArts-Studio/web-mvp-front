@@ -8,6 +8,8 @@
 
 export type ChallengeTrack = 'automation' | 'manual' | 'api';
 export type ChallengeDifficulty = 'easy' | 'medium' | 'hard';
+/** 주제 카테고리. 트랙(테스트 방식)과 별개인 도메인 축. */
+export type ChallengeCategory = 'auth' | 'forms' | 'data' | 'interaction' | 'async';
 
 export interface ChallengeSelector {
   name: string;
@@ -29,6 +31,7 @@ export interface Challenge {
   slug: string;
   title: string;
   track: ChallengeTrack;
+  category: ChallengeCategory;
   difficulty: ChallengeDifficulty;
   tools: string[];
   summary: string;
@@ -58,11 +61,29 @@ export const DIFFICULTY_LABEL: Record<ChallengeDifficulty, string> = {
   hard: '고급',
 };
 
+export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
+  auth: '인증',
+  forms: '폼',
+  data: '데이터',
+  interaction: '상호작용',
+  async: '비동기',
+};
+
+/** 목록에 카테고리를 노출할 순서. */
+export const CATEGORY_ORDER: ChallengeCategory[] = [
+  'auth',
+  'forms',
+  'data',
+  'interaction',
+  'async',
+];
+
 export const CHALLENGES: Challenge[] = [
   {
     slug: 'login-basic',
     title: '로그인 폼 자동화',
     track: 'automation',
+    category: 'auth',
     difficulty: 'easy',
     tools: ['Playwright'],
     summary: '유효·무효 자격증명에 따른 로그인 동작을 검증하는 자동화 테스트를 작성하세요.',
@@ -84,6 +105,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'signup-validation',
     title: '회원가입 폼 검증',
     track: 'automation',
+    category: 'forms',
     difficulty: 'easy',
     tools: ['Playwright'],
     summary: '이메일 형식, 비밀번호 규칙, 비밀번호 확인 일치를 검증하는 테스트를 작성하세요.',
@@ -109,6 +131,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'data-table',
     title: '데이터 테이블 검색·정렬·페이지네이션',
     track: 'automation',
+    category: 'data',
     difficulty: 'medium',
     tools: ['Playwright'],
     summary: '검색 필터, 컬럼 정렬, 페이지 이동이 있는 테이블을 검증하는 테스트를 작성하세요.',
@@ -131,6 +154,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'async-load',
     title: '비동기 로딩과 대기',
     track: 'automation',
+    category: 'async',
     difficulty: 'easy',
     tools: ['Playwright'],
     summary: '지연 로딩되는 콘텐츠를 적절히 대기해 검증하는 테스트를 작성하세요.',
@@ -149,6 +173,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'modal',
     title: '모달 다이얼로그 확인',
     track: 'automation',
+    category: 'interaction',
     difficulty: 'easy',
     tools: ['Playwright'],
     summary: '열기·확인·취소가 있는 모달의 흐름을 검증하는 테스트를 작성하세요.',
@@ -170,6 +195,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'drag-and-drop',
     title: '드래그앤드롭 배치',
     track: 'automation',
+    category: 'interaction',
     difficulty: 'medium',
     tools: ['Playwright'],
     summary: 'HTML5 드래그앤드롭으로 위젯을 드롭존에 배치하는 동작을 검증하는 테스트를 작성하세요.',
@@ -188,6 +214,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'file-upload',
     title: '파일 업로드',
     track: 'automation',
+    category: 'interaction',
     difficulty: 'easy',
     tools: ['Playwright'],
     summary: '파일을 선택하고 업로드해 완료 상태를 검증하는 테스트를 작성하세요.',
@@ -207,6 +234,7 @@ export const CHALLENGES: Challenge[] = [
     slug: 'rest-api-products',
     title: '상품 REST API 자동화',
     track: 'api',
+    category: 'data',
     difficulty: 'medium',
     tools: ['Postman'],
     summary:
@@ -237,4 +265,12 @@ export const CHALLENGES: Challenge[] = [
 
 export function getChallenge(slug: string): Challenge | undefined {
   return CHALLENGES.find((c) => c.slug === slug);
+}
+
+/** 카테고리 순서대로 묶은 챌린지 그룹 (빈 카테고리는 제외). */
+export function challengesByCategory(): { category: ChallengeCategory; items: Challenge[] }[] {
+  return CATEGORY_ORDER.map((category) => ({
+    category,
+    items: CHALLENGES.filter((c) => c.category === category),
+  })).filter((group) => group.items.length > 0);
 }
