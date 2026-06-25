@@ -15,10 +15,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const challenge = getChallenge(slug);
-  if (!challenge) return { title: '챌린지를 찾을 수 없음 — qaground' };
+  if (!challenge) return { title: '챌린지를 찾을 수 없음' };
+  const url = `https://qaground.gettestea.com/challenges/${challenge.slug}`;
   return {
-    title: `${challenge.title} — qaground`,
+    title: challenge.title,
     description: challenge.summary,
+    alternates: { canonical: `/challenges/${challenge.slug}` },
+    keywords: [challenge.title, ...challenge.tools, 'QA 연습', '테스트 연습', '테스티아'],
+    openGraph: {
+      title: `${challenge.title} | qaground`,
+      description: challenge.summary,
+      url,
+    },
   };
 }
 
