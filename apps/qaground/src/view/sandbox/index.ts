@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 
 import { AsyncLoadSandbox } from './async-load-sandbox';
+import { CartCheckoutSandbox } from './cart-checkout-sandbox';
 import { DataTableSandbox } from './data-table-sandbox';
 import { DatePickerSandbox } from './date-picker-sandbox';
 import { DndSandbox } from './dnd-sandbox';
@@ -8,6 +9,7 @@ import { FileUploadSandbox } from './file-upload-sandbox';
 import { InfiniteScrollSandbox } from './infinite-scroll-sandbox';
 import { LoginSandbox } from './login-sandbox';
 import { ModalSandbox } from './modal-sandbox';
+import { MoneyTransferSandbox } from './money-transfer-sandbox';
 import { OrderFormSandbox } from './order-form-sandbox';
 import { ProfileFormSandbox } from './profile-form-sandbox';
 import { RealtimeValidationSandbox } from './realtime-validation-sandbox';
@@ -35,4 +37,6 @@ export const SANDBOXES: Record<string, ComponentType> = {
   tabs: TabsSandbox,
   'realtime-validation': RealtimeValidationSandbox,
   'date-picker': DatePickerSandbox,
+  'cart-checkout': CartCheckoutSandbox,
+  'money-transfer': MoneyTransferSandbox,
 };
