@@ -86,6 +86,9 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true },
   },
+  verification: {
+    other: { 'naver-site-verification': '2a41c60503088ea4c2589bb5f5fdf7861b3306e9' },
+  },
 };
 
 export default function RootLayout({
