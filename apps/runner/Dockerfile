@@ -32,4 +32,11 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
+# 비신뢰 spec 은 root 로 실행하지 않는다(권한 상승·컨테이너 탈출 표면 축소).
+# Playwright 베이스 이미지가 제공하는 비특권 사용자 pwuser(uid 1000)로 떨어뜨린다.
+# 런타임 실행 디렉터리(.runs)를 미리 만들어 소유권을 넘겨, 비root 프로세스가
+# 요청별 임시 디렉터리를 생성·정리할 수 있게 한다.
+RUN mkdir -p /app/.runs && chown -R pwuser:pwuser /app
+USER pwuser
+
 CMD ["node", "dist/server.js"]

@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 
 import { getChallenge } from '@/shared/challenges/registry';
+import { getClientIp, rateLimit } from '@/shared/rate-limit';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+/** 채점 호출 레이트리밋: IP 당 60초에 10회. 비신뢰 코드 실행이므로 보수적으로 둔다. */
+const RUN_LIMIT = 10;
+const RUN_WINDOW_MS = 60_000;
 
 const BodySchema = z
   .object({
@@ -23,6 +28,16 @@ const BodySchema = z
  * - 보안: 러너는 비신뢰 코드 실행이므로 일회용 격리 컨테이너 전제(러너 배포 측 책임).
  */
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  // 인증 없는 공개 엔드포인트이므로 IP 단위로 호출을 제한한다(대량 코드 실행 남용 방지).
+  const ip = getClientIp(request);
+  const limit = rateLimit(`challenges-run:${ip}`, RUN_LIMIT, RUN_WINDOW_MS);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: '요청이 너무 잦습니다. 잠시 후 다시 시도해주세요.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(limit.retryAfterMs / 1000)) } }
+    );
+  }
+
   const { slug } = await params;
   const challenge = getChallenge(slug);
   if (!challenge || !challenge.sandboxSlug) {
