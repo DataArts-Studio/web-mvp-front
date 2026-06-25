@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
+import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
@@ -187,7 +188,7 @@ let nextId = 2;
  * 포스트맨처럼 요청을 구성하고, (1) 구조화된 단언 또는 (2) pm.test 스크립트로 응답을 검증한다.
  * 스크립트는 사용자 브라우저에서만 평가하므로 격리 러너·서버 코드 실행이 필요 없다.
  */
-export const ApiTesterExercise = ({ apiBase }: { apiBase: string }) => {
+export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: string }) => {
   const [method, setMethod] = useState<Method>('GET');
   const [path, setPath] = useState('/products?page=1&limit=5');
   const [token, setToken] = useState('');
@@ -253,9 +254,15 @@ export const ApiTesterExercise = ({ apiBase }: { apiBase: string }) => {
 
       const pretty = json !== undefined ? JSON.stringify(json, null, 2) : bodyText;
       setResult({ status: res.status, bodyText: pretty, checks, scriptResults });
-      track('api_run', {
-        passed: checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length,
-        total: checks.length + scriptResults.length,
+      const passed =
+        checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length;
+      const totalChecks = checks.length + scriptResults.length;
+      track('api_run', { passed, total: totalChecks });
+      recordSubmission({
+        slug,
+        kind: 'api',
+        content: { method, path, assertions, script },
+        result: { passed, total: totalChecks },
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : '요청 실패');

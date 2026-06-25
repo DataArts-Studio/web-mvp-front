@@ -136,7 +136,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
                   starterSpec={challenge.starterSpec}
                 />
               ) : (
-                <ApiTesterExercise apiBase={challenge.apiBase!} />
+                <ApiTesterExercise apiBase={challenge.apiBase!} slug={challenge.slug} />
               )}
             </div>
           </div>
@@ -157,11 +157,12 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
 
         {challenge.knownDefects ? (
           <DefectReportExercise
+            slug={challenge.slug}
             sandboxSlug={challenge.sandboxSlug}
             knownDefects={challenge.knownDefects}
           />
         ) : challenge.modelTestCases ? (
-          <TestCaseExercise modelTestCases={challenge.modelTestCases} />
+          <TestCaseExercise slug={challenge.slug} modelTestCases={challenge.modelTestCases} />
         ) : challenge.sandboxSlug ? (
           <section className="mt-8">
             <h2 className="text-lg font-semibold">연습 대상</h2>
