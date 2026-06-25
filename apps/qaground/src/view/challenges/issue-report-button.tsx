@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { track } from '@/shared/analytics/track';
+
 type IssueType = 'bug' | 'idea' | 'etc';
 type Status = 'idle' | 'submitting' | 'done' | 'error' | 'unavailable';
 
@@ -129,6 +131,7 @@ export const IssueReportButton = () => {
         setMessage(data?.error ?? '이슈 등록에 실패했습니다.');
         return;
       }
+      track('issue_submit', { issue_type: type });
       setStatus('done');
     } catch {
       setStatus('error');

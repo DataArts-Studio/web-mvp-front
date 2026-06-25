@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { track } from '@/shared/analytics/track';
+
 interface ModelCase {
   title: string;
   detail: string;
@@ -80,7 +82,10 @@ export const TestCaseExercise = ({ modelTestCases }: { modelTestCases: ModelCase
           data-testid="cases-submit"
           type="button"
           disabled={!canSubmit || submitted}
-          onClick={() => setSubmitted(true)}
+          onClick={() => {
+            track('testcase_submit');
+            setSubmitted(true);
+          }}
           className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           제출하고 모범 답안 확인

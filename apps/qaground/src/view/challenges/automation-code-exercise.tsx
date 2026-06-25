@@ -5,6 +5,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
+import { track } from '@/shared/analytics/track';
 import type { ChallengeSelector } from '@/shared/challenges/registry';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
@@ -75,6 +76,7 @@ export const AutomationCodeExercise = ({
       }
       setResult(data);
       setStatus('result');
+      track('code_submit', { slug, status: data.status, ok: data.ok });
     } catch {
       setStatus('error');
       setMessage('제출에 실패했습니다.');

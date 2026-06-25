@@ -4,6 +4,8 @@ import { useState } from 'react';
 
 import Link from 'next/link';
 
+import { track } from '@/shared/analytics/track';
+
 interface Defect {
   title: string;
   detail: string;
@@ -117,7 +119,10 @@ export const DefectReportExercise = ({
         data-testid="report-submit"
         type="button"
         disabled={!canSubmit || submitted}
-        onClick={() => setSubmitted(true)}
+        onClick={() => {
+          track('defect_submit');
+          setSubmitted(true);
+        }}
         className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-5 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
         제출하고 정답 확인

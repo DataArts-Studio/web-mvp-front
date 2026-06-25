@@ -16,6 +16,13 @@ const BodySchema = z
 
 const TYPE_LABEL: Record<string, string> = { bug: '버그', idea: '제안', etc: '기타' };
 
+// 유형 → 레포 라벨(레포에 이미 존재하는 라벨만 사용. 없는 라벨이면 422). 빈 값은 미부착.
+const TYPE_GH_LABEL: Record<string, string> = {
+  bug: '🐛 type: bug',
+  idea: '✨ type: feature',
+  etc: '',
+};
+
 // 간단 인메모리 레이트리밋. 서버 인스턴스별이라 콜드스타트 시 리셋되는 약한 방어지만,
 // 공개 엔드포인트의 1차 남용 차단용. 운영 스케일 시 Redis 등으로 교체.
 const WINDOW_MS = 60 * 60 * 1000; // 1시간
@@ -72,6 +79,9 @@ export async function POST(request: Request) {
 
   const typeLabel = type ? TYPE_LABEL[type] : '기타';
   const issueTitle = `[제보/${typeLabel}] ${title}`;
+  const typeGhLabel = type ? TYPE_GH_LABEL[type] : '';
+  const labels = ['qaground', ...(typeGhLabel ? [typeGhLabel] : [])];
+  const assignee = process.env.QAGROUND_GH_ISSUE_ASSIGNEE ?? 'JangHwanPark';
   const issueBody = [body, '', '---', '_qaground 사용자 제보_', pageUrl ? `페이지: ${pageUrl}` : '']
     .filter(Boolean)
     .join('\n');
@@ -85,7 +95,12 @@ export async function POST(request: Request) {
         'X-GitHub-Api-Version': '2022-11-28',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ title: issueTitle, body: issueBody }),
+      body: JSON.stringify({
+        title: issueTitle,
+        body: issueBody,
+        labels,
+        assignees: [assignee],
+      }),
     });
     if (!res.ok) {
       console.error('[issues] GitHub 이슈 생성 실패', res.status, await res.text().catch(() => ''));
