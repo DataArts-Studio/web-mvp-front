@@ -47,22 +47,63 @@ function ChallengeMeta({ challenge }: { challenge: Challenge }) {
   );
 }
 
-function Requirements({ challenge }: { challenge: Challenge }) {
+function RequirementList({ challenge }: { challenge: Challenge }) {
   return (
-    <section className="mt-8">
+    <>
       <h2 className="text-lg font-semibold">요구사항</h2>
       <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
         {challenge.requirement.map((r) => (
           <li key={r}>{r}</li>
         ))}
       </ol>
-    </section>
+    </>
+  );
+}
+
+function ApiEndpoints({ challenge }: { challenge: Challenge }) {
+  if (!challenge.endpoints) return null;
+  return (
+    <div className="mt-6">
+      <h3 className="text-base font-semibold">연습 대상 API</h3>
+      <p className="text-text-2 mt-2 text-sm">
+        베이스 경로 <code className="text-primary font-mono text-xs">{challenge.apiBase}</code>
+      </p>
+      <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden rounded-xl border">
+        <div className="border-line-2 text-text-3 grid grid-cols-[3.5rem_1fr_2.5rem] gap-3 border-b px-4 py-2.5 text-xs">
+          <span>메서드</span>
+          <span>경로</span>
+          <span>인증</span>
+        </div>
+        {challenge.endpoints.map((ep) => (
+          <div
+            key={`${ep.method} ${ep.path}`}
+            className="border-line-2 grid grid-cols-[3.5rem_1fr_2.5rem] items-start gap-3 border-b px-4 py-2.5 text-sm last:border-b-0"
+          >
+            <span className={`font-mono text-xs font-semibold ${METHOD_COLOR[ep.method]}`}>
+              {ep.method}
+            </span>
+            <span className="flex flex-col gap-1">
+              <code className="text-text-1 font-mono text-xs break-all">{ep.path}</code>
+              <span className="text-text-3 text-xs">{ep.desc}</span>
+            </span>
+            <span className="text-text-3 text-xs">{ep.auth ? '필요' : '-'}</span>
+          </div>
+        ))}
+      </div>
+      {challenge.apiNote && (
+        <p className="border-line-2 bg-bg-2 text-text-2 mt-3 rounded-xl border px-4 py-3 text-xs leading-relaxed">
+          {challenge.apiNote}
+        </p>
+      )}
+    </div>
   );
 }
 
 export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => {
   const isAutomationCode =
     challenge.track === 'automation' && !!challenge.sandboxSlug && !!challenge.selectors?.length;
+  const isApiTester = !!challenge.endpoints && !!challenge.apiBase;
+  const isSplit = isAutomationCode || isApiTester;
 
   const backLink = (
     <Link
@@ -73,8 +114,8 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
     </Link>
   );
 
-  // 프로그래머스식 2단: 좌 요구사항 / 우 코드 에디터
-  if (isAutomationCode) {
+  // 프로그래머스식 2단: 좌 요구사항(+API 엔드포인트) / 우 작성·실행 폼
+  if (isSplit) {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
         <PlaygroundHeader />
@@ -83,20 +124,20 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
           <ChallengeMeta challenge={challenge} />
           <div className="mt-8 grid gap-8 lg:grid-cols-[4fr_6fr] lg:gap-10">
             <div className="lg:sticky lg:top-24 lg:self-start">
-              <h2 className="text-lg font-semibold">요구사항</h2>
-              <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
-                {challenge.requirement.map((r) => (
-                  <li key={r}>{r}</li>
-                ))}
-              </ol>
+              <RequirementList challenge={challenge} />
+              {isApiTester && <ApiEndpoints challenge={challenge} />}
             </div>
             <div>
-              <AutomationCodeExercise
-                slug={challenge.slug}
-                sandboxSlug={challenge.sandboxSlug!}
-                selectors={challenge.selectors!}
-                starterSpec={challenge.starterSpec}
-              />
+              {isAutomationCode ? (
+                <AutomationCodeExercise
+                  slug={challenge.slug}
+                  sandboxSlug={challenge.sandboxSlug!}
+                  selectors={challenge.selectors!}
+                  starterSpec={challenge.starterSpec}
+                />
+              ) : (
+                <ApiTesterExercise apiBase={challenge.apiBase!} />
+              )}
             </div>
           </div>
         </main>
@@ -110,52 +151,11 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
         {backLink}
         <ChallengeMeta challenge={challenge} />
-        <Requirements challenge={challenge} />
+        <section className="mt-8">
+          <RequirementList challenge={challenge} />
+        </section>
 
-        {challenge.endpoints ? (
-          <>
-            <section className="mt-8">
-              <h2 className="text-lg font-semibold">연습 대상 API</h2>
-              <p className="text-text-2 mt-2 text-sm leading-relaxed">
-                아래 엔드포인트에 HTTP 요청을 보내 응답 본문과 상태 코드를 검증하세요.
-              </p>
-              <p className="text-text-2 mt-3 text-sm">
-                베이스 경로{' '}
-                <code className="text-primary font-mono text-xs">{challenge.apiBase}</code>
-              </p>
-
-              <div className="border-line-2 bg-bg-2 mt-4 overflow-hidden rounded-xl border">
-                <div className="border-line-2 text-text-3 grid grid-cols-[3.5rem_1fr_2.5rem] gap-3 border-b px-5 py-3 text-xs">
-                  <span>메서드</span>
-                  <span>경로</span>
-                  <span>인증</span>
-                </div>
-                {challenge.endpoints.map((ep) => (
-                  <div
-                    key={`${ep.method} ${ep.path}`}
-                    className="border-line-2 grid grid-cols-[3.5rem_1fr_2.5rem] items-start gap-3 border-b px-5 py-3 text-sm last:border-b-0"
-                  >
-                    <span className={`font-mono text-xs font-semibold ${METHOD_COLOR[ep.method]}`}>
-                      {ep.method}
-                    </span>
-                    <span className="flex flex-col gap-1">
-                      <code className="text-text-1 font-mono text-xs break-all">{ep.path}</code>
-                      <span className="text-text-3 text-xs">{ep.desc}</span>
-                    </span>
-                    <span className="text-text-3 text-xs">{ep.auth ? '필요' : '-'}</span>
-                  </div>
-                ))}
-              </div>
-
-              {challenge.apiNote && (
-                <p className="border-line-2 bg-bg-2 text-text-2 mt-4 rounded-xl border px-4 py-3 text-xs leading-relaxed">
-                  {challenge.apiNote}
-                </p>
-              )}
-            </section>
-            {challenge.apiBase && <ApiTesterExercise apiBase={challenge.apiBase} />}
-          </>
-        ) : challenge.knownDefects ? (
+        {challenge.knownDefects ? (
           <DefectReportExercise
             sandboxSlug={challenge.sandboxSlug}
             knownDefects={challenge.knownDefects}
@@ -178,7 +178,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
           </section>
         ) : null}
 
-        {!challenge.knownDefects && !challenge.modelTestCases && !challenge.endpoints && (
+        {!challenge.knownDefects && !challenge.modelTestCases && (
           <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
             <h2 className="text-base font-semibold">
               {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
