@@ -19,12 +19,12 @@
   "peerDependencies": {
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "next": "^16.1.6"
+    "next": "^16.2.9"
   },
   "devDependencies": {
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19",
-    "next": "^16.1.6",
+    "next": "^16.2.9",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "typescript": "^5"
