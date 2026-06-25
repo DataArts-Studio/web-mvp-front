@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { track } from '@/shared/analytics/track';
@@ -48,11 +48,12 @@ export const IssueReportButton = () => {
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
+  const openModal = () => {
     const d = detectBrowser();
     setBrowser(d.name);
     setBrowserVersion(d.version);
-  }, []);
+    setOpen(true);
+  };
 
   const reset = () => {
     setTitle('');
@@ -143,7 +144,7 @@ export const IssueReportButton = () => {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openModal}
         className="border-line-3 text-text-2 hover:text-text-1 hover:border-line-2 rounded-button h-9 border px-3 text-sm transition-colors"
       >
         이슈 등록

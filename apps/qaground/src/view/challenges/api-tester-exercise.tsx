@@ -156,7 +156,6 @@ function runPmScript(
     },
   };
   try {
-    // eslint-disable-next-line no-new-func
     new Function('pm', script)(pm);
   } catch (e) {
     results.push({
