@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import Link from 'next/link';
 
+import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
 
 interface Defect {
@@ -20,9 +21,11 @@ const SEVERITIES = ['낮음', '보통', '높음', '긴급'] as const;
  * 의도적으로 심은 결함(정답)과 자가비교 피드백을 보여준다.
  */
 export const DefectReportExercise = ({
+  slug,
   sandboxSlug,
   knownDefects,
 }: {
+  slug: string;
   sandboxSlug?: string;
   knownDefects: Defect[];
 }) => {
@@ -121,6 +124,11 @@ export const DefectReportExercise = ({
         disabled={!canSubmit || submitted}
         onClick={() => {
           track('defect_submit');
+          recordSubmission({
+            slug,
+            kind: 'defect',
+            content: { title, steps, expected, actual, severity },
+          });
           setSubmitted(true);
         }}
         className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-5 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
