@@ -38,6 +38,19 @@ export const Footer = () => {
         <Link href="/team" aria-label={t('teamAria')} className="hover:text-teal-400">
           {t('team')}
         </Link>
+        <span aria-hidden="true" className="mx-2">
+          {' '}
+          |{' '}
+        </span>
+        <a
+          href="https://qaground.gettestea.com"
+          target="_blank"
+          rel="noopener"
+          aria-label={t('qagroundAria')}
+          className="hover:text-teal-400"
+        >
+          {t('qaground')}
+        </a>
       </nav>
     </footer>
   );
