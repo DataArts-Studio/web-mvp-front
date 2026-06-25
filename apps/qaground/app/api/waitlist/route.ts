@@ -1,0 +1,49 @@
+import { NextResponse } from 'next/server';
+
+import { getDatabase, qagroundWaitlist } from '@testea/db';
+import { z } from 'zod';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+const BodySchema = z
+  .object({
+    email: z.string().trim().toLowerCase().email().max(254),
+  })
+  .strict();
+
+/**
+ * qaground 비공개 베타 대기자 신청 수신.
+ *
+ * - 외부 입력을 신뢰하지 않는다: zod 로 이메일 검증·정규화(소문자) 후 저장.
+ * - 중복 이메일은 unique 제약으로 무시하고 성공(alreadyJoined) 으로 응답한다.
+ * - DB 접근은 서버(service_role 연결) 경유. 테이블은 RLS deny-anon.
+ * - TODO: 봇/스팸 방지(Turnstile)·레이트리밋은 후속. 현재는 검증·중복무시까지.
+ */
+export async function POST(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 });
+  }
+
+  const parsed = BodySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, error: 'invalid_email' }, { status: 400 });
+  }
+
+  try {
+    const db = getDatabase();
+    const inserted = await db
+      .insert(qagroundWaitlist)
+      .values({ email: parsed.data.email, source: 'beta-landing' })
+      .onConflictDoNothing({ target: qagroundWaitlist.email })
+      .returning({ id: qagroundWaitlist.id });
+
+    return NextResponse.json({ ok: true, alreadyJoined: inserted.length === 0 });
+  } catch (error) {
+    console.error('[waitlist] 대기자 저장 실패', error);
+    return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 });
+  }
+}
