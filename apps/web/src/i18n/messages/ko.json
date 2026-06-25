@@ -85,7 +85,9 @@
     "privacy": "개인정보 처리방침",
     "terms": "이용약관",
     "team": "팀 테스티아",
-    "teamAria": "팀 소개"
+    "teamAria": "팀 소개",
+    "qaground": "QA 자동화 연습",
+    "qagroundAria": "qaground - QA 자동화 연습 플레이그라운드"
   },
   "lending": {
     "documentAria": "Testea 랜딩 페이지",
