@@ -118,10 +118,8 @@ export const CHALLENGES: Challenge[] = [
 
 test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다', async ({ page }) => {
   await page.goto('/');
-  await page.getByTestId('username').fill('tester');
-  await page.getByTestId('password').fill('qaground123');
-  await page.getByTestId('login-submit').click();
-  await expect(page.getByTestId('login-success')).toBeVisible();
+  // TODO: username·password 를 채우고 로그인 버튼을 클릭한 뒤,
+  //       login-success 가 보이는지 expect 로 검증하세요.
 });
 `,
   },
@@ -149,6 +147,36 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       { name: '비밀번호 에러', testid: 'password-error', desc: '비밀번호 검증 실패 시 노출' },
       { name: '확인 에러', testid: 'confirm-error', desc: '비밀번호 불일치 시 노출' },
       { name: '성공 메시지', testid: 'signup-success', desc: '가입 완료 시 노출' },
+    ],
+  },
+  {
+    slug: 'profile-form',
+    title: '프로필 등록 폼 다중 검증',
+    track: 'automation',
+    category: 'forms',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '이름 길이, 전화번호 형식, 나이 범위, 약관 동의 등 서로 다른 유형의 유효성 규칙을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '이름이 2자 미만이거나 20자를 초과하면 이름 에러가 보인다.',
+      '전화번호가 010-0000-0000 형식이 아니면 전화 에러가 보인다.',
+      '나이가 14 미만이거나 120 초과 또는 숫자가 아니면 나이 에러가 보인다.',
+      '약관에 동의하지 않고 제출하면 약관 에러가 보인다.',
+      '모든 필드가 유효하면 등록 완료 메시지가 보인다.',
+    ],
+    sandboxSlug: 'profile-form',
+    selectors: [
+      { name: '이름 입력', testid: 'name', desc: '이름 입력 필드' },
+      { name: '전화 입력', testid: 'phone', desc: '전화번호 입력 필드' },
+      { name: '나이 입력', testid: 'age', desc: '나이 입력 필드' },
+      { name: '약관 동의', testid: 'terms', desc: '약관 동의 체크박스' },
+      { name: '등록 버튼', testid: 'profile-submit', desc: '제출 버튼' },
+      { name: '이름 에러', testid: 'name-error', desc: '이름 검증 실패 시 노출' },
+      { name: '전화 에러', testid: 'phone-error', desc: '전화 검증 실패 시 노출' },
+      { name: '나이 에러', testid: 'age-error', desc: '나이 검증 실패 시 노출' },
+      { name: '약관 에러', testid: 'terms-error', desc: '약관 미동의 시 노출' },
+      { name: '성공 메시지', testid: 'profile-success', desc: '등록 완료 시 노출' },
     ],
   },
   {
@@ -252,6 +280,166 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       { name: '파일 이름', testid: 'file-name', desc: '선택한 파일 이름' },
       { name: '업로드 버튼', testid: 'upload-submit', desc: '업로드 제출 버튼' },
       { name: '업로드 결과', testid: 'upload-result', desc: '업로드 완료 시 노출' },
+    ],
+  },
+  {
+    slug: 'session-expiry',
+    title: '세션 만료와 재로그인',
+    track: 'automation',
+    category: 'auth',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary: '로그인·세션 만료·재로그인으로 이어지는 상태 전이를 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '로그인 버튼을 누르면 로그인 상태 메시지가 보인다.',
+      '세션 만료를 시뮬레이트하면 만료 배너가 보인다.',
+      '다시 로그인을 누르면 로그인 상태로 돌아온다.',
+    ],
+    sandboxSlug: 'session-expiry',
+    selectors: [
+      { name: '로그인 버튼', testid: 'login-btn', desc: '로그인 버튼' },
+      { name: '세션 상태', testid: 'session-status', desc: '로그인 상태 메시지' },
+      { name: '만료 버튼', testid: 'expire-btn', desc: '세션 만료 시뮬레이트' },
+      { name: '만료 배너', testid: 'expired-banner', desc: '세션 만료 시 노출' },
+      { name: '재로그인 버튼', testid: 'relogin-btn', desc: '다시 로그인 버튼' },
+    ],
+  },
+  {
+    slug: 'infinite-scroll',
+    title: '무한 스크롤 더 불러오기',
+    track: 'automation',
+    category: 'async',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '더 불러오기로 항목이 비동기 추가되고 끝에 도달하면 멈추는 목록을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '처음에는 10개 항목이 보인다.',
+      '더 불러오기를 누르면 로딩 표시 후 항목이 10개씩 추가된다.',
+      '최대(30개)에 도달하면 더 불러오기 버튼이 사라지고 마지막 안내가 보인다.',
+    ],
+    sandboxSlug: 'infinite-scroll',
+    selectors: [
+      { name: '목록', testid: 'scroll-list', desc: '항목 목록 컨테이너' },
+      { name: '항목', testid: 'list-item', desc: '각 목록 항목 (여러 개)' },
+      { name: '로딩', testid: 'loading', desc: '불러오는 중 노출' },
+      { name: '더 불러오기', testid: 'load-more', desc: '추가 로딩 버튼' },
+      { name: '목록 끝', testid: 'list-end', desc: '마지막 도달 시 노출' },
+    ],
+  },
+  {
+    slug: 'wizard-form',
+    title: '다단계 위저드 폼',
+    track: 'automation',
+    category: 'forms',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary: '단계별 검증·이동·이전 복귀가 있는 3단계 위저드 폼을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '1단계에서 이름·이메일이 유효하지 않으면 에러가 보이고 다음 단계로 넘어가지 않는다.',
+      '유효하면 2단계 확인 화면에 입력한 값이 보인다.',
+      '이전을 누르면 1단계로 돌아간다.',
+      '제출을 누르면 3단계 완료 메시지가 보인다.',
+      '단계 표시가 현재 단계에 맞게 갱신된다.',
+    ],
+    sandboxSlug: 'wizard-form',
+    selectors: [
+      { name: '단계 표시', testid: 'step-indicator', desc: '현재 / 전체 단계' },
+      { name: '이름 입력', testid: 'name', desc: '1단계 이름 필드' },
+      { name: '이메일 입력', testid: 'email', desc: '1단계 이메일 필드' },
+      { name: '이름 에러', testid: 'name-error', desc: '이름 검증 실패 시' },
+      { name: '이메일 에러', testid: 'email-error', desc: '이메일 검증 실패 시' },
+      { name: '다음 버튼', testid: 'next-btn', desc: '다음 단계' },
+      { name: '확인 이름', testid: 'confirm-name', desc: '2단계 이름 확인' },
+      { name: '확인 이메일', testid: 'confirm-email', desc: '2단계 이메일 확인' },
+      { name: '이전 버튼', testid: 'prev-btn', desc: '이전 단계' },
+      { name: '제출 버튼', testid: 'submit-btn', desc: '제출' },
+      { name: '완료 메시지', testid: 'complete', desc: '3단계 완료 시' },
+    ],
+  },
+  {
+    slug: 'toast-notification',
+    title: '토스트 자동 소멸',
+    track: 'automation',
+    category: 'async',
+    difficulty: 'easy',
+    tools: ['Playwright'],
+    summary: '액션 후 나타났다 잠시 뒤 사라지는 토스트를 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '저장하기를 누르면 토스트가 나타난다.',
+      '잠시(약 2초) 후 토스트가 자동으로 사라진다.',
+    ],
+    sandboxSlug: 'toast-notification',
+    selectors: [
+      { name: '저장 버튼', testid: 'show-toast', desc: '토스트를 띄우는 버튼' },
+      { name: '토스트', testid: 'toast', desc: '나타났다 사라지는 알림' },
+    ],
+  },
+  {
+    slug: 'tabs',
+    title: '탭 전환',
+    track: 'automation',
+    category: 'interaction',
+    difficulty: 'easy',
+    tools: ['Playwright'],
+    summary:
+      '탭을 클릭하면 콘텐츠가 바뀌고 활성 탭이 표시되는 동작을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '탭(개요·사양·리뷰)을 클릭하면 해당 콘텐츠가 패널에 보인다.',
+      '선택한 탭은 활성(aria-selected) 상태로 표시된다.',
+    ],
+    sandboxSlug: 'tabs',
+    selectors: [
+      { name: '개요 탭', testid: 'tab-overview', desc: '개요 탭' },
+      { name: '사양 탭', testid: 'tab-specs', desc: '사양 탭' },
+      { name: '리뷰 탭', testid: 'tab-reviews', desc: '리뷰 탭' },
+      { name: '탭 패널', testid: 'tab-panel', desc: '활성 탭의 콘텐츠' },
+    ],
+  },
+  {
+    slug: 'realtime-validation',
+    title: '실시간 인라인 검증',
+    track: 'automation',
+    category: 'forms',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '입력 즉시 이메일 형식·비밀번호 강도를 표시하고 둘 다 유효할 때만 제출이 활성화되는 폼을 검증하세요.',
+    requirement: [
+      '이메일을 입력하면 형식 유효 여부가 즉시 표시된다.',
+      '비밀번호를 입력하면 강도(약함·보통·강함)가 표시된다.',
+      '이메일 형식이 맞고 비밀번호가 8자 이상이면 제출 버튼이 활성화된다.',
+      '둘 중 하나라도 유효하지 않으면 제출 버튼이 비활성화된다.',
+    ],
+    sandboxSlug: 'realtime-validation',
+    selectors: [
+      { name: '이메일 입력', testid: 'email', desc: '이메일 필드' },
+      { name: '이메일 상태', testid: 'email-status', desc: '형식 유효 여부 즉시 표시' },
+      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 필드' },
+      { name: '비밀번호 강도', testid: 'password-strength', desc: '강도 표시' },
+      { name: '제출 버튼', testid: 'submit', desc: '둘 다 유효할 때만 활성' },
+    ],
+  },
+  {
+    slug: 'date-picker',
+    title: '날짜 선택기',
+    track: 'automation',
+    category: 'interaction',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '입력을 누르면 달력이 열리고 날짜를 고르면 입력에 반영되는 동작을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '날짜 입력을 누르면 달력이 열린다.',
+      '달력에서 날짜를 선택하면 입력에 날짜가 반영되고 달력이 닫힌다.',
+      '선택한 날짜가 표시된다.',
+    ],
+    sandboxSlug: 'date-picker',
+    selectors: [
+      { name: '날짜 입력', testid: 'date-input', desc: '클릭하면 달력 열림' },
+      { name: '달력', testid: 'calendar', desc: '날짜 그리드' },
+      { name: '날짜 셀', testid: 'day-cell', desc: '각 날짜 (여러 개)' },
+      { name: '선택 날짜', testid: 'selected-date', desc: '선택 후 표시' },
     ],
   },
   {
