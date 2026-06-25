@@ -1,7 +1,5 @@
 import Link from 'next/link';
 
-import { WaitlistForm } from './waitlist-form';
-
 export const BetaLandingView = () => {
   return (
     <div className="bg-bg-1 text-text-1 relative flex h-screen w-full flex-col overflow-hidden font-sans">
@@ -42,14 +40,13 @@ export const BetaLandingView = () => {
           QA 연습 플레이그라운드
         </h1>
         <p className="text-text-2 max-w-xl text-base leading-[170%] sm:text-lg">
-          곧 공개됩니다. 가장 먼저 연습을 시작하고 싶다면 베타를 신청하세요.
+          로그인·가입 없이 지금 바로 연습을 시작할 수 있어요.
         </p>
-        <WaitlistForm />
         <Link
           href="/challenges"
-          className="text-text-3 hover:text-text-1 text-sm transition-colors"
+          className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 inline-flex items-center justify-center px-8 text-sm font-medium text-white transition-colors"
         >
-          또는 지금 연습 챌린지 둘러보기 →
+          바로 챌린지 시작하기 →
         </Link>
       </main>
 

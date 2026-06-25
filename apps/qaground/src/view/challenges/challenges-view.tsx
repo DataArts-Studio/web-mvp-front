@@ -101,6 +101,21 @@ export const ChallengesView = ({ selectedCategory }: { selectedCategory?: string
             ))}
           </div>
         </div>
+
+        <section className="border-line-2 bg-bg-2 mt-16 flex flex-col items-center gap-3 rounded-2xl border px-6 py-10 text-center">
+          <p className="text-text-3 text-sm">여기서 연습한 테스트, 실무에선 어떻게 관리하시나요?</p>
+          <h2 className="text-xl font-semibold">
+            테스트 케이스·실행·리포트는 <span className="text-primary">Testea</span>로
+          </h2>
+          <a
+            href="https://gettestea.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 rounded-lg bg-[#0bb57f] px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
+            Testea 둘러보기
+          </a>
+        </section>
       </main>
     </div>
   );
