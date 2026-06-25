@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import '@/app-shell/globals.css';
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const SITE_URL = 'https://qaground.gettestea.com';
 
@@ -92,9 +93,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // GA는 production 배포에서만 로드. preview(dev 브랜치)·로컬은 GA_ID가 주입돼도 차단.
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const gaEnabled = !!gaId && process.env.VERCEL_ENV === 'production';
+
   return (
     <html lang="ko" className="h-full antialiased">
       <body className="bg-bg-1 text-text-1 flex min-h-full flex-col">{children}</body>
+      {gaEnabled && <GoogleAnalytics gaId={gaId} />}
     </html>
   );
 }

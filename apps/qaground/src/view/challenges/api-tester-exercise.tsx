@@ -4,6 +4,8 @@ import { useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
+import { track } from '@/shared/analytics/track';
+
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
@@ -252,6 +254,10 @@ export const ApiTesterExercise = ({ apiBase }: { apiBase: string }) => {
 
       const pretty = json !== undefined ? JSON.stringify(json, null, 2) : bodyText;
       setResult({ status: res.status, bodyText: pretty, checks, scriptResults });
+      track('api_run', {
+        passed: checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length,
+        total: checks.length + scriptResults.length,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : '요청 실패');
     } finally {
