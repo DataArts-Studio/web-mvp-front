@@ -5,6 +5,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
+import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
 import type { ChallengeSelector } from '@/shared/challenges/registry';
 
@@ -77,6 +78,12 @@ export const AutomationCodeExercise = ({
       setResult(data);
       setStatus('result');
       track('code_submit', { slug, status: data.status, ok: data.ok });
+      recordSubmission({
+        slug,
+        kind: 'code',
+        content: { code },
+        result: { status: data.status, ok: data.ok },
+      });
     } catch {
       setStatus('error');
       setMessage('제출에 실패했습니다.');

@@ -28,4 +28,5 @@ export * from './ai-requirement-analyses';
 export * from './test-scenarios';
 export * from './target-sites';
 export * from './qaground-waitlist';
+export * from './qaground-submissions';
 export * from './relations';
