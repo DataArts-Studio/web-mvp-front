@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
 
 interface ModelCase {
@@ -19,7 +20,13 @@ const EMPTY_ROW: Row = { scenario: '', expected: '' };
  * 자동 채점이 아니라, 우리가 제공하는 표 양식으로 케이스를 작성해 제출하면
  * 모범 답안(핵심 케이스)과 자가비교 피드백을 보여준다.
  */
-export const TestCaseExercise = ({ modelTestCases }: { modelTestCases: ModelCase[] }) => {
+export const TestCaseExercise = ({
+  slug,
+  modelTestCases,
+}: {
+  slug: string;
+  modelTestCases: ModelCase[];
+}) => {
   const [rows, setRows] = useState<Row[]>([EMPTY_ROW, EMPTY_ROW, EMPTY_ROW]);
   const [submitted, setSubmitted] = useState(false);
 
@@ -84,6 +91,7 @@ export const TestCaseExercise = ({ modelTestCases }: { modelTestCases: ModelCase
           disabled={!canSubmit || submitted}
           onClick={() => {
             track('testcase_submit');
+            recordSubmission({ slug, kind: 'testcase', content: { rows } });
             setSubmitted(true);
           }}
           className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
