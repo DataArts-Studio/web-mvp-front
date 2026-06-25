@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,13 +59,20 @@ const ALLOWED_CHILD_ENV_KEYS = [
   'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD',
 ];
 
-function buildChildEnv(): NodeJS.ProcessEnv {
+function buildChildEnv(runDir: string): NodeJS.ProcessEnv {
   // 컨테이너 내장 브라우저 경로 재사용 (베이스 이미지 ms-playwright).
   const env: NodeJS.ProcessEnv = { CI: '1' };
   for (const key of ALLOWED_CHILD_ENV_KEYS) {
     const value = process.env[key];
     if (value !== undefined) env[key] = value;
   }
+  // spec 의 HOME/TMPDIR 를 요청별 디렉터리로 고정한다. 임의 코드가 공유 임시 경로
+  // (예: /tmp)에 쓰거나 거기서 다른 run 의 산출물을 줍는 표면을 줄인다. 이 디렉터리는
+  // 실행 종료 후 rm 으로 회수된다. (동시 run 간 완전 격리는 컨테이너-per-run 이 본 수단.)
+  env.HOME = runDir;
+  env.TMPDIR = runDir;
+  env.TEMP = runDir;
+  env.TMP = runDir;
   return env;
 }
 
@@ -102,7 +109,12 @@ async function writeRunFiles(
     useEntries.push(`baseURL: ${JSON.stringify(input.baseUrl)}`);
   }
   if (input.storageState !== undefined && input.storageState !== null) {
-    await writeFile(storageStatePath, JSON.stringify(input.storageState), 'utf8');
+    // storageState 는 대상 사이트의 복호화된 인증쿠키를 담을 수 있다. 소유자만 읽도록
+    // 0600 으로 기록해, 같은 컨테이너에서 도는 다른(비신뢰) spec 의 우발적 노출을 줄인다.
+    await writeFile(storageStatePath, JSON.stringify(input.storageState), {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
     useEntries.push(`storageState: ${JSON.stringify(storageStatePath)}`);
   }
   // chromium 만 사용 (베이스 이미지 내장 브라우저 재사용, 추가 다운로드 최소화).
@@ -181,6 +193,9 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
   const startedAt = Date.now();
   await mkdir(RUNS_ROOT, { recursive: true });
   const dir = await mkdtemp(join(RUNS_ROOT, 'run-'));
+  // 요청별 디렉터리를 소유자 전용(0700)으로 고정한다. mkdtemp 가 기본 0700 이지만
+  // umask 영향 없이 명시적으로 보장한다 (storage-state.json 등 민감 산출물 보호).
+  await chmod(dir, 0o700);
 
   try {
     const { configPath, reportPath } = await writeRunFiles(dir, input);
@@ -193,7 +208,7 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
         stdio: 'ignore',
         // 임의 코드(spec)에 전체 env 를 상속하지 않는다. RUNNER_SHARED_SECRET 등
         // 시크릿 유출 방지를 위해 Playwright 실행에 필요한 키만 allowlist 로 전달한다.
-        env: buildChildEnv(),
+        env: buildChildEnv(dir),
         // 자체 프로세스 그룹으로 띄운다. 타임아웃 강제 종료 시 @playwright/test 가
         // 띄운 Chromium 손자 프로세스까지 그룹 단위로 회수하기 위함이다. detached 는
         // unref 가 아니므로 부모는 아래 close 까지 그대로 대기한다. (러너는 Linux 컨테이너 전제)
