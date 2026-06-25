@@ -216,31 +216,43 @@ export const IssueReportButton = () => {
 
                     {type === 'bug' ? (
                       <>
-                        <div className="flex gap-2">
-                          <select
-                            value={severity}
-                            onChange={(e) => setSeverity(e.target.value)}
-                            className={`${fieldClass} flex-1`}
-                            aria-label="심각도"
-                          >
+                        <div>
+                          <span className="text-text-3 text-xs">심각도</span>
+                          <div className="mt-1 flex gap-2">
                             {['낮음', '보통', '높음', '심각'].map((s) => (
-                              <option key={s} value={s}>
-                                심각도: {s}
-                              </option>
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => setSeverity(s)}
+                                className={`rounded-button h-9 flex-1 border text-sm transition-colors ${
+                                  severity === s
+                                    ? 'border-primary text-primary'
+                                    : 'border-line-3 text-text-2 hover:text-text-1'
+                                }`}
+                              >
+                                {s}
+                              </button>
                             ))}
-                          </select>
-                          <select
-                            value={priority}
-                            onChange={(e) => setPriority(e.target.value)}
-                            className={`${fieldClass} flex-1`}
-                            aria-label="우선순위"
-                          >
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-text-3 text-xs">우선순위</span>
+                          <div className="mt-1 flex gap-2">
                             {['낮음', '보통', '높음', '긴급'].map((p) => (
-                              <option key={p} value={p}>
-                                우선순위: {p}
-                              </option>
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => setPriority(p)}
+                                className={`rounded-button h-9 flex-1 border text-sm transition-colors ${
+                                  priority === p
+                                    ? 'border-primary text-primary'
+                                    : 'border-line-3 text-text-2 hover:text-text-1'
+                                }`}
+                              >
+                                {p}
+                              </button>
                             ))}
-                          </select>
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <select
