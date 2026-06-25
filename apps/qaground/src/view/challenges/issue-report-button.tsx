@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 type IssueType = 'bug' | 'idea' | 'etc';
@@ -12,6 +12,22 @@ const TYPES: { value: IssueType; label: string }[] = [
   { value: 'etc', label: '기타' },
 ];
 
+const BROWSERS = ['Chrome', 'Edge', 'Whale', 'Safari', 'Firefox', 'Opera', '기타'];
+
+/** userAgent 로 브라우저 이름과 버전(빌드번호)을 감지한다. 순서 중요(Edge>Chrome 등). */
+function detectBrowser(): { name: string; version: string } {
+  if (typeof navigator === 'undefined') return { name: 'Chrome', version: '' };
+  const ua = navigator.userAgent;
+  const pick = (re: RegExp): string => ua.match(re)?.[1] ?? '';
+  if (/Edg\//.test(ua)) return { name: 'Edge', version: pick(/Edg\/([\d.]+)/) };
+  if (/Whale\//.test(ua)) return { name: 'Whale', version: pick(/Whale\/([\d.]+)/) };
+  if (/OPR\//.test(ua)) return { name: 'Opera', version: pick(/OPR\/([\d.]+)/) };
+  if (/Firefox\//.test(ua)) return { name: 'Firefox', version: pick(/Firefox\/([\d.]+)/) };
+  if (/Chrome\//.test(ua)) return { name: 'Chrome', version: pick(/Chrome\/([\d.]+)/) };
+  if (/Safari\//.test(ua)) return { name: 'Safari', version: pick(/Version\/([\d.]+)/) };
+  return { name: '기타', version: '' };
+}
+
 const fieldClass =
   'border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary w-full border px-3 py-2 text-sm transition-colors outline-none';
 
@@ -20,13 +36,31 @@ export const IssueReportButton = () => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<IssueType>('bug');
   const [body, setBody] = useState('');
+  const [steps, setSteps] = useState('');
+  const [expected, setExpected] = useState('');
+  const [actual, setActual] = useState('');
+  const [severity, setSeverity] = useState('보통');
+  const [priority, setPriority] = useState('보통');
+  const [browser, setBrowser] = useState('Chrome');
+  const [browserVersion, setBrowserVersion] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    const d = detectBrowser();
+    setBrowser(d.name);
+    setBrowserVersion(d.version);
+  }, []);
 
   const reset = () => {
     setTitle('');
     setType('bug');
     setBody('');
+    setSteps('');
+    setExpected('');
+    setActual('');
+    setSeverity('보통');
+    setPriority('보통');
     setStatus('idle');
     setMessage('');
   };
@@ -36,10 +70,40 @@ export const IssueReportButton = () => {
   };
 
   const submit = async () => {
-    if (title.trim().length < 3 || body.trim().length < 5) {
-      setStatus('error');
-      setMessage('제목(3자 이상)과 내용(5자 이상)을 적어주세요.');
-      return;
+    const isBug = type === 'bug';
+    let composed: string;
+    if (isBug) {
+      if (title.trim().length < 3 || steps.trim().length < 5 || actual.trim().length < 3) {
+        setStatus('error');
+        setMessage('제목·재현 절차·실제 결과를 적어주세요.');
+        return;
+      }
+      composed = [
+        '## 재현 절차',
+        steps.trim(),
+        '',
+        '## 기대 결과',
+        expected.trim() || '(작성 안 함)',
+        '',
+        '## 실제 결과',
+        actual.trim(),
+        '',
+        '## 심각도',
+        severity,
+        '',
+        '## 우선순위',
+        priority,
+        '',
+        '## 환경',
+        `브라우저: ${browser}${browserVersion ? ` ${browserVersion}` : ''}`,
+      ].join('\n');
+    } else {
+      if (title.trim().length < 3 || body.trim().length < 5) {
+        setStatus('error');
+        setMessage('제목(3자 이상)과 내용(5자 이상)을 적어주세요.');
+        return;
+      }
+      composed = body.trim();
     }
     setStatus('submitting');
     setMessage('');
@@ -50,7 +114,7 @@ export const IssueReportButton = () => {
         body: JSON.stringify({
           title: title.trim(),
           type,
-          body: body.trim(),
+          body: composed,
           pageUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         }),
       });
@@ -92,7 +156,7 @@ export const IssueReportButton = () => {
             aria-label="이슈 등록"
           >
             <div className="absolute inset-0 bg-black/60" onClick={close} />
-            <div className="border-line-2 bg-bg-2 relative z-10 w-full max-w-lg rounded-2xl border p-6 shadow-xl">
+            <div className="border-line-2 bg-bg-2 relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 shadow-xl">
               {status === 'done' ? (
                 <div className="flex flex-col items-center gap-3 py-4 text-center">
                   <h2 className="text-base font-semibold">제보가 등록되었습니다</h2>
@@ -149,14 +213,96 @@ export const IssueReportButton = () => {
                       maxLength={120}
                       className={fieldClass}
                     />
-                    <textarea
-                      value={body}
-                      onChange={(e) => setBody(e.target.value)}
-                      placeholder="무엇이 문제이거나 어떤 점이 좋아지면 좋을지 적어주세요."
-                      rows={5}
-                      maxLength={4000}
-                      className={`${fieldClass} resize-none`}
-                    />
+
+                    {type === 'bug' ? (
+                      <>
+                        <div className="flex gap-2">
+                          <select
+                            value={severity}
+                            onChange={(e) => setSeverity(e.target.value)}
+                            className={`${fieldClass} flex-1`}
+                            aria-label="심각도"
+                          >
+                            {['낮음', '보통', '높음', '심각'].map((s) => (
+                              <option key={s} value={s}>
+                                심각도: {s}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={priority}
+                            onChange={(e) => setPriority(e.target.value)}
+                            className={`${fieldClass} flex-1`}
+                            aria-label="우선순위"
+                          >
+                            {['낮음', '보통', '높음', '긴급'].map((p) => (
+                              <option key={p} value={p}>
+                                우선순위: {p}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <select
+                            value={browser}
+                            onChange={(e) => setBrowser(e.target.value)}
+                            className={`${fieldClass} flex-1`}
+                            aria-label="브라우저"
+                          >
+                            {BROWSERS.map((b) => (
+                              <option key={b} value={b}>
+                                {b}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            value={browserVersion}
+                            onChange={(e) => setBrowserVersion(e.target.value)}
+                            placeholder="버전 (빌드번호)"
+                            maxLength={40}
+                            className={`${fieldClass} flex-1`}
+                            aria-label="브라우저 버전"
+                          />
+                        </div>
+                        <textarea
+                          value={steps}
+                          onChange={(e) => setSteps(e.target.value)}
+                          placeholder="재현 절차 (예: 1. 로그인 페이지 진입  2. 빈 값으로 제출  3. ...)"
+                          rows={3}
+                          maxLength={2000}
+                          className={`${fieldClass} resize-none`}
+                        />
+                        <textarea
+                          value={expected}
+                          onChange={(e) => setExpected(e.target.value)}
+                          placeholder="기대 결과 (어떻게 동작해야 하나요?)"
+                          rows={2}
+                          maxLength={1000}
+                          className={`${fieldClass} resize-none`}
+                        />
+                        <textarea
+                          value={actual}
+                          onChange={(e) => setActual(e.target.value)}
+                          placeholder="실제 결과 (실제로 어떻게 됐나요?)"
+                          rows={2}
+                          maxLength={1000}
+                          className={`${fieldClass} resize-none`}
+                        />
+                      </>
+                    ) : (
+                      <textarea
+                        value={body}
+                        onChange={(e) => setBody(e.target.value)}
+                        placeholder={
+                          type === 'idea'
+                            ? '어떤 점이 좋아지면 좋을지 적어주세요.'
+                            : '내용을 적어주세요.'
+                        }
+                        rows={5}
+                        maxLength={4000}
+                        className={`${fieldClass} resize-none`}
+                      />
+                    )}
                   </div>
 
                   {(status === 'error' || status === 'unavailable') && (
