@@ -4,9 +4,9 @@ FROM mcr.microsoft.com/playwright:v1.60.0-jammy
 
 WORKDIR /app
 
-# Build context is this directory (apps/runner). fly.toml sets build.dockerfile
-# accordingly so the runner ships independently of the rest of the monorepo
-# (it has no @testea/* dependencies).
+# Build context is this directory (apps/runner). Cloud Run(`gcloud run deploy
+# --source .`) 과 fly.toml 모두 이 폴더를 컨텍스트로 잡아, 러너가 모노레포와
+# 독립적으로 빌드/배포된다 (@testea/* 의존 없음).
 
 # Corepack ships with the Node bundled in the Playwright image; pin pnpm to the
 # repo's packageManager version.
