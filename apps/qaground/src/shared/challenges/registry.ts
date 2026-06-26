@@ -681,6 +681,139 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       '세션 시간(예: 60분)과 기록 방법, 발견 시 후속 처리를 정하세요.',
     ],
   },
+  {
+    slug: 'page-navigation',
+    title: '페이지 전환 내비게이션',
+    track: 'automation',
+    category: 'interaction',
+    difficulty: 'easy',
+    tools: ['Playwright'],
+    summary:
+      '내비게이션으로 페이지를 전환하고 뒤로가기로 직전 페이지로 돌아가는 동작을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '각 내비 링크를 클릭하면 page-title 이 해당 페이지 제목으로 바뀌는지 검증한다.',
+      '여러 페이지를 이동한 뒤 뒤로가기를 누르면 직전 페이지로 돌아가는지 검증한다.',
+      '첫 페이지(대시보드)에서는 뒤로가기 버튼이 비활성(disabled)인지 검증한다.',
+      '연속 이동·뒤로가기 후 page-title 이 방문 이력과 일치하는지 검증한다.',
+    ],
+    sandboxSlug: 'page-navigation',
+    selectors: [
+      { name: '대시보드 메뉴', testid: 'nav-dashboard', desc: '대시보드로 이동' },
+      { name: '주문 메뉴', testid: 'nav-orders', desc: '주문으로 이동' },
+      { name: '설정 메뉴', testid: 'nav-settings', desc: '설정으로 이동' },
+      { name: '현재 페이지 제목', testid: 'page-title', desc: '현재 페이지 제목' },
+      { name: '뒤로가기', testid: 'back-button', desc: '직전 페이지로 이동' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내비게이션으로 페이지를 전환한다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: nav-orders 를 클릭해 page-title 이 '주문' 인지 검증한 뒤,
+  //       back-button 으로 직전 페이지로 돌아가는지 확인하세요.
+});
+`,
+  },
+  {
+    slug: 'token-storage',
+    title: '토큰 저장·세션 유지',
+    track: 'automation',
+    category: 'auth',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '로그인 성공 시 토큰이 localStorage 에 저장되고 로그아웃 시 제거되는지 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '유효한 자격증명(tester / qaground123)으로 로그인하면 localStorage 키 qaground_token 에 토큰이 저장되는지 검증한다.',
+      '로그인 성공 시 화면이 로그인됨 상태(token-status)로 바뀌고 토큰 값(token-value)이 노출되는지 검증한다.',
+      '잘못된 자격증명으로는 토큰이 저장되지 않고 에러가 노출되는지 검증한다.',
+      '로그아웃하면 localStorage 의 토큰이 제거되고 로그아웃 상태로 돌아가는지 검증한다.',
+    ],
+    sandboxSlug: 'token-storage',
+    selectors: [
+      { name: '아이디 입력', testid: 'token-username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'token-password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'token-login', desc: '제출 버튼' },
+      { name: '인증 상태', testid: 'token-status', desc: '로그인됨/로그아웃됨 표시' },
+      { name: '토큰 값', testid: 'token-value', desc: '저장된 토큰 노출' },
+      { name: '로그아웃 버튼', testid: 'token-logout', desc: '토큰 제거' },
+      { name: '에러 메시지', testid: 'token-error', desc: '인증 실패 시 노출' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('로그인하면 토큰이 저장된다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: token-username·token-password 를 채우고 token-login 을 클릭한 뒤,
+  //       localStorage 의 qaground_token 을 page.evaluate 로 읽어 검증하세요.
+  //       예: await page.evaluate(() => localStorage.getItem('qaground_token'))
+});
+`,
+  },
+  {
+    slug: 'route-guard',
+    title: '라우트 가드(접근 제어)',
+    track: 'automation',
+    category: 'auth',
+    difficulty: 'hard',
+    tools: ['Playwright'],
+    summary:
+      '미인증 사용자의 보호 페이지 접근을 차단하고 로그인 후 진입시키는 접근 제어 흐름을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '미인증 상태에서 보호 페이지 접근을 시도하면 로그인 화면으로 리다이렉트되고 안내(guard-redirect-notice)가 노출되는지 검증한다.',
+      '올바른 자격증명(tester / qaground123)으로 로그인하면 보호 페이지 내용(guard-protected-view)이 보이는지 검증한다.',
+      '인증된 뒤에는 보호 페이지 링크로 바로 접근되는지 검증한다.',
+      '로그아웃하면 보호 페이지 접근이 다시 차단되는지 검증한다.',
+    ],
+    sandboxSlug: 'route-guard',
+    selectors: [
+      { name: '보호 페이지 링크', testid: 'guard-protected-link', desc: '보호 페이지 접근 시도' },
+      { name: '아이디 입력', testid: 'guard-username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'guard-password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'guard-login-submit', desc: '제출 버튼' },
+      { name: '리다이렉트 안내', testid: 'guard-redirect-notice', desc: '미인증 접근 시 노출' },
+      { name: '보호 페이지', testid: 'guard-protected-view', desc: '인증 후 보이는 내용' },
+      { name: '로그아웃 버튼', testid: 'guard-logout', desc: '인증 해제' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('미인증 접근은 차단되고 로그인 후 진입된다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: guard-protected-link 클릭 시 guard-redirect-notice 가 보이는지 확인하고,
+  //       로그인 후 guard-protected-view 가 보이는지 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'form-autosave',
+    title: '폼 임시저장·복원',
+    track: 'automation',
+    category: 'forms',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '입력을 localStorage 에 자동 저장하고 재방문 시 복원하며 초기화/제출로 비우는 동작을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '제목·내용을 입력하면 localStorage 키 qaground_draft 에 저장되고 저장 상태(draft-status)가 노출되는지 검증한다.',
+      '입력 후 페이지를 새로고침(page.reload)해도 입력값이 복원되는지 검증한다.',
+      '초기화(draft-clear)를 누르면 입력과 localStorage 의 draft 가 모두 비워지는지 검증한다.',
+      '제출(draft-submit)하면 draft 가 제거되고 제출 상태가 되는지 검증한다.',
+    ],
+    sandboxSlug: 'form-autosave',
+    selectors: [
+      { name: '제목 입력', testid: 'draft-title', desc: '제목 입력 필드' },
+      { name: '내용 입력', testid: 'draft-body', desc: '내용 입력 영역' },
+      { name: '저장 상태', testid: 'draft-status', desc: '임시저장/복원/초기화 표시' },
+      { name: '초기화 버튼', testid: 'draft-clear', desc: '입력·draft 비우기' },
+      { name: '제출 버튼', testid: 'draft-submit', desc: '제출 후 draft 제거' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('입력이 임시저장되고 새로고침 후 복원된다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: draft-title·draft-body 를 입력하고 page.reload() 후에도
+  //       값이 남아있는지 검증하세요. (localStorage 키: qaground_draft)
+});
+`,
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {
