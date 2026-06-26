@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { getChallenge } from '@/shared/challenges/registry';
+import { gradeSubmissionStatically } from '@/shared/challenges/static-grader';
+import { getRunnerAuthHeader } from '@/shared/runner/runner-identity';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +45,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const runnerUrl = process.env.QAGROUND_RUNNER_URL;
   const runnerSecret = process.env.QAGROUND_RUNNER_SECRET;
   if (!runnerUrl || !runnerSecret) {
-    return NextResponse.json({ error: '채점 서버가 아직 연결되지 않았습니다.' }, { status: 503 });
+    // 임시: 러너 미연결 구간에는 정적 채점으로 폴백한다(코드를 실행하지 않고 구조·관련성만
+    // 점검). 러너가 연결되면 아래 실제 실행 채점으로 자동 전환되고 이 분기는 제거 대상이다.
+    const result = gradeSubmissionStatically(challenge, parsed.data.code);
+    return NextResponse.json({ ...result, mode: 'static' });
   }
 
   // 러너가 spec 을 실행할 대상 URL. 현재는 qaground 가 서빙하는 샌드박스 주소.
@@ -51,13 +56,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const origin = new URL(request.url).origin;
   const baseUrl = `${origin}/sandbox/${challenge.sandboxSlug}`;
 
+  const normalizedRunnerUrl = runnerUrl.replace(/\/$/, '');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Runner-Secret': runnerSecret,
+  };
+  // IAM 보호 러너면 Google ID 토큰을 추가(1차 방어). 자격증명 미설정이면 생략.
+  const authHeader = await getRunnerAuthHeader(
+    normalizedRunnerUrl,
+    process.env.QAGROUND_RUNNER_INVOKER_SA_KEY
+  );
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
+
   try {
-    const res = await fetch(`${runnerUrl.replace(/\/$/, '')}/run`, {
+    const res = await fetch(`${normalizedRunnerUrl}/run`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Runner-Secret': runnerSecret,
-      },
+      headers,
       body: JSON.stringify({ spec: parsed.data.code, baseUrl, timeoutMs: 30_000 }),
     });
     const data = await res.json().catch(() => null);
