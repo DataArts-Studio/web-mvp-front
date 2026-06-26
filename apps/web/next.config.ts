@@ -32,6 +32,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // google-auth-library 는 Node 전용(서버에서만 import). 번들링 대신 외부화한다.
+  serverExternalPackages: ['google-auth-library'],
   transpilePackages: [
     '@testea/db',
     '@testea/fetch-kit',
