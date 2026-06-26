@@ -24,6 +24,8 @@ interface RunResult {
   status: string;
   durationMs?: number;
   errorMessage?: string;
+  /** 'static' = 러너 미연결 구간의 임시 정적 채점(코드 미실행). 연결되면 실제 실행 채점. */
+  mode?: 'static' | 'runner';
 }
 
 function genStarter(selectors: ChallengeSelector[]): string {
@@ -164,6 +166,15 @@ export const AutomationCodeExercise = ({
               {result.status}
               {typeof result.durationMs === 'number' ? ` · ${result.durationMs}ms` : ''}
             </span>
+            {result.mode === 'static' && (
+              <span
+                data-testid="grading-mode-badge"
+                title="코드를 실행하지 않고 구조만 점검하는 임시 채점입니다. 러너 연결 시 실제 실행 채점으로 전환됩니다."
+                className="border-line-3 bg-bg-1 text-text-3 ml-auto rounded-full border px-2 py-0.5 text-[11px] font-medium"
+              >
+                임시 모드
+              </span>
+            )}
           </div>
           {result.errorMessage && (
             <pre className="text-text-2 max-h-48 overflow-auto font-mono text-xs whitespace-pre-wrap">
