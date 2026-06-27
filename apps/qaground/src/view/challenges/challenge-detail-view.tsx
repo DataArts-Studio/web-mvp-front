@@ -268,6 +268,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
                 <TestCaseExercise
                   slug={challenge.slug}
                   modelTestCases={challenge.modelTestCases!}
+                  requirements={challenge.requirement}
                 />
               )}
             </div>
@@ -294,7 +295,11 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             knownDefects={challenge.knownDefects}
           />
         ) : challenge.modelTestCases ? (
-          <TestCaseExercise slug={challenge.slug} modelTestCases={challenge.modelTestCases} />
+          <TestCaseExercise
+            slug={challenge.slug}
+            modelTestCases={challenge.modelTestCases}
+            requirements={challenge.requirement}
+          />
         ) : challenge.sandboxSlug ? (
           <section className="mt-8">
             <h2 className="text-lg font-semibold">연습 대상</h2>

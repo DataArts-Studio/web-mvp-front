@@ -11,7 +11,14 @@ interface ModelCase {
 }
 
 type Priority = 'high' | 'medium' | 'low';
-type Row = { name: string; priority: Priority; steps: string[]; expected: string };
+type Row = {
+  name: string;
+  priority: Priority;
+  precondition: string;
+  steps: string[];
+  expected: string;
+  reqs: number[];
+};
 
 const PRIORITY_LABEL: Record<Priority, string> = {
   high: '높음',
@@ -25,14 +32,22 @@ const PRIORITY_BADGE: Record<Priority, string> = {
   low: 'bg-[#3fb950]/12 text-[#3fb950]',
 };
 
-const newRow = (): Row => ({ name: '', priority: 'medium', steps: [''], expected: '' });
+const newRow = (): Row => ({
+  name: '',
+  priority: 'medium',
+  precondition: '',
+  steps: [''],
+  expected: '',
+  reqs: [],
+});
 
 type GradeStatus = 'passed' | 'partial' | 'failed';
 interface GradeResult {
   status: GradeStatus;
   written: number;
-  complete: number;
-  target: number;
+  reqCovered: number;
+  reqTotal: number;
+  uncovered: number[];
 }
 
 const STATUS_META: Record<GradeStatus, { label: string; cls: string }> = {
@@ -42,28 +57,33 @@ const STATUS_META: Record<GradeStatus, { label: string; cls: string }> = {
 };
 
 /**
- * 테스트 케이스 작성 + 커버리지 채점 (Manual 트랙).
+ * 테스트 케이스 작성 + 요구사항 커버리지 채점 (Manual 트랙).
  *
- * 실제 테스트 케이스 도구처럼 케이스 이름(시나리오)·우선순위·절차·기대 결과를 작성한다.
- * 자동 실행이 아니라, 작성한 케이스 수를 핵심 케이스 수와 비교해 통과/부분/미흡으로 채점하고
- * (Playwright 정적 채점과 동일한 구조적 채점) 모범 답안을 공개해 자가비교하게 한다.
+ * 실제 도구처럼 케이스 이름·우선순위·사전조건·절차·기대 결과를 작성하고, 각 케이스가
+ * 어떤 요구사항을 검증하는지 연결(추적성)한다. 채점은 요구사항 N개 중 케이스가 연결된
+ * 수(커버리지)로 통과/부분/미흡을 매기고, 모범 답안을 공개해 자가비교하게 한다.
  */
 export const TestCaseExercise = ({
   slug,
   modelTestCases,
+  requirements,
 }: {
   slug: string;
   modelTestCases: ModelCase[];
+  requirements: string[];
 }) => {
   const [rows, setRows] = useState<Row[]>([newRow()]);
   const [result, setResult] = useState<GradeResult | null>(null);
 
-  const target = modelTestCases.length;
-  const written = rows.filter((r) => r.name.trim()).length;
-  const complete = rows.filter((r) => r.name.trim() && r.expected.trim()).length;
+  const reqTotal = requirements.length;
+  const named = rows.filter((r) => r.name.trim());
+  const written = named.length;
+  const coveredSet = new Set<number>();
+  named.forEach((r) => r.reqs.forEach((i) => coveredSet.add(i)));
+  const reqCovered = coveredSet.size;
   const canSubmit = written >= 1;
 
-  const update = (i: number, key: keyof Row, v: string) =>
+  const update = (i: number, key: 'name' | 'priority' | 'precondition' | 'expected', v: string) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [key]: v } : r)));
   const addRow = () => setRows((rs) => [...rs, newRow()]);
   const removeRow = (i: number) =>
@@ -83,11 +103,20 @@ export const TestCaseExercise = ({
         idx === ci && r.steps.length > 1 ? { ...r, steps: r.steps.filter((_, j) => j !== si) } : r
       )
     );
+  const toggleReq = (ci: number, ri: number) =>
+    setRows((rs) =>
+      rs.map((r, idx) =>
+        idx === ci
+          ? { ...r, reqs: r.reqs.includes(ri) ? r.reqs.filter((x) => x !== ri) : [...r.reqs, ri] }
+          : r
+      )
+    );
 
   const grade = () => {
+    const uncovered = requirements.map((_, i) => i).filter((i) => !coveredSet.has(i));
     const status: GradeStatus =
-      complete === 0 ? 'failed' : complete >= target ? 'passed' : 'partial';
-    const res: GradeResult = { status, written, complete, target };
+      written === 0 || reqCovered === 0 ? 'failed' : reqCovered >= reqTotal ? 'passed' : 'partial';
+    const res: GradeResult = { status, written, reqCovered, reqTotal, uncovered };
     setResult(res);
     track('testcase_submit', { slug, status });
     recordSubmission({ slug, kind: 'testcase', content: { rows }, result: { status } });
@@ -101,12 +130,12 @@ export const TestCaseExercise = ({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold">테스트 케이스 작성</h2>
         <span className="text-text-3 text-xs">
-          작성 {written}개 · 핵심 {target}개
+          요구사항 {reqTotal}개 중 {reqCovered}개 연결 · 작성 {written}개
         </span>
       </div>
       <p className="text-text-2 mt-2 text-sm leading-relaxed">
-        요구사항을 분석해 케이스를 작성하세요. 핵심 케이스 수만큼 작성하면 통과입니다. 제출하면 채점
-        결과와 모범 답안이 나타납니다.
+        요구사항을 분석해 케이스를 작성하고, 각 케이스가 검증하는 요구사항을 연결하세요. 모든
+        요구사항에 케이스를 연결하면 통과입니다. 제출하면 채점 결과와 모범 답안이 나타납니다.
       </p>
 
       <ol className="mt-5 flex flex-col gap-3">
@@ -136,6 +165,7 @@ export const TestCaseExercise = ({
                 ✕
               </button>
             </div>
+
             <input
               data-testid="case-scenario"
               value={r.name}
@@ -143,6 +173,15 @@ export const TestCaseExercise = ({
               placeholder="케이스 이름 (시나리오) — 예: 최소 금액 미달 시 쿠폰 거부"
               className={`h-button-md ${fieldClass}`}
             />
+
+            <input
+              data-testid="case-precondition"
+              value={r.precondition}
+              onChange={(e) => update(i, 'precondition', e.target.value)}
+              placeholder="사전조건 — 예: 만료되지 않은 쿠폰이 발급된 상태"
+              className={`h-button-md mt-2 ${fieldClass}`}
+            />
+
             <div className="mt-2">
               <span className="text-text-3 text-xs">절차</span>
               <div className="mt-1.5 flex flex-col gap-1.5">
@@ -178,6 +217,7 @@ export const TestCaseExercise = ({
                 + 단계 추가
               </button>
             </div>
+
             <textarea
               data-testid="case-expected"
               value={r.expected}
@@ -186,6 +226,32 @@ export const TestCaseExercise = ({
               placeholder="기대 결과 — 예: 적용되지 않고 안내가 표시됨"
               className={`mt-2 resize-none py-2 ${fieldClass}`}
             />
+
+            {reqTotal > 0 && (
+              <div className="mt-2.5">
+                <span className="text-text-3 text-xs">연관 요구사항</span>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {requirements.map((req, ri) => {
+                    const on = r.reqs.includes(ri);
+                    return (
+                      <button
+                        key={ri}
+                        type="button"
+                        title={req}
+                        onClick={() => toggleReq(i, ri)}
+                        className={`rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                          on
+                            ? 'border-primary bg-primary/15 text-primary'
+                            : 'border-line-3 text-text-3 hover:text-text-1'
+                        }`}
+                      >
+                        요구 {ri + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </li>
         ))}
       </ol>
@@ -217,12 +283,12 @@ export const TestCaseExercise = ({
               {STATUS_META[result.status].label}
             </span>
             <span className="text-text-3 text-xs">
-              핵심 {result.target}개 중 {Math.min(result.complete, result.target)}개 작성 (총{' '}
+              요구사항 {result.reqTotal}개 중 {result.reqCovered}개 케이스 연결 (작성{' '}
               {result.written}개)
             </span>
             <span
               data-testid="grading-mode-badge"
-              title="케이스 내용의 정확도가 아니라 작성 수(커버리지)만 보는 구조적 채점입니다. 모범 답안과 직접 비교하세요."
+              title="케이스 내용의 정확도가 아니라 요구사항 연결(커버리지)을 보는 구조적 채점입니다. 모범 답안과 직접 비교하세요."
               className="border-line-3 bg-bg-1 text-text-3 ml-auto rounded-full border px-2 py-0.5 text-[11px] font-medium"
             >
               임시 모드
@@ -231,20 +297,29 @@ export const TestCaseExercise = ({
 
           {result.status === 'failed' && (
             <p className="text-text-2 mt-3 text-sm leading-relaxed">
-              기대 결과까지 채운 케이스가 없습니다. 케이스 이름과 기대 결과를 작성해 다시
-              제출하세요.
+              요구사항에 연결된 케이스가 없습니다. 케이스를 작성하고 아래 "연관 요구사항"에서 해당
+              요구사항을 연결한 뒤 다시 제출하세요.
             </p>
           )}
-          {result.status === 'partial' && (
-            <p className="text-text-2 mt-3 text-sm leading-relaxed">
-              핵심 케이스 수보다 적게 작성했습니다. 아래 모범 답안과 비교해 놓친 시나리오(경계·예외
-              등)를 추가해 보세요.
-            </p>
+          {result.status === 'partial' && result.uncovered.length > 0 && (
+            <div className="mt-3">
+              <p className="text-text-2 text-sm leading-relaxed">
+                아직 케이스가 연결되지 않은 요구사항이 있습니다. 아래 요구사항을 검증하는 케이스를
+                추가해 보세요.
+              </p>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {result.uncovered.map((ri) => (
+                  <li key={ri} className="text-sm leading-relaxed text-[#f85149]">
+                    ✗ 요구 {ri + 1}. {requirements[ri]}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {result.status === 'passed' && (
             <p className="text-text-2 mt-3 text-sm leading-relaxed">
-              핵심 케이스 수만큼 작성했습니다. 아래 모범 답안과 비교해 관점이 일치하는지 확인해
-              보세요.
+              모든 요구사항에 케이스를 연결했습니다. 아래 모범 답안과 비교해 경계·예외 케이스까지
+              빠짐없이 도출했는지 확인해 보세요.
             </p>
           )}
 
