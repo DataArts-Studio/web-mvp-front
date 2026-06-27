@@ -32,15 +32,6 @@ const PRIORITY_BADGE: Record<Priority, string> = {
   low: 'bg-[#3fb950]/12 text-[#3fb950]',
 };
 
-const newRow = (): Row => ({
-  name: '',
-  priority: 'medium',
-  precondition: '',
-  steps: [''],
-  expected: '',
-  reqs: [],
-});
-
 type GradeStatus = 'passed' | 'partial' | 'failed';
 interface GradeResult {
   status: GradeStatus;
@@ -72,10 +63,19 @@ export const TestCaseExercise = ({
   modelTestCases: ModelCase[];
   requirements: string[];
 }) => {
-  const [rows, setRows] = useState<Row[]>([newRow()]);
+  const reqTotal = requirements.length;
+  // 새 케이스는 자기 번호에 해당하는 요구사항을 기본 연결한다(TC-1→요구1 …). 토글로 변경 가능.
+  const rowForIndex = (index: number): Row => ({
+    name: '',
+    priority: 'medium',
+    precondition: '',
+    steps: [''],
+    expected: '',
+    reqs: index < reqTotal ? [index] : [],
+  });
+  const [rows, setRows] = useState<Row[]>(() => [rowForIndex(0)]);
   const [result, setResult] = useState<GradeResult | null>(null);
 
-  const reqTotal = requirements.length;
   const named = rows.filter((r) => r.name.trim());
   const written = named.length;
   const coveredSet = new Set<number>();
@@ -85,7 +85,7 @@ export const TestCaseExercise = ({
 
   const update = (i: number, key: 'name' | 'priority' | 'precondition' | 'expected', v: string) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [key]: v } : r)));
-  const addRow = () => setRows((rs) => [...rs, newRow()]);
+  const addRow = () => setRows((rs) => [...rs, rowForIndex(rs.length)]);
   const removeRow = (i: number) =>
     setRows((rs) => (rs.length > 1 ? rs.filter((_, idx) => idx !== i) : rs));
 
