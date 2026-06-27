@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 import { CHALLENGES } from '@/shared/challenges/registry';
 
-// 챌린지 추가 시 자동 반영되는 사이트맵.
+// 챌린지가 추가되면 자동으로 반영되는 사이트맵.
 const SITE_URL = 'https://qaground.gettestea.com';
 
 export default function sitemap(): MetadataRoute.Sitemap {
