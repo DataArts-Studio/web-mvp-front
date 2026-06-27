@@ -130,7 +130,7 @@ export const TestCaseExercise = ({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold">테스트 케이스 작성</h2>
         <span className="text-text-3 text-xs">
-          요구사항 {reqTotal}개 중 {reqCovered}개 연결 · 작성 {written}개
+          작성 {written}개 · 요구사항 연결 {reqCovered}개
         </span>
       </div>
       <p className="text-text-2 mt-2 text-sm leading-relaxed">
@@ -231,7 +231,8 @@ export const TestCaseExercise = ({
               <div className="mt-2.5">
                 <span className="text-text-3 text-xs">연관 요구사항</span>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {requirements.map((req, ri) => {
+                  {/* 요구사항 총개수가 곧 작성할 케이스 수 힌트라서, 칩은 작성한 TC 개수만큼만 노출 */}
+                  {requirements.slice(0, rows.length).map((req, ri) => {
                     const on = r.reqs.includes(ri);
                     return (
                       <button
