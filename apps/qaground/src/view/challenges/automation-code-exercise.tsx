@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
 import type { ChallengeSelector } from '@/shared/challenges/registry';
+import { type Monaco } from '@monaco-editor/react';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -17,6 +18,18 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
     </div>
   ),
 });
+
+/**
+ * 에디터는 @playwright/test 타입을 로드하지 않으므로 "모듈을 찾을 수 없음" 같은
+ * 의미(semantic) 진단을 끈다. 실제 검증은 서버 채점이 하므로 빨간 줄은 혼란만 준다.
+ * (오타 등 구문 오류는 그대로 표시.)
+ */
+function configureEditor(monaco: Monaco) {
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: true,
+    noSyntaxValidation: false,
+  });
+}
 
 type Status = 'idle' | 'submitting' | 'result' | 'unavailable' | 'error';
 interface RunResult {
@@ -120,6 +133,7 @@ export const AutomationCodeExercise = ({
           theme="vs-dark"
           value={code}
           onChange={(value) => setCode(value ?? '')}
+          beforeMount={configureEditor}
           options={{
             minimap: { enabled: false },
             fontSize: 13,
@@ -127,6 +141,8 @@ export const AutomationCodeExercise = ({
             scrollBeyondLastLine: false,
             automaticLayout: true,
             padding: { top: 12, bottom: 12 },
+            // overflow-hidden 컨테이너에 호버/자동완성 툴팁이 잘리지 않도록 body 에 렌더.
+            fixedOverflowWidgets: true,
           }}
         />
       </div>
