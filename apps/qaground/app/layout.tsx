@@ -97,6 +97,30 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: 'qaground',
+      alternateName: '큐에이그라운드',
+      description: DESCRIPTION,
+      inLanguage: 'ko-KR',
+      publisher: { '@id': `${SITE_URL}/#org` },
+    },
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#org`,
+      name: 'Testea',
+      alternateName: '테스티아',
+      url: 'https://gettestea.com',
+      description: 'QA 자동화 연습 플레이그라운드 qaground 운영',
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -110,7 +134,13 @@ export default function RootLayout({
 
   return (
     <html lang="ko" className="h-full antialiased">
-      <body className="bg-bg-1 text-text-1 flex min-h-full flex-col">{children}</body>
+      <body className="bg-bg-1 text-text-1 flex min-h-full flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
       {gaEnabled && <GoogleAnalytics gaId={gaId} />}
       {adsEnabled && (
         <Script
