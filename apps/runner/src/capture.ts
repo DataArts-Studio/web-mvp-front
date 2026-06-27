@@ -1,5 +1,7 @@
 import { chromium } from '@playwright/test';
 
+import { createTimer } from './timing.js';
+
 /**
  * 대상 페이지 접근성 트리 캡처기. DB 에 접근하지 않는다.
  *
@@ -36,8 +38,10 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 
 export async function capture(input: CaptureInput): Promise<CaptureResult> {
   const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const timer = createTimer('capture');
 
   const browser = await chromium.launch();
+  timer.mark('launch');
   try {
     const context = await browser.newContext(
       // storageState 는 Playwright 가 받는 형태({cookies, origins})를 그대로 전달.
@@ -45,20 +49,26 @@ export async function capture(input: CaptureInput): Promise<CaptureResult> {
       input.storageState ? { storageState: input.storageState as never } : undefined
     );
     const page = await context.newPage();
+    timer.mark('context');
 
     await page.goto(input.url, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+    timer.mark('goto');
 
     // 데이터 로딩(스켈레톤) 후 본문이 채워질 때까지 대기. networkidle 실패는 치명적이지
     // 않으므로(SPA 폴링 등) 흡수하고 캡처를 진행한다.
     await page.waitForLoadState('networkidle', { timeout: timeoutMs }).catch(() => {});
+    timer.mark('networkidle');
 
     const main = page.locator('main');
     const target = (await main.count()) > 0 ? main.first() : page.locator('body');
 
     const snapshot = await target.ariaSnapshot({ timeout: timeoutMs });
+    timer.mark('snapshot');
 
+    timer.flush({ ok: true });
     return { ok: true, snapshot };
   } catch (error) {
+    timer.flush({ ok: false });
     return {
       ok: false,
       errorMessage: error instanceof Error ? error.message : String(error),

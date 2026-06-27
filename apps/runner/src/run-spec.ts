@@ -4,6 +4,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { createTimer } from './timing.js';
+
 /**
  * 순수 Playwright 실행기. DB 에 접근하지 않는다.
  *
@@ -179,13 +181,18 @@ function findResultInSuite(suite: PwSuite): PwTestResult | undefined {
 export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
   const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const startedAt = Date.now();
+  const timer = createTimer('run');
   await mkdir(RUNS_ROOT, { recursive: true });
   const dir = await mkdtemp(join(RUNS_ROOT, 'run-'));
+  timer.mark('tmpdir');
 
   try {
     const { configPath, reportPath } = await writeRunFiles(dir, input);
+    timer.mark('writeFiles');
     const cli = resolvePlaywrightCli();
+    timer.mark('resolveCli');
 
+    let timedOut = false;
     await new Promise<void>((resolve) => {
       const child = spawn(process.execPath, [cli, 'test', '--config', configPath, '--workers=1'], {
         cwd: dir,
@@ -203,6 +210,7 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
       // 직접 자식(node CLI)만 죽이면 Chromium 손자 프로세스가 고아로 남아
       // 메모리/CPU 를 누수한다. child.pid 를 음수로 넘겨 프로세스 그룹 전체를 종료한다.
       const killGroup = () => {
+        timedOut = true;
         if (child.pid === undefined) return;
         try {
           process.kill(-child.pid, 'SIGKILL');
@@ -222,6 +230,8 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
         resolve();
       });
     });
+    // spawn~close: Node 부팅 + config/spec 트랜스파일 + chromium 런칭 + 실제 테스트.
+    timer.mark('childRun');
 
     let raw: string | undefined;
     try {
@@ -229,9 +239,11 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
     } catch {
       raw = undefined;
     }
+    timer.mark('readReport');
 
     if (!raw) {
       // reporter 산출물이 없으면 (타임아웃 강제종료/크래시) 실패로 본다.
+      timer.flush({ status: 'timedOut', timedOut, hadReport: false });
       return {
         ok: false,
         status: 'timedOut',
@@ -240,7 +252,10 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
       };
     }
 
-    return parseReport(raw);
+    const result = parseReport(raw);
+    timer.mark('parse');
+    timer.flush({ status: result.status, timedOut, hadReport: true });
+    return result;
   } finally {
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
