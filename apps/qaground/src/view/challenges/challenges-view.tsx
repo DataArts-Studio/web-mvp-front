@@ -4,6 +4,7 @@ import {
   CATEGORY_LABEL,
   type Challenge,
   type ChallengeCategory,
+  type ChallengeDifficulty,
   DIFFICULTY_LABEL,
   TRACK_LABEL,
   challengesByCategory,
@@ -11,22 +12,49 @@ import {
 
 import { PlaygroundHeader } from './playground-header';
 
+/** 난이도별 배지 색 (한눈에 스캔되도록). 다크 테마용 톤. */
+const DIFFICULTY_BADGE: Record<ChallengeDifficulty, string> = {
+  easy: 'bg-[#3fb950]/12 text-[#3fb950]',
+  medium: 'bg-[#d29922]/12 text-[#d29922]',
+  hard: 'bg-[#f85149]/12 text-[#f85149]',
+};
+
 function ChallengeCard({ challenge }: { challenge: Challenge }) {
   return (
     <Link
       href={`/challenges/${challenge.slug}`}
-      className="border-line-2 bg-bg-2 hover:border-line-3 flex h-full flex-col gap-3 rounded-2xl border p-6 transition-colors"
+      className="group border-line-2 bg-bg-2 hover:border-line-3 hover:bg-bg-3/40 flex h-full flex-col gap-3 rounded-2xl border p-5 transition-colors"
     >
       <div className="flex items-center gap-2">
-        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-0.5 text-xs">
           {TRACK_LABEL[challenge.track]}
         </span>
-        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+        >
           {DIFFICULTY_LABEL[challenge.difficulty]}
         </span>
+        <span
+          aria-hidden
+          className="text-text-3 group-hover:text-text-1 ml-auto translate-x-0 text-sm transition-all group-hover:translate-x-0.5"
+        >
+          →
+        </span>
       </div>
-      <span className="text-lg font-semibold">{challenge.title}</span>
-      <span className="text-text-2 text-sm leading-relaxed">{challenge.summary}</span>
+      <h3 className="leading-snug font-semibold">{challenge.title}</h3>
+      <p className="text-text-2 line-clamp-3 flex-1 text-sm leading-relaxed">{challenge.summary}</p>
+      <div className="border-line-2 mt-1 flex items-center justify-between gap-2 border-t pt-3">
+        <div className="flex min-w-0 flex-wrap gap-1.5">
+          {challenge.tools.slice(0, 3).map((t) => (
+            <span key={t} className="bg-bg-3 text-text-3 rounded px-1.5 py-0.5 text-[11px]">
+              {t}
+            </span>
+          ))}
+        </div>
+        <span className="text-text-3 shrink-0 text-xs">
+          요구사항 {challenge.requirement.length}개
+        </span>
+      </div>
     </Link>
   );
 }
