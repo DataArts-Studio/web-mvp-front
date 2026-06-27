@@ -98,17 +98,11 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
     };
   }
 
-  // 통과: 커버리지 요약 + 소프트 제안(통과는 유지).
+  // 요구사항 대비 커버리지로 통과/부분을 가른다. 정적 채점은 의미 매핑을 못 하므로
+  // "작성한 테스트 수"와 "단언 수" 중 큰 값을 커버리지 추정치로 쓴다.
   const reqCount = challenge.requirement?.length ?? 0;
-  const suggestions: string[] = [];
-  if (reqCount > 0 && assertions < reqCount) {
-    suggestions.push(
-      `요구사항 ${reqCount}개 대비 단언이 ${assertions}개입니다. 케이스를 더 추가하면 좋습니다.`
-    );
-  }
-  if (selectorIds.length > 0 && usedTestids > 0 && usedTestids < selectorIds.length) {
-    suggestions.push(`셀렉터 ${selectorIds.length}개 중 ${usedTestids}개 사용.`);
-  }
+  const testCount = countMatches(stripped, /\b(?:test|it)\s*\(/g);
+  const coverage = Math.max(testCount, assertions);
 
   const selectorSummary =
     selectorIds.length === 0
@@ -118,9 +112,23 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
         : usesSemanticLocator
           ? ', 접근성 기반 셀렉터'
           : '';
-  const note = [`구조 점검 통과 (단언 ${assertions}개${selectorSummary}).`, ...suggestions].join(
-    '\n'
-  );
 
+  // 요구사항을 다 다루지 않은 부분 작성: 통과로 인정하지 않는다.
+  if (reqCount > 0 && coverage < reqCount) {
+    return {
+      ok: false,
+      status: 'partial',
+      durationMs,
+      errorMessage: [
+        `부분 작성입니다 (작성한 테스트 ${testCount}개 · 단언 ${assertions}개).`,
+        `요구사항 ${reqCount}개를 각각 검증하는 테스트를 모두 작성해야 통과입니다.`,
+      ].join('\n'),
+    };
+  }
+
+  // 요구사항 수만큼 작성한 전체 통과.
+  const note = `구조 점검 통과 (단언 ${assertions}개${selectorSummary}${
+    reqCount > 0 ? `, 요구사항 ${reqCount}개 커버 추정` : ''
+  }).`;
   return { ok: true, status: 'passed', durationMs, errorMessage: note };
 }

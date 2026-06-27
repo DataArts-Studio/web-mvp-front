@@ -152,6 +152,9 @@ export const AutomationCodeExercise = ({
     }
 
     const ok = data.ok;
+    const partial = data.status === 'partial';
+    // 통과·부분은 테스트를 정상 작성한 것이므로 ✓, 실패만 ◌.
+    const wrote = ok || partial;
 
     // 테스트 케이스를 한 줄씩 "실행 → 완료" 로 흘린다.
     for (let i = 0; i < titles.length; i += 1) {
@@ -163,7 +166,11 @@ export const AutomationCodeExercise = ({
       setTerm((prev) =>
         prev.map((l) =>
           l.id === `run-${n}`
-            ? { ...l, text: `  ${ok ? '✓' : '◌'}  ${n} › ${title}`, kind: ok ? 'pass' : 'dim' }
+            ? {
+                ...l,
+                text: `  ${wrote ? '✓' : '◌'}  ${n} › ${title}`,
+                kind: wrote ? 'pass' : 'dim',
+              }
             : l
         )
       );
@@ -177,16 +184,20 @@ export const AutomationCodeExercise = ({
     if (ok) {
       const ms = typeof data.durationMs === 'number' ? ` (${data.durationMs}ms)` : '';
       push({ id: 'sum', text: `  ${titles.length || 1} passed${ms}`, kind: 'pass' });
+    } else if (partial) {
+      push({ id: 'sum', text: '  부분 통과 — 요구사항을 모두 작성해야 통과', kind: 'run' });
     } else {
       push({ id: 'sum', text: '  채점 실패 — 아래를 보완하세요', kind: 'fail' });
     }
 
-    // 상세(보완 항목 / 통과 요약)를 줄 단위로. 임시 여부는 헤더의 "임시 모드" 배지로 대신한다.
+    // 상세(보완 항목 / 통과·부분 요약)를 줄 단위로. 임시 여부는 헤더의 "임시 모드" 배지로 대신한다.
     (data.errorMessage ?? '')
       .split('\n')
       .map((s) => s.trim())
       .filter(Boolean)
-      .forEach((ln, idx) => push({ id: `msg-${idx}`, text: `  ${ln}`, kind: ok ? 'dim' : 'fail' }));
+      .forEach((ln, idx) =>
+        push({ id: `msg-${idx}`, text: `  ${ln}`, kind: ok ? 'dim' : partial ? 'run' : 'fail' })
+      );
 
     setResult(data);
     setStatus('result');

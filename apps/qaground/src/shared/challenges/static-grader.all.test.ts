@@ -10,11 +10,17 @@ function goodSubmission(c: Challenge): string {
   const ids = (c.selectors ?? []).map((s) => s.testid);
   const a = ids[0] ?? 'root';
   const b = ids[1] ?? a;
+  // 요구사항 수만큼 단언을 넣어 전체 통과(부분 아님)가 되도록 한다.
+  const reqCount = c.requirement?.length ?? 1;
+  const asserts = Array.from(
+    { length: reqCount },
+    () => `  await expect(page.getByTestId('${b}')).toBeVisible();`
+  ).join('\n');
   return `import { test, expect } from '@playwright/test';
 test('충실한 제출', async ({ page }) => {
   await page.goto('/sandbox/${c.sandboxSlug}');
   await page.getByTestId('${a}').click();
-  await expect(page.getByTestId('${b}')).toBeVisible();
+${asserts}
 });`;
 }
 

@@ -11,7 +11,7 @@ const challenge: Challenge = {
   difficulty: 'easy',
   tools: ['Playwright'],
   summary: '로그인 동작 검증',
-  requirement: ['유효 자격증명 성공', '무효 자격증명 에러', '필수 입력 에러'],
+  requirement: ['유효 자격증명 성공'],
   sandboxSlug: 'login-basic',
   selectors: [
     { name: '아이디', testid: 'username', desc: '' },
@@ -119,5 +119,31 @@ test('t', async ({ page }) => {
 });`;
     const r = gradeSubmissionStatically(noSelectorChallenge, code);
     expect(r.ok).toBe(true);
+  });
+
+  it('요구사항보다 적게 작성하면 부분(partial)으로 처리한다', () => {
+    const multiReq: Challenge = { ...challenge, requirement: ['r1', 'r2', 'r3', 'r4'] };
+    // goodCode 는 테스트 1개·단언 1개라 요구사항 4개에 못 미친다.
+    const r = gradeSubmissionStatically(multiReq, goodCode);
+    expect(r.ok).toBe(false);
+    expect(r.status).toBe('partial');
+    expect(r.errorMessage).toContain('부분 작성');
+  });
+
+  it('요구사항 수만큼 작성하면 통과한다', () => {
+    const multiReq: Challenge = { ...challenge, requirement: ['r1', 'r2', 'r3'] };
+    const fullCode = `import { test, expect } from '@playwright/test';
+test('전체', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('login-success')).toBeVisible();
+  await expect(page.getByTestId('username')).toBeVisible();
+  await expect(page.getByTestId('password')).toBeVisible();
+});`;
+    const r = gradeSubmissionStatically(multiReq, fullCode);
+    expect(r.ok).toBe(true);
+    expect(r.status).toBe('passed');
   });
 });
