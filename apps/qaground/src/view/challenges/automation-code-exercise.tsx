@@ -20,14 +20,16 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 });
 
 /**
- * 에디터는 @playwright/test 타입을 로드하지 않으므로 "모듈을 찾을 수 없음" 같은
- * 의미(semantic) 진단을 끈다. 실제 검증은 서버 채점이 하므로 빨간 줄은 혼란만 준다.
- * (오타 등 구문 오류는 그대로 표시.)
+ * 에디터는 @playwright/test 타입을 로드하지 않으므로 "모듈을 찾을 수 없음"(의미 진단)과
+ * "import 했는데 안 씀"(제안/미사용 진단) 같은 표시를 끈다. 스타터가 expect 를 import 만
+ * 하고 본문에서 안 써도 밑줄이 안 생긴다. 실제 검증은 서버 채점이 하므로 이런 표시는 혼란만 준다.
+ * (진짜 오타 등 구문 오류는 그대로 표시한다.)
  */
 function configureEditor(monaco: Monaco) {
   monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: true,
     noSyntaxValidation: false,
+    noSuggestionDiagnostics: true,
   });
 }
 
