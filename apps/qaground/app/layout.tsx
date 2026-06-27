@@ -125,15 +125,17 @@ const jsonLd = {
       alternateName: '큐에이그라운드',
       description: DESCRIPTION,
       inLanguage: 'ko-KR',
-      publisher: { '@id': `${SITE_URL}/#org` },
+      // gettestea.com 과 동일한 Organization 엔티티(@id)로 묶어 같은 브랜드(테스티아)로 인식시킨다.
+      publisher: { '@id': 'https://gettestea.com/#organization' },
     },
     {
       '@type': 'Organization',
-      '@id': `${SITE_URL}/#org`,
+      '@id': 'https://gettestea.com/#organization',
       name: 'Testea',
       alternateName: '테스티아',
       url: 'https://gettestea.com',
-      description: 'QA 자동화 연습 플레이그라운드 qaground 운영',
+      sameAs: ['https://gettestea.com'],
+      description: '테스티아(Testea)가 운영하는 QA 자동화 연습 플레이그라운드 qaground',
     },
   ],
 };
