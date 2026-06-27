@@ -12,6 +12,7 @@ import { InfiniteScrollSandbox } from './infinite-scroll-sandbox';
 import { LoginSandbox } from './login-sandbox';
 import { ModalSandbox } from './modal-sandbox';
 import { MoneyTransferSandbox } from './money-transfer-sandbox';
+import { OrderCancelSandbox } from './order-cancel-sandbox';
 import { OrderFormSandbox } from './order-form-sandbox';
 import { PageNavigationSandbox } from './page-navigation-sandbox';
 import { PointsSettlementSandbox } from './points-settlement-sandbox';
@@ -59,4 +60,5 @@ export const SANDBOXES: Record<string, ComponentType> = {
   wishlist: WishlistSandbox,
   'seat-booking': SeatBookingSandbox,
   'points-settlement': PointsSettlementSandbox,
+  'order-cancel': OrderCancelSandbox,
 };
