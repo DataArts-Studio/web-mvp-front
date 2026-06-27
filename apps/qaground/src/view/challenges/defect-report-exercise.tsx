@@ -150,24 +150,24 @@ export const DefectReportExercise = ({
               onChange={(e) => update(i, 'steps', e.target.value)}
               rows={2}
               placeholder={'재현 절차 — 1. ... 2. ...'}
-              className={`mt-2 py-2 ${fieldClass}`}
+              className={`mt-2 resize-none py-2 ${fieldClass}`}
             />
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              <input
-                data-testid="report-expected"
-                value={r.expected}
-                onChange={(e) => update(i, 'expected', e.target.value)}
-                placeholder="기대 결과"
-                className={`h-button-md ${fieldClass}`}
-              />
-              <input
-                data-testid="report-actual"
-                value={r.actual}
-                onChange={(e) => update(i, 'actual', e.target.value)}
-                placeholder="실제 결과 (결함)"
-                className={`h-button-md ${fieldClass}`}
-              />
-            </div>
+            <textarea
+              data-testid="report-expected"
+              value={r.expected}
+              onChange={(e) => update(i, 'expected', e.target.value)}
+              rows={2}
+              placeholder="기대 결과"
+              className={`mt-2 resize-none py-2 ${fieldClass}`}
+            />
+            <textarea
+              data-testid="report-actual"
+              value={r.actual}
+              onChange={(e) => update(i, 'actual', e.target.value)}
+              rows={2}
+              placeholder="실제 결과 (결함)"
+              className={`mt-2 resize-none py-2 ${fieldClass}`}
+            />
           </li>
         ))}
       </ol>
