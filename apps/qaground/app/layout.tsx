@@ -91,8 +91,8 @@ export const metadata: Metadata = {
   verification: {
     other: {
       'naver-site-verification': '2a41c60503088ea4c2589bb5f5fdf7861b3306e9',
-      // AdSense 사이트 소유확인 (env 주입 시에만).
-      ...(ADSENSE_ID ? { 'google-adsense-account': ADSENSE_ID } : {}),
+      // AdSense 사이트 소유확인 (퍼블리셔 ID는 공개 정보라 하드코딩).
+      'google-adsense-account': 'ca-pub-4243558524225646',
     },
   },
 };
