@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {
   CATEGORY_LABEL,
   type Challenge,
+  type ChallengeDifficulty,
   DIFFICULTY_LABEL,
   type HttpMethod,
   TRACK_LABEL,
@@ -20,6 +21,12 @@ const METHOD_COLOR: Record<HttpMethod, string> = {
   PUT: 'text-blue-600',
   PATCH: 'text-blue-600',
   DELETE: 'text-system-red',
+};
+
+const DIFFICULTY_BADGE: Record<ChallengeDifficulty, string> = {
+  easy: 'bg-[#3fb950]/12 text-[#3fb950]',
+  medium: 'bg-[#d29922]/12 text-[#d29922]',
+  hard: 'bg-[#f85149]/12 text-[#f85149]',
 };
 
 function ChallengeMeta({ challenge }: { challenge: Challenge }) {
@@ -113,6 +120,75 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
       ← 챌린지 목록
     </Link>
   );
+
+  // 자동화 코드 트랙: 프로그래머스식 풀높이 2단 (좌 문제·요구사항·셀렉터 / 우 에디터·터미널)
+  if (isAutomationCode) {
+    return (
+      <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans lg:h-screen lg:overflow-hidden">
+        <PlaygroundHeader />
+        <div className="border-line-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2.5 sm:px-6">
+          <Link
+            href="/challenges"
+            aria-label="챌린지 목록"
+            className="text-text-3 hover:text-text-1 text-sm transition-colors"
+          >
+            ←
+          </Link>
+          <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
+          <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+            {TRACK_LABEL[challenge.track]}
+          </span>
+          <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+            {CATEGORY_LABEL[challenge.category]}
+          </span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+          >
+            {DIFFICULTY_LABEL[challenge.difficulty]}
+          </span>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="border-line-2 overflow-y-auto border-b p-5 sm:p-6 lg:w-2/5 lg:max-w-lg lg:border-r lg:border-b-0">
+            <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
+              {challenge.summary}
+            </p>
+            <h2 className="mt-6 text-base font-semibold">요구사항</h2>
+            <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
+              {challenge.requirement.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ol>
+            {!!challenge.selectors?.length && (
+              <div className="mt-6">
+                <h3 className="text-text-3 text-xs font-semibold tracking-wide uppercase">
+                  참고 셀렉터
+                </h3>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {challenge.selectors.map((s) => (
+                    <code
+                      key={s.testid}
+                      title={s.desc}
+                      className="bg-bg-3 text-text-2 rounded px-2 py-0.5 font-mono text-xs"
+                    >
+                      {s.testid}
+                    </code>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <AutomationCodeExercise
+              slug={challenge.slug}
+              sandboxSlug={challenge.sandboxSlug!}
+              selectors={challenge.selectors!}
+              starterSpec={challenge.starterSpec}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 프로그래머스식 2단: 좌 요구사항(+API 엔드포인트) / 우 작성·실행 폼
   if (isSplit) {

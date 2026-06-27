@@ -13,7 +13,7 @@ import { type Monaco } from '@monaco-editor/react';
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
-    <div className="border-line-2 bg-bg-1 text-text-3 flex h-[340px] items-center justify-center rounded-xl border text-sm">
+    <div className="border-line-2 bg-bg-1 text-text-3 flex h-full items-center justify-center border-y text-sm">
       에디터를 불러오는 중...
     </div>
   ),
@@ -232,14 +232,9 @@ export const AutomationCodeExercise = ({
   const running = status === 'running';
 
   return (
-    <section className="border-line-2 bg-bg-2 rounded-2xl border p-6">
-      <h2 className="text-base font-semibold">코드 작성 · 자동 채점</h2>
-      <p className="text-text-2 mt-2 text-sm leading-relaxed">
-        아래 에디터에 Playwright 테스트를 작성해 제출하면, 테스트가 한 줄씩 실행되며 통과/실패를
-        채점합니다.
-      </p>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+    <section className="flex h-full min-h-0 flex-col">
+      {/* 툴바: 연습 대상 열기 + 제출 (IDE 스타일 상단 고정) */}
+      <div className="border-line-2 flex shrink-0 items-center gap-3 border-b px-4 py-2">
         <Link
           href={`/sandbox/${sandboxSlug}`}
           target="_blank"
@@ -247,14 +242,21 @@ export const AutomationCodeExercise = ({
         >
           연습 대상 열기 ↗
         </Link>
-        <span className="text-text-3 text-xs">
-          셀렉터: {selectors.map((s) => s.testid).join(', ')}
-        </span>
+        <button
+          data-testid="code-submit"
+          type="button"
+          onClick={submit}
+          disabled={running}
+          className="bg-primary rounded-button hover:bg-primary/90 active:bg-primary/80 ml-auto inline-flex h-9 items-center justify-center px-4 text-sm font-medium text-white transition-colors disabled:opacity-60"
+        >
+          {running ? '실행 중...' : '제출하고 채점'}
+        </button>
       </div>
 
-      <div className="border-line-2 mt-4 overflow-hidden rounded-xl border">
+      {/* 에디터: 남는 높이를 채운다 (모바일은 55vh 고정) */}
+      <div className="h-[55vh] min-h-0 flex-1 lg:h-auto">
         <MonacoEditor
-          height="460px"
+          height="100%"
           defaultLanguage="typescript"
           theme="vs-dark"
           value={code}
@@ -273,33 +275,24 @@ export const AutomationCodeExercise = ({
         />
       </div>
 
-      <button
-        data-testid="code-submit"
-        type="button"
-        onClick={submit}
-        disabled={running}
-        className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-5 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors disabled:opacity-60"
-      >
-        {running ? '실행 중...' : '제출하고 채점'}
-      </button>
-
       {status === 'unavailable' && (
-        <p className="border-line-3 text-text-3 mt-4 rounded-xl border border-dashed px-4 py-3 text-sm">
+        <p className="border-line-3 text-text-3 m-4 rounded-xl border border-dashed px-4 py-3 text-sm">
           {message} (러너 배포 후 연결됩니다.)
         </p>
       )}
       {status === 'error' && (
-        <p className="text-system-red mt-4 text-sm" role="alert">
+        <p className="text-system-red m-4 text-sm" role="alert">
           {message}
         </p>
       )}
 
+      {/* 터미널: 실행·결과 시 하단에 펼쳐진다 (에디터가 줄어들며 자리 양보) */}
       {(status === 'running' || status === 'result') && (
         <div
           data-testid="code-result"
-          className="border-line-2 mt-5 overflow-hidden rounded-xl border bg-[#0d1117]"
+          className="border-line-2 flex max-h-72 shrink-0 flex-col border-t bg-[#0d1117] lg:max-h-[45%]"
         >
-          <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2">
+          <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-2">
             <span className="flex gap-1.5" aria-hidden>
               <span className="h-2.5 w-2.5 rounded-full bg-[#f85149]/80" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#d29922]/80" />
@@ -317,10 +310,10 @@ export const AutomationCodeExercise = ({
               </span>
             )}
           </div>
-          <div className="max-h-72 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed">
+          <div className="min-h-0 flex-1 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed">
             {term.map((l) => (
               <div key={l.id} className={`${TERM_CLASS[l.kind]} whitespace-pre-wrap`}>
-                {l.text || ' '}
+                {l.text || ' '}
               </div>
             ))}
             {running && <span className="animate-pulse text-[#8b949e]">▋</span>}
