@@ -8,7 +8,7 @@ const SITE_URL = 'https://qaground.gettestea.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID;
 
 const DESCRIPTION =
-  'qaground(큐에이그라운드)는 테스티아(Testea)가 만든 QA 연습 플레이그라운드입니다. 로그인 없이 로그인 폼·API·결제 같은 실제형 연습 대상에 Playwright·Postman 테스트를 직접 작성해 실행하고 채점받으세요. QA 과제전형·과제 테스트 준비에도 활용할 수 있습니다.';
+  'qaground(큐에이그라운드)는 테스티아(Testea)가 만든 QA 연습 플레이그라운드입니다. 로그인 없이 로그인 폼·API·결제 같은 실제형 연습 대상에 Playwright·Postman 테스트를 직접 작성해 실행하고 채점받으세요. QA 과제전형·과제 연습·과제 테스트 준비에도 활용할 수 있습니다.';
 
 const TITLE = 'qaground — QA 자동화 연습 플레이그라운드 | 테스티아';
 
@@ -34,6 +34,14 @@ export const metadata: Metadata = {
     'QA 채용',
     '개발자 과제전형',
     '코딩 과제전형',
+    '과제전형',
+    '과제전형 연습',
+    '과제 연습',
+    'QA 과제 연습',
+    '코딩 과제전형 연습',
+    '실무 과제 연습',
+    'QA 면접 준비',
+    'QA 신입',
     // 연습·학습
     'QA 자동화 연습',
     '테스트 자동화 연습',
@@ -45,15 +53,24 @@ export const metadata: Metadata = {
     'QA 독학',
     'QA 포트폴리오',
     '웹 테스트 연습',
+    'QA 코딩테스트',
+    'QA 코테',
+    '테스트 코드 연습',
+    '웹 자동화 연습',
+    '테스트 자동화 실습',
     // 도구
     'Playwright',
     'Playwright 연습',
+    'Playwright 튜토리얼',
+    'Playwright 예제',
     'Postman',
     'Postman 연습',
     'API 테스트',
     'API 테스트 연습',
     'Selenium 대안',
+    'Cypress 대안',
     'E2E 테스트',
+    'E2E 테스트 연습',
     // 역할·일반
     'QA 엔지니어',
     '테스터',
