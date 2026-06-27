@@ -115,6 +115,10 @@ export const metadata: Metadata = {
   verification: {
     // Google Search Console 인증 시 추가
     // google: 'your-google-verification-code',
+    other: {
+      // AdSense 사이트 소유확인 (퍼블리셔 ID는 공개 정보라 하드코딩).
+      'google-adsense-account': 'ca-pub-4243558524225646',
+    },
   },
 };
 
