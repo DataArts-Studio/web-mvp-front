@@ -55,7 +55,7 @@ export const TestCaseExercise = ({
   slug: string;
   modelTestCases: ModelCase[];
 }) => {
-  const [rows, setRows] = useState<Row[]>([newRow(), newRow()]);
+  const [rows, setRows] = useState<Row[]>([newRow()]);
   const [result, setResult] = useState<GradeResult | null>(null);
 
   const target = modelTestCases.length;
