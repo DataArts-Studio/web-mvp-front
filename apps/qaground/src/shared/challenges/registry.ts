@@ -960,6 +960,76 @@ test('찜을 토글하면 개수가 갱신된다', async ({ page }) => {
 });
 `,
   },
+  {
+    slug: 'seat-booking',
+    title: '무지의 콘서트 좌석 예매',
+    track: 'automation',
+    category: 'commerce',
+    difficulty: 'hard',
+    tools: ['Playwright'],
+    summary:
+      '무지가 소규모 콘서트 예매 페이지를 열었는데 "예매가 이상하다"는 제보가 쏟아진다. 아래 명세를 분석해, 페이지가 명세대로 동작하는지 검증하는 자동화 테스트를 작성하라. 어떤 케이스(경계·엣지)가 필요한지는 직접 판단해야 한다. [명세] 좌석은 A1~A5·B1~B5(10석)이고 A3·B2 는 이미 매진이다. 매진 좌석은 고를 수 없고, 한 사람은 최대 4석까지 선택할 수 있다(초과 시 경고). 좌석당 50,000원이며 선택 수와 총액이 표시된다. 1석 이상 골라야 예매할 수 있고, 예매하면 고른 좌석이 매진으로 바뀌며 예매번호가 나온다.',
+    requirement: [
+      '매진 좌석은 선택되지 않는다.',
+      '최대 선택 수를 넘기면 더 선택되지 않고 경고가 노출된다.',
+      '선택한 좌석 수와 총액이 정확히 반영된다.',
+      '아무 좌석도 고르지 않으면 예매하기가 비활성이다.',
+      '예매하면 고른 좌석이 매진 처리되고 예매번호가 노출된다.',
+    ],
+    sandboxSlug: 'seat-booking',
+    selectors: [
+      { name: '좌석 버튼', testid: 'seat-A1', desc: '좌석 A1 (각 좌석은 seat-<좌석명>)' },
+      { name: '매진 좌석', testid: 'seat-A3', desc: '시작부터 매진된 좌석(비활성)' },
+      { name: '선택 수', testid: 'select-count', desc: '선택한 좌석 수' },
+      { name: '총액', testid: 'total-price', desc: '선택 좌석 총액' },
+      { name: '초과 경고', testid: 'max-warning', desc: '최대 선택 초과 시' },
+      { name: '예매 버튼', testid: 'book-button', desc: '예매하기' },
+      { name: '예매 완료', testid: 'booking-complete', desc: '예매 완료 영역' },
+      { name: '예매번호', testid: 'booking-number', desc: '발급된 예매번호' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내 테스트', async ({ page }) => {
+  await page.goto('/sandbox/seat-booking');
+  // 명세를 분석해 필요한 케이스를 직접 설계하세요.
+});
+`,
+  },
+  {
+    slug: 'points-settlement',
+    title: '어피치의 포인트 정산',
+    track: 'automation',
+    category: 'fintech',
+    difficulty: 'hard',
+    tools: ['Playwright'],
+    summary:
+      '어피치 쇼핑몰 결제 화면에 "포인트 적립·결제액이 안 맞다"는 제보가 들어왔다. 아래 정산 규칙을 분석해, 화면이 규칙대로 계산하는지 검증하는 자동화 테스트를 작성하라. 경계값·예외는 직접 도출해야 한다. [규칙] 회원 등급 적립률은 일반 1%·실버 2%·골드 5%. 포인트는 최소 1,000p 부터 사용 가능하고(미만이면 미적용), 주문 금액의 50%까지만 쓸 수 있다(초과 시 미적용). 잘못된 포인트 입력은 에러를 띄우고 계산에 반영하지 않는다. 최종 결제액 = 주문금액 − 사용포인트, 적립 예정 = (주문금액 − 사용포인트) × 등급 적립률(원 단위 내림).',
+    requirement: [
+      '등급별 적립률이 (주문금액 − 사용포인트)에 정확히 적용된다.',
+      '포인트 최소 사용 금액(1,000p) 경계가 지켜진다.',
+      '포인트는 주문 금액의 50%를 초과해 쓸 수 없다.',
+      '최종 결제액 = 주문금액 − 사용포인트로 정확히 계산된다.',
+      '잘못된 포인트 입력 시 에러가 나고 적립·결제액에 반영되지 않는다.',
+    ],
+    sandboxSlug: 'points-settlement',
+    selectors: [
+      { name: '주문 금액', testid: 'order-amount', desc: '주문 금액 입력' },
+      { name: '일반 등급', testid: 'grade-normal', desc: '일반(1%)' },
+      { name: '실버 등급', testid: 'grade-silver', desc: '실버(2%)' },
+      { name: '골드 등급', testid: 'grade-gold', desc: '골드(5%)' },
+      { name: '사용 포인트', testid: 'use-points', desc: '사용 포인트 입력' },
+      { name: '최종 결제액', testid: 'final-amount', desc: '결제 금액' },
+      { name: '적립 예정', testid: 'earned-points', desc: '적립 예정 포인트' },
+      { name: '포인트 에러', testid: 'point-error', desc: '포인트 검증 실패 시' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내 테스트', async ({ page }) => {
+  await page.goto('/sandbox/points-settlement');
+  // 규칙을 분석해 필요한 케이스를 직접 설계하세요.
+});
+`,
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {

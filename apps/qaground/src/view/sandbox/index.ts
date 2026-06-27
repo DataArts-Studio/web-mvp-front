@@ -14,11 +14,13 @@ import { ModalSandbox } from './modal-sandbox';
 import { MoneyTransferSandbox } from './money-transfer-sandbox';
 import { OrderFormSandbox } from './order-form-sandbox';
 import { PageNavigationSandbox } from './page-navigation-sandbox';
+import { PointsSettlementSandbox } from './points-settlement-sandbox';
 import { ProductCatalogSandbox } from './product-catalog-sandbox';
 import { ProductOptionsSandbox } from './product-options-sandbox';
 import { ProfileFormSandbox } from './profile-form-sandbox';
 import { RealtimeValidationSandbox } from './realtime-validation-sandbox';
 import { RouteGuardSandbox } from './route-guard-sandbox';
+import { SeatBookingSandbox } from './seat-booking-sandbox';
 import { SessionExpirySandbox } from './session-expiry-sandbox';
 import { SignupSandbox } from './signup-sandbox';
 import { TabsSandbox } from './tabs-sandbox';
@@ -55,4 +57,6 @@ export const SANDBOXES: Record<string, ComponentType> = {
   'product-catalog': ProductCatalogSandbox,
   'product-options': ProductOptionsSandbox,
   wishlist: WishlistSandbox,
+  'seat-booking': SeatBookingSandbox,
+  'points-settlement': PointsSettlementSandbox,
 };
