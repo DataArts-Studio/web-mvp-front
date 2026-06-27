@@ -79,7 +79,7 @@ export const TestCaseExercise = ({
   };
 
   const fieldClass =
-    'border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary h-button-md w-full border px-3 text-sm transition-colors outline-none';
+    'border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary w-full border px-3 text-sm transition-colors outline-none';
 
   return (
     <section className="border-line-2 bg-bg-2 rounded-2xl border p-5 sm:p-6">
@@ -126,24 +126,24 @@ export const TestCaseExercise = ({
               value={r.name}
               onChange={(e) => update(i, 'name', e.target.value)}
               placeholder="케이스 이름 (시나리오) — 예: 최소 금액 미달 시 쿠폰 거부"
-              className={fieldClass}
+              className={`h-button-md ${fieldClass}`}
             />
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              <input
-                data-testid="case-steps"
-                value={r.steps}
-                onChange={(e) => update(i, 'steps', e.target.value)}
-                placeholder="절차 — 예: 19,999원 주문에 쿠폰 적용"
-                className={fieldClass}
-              />
-              <input
-                data-testid="case-expected"
-                value={r.expected}
-                onChange={(e) => update(i, 'expected', e.target.value)}
-                placeholder="기대 결과 — 예: 적용되지 않고 안내 표시"
-                className={fieldClass}
-              />
-            </div>
+            <textarea
+              data-testid="case-steps"
+              value={r.steps}
+              onChange={(e) => update(i, 'steps', e.target.value)}
+              rows={2}
+              placeholder={'절차 — 예: 1. 19,999원 주문  2. 쿠폰 적용'}
+              className={`mt-2 resize-none py-2 ${fieldClass}`}
+            />
+            <textarea
+              data-testid="case-expected"
+              value={r.expected}
+              onChange={(e) => update(i, 'expected', e.target.value)}
+              rows={2}
+              placeholder="기대 결과 — 예: 적용되지 않고 안내가 표시됨"
+              className={`mt-2 resize-none py-2 ${fieldClass}`}
+            />
           </li>
         ))}
       </ol>

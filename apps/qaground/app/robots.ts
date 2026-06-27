@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 
+// 검색 크롤러 정책: 공개 콘텐츠는 허용, 테스트 픽스처·API 는 색인 제외.
 const SITE_URL = 'https://qaground.gettestea.com';
 
 export default function robots(): MetadataRoute.Robots {
