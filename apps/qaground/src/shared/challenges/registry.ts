@@ -681,6 +681,285 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       '세션 시간(예: 60분)과 기록 방법, 발견 시 후속 처리를 정하세요.',
     ],
   },
+  {
+    slug: 'page-navigation',
+    title: '페이지 전환 내비게이션',
+    track: 'automation',
+    category: 'interaction',
+    difficulty: 'easy',
+    tools: ['Playwright'],
+    summary:
+      '내비게이션으로 페이지를 전환하고 뒤로가기로 직전 페이지로 돌아가는 동작을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '각 내비 링크를 클릭하면 page-title 이 해당 페이지 제목으로 바뀌는지 검증한다.',
+      '여러 페이지를 이동한 뒤 뒤로가기를 누르면 직전 페이지로 돌아가는지 검증한다.',
+      '첫 페이지(대시보드)에서는 뒤로가기 버튼이 비활성(disabled)인지 검증한다.',
+      '연속 이동·뒤로가기 후 page-title 이 방문 이력과 일치하는지 검증한다.',
+    ],
+    sandboxSlug: 'page-navigation',
+    selectors: [
+      { name: '대시보드 메뉴', testid: 'nav-dashboard', desc: '대시보드로 이동' },
+      { name: '주문 메뉴', testid: 'nav-orders', desc: '주문으로 이동' },
+      { name: '설정 메뉴', testid: 'nav-settings', desc: '설정으로 이동' },
+      { name: '현재 페이지 제목', testid: 'page-title', desc: '현재 페이지 제목' },
+      { name: '뒤로가기', testid: 'back-button', desc: '직전 페이지로 이동' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내비게이션으로 페이지를 전환한다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: nav-orders 를 클릭해 page-title 이 '주문' 인지 검증한 뒤,
+  //       back-button 으로 직전 페이지로 돌아가는지 확인하세요.
+});
+`,
+  },
+  {
+    slug: 'token-storage',
+    title: '토큰 저장·세션 유지',
+    track: 'automation',
+    category: 'auth',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '로그인 성공 시 토큰이 localStorage 에 저장되고 로그아웃 시 제거되는지 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '유효한 자격증명(tester / qaground123)으로 로그인하면 localStorage 키 qaground_token 에 토큰이 저장되는지 검증한다.',
+      '로그인 성공 시 화면이 로그인됨 상태(token-status)로 바뀌고 토큰 값(token-value)이 노출되는지 검증한다.',
+      '잘못된 자격증명으로는 토큰이 저장되지 않고 에러가 노출되는지 검증한다.',
+      '로그아웃하면 localStorage 의 토큰이 제거되고 로그아웃 상태로 돌아가는지 검증한다.',
+    ],
+    sandboxSlug: 'token-storage',
+    selectors: [
+      { name: '아이디 입력', testid: 'token-username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'token-password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'token-login', desc: '제출 버튼' },
+      { name: '인증 상태', testid: 'token-status', desc: '로그인됨/로그아웃됨 표시' },
+      { name: '토큰 값', testid: 'token-value', desc: '저장된 토큰 노출' },
+      { name: '로그아웃 버튼', testid: 'token-logout', desc: '토큰 제거' },
+      { name: '에러 메시지', testid: 'token-error', desc: '인증 실패 시 노출' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('로그인하면 토큰이 저장된다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: token-username·token-password 를 채우고 token-login 을 클릭한 뒤,
+  //       localStorage 의 qaground_token 을 page.evaluate 로 읽어 검증하세요.
+  //       예: await page.evaluate(() => localStorage.getItem('qaground_token'))
+});
+`,
+  },
+  {
+    slug: 'route-guard',
+    title: '라우트 가드(접근 제어)',
+    track: 'automation',
+    category: 'auth',
+    difficulty: 'hard',
+    tools: ['Playwright'],
+    summary:
+      '미인증 사용자의 보호 페이지 접근을 차단하고 로그인 후 진입시키는 접근 제어 흐름을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '미인증 상태에서 보호 페이지 접근을 시도하면 로그인 화면으로 리다이렉트되고 안내(guard-redirect-notice)가 노출되는지 검증한다.',
+      '올바른 자격증명(tester / qaground123)으로 로그인하면 보호 페이지 내용(guard-protected-view)이 보이는지 검증한다.',
+      '인증된 뒤에는 보호 페이지 링크로 바로 접근되는지 검증한다.',
+      '로그아웃하면 보호 페이지 접근이 다시 차단되는지 검증한다.',
+    ],
+    sandboxSlug: 'route-guard',
+    selectors: [
+      { name: '보호 페이지 링크', testid: 'guard-protected-link', desc: '보호 페이지 접근 시도' },
+      { name: '아이디 입력', testid: 'guard-username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'guard-password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'guard-login-submit', desc: '제출 버튼' },
+      { name: '리다이렉트 안내', testid: 'guard-redirect-notice', desc: '미인증 접근 시 노출' },
+      { name: '보호 페이지', testid: 'guard-protected-view', desc: '인증 후 보이는 내용' },
+      { name: '로그아웃 버튼', testid: 'guard-logout', desc: '인증 해제' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('미인증 접근은 차단되고 로그인 후 진입된다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: guard-protected-link 클릭 시 guard-redirect-notice 가 보이는지 확인하고,
+  //       로그인 후 guard-protected-view 가 보이는지 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'form-autosave',
+    title: '폼 임시저장·복원',
+    track: 'automation',
+    category: 'forms',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '입력을 localStorage 에 자동 저장하고 재방문 시 복원하며 초기화/제출로 비우는 동작을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '제목·내용을 입력하면 localStorage 키 qaground_draft 에 저장되고 저장 상태(draft-status)가 노출되는지 검증한다.',
+      '입력 후 페이지를 새로고침(page.reload)해도 입력값이 복원되는지 검증한다.',
+      '초기화(draft-clear)를 누르면 입력과 localStorage 의 draft 가 모두 비워지는지 검증한다.',
+      '제출(draft-submit)하면 draft 가 제거되고 제출 상태가 되는지 검증한다.',
+    ],
+    sandboxSlug: 'form-autosave',
+    selectors: [
+      { name: '제목 입력', testid: 'draft-title', desc: '제목 입력 필드' },
+      { name: '내용 입력', testid: 'draft-body', desc: '내용 입력 영역' },
+      { name: '저장 상태', testid: 'draft-status', desc: '임시저장/복원/초기화 표시' },
+      { name: '초기화 버튼', testid: 'draft-clear', desc: '입력·draft 비우기' },
+      { name: '제출 버튼', testid: 'draft-submit', desc: '제출 후 draft 제거' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('입력이 임시저장되고 새로고침 후 복원된다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: draft-title·draft-body 를 입력하고 page.reload() 후에도
+  //       값이 남아있는지 검증하세요. (localStorage 키: qaground_draft)
+});
+`,
+  },
+  {
+    slug: 'checkout-flow',
+    title: '주문 결제 E2E',
+    track: 'automation',
+    category: 'commerce',
+    difficulty: 'hard',
+    tools: ['Playwright'],
+    summary:
+      '상품 선택부터 장바구니·배송 정보·결제수단·주문 완료까지 이어지는 전체 결제 여정을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '상품을 담으면 cart-count 가 증가하고 장바구니 단계로 이동할 수 있는지 검증한다.',
+      '빈 장바구니에서는 장바구니 단계로 넘어갈 수 없는지(go-cart 비활성) 검증한다.',
+      '배송 정보를 비운 채 진행하면 에러(shipping-error)가 나고 결제로 넘어가지 못하는지 검증한다.',
+      '배송 정보를 모두 채우면 결제 단계로 넘어가는지 검증한다.',
+      '결제수단을 선택하고 주문하면 주문 완료(order-complete)와 주문번호(order-number)가 노출되는지 검증한다.',
+    ],
+    sandboxSlug: 'checkout-flow',
+    selectors: [
+      { name: '마우스 담기', testid: 'add-mouse', desc: '무선 마우스 담기' },
+      { name: '키보드 담기', testid: 'add-keyboard', desc: '기계식 키보드 담기' },
+      { name: '장바구니 개수', testid: 'cart-count', desc: '담긴 수량 배지' },
+      { name: '장바구니로', testid: 'go-cart', desc: '장바구니 단계로 이동' },
+      { name: '배송 정보로', testid: 'go-shipping', desc: '배송 단계로 이동' },
+      { name: '받는 사람', testid: 'ship-name', desc: '수령인 입력' },
+      { name: '주소', testid: 'ship-address', desc: '주소 입력' },
+      { name: '연락처', testid: 'ship-phone', desc: '연락처 입력' },
+      { name: '배송 에러', testid: 'shipping-error', desc: '배송 정보 누락 시' },
+      { name: '결제수단으로', testid: 'go-payment', desc: '결제 단계로 이동' },
+      { name: '카드 결제', testid: 'pay-card', desc: '신용카드 선택' },
+      { name: '주문하기', testid: 'place-order', desc: '주문 확정' },
+      { name: '주문 완료', testid: 'order-complete', desc: '완료 화면' },
+      { name: '주문번호', testid: 'order-number', desc: '발급된 주문번호' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('상품 선택부터 주문 완료까지 진행한다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: add-mouse 로 담고 go-cart→go-shipping 으로 진행한 뒤,
+  //       배송 정보를 채우고 pay-card 선택 후 place-order 로 주문을 완료해
+  //       order-complete 가 보이는지 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'product-catalog',
+    title: '상품 필터·정렬',
+    track: 'automation',
+    category: 'commerce',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '카테고리 필터·가격 정렬·검색으로 상품 목록을 좁히는 동작을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '카테고리 필터를 선택하면 해당 카테고리 상품만 남고 result-count 가 맞는지 검증한다.',
+      '검색어를 입력하면 이름에 포함된 상품만 노출되는지 검증한다.',
+      '가격 낮은순/높은순 정렬 시 첫 상품(product-item)이 바뀌는지 검증한다.',
+      '필터와 검색을 함께 적용했을 때 결과가 교집합으로 좁혀지는지 검증한다.',
+      '결과가 없으면 빈 상태(empty-state)가 노출되는지 검증한다.',
+    ],
+    sandboxSlug: 'product-catalog',
+    selectors: [
+      { name: '전체 필터', testid: 'filter-all', desc: '모든 카테고리' },
+      { name: '전자 필터', testid: 'filter-electronics', desc: '전자 카테고리' },
+      { name: '의류 필터', testid: 'filter-clothing', desc: '의류 카테고리' },
+      { name: '도서 필터', testid: 'filter-books', desc: '도서 카테고리' },
+      { name: '낮은순 정렬', testid: 'sort-asc', desc: '가격 오름차순' },
+      { name: '높은순 정렬', testid: 'sort-desc', desc: '가격 내림차순' },
+      { name: '검색 입력', testid: 'search-input', desc: '상품 이름 검색' },
+      { name: '결과 개수', testid: 'result-count', desc: '필터 결과 수' },
+      { name: '상품 항목', testid: 'product-item', desc: '목록의 각 상품' },
+      { name: '빈 상태', testid: 'empty-state', desc: '결과 없음 안내' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('필터와 검색으로 목록을 좁힌다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: filter-electronics 를 선택하고 result-count·product-item 수를 검증한 뒤,
+  //       search-input 으로 더 좁히거나 sort-desc 로 정렬 순서를 확인하세요.
+});
+`,
+  },
+  {
+    slug: 'product-options',
+    title: '상품 옵션 선택',
+    track: 'automation',
+    category: 'commerce',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary: '사이즈·색상 옵션을 모두 선택해야 담기에 성공하는 필수 옵션 검증 테스트를 작성하세요.',
+    requirement: [
+      '옵션을 선택하지 않고 담기를 누르면 에러(option-error)가 나고 담기지 않는지 검증한다.',
+      '사이즈만 선택하고 담아도 여전히 에러가 나는지 검증한다.',
+      '사이즈·색상을 모두 선택하면 담기가 성공하고 확인(added-confirm)이 노출되는지 검증한다.',
+      '선택한 옵션이 요약(selected-summary)에 정확히 반영되는지 검증한다.',
+    ],
+    sandboxSlug: 'product-options',
+    selectors: [
+      { name: '사이즈 S', testid: 'size-s', desc: 'S 사이즈' },
+      { name: '사이즈 M', testid: 'size-m', desc: 'M 사이즈' },
+      { name: '사이즈 L', testid: 'size-l', desc: 'L 사이즈' },
+      { name: '블랙', testid: 'color-black', desc: '블랙 색상' },
+      { name: '화이트', testid: 'color-white', desc: '화이트 색상' },
+      { name: '담기', testid: 'add-to-cart', desc: '장바구니 담기' },
+      { name: '옵션 에러', testid: 'option-error', desc: '옵션 미선택 시' },
+      { name: '담기 확인', testid: 'added-confirm', desc: '담기 성공 시' },
+      { name: '선택 요약', testid: 'selected-summary', desc: '선택한 옵션 표시' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('옵션을 모두 선택해야 담긴다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: 옵션 없이 add-to-cart 시 option-error 를 확인하고,
+  //       size-m·color-black 선택 후 담으면 added-confirm 이 보이는지 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'wishlist',
+    title: '위시리스트 토글',
+    track: 'automation',
+    category: 'commerce',
+    difficulty: 'easy',
+    tools: ['Playwright'],
+    summary: '상품별 찜 토글과 개수 배지 갱신을 검증하는 테스트를 작성하세요.',
+    requirement: [
+      '찜 버튼을 누르면 찜 상태(aria-pressed=true)가 되고 wish-count 가 증가하는지 검증한다.',
+      '다시 누르면 찜이 해제되고 wish-count 가 감소하는지 검증한다.',
+      '여러 상품을 찜하면 wish-count 가 정확히 합산되는지 검증한다.',
+      '모두 해제하면 wish-count 가 0이 되는지 검증한다.',
+    ],
+    sandboxSlug: 'wishlist',
+    selectors: [
+      { name: '상품1 찜', testid: 'wish-1', desc: '무선 마우스 찜 토글' },
+      { name: '상품2 찜', testid: 'wish-2', desc: '기계식 키보드 찜 토글' },
+      { name: '상품3 찜', testid: 'wish-3', desc: '4K 모니터 찜 토글' },
+      { name: '찜 개수', testid: 'wish-count', desc: '찜한 상품 수 배지' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('찜을 토글하면 개수가 갱신된다', async ({ page }) => {
+  await page.goto('/');
+  // TODO: wish-1 을 눌러 aria-pressed 와 wish-count 증가를 확인하고,
+  //       다시 눌러 해제되며 count 가 감소하는지 검증하세요.
+});
+`,
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {

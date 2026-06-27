@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getChallenge } from '@/shared/challenges/registry';
+import { gradeSubmissionStatically } from '@/shared/challenges/static-grader';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const runnerUrl = process.env.QAGROUND_RUNNER_URL;
   const runnerSecret = process.env.QAGROUND_RUNNER_SECRET;
   if (!runnerUrl || !runnerSecret) {
-    return NextResponse.json({ error: '채점 서버가 아직 연결되지 않았습니다.' }, { status: 503 });
+    // 임시: 러너 미연결 구간에는 정적 채점으로 폴백한다(코드를 실행하지 않고 구조·관련성만
+    // 점검). 러너가 연결되면 아래 실제 실행 채점으로 자동 전환되고 이 분기는 제거 대상이다.
+    const result = gradeSubmissionStatically(challenge, parsed.data.code);
+    return NextResponse.json({ ...result, mode: 'static' });
   }
 
   // 러너가 spec 을 실행할 대상 URL. 현재는 qaground 가 서빙하는 샌드박스 주소.
