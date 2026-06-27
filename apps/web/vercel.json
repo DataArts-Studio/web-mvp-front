@@ -1,3 +1,4 @@
 {
-  "regions": ["icn1"]
+  "regions": ["icn1"],
+  "ignoreCommand": "npx turbo-ignore web"
 }
