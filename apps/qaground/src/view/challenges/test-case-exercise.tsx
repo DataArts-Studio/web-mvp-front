@@ -41,7 +41,7 @@ export const TestCaseExercise = ({
     'border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none';
 
   return (
-    <section className="border-line-2 bg-bg-2 mt-8 rounded-2xl border p-6">
+    <section className="border-line-2 bg-bg-2 rounded-2xl border p-6">
       <h2 className="text-base font-semibold">테스트 케이스 제출</h2>
       <p className="text-text-2 mt-2 text-sm leading-relaxed">
         요구사항을 보고 테스트 케이스를 작성해 제출하세요. 제출하면 모범 답안과 피드백이 나타납니다.

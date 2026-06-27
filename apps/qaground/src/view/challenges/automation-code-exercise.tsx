@@ -253,8 +253,8 @@ export const AutomationCodeExercise = ({
         </button>
       </div>
 
-      {/* 에디터: 남는 높이를 채운다 (모바일은 55vh 고정) */}
-      <div className="h-[55vh] min-h-0 flex-1 lg:h-auto">
+      {/* 에디터: 남는 높이를 채운다 (모바일은 고정 높이) */}
+      <div className="h-[45vh] min-h-0 flex-1 lg:h-auto">
         <MonacoEditor
           height="100%"
           defaultLanguage="typescript"
@@ -286,40 +286,42 @@ export const AutomationCodeExercise = ({
         </p>
       )}
 
-      {/* 터미널: 실행·결과 시 하단에 펼쳐진다 (에디터가 줄어들며 자리 양보) */}
-      {(status === 'running' || status === 'result') && (
-        <div
-          data-testid="code-result"
-          className="border-line-2 flex max-h-72 shrink-0 flex-col border-t bg-[#0d1117] lg:max-h-[45%]"
-        >
-          <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-2">
-            <span className="flex gap-1.5" aria-hidden>
-              <span className="h-2.5 w-2.5 rounded-full bg-[#f85149]/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#d29922]/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#3fb950]/80" />
+      {/* 터미널: 항상 고정 높이로 자리 잡고 내부 스크롤 (실행해도 에디터가 밀리지 않음) */}
+      <div
+        data-testid="code-result"
+        className="border-line-2 flex h-56 shrink-0 flex-col border-t bg-[#0d1117] lg:h-72"
+      >
+        <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-2">
+          <span className="flex gap-1.5" aria-hidden>
+            <span className="h-2.5 w-2.5 rounded-full bg-[#f85149]/80" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#d29922]/80" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#3fb950]/80" />
+          </span>
+          <span className="font-mono text-xs text-[#8b949e]">qaground grade</span>
+          {running && <span className="ml-auto font-mono text-xs text-[#d29922]">실행 중…</span>}
+          {status === 'result' && result?.mode === 'static' && (
+            <span
+              data-testid="grading-mode-badge"
+              title="코드를 실행하지 않고 구조만 점검하는 임시 채점입니다. 러너 연결 시 실제 실행 채점으로 전환됩니다."
+              className="ml-auto rounded-full border border-white/15 px-2 py-0.5 font-mono text-[11px] text-[#8b949e]"
+            >
+              임시 모드
             </span>
-            <span className="font-mono text-xs text-[#8b949e]">qaground grade</span>
-            {running && <span className="ml-auto font-mono text-xs text-[#d29922]">실행 중…</span>}
-            {status === 'result' && result?.mode === 'static' && (
-              <span
-                data-testid="grading-mode-badge"
-                title="코드를 실행하지 않고 구조만 점검하는 임시 채점입니다. 러너 연결 시 실제 실행 채점으로 전환됩니다."
-                className="ml-auto rounded-full border border-white/15 px-2 py-0.5 font-mono text-[11px] text-[#8b949e]"
-              >
-                임시 모드
-              </span>
-            )}
-          </div>
-          <div className="min-h-0 flex-1 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed">
-            {term.map((l) => (
+          )}
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed">
+          {term.length === 0 && !running ? (
+            <span className="text-[#8b949e]">제출하면 실행 결과가 여기에 표시됩니다.</span>
+          ) : (
+            term.map((l) => (
               <div key={l.id} className={`${TERM_CLASS[l.kind]} whitespace-pre-wrap`}>
                 {l.text || ' '}
               </div>
-            ))}
-            {running && <span className="animate-pulse text-[#8b949e]">▋</span>}
-          </div>
+            ))
+          )}
+          {running && <span className="animate-pulse text-[#8b949e]">▋</span>}
         </div>
-      )}
+      </div>
     </section>
   );
 };
