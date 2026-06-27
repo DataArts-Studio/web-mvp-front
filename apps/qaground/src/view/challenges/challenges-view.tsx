@@ -130,19 +130,41 @@ export const ChallengesView = ({ selectedCategory }: { selectedCategory?: string
           </div>
         </div>
 
-        <section className="border-line-2 bg-bg-2 mt-16 flex flex-col items-center gap-3 rounded-2xl border px-6 py-10 text-center">
-          <p className="text-text-3 text-sm">여기서 연습한 테스트, 실무에선 어떻게 관리하시나요?</p>
-          <h2 className="text-xl font-semibold">
-            테스트 케이스·실행·리포트는 <span className="text-primary">Testea</span>로
-          </h2>
-          <a
-            href="https://gettestea.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 rounded-lg bg-[#0bb57f] px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            Testea 둘러보기
-          </a>
+        <section className="border-line-2 bg-bg-2 relative mt-16 overflow-hidden rounded-2xl border px-6 py-8 sm:px-10">
+          <div
+            aria-hidden
+            className="bg-primary/15 pointer-events-none absolute -top-20 -right-20 h-52 w-52 rounded-full blur-3xl"
+          />
+          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-xl">
+              <span className="text-primary text-xs font-semibold">실무 QA 도구 · 무료</span>
+              <h2 className="mt-2 text-xl font-bold sm:text-2xl">
+                여기서 연습한 테스트, 실무에선 <span className="text-primary">Testea</span>로
+              </h2>
+              <p className="text-text-2 mt-2 text-sm leading-relaxed">
+                테스트 케이스·실행·리포트·마일스톤을 한 곳에서. AI가 요구사항으로
+                시나리오·케이스까지 만들어 줍니다.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {['테스트 케이스 관리', 'AI 시나리오 생성', '실행 추적', '리포트'].map((c) => (
+                  <span
+                    key={c}
+                    className="border-line-3 text-text-3 rounded-full border px-2 py-0.5 text-xs"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <a
+              href="https://gettestea.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 inline-flex shrink-0 items-center justify-center px-6 text-sm font-semibold whitespace-nowrap text-white transition-colors"
+            >
+              Testea 무료로 시작하기 →
+            </a>
+          </div>
         </section>
       </main>
     </div>
