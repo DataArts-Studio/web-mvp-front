@@ -100,6 +100,32 @@ export const AutomationCodeExercise = ({
   const [term, setTerm] = useState<TermLine[]>([]);
   const runIdRef = useRef(0);
 
+  // 에디터↔터미널 경계 드래그로 터미널 높이 조절
+  const [termH, setTermH] = useState(288);
+  const sectionRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{ startY: number; startH: number } | null>(null);
+
+  const onResizeDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragRef.current = { startY: e.clientY, startH: termH };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onResizeMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const total = sectionRef.current?.clientHeight ?? 800;
+    const max = Math.max(160, total - 220); // 에디터·툴바 최소 공간 확보
+    const next = dragRef.current.startH + (dragRef.current.startY - e.clientY);
+    setTermH(Math.min(Math.max(next, 96), max));
+  };
+  const onResizeUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // 포인터 캡처가 없으면 무시
+    }
+  };
+
   const submit = async () => {
     const runId = (runIdRef.current += 1);
     const alive = () => runIdRef.current === runId;
@@ -232,7 +258,7 @@ export const AutomationCodeExercise = ({
   const running = status === 'running';
 
   return (
-    <section className="flex h-full min-h-0 flex-col">
+    <section ref={sectionRef} className="flex h-full min-h-0 flex-col">
       {/* 툴바: 연습 대상 열기 + 제출 (IDE 스타일 상단 고정) */}
       <div className="border-line-2 flex shrink-0 items-center gap-3 border-b px-4 py-2">
         <Link
@@ -286,10 +312,26 @@ export const AutomationCodeExercise = ({
         </p>
       )}
 
-      {/* 터미널: 항상 고정 높이로 자리 잡고 내부 스크롤 (실행해도 에디터가 밀리지 않음) */}
+      {/* 에디터↔터미널 경계: 드래그로 높이 조절 */}
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="터미널 높이 조절"
+        onPointerDown={onResizeDown}
+        onPointerMove={onResizeMove}
+        onPointerUp={onResizeUp}
+        className="border-line-2 bg-bg-2 hover:bg-primary/20 group flex h-2 shrink-0 cursor-row-resize touch-none items-center justify-center border-t transition-colors"
+      >
+        <span
+          aria-hidden
+          className="bg-line-3 group-hover:bg-primary h-0.5 w-8 rounded-full transition-colors"
+        />
+      </div>
+      {/* 터미널: 드래그로 조절되는 고정 높이 + 내부 스크롤 */}
       <div
         data-testid="code-result"
-        className="border-line-2 flex h-56 shrink-0 flex-col border-t bg-[#0d1117] lg:h-72"
+        style={{ height: termH }}
+        className="flex shrink-0 flex-col overflow-hidden bg-[#0d1117]"
       >
         <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-2">
           <span className="flex gap-1.5" aria-hidden>
