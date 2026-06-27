@@ -11,7 +11,7 @@ interface ModelCase {
 }
 
 type Priority = 'high' | 'medium' | 'low';
-type Row = { name: string; priority: Priority; steps: string; expected: string };
+type Row = { name: string; priority: Priority; steps: string[]; expected: string };
 
 const PRIORITY_LABEL: Record<Priority, string> = {
   high: '높음',
@@ -25,7 +25,7 @@ const PRIORITY_BADGE: Record<Priority, string> = {
   low: 'bg-[#3fb950]/12 text-[#3fb950]',
 };
 
-const newRow = (): Row => ({ name: '', priority: 'medium', steps: '', expected: '' });
+const newRow = (): Row => ({ name: '', priority: 'medium', steps: [''], expected: '' });
 
 type GradeStatus = 'passed' | 'partial' | 'failed';
 interface GradeResult {
@@ -68,6 +68,21 @@ export const TestCaseExercise = ({
   const addRow = () => setRows((rs) => [...rs, newRow()]);
   const removeRow = (i: number) =>
     setRows((rs) => (rs.length > 1 ? rs.filter((_, idx) => idx !== i) : rs));
+
+  const updateStep = (ci: number, si: number, v: string) =>
+    setRows((rs) =>
+      rs.map((r, idx) =>
+        idx === ci ? { ...r, steps: r.steps.map((s, j) => (j === si ? v : s)) } : r
+      )
+    );
+  const addStep = (ci: number) =>
+    setRows((rs) => rs.map((r, idx) => (idx === ci ? { ...r, steps: [...r.steps, ''] } : r)));
+  const removeStep = (ci: number, si: number) =>
+    setRows((rs) =>
+      rs.map((r, idx) =>
+        idx === ci && r.steps.length > 1 ? { ...r, steps: r.steps.filter((_, j) => j !== si) } : r
+      )
+    );
 
   const grade = () => {
     const status: GradeStatus =
@@ -128,14 +143,41 @@ export const TestCaseExercise = ({
               placeholder="케이스 이름 (시나리오) — 예: 최소 금액 미달 시 쿠폰 거부"
               className={`h-button-md ${fieldClass}`}
             />
-            <textarea
-              data-testid="case-steps"
-              value={r.steps}
-              onChange={(e) => update(i, 'steps', e.target.value)}
-              rows={2}
-              placeholder={'절차 — 예: 1. 19,999원 주문  2. 쿠폰 적용'}
-              className={`mt-2 resize-none py-2 ${fieldClass}`}
-            />
+            <div className="mt-2">
+              <span className="text-text-3 text-xs">절차</span>
+              <div className="mt-1.5 flex flex-col gap-1.5">
+                {r.steps.map((s, si) => (
+                  <div key={si} className="flex items-center gap-2">
+                    <span className="text-text-3 w-4 shrink-0 text-right font-mono text-xs">
+                      {si + 1}
+                    </span>
+                    <input
+                      data-testid="case-steps"
+                      value={s}
+                      onChange={(e) => updateStep(i, si, e.target.value)}
+                      placeholder={si === 0 ? '예: 19,999원 주문에 쿠폰 적용' : '다음 단계'}
+                      className={`h-button-md ${fieldClass}`}
+                    />
+                    <button
+                      type="button"
+                      aria-label="단계 삭제"
+                      onClick={() => removeStep(i, si)}
+                      disabled={r.steps.length <= 1}
+                      className="text-text-3 hover:text-text-1 shrink-0 text-sm transition-colors disabled:opacity-30"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => addStep(i)}
+                className="text-text-2 hover:text-text-1 mt-1.5 ml-6 text-xs transition-colors"
+              >
+                + 단계 추가
+              </button>
+            </div>
             <textarea
               data-testid="case-expected"
               value={r.expected}
