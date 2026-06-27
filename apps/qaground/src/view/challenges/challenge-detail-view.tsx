@@ -125,7 +125,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   if (isAutomationCode) {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans lg:h-screen lg:overflow-hidden">
-        <PlaygroundHeader />
+        <PlaygroundHeader containerClassName="max-w-none" />
         <div className="border-line-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2.5 sm:px-6">
           <Link
             href="/challenges"
@@ -194,7 +194,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   if (isSplit) {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader />
+        <PlaygroundHeader containerClassName="max-w-7xl" />
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6">
           {backLink}
           <ChallengeMeta challenge={challenge} />
@@ -225,27 +225,29 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   if (challenge.modelTestCases || challenge.knownDefects) {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader />
-        <div className="border-line-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2.5 sm:px-6">
-          <Link
-            href="/challenges"
-            aria-label="챌린지 목록"
-            className="text-text-3 hover:text-text-1 text-sm transition-colors"
-          >
-            ←
-          </Link>
-          <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
-          <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
-            {TRACK_LABEL[challenge.track]}
-          </span>
-          <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
-            {CATEGORY_LABEL[challenge.category]}
-          </span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
-          >
-            {DIFFICULTY_LABEL[challenge.difficulty]}
-          </span>
+        <PlaygroundHeader containerClassName="max-w-6xl" />
+        <div className="border-line-2 border-b">
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5 sm:px-6">
+            <Link
+              href="/challenges"
+              aria-label="챌린지 목록"
+              className="text-text-3 hover:text-text-1 text-sm transition-colors"
+            >
+              ←
+            </Link>
+            <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
+            <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+              {TRACK_LABEL[challenge.track]}
+            </span>
+            <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+              {CATEGORY_LABEL[challenge.category]}
+            </span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+            >
+              {DIFFICULTY_LABEL[challenge.difficulty]}
+            </span>
+          </div>
         </div>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[2fr_3fr] lg:gap-10">
@@ -280,7 +282,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
 
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-      <PlaygroundHeader />
+      <PlaygroundHeader containerClassName="max-w-3xl" />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
         {backLink}
         <ChallengeMeta challenge={challenge} />
