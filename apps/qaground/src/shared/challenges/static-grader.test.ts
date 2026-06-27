@@ -44,7 +44,7 @@ describe('gradeSubmissionStatically', () => {
     const r = gradeSubmissionStatically(challenge, goodCode);
     expect(r.ok).toBe(true);
     expect(r.status).toBe('passed');
-    expect(r.errorMessage).toContain('임시 정적 채점');
+    expect(r.errorMessage).toContain('구조 점검 통과');
   });
 
   it('스타터를 수정하지 않으면 실패한다', () => {

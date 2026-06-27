@@ -181,12 +181,11 @@ export const AutomationCodeExercise = ({
       push({ id: 'sum', text: '  채점 실패 — 아래를 보완하세요', kind: 'fail' });
     }
 
-    // 상세(보완 항목 / 통과 요약)를 줄 단위로. 머리말 태그는 헤더 배지로 대신한다.
+    // 상세(보완 항목 / 통과 요약)를 줄 단위로. 임시 여부는 헤더의 "임시 모드" 배지로 대신한다.
     (data.errorMessage ?? '')
       .split('\n')
       .map((s) => s.trim())
       .filter(Boolean)
-      .filter((s) => !s.startsWith('[임시 정적 채점]'))
       .forEach((ln, idx) => push({ id: `msg-${idx}`, text: `  ${ln}`, kind: ok ? 'dim' : 'fail' }));
 
     setResult(data);

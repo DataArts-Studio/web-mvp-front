@@ -94,7 +94,7 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
       ok: false,
       status: 'failed',
       durationMs,
-      errorMessage: `[임시 정적 채점] 아래 항목을 보완하세요:\n- ${failures.join('\n- ')}`,
+      errorMessage: `- ${failures.join('\n- ')}`,
     };
   }
 
@@ -118,11 +118,9 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
         : usesSemanticLocator
           ? ', 접근성 기반 셀렉터'
           : '';
-  const note = [
-    `[임시 정적 채점] 구조·관련성 기준 통과 (단언 ${assertions}개${selectorSummary}).`,
-    '실제 실행 채점은 러너 연결 후 자동 전환됩니다.',
-    ...suggestions,
-  ].join('\n');
+  const note = [`구조 점검 통과 (단언 ${assertions}개${selectorSummary}).`, ...suggestions].join(
+    '\n'
+  );
 
   return { ok: true, status: 'passed', durationMs, errorMessage: note };
 }
