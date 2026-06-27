@@ -19,6 +19,12 @@ export interface GradeResult {
   status: string;
   durationMs: number;
   errorMessage?: string;
+  /** 요구사항 총 개수 (커버리지 판정 기준). */
+  requirementCount?: number;
+  /** 충족 추정 개수. */
+  covered?: number;
+  /** 미작성 추정 요구사항 텍스트 (부분 통과 시 빨간 fail 로 표시). */
+  uncovered?: string[];
 }
 
 /** 라인/블록 주석 제거. 주석 속 TODO 힌트(`// expect ...`)가 채점에 끼지 않게 한다. */
@@ -119,6 +125,10 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
       ok: false,
       status: 'partial',
       durationMs,
+      requirementCount: reqCount,
+      covered: coverage,
+      // 작성 수를 넘어서는 요구사항을 미작성(추정)으로 본다.
+      uncovered: (challenge.requirement ?? []).slice(coverage),
       errorMessage: [
         `부분 작성입니다 (작성한 테스트 ${testCount}개 · 단언 ${assertions}개).`,
         `요구사항 ${reqCount}개를 각각 검증하는 테스트를 모두 작성해야 통과입니다.`,
@@ -130,5 +140,13 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
   const note = `구조 점검 통과 (단언 ${assertions}개${selectorSummary}${
     reqCount > 0 ? `, 요구사항 ${reqCount}개 커버 추정` : ''
   }).`;
-  return { ok: true, status: 'passed', durationMs, errorMessage: note };
+  return {
+    ok: true,
+    status: 'passed',
+    durationMs,
+    requirementCount: reqCount,
+    covered: coverage,
+    uncovered: [],
+    errorMessage: note,
+  };
 }

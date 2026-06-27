@@ -42,6 +42,10 @@ interface RunResult {
   errorMessage?: string;
   /** 'static' = 러너 미연결 구간의 임시 정적 채점(코드 미실행). 연결되면 실제 실행 채점. */
   mode?: 'static' | 'runner';
+  requirementCount?: number;
+  covered?: number;
+  /** 부분 통과 시 미작성(추정) 요구사항 — 빨간 fail 로 표시. */
+  uncovered?: string[];
 }
 
 type TermKind = 'cmd' | 'dim' | 'pass' | 'fail' | 'run';
@@ -185,19 +189,34 @@ export const AutomationCodeExercise = ({
       const ms = typeof data.durationMs === 'number' ? ` (${data.durationMs}ms)` : '';
       push({ id: 'sum', text: `  ${titles.length || 1} passed${ms}`, kind: 'pass' });
     } else if (partial) {
-      push({ id: 'sum', text: '  부분 통과 — 요구사항을 모두 작성해야 통과', kind: 'run' });
+      push({
+        id: 'sum',
+        text: `  부분 통과 — 요구사항 ${data.requirementCount ?? '?'}개 중 ${data.covered ?? '?'}개 작성`,
+        kind: 'run',
+      });
+      const uncovered = data.uncovered ?? [];
+      if (uncovered.length > 0) {
+        push({
+          id: 'unc-h',
+          text: '  미작성(추정) — 아래 요구사항 테스트를 추가하세요:',
+          kind: 'dim',
+        });
+        uncovered.forEach((t, i) => push({ id: `unc-${i}`, text: `  ✗  ${t}`, kind: 'fail' }));
+      }
     } else {
       push({ id: 'sum', text: '  채점 실패 — 아래를 보완하세요', kind: 'fail' });
     }
 
-    // 상세(보완 항목 / 통과·부분 요약)를 줄 단위로. 임시 여부는 헤더의 "임시 모드" 배지로 대신한다.
-    (data.errorMessage ?? '')
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .forEach((ln, idx) =>
-        push({ id: `msg-${idx}`, text: `  ${ln}`, kind: ok ? 'dim' : partial ? 'run' : 'fail' })
-      );
+    // 통과/실패 상세는 errorMessage 로. 부분 통과는 위 미작성 목록으로 대체한다.
+    if (!partial) {
+      (data.errorMessage ?? '')
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((ln, idx) =>
+          push({ id: `msg-${idx}`, text: `  ${ln}`, kind: ok ? 'dim' : 'fail' })
+        );
+    }
 
     setResult(data);
     setStatus('result');
