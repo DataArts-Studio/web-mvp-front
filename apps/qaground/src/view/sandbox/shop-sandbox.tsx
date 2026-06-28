@@ -153,6 +153,29 @@ const SHIPPING = 3000;
 const FREE_OVER = 50000;
 const COUPONS: Record<string, number> = { SAVE10: 0.1, WELCOME20: 0.2 };
 
+/** 상세 리뷰 샘플(테스트용 고정 데이터). */
+const REVIEWS = [
+  {
+    author: 'qa***',
+    rating: 5,
+    date: '2026-06-20',
+    text: '배송도 빠르고 품질이 기대 이상이에요. 재구매합니다.',
+  },
+  {
+    author: 'te***',
+    rating: 4,
+    date: '2026-06-18',
+    text: '가성비 좋아요. 사이즈는 살짝 큰 편입니다.',
+  },
+  { author: 'au***', rating: 5, date: '2026-06-15', text: '설명과 동일하고 마감도 깔끔합니다.' },
+  {
+    author: 'mo***',
+    rating: 3,
+    date: '2026-06-10',
+    text: '무난해요. 색상이 사진보다 조금 진합니다.',
+  },
+];
+
 interface CartLine {
   key: string;
   id: number;
@@ -182,6 +205,8 @@ export const ShopSandbox = () => {
   const [form, setForm] = useState({ name: '', address: '', phone: '', pay: '카드' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [orderNo, setOrderNo] = useState('');
+  const [galleryIdx, setGalleryIdx] = useState(0);
+  const [tab, setTab] = useState<'info' | 'reviews' | 'shipping'>('info');
 
   const listProducts = useMemo(() => {
     let r = PRODUCTS.filter(
@@ -200,10 +225,17 @@ export const ShopSandbox = () => {
   const shipping = subtotal === 0 || subtotal - discount >= FREE_OVER ? 0 : SHIPPING;
   const total = subtotal - discount + shipping;
 
+  const gallery = selected ? [selected.emoji, '📦', '🔍', '✅'] : [];
+  const related = selected
+    ? PRODUCTS.filter((p) => p.category === selected.category && p.id !== selected.id).slice(0, 4)
+    : [];
+
   const openDetail = (p: Product) => {
     setSelected(p);
     setSize(p.sizes ? '' : '-');
     setQty(1);
+    setGalleryIdx(0);
+    setTab('info');
     setView('detail');
   };
 
@@ -413,102 +445,226 @@ export const ShopSandbox = () => {
 
         {/* 상세 */}
         {view === 'detail' && selected && (
-          <section className={`${card} p-6`}>
-            <button
-              type="button"
-              onClick={() => setView('catalog')}
-              className="mb-4 text-sm text-gray-500 hover:text-gray-900"
-            >
-              ← 목록
-            </button>
-            <div className="flex flex-col gap-6 sm:flex-row">
-              <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-gray-50 text-7xl sm:w-64">
-                {selected.emoji}
-              </div>
-              <div className="flex-1">
-                <span className="text-sm text-gray-400">{selected.brand}</span>
-                <h1 className="text-xl font-bold">{selected.name}</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  ★ {selected.rating} ({selected.reviews.toLocaleString()} 리뷰)
-                </p>
-                <div className="mt-3 flex items-baseline gap-2">
-                  {dc(selected) > 0 && (
-                    <span className="text-xl font-extrabold text-red-600">{dc(selected)}%</span>
-                  )}
-                  <span data-testid="detail-price" className="text-2xl font-extrabold">
-                    {won(selected.price)}
-                  </span>
-                  {selected.list && (
-                    <span className="text-sm text-gray-400 line-through">{won(selected.list)}</span>
-                  )}
-                </div>
-
-                {selected.sizes && (
-                  <div className="mt-5">
-                    <p className="mb-1.5 text-xs text-gray-500">사이즈</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selected.sizes.map((s) => (
-                        <button
-                          key={s}
-                          data-testid={`size-${s}`}
-                          type="button"
-                          onClick={() => setSize(s)}
-                          className={`h-10 rounded-lg border px-4 text-sm ${
-                            size === s
-                              ? 'border-[#03c75a] font-bold text-[#03c75a]'
-                              : 'border-gray-300 text-gray-600'
-                          }`}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
+          <div className="flex flex-col gap-4">
+            <section className={`${card} p-6`}>
+              <button
+                type="button"
+                onClick={() => setView('catalog')}
+                className="mb-4 text-sm text-gray-500 hover:text-gray-900"
+              >
+                ← 목록
+              </button>
+              <div className="flex flex-col gap-6 sm:flex-row">
+                <div className="w-full sm:w-72">
+                  <div
+                    data-testid="gallery-main"
+                    className="flex aspect-square items-center justify-center rounded-xl bg-gray-50 text-7xl"
+                  >
+                    {gallery[galleryIdx]}
                   </div>
-                )}
+                  <div className="mt-2 flex gap-2">
+                    {gallery.map((g, i) => (
+                      <button
+                        key={i}
+                        data-testid="gallery-thumb"
+                        type="button"
+                        onClick={() => setGalleryIdx(i)}
+                        className={`flex h-14 w-14 items-center justify-center rounded-lg border text-2xl ${
+                          galleryIdx === i ? 'border-[#03c75a]' : 'border-gray-200'
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <span className="text-sm text-gray-400">{selected.brand}</span>
+                  <h1 className="text-xl font-bold">{selected.name}</h1>
+                  <p className="mt-1 text-sm text-gray-500">
+                    ★ {selected.rating} ({selected.reviews.toLocaleString()} 리뷰)
+                  </p>
+                  <div className="mt-3 flex items-baseline gap-2">
+                    {dc(selected) > 0 && (
+                      <span className="text-xl font-extrabold text-red-600">{dc(selected)}%</span>
+                    )}
+                    <span data-testid="detail-price" className="text-2xl font-extrabold">
+                      {won(selected.price)}
+                    </span>
+                    {selected.list && (
+                      <span className="text-sm text-gray-400 line-through">
+                        {won(selected.list)}
+                      </span>
+                    )}
+                  </div>
 
-                <div className="mt-5 flex items-center gap-2">
-                  <span className="text-xs text-gray-500">수량</span>
+                  {selected.sizes && (
+                    <div className="mt-5">
+                      <p className="mb-1.5 text-xs text-gray-500">사이즈</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selected.sizes.map((s) => (
+                          <button
+                            key={s}
+                            data-testid={`size-${s}`}
+                            type="button"
+                            onClick={() => setSize(s)}
+                            className={`h-10 rounded-lg border px-4 text-sm ${
+                              size === s
+                                ? 'border-[#03c75a] font-bold text-[#03c75a]'
+                                : 'border-gray-300 text-gray-600'
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-5 flex items-center gap-2">
+                    <span className="text-xs text-gray-500">수량</span>
+                    <button
+                      data-testid="qty-minus"
+                      type="button"
+                      onClick={() => setQty((q) => Math.max(1, q - 1))}
+                      className="h-9 w-9 rounded-lg border border-gray-300 text-sm"
+                    >
+                      −
+                    </button>
+                    <span data-testid="qty-value" className="w-8 text-center text-sm">
+                      {qty}
+                    </span>
+                    <button
+                      data-testid="qty-plus"
+                      type="button"
+                      onClick={() => setQty((q) => q + 1)}
+                      className="h-9 w-9 rounded-lg border border-gray-300 text-sm"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {selected.sizes && !size && (
+                    <p data-testid="option-error" className="mt-3 text-xs text-red-600">
+                      사이즈를 선택하세요.
+                    </p>
+                  )}
                   <button
-                    data-testid="qty-minus"
+                    data-testid="add-detail"
                     type="button"
-                    onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="h-9 w-9 rounded-lg border border-gray-300 text-sm"
+                    disabled={!!selected.sizes && !size}
+                    onClick={() => {
+                      addToCart(selected, selected.sizes ? size : '-', qty);
+                      setView('cart');
+                    }}
+                    className={`mt-5 h-12 w-full text-sm ${primaryBtn}`}
                   >
-                    −
-                  </button>
-                  <span data-testid="qty-value" className="w-8 text-center text-sm">
-                    {qty}
-                  </span>
-                  <button
-                    data-testid="qty-plus"
-                    type="button"
-                    onClick={() => setQty((q) => q + 1)}
-                    className="h-9 w-9 rounded-lg border border-gray-300 text-sm"
-                  >
-                    +
+                    장바구니 담기
                   </button>
                 </div>
-
-                {selected.sizes && !size && (
-                  <p data-testid="option-error" className="mt-3 text-xs text-red-600">
-                    사이즈를 선택하세요.
-                  </p>
-                )}
-                <button
-                  data-testid="add-detail"
-                  type="button"
-                  disabled={!!selected.sizes && !size}
-                  onClick={() => {
-                    addToCart(selected, selected.sizes ? size : '-', qty);
-                    setView('cart');
-                  }}
-                  className={`mt-5 h-12 w-full text-sm ${primaryBtn}`}
-                >
-                  장바구니 담기
-                </button>
               </div>
-            </div>
-          </section>
+            </section>
+
+            <section className={`${card} p-6`}>
+              <div className="mb-4 flex gap-1 border-b border-gray-200">
+                {(
+                  [
+                    ['info', '상세정보'],
+                    ['reviews', `리뷰 ${selected.reviews.toLocaleString()}`],
+                    ['shipping', '배송·교환'],
+                  ] as const
+                ).map(([k, label]) => (
+                  <button
+                    key={k}
+                    data-testid={`tab-${k}`}
+                    type="button"
+                    onClick={() => setTab(k)}
+                    className={`-mb-px border-b-2 px-4 pb-2 text-sm ${
+                      tab === k
+                        ? 'border-[#03c75a] font-bold text-[#03c75a]'
+                        : 'border-transparent text-gray-500'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {tab === 'info' && (
+                <div data-testid="panel-info" className="text-sm leading-relaxed text-gray-600">
+                  <p>
+                    {selected.brand}의 {selected.name}. 일상에서 두루 쓰기 좋은 제품으로, 꼼꼼한
+                    마감과 검증된 품질을 갖췄습니다.
+                  </p>
+                  <ul className="mt-3 list-disc pl-5">
+                    <li>카테고리: {selected.category}</li>
+                    <li>브랜드: {selected.brand}</li>
+                    <li>평점: ★ {selected.rating} / 5</li>
+                    <li>배송: 무료배송{selected.rocket ? ' · 로켓배송' : ''}</li>
+                  </ul>
+                </div>
+              )}
+              {tab === 'reviews' && (
+                <div data-testid="panel-reviews">
+                  <div className="mb-4 flex items-baseline gap-2">
+                    <span className="text-2xl font-extrabold">★ {selected.rating}</span>
+                    <span className="text-sm text-gray-500">
+                      / 5 · 리뷰 {selected.reviews.toLocaleString()}개
+                    </span>
+                  </div>
+                  <ul className="flex flex-col gap-3">
+                    {REVIEWS.map((r) => (
+                      <li
+                        key={r.author + r.date}
+                        data-testid="review-item"
+                        className="rounded-xl border border-gray-200 p-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{r.author}</span>
+                          <span className="text-xs text-gray-400">{r.date}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-[#03c75a]">{'★'.repeat(r.rating)}</p>
+                        <p className="mt-1 text-sm text-gray-600">{r.text}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {tab === 'shipping' && (
+                <div data-testid="panel-shipping" className="text-sm leading-relaxed text-gray-600">
+                  <p>· 배송비: 3,000원 (5만원 이상 무료배송)</p>
+                  <p>
+                    · 배송 기간: 결제 후 평균 1~3일{selected.rocket ? ' (로켓배송 익일 도착)' : ''}
+                  </p>
+                  <p>· 교환·반품: 수령 후 7일 이내 신청 가능</p>
+                </div>
+              )}
+            </section>
+
+            {related.length > 0 && (
+              <section className={`${card} p-6`}>
+                <h2 className="mb-3 text-base font-bold">함께 보면 좋은 상품</h2>
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {related.map((p) => (
+                    <li key={p.id} data-testid="related-item">
+                      <button
+                        type="button"
+                        onClick={() => openDetail(p)}
+                        className="flex w-full flex-col rounded-xl border border-gray-200 p-3 text-left hover:shadow-sm"
+                      >
+                        <span className="flex h-20 items-center justify-center rounded-lg bg-gray-50 text-4xl">
+                          {p.emoji}
+                        </span>
+                        <span data-testid="related-name" className="mt-2 line-clamp-1 text-sm">
+                          {p.name}
+                        </span>
+                        <span className="text-sm font-bold">{won(p.price)}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
         )}
 
         {/* 장바구니 */}
