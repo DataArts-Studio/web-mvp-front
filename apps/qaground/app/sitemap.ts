@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: SITE_URL, changeFrequency: 'weekly', priority: 1 },
     { url: `${SITE_URL}/preview`, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${SITE_URL}/challenges`, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${SITE_URL}/learn`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/guide`, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.3 },
   ];
