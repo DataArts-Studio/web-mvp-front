@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 
 import { AsyncLoadSandbox } from './async-load-sandbox';
 import { CartCheckoutSandbox } from './cart-checkout-sandbox';
+import { ChatRoomSandbox } from './chat-room-sandbox';
 import { CheckoutFlowSandbox } from './checkout-flow-sandbox';
 import { DataTableSandbox } from './data-table-sandbox';
 import { DatePickerSandbox } from './date-picker-sandbox';
@@ -16,6 +17,7 @@ import { OrderCancelSandbox } from './order-cancel-sandbox';
 import { OrderFormSandbox } from './order-form-sandbox';
 import { PageNavigationSandbox } from './page-navigation-sandbox';
 import { PointsSettlementSandbox } from './points-settlement-sandbox';
+import { PostBoardSandbox } from './post-board-sandbox';
 import { ProductCatalogSandbox } from './product-catalog-sandbox';
 import { ProductOptionsSandbox } from './product-options-sandbox';
 import { ProfileFormSandbox } from './profile-form-sandbox';
@@ -26,6 +28,7 @@ import { SessionExpirySandbox } from './session-expiry-sandbox';
 import { SignupSandbox } from './signup-sandbox';
 import { TabsSandbox } from './tabs-sandbox';
 import { ToastSandbox } from './toast-sandbox';
+import { TodoListSandbox } from './todo-list-sandbox';
 import { TokenStorageSandbox } from './token-storage-sandbox';
 import { WishlistSandbox } from './wishlist-sandbox';
 import { WizardFormSandbox } from './wizard-form-sandbox';
@@ -61,4 +64,7 @@ export const SANDBOXES: Record<string, ComponentType> = {
   'seat-booking': SeatBookingSandbox,
   'points-settlement': PointsSettlementSandbox,
   'order-cancel': OrderCancelSandbox,
+  'todo-list': TodoListSandbox,
+  'post-board': PostBoardSandbox,
+  'chat-room': ChatRoomSandbox,
 };

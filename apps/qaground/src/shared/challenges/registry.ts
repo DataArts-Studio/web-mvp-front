@@ -1195,6 +1195,113 @@ test('내 테스트', async ({ page }) => {
       },
     ],
   },
+  {
+    slug: 'todo-list',
+    title: '할 일 관리(Todo) CRUD',
+    track: 'automation',
+    category: 'interaction',
+    difficulty: 'easy',
+    tools: ['Playwright'],
+    summary:
+      '할 일 관리 위젯의 기본 동작을 검증하는 자동화 테스트를 작성하라. 추가·완료·수정·삭제·필터·남은 개수가 명세대로 동작하는지 직접 케이스를 설계해야 한다. [명세] 입력 후 추가하면 목록에 생기고 입력창이 비워진다(공백만이면 추가 안 됨). 체크박스로 완료/미완료를 전환한다(완료는 취소선). 수정→저장으로 텍스트를 바꾸고, 삭제로 항목을 제거한다. 필터는 전체/미완료/완료이며, 남은 일 개수는 미완료 항목 수다.',
+    requirement: [
+      '할 일을 입력해 추가하면 목록에 나타나고 입력창이 비워진다. 공백만 입력하면 추가되지 않는다.',
+      '체크박스로 완료/미완료를 토글하면 표시와 남은 개수가 갱신된다.',
+      '항목을 수정·저장하면 텍스트가 바뀌고, 삭제하면 목록에서 사라진다.',
+      '필터(전체/미완료/완료)에 따라 보이는 항목이 달라진다.',
+    ],
+    sandboxSlug: 'todo-list',
+    selectors: [
+      { name: '입력', testid: 'todo-input', desc: '할 일 입력' },
+      { name: '추가', testid: 'todo-add', desc: '할 일 추가' },
+      { name: '항목', testid: 'todo-item', desc: '할 일 항목' },
+      { name: '완료 토글', testid: 'todo-toggle', desc: '완료 체크박스' },
+      { name: '텍스트', testid: 'todo-text', desc: '할 일 텍스트' },
+      { name: '수정', testid: 'todo-edit', desc: '수정 시작' },
+      { name: '수정 입력', testid: 'todo-edit-input', desc: '수정 입력창' },
+      { name: '저장', testid: 'todo-save', desc: '수정 저장' },
+      { name: '삭제', testid: 'todo-delete', desc: '할 일 삭제' },
+      { name: '필터-전체', testid: 'filter-all', desc: '전체 보기' },
+      { name: '필터-미완료', testid: 'filter-active', desc: '미완료만' },
+      { name: '필터-완료', testid: 'filter-done', desc: '완료만' },
+      { name: '남은 개수', testid: 'remaining-count', desc: '남은(미완료) 개수' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내 테스트', async ({ page }) => {
+  await page.goto('/sandbox/todo-list');
+  // 명세를 분석해 추가·완료·수정·삭제·필터를 직접 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'post-board',
+    title: '게시판 검색·페이지네이션',
+    track: 'automation',
+    category: 'data',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '게시판의 검색·필터·페이지네이션·글 작성을 검증하는 자동화 테스트를 작성하라. 어떤 경계·조합 케이스가 필요한지는 직접 판단해야 한다. [명세] 목록은 페이지당 5개씩 보이고 이전/다음과 "현재/전체" 페이지가 표시된다. 제목 검색은 부분 일치로 필터하며 결과 수와 페이지가 갱신된다. 카테고리(전체/공지/질문/자유) 필터가 있다. 글을 작성하면 목록 맨 위에 추가된다.',
+    requirement: [
+      '한 페이지에 5개씩 보이고, 다음/이전으로 페이지를 이동하면 목록과 페이지 표시가 갱신된다.',
+      '제목 검색(부분 일치)으로 결과가 필터되고 결과 수가 갱신된다.',
+      '카테고리 필터로 해당 카테고리 글만 보인다.',
+      '글을 작성하면 목록 맨 위에 새 글이 추가된다.',
+    ],
+    sandboxSlug: 'post-board',
+    selectors: [
+      { name: '검색', testid: 'post-search', desc: '제목 검색' },
+      { name: '카테고리 필터', testid: 'category-filter', desc: '카테고리 선택' },
+      { name: '글 항목', testid: 'post-item', desc: '게시글 행' },
+      { name: '글 제목', testid: 'post-title', desc: '게시글 제목' },
+      { name: '결과 수', testid: 'result-count', desc: '검색 결과 수' },
+      { name: '이전', testid: 'page-prev', desc: '이전 페이지' },
+      { name: '다음', testid: 'page-next', desc: '다음 페이지' },
+      { name: '페이지 표시', testid: 'page-indicator', desc: '현재/전체 페이지' },
+      { name: '새 글 제목', testid: 'post-title-input', desc: '작성할 제목' },
+      { name: '새 글 카테고리', testid: 'post-category', desc: '작성 카테고리' },
+      { name: '작성', testid: 'post-submit', desc: '글 작성' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내 테스트', async ({ page }) => {
+  await page.goto('/sandbox/post-board');
+  // 검색·필터·페이지네이션·작성을 직접 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'chat-room',
+    title: '실시간 채팅 메시지 전송',
+    track: 'automation',
+    category: 'async',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '채팅 화면의 메시지 전송과 자동 응답을 검증하는 자동화 테스트를 작성하라. 비동기 응답을 어떻게 기다릴지, 어떤 케이스가 필요한지 직접 설계해야 한다. [명세] 메시지를 입력해 전송하면 내 메시지가 목록 끝에 추가되고 입력창이 비워진다. 공백만 입력하면 전송되지 않는다. 전송 후 잠시 뒤(약 0.7초) 상대(봇) 자동 응답이 목록에 추가된다. Enter 로도 전송된다.',
+    requirement: [
+      '메시지를 입력해 전송하면 내 메시지가 목록에 추가되고 입력창이 비워진다.',
+      '공백만 입력하면 전송되지 않는다.',
+      '전송 후 잠시 뒤 상대(봇)의 자동 응답이 목록에 추가된다(비동기 대기 필요).',
+      'Enter 키로도 전송된다.',
+    ],
+    sandboxSlug: 'chat-room',
+    selectors: [
+      { name: '입력', testid: 'chat-input', desc: '메시지 입력' },
+      { name: '전송', testid: 'chat-send', desc: '메시지 전송' },
+      { name: '메시지 목록', testid: 'message-list', desc: '메시지 영역' },
+      { name: '메시지', testid: 'message-item', desc: '개별 메시지' },
+      { name: '봇 메시지', testid: 'bot-message', desc: '상대(봇) 응답' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내 테스트', async ({ page }) => {
+  await page.goto('/sandbox/chat-room');
+  // 메시지 전송·입력창 초기화·봇 자동 응답(비동기)을 직접 검증하세요.
+});
+`,
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {
