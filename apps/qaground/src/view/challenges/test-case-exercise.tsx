@@ -55,6 +55,22 @@ interface GradeResult {
   reqCovered: number;
   reqTotal: number;
   uncovered: number[];
+  mode: 'ai' | 'static';
+  strengths?: string;
+  gaps?: string;
+}
+
+interface AiVerdict {
+  index: number;
+  covered: boolean;
+  feedback: string;
+}
+interface AiGrade {
+  mode: 'ai';
+  requirements: AiVerdict[];
+  overall: GradeStatus;
+  strengths: string;
+  gaps: string;
 }
 
 /**
@@ -125,6 +141,35 @@ export const TestCaseExercise = ({
       )
     );
 
+  // AI 채점 시도. 키 미설정·오류·타임아웃이면 null → 커버리지로 폴백한다.
+  const fetchAiGrade = async (): Promise<AiGrade | null> => {
+    try {
+      const res = await fetch('/api/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug,
+          kind: 'testcase',
+          submission: {
+            cases: named.map((r) => ({
+              name: r.name,
+              priority: r.priority,
+              precondition: r.precondition,
+              steps: r.steps.filter((s) => s.trim()),
+              expected: r.expected,
+            })),
+          },
+        }),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as AiGrade;
+      if (!Array.isArray(data.requirements)) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  };
+
   const grade = async () => {
     const runId = (runRef.current += 1);
     const alive = () => runRef.current === runId;
@@ -136,52 +181,85 @@ export const TestCaseExercise = ({
     setTerm([]);
 
     push({ id: 'cmd', text: '$ qaground grade --testcases', kind: 'cmd' });
-    await delay(450);
-    if (!alive()) return;
-    push({
-      id: 'hdr',
-      text: `요구사항 ${reqTotal}개에 대한 케이스 연결을 검사합니다`,
-      kind: 'dim',
-    });
     await delay(400);
     if (!alive()) return;
 
+    const ai = await fetchAiGrade();
+    if (!alive()) return;
+
+    // 요구사항별 판정: AI 결과가 있으면 그것을, 없으면 커버리지(연결 여부)를 쓴다.
+    const verdicts = requirements.map((_, i) => {
+      if (ai) {
+        const v = ai.requirements.find((r) => r.index === i);
+        return { covered: v?.covered ?? false, feedback: v?.feedback };
+      }
+      return { covered: coveredSet.has(i), feedback: undefined as string | undefined };
+    });
+    const mode: 'ai' | 'static' = ai ? 'ai' : 'static';
+
+    push({
+      id: 'hdr',
+      text: ai
+        ? `AI 채점기가 요구사항 ${reqTotal}개에 대한 케이스 내용을 검토합니다`
+        : `요구사항 ${reqTotal}개에 대한 케이스 연결을 검사합니다`,
+      kind: 'dim',
+    });
+    await delay(350);
+    if (!alive()) return;
+
     for (let i = 0; i < reqTotal; i += 1) {
-      const covered = coveredSet.has(i);
+      const v = verdicts[i];
       push({ id: `r-${i}`, text: `  ◌  요구 ${i + 1} 검사 중...`, kind: 'run' });
-      await delay(300);
+      await delay(ai ? 220 : 300);
       if (!alive()) return;
       setTerm((p) =>
         p.map((l) =>
           l.id === `r-${i}`
             ? {
                 ...l,
-                text: `  ${covered ? '✓' : '✗'}  요구 ${i + 1} — ${covered ? '케이스 연결됨' : '연결된 케이스 없음'}`,
-                kind: covered ? 'pass' : 'fail',
+                text: `  ${v.covered ? '✓' : '✗'}  요구 ${i + 1} — ${v.covered ? '충족' : '미충족'}`,
+                kind: v.covered ? 'pass' : 'fail',
               }
             : l
         )
       );
+      if (v.feedback) push({ id: `fb-${i}`, text: `       ↳ ${v.feedback}`, kind: 'dim' });
       await delay(120);
       if (!alive()) return;
     }
 
-    await delay(220);
+    const covCount = verdicts.filter((v) => v.covered).length;
+    const status: GradeStatus = ai
+      ? ai.overall
+      : written === 0 || covCount === 0
+        ? 'failed'
+        : covCount >= reqTotal
+          ? 'passed'
+          : 'partial';
+
+    await delay(200);
     if (!alive()) return;
     push({ id: 'blank', text: '', kind: 'dim' });
-    const status: GradeStatus =
-      written === 0 || reqCovered === 0 ? 'failed' : reqCovered >= reqTotal ? 'passed' : 'partial';
     if (status === 'passed')
-      push({ id: 'sum', text: `  통과 — 요구사항 ${reqTotal}개 모두 케이스 연결됨`, kind: 'pass' });
+      push({ id: 'sum', text: `  통과 — 요구사항 ${reqTotal}개 모두 충족`, kind: 'pass' });
     else if (status === 'partial')
-      push({ id: 'sum', text: `  부분 통과 — ${reqTotal}개 중 ${reqCovered}개 연결`, kind: 'run' });
-    else push({ id: 'sum', text: '  미흡 — 연결된 케이스가 없습니다', kind: 'fail' });
+      push({ id: 'sum', text: `  부분 통과 — ${reqTotal}개 중 ${covCount}개 충족`, kind: 'run' });
+    else push({ id: 'sum', text: '  미흡 — 충족된 요구사항이 없습니다', kind: 'fail' });
 
-    const uncovered = requirements.map((_, i) => i).filter((i) => !coveredSet.has(i));
-    setResult({ status, written, reqCovered, reqTotal, uncovered });
+    const uncovered = verdicts.map((v, i) => (v.covered ? -1 : i)).filter((i) => i >= 0);
+    setResult({
+      status,
+      written,
+      reqCovered: covCount,
+      reqTotal,
+      uncovered,
+      mode,
+      strengths: ai?.strengths,
+      gaps: ai?.gaps,
+    });
     setGrading(false);
-    track('testcase_submit', { slug, status });
-    recordSubmission({ slug, kind: 'testcase', content: { rows }, result: { status } });
+    track('testcase_submit', { slug, status, mode });
+    recordSubmission({ slug, kind: 'testcase', content: { rows }, result: { status, mode } });
   };
 
   const fieldClass =
@@ -356,10 +434,18 @@ export const TestCaseExercise = ({
               {!grading && result && (
                 <span
                   data-testid="grading-mode-badge"
-                  title="케이스 내용의 정확도가 아니라 요구사항 연결(커버리지)을 보는 구조적 채점입니다. 모범 답안과 직접 비교하세요."
-                  className="ml-auto rounded-full border border-white/15 px-2 py-0.5 font-mono text-[11px] text-[#8b949e]"
+                  title={
+                    result.mode === 'ai'
+                      ? '작성한 케이스 내용을 AI가 요구사항별로 평가했습니다. 모범 답안과도 비교해 보세요.'
+                      : '케이스 내용이 아니라 요구사항 연결(커버리지)을 보는 구조적 채점입니다. 모범 답안과 직접 비교하세요.'
+                  }
+                  className={`ml-auto rounded-full border px-2 py-0.5 font-mono text-[11px] ${
+                    result.mode === 'ai'
+                      ? 'border-[#3fb950]/40 text-[#3fb950]'
+                      : 'border-white/15 text-[#8b949e]'
+                  }`}
                 >
-                  임시 모드
+                  {result.mode === 'ai' ? 'AI 채점' : '임시 모드'}
                 </span>
               )}
             </div>
@@ -375,11 +461,28 @@ export const TestCaseExercise = ({
 
           {result && !grading && (
             <>
-              {result.status === 'partial' && result.uncovered.length > 0 && (
+              {(result.strengths || result.gaps) && (
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  {result.strengths && (
+                    <div className="border-line-2 bg-bg-3 flex-1 rounded-xl border p-4">
+                      <span className="text-xs font-semibold text-[#3fb950]">잘한 점</span>
+                      <p className="text-text-2 mt-1 text-sm leading-relaxed">{result.strengths}</p>
+                    </div>
+                  )}
+                  {result.gaps && (
+                    <div className="border-line-2 bg-bg-3 flex-1 rounded-xl border p-4">
+                      <span className="text-xs font-semibold text-[#d29922]">개선 방향</span>
+                      <p className="text-text-2 mt-1 text-sm leading-relaxed">{result.gaps}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {result.uncovered.length > 0 && (
                 <div className="mt-4">
                   <p className="text-text-2 text-sm leading-relaxed">
-                    아직 케이스가 연결되지 않은 요구사항입니다. 이 요구사항을 검증하는 케이스를
-                    추가해 보세요.
+                    아직 충족되지 않은 요구사항입니다. 이 요구사항을 검증하는 케이스를 보강해
+                    보세요.
                   </p>
                   <ul className="mt-2 flex flex-col gap-1.5">
                     {result.uncovered.map((ri) => (
