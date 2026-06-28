@@ -1,5 +1,5 @@
 export interface ApiAssertionForGrade {
-  kind: 'status' | 'json';
+  kind: 'status' | 'json' | 'exists' | 'type' | 'arrayLength';
   path: string;
   expected: string;
 }
@@ -49,7 +49,9 @@ function hasStatusAssertion(attempt: ApiAttemptForGrade): boolean {
 }
 
 function hasBodyAssertion(attempt: ApiAttemptForGrade): boolean {
-  if (attempt.assertions.some((assertion) => assertion.kind === 'json' && assertion.path.trim())) {
+  if (
+    attempt.assertions.some((assertion) => assertion.kind !== 'status' && assertion.path.trim())
+  ) {
     return true;
   }
   return /pm\.response\.json\s*\(\)[\s\S]*(pm\.expect|\.to\.|\.have\.|\.eql\s*\(|\.equal\s*\()/i.test(

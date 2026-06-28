@@ -212,7 +212,11 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
                   starterSpec={challenge.starterSpec}
                 />
               ) : (
-                <ApiTesterExercise apiBase={challenge.apiBase!} slug={challenge.slug} />
+                <ApiTesterExercise
+                  apiBase={challenge.apiBase!}
+                  slug={challenge.slug}
+                  endpoints={challenge.endpoints}
+                />
               )}
             </div>
           </div>
