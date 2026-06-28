@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 
 import '@/app-shell/globals.css';
-import { GoogleAnalytics } from '@next/third-parties/google';
+import { ProductionScripts } from '@/shared/analytics/production-scripts';
 
 const SITE_URL = 'https://qaground.gettestea.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID;
@@ -145,10 +144,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // GA는 production 배포에서만 로드. preview(dev 브랜치)·로컬은 GA_ID가 주입돼도 차단.
+  // GA/AdSense는 production 배포 + 운영 호스트에서만 로드. dev 서브도메인은 production 배포여도 차단.
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const gaEnabled = !!gaId && process.env.VERCEL_ENV === 'production';
-  // AdSense도 동일하게 production + ID 주입 시에만 로더 주입.
   const adsEnabled = !!ADSENSE_ID && process.env.VERCEL_ENV === 'production';
 
   return (
@@ -160,14 +158,10 @@ export default function RootLayout({
         />
         {children}
       </body>
-      {gaEnabled && <GoogleAnalytics gaId={gaId} />}
-      {adsEnabled && (
-        <Script
-          id="adsbygoogle-loader"
-          async
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`}
+      {(gaEnabled || adsEnabled) && (
+        <ProductionScripts
+          gaId={gaEnabled ? gaId : undefined}
+          adsenseId={adsEnabled ? ADSENSE_ID : undefined}
         />
       )}
     </html>
