@@ -1392,6 +1392,50 @@ test('내 테스트', async ({ page }) => {
 });
 `,
   },
+  {
+    slug: 'bank-transfer',
+    title: '뱅킹 이체·거래내역',
+    track: 'automation',
+    category: 'fintech',
+    difficulty: 'hard',
+    tools: ['Playwright'],
+    summary:
+      '뱅킹 대시보드(qabank)에서 계좌 이체와 거래내역을 검증하는 테스트를 작성하라. 경계·예외 케이스는 직접 도출해야 한다. [규칙] 받는 계좌·예금주·금액은 필수이고 금액은 0보다 커야 한다. 출금액이 잔액보다 크면 "잔액 부족"으로 거부되고, 1회 이체 한도는 5,000,000원이다. 이체 성공 시 출금 계좌 잔액이 줄고 거래내역 맨 위에 출금 내역이 추가되며 출금 후 잔액이 표시된다. 거래내역은 전체/입금/출금 필터와 검색을 지원한다.',
+    requirement: [
+      '받는 계좌·예금주·금액이 비었거나 금액이 0이면 이체가 거부되고 항목별 안내가 노출된다.',
+      '잔액보다 큰 금액, 1회 한도(5,000,000원) 초과는 각각 거부된다.',
+      '정상 이체 시 잔액이 줄고 거래내역 맨 위에 출금 내역이 추가되며 출금 후 잔액이 표시된다.',
+      '거래내역을 입금/출금 필터와 검색어로 거를 수 있다.',
+    ],
+    sandboxSlug: 'bank',
+    selectors: [
+      { name: '총 자산', testid: 'total-assets', desc: '총 자산 합계' },
+      { name: '계좌 카드', testid: 'account-card', desc: '계좌 선택' },
+      { name: '계좌 잔액', testid: 'account-balance', desc: '계좌 잔액' },
+      { name: '거래내역 탭', testid: 'tab-history', desc: '거래내역 보기' },
+      { name: '이체 탭', testid: 'tab-transfer', desc: '이체 화면' },
+      { name: '입금 필터', testid: 'tx-filter-in', desc: '입금만' },
+      { name: '출금 필터', testid: 'tx-filter-out', desc: '출금만' },
+      { name: '내역 검색', testid: 'tx-search', desc: '거래 검색' },
+      { name: '거래 항목', testid: 'tx-item', desc: '거래 행' },
+      { name: '거래 금액', testid: 'tx-amount', desc: '거래 금액' },
+      { name: '받는 은행', testid: 'transfer-bank', desc: '은행 선택' },
+      { name: '받는 계좌', testid: 'transfer-account', desc: '받는 계좌번호' },
+      { name: '받는 분', testid: 'transfer-name', desc: '예금주' },
+      { name: '이체 금액', testid: 'transfer-amount', desc: '이체 금액' },
+      { name: '이체하기', testid: 'transfer-submit', desc: '이체 실행' },
+      { name: '금액 오류', testid: 'error-amount', desc: '잔액부족·한도 안내' },
+      { name: '이체 완료', testid: 'transfer-success', desc: '이체 성공 영역' },
+      { name: '출금 후 잔액', testid: 'balance-after', desc: '이체 후 잔액' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내 테스트', async ({ page }) => {
+  await page.goto('/sandbox/bank');
+  // 이체 폼 검증(필수·잔액부족·한도)·정상 이체·거래내역 필터를 직접 검증하세요.
+});
+`,
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {

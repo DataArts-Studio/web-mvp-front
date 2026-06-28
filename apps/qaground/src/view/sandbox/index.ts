@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 
 import { AsyncLoadSandbox } from './async-load-sandbox';
+import { BankSandbox } from './bank-sandbox';
 import { CartCheckoutSandbox } from './cart-checkout-sandbox';
 import { ChatRoomSandbox } from './chat-room-sandbox';
 import { CheckoutFlowSandbox } from './checkout-flow-sandbox';
@@ -69,4 +70,5 @@ export const SANDBOXES: Record<string, ComponentType> = {
   'post-board': PostBoardSandbox,
   'chat-room': ChatRoomSandbox,
   shop: ShopSandbox,
+  bank: BankSandbox,
 };
