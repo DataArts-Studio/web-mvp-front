@@ -8,6 +8,7 @@ import Script from 'next/script';
 import { LazyToaster } from '@/app-shell/providers/lazy-toaster';
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
+import { ProductionAnalytics } from '@/shared/lib/analytics/production-analytics';
 import { CriticalBanner } from '@/widgets/announcement-banner';
 import { AnnouncementPopup } from '@/widgets/announcement-popup';
 import { MvpBottomNavbarLazy } from '@testea/ui';
@@ -248,22 +249,9 @@ export default async function RootLayout({
             __html: `var f=document.querySelector('[data-font-css]');if(f){if(f.sheet){f.media='all'}else{f.addEventListener('load',function(){this.media='all'})}}`,
           }}
         />
-        {/* GTM은 production 배포에서만 로드. preview(dev 브랜치)·로컬은 GTM_ID가 주입돼도 차단 */}
-        {process.env.NEXT_PUBLIC_GTM_ID && process.env.VERCEL_ENV === 'production' && (
-          <>
-            <Script
-              id="gtm-init"
-              strategy="lazyOnload"
-              dangerouslySetInnerHTML={{
-                __html: `window.dataLayer=window.dataLayer||[];window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});`,
-              }}
-            />
-            <Script
-              id="gtm-script"
-              src={`https://www.googletagmanager.com/gtm.js?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
-              strategy="lazyOnload"
-            />
-          </>
+        {/* GA는 production 배포 + 운영 호스트에서만 로드. dev 서브도메인은 production 배포여도 차단. */}
+        {process.env.NEXT_PUBLIC_GA_ID && process.env.VERCEL_ENV === 'production' && (
+          <ProductionAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         )}
       </body>
     </html>

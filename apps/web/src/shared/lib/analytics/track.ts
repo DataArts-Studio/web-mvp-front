@@ -1,9 +1,12 @@
-import { sendGTMEvent } from '@next/third-parties/google';
+import { sendGAEvent } from '@next/third-parties/google';
+
+import { isAllowedAnalyticsHost } from '@/shared/lib/analytics/host';
 
 type EventParams = Record<string, string | number | boolean | null | undefined>;
 
 /**
- * GTM dataLayer로 이벤트 전송
+ * GA4 이벤트 전송.
+ * 운영 호스트(gettestea.com) 밖에서는 이벤트를 전송하지 않는다.
  *
  * @example
  * track(GA_EVENTS.LANDING.PROJECT_CREATE_START, { trigger_location: 'landing_hero' });
@@ -17,12 +20,14 @@ export function track(eventName: string, params?: EventParams): void {
     ? Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null))
     : {};
 
-  sendGTMEvent({ event: eventName, ...cleanParams });
-
   // 개발 환경에서 디버깅
   if (process.env.NODE_ENV === 'development') {
     console.log(`[GA] ${eventName}`, cleanParams);
   }
+
+  if (!isAllowedAnalyticsHost()) return;
+
+  sendGAEvent('event', eventName, cleanParams);
 }
 
 /**
