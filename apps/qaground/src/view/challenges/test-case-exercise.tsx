@@ -1,9 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
+
+const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+type TermKind = 'cmd' | 'dim' | 'run' | 'pass' | 'fail';
+interface TermLine {
+  id: string;
+  text: string;
+  kind: TermKind;
+}
+const TERM_CLASS: Record<TermKind, string> = {
+  cmd: 'text-[#c9d1d9]',
+  dim: 'text-[#8b949e]',
+  run: 'text-[#d29922]',
+  pass: 'text-[#3fb950]',
+  fail: 'text-[#f85149]',
+};
 
 interface ModelCase {
   title: string;
@@ -41,12 +57,6 @@ interface GradeResult {
   uncovered: number[];
 }
 
-const STATUS_META: Record<GradeStatus, { label: string; cls: string }> = {
-  passed: { label: '통과', cls: 'text-[#3fb950]' },
-  partial: { label: '부분 통과', cls: 'text-[#d29922]' },
-  failed: { label: '미흡', cls: 'text-[#f85149]' },
-};
-
 /**
  * 테스트 케이스 작성 + 요구사항 커버리지 채점 (Manual 트랙).
  *
@@ -75,6 +85,9 @@ export const TestCaseExercise = ({
   });
   const [rows, setRows] = useState<Row[]>(() => [rowForIndex(0)]);
   const [result, setResult] = useState<GradeResult | null>(null);
+  const [grading, setGrading] = useState(false);
+  const [term, setTerm] = useState<TermLine[]>([]);
+  const runRef = useRef(0);
 
   const named = rows.filter((r) => r.name.trim());
   const written = named.length;
@@ -112,12 +125,61 @@ export const TestCaseExercise = ({
       )
     );
 
-  const grade = () => {
-    const uncovered = requirements.map((_, i) => i).filter((i) => !coveredSet.has(i));
+  const grade = async () => {
+    const runId = (runRef.current += 1);
+    const alive = () => runRef.current === runId;
+    const push = (l: TermLine) => {
+      if (alive()) setTerm((p) => [...p, l]);
+    };
+    setGrading(true);
+    setResult(null);
+    setTerm([]);
+
+    push({ id: 'cmd', text: '$ qaground grade --testcases', kind: 'cmd' });
+    await delay(450);
+    if (!alive()) return;
+    push({
+      id: 'hdr',
+      text: `요구사항 ${reqTotal}개에 대한 케이스 연결을 검사합니다`,
+      kind: 'dim',
+    });
+    await delay(400);
+    if (!alive()) return;
+
+    for (let i = 0; i < reqTotal; i += 1) {
+      const covered = coveredSet.has(i);
+      push({ id: `r-${i}`, text: `  ◌  요구 ${i + 1} 검사 중...`, kind: 'run' });
+      await delay(300);
+      if (!alive()) return;
+      setTerm((p) =>
+        p.map((l) =>
+          l.id === `r-${i}`
+            ? {
+                ...l,
+                text: `  ${covered ? '✓' : '✗'}  요구 ${i + 1} — ${covered ? '케이스 연결됨' : '연결된 케이스 없음'}`,
+                kind: covered ? 'pass' : 'fail',
+              }
+            : l
+        )
+      );
+      await delay(120);
+      if (!alive()) return;
+    }
+
+    await delay(220);
+    if (!alive()) return;
+    push({ id: 'blank', text: '', kind: 'dim' });
     const status: GradeStatus =
       written === 0 || reqCovered === 0 ? 'failed' : reqCovered >= reqTotal ? 'passed' : 'partial';
-    const res: GradeResult = { status, written, reqCovered, reqTotal, uncovered };
-    setResult(res);
+    if (status === 'passed')
+      push({ id: 'sum', text: `  통과 — 요구사항 ${reqTotal}개 모두 케이스 연결됨`, kind: 'pass' });
+    else if (status === 'partial')
+      push({ id: 'sum', text: `  부분 통과 — ${reqTotal}개 중 ${reqCovered}개 연결`, kind: 'run' });
+    else push({ id: 'sum', text: '  미흡 — 연결된 케이스가 없습니다', kind: 'fail' });
+
+    const uncovered = requirements.map((_, i) => i).filter((i) => !coveredSet.has(i));
+    setResult({ status, written, reqCovered, reqTotal, uncovered });
+    setGrading(false);
     track('testcase_submit', { slug, status });
     recordSubmission({ slug, kind: 'testcase', content: { rows }, result: { status } });
   };
@@ -269,72 +331,79 @@ export const TestCaseExercise = ({
         <button
           data-testid="cases-submit"
           type="button"
-          disabled={!canSubmit}
+          disabled={!canSubmit || grading}
           onClick={grade}
           className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          제출하고 채점
+          {grading ? '채점 중...' : '제출하고 채점'}
         </button>
       </div>
 
-      {result && (
-        <div data-testid="cases-answer" className="border-line-2 mt-6 border-t pt-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`text-sm font-semibold ${STATUS_META[result.status].cls}`}>
-              {STATUS_META[result.status].label}
-            </span>
-            <span className="text-text-3 text-xs">
-              요구사항 {result.reqTotal}개 중 {result.reqCovered}개 케이스 연결 (작성{' '}
-              {result.written}개)
-            </span>
-            <span
-              data-testid="grading-mode-badge"
-              title="케이스 내용의 정확도가 아니라 요구사항 연결(커버리지)을 보는 구조적 채점입니다. 모범 답안과 직접 비교하세요."
-              className="border-line-3 bg-bg-1 text-text-3 ml-auto rounded-full border px-2 py-0.5 text-[11px] font-medium"
-            >
-              임시 모드
-            </span>
+      {(grading || result) && (
+        <div data-testid="cases-answer" className="mt-6">
+          {/* 채점 콘솔 (자동화처럼 요구사항별로 한 줄씩 검사) */}
+          <div className="border-line-2 overflow-hidden rounded-xl border bg-[#0d1117]">
+            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2">
+              <span className="flex gap-1.5" aria-hidden>
+                <span className="h-2.5 w-2.5 rounded-full bg-[#f85149]/80" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#d29922]/80" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#3fb950]/80" />
+              </span>
+              <span className="font-mono text-xs text-[#8b949e]">qaground 채점</span>
+              {grading && (
+                <span className="ml-auto font-mono text-xs text-[#d29922]">채점 중…</span>
+              )}
+              {!grading && result && (
+                <span
+                  data-testid="grading-mode-badge"
+                  title="케이스 내용의 정확도가 아니라 요구사항 연결(커버리지)을 보는 구조적 채점입니다. 모범 답안과 직접 비교하세요."
+                  className="ml-auto rounded-full border border-white/15 px-2 py-0.5 font-mono text-[11px] text-[#8b949e]"
+                >
+                  임시 모드
+                </span>
+              )}
+            </div>
+            <div className="max-h-72 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed">
+              {term.map((l) => (
+                <div key={l.id} className={`${TERM_CLASS[l.kind]} whitespace-pre-wrap`}>
+                  {l.text || ' '}
+                </div>
+              ))}
+              {grading && <span className="animate-pulse text-[#8b949e]">▋</span>}
+            </div>
           </div>
 
-          {result.status === 'failed' && (
-            <p className="text-text-2 mt-3 text-sm leading-relaxed">
-              요구사항에 연결된 케이스가 없습니다. 케이스를 작성하고 아래 "연관 요구사항"에서 해당
-              요구사항을 연결한 뒤 다시 제출하세요.
-            </p>
-          )}
-          {result.status === 'partial' && result.uncovered.length > 0 && (
-            <div className="mt-3">
-              <p className="text-text-2 text-sm leading-relaxed">
-                아직 케이스가 연결되지 않은 요구사항이 있습니다. 아래 요구사항을 검증하는 케이스를
-                추가해 보세요.
-              </p>
-              <ul className="mt-2 flex flex-col gap-1.5">
-                {result.uncovered.map((ri) => (
-                  <li key={ri} className="text-sm leading-relaxed text-[#f85149]">
-                    ✗ 요구 {ri + 1}. {requirements[ri]}
+          {result && !grading && (
+            <>
+              {result.status === 'partial' && result.uncovered.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-text-2 text-sm leading-relaxed">
+                    아직 케이스가 연결되지 않은 요구사항입니다. 이 요구사항을 검증하는 케이스를
+                    추가해 보세요.
+                  </p>
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                    {result.uncovered.map((ri) => (
+                      <li key={ri} className="text-sm leading-relaxed text-[#f85149]">
+                        ✗ 요구 {ri + 1}. {requirements[ri]}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <h3 className="text-text-1 mt-5 text-sm font-semibold">
+                모범 답안 · 핵심 케이스 {modelTestCases.length}개
+              </h3>
+              <ul className="mt-3 flex flex-col gap-2.5">
+                {modelTestCases.map((c) => (
+                  <li key={c.title} className="border-line-2 bg-bg-3 rounded-xl border p-4">
+                    <span className="text-text-1 text-sm font-medium">{c.title}</span>
+                    <p className="text-text-2 mt-1 text-sm leading-relaxed">{c.detail}</p>
                   </li>
                 ))}
               </ul>
-            </div>
+            </>
           )}
-          {result.status === 'passed' && (
-            <p className="text-text-2 mt-3 text-sm leading-relaxed">
-              모든 요구사항에 케이스를 연결했습니다. 아래 모범 답안과 비교해 경계·예외 케이스까지
-              빠짐없이 도출했는지 확인해 보세요.
-            </p>
-          )}
-
-          <h3 className="text-text-1 mt-5 text-sm font-semibold">
-            모범 답안 · 핵심 케이스 {modelTestCases.length}개
-          </h3>
-          <ul className="mt-3 flex flex-col gap-2.5">
-            {modelTestCases.map((c) => (
-              <li key={c.title} className="border-line-2 bg-bg-3 rounded-xl border p-4">
-                <span className="text-text-1 text-sm font-medium">{c.title}</span>
-                <p className="text-text-2 mt-1 text-sm leading-relaxed">{c.detail}</p>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </section>
