@@ -17,6 +17,9 @@ export type ChallengeCategory =
   | 'async'
   | 'commerce'
   | 'fintech'
+  | 'security'
+  | 'accessibility'
+  | 'integrity'
   | 'fundamentals';
 
 export interface ChallengeSelector {
@@ -83,6 +86,9 @@ export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
   async: '비동기',
   commerce: '커머스',
   fintech: '핀테크',
+  security: '보안',
+  accessibility: '접근성',
+  integrity: '데이터 무결성',
   fundamentals: '테스팅 기초',
 };
 
@@ -93,6 +99,9 @@ export const CATEGORY_ORDER: ChallengeCategory[] = [
   'data',
   'interaction',
   'async',
+  'security',
+  'accessibility',
+  'integrity',
   'commerce',
   'fintech',
   'fundamentals',
@@ -1903,6 +1912,107 @@ test('내 테스트', async ({ page }) => {
     ],
     apiNote:
       '/status/:code 는 200~599 범위의 코드로 응답합니다. 자동화에서 에러 응답의 상태와 본문을 어떻게 단언할지 연습하세요.',
+  },
+  {
+    slug: 'security-access-control',
+    title: '보안 테스트: 접근 제어 우회 방지',
+    track: 'automation',
+    category: 'security',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '보호된 화면이 비로그인 사용자에게 노출되지 않고, 인증 상태 변경 후 권한 경계가 유지되는지 SQA 관점에서 검증하는 자동화 테스트를 작성하세요.',
+    requirement: [
+      '미인증 상태에서 보호 페이지 접근을 시도하면 보호 콘텐츠가 노출되지 않는지 검증한다.',
+      '미인증 접근 시 로그인 화면과 리다이렉트 안내가 노출되는지 검증한다.',
+      '올바른 자격증명으로 로그인한 뒤에만 보호 페이지 내용이 보이는지 검증한다.',
+      '로그아웃 후 보호 페이지 접근이 다시 차단되는지 검증한다.',
+      '인증 실패 입력으로는 보호 페이지에 진입하거나 인증 상태가 유지되지 않는지 검증한다.',
+    ],
+    sandboxSlug: 'route-guard',
+    selectors: [
+      { name: '보호 페이지 링크', testid: 'guard-protected-link', desc: '보호 페이지 접근 시도' },
+      { name: '아이디 입력', testid: 'guard-username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'guard-password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'guard-login-submit', desc: '제출 버튼' },
+      { name: '리다이렉트 안내', testid: 'guard-redirect-notice', desc: '미인증 접근 시 노출' },
+      { name: '보호 페이지', testid: 'guard-protected-view', desc: '인증 후 보이는 내용' },
+      { name: '로그아웃 버튼', testid: 'guard-logout', desc: '인증 해제' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('보호 페이지는 인증된 사용자에게만 노출된다', async ({ page }) => {
+  await page.goto('/sandbox/route-guard');
+  // TODO: 미인증 접근 차단, 로그인 후 접근 허용, 로그아웃 후 재차단을 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'accessibility-modal-dialog',
+    title: '접근성 테스트: 모달 키보드 조작',
+    track: 'automation',
+    category: 'accessibility',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      '모달 다이얼로그가 키보드와 보조기술 사용자에게도 사용 가능한지 접근성 관점에서 검증하는 자동화 테스트를 작성하세요.',
+    requirement: [
+      '모달 열기 버튼은 키보드 Enter 또는 Space 로 실행 가능한지 검증한다.',
+      '모달은 role=dialog 와 aria-modal=true 를 가진 상태로 노출되는지 검증한다.',
+      '취소와 삭제 버튼은 접근 가능한 이름을 가지고 키보드로 포커스 가능한지 검증한다.',
+      '취소를 누르면 모달이 닫히고 삭제 결과 메시지가 노출되지 않는지 검증한다.',
+      '삭제를 누르면 모달이 닫히고 결과 상태 메시지가 노출되는지 검증한다.',
+    ],
+    sandboxSlug: 'modal',
+    selectors: [
+      { name: '모달 열기', testid: 'modal-open', desc: '모달 여는 버튼' },
+      { name: '모달', testid: 'modal', desc: '모달 컨테이너' },
+      { name: '확인 버튼', testid: 'modal-confirm', desc: '모달 확인(삭제) 버튼' },
+      { name: '취소 버튼', testid: 'modal-cancel', desc: '모달 취소 버튼' },
+      { name: '결과 메시지', testid: 'modal-result', desc: '삭제 완료 상태 메시지' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('모달은 키보드와 접근성 속성으로 사용할 수 있다', async ({ page }) => {
+  await page.goto('/sandbox/modal');
+  // TODO: 키보드로 모달을 열고 role, aria-modal, 버튼 이름, 닫힘/결과 상태를 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'data-integrity-seat-booking',
+    title: '데이터 무결성 테스트: 좌석 예매 상태 전이',
+    track: 'automation',
+    category: 'integrity',
+    difficulty: 'hard',
+    tools: ['Playwright'],
+    summary:
+      'DB에 직접 쿼리하지 않고 화면에 드러난 상태와 계산값만으로 좌석 예매 데이터의 일관성을 검증하는 자동화 테스트를 작성하세요.',
+    requirement: [
+      '초기 매진 좌석은 선택할 수 없고 선택 수와 총액에 반영되지 않는지 검증한다.',
+      '선택한 좌석 수와 총액이 좌석당 금액 기준으로 항상 일치하는지 검증한다.',
+      '최대 4석을 초과 선택할 수 없고 초과 경고가 노출되는지 검증한다.',
+      '예매 완료 후 선택했던 좌석이 매진 상태로 전환되어 다시 선택되지 않는지 검증한다.',
+      '예매번호가 선택 좌석 정보를 일관된 형식으로 포함하는지 검증한다.',
+    ],
+    sandboxSlug: 'seat-booking',
+    selectors: [
+      { name: '좌석 버튼', testid: 'seat-A1', desc: '좌석 A1 (각 좌석은 seat-<좌석명>)' },
+      { name: '매진 좌석', testid: 'seat-A3', desc: '시작부터 매진된 좌석(비활성)' },
+      { name: '선택 수', testid: 'select-count', desc: '선택한 좌석 수' },
+      { name: '총액', testid: 'total-price', desc: '선택 좌석 총액' },
+      { name: '초과 경고', testid: 'max-warning', desc: '최대 선택 초과 시' },
+      { name: '예매 버튼', testid: 'book-button', desc: '예매하기' },
+      { name: '예매 완료', testid: 'booking-complete', desc: '예매 완료 영역' },
+      { name: '예매번호', testid: 'booking-number', desc: '발급된 예매번호' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('좌석 예매 상태와 계산값은 일관된다', async ({ page }) => {
+  await page.goto('/sandbox/seat-booking');
+  // TODO: 매진 좌석, 선택 수, 총액, 최대 선택 제한, 예매 후 상태 전이를 검증하세요.
+});
+`,
   },
 ];
 
