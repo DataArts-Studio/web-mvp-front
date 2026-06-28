@@ -16,7 +16,7 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ),
 });
 
-type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 type AssertKind = 'status' | 'json';
 interface Assertion {
   id: number;
@@ -41,7 +41,7 @@ interface RunResult {
   scriptResults: PmResult[];
 }
 
-const METHODS: Method[] = ['GET', 'POST', 'PUT', 'DELETE'];
+const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 /** 점(.) 경로로 JSON 값 탐색. eval 없이 구조적 접근만 한다. (`data.0.id` 등) */
 function getByPath(obj: unknown, path: string): unknown {

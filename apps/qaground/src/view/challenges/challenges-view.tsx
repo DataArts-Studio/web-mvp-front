@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import {
   CATEGORY_LABEL,
+  CHALLENGES,
   type Challenge,
   type ChallengeCategory,
   type ChallengeDifficulty,
@@ -59,7 +60,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
   );
 }
 
-type Selected = ChallengeCategory | 'all';
+type Selected = ChallengeCategory | 'api' | 'all';
 
 /**
  * 선택 카테고리는 쿼리스트링(`?category=`)으로 받는다. 필터된 화면을 그대로
@@ -67,11 +68,25 @@ type Selected = ChallengeCategory | 'all';
  */
 export const ChallengesView = ({ selectedCategory }: { selectedCategory?: string }) => {
   const groups = challengesByCategory();
+  const visibleCategoryGroups = groups.filter((g) => g.category !== 'data');
   const total = groups.reduce((n, g) => n + g.items.length, 0);
+  const apiChallenges = CHALLENGES.filter((c) => c.track === 'api');
 
-  const isValid = groups.some((g) => g.category === selectedCategory);
-  const selected: Selected = isValid ? (selectedCategory as ChallengeCategory) : 'all';
-  const visible = selected === 'all' ? groups : groups.filter((g) => g.category === selected);
+  const isCategory = visibleCategoryGroups.some((g) => g.category === selectedCategory);
+  const selected: Selected =
+    selectedCategory === 'api'
+      ? 'api'
+      : isCategory
+        ? (selectedCategory as ChallengeCategory)
+        : 'all';
+  const visible =
+    selected === 'all'
+      ? groups.map((g) => ({ key: g.category, label: CATEGORY_LABEL[g.category], items: g.items }))
+      : selected === 'api'
+        ? [{ key: 'api', label: 'API', items: apiChallenges }]
+        : groups
+            .filter((g) => g.category === selected)
+            .map((g) => ({ key: g.category, label: CATEGORY_LABEL[g.category], items: g.items }));
 
   const navItem = (key: Selected, label: string, count: number) => {
     const active = selected === key;
@@ -107,15 +122,18 @@ export const ChallengesView = ({ selectedCategory }: { selectedCategory?: string
           <aside className="sm:w-44 sm:shrink-0">
             <nav className="flex gap-1 overflow-x-auto sm:sticky sm:top-24 sm:flex-col sm:overflow-visible">
               {navItem('all', '전체', total)}
-              {groups.map((g) => navItem(g.category, CATEGORY_LABEL[g.category], g.items.length))}
+              {navItem('api', 'API', apiChallenges.length)}
+              {visibleCategoryGroups.map((g) =>
+                navItem(g.category, CATEGORY_LABEL[g.category], g.items.length)
+              )}
             </nav>
           </aside>
 
           <div className="flex flex-1 flex-col gap-12">
             {visible.map((group) => (
-              <section key={group.category}>
+              <section key={group.key}>
                 <h2 className="mb-4 flex items-baseline gap-2 text-lg font-semibold">
-                  {CATEGORY_LABEL[group.category]}
+                  {group.label}
                   <span className="text-text-3 text-sm font-normal">{group.items.length}</span>
                 </h2>
                 <ul className="grid gap-4 sm:grid-cols-2">

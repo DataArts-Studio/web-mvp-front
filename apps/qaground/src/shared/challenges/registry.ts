@@ -1437,6 +1437,283 @@ test('내 테스트', async ({ page }) => {
 `,
   },
   {
+    slug: 'rest-api-auth-session',
+    title: '인증·세션 API: 토큰 만료와 갱신',
+    track: 'api',
+    category: 'auth',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '로그인 후 보호된 /me API를 호출하고, 누락·만료·잘못된 토큰과 refresh token 갱신 경로를 검증하세요.',
+    requirement: [
+      '유효한 로그인은 token을 반환하고, 잘못된 자격증명은 401을 반환한다.',
+      'GET /auth/me 는 유효한 Bearer 토큰에서 200과 사용자 정보를 반환한다.',
+      '토큰이 없거나 expired-token 이면 각각 401과 에러 코드를 반환한다.',
+      'POST /auth/refresh 는 유효한 refreshToken 에서 새 token을 반환하고, 잘못된 refreshToken 은 401을 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/auth/login', desc: '로그인' },
+      { method: 'GET', path: '/auth/me', auth: true, desc: '내 정보 조회' },
+      { method: 'POST', path: '/auth/refresh', desc: '토큰 갱신' },
+    ],
+    apiNote:
+      '데모 계정은 tester@qaground.dev / qaground123, refreshToken은 qaground-refresh-token 입니다. expired-token으로 만료 토큰 경로를 검증할 수 있습니다.',
+  },
+  {
+    slug: 'rest-api-reservations',
+    title: '예약 API: 슬롯 조회와 중복 방지',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '날짜별 예약 가능 슬롯을 조회하고, 만석 슬롯·잘못된 날짜·필수값 누락 같은 예약 API 경계 조건을 검증하세요.',
+    requirement: [
+      'GET /reservations/slots 는 YYYY-MM-DD 날짜에서 슬롯 목록과 available 값을 반환한다.',
+      '날짜 형식이 없거나 잘못되면 400을 반환한다.',
+      'POST /reservations 는 유효한 슬롯과 고객 정보에서 201 confirmed를 반환한다.',
+      '만석 슬롯은 409, 없는 슬롯은 404, 잘못된 이메일이나 이름 누락은 400을 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/reservations/slots?date=2026-07-01', desc: '날짜별 슬롯 조회' },
+      { method: 'POST', path: '/reservations', desc: '예약 생성 (400 / 404 / 409 / 201)' },
+    ],
+    apiNote:
+      '예약 생성 예: { "slotId": "slot-0900", "name": "김테스터", "email": "tester@example.com" }. slot-1000은 만석이라 409를 반환합니다.',
+  },
+  {
+    slug: 'rest-api-file-metadata',
+    title: '파일 메타데이터 API: 형식·용량 검증',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      'JSON 기반 파일 메타데이터 업로드 API로 MIME type, 파일 크기, 단건 메타데이터 조회를 검증하세요.',
+    requirement: [
+      '허용 MIME(image/png, image/jpeg, application/pdf)과 5MB 이하 크기에서는 201 uploaded를 반환한다.',
+      '허용되지 않은 MIME type은 415를 반환한다.',
+      '5MB 초과 파일은 413과 maxSize를 반환한다.',
+      'GET /files/:id 는 존재하는 파일에서 200, 없는 파일에서 404를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/files', desc: '파일 메타데이터 업로드 (400 / 413 / 415 / 201)' },
+      { method: 'GET', path: '/files/file-1001', desc: '파일 메타데이터 조회' },
+    ],
+    apiNote:
+      '요청 본문 예: { "fileName": "report.pdf", "mimeType": "application/pdf", "size": 204800 }. 브라우저 내 API 테스터 특성상 multipart 대신 메타데이터 API로 연습합니다.',
+  },
+  {
+    slug: 'rest-api-notifications',
+    title: '알림 API: 읽음 처리와 unread count',
+    track: 'api',
+    category: 'async',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      '알림 목록과 읽음 처리 API에서 unreadOnly 필터, unreadCount, 없는 알림 처리와 멱등적 PATCH 응답을 검증하세요.',
+    requirement: [
+      'GET /notifications 는 unreadCount와 전체 알림 목록을 반환한다.',
+      'unreadOnly=true 는 읽지 않은 알림만 반환한다.',
+      'PATCH /notifications/:id/read 는 존재하는 알림에서 200과 read=true를 반환한다.',
+      '숫자가 아닌 ID는 400, 없는 ID는 404를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/notifications', desc: '알림 목록' },
+      { method: 'GET', path: '/notifications?unreadOnly=true', desc: '읽지 않은 알림만' },
+      { method: 'PATCH', path: '/notifications/301/read', desc: '읽음 처리' },
+    ],
+  },
+  {
+    slug: 'rest-api-rbac-admin',
+    title: '권한 API: 관리자 전용 리포트',
+    track: 'api',
+    category: 'auth',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '관리자 전용 API에서 미인증 401, 일반 사용자 403, 관리자 200 경계를 구분해 검증하세요.',
+    requirement: [
+      'Authorization 헤더가 없으면 401을 반환한다.',
+      '일반 토큰(qaground-demo-token)은 인증은 되었지만 관리자 권한이 없어 403을 반환한다.',
+      '관리자 토큰(qaground-admin-token)은 200과 운영 리포트 데이터를 반환한다.',
+      '401과 403을 같은 실패로 뭉개지 않고 각각 다른 의미로 단언한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [{ method: 'GET', path: '/admin/reports', auth: true, desc: '관리자 전용 리포트' }],
+    apiNote:
+      '일반 토큰은 qaground-demo-token, 관리자 토큰은 qaground-admin-token 입니다. 같은 엔드포인트를 토큰별로 반복 실행해 401/403/200을 비교하세요.',
+  },
+  {
+    slug: 'rest-api-articles-search',
+    title: '검색 API: 키워드·태그·정렬 조합',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary: '문서 검색 API에서 q, tag, sort, order 파라미터 조합과 total 메타데이터를 검증하세요.',
+    requirement: [
+      'q는 제목 부분검색으로 동작하고 total이 결과 수와 일치한다.',
+      'tag=api 는 API 태그 문서만 반환한다.',
+      'sort=views&order=desc 는 조회수 내림차순으로 정렬한다.',
+      '검색어와 태그를 조합해도 결과 집합과 total이 일관된다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/articles?q=API', desc: '키워드 검색' },
+      { method: 'GET', path: '/articles?tag=api&sort=views&order=desc', desc: '태그+정렬 조합' },
+    ],
+  },
+  {
+    slug: 'rest-api-webhook-signature',
+    title: '웹훅 API: 서명 검증과 중복 이벤트',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'hard',
+    tools: ['Postman'],
+    summary: '결제 웹훅 수신 API에서 서명 헤더, payload 검증, 중복 eventId 처리를 검증하세요.',
+    requirement: [
+      'x-qaground-signature 헤더가 없거나 틀리면 401을 반환한다.',
+      '유효 서명과 올바른 payload는 200과 ok=true를 반환한다.',
+      '필수 필드 누락, 허용되지 않은 type, 0 이하 amount는 400을 반환한다.',
+      'eventId=evt-duplicate 는 200과 duplicate=true를 반환해 멱등 처리 경로를 드러낸다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/webhooks/payment', desc: '결제 웹훅 수신 (401 / 400 / 200)' },
+    ],
+    apiNote:
+      '헤더 x-qaground-signature: test-signature 를 넣어야 합니다. 본문 예: { "eventId": "evt-100", "type": "payment.succeeded", "amount": 39000 }.',
+  },
+  {
+    slug: 'rest-api-wallet-transfer',
+    title: '지갑 API: 잔액과 송금 검증',
+    track: 'api',
+    category: 'fintech',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '지갑 잔액·거래내역 조회와 송금 API에서 금액 검증, 잔액 부족, 거래내역 필터를 검증하세요.',
+    requirement: [
+      'GET /wallet/transactions 는 balance, total, 거래내역 배열을 반환한다.',
+      'type=deposit/withdrawal 필터가 적용되고 total이 결과 수와 일치한다.',
+      '송금 금액은 양의 정수여야 하며 0·음수·누락은 400을 반환한다.',
+      '잔액보다 큰 송금은 409 insufficient_balance를 반환하고, 정상 송금은 201과 balanceAfter를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/wallet/transactions?type=withdrawal', desc: '거래내역 필터' },
+      { method: 'POST', path: '/wallet/transfer', desc: '송금 (400 / 409 / 201)' },
+    ],
+    apiNote: '송금 예: { "to": "bank-001", "amount": 12000 }. 현재 데모 잔액은 138000입니다.',
+  },
+  {
+    slug: 'rest-api-content-moderation',
+    title: '콘텐츠 API: 댓글·신고·금칙어',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '게시글 생성, 댓글 작성, 신고 API에서 금칙어, 삭제된 글 댓글 금지, 중복 신고 같은 콘텐츠 정책을 검증하세요.',
+    requirement: [
+      '게시글 목록은 삭제되지 않은 글만 반환한다.',
+      '게시글 생성은 유효 제목에서 201, 짧은 제목은 400, 금칙어 포함은 422를 반환한다.',
+      '댓글 작성은 존재하는 글에서 201, 삭제된 글에서 409, 없는 글에서 404를 반환한다.',
+      '신고 생성은 정상 요청에서 201, 중복 신고 대상에서는 409를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/posts', desc: '게시글 목록' },
+      { method: 'POST', path: '/posts', desc: '게시글 생성 (400 / 422 / 201)' },
+      { method: 'POST', path: '/posts/701/comments', desc: '댓글 작성 (400 / 404 / 409 / 201)' },
+      { method: 'POST', path: '/reports', desc: '신고 생성 (400 / 409 / 201)' },
+    ],
+  },
+  {
+    slug: 'rest-api-health-monitoring',
+    title: '운영 API: 헬스체크와 장애 응답',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      '헬스체크 API에서 정상 상태와 degraded 상태의 HTTP status, JSON checks 필드를 검증하세요.',
+    requirement: [
+      'GET /health 는 200과 status=ok, database=ok, queue=ok를 반환한다.',
+      'GET /health?mode=degraded 는 503과 status=degraded, queue=slow를 반환한다.',
+      '운영 API 테스트에서는 HTTP 상태와 body 상태 필드를 함께 단언한다.',
+      '503도 JSON body를 반환하므로 실패 응답 본문을 파싱해 검증한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/health', desc: '정상 헬스체크' },
+      { method: 'GET', path: '/health?mode=degraded', desc: '장애 상태 헬스체크' },
+    ],
+  },
+  {
+    slug: 'rest-api-support-tickets',
+    title: '고객지원 티켓 API: 필터·상태 변경',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '고객지원 티켓 API에서 상태·우선순위·담당자 필터, 티켓 생성 입력 검증, 보호된 상태 변경 API를 검증하세요. 실무 API 테스트에서 자주 만나는 목록 메타데이터와 권한 경계, 부분 수정(PATCH)을 함께 연습합니다.',
+    requirement: [
+      '티켓 목록은 page·limit 메타데이터를 포함하고, status·priority·assignee·q 필터가 조합되어 적용된다.',
+      '단건 조회는 존재하는 ID에서 200과 티켓 객체를 반환하고, 없는 ID는 404, 숫자가 아닌 ID는 400을 반환한다.',
+      '티켓 생성은 유효한 title·customerEmail·priority 에서 201과 open 상태 티켓을 반환하고, 잘못된 이메일·빈 제목은 400을 반환한다.',
+      '상태 변경(PATCH)은 Authorization 헤더가 없으면 401을 반환하고, 정상 토큰과 유효한 status/assignee 에서 200을 반환한다.',
+      'PATCH 본문이 비어 있거나 허용되지 않는 status 값이면 400을 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/tickets?status=open&priority=high', desc: '상태·우선순위 필터' },
+      { method: 'GET', path: '/tickets?assignee=unassigned&q=로그인', desc: '미배정 티켓 검색' },
+      { method: 'GET', path: '/tickets/501', desc: '티켓 단건 조회 (400 / 404 / 200)' },
+      { method: 'POST', path: '/tickets', desc: '티켓 생성 (400 / 201)' },
+      {
+        method: 'PATCH',
+        path: '/tickets/501',
+        auth: true,
+        desc: '상태·담당자 변경 (401 / 400 / 404 / 200)',
+      },
+    ],
+    apiNote:
+      'PATCH 는 Bearer qaground-demo-token 인증이 필요합니다. 생성 예: { "title": "비밀번호 재설정 문의", "customerEmail": "user@example.com", "priority": "high" }. 수정 예: { "status": "pending", "assignee": "support-a" }. assignee=unassigned 는 미배정 티켓만 반환합니다.',
+  },
+  {
+    slug: 'rest-api-product-crud-auth',
+    title: '상품 관리 API: 인증·CRUD 검증',
+    track: 'api',
+    category: 'commerce',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '로그인으로 토큰을 발급받고, 보호된 상품 생성·수정·삭제 API의 인증, 입력 검증, 상태 코드를 검증하세요. 성공 경로뿐 아니라 401·400·404·204 같은 API 경계 응답까지 함께 확인해야 합니다.',
+    requirement: [
+      'POST /auth/login 은 유효한 데모 계정으로 200과 token 을 반환하고, 잘못된 자격증명은 401 을 반환한다.',
+      '보호된 상품 생성·수정·삭제 요청은 Authorization 헤더가 없으면 401 을 반환한다.',
+      '정상 토큰으로 상품을 생성하면 201과 생성된 상품 객체를 반환하고, 필수값 누락·잘못된 price 는 400 을 반환한다.',
+      '상품 수정은 존재하는 ID와 유효한 본문에서 200을 반환하고, 빈 본문·없는 ID·숫자가 아닌 ID는 각각 에러 상태를 반환한다.',
+      '상품 삭제는 정상 토큰과 존재하는 ID에서 204 No Content 를 반환하고, 없는 ID는 404 를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/auth/login', desc: '데모 계정 로그인 후 토큰 발급' },
+      { method: 'POST', path: '/products', auth: true, desc: '상품 생성 (401 / 400 / 201)' },
+      { method: 'PUT', path: '/products/1', auth: true, desc: '상품 수정 (401 / 400 / 404 / 200)' },
+      { method: 'DELETE', path: '/products/1', auth: true, desc: '상품 삭제 (401 / 404 / 204)' },
+    ],
+    apiNote:
+      '데모 계정은 tester@qaground.dev / qaground123 입니다. 로그인 응답의 token 또는 qaground-demo-token 을 Bearer 토큰으로 사용하세요. 상품 생성 예: { "name": "테스트 상품", "price": 12000, "category": "기타" }. 데모 API는 실제로 영속하지 않으므로 삭제·수정 후 목록 변경을 전제로 두지 마세요.',
+  },
+  {
     slug: 'rest-api-products-advanced',
     title: '상품 목록 API: 검색·정렬·필터',
     track: 'api',
@@ -1506,6 +1783,30 @@ test('내 테스트', async ({ page }) => {
     ],
     apiNote:
       '요청 본문 예: { "customer": "홍길동", "items": [{ "name": "키보드", "qty": 2, "price": 39000 }] }. total 은 서버가 계산합니다. 빈 items·음수 수량 등 실패 케이스도 검증하세요.',
+  },
+  {
+    slug: 'rest-api-status-basic',
+    title: '상태 코드 API 입문: 200·404 검증',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      '상태 코드 시뮬레이터로 API 응답의 status code와 JSON 본문을 함께 검증하는 입문 챌린지입니다. 성공 응답과 실패 응답을 나란히 확인하며 기본 단언 흐름을 익히세요.',
+    requirement: [
+      'GET /status/200 은 HTTP 200과 본문 { status: 200, message: "OK" }를 반환한다.',
+      'GET /status/404 는 HTTP 404와 본문 { status: 404, message: "Not Found" }를 반환한다.',
+      'HTTP 상태 코드뿐 아니라 응답 JSON의 status·message 필드를 함께 단언한다.',
+      '숫자가 아닌 상태 코드 요청은 400과 error 필드를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/status/200', desc: '성공 응답 기본 검증' },
+      { method: 'GET', path: '/status/404', desc: 'Not Found 응답 검증' },
+      { method: 'GET', path: '/status/abc', desc: '잘못된 코드 → 400' },
+    ],
+    apiNote:
+      '처음에는 구조화된 단언으로 상태 코드와 JSON 필드를 검증해 보세요. 예: status == 200, message == OK. 이후 pm.test 스크립트로 같은 검증을 옮겨 보면 좋습니다.',
   },
   {
     slug: 'rest-api-errors',
