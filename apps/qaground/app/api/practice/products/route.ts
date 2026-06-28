@@ -7,16 +7,33 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/practice/products?page=1&limit=5&category=주변기기
- * - 페이지네이션 + 선택적 카테고리 필터. 메타데이터(total·totalPages) 포함.
+ * GET /api/practice/products?page=1&limit=5&category=주변기기&q=키보드&sort=price&order=desc&inStock=true
+ * - 페이지네이션 + 카테고리·검색(q)·재고(inStock) 필터 + 정렬(sort=price|name, order=asc|desc).
+ * - 메타데이터(total·totalPages) 포함.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
   const limit = Math.min(50, Math.max(1, Number(searchParams.get('limit') ?? '5') || 5));
   const category = searchParams.get('category');
+  const q = (searchParams.get('q') ?? '').trim().toLowerCase();
+  const inStock = searchParams.get('inStock');
+  const sort = searchParams.get('sort');
+  const order = searchParams.get('order') === 'desc' ? 'desc' : 'asc';
 
-  const filtered = category ? PRODUCTS.filter((p) => p.category === category) : PRODUCTS;
+  let filtered = PRODUCTS.slice();
+  if (category) filtered = filtered.filter((p) => p.category === category);
+  if (q) filtered = filtered.filter((p) => p.name.toLowerCase().includes(q));
+  if (inStock === 'true') filtered = filtered.filter((p) => p.inStock);
+  if (inStock === 'false') filtered = filtered.filter((p) => !p.inStock);
+
+  if (sort === 'price' || sort === 'name') {
+    filtered.sort((a, b) => {
+      const cmp = sort === 'price' ? a.price - b.price : a.name.localeCompare(b.name, 'ko');
+      return order === 'desc' ? -cmp : cmp;
+    });
+  }
+
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const data = filtered.slice((page - 1) * limit, page * limit);
