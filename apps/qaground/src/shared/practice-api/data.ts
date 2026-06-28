@@ -32,3 +32,58 @@ export const PRODUCTS: Product[] = [
 export function findProduct(id: number): Product | undefined {
   return PRODUCTS.find((p) => p.id === id);
 }
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'member';
+  active: boolean;
+}
+
+export const USERS: User[] = [
+  { id: 1, name: '김지원', email: 'jiwon@qaground.dev', role: 'admin', active: true },
+  { id: 2, name: '박서준', email: 'seojun@qaground.dev', role: 'member', active: true },
+  { id: 3, name: '이하늘', email: 'haneul@qaground.dev', role: 'member', active: false },
+  { id: 4, name: '최민지', email: 'minji@qaground.dev', role: 'member', active: true },
+  { id: 5, name: '정우성', email: 'woosung@qaground.dev', role: 'admin', active: true },
+  { id: 6, name: '한가람', email: 'garam@qaground.dev', role: 'member', active: true },
+  { id: 7, name: '오세린', email: 'serin@qaground.dev', role: 'member', active: false },
+  { id: 8, name: '배도윤', email: 'doyun@qaground.dev', role: 'member', active: true },
+];
+
+export function findUser(id: number): User | undefined {
+  return USERS.find((u) => u.id === id);
+}
+
+export interface Order {
+  id: number;
+  customer: string;
+  items: { name: string; qty: number; price: number }[];
+  total: number;
+  status: 'created' | 'paid' | 'shipped';
+}
+
+export const ORDERS: Order[] = [
+  {
+    id: 1001,
+    customer: '김지원',
+    items: [{ name: '무선 키보드', qty: 1, price: 39000 }],
+    total: 39000,
+    status: 'paid',
+  },
+  {
+    id: 1002,
+    customer: '박서준',
+    items: [
+      { name: '무선 마우스', qty: 2, price: 29000 },
+      { name: 'USB-C 허브', qty: 1, price: 49000 },
+    ],
+    total: 107000,
+    status: 'shipped',
+  },
+];
+
+export function findOrder(id: number): Order | undefined {
+  return ORDERS.find((o) => o.id === id);
+}

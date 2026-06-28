@@ -1436,6 +1436,102 @@ test('내 테스트', async ({ page }) => {
 });
 `,
   },
+  {
+    slug: 'rest-api-products-advanced',
+    title: '상품 목록 API: 검색·정렬·필터',
+    track: 'api',
+    category: 'data',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '상품 목록 API의 검색(q)·정렬(sort/order)·재고 필터(inStock)·페이지네이션 경계를 검증하는 API 테스트를 작성하세요. 어떤 조합·경계를 확인할지는 직접 설계해야 합니다.',
+    requirement: [
+      'q 파라미터로 상품명을 부분검색하면 일치하는 항목만 오고, 메타데이터(total)도 그에 맞게 바뀐다.',
+      'sort=price&order=asc/desc 로 가격 정렬되며, sort 가 없으면 기본(id) 순서다.',
+      'inStock=true 면 재고 있는 상품만, inStock=false 면 품절 상품만 반환된다.',
+      'page·limit 경계(마지막 페이지, limit 변경)에서 data 길이와 totalPages 가 올바르다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/products?q=키보드', desc: '상품명 검색' },
+      { method: 'GET', path: '/products?sort=price&order=desc', desc: '가격 정렬' },
+      { method: 'GET', path: '/products?inStock=true', desc: '재고 필터' },
+      { method: 'GET', path: '/products?page=3&limit=5', desc: '페이지네이션 경계' },
+    ],
+    apiNote:
+      '검색·정렬·필터는 조합할 수 있습니다. sort 는 price|name, order 기본은 asc 입니다. 응답 메타(total·totalPages)가 필터 결과와 일치하는지 확인하세요.',
+  },
+  {
+    slug: 'rest-api-users',
+    title: '사용자 API: 페이지네이션·단건 조회',
+    track: 'api',
+    category: 'data',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      '사용자 목록 API의 페이지네이션 메타데이터와 단건 조회(존재·404·잘못된 ID)를 검증하세요.',
+    requirement: [
+      '사용자 목록은 page·limit 로 페이지네이션되고 total·totalPages·data 를 포함한다.',
+      'limit 을 바꾸면 data 길이가 그에 맞게 달라진다.',
+      'role·active 필터가 적용된다(예: role=admin, active=false).',
+      '존재하는 ID 는 200과 사용자 객체, 없는 ID 는 404, 숫자가 아닌 ID 는 400 을 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/users?page=1&limit=5', desc: '사용자 목록' },
+      { method: 'GET', path: '/users?role=admin', desc: '역할 필터' },
+      { method: 'GET', path: '/users/2', desc: '단건 (없으면 404)' },
+      { method: 'GET', path: '/users/abc', desc: '잘못된 ID → 400' },
+    ],
+  },
+  {
+    slug: 'rest-api-orders',
+    title: '주문 생성 API: 입력 검증·합계',
+    track: 'api',
+    category: 'commerce',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '주문 생성 API의 입력 검증(필수·수량·가격)과 합계 계산, 단건 조회를 검증하세요. 견고한 자동화는 성공 경로뿐 아니라 검증 실패(400)도 확인합니다.',
+    requirement: [
+      'customer 가 없거나 items 가 없거나 빈 배열이면 400 을 반환한다.',
+      'item 의 qty 가 0 이하이거나 price 가 0 이하면 400 을 반환한다.',
+      '정상 요청은 201과 함께 total(= 각 item 의 qty×price 합계)을 정확히 계산해 반환한다.',
+      '존재하는 주문 ID 는 200, 없는 ID 는 404 를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/orders', desc: '주문 생성 (검증 400 / 성공 201)' },
+      { method: 'GET', path: '/orders/1001', desc: '주문 단건 (없으면 404)' },
+    ],
+    apiNote:
+      '요청 본문 예: { "customer": "홍길동", "items": [{ "name": "키보드", "qty": 2, "price": 39000 }] }. total 은 서버가 계산합니다. 빈 items·음수 수량 등 실패 케이스도 검증하세요.',
+  },
+  {
+    slug: 'rest-api-errors',
+    title: '에러 처리·상태 코드 검증',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '상태 코드 시뮬레이터로 다양한 4xx/5xx 응답과 에러 본문을 검증하세요. 실패 경로까지 단언하는 것이 견고한 API 자동화의 핵심입니다.',
+    requirement: [
+      '/status/:code 는 요청한 상태 코드로 응답한다(예: 404, 500, 503).',
+      '2xx 가 아닌 응답에도 일관된 본문(status·message 필드)이 온다.',
+      '범위를 벗어난 코드(예: 999)나 숫자가 아닌 코드는 400 을 반환한다.',
+      '응답의 상태 코드와 본문을 모두 단언해 실패 경로를 검증한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/status/404', desc: '404 응답' },
+      { method: 'GET', path: '/status/500', desc: '500 응답' },
+      { method: 'GET', path: '/status/503', desc: '503 응답' },
+      { method: 'GET', path: '/status/999', desc: '범위 밖 → 400' },
+    ],
+    apiNote:
+      '/status/:code 는 200~599 범위의 코드로 응답합니다. 자동화에서 에러 응답의 상태와 본문을 어떻게 단언할지 연습하세요.',
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {
