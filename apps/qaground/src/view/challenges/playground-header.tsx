@@ -17,6 +17,9 @@ export const PlaygroundHeader = ({
           qa<span className="text-primary">ground</span>
         </Link>
         <div className="flex items-center gap-4">
+          <Link href="/guide" className="text-text-2 hover:text-text-1 text-sm transition-colors">
+            가이드
+          </Link>
           <Link
             href="/challenges"
             className="text-text-2 hover:text-text-1 text-sm transition-colors"
