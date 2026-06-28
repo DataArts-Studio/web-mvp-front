@@ -6,6 +6,11 @@ import dynamic from 'next/dynamic';
 
 import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
+import {
+  type ApiAttemptForGrade,
+  type HiddenGradeResult,
+  gradeApiAttempts,
+} from '@/shared/challenges/api-hidden-grader';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -39,6 +44,7 @@ interface RunResult {
   bodyText: string;
   checks: Check[];
   scriptResults: PmResult[];
+  hiddenGrade: HiddenGradeResult;
 }
 
 const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -200,6 +206,7 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<RunResult | null>(null);
+  const [attempts, setAttempts] = useState<ApiAttemptForGrade[]>([]);
 
   const updateAssertion = (id: number, patch: Partial<Assertion>) =>
     setAssertions((as) => as.map((a) => (a.id === id ? { ...a, ...patch } : a)));
@@ -252,17 +259,30 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
         ? runPmScript(script, { status: res.status, json, bodyText })
         : [];
 
+      const attempt: ApiAttemptForGrade = {
+        method,
+        path,
+        status: res.status,
+        assertions,
+        script,
+        checks,
+        scriptResults,
+      };
+      const nextAttempts = [...attempts, attempt];
+      const hiddenGrade = gradeApiAttempts(nextAttempts);
+      setAttempts(nextAttempts);
+
       const pretty = json !== undefined ? JSON.stringify(json, null, 2) : bodyText;
-      setResult({ status: res.status, bodyText: pretty, checks, scriptResults });
+      setResult({ status: res.status, bodyText: pretty, checks, scriptResults, hiddenGrade });
       const passed =
         checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length;
       const totalChecks = checks.length + scriptResults.length;
-      track('api_run', { passed, total: totalChecks });
+      track('api_run', { passed, total: totalChecks, score: hiddenGrade.score });
       recordSubmission({
         slug,
         kind: 'api',
         content: { method, path, assertions, script },
-        result: { passed, total: totalChecks },
+        result: { passed, total: totalChecks, hiddenGrade },
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : '요청 실패');
@@ -446,6 +466,36 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
             >
               {passCount}/{total} 통과
             </span>
+          </div>
+
+          <div className="border-line-2 bg-bg-3 mt-4 rounded-xl border p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-text-1 text-sm font-semibold">숨김 채점</span>
+              <span
+                className={`font-mono text-sm font-semibold ${
+                  result.hiddenGrade.score === result.hiddenGrade.maxScore
+                    ? 'text-primary'
+                    : 'text-text-1'
+                }`}
+              >
+                {result.hiddenGrade.score}/{result.hiddenGrade.maxScore}점
+              </span>
+            </div>
+            <p className="text-text-3 mt-1 text-xs">
+              숨김 케이스 {result.hiddenGrade.passed}/{result.hiddenGrade.total} 통과
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+              {result.hiddenGrade.cases.map((item, index) => (
+                <span
+                  key={item.id}
+                  className={`border-line-2 rounded-lg border px-2 py-1 text-center text-xs font-medium ${
+                    item.pass ? 'text-primary' : 'text-text-3'
+                  }`}
+                >
+                  #{index + 1} {item.pass ? '통과' : '실패'}
+                </span>
+              ))}
+            </div>
           </div>
 
           {result.checks.length > 0 && (
