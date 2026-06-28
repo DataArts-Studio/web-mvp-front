@@ -25,6 +25,7 @@ import { RealtimeValidationSandbox } from './realtime-validation-sandbox';
 import { RouteGuardSandbox } from './route-guard-sandbox';
 import { SeatBookingSandbox } from './seat-booking-sandbox';
 import { SessionExpirySandbox } from './session-expiry-sandbox';
+import { ShopSandbox } from './shop-sandbox';
 import { SignupSandbox } from './signup-sandbox';
 import { TabsSandbox } from './tabs-sandbox';
 import { ToastSandbox } from './toast-sandbox';
@@ -67,4 +68,5 @@ export const SANDBOXES: Record<string, ComponentType> = {
   'todo-list': TodoListSandbox,
   'post-board': PostBoardSandbox,
   'chat-room': ChatRoomSandbox,
+  shop: ShopSandbox,
 };

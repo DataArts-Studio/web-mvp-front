@@ -1302,6 +1302,96 @@ test('내 테스트', async ({ page }) => {
 });
 `,
   },
+  {
+    slug: 'shop-order',
+    title: '쇼핑몰 주문 전체 흐름(E2E)',
+    track: 'automation',
+    category: 'commerce',
+    difficulty: 'hard',
+    tools: ['Playwright'],
+    summary:
+      '실제 쇼핑몰(qashop)에서 상품을 찾아 주문 완료까지 가는 전체 흐름을 검증하는 E2E 테스트를 작성하라. 어떤 단계·경계 케이스가 필요한지는 직접 설계해야 한다. [흐름] 상품목록(검색·카테고리·정렬) → 상세(옵션·수량) → 장바구니(수량·삭제·쿠폰·배송비) → 결제(폼 검증) → 주문완료(주문번호). [규칙] 품절 상품은 담기 불가, 옵션 있는 상품은 사이즈 선택 후 담기, 상품합계 50,000원 이상이면 무료배송, 쿠폰 SAVE10/WELCOME20만 유효, 전화번호는 010-0000-0000 형식.',
+    requirement: [
+      '상품을 검색·카테고리·정렬로 찾고, 장바구니 담기 후 상단 배지 수량이 갱신된다.',
+      '옵션(사이즈) 있는 상품은 사이즈 선택 후에만 담기고, 품절 상품은 담을 수 없다.',
+      '장바구니에서 수량 변경·삭제, 쿠폰 적용(SAVE10 등), 무료배송 임계값이 합계에 반영된다.',
+      '결제 폼은 필수값·전화번호 형식을 검증하고, 통과하면 주문완료에 주문번호가 노출된다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '상품 검색', testid: 'search', desc: '상품명 검색' },
+      { name: '정렬', testid: 'sort-select', desc: '가격 정렬' },
+      { name: '카테고리(의류)', testid: 'cat-의류', desc: '카테고리 필터' },
+      { name: '상품 카드', testid: 'product-card', desc: '상품 항목' },
+      { name: '상품명', testid: 'product-name', desc: '상품 이름' },
+      { name: '담기', testid: 'add-to-cart', desc: '목록에서 담기' },
+      { name: '상세 보기', testid: 'view-detail', desc: '상품 상세' },
+      { name: '품절 배지', testid: 'stock-badge', desc: '품절 표시' },
+      { name: '상세 담기', testid: 'add-detail', desc: '상세에서 담기' },
+      { name: '장바구니 버튼', testid: 'cart-button', desc: '장바구니 열기' },
+      { name: '장바구니 수량', testid: 'cart-count', desc: '담긴 개수 배지' },
+      { name: '장바구니 항목', testid: 'cart-item', desc: '장바구니 줄' },
+      { name: '줄 삭제', testid: 'line-remove', desc: '항목 삭제' },
+      { name: '쿠폰 입력', testid: 'coupon-input', desc: '쿠폰 코드' },
+      { name: '쿠폰 적용', testid: 'coupon-apply', desc: '쿠폰 적용' },
+      { name: '배송비', testid: 'shipping-fee', desc: '배송비' },
+      { name: '결제예정액', testid: 'cart-total', desc: '합계' },
+      { name: '주문하기', testid: 'checkout-button', desc: '결제 화면으로' },
+      { name: '받는사람', testid: 'ship-name', desc: '수령인' },
+      { name: '주소', testid: 'ship-address', desc: '배송지' },
+      { name: '전화번호', testid: 'ship-phone', desc: '연락처' },
+      { name: '결제하기', testid: 'place-order', desc: '주문 확정' },
+      { name: '주문완료', testid: 'order-complete', desc: '완료 화면' },
+      { name: '주문번호', testid: 'order-number', desc: '주문번호' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내 테스트', async ({ page }) => {
+  await page.goto('/sandbox/shop');
+  // 검색→담기→장바구니→결제→주문완료까지 직접 검증하세요.
+});
+`,
+  },
+  {
+    slug: 'shop-cart',
+    title: '쇼핑몰 장바구니 금액 계산',
+    track: 'automation',
+    category: 'commerce',
+    difficulty: 'medium',
+    tools: ['Playwright'],
+    summary:
+      'qashop 장바구니의 금액 계산(수량·쿠폰·배송비)을 검증하는 테스트를 작성하라. 경계값을 직접 도출해야 한다. [규칙] 배송비는 3,000원이고 상품합계 50,000원 이상이면 무료배송이다. 쿠폰 SAVE10은 10%, WELCOME20은 20% 할인이며 그 외 코드는 거부된다. 줄별 수량 증감·삭제가 합계에 즉시 반영된다.',
+    requirement: [
+      '수량을 늘리거나 줄이면 상품 합계와 결제 예정액이 정확히 갱신된다.',
+      '상품합계 50,000원 미만은 배송비 3,000원, 이상은 무료배송이다(경계 확인).',
+      '유효한 쿠폰(SAVE10/WELCOME20)은 할인이 적용되고, 잘못된 코드는 거부된다.',
+      '항목을 삭제하면 합계에서 빠진다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '담기', testid: 'add-to-cart', desc: '상품 담기' },
+      { name: '장바구니 버튼', testid: 'cart-button', desc: '장바구니 열기' },
+      { name: '장바구니 항목', testid: 'cart-item', desc: '장바구니 줄' },
+      { name: '줄 수량+', testid: 'line-plus', desc: '수량 증가' },
+      { name: '줄 수량-', testid: 'line-minus', desc: '수량 감소' },
+      { name: '줄 수량', testid: 'line-qty', desc: '줄 수량' },
+      { name: '줄 삭제', testid: 'line-remove', desc: '항목 삭제' },
+      { name: '쿠폰 입력', testid: 'coupon-input', desc: '쿠폰 코드' },
+      { name: '쿠폰 적용', testid: 'coupon-apply', desc: '쿠폰 적용' },
+      { name: '쿠폰 메시지', testid: 'coupon-msg', desc: '쿠폰 결과' },
+      { name: '상품 합계', testid: 'subtotal', desc: '상품 합계' },
+      { name: '할인', testid: 'discount', desc: '할인 금액' },
+      { name: '배송비', testid: 'shipping-fee', desc: '배송비' },
+      { name: '결제예정액', testid: 'cart-total', desc: '합계' },
+    ],
+    starterSpec: `import { test, expect } from '@playwright/test';
+
+test('내 테스트', async ({ page }) => {
+  await page.goto('/sandbox/shop');
+  // 수량·쿠폰·무료배송 경계로 금액 계산을 직접 검증하세요.
+});
+`,
+  },
 ];
 
 export function getChallenge(slug: string): Challenge | undefined {
