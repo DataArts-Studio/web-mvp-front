@@ -8,7 +8,7 @@ const SITE_URL = 'https://qaground.gettestea.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID;
 
 const DESCRIPTION =
-  'qaground(큐에이그라운드)는 테스티아(Testea)가 만든 QA 연습 플레이그라운드입니다. 로그인 없이 로그인 폼·API·결제 같은 실제형 연습 대상에 Playwright·Postman 테스트를 직접 작성해 실행하고 채점받으세요. QA 과제전형·과제 연습·과제 테스트 준비에도 활용할 수 있습니다.';
+  'qaground(큐에이그라운드)는 테스티아(Testea)가 만든 QA 연습 플레이그라운드입니다. 로그인 없이 시작하거나 Testea 계정으로 로그인해 로그인 폼·API·결제 같은 실제형 연습 대상에 Playwright·Postman 테스트를 직접 작성해 실행하고 채점받으세요. QA 과제전형·과제 연습·과제 테스트 준비에도 활용할 수 있습니다.';
 
 const TITLE = 'qaground — QA 자동화 연습 플레이그라운드 | 테스티아';
 

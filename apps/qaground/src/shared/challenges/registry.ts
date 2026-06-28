@@ -30,12 +30,25 @@ export interface ChallengeSelector {
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
+export type ApiSchemaType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'null';
+
+export interface ApiSchemaField {
+  path: string;
+  type: ApiSchemaType;
+  required?: boolean;
+  desc?: string;
+}
+
 export interface ApiEndpoint {
   method: HttpMethod;
   path: string;
   /** 인증(토큰) 필요 여부. */
   auth?: boolean;
   desc: string;
+  query?: ApiSchemaField[];
+  body?: ApiSchemaField[];
+  response?: ApiSchemaField[];
+  responseExample?: unknown;
 }
 
 export interface Challenge {

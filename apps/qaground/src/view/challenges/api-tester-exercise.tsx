@@ -616,7 +616,7 @@ export const ApiTesterExercise = ({
             </div>
             <button
               type="button"
-              onClick={addAssertion}
+              onClick={() => addAssertion()}
               className="text-text-2 hover:text-text-1 mt-2 text-sm transition-colors"
             >
               + JSON 값 검증 추가

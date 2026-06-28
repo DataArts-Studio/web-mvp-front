@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AuthStatus } from '@/features/auth';
+
 import { IssueReportButton } from './issue-report-button';
 
 export const PlaygroundHeader = ({
@@ -26,6 +28,7 @@ export const PlaygroundHeader = ({
           >
             챌린지
           </Link>
+          <AuthStatus />
           <IssueReportButton />
         </div>
       </div>

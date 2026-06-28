@@ -24,10 +24,15 @@ export const BetaLandingView = () => {
             by Testea
           </a>
         </div>
-        <span className="border-line-2 bg-bg-2 text-text-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs">
-          <span className="bg-primary inline-block h-1.5 w-1.5 rounded-full" />
-          베타테스트
-        </span>
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="text-text-2 hover:text-text-1 text-sm transition-colors">
+            로그인
+          </Link>
+          <span className="border-line-2 bg-bg-2 text-text-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs">
+            <span className="bg-primary inline-block h-1.5 w-1.5 rounded-full" />
+            베타테스트
+          </span>
+        </div>
       </header>
 
       {/* 본문 (중앙 정렬) */}
@@ -40,7 +45,7 @@ export const BetaLandingView = () => {
           QA 연습 플레이그라운드
         </h1>
         <p className="text-text-2 max-w-xl text-base leading-[170%] sm:text-lg">
-          로그인·가입 없이 지금 바로 연습을 시작할 수 있어요.
+          로그인 없이도 시작할 수 있고, Testea 계정으로 기록 연동을 준비 중입니다.
         </p>
         <Link
           href="/challenges"
