@@ -20,7 +20,7 @@ export const LandingHero = () => {
       <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-4 py-24 text-center sm:px-6 sm:py-32">
         <span className="border-line-2 bg-bg-2 text-text-2 animate-fade-in-up inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs">
           <span className="bg-primary inline-block h-1.5 w-1.5 rounded-full" />
-          QA 자동화 연습 플랫폼 · 비공개 베타 준비 중
+          QA 자동화 연습 플랫폼 · 베타테스트
         </span>
 
         <h1 className="animate-fade-in-up text-4xl leading-[130%] font-bold tracking-tight sm:text-5xl md:text-6xl">

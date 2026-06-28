@@ -26,7 +26,7 @@ export const BetaLandingView = () => {
         </div>
         <span className="border-line-2 bg-bg-2 text-text-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs">
           <span className="bg-primary inline-block h-1.5 w-1.5 rounded-full" />
-          비공개 베타
+          베타테스트
         </span>
       </header>
 
