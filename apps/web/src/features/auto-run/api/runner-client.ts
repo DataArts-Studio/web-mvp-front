@@ -1,14 +1,19 @@
 import 'server-only';
 
+import { getRunnerAuthHeader } from './runner-identity';
+
 /**
  * Testea → 자체 러너(apps/runner) HTTP 클라이언트.
  *
  * Vercel(서버리스)은 Playwright 를 못 돌리므로 접근성 캡처와 spec 실행을 러너가 한다.
  * Testea 는 fetch + LLM + DB 만. 러너 접속 정보는 env 로 주입한다:
- * - RUNNER_URL: 러너 베이스 URL (로컬 http://localhost:8080, prod 는 Fly URL).
- * - RUNNER_SHARED_SECRET: 러너 인증 시크릿. X-Runner-Secret 헤더로 전송.
+ * - RUNNER_URL: 러너 베이스 URL (로컬 http://localhost:8080, prod 는 Cloud Run URL).
+ * - RUNNER_SHARED_SECRET: 앱 레벨 공유 시크릿. X-Runner-Secret 헤더(2차 방어).
+ * - RUNNER_INVOKER_SA_KEY: (선택) IAM 보호 러너 호출용 invoker SA 자격증명.
+ *   설정되면 Google ID 토큰을 Authorization: Bearer 로 추가(1차 방어). 미설정이면
+ *   생략(로컬 비IAM 러너 호환).
  *
- * 둘 중 하나라도 없으면 명확한 에러를 던져 호출부가 운영 설정 누락을 알게 한다.
+ * 필수 값(URL/시크릿) 누락 시 명확한 에러를 던져 운영 설정 누락을 드러낸다.
  */
 
 export class RunnerConfigError extends Error {
@@ -55,14 +60,21 @@ function getRunnerConfig(): { url: string; secret: string } {
 async function postToRunner<T>(path: string, payload: unknown): Promise<T> {
   const { url, secret } = getRunnerConfig();
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Runner-Secret': secret,
+  };
+  // IAM 보호 러너면 Google ID 토큰을 추가(1차 방어). 자격증명 미설정이면 생략.
+  const authHeader = await getRunnerAuthHeader(url, process.env.RUNNER_INVOKER_SA_KEY);
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
+
   let res: Response;
   try {
     res = await fetch(`${url}${path}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Runner-Secret': secret,
-      },
+      headers,
       body: JSON.stringify(payload),
       cache: 'no-store',
     });

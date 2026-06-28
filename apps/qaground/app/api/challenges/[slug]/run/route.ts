@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getChallenge } from '@/shared/challenges/registry';
 import { gradeSubmissionStatically } from '@/shared/challenges/static-grader';
+import { getRunnerAuthHeader } from '@/shared/runner/runner-identity';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -55,13 +56,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const origin = new URL(request.url).origin;
   const baseUrl = `${origin}/sandbox/${challenge.sandboxSlug}`;
 
+  const normalizedRunnerUrl = runnerUrl.replace(/\/$/, '');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Runner-Secret': runnerSecret,
+  };
+  // IAM 보호 러너면 Google ID 토큰을 추가(1차 방어). 자격증명 미설정이면 생략.
+  const authHeader = await getRunnerAuthHeader(
+    normalizedRunnerUrl,
+    process.env.QAGROUND_RUNNER_INVOKER_SA_KEY
+  );
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
+
   try {
-    const res = await fetch(`${runnerUrl.replace(/\/$/, '')}/run`, {
+    const res = await fetch(`${normalizedRunnerUrl}/run`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Runner-Secret': runnerSecret,
-      },
+      headers,
       body: JSON.stringify({ spec: parsed.data.code, baseUrl, timeoutMs: 30_000 }),
     });
     const data = await res.json().catch(() => null);

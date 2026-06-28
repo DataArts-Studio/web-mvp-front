@@ -3,3 +3,7 @@ dist
 .runs
 test-results
 *.log
+# invoker SA 키는 절대 커밋 금지 (Vercel env 에만)
+invoker*.json
+*-key.json
+*sa-key*.json
