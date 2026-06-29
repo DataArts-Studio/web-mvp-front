@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { projectIdQueryOptions } from '@/entities/project';
 import type { RequirementAnalysisListItem } from '@/entities/requirement-analysis';
@@ -20,6 +20,7 @@ import {
   Languages,
   ListChecks,
   Plus,
+  Search,
   Sparkles,
 } from 'lucide-react';
 
@@ -31,11 +32,23 @@ const LANGUAGE_LABEL: Record<string, string> = {
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
-export const RequirementsView = () => {
+type RequirementsViewProps = {
+  openCreateOnMount?: boolean;
+};
+
+export const RequirementsView = ({ openCreateOnMount = false }: RequirementsViewProps) => {
   const params = useParams();
+  const router = useRouter();
   const slug = params.slug as string;
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onClose } = useDisclosure(openCreateOnMount);
   const [searchQuery, setSearchQuery] = useState('');
+  const createHref = `/projects/${slug}/requirements/create`;
+  const listHref = `/projects/${slug}/requirements`;
+  const openCreate = () => router.push(createHref);
+  const closeCreate = () => {
+    onClose();
+    if (openCreateOnMount) router.replace(listHref);
+  };
 
   // 클라이언트 hydration 완료 전까지 서버와 동일 출력(스켈레톤) 보장 → SSR↔CSR 미스매치 방지
   const [hydrated, setHydrated] = useState(false);
@@ -117,7 +130,13 @@ export const RequirementsView = () => {
             요구사항 문서를 정리하고 기능 단위 시나리오로 이어지는 작업 목록을 관리합니다.
           </p>
         </div>
-        <DSButton size="small" type="button" variant="solid" onClick={onOpen} disabled={!projectId}>
+        <DSButton
+          size="small"
+          type="button"
+          variant="solid"
+          onClick={openCreate}
+          disabled={!projectId}
+        >
           <Plus className="h-4 w-4" />
           <span className="leading-none">새 요구사항 정리</span>
         </DSButton>
@@ -178,7 +197,7 @@ export const RequirementsView = () => {
                       </p>
                       <button
                         type="button"
-                        onClick={onOpen}
+                        onClick={openCreate}
                         disabled={!projectId}
                         className="bg-primary hover:bg-primary/90 typo-label-heading rounded-2 mt-5 inline-flex h-9 w-fit items-center justify-center gap-2 px-4 text-white transition-colors disabled:opacity-50"
                       >
@@ -328,7 +347,7 @@ export const RequirementsView = () => {
             ) : (
               <button
                 type="button"
-                onClick={onOpen}
+                onClick={openCreate}
                 disabled={!projectId}
                 className="typo-label-heading text-primary mt-3 inline-flex disabled:opacity-50"
               >
@@ -339,7 +358,9 @@ export const RequirementsView = () => {
         </aside>
       </section>
 
-      {isOpen && projectId && <RequirementAnalysisModal projectId={projectId} onClose={onClose} />}
+      {isOpen && projectId && (
+        <RequirementAnalysisModal projectId={projectId} onClose={closeCreate} />
+      )}
     </MainContainer>
   );
 };
