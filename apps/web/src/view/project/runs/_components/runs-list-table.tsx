@@ -2,19 +2,8 @@
 
 import React from 'react';
 
-import { DSButton, EmptyState, Pagination, RUN_STATUS_CONFIG } from '@testea/ui';
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  ListTodo,
-  PlayCircle,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  Search,
-  Trash2,
-} from 'lucide-react';
+import { Pagination } from '@testea/ui';
+import { ListTodo } from 'lucide-react';
 
 import {
   type ITestRun,
@@ -43,15 +32,58 @@ interface RunsListTableProps {
   onCreateRun: () => void;
 }
 
-const getSourceIcon = (type: RunSourceType) => {
+const getSourceLabel = (type: RunSourceType) => {
   switch (type) {
     case 'SUITE':
-      return <ListTodo className="h-3.5 w-3.5" />;
+      return '스위트';
     case 'MILESTONE':
-      return <Clock className="h-3.5 w-3.5" />;
+      return '마일스톤';
     default:
-      return <PlayCircle className="h-3.5 w-3.5" />;
+      return '단독 실행';
   }
+};
+
+const getStatusMeta = (status: ITestRun['status']) => {
+  switch (status) {
+    case 'COMPLETED':
+      return {
+        label: '완료됨',
+        dotClass: 'bg-system-green',
+        badgeClass: 'border-system-green/30 bg-system-green/10 text-system-green',
+      };
+    case 'IN_PROGRESS':
+      return {
+        label: '진행 중',
+        dotClass: 'bg-amber-400',
+        badgeClass: 'border-amber-400/30 bg-amber-400/10 text-amber-300',
+      };
+    default:
+      return {
+        label: '시작 전',
+        dotClass: 'bg-bg-4',
+        badgeClass: 'border-line-2 bg-bg-3 text-text-3',
+      };
+  }
+};
+
+const RunProgressBar = ({ run }: { run: ITestRun }) => {
+  const { totalCases } = run.stats;
+
+  if (totalCases === 0) return <div className="rounded-1 bg-bg-4 h-1.5 w-full" />;
+
+  const passP = (run.stats.pass / totalCases) * 100;
+  const failP = (run.stats.fail / totalCases) * 100;
+  const blockedP = (run.stats.blocked / totalCases) * 100;
+  const untestedP = Math.max(0, 100 - passP - failP - blockedP);
+
+  return (
+    <div className="rounded-1 bg-bg-4 flex h-1.5 w-full overflow-hidden">
+      {run.stats.pass > 0 && <div className="bg-system-green" style={{ width: `${passP}%` }} />}
+      {run.stats.fail > 0 && <div className="bg-system-red" style={{ width: `${failP}%` }} />}
+      {run.stats.blocked > 0 && <div className="bg-amber-400" style={{ width: `${blockedP}%` }} />}
+      {untestedP > 0 && <div className="bg-bg-4" style={{ width: `${untestedP}%` }} />}
+    </div>
+  );
 };
 
 export const RunsListTable = ({
@@ -72,236 +104,169 @@ export const RunsListTable = ({
   onResetFilters,
   onCreateRun,
 }: RunsListTableProps) => {
+  if (hasError && totalRunsCount === 0) {
+    return (
+      <section className="col-span-6 flex min-h-0 flex-col">
+        <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 px-6 text-center">
+          <p className="typo-body2-heading text-text-1">데이터를 불러오지 못했습니다.</p>
+          <p className="typo-body2-normal text-text-3">일시적인 오류가 발생했습니다.</p>
+          <button
+            type="button"
+            onClick={onRefetch}
+            className="typo-body2-heading text-primary hover:underline"
+          >
+            다시 시도
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (totalRunsCount === 0) {
+    return (
+      <section className="col-span-6 flex min-h-0 flex-col">
+        <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 px-6 text-center">
+          <ListTodo className="text-text-4 h-6 w-6" aria-hidden="true" />
+          <p className="typo-body2-heading text-text-1">생성된 테스트 실행이 없습니다.</p>
+          <p className="typo-body2-normal text-text-3">
+            새로운 테스트 실행을 생성하여 결과를 기록해보세요.
+          </p>
+          <button
+            type="button"
+            onClick={onCreateRun}
+            className="typo-body2-heading text-primary hover:underline"
+          >
+            테스트 실행 생성
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (sortedRunsCount === 0) {
+    return (
+      <section className="col-span-6 flex min-h-0 flex-col">
+        <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 px-6 text-center">
+          <p className="typo-body2-heading text-text-1">검색 결과가 없습니다.</p>
+          <p className="typo-body2-normal text-text-3">
+            {searchTerm
+              ? `"${searchTerm}"에 대한 결과가 없습니다.`
+              : `상태: ${getStatusFilterLabel(statusFilter)}`}
+          </p>
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="typo-body2-heading text-primary hover:underline"
+          >
+            필터 초기화
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="rounded-4 border-line-2 bg-bg-2 shadow-1 col-span-6 flex min-h-0 flex-col overflow-hidden border">
-      {/* 검색 결과 요약 */}
+    <section className="col-span-6 flex min-h-0 flex-col overflow-hidden">
       {(searchTerm || statusFilter !== 'ALL') && (
-        <div className="border-line-2 text-text-3 flex items-center gap-2 border-b px-6 py-2">
-          <span className="typo-body2-normal">
-            {sortedRunsCount}개 결과
-            {searchTerm && <span className="ml-1">· 검색어: &quot;{searchTerm}&quot;</span>}
-            {statusFilter !== 'ALL' && (
-              <span className="ml-1">· 상태: {getStatusFilterLabel(statusFilter)}</span>
-            )}
-          </span>
+        <div className="border-line-2 text-text-4 typo-caption-normal border-b py-2">
+          {sortedRunsCount}개 결과
+          {searchTerm && <span className="ml-1">/ &quot;{searchTerm}&quot;</span>}
+          {statusFilter !== 'ALL' && (
+            <span className="ml-1">/ {getStatusFilterLabel(statusFilter)}</span>
+          )}
         </div>
       )}
-      <div className="border-line-2 bg-bg-3 grid grid-cols-[5fr_3fr_2fr_2fr_auto] gap-4 border-b px-6 py-3">
-        <div className="typo-caption-heading text-text-3 uppercase">실행 이름 / 기준</div>
-        <div className="typo-caption-heading text-text-3 uppercase">진행률 (완료/전체)</div>
-        <div className="typo-caption-heading text-text-3 text-center uppercase">상태</div>
-        <div className="typo-caption-heading text-text-3 text-right uppercase">마지막 업데이트</div>
-        <div className="w-20" />
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col">
+          {paginatedRuns.map((run) => {
+            const statusMeta = getStatusMeta(run.status);
+            const { totalCases, completedCases, progressPercent } = run.stats;
+
+            return (
+              <article
+                key={run.id}
+                className="border-line-2 hover:bg-bg-2 grid grid-cols-1 gap-3 border-b px-1 py-4 transition-colors last:border-b-0 md:grid-cols-[minmax(0,1fr)_260px] md:items-start md:gap-6"
+              >
+                <div className="min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => onRunClick(run.id)}
+                    className="typo-body2-heading text-text-1 hover:text-primary focus-visible:ring-primary/40 block max-w-full truncate text-left focus-visible:ring-2 focus-visible:outline-none"
+                  >
+                    {run.name}
+                  </button>
+                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="typo-caption-normal text-text-4">
+                      {getSourceLabel(run.sourceType)}
+                    </span>
+                    <span className="text-text-4" aria-hidden="true">
+                      /
+                    </span>
+                    <SuiteSourceName sourceName={run.sourceName} sourceType={run.sourceType} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <button
+                      type="button"
+                      onClick={() => onRerunClick(run)}
+                      disabled={rerunPendingId === run.id}
+                      className="typo-caption-normal text-text-3 hover:text-primary disabled:opacity-50"
+                    >
+                      {rerunPendingId === run.id ? '생성 중' : '다시 실행'}
+                    </button>
+                    <span className="text-text-4" aria-hidden="true">
+                      /
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteClick(run)}
+                      className="typo-caption-normal text-text-3 hover:text-system-red"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+
+                <div className="min-w-0 md:text-right">
+                  <div className="flex min-w-0 items-center gap-2 md:justify-end">
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${statusMeta.dotClass}`}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className={`typo-caption-heading rounded-1 inline-flex max-w-full items-center border px-2 py-0.5 ${statusMeta.badgeClass}`}
+                    >
+                      {statusMeta.label}
+                    </span>
+                  </div>
+                  <div className="mt-2 md:ml-auto md:max-w-[220px]">
+                    <div className="typo-caption-normal text-text-4 mb-1 flex justify-between">
+                      <span>{progressPercent}%</span>
+                      <span>
+                        {completedCases}/{totalCases}
+                      </span>
+                    </div>
+                    <RunProgressBar run={run} />
+                  </div>
+                  <p className="typo-caption-normal text-text-4 mt-2">
+                    {new Date(run.updatedAt).toLocaleDateString()}{' '}
+                    {new Date(run.updatedAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {paginatedRuns.map((run) => {
-          const { totalCases, completedCases, progressPercent } = run.stats;
-
-          return (
-            <div
-              key={run.id}
-              onClick={() => onRunClick(run.id)}
-              className="group border-line-2 hover:bg-bg-3 grid cursor-pointer grid-cols-[5fr_3fr_2fr_2fr_auto] items-center gap-4 border-b px-6 py-5 transition-colors last:border-b-0"
-            >
-              <div className="flex flex-col gap-1.5">
-                <span className="typo-body1-heading text-text-1 group-hover:text-primary transition-colors">
-                  {run.name}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-1 bg-bg-4 text-text-2 inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium">
-                    {getSourceIcon(run.sourceType)}
-                    {run.sourceType}
-                  </span>
-                  <SuiteSourceName sourceName={run.sourceName} sourceType={run.sourceType} />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 pr-4">
-                <div className="flex justify-between text-xs">
-                  <span className="text-text-1 font-medium">{progressPercent}%</span>
-                  <span className="text-text-3">
-                    {completedCases} / {totalCases}
-                  </span>
-                </div>
-                {(() => {
-                  const h = 8;
-                  const r = h / 2;
-                  if (totalCases === 0) return <div className="bg-bg-4 h-2 w-full rounded-full" />;
-                  const passP = (run.stats.pass / totalCases) * 100;
-                  const failP = (run.stats.fail / totalCases) * 100;
-                  const blockedP = (run.stats.blocked / totalCases) * 100;
-                  const untestedP = 100 - passP - failP - blockedP;
-                  return (
-                    <svg width="100%" height={h} className="block overflow-hidden rounded-full">
-                      <defs>
-                        <clipPath id={`bar-clip-${run.id}`}>
-                          <rect x="0" y="0" width="100%" height={h} rx={r} ry={r} />
-                        </clipPath>
-                      </defs>
-                      <g clipPath={`url(#bar-clip-${run.id})`}>
-                        {run.stats.pass > 0 && (
-                          <rect
-                            x="0%"
-                            y="0"
-                            width={`${passP}%`}
-                            height={h}
-                            fill="#0BB57F"
-                            shapeRendering="crispEdges"
-                          />
-                        )}
-                        {run.stats.fail > 0 && (
-                          <rect
-                            x={`${passP}%`}
-                            y="0"
-                            width={`${failP}%`}
-                            height={h}
-                            fill="#FC4141"
-                            shapeRendering="crispEdges"
-                          />
-                        )}
-                        {run.stats.blocked > 0 && (
-                          <rect
-                            x={`${passP + failP}%`}
-                            y="0"
-                            width={`${blockedP}%`}
-                            height={h}
-                            fill="#FBA900"
-                            shapeRendering="crispEdges"
-                          />
-                        )}
-                        {untestedP > 0 && (
-                          <rect
-                            x={`${passP + failP + blockedP}%`}
-                            y="0"
-                            width={`${untestedP}%`}
-                            height={h}
-                            fill="var(--color-bg-4)"
-                            shapeRendering="crispEdges"
-                          />
-                        )}
-                      </g>
-                    </svg>
-                  );
-                })()}
-              </div>
-
-              <div className="flex justify-center">
-                <span
-                  className={`typo-caption-heading rounded-1 inline-flex items-center px-2.5 py-1 ${RUN_STATUS_CONFIG[run.status]?.style ?? 'bg-bg-4 text-text-3'}`}
-                >
-                  {run.status === 'COMPLETED' && <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
-                  {run.status === 'IN_PROGRESS' && <PlayCircle className="mr-1.5 h-3.5 w-3.5" />}
-                  {RUN_STATUS_CONFIG[run.status]?.label ?? run.status}
-                </span>
-              </div>
-
-              <div className="text-right">
-                <span className="typo-caption-normal text-text-3">
-                  {new Date(run.updatedAt).toLocaleDateString()}
-                </span>
-                <div className="typo-caption-normal text-text-4">
-                  {new Date(run.updatedAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRerunClick(run);
-                  }}
-                  disabled={rerunPendingId === run.id}
-                  className="rounded-2 text-text-4 hover:bg-primary/10 hover:text-primary flex h-9 w-9 cursor-pointer items-center justify-center opacity-0 transition-all group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  title="다시 실행"
-                  aria-label="다시 실행"
-                >
-                  <RotateCcw
-                    className={`h-4 w-4 ${rerunPendingId === run.id ? 'animate-spin' : ''}`}
-                  />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteClick(run);
-                  }}
-                  className="rounded-2 text-text-4 hover:bg-system-red/10 hover:text-system-red flex h-9 w-9 cursor-pointer items-center justify-center opacity-0 transition-all group-hover:opacity-100"
-                  title="삭제"
-                  aria-label="삭제"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* 에러 발생 시 */}
-        {hasError && totalRunsCount === 0 && (
-          <EmptyState
-            icon={<AlertCircle className="h-6 w-6" />}
-            title="데이터를 불러오지 못했습니다."
-            description="일시적인 오류가 발생했습니다. 다시 시도해주세요."
-            action={
-              <DSButton
-                variant="ghost"
-                className="mt-2 flex items-center gap-2"
-                onClick={onRefetch}
-              >
-                <RefreshCw className="h-4 w-4" />
-                다시 시도
-              </DSButton>
-            }
-            className="h-60"
-          />
-        )}
-
-        {/* 검색/필터 결과가 없을 때 */}
-        {totalRunsCount > 0 && sortedRunsCount === 0 && (
-          <EmptyState
-            icon={<Search className="h-6 w-6" />}
-            title="검색 결과가 없습니다."
-            description={`${searchTerm ? `"${searchTerm}"에 대한 결과가 없습니다. ` : ''}${statusFilter !== 'ALL' ? `상태: ${getStatusFilterLabel(statusFilter)}` : ''}`}
-            action={
-              <button
-                onClick={onResetFilters}
-                className="typo-body2-heading text-primary mt-2 hover:underline"
-              >
-                필터 초기화
-              </button>
-            }
-            className="h-60"
-          />
-        )}
-
-        {/* 테스트 실행이 하나도 없을 때 */}
-        {!hasError && totalRunsCount === 0 && (
-          <EmptyState
-            icon={<ListTodo className="h-6 w-6" />}
-            title="생성된 테스트 실행이 없습니다."
-            description="새로운 테스트 실행을 생성하여 결과를 기록해보세요."
-            action={
-              <DSButton
-                variant="ghost"
-                className="mt-2 flex items-center gap-2"
-                onClick={onCreateRun}
-              >
-                <Plus className="h-4 w-4" />
-                테스트 실행 생성
-              </DSButton>
-            }
-            className="h-60"
-          />
-        )}
-      </div>
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}
-        className="border-line-2 mt-auto border-t"
+        className="border-line-2 border-t"
       />
     </section>
   );
