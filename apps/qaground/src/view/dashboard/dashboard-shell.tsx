@@ -8,7 +8,14 @@ import { useRouter } from 'next/navigation';
 import { CHALLENGES } from '@/shared/challenges/registry';
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
 import { createSupabaseBrowserAuthClient } from '@testea/db/src/client/supabase/auth-client';
-import { LayoutDashboard, ListChecks, Settings } from 'lucide-react';
+import {
+  ChevronDown,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  Settings,
+  UserCircle,
+} from 'lucide-react';
 
 type AuthState = 'checking' | 'authenticated' | 'unauthenticated' | 'unavailable';
 
@@ -53,6 +60,7 @@ export function DashboardShell({
   }, []);
   const [authState, setAuthState] = useState<AuthState>('checking');
   const [user, setUser] = useState<DashboardUser | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -88,6 +96,12 @@ export function DashboardShell({
       data.subscription.unsubscribe();
     };
   }, [nextPath, router, supabase]);
+
+  const handleSignOut = async () => {
+    await supabase?.auth.signOut();
+    setAccountMenuOpen(false);
+    router.replace('/login?next=/dashboard');
+  };
 
   if (authState === 'checking') {
     return (
@@ -132,14 +146,61 @@ export function DashboardShell({
       <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
       <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[248px_1fr] lg:py-10">
         <aside className="border-line-2 bg-bg-2 h-fit rounded-lg border p-4 lg:sticky lg:top-6">
-          <div className="flex items-center gap-3 px-1 py-2">
-            <div className="bg-primary/10 text-primary flex size-11 items-center justify-center rounded-full text-base font-bold">
-              {(user?.email?.[0] ?? 'Q').toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{user?.email ?? 'qaground 사용자'}</p>
-              <p className="text-text-3 mt-1 text-xs">로그인 사용자</p>
-            </div>
+          <div className="relative px-1 py-2">
+            <button
+              type="button"
+              onClick={() => setAccountMenuOpen((current) => !current)}
+              className="border-line-2 bg-bg-1 hover:border-primary/50 flex h-12 w-full items-center justify-between rounded-lg border px-3 transition-colors"
+              aria-expanded={accountMenuOpen}
+              aria-haspopup="menu"
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-full">
+                  <UserCircle size={21} aria-hidden="true" />
+                </span>
+                <span className="min-w-0 text-left">
+                  <span className="block text-sm font-semibold">내 계정</span>
+                  <span className="text-text-3 block text-xs">로그인 사용자</span>
+                </span>
+              </span>
+              <ChevronDown
+                className={`text-text-3 shrink-0 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`}
+                size={16}
+                aria-hidden="true"
+              />
+            </button>
+
+            {accountMenuOpen ? (
+              <div
+                className="border-line-2 bg-bg-1 absolute top-16 right-1 left-1 z-20 rounded-lg border p-2 shadow-lg"
+                role="menu"
+              >
+                <div className="border-line-2 mb-2 border-b px-2 pb-2">
+                  <p className="text-text-3 text-xs">계정</p>
+                  <p className="mt-1 truncate text-sm font-medium">
+                    {user?.email ?? 'qaground 사용자'}
+                  </p>
+                </div>
+                <Link
+                  href="/dashboard/settings"
+                  onClick={() => setAccountMenuOpen(false)}
+                  className="hover:bg-bg-3 flex h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors"
+                  role="menuitem"
+                >
+                  <Settings size={15} aria-hidden="true" />
+                  설정
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  className="text-text-2 hover:bg-bg-3 hover:text-text-1 flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors"
+                  role="menuitem"
+                >
+                  <LogOut size={15} aria-hidden="true" />
+                  로그아웃
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <nav className="mt-4 grid gap-1" aria-label="대시보드 메뉴">
