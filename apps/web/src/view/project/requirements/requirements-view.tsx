@@ -153,7 +153,7 @@ export const RequirementsView = () => {
             <span className="typo-caption bg-bg-3 text-text-3 rounded-full px-2 py-1">최신순</span>
           </div>
 
-          <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {analyses.length === 0 ? (
               <div className="rounded-3 border-line-2 bg-bg-2/50 flex h-full min-h-[320px] flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
                 <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
@@ -180,55 +180,65 @@ export const RequirementsView = () => {
                 </div>
               </div>
             ) : (
-              analyses.map((a) => (
-                <Link
-                  key={a.id}
-                  href={`/projects/${slug}/scenarios/${a.id}`}
-                  className="group rounded-3 border-line-2 bg-bg-2 hover:border-primary/40 hover:bg-bg-3 flex flex-col gap-3 border px-5 py-4 transition-colors"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="bg-bg-3 text-primary border-line-2 rounded-3 flex h-10 w-10 shrink-0 items-center justify-center border">
-                      <FileText className="h-5 w-5" strokeWidth={1.8} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <h3 className="typo-body1-heading text-text-1 group-hover:text-primary truncate">
-                          {a.title}
-                        </h3>
-                        <span className="typo-caption bg-bg-3 text-text-3 rounded-full px-2 py-0.5">
-                          {LANGUAGE_LABEL[a.language] ?? a.language}
-                        </span>
+              <div className="border-line-2 bg-bg-2 rounded-3 overflow-hidden border">
+                <div className="border-line-2 text-text-4 grid grid-cols-[minmax(0,1fr)_8rem_8rem_8rem] gap-4 border-b px-5 py-2.5 text-xs max-lg:hidden">
+                  <span>분석 결과</span>
+                  <span>요구사항</span>
+                  <span>시나리오</span>
+                  <span>생성일</span>
+                </div>
+                <div className="divide-line-2 divide-y">
+                  {analyses.map((a) => (
+                    <Link
+                      key={a.id}
+                      href={`/projects/${slug}/scenarios/${a.id}`}
+                      className="group hover:bg-bg-3 grid gap-3 px-5 py-4 transition-colors lg:grid-cols-[minmax(0,1fr)_8rem_8rem_8rem] lg:items-center lg:gap-4"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <FileText
+                            className="text-primary h-4 w-4 shrink-0"
+                            strokeWidth={1.8}
+                            aria-hidden="true"
+                          />
+                          <h3 className="typo-body1-heading text-text-1 group-hover:text-primary truncate">
+                            {a.title}
+                          </h3>
+                          <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-0.5">
+                            {LANGUAGE_LABEL[a.language] ?? a.language}
+                          </span>
+                        </div>
+                        {a.summary && (
+                          <p className="typo-body2-normal text-text-3 mt-1.5 line-clamp-2 whitespace-pre-line lg:line-clamp-1">
+                            {a.summary}
+                          </p>
+                        )}
+                        <div className="text-text-4 mt-2 flex flex-wrap gap-x-3 gap-y-1 lg:hidden">
+                          <span className="typo-label-normal">
+                            기능 요구사항 {a.functionalCount}
+                          </span>
+                          <span className="typo-label-normal">시나리오 {a.scenarioCount}</span>
+                          <span className="typo-label-normal">
+                            스위트 {a.savedSuiteCount}개 저장
+                          </span>
+                          <span className="typo-label-normal">{formatDate(a.createdAt)}</span>
+                        </div>
                       </div>
-                      {a.summary && (
-                        <p className="typo-body2-normal text-text-3 mt-1.5 line-clamp-2 whitespace-pre-line">
-                          {a.summary}
-                        </p>
-                      )}
-                    </div>
-                    <span className="typo-label-normal text-text-4 hidden shrink-0 sm:block">
-                      {formatDate(a.createdAt)}
-                    </span>
-                  </div>
-                  <div className="text-text-3 flex flex-wrap items-center gap-x-4 gap-y-2 pl-14">
-                    <span className="typo-label-normal flex items-center gap-1.5">
-                      <ListChecks className="h-3.5 w-3.5" />
-                      기능 요구사항 {a.functionalCount}
-                    </span>
-                    <span className="typo-label-normal flex items-center gap-1.5">
-                      <FolderTree className="h-3.5 w-3.5" />
-                      시나리오 {a.scenarioCount}
-                    </span>
-                    <span className="typo-label-normal flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      스위트 {a.savedSuiteCount}개 저장
-                    </span>
-                    <span className="typo-label-normal text-text-4 flex items-center gap-1.5 sm:hidden">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {formatDate(a.createdAt)}
-                    </span>
-                  </div>
-                </Link>
-              ))
+                      <span className="typo-label-normal text-text-3 hidden lg:flex lg:items-center lg:gap-1.5">
+                        <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+                        {a.functionalCount}
+                      </span>
+                      <span className="typo-label-normal text-text-3 hidden lg:flex lg:items-center lg:gap-1.5">
+                        <FolderTree className="h-3.5 w-3.5" aria-hidden="true" />
+                        {a.scenarioCount}
+                      </span>
+                      <span className="typo-label-normal text-text-4 hidden lg:block">
+                        {formatDate(a.createdAt)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>
