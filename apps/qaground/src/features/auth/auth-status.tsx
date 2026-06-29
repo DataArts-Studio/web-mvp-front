@@ -47,7 +47,10 @@ export function AuthStatus() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
+      <Link href="/dashboard" className="text-text-2 hover:text-text-1 text-sm transition-colors">
+        대시보드
+      </Link>
       <span className="text-text-3 hidden max-w-40 truncate text-xs sm:inline">{user.email}</span>
       <button
         type="button"

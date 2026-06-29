@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
 import { createSupabaseBrowserAuthClient } from '@testea/db/src/client/supabase/auth-client';
 
 const ENV_ERROR = '로그인 환경변수가 아직 설정되지 않았습니다.';
@@ -18,7 +20,8 @@ function getAuthErrorMessage(message?: string): string {
   return message;
 }
 
-export function LoginForm() {
+export function LoginForm({ nextPath = '/dashboard' }: { nextPath?: string }) {
+  const router = useRouter();
   const supabase = useMemo(() => {
     try {
       return createSupabaseBrowserAuthClient();
@@ -28,19 +31,16 @@ export function LoginForm() {
   }, []);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [error, setError] = useState(supabase ? '' : ENV_ERROR);
-  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     if (!supabase) return;
 
     void supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        setNotice(
-          '이미 로그인되어 있습니다. qaground와 Testea에서 같은 계정으로 사용할 수 있습니다.'
-        );
+        router.replace(nextPath);
       }
     });
-  }, [supabase]);
+  }, [nextPath, router, supabase]);
 
   const signIn = async (provider: (typeof PROVIDERS)[number]['id']) => {
     if (!supabase) {
@@ -50,12 +50,10 @@ export function LoginForm() {
 
     setLoadingProvider(provider);
     setError('');
-    setNotice('');
-
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/login?next=${encodeURIComponent(nextPath)}`,
       },
     });
 
@@ -94,12 +92,6 @@ export function LoginForm() {
           {error}
         </p>
       )}
-      {notice && (
-        <p role="status" className="text-primary text-sm">
-          {notice}
-        </p>
-      )}
-
       <p className="text-text-3 text-xs leading-relaxed">
         배포 전에는 Supabase Auth의 Google/GitHub 공급자와 redirect URL 설정이 완료된 환경에서만
         동작합니다.

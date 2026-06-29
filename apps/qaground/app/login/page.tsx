@@ -9,7 +9,19 @@ export const metadata: Metadata = {
   description: 'Testea 계정으로 qaground에 로그인합니다.',
 };
 
-export default function LoginPage() {
+function getSafeNextPath(next?: string): string {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/dashboard';
+  if (next.startsWith('/login')) return '/dashboard';
+  return next;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const nextPath = getSafeNextPath(next);
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
       <PlaygroundHeader containerClassName="max-w-5xl" />
@@ -31,7 +43,7 @@ export default function LoginPage() {
               브랜치에만 올려두고, Testea 로그인과 같은 Supabase Auth 설정을 공유합니다.
             </p>
           </section>
-          <LoginForm />
+          <LoginForm nextPath={nextPath} />
         </div>
       </main>
     </div>
