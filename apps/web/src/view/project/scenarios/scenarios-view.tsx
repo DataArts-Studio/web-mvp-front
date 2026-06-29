@@ -16,11 +16,14 @@ import { ActionToolbar } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { useDisclosure } from '@testea/lib';
 import { MainContainer, ProjectErrorFallback, Skeleton } from '@testea/ui';
-import { FolderTree, ListChecks, Plus, Sparkles } from 'lucide-react';
+import { CalendarDays, FileText, FolderTree, ListChecks, Plus, Sparkles } from 'lucide-react';
 
 import { NewFeatureModal } from './_components/new-feature-modal';
 
 const STATUS_ORDER = ['CONFIRMED', 'REVIEW', 'DRAFT'] as const;
+
+const formatDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : '수동';
 
 export const ScenarioFeaturesView = () => {
   const params = useParams();
@@ -52,28 +55,47 @@ export const ScenarioFeaturesView = () => {
     enabled: !!projectId,
   });
 
+  const allFeatures = useMemo<ScenarioFeatureListItem[]>(
+    () => (featuresData?.success ? featuresData.data : []),
+    [featuresData]
+  );
+
   const features = useMemo<ScenarioFeatureListItem[]>(() => {
-    if (!featuresData?.success) return [];
-    const items = featuresData.data;
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((f) => f.title.toLowerCase().includes(q));
-  }, [featuresData, searchQuery]);
+    if (!q) return allFeatures;
+    return allFeatures.filter(
+      (f) => f.title.toLowerCase().includes(q) || f.summary.toLowerCase().includes(q)
+    );
+  }, [allFeatures, searchQuery]);
+
+  const statusTotals = useMemo(
+    () =>
+      STATUS_ORDER.map((status) => ({
+        status,
+        count: allFeatures.reduce((sum, feature) => sum + feature.statusCounts[status], 0),
+      })),
+    [allFeatures]
+  );
+  const totalScenarioCount = allFeatures.reduce((sum, feature) => sum + feature.scenarioCount, 0);
+  const latestFeature = allFeatures.find((feature) => !feature.isManual) ?? allFeatures[0];
 
   const hrefFor = (f: ScenarioFeatureListItem) =>
     `/projects/${slug}/scenarios/${f.isManual ? 'manual' : f.id}`;
 
   if (!hydrated || isLoadingProject || isLoadingFeatures) {
     return (
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
+      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1280px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
         <header className="col-span-6 flex flex-col gap-2">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-5 w-96" />
         </header>
-        <div className="col-span-6 flex flex-col gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="rounded-3 h-24 w-full" />
-          ))}
+        <div className="col-span-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="rounded-3 h-24 w-full" />
+            ))}
+          </div>
+          <Skeleton className="rounded-3 hidden h-72 w-full lg:block" />
         </div>
       </MainContainer>
     );
@@ -87,18 +109,20 @@ export const ScenarioFeaturesView = () => {
   }
 
   return (
-    <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-4 overflow-hidden px-10 py-8">
-      <header className="col-span-6 flex flex-col gap-1">
-        <h1 className="typo-title-heading">시나리오 관리</h1>
-        <p className="typo-body1-normal text-text-3">
-          기능(요구사항)별로 테스트 시나리오를 작성·관리합니다. 기능을 선택해 시나리오를 추가하세요.
+    <MainContainer className="mx-auto grid h-screen w-full max-w-[1280px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-5 overflow-hidden px-10 py-8">
+      <header className="col-span-6 flex flex-col gap-1.5">
+        <p className="typo-caption text-primary">테스트 설계</p>
+        <h1 className="typo-title-heading text-text-1">시나리오 관리</h1>
+        <p className="typo-body1-normal text-text-3 max-w-2xl">
+          기능 단위로 테스트 시나리오를 검토하고 상태를 정리합니다. 기능을 선택하면 상세 시나리오
+          목록으로 이동합니다.
         </p>
       </header>
 
       <ActionToolbar.Root ariaLabel="기능 목록 컨트롤">
         <ActionToolbar.Group>
           <ActionToolbar.Search
-            placeholder="기능 이름으로 검색"
+            placeholder="기능 이름·요약으로 검색"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -127,69 +151,220 @@ export const ScenarioFeaturesView = () => {
         </div>
       </ActionToolbar.Root>
 
-      <section className="col-span-6 flex min-h-0 flex-col">
-        <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
-          {features.length === 0 ? (
-            <div className="rounded-3 border-line-2 bg-bg-2/50 flex h-full flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
-              <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
-                <FolderTree className="h-6 w-6" strokeWidth={1.5} />
-              </div>
-              <div className="flex flex-col gap-1">
-                {searchQuery.trim() ? (
-                  <>
-                    <p className="typo-h3-heading text-text-1">검색 결과가 없습니다.</p>
-                    <p className="typo-body2-normal text-text-3">다른 키워드로 검색해보세요.</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="typo-h3-heading text-text-1">아직 기능이 없습니다.</p>
-                    <p className="typo-body2-normal text-text-3">
-                      새 기능을 만들거나 AI 요구사항 분석으로 시작해보세요.
-                    </p>
-                  </>
-                )}
-              </div>
+      <section className="col-span-6 grid min-h-0 gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="border-line-2 bg-bg-2 rounded-3 flex min-h-0 flex-col overflow-hidden border">
+          <div className="border-line-2 flex items-center justify-between gap-4 border-b px-5 py-4">
+            <div className="min-w-0">
+              <h2 className="typo-body1-heading text-text-1">기능별 시나리오</h2>
+              <p className="typo-label-normal text-text-3 mt-0.5">
+                {searchQuery.trim()
+                  ? `검색 결과 ${features.length}개 / 전체 ${allFeatures.length}개`
+                  : `전체 ${allFeatures.length}개 기능 · 시나리오 ${totalScenarioCount}개`}
+              </p>
             </div>
-          ) : (
-            features.map((f) => (
-              <Link
-                key={f.id ?? 'manual'}
-                href={hrefFor(f)}
-                className="rounded-3 border-line-2 bg-bg-2 hover:border-primary/40 flex flex-col gap-2.5 border px-5 py-4 transition-colors"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="typo-body1-heading text-text-1 truncate">{f.title}</h3>
-                    {f.summary && (
-                      <p className="typo-body2-normal text-text-3 mt-1 line-clamp-2 whitespace-pre-line">
-                        {f.summary}
-                      </p>
-                    )}
+            <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-1">
+              상태별 관리
+            </span>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {features.length === 0 ? (
+              <div className="grid h-full min-h-[360px] overflow-hidden lg:grid-cols-[minmax(0,1fr)_18rem]">
+                <div className="flex min-w-0 flex-col justify-center px-8 py-10">
+                  <div className="bg-bg-3 text-primary border-line-2 rounded-3 flex h-11 w-11 items-center justify-center border">
+                    <FolderTree className="h-5 w-5" strokeWidth={1.7} />
                   </div>
-                  {f.isManual && (
-                    <span className="typo-caption text-text-4 bg-bg-3 shrink-0 rounded-full px-2 py-0.5">
-                      수동
-                    </span>
+                  {searchQuery.trim() ? (
+                    <>
+                      <h3 className="typo-h2-heading text-text-1 mt-5">검색 결과가 없습니다.</h3>
+                      <p className="typo-body2-normal text-text-3 mt-2 max-w-xl">
+                        기능 이름이나 요약에 포함된 다른 키워드로 다시 검색해보세요.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="typo-h2-heading text-text-1 mt-5">
+                        첫 기능을 만들고 시나리오를 정리하세요.
+                      </h3>
+                      <p className="typo-body2-normal text-text-3 mt-2 max-w-xl">
+                        직접 기능을 만들거나 AI 요구사항 분석에서 기능과 시나리오를 생성할 수
+                        있습니다.
+                      </p>
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={onNewOpen}
+                          disabled={!projectId}
+                          className="bg-primary hover:bg-primary/90 typo-label-heading rounded-2 inline-flex h-9 items-center justify-center gap-2 px-4 text-white transition-colors disabled:opacity-50"
+                        >
+                          <Plus className="h-4 w-4" />새 기능
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onAiOpen}
+                          disabled={!projectId}
+                          className="border-line-2 bg-bg-3 hover:bg-bg-1 typo-label-heading text-text-2 rounded-2 inline-flex h-9 items-center justify-center gap-2 border px-4 transition-colors disabled:opacity-50"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          AI 분석
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
-                <div className="text-text-3 flex flex-wrap items-center gap-3">
-                  <span className="typo-label-normal flex items-center gap-1.5">
-                    <ListChecks className="h-3.5 w-3.5" />
-                    시나리오 {f.scenarioCount}개
-                  </span>
-                  {STATUS_ORDER.filter((s) => f.statusCounts[s] > 0).map((s) => (
-                    <span
-                      key={s}
-                      className={`typo-caption rounded-full px-2 py-0.5 ${SCENARIO_STATUS_META[s].cls}`}
+                <div className="border-line-2 bg-bg-1/60 flex flex-col justify-center gap-4 border-t px-6 py-8 lg:border-t-0 lg:border-l">
+                  <div>
+                    <p className="typo-label-heading text-text-2">관리 기준</p>
+                    <ul className="typo-label-normal text-text-4 mt-2 flex flex-col gap-1.5">
+                      <li>기능별 시나리오 묶음</li>
+                      <li>초안·검토·확정 상태</li>
+                      <li>스위트 저장 전 검토 흐름</li>
+                    </ul>
+                  </div>
+                  <div className="border-line-2 border-t pt-4">
+                    <p className="typo-label-heading text-text-2">다음 단계</p>
+                    <p className="typo-label-normal text-text-4 mt-1">
+                      기능을 선택해 시나리오를 보강한 뒤 테스트 스위트로 저장합니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="min-h-full">
+                <div className="border-line-2 text-text-4 grid grid-cols-[minmax(0,1fr)_7rem_12rem_6rem] gap-4 border-b px-5 py-2.5 text-xs max-lg:hidden">
+                  <span>기능</span>
+                  <span>시나리오</span>
+                  <span>상태</span>
+                  <span>생성</span>
+                </div>
+                <div className="divide-line-2 divide-y">
+                  {features.map((f) => (
+                    <Link
+                      key={f.id ?? 'manual'}
+                      href={hrefFor(f)}
+                      className="group hover:bg-bg-3 grid gap-3 px-5 py-4 transition-colors lg:grid-cols-[minmax(0,1fr)_7rem_12rem_6rem] lg:items-center lg:gap-4"
                     >
-                      {SCENARIO_STATUS_META[s].label} {f.statusCounts[s]}
-                    </span>
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <FileText
+                            className="text-primary h-4 w-4 shrink-0"
+                            strokeWidth={1.8}
+                            aria-hidden="true"
+                          />
+                          <h3 className="typo-body1-heading text-text-1 group-hover:text-primary truncate">
+                            {f.title}
+                          </h3>
+                          {f.isManual && (
+                            <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-0.5">
+                              수동
+                            </span>
+                          )}
+                        </div>
+                        {f.summary && (
+                          <p className="typo-body2-normal text-text-3 mt-1.5 line-clamp-2 whitespace-pre-line lg:line-clamp-1">
+                            {f.summary}
+                          </p>
+                        )}
+                        <div className="text-text-4 mt-2 flex flex-wrap gap-x-3 gap-y-1 lg:hidden">
+                          <span className="typo-label-normal">시나리오 {f.scenarioCount}개</span>
+                          {STATUS_ORDER.filter((s) => f.statusCounts[s] > 0).map((s) => (
+                            <span key={s} className="typo-label-normal">
+                              {SCENARIO_STATUS_META[s].label} {f.statusCounts[s]}
+                            </span>
+                          ))}
+                          <span className="typo-label-normal">{formatDate(f.createdAt)}</span>
+                        </div>
+                      </div>
+                      <span className="typo-label-normal text-text-3 hidden lg:flex lg:items-center lg:gap-1.5">
+                        <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+                        {f.scenarioCount}
+                      </span>
+                      <div className="hidden flex-wrap gap-1.5 lg:flex">
+                        {STATUS_ORDER.filter((s) => f.statusCounts[s] > 0).map((s) => (
+                          <span
+                            key={s}
+                            className={`typo-caption rounded-full px-2 py-0.5 ${SCENARIO_STATUS_META[s].cls}`}
+                          >
+                            {SCENARIO_STATUS_META[s].label} {f.statusCounts[s]}
+                          </span>
+                        ))}
+                      </div>
+                      <span className="typo-label-normal text-text-4 hidden lg:flex lg:items-center lg:gap-1.5">
+                        <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                        {formatDate(f.createdAt)}
+                      </span>
+                    </Link>
                   ))}
                 </div>
-              </Link>
-            ))
-          )}
+              </div>
+            )}
+          </div>
         </div>
+
+        <aside className="hidden min-h-0 flex-col gap-4 lg:flex">
+          <div className="border-line-2 bg-bg-2 rounded-3 border p-4">
+            <h2 className="typo-body1-heading text-text-1">상태 요약</h2>
+            <div className="mt-4 flex flex-col gap-2">
+              {statusTotals.map(({ status, count }) => (
+                <div key={status} className="flex items-center justify-between gap-3">
+                  <span
+                    className={`typo-caption rounded-full px-2 py-0.5 ${SCENARIO_STATUS_META[status].cls}`}
+                  >
+                    {SCENARIO_STATUS_META[status].label}
+                  </span>
+                  <span className="typo-label-heading text-text-1">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-line-2 bg-bg-2 rounded-3 border p-4">
+            <h2 className="typo-body1-heading text-text-1">작업 흐름</h2>
+            <ol className="mt-4 flex flex-col gap-3">
+              {[
+                ['1', '기능 선택', '요구사항 단위로 시나리오를 묶습니다.'],
+                ['2', '상태 정리', '초안·검토·확정 상태를 관리합니다.'],
+                ['3', '스위트 저장', '검증할 시나리오를 실행 묶음으로 전환합니다.'],
+              ].map(([step, title, desc]) => (
+                <li key={step} className="flex gap-3">
+                  <span className="bg-bg-3 text-text-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs">
+                    {step}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="typo-label-heading text-text-2 block">{title}</span>
+                    <span className="typo-label-normal text-text-4 mt-0.5 block">{desc}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="border-primary/20 bg-primary/5 rounded-3 border p-4">
+            <h2 className="typo-body1-heading text-text-1">다음 추천 작업</h2>
+            <p className="typo-body2-normal text-text-3 mt-2">
+              {latestFeature
+                ? `${latestFeature.title} 기능의 시나리오를 검토하고 확정 상태로 정리하세요.`
+                : '첫 기능을 만들고 테스트 시나리오를 추가하세요.'}
+            </p>
+            {latestFeature ? (
+              <Link
+                href={hrefFor(latestFeature)}
+                className="typo-label-heading text-primary mt-3 inline-flex"
+              >
+                기능 열기
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={onNewOpen}
+                disabled={!projectId}
+                className="typo-label-heading text-primary mt-3 inline-flex disabled:opacity-50"
+              >
+                새 기능 만들기
+              </button>
+            )}
+          </div>
+        </aside>
       </section>
 
       {isNewOpen && projectId && (
