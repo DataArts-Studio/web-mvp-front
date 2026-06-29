@@ -111,15 +111,14 @@ export const RequirementsView = () => {
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1280px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-5 overflow-hidden px-10 py-8">
       <header className="col-span-6 flex min-w-0 flex-col gap-1.5">
-        <p className="typo-caption text-primary">AI 요구사항 분석</p>
+        <p className="typo-caption text-primary">요구사항 정리</p>
         <h1 className="typo-title-heading text-text-1">요구사항 생성</h1>
         <p className="typo-body1-normal text-text-3 max-w-2xl">
-          요구사항을 입력하면 분석서, 기능 요구사항, 테스트 시나리오를 생성하고 후속 작업으로
-          연결합니다.
+          요구사항 문서를 정리하고 기능 단위 시나리오로 이어지는 작업 목록을 관리합니다.
         </p>
       </header>
 
-      <ActionToolbar.Root ariaLabel="요구사항 분석 컨트롤">
+      <ActionToolbar.Root ariaLabel="요구사항 정리 컨트롤">
         <ActionToolbar.Group>
           <ActionToolbar.Search
             placeholder="제목·요약으로 검색"
@@ -135,7 +134,7 @@ export const RequirementsView = () => {
           disabled={!projectId}
         >
           <Plus className="h-4 w-4" />
-          <span className="leading-none">새 요구사항 분석</span>
+          <span className="leading-none">새 요구사항 정리</span>
         </ActionToolbar.Action>
       </ActionToolbar.Root>
 
@@ -143,7 +142,7 @@ export const RequirementsView = () => {
         <div className="border-line-2 bg-bg-2 rounded-3 flex min-h-0 flex-col overflow-hidden border">
           <div className="border-line-2 flex items-center justify-between gap-4 border-b px-5 py-4">
             <div className="min-w-0">
-              <h2 className="typo-body1-heading text-text-1">요구사항 분석</h2>
+              <h2 className="typo-body1-heading text-text-1">요구사항 정리</h2>
               <p className="typo-label-normal text-text-3 mt-0.5">
                 {searchQuery.trim()
                   ? `검색 결과 ${analyses.length}개 / 전체 ${allAnalyses.length}개`
@@ -172,11 +171,11 @@ export const RequirementsView = () => {
                   ) : (
                     <>
                       <h3 className="typo-h2-heading text-text-1 mt-5">
-                        첫 요구사항 분석을 시작하세요.
+                        아직 정리된 요구사항이 없습니다.
                       </h3>
                       <p className="typo-body2-normal text-text-3 mt-2 max-w-xl">
-                        기능 설명, 정책 문서, 회의록을 입력하면 분석 결과와 테스트 시나리오로
-                        이어지는 작업 단위를 만듭니다.
+                        기능 설명이나 정책 문서를 등록하면 시나리오 설계에 필요한 기준을 남길 수
+                        있습니다.
                       </p>
                       <button
                         type="button"
@@ -184,14 +183,14 @@ export const RequirementsView = () => {
                         disabled={!projectId}
                         className="bg-primary hover:bg-primary/90 typo-label-heading rounded-2 mt-5 inline-flex h-9 w-fit items-center justify-center gap-2 px-4 text-white transition-colors disabled:opacity-50"
                       >
-                        <Plus className="h-4 w-4" />새 요구사항 분석
+                        <Plus className="h-4 w-4" />새 요구사항 정리
                       </button>
                     </>
                   )}
                 </div>
                 <div className="border-line-2 bg-bg-1/60 flex flex-col justify-center gap-4 border-t px-6 py-8 lg:border-t-0 lg:border-l">
                   <div>
-                    <p className="typo-label-heading text-text-2">권장 입력</p>
+                    <p className="typo-label-heading text-text-2">입력하면 좋은 내용</p>
                     <ul className="typo-label-normal text-text-4 mt-2 flex flex-col gap-1.5">
                       <li>사용자 역할과 주요 행동</li>
                       <li>정상 흐름과 예외 조건</li>
@@ -199,9 +198,9 @@ export const RequirementsView = () => {
                     </ul>
                   </div>
                   <div className="border-line-2 border-t pt-4">
-                    <p className="typo-label-heading text-text-2">생성 후 이동</p>
+                    <p className="typo-label-heading text-text-2">연결되는 작업</p>
                     <p className="typo-label-normal text-text-4 mt-1">
-                      분석 결과를 확인한 뒤 시나리오 관리에서 케이스와 스위트로 확장합니다.
+                      정리한 요구사항은 시나리오 관리와 테스트 스위트 작성의 기준으로 사용됩니다.
                     </p>
                   </div>
                 </div>
@@ -209,7 +208,7 @@ export const RequirementsView = () => {
             ) : (
               <div className="min-h-full">
                 <div className="border-line-2 text-text-4 grid grid-cols-[minmax(0,1fr)_8rem_8rem_8rem] gap-4 border-b px-5 py-2.5 text-xs max-lg:hidden">
-                  <span>분석 결과</span>
+                  <span>항목</span>
                   <span>요구사항</span>
                   <span>시나리오</span>
                   <span>생성일</span>
@@ -272,12 +271,12 @@ export const RequirementsView = () => {
 
         <aside className="hidden min-h-0 flex-col gap-4 lg:flex">
           <div className="border-line-2 bg-bg-2 rounded-3 border p-4">
-            <h2 className="typo-body1-heading text-text-1">작업 흐름</h2>
+            <h2 className="typo-body1-heading text-text-1">검토 기준</h2>
             <ol className="mt-4 flex flex-col gap-3">
               {[
-                ['1', '요구사항 입력', '문서나 기능 설명을 분석합니다.'],
-                ['2', '시나리오 검토', '생성된 시나리오를 기능별로 정리합니다.'],
-                ['3', '스위트 저장', '실행 가능한 테스트 묶음으로 전환합니다.'],
+                ['1', '범위', '기능에 포함되는 동작과 제외할 동작을 나눕니다.'],
+                ['2', '예외', '실패 조건과 빈 값, 권한 차이를 확인합니다.'],
+                ['3', '검증', '시나리오와 스위트로 옮길 기준을 남깁니다.'],
               ].map(([step, title, desc]) => (
                 <li key={step} className="flex gap-3">
                   <span className="bg-bg-3 text-text-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs">
@@ -295,11 +294,11 @@ export const RequirementsView = () => {
           <div className="border-line-2 bg-bg-2 rounded-3 border p-4">
             <div className="flex items-center gap-2">
               <Languages className="text-text-3 h-4 w-4" />
-              <h2 className="typo-body1-heading text-text-1">언어 구성</h2>
+              <h2 className="typo-body1-heading text-text-1">문서 언어</h2>
             </div>
             <div className="mt-4 flex flex-col gap-2">
               {Object.keys(languageCount).length === 0 ? (
-                <p className="typo-label-normal text-text-4">아직 분석서가 없습니다.</p>
+                <p className="typo-label-normal text-text-4">아직 정리된 문서가 없습니다.</p>
               ) : (
                 Object.entries(languageCount).map(([language, count]) => (
                   <div key={language} className="flex items-center justify-between gap-3">
@@ -314,18 +313,18 @@ export const RequirementsView = () => {
           </div>
 
           <div className="border-primary/20 bg-primary/5 rounded-3 border p-4">
-            <h2 className="typo-body1-heading text-text-1">다음 추천 작업</h2>
+            <h2 className="typo-body1-heading text-text-1">최근 작업</h2>
             <p className="typo-body2-normal text-text-3 mt-2">
               {latestAnalysis
-                ? `${latestAnalysis.title} 분석서의 시나리오를 확인하고 테스트 스위트로 저장하세요.`
-                : '첫 요구사항 분석서를 생성해 테스트 설계 흐름을 시작하세요.'}
+                ? `${latestAnalysis.title} 항목에서 이어진 시나리오를 확인하세요.`
+                : '요구사항을 먼저 정리하면 시나리오 작성으로 이어갈 수 있습니다.'}
             </p>
             {latestAnalysis ? (
               <Link
                 href={`/projects/${slug}/scenarios/${latestAnalysis.id}`}
                 className="typo-label-heading text-primary mt-3 inline-flex"
               >
-                최신 분석서 열기
+                최근 항목 열기
               </Link>
             ) : (
               <button
@@ -334,7 +333,7 @@ export const RequirementsView = () => {
                 disabled={!projectId}
                 className="typo-label-heading text-primary mt-3 inline-flex disabled:opacity-50"
               >
-                새 분석 시작
+                새 요구사항 정리
               </button>
             )}
           </div>

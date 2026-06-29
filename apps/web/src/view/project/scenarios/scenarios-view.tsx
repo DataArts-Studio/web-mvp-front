@@ -111,11 +111,10 @@ export const ScenarioFeaturesView = () => {
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1280px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-5 overflow-hidden px-10 py-8">
       <header className="col-span-6 flex flex-col gap-1.5">
-        <p className="typo-caption text-primary">테스트 설계</p>
+        <p className="typo-caption text-primary">시나리오</p>
         <h1 className="typo-title-heading text-text-1">시나리오 관리</h1>
         <p className="typo-body1-normal text-text-3 max-w-2xl">
-          기능 단위로 테스트 시나리오를 검토하고 상태를 정리합니다. 기능을 선택하면 상세 시나리오
-          목록으로 이동합니다.
+          기능별 시나리오와 상태를 확인하고 테스트 스위트로 넘길 항목을 정리합니다.
         </p>
       </header>
 
@@ -136,7 +135,7 @@ export const ScenarioFeaturesView = () => {
             disabled={!projectId}
           >
             <Sparkles className="h-4 w-4" />
-            <span className="leading-none">AI 요구사항 분석</span>
+            <span className="leading-none">요구사항 정리</span>
           </ActionToolbar.Action>
           <ActionToolbar.Action
             size="small"
@@ -184,10 +183,10 @@ export const ScenarioFeaturesView = () => {
                   ) : (
                     <>
                       <h3 className="typo-h2-heading text-text-1 mt-5">
-                        첫 기능을 만들고 시나리오를 정리하세요.
+                        아직 등록된 기능이 없습니다.
                       </h3>
                       <p className="typo-body2-normal text-text-3 mt-2 max-w-xl">
-                        직접 기능을 만들거나 AI 요구사항 분석에서 기능과 시나리오를 생성할 수
+                        기능을 직접 추가하거나 정리된 요구사항에서 시나리오를 이어서 만들 수
                         있습니다.
                       </p>
                       <div className="mt-5 flex flex-wrap gap-2">
@@ -206,7 +205,7 @@ export const ScenarioFeaturesView = () => {
                           className="border-line-2 bg-bg-3 hover:bg-bg-1 typo-label-heading text-text-2 rounded-2 inline-flex h-9 items-center justify-center gap-2 border px-4 transition-colors disabled:opacity-50"
                         >
                           <Sparkles className="h-4 w-4" />
-                          AI 분석
+                          요구사항 정리
                         </button>
                       </div>
                     </>
@@ -214,17 +213,17 @@ export const ScenarioFeaturesView = () => {
                 </div>
                 <div className="border-line-2 bg-bg-1/60 flex flex-col justify-center gap-4 border-t px-6 py-8 lg:border-t-0 lg:border-l">
                   <div>
-                    <p className="typo-label-heading text-text-2">관리 기준</p>
+                    <p className="typo-label-heading text-text-2">검토할 항목</p>
                     <ul className="typo-label-normal text-text-4 mt-2 flex flex-col gap-1.5">
                       <li>기능별 시나리오 묶음</li>
                       <li>초안·검토·확정 상태</li>
-                      <li>스위트 저장 전 검토 흐름</li>
+                      <li>스위트로 묶을 대상</li>
                     </ul>
                   </div>
                   <div className="border-line-2 border-t pt-4">
-                    <p className="typo-label-heading text-text-2">다음 단계</p>
+                    <p className="typo-label-heading text-text-2">연결되는 작업</p>
                     <p className="typo-label-normal text-text-4 mt-1">
-                      기능을 선택해 시나리오를 보강한 뒤 테스트 스위트로 저장합니다.
+                      검토가 끝난 시나리오는 테스트 스위트에서 바로 사용할 수 있습니다.
                     </p>
                   </div>
                 </div>
@@ -303,7 +302,7 @@ export const ScenarioFeaturesView = () => {
 
         <aside className="hidden min-h-0 flex-col gap-4 lg:flex">
           <div className="border-line-2 bg-bg-2 rounded-3 border p-4">
-            <h2 className="typo-body1-heading text-text-1">상태 요약</h2>
+            <h2 className="typo-body1-heading text-text-1">상태별 개수</h2>
             <div className="mt-4 flex flex-col gap-2">
               {statusTotals.map(({ status, count }) => (
                 <div key={status} className="flex items-center justify-between gap-3">
@@ -319,12 +318,12 @@ export const ScenarioFeaturesView = () => {
           </div>
 
           <div className="border-line-2 bg-bg-2 rounded-3 border p-4">
-            <h2 className="typo-body1-heading text-text-1">작업 흐름</h2>
+            <h2 className="typo-body1-heading text-text-1">검토 기준</h2>
             <ol className="mt-4 flex flex-col gap-3">
               {[
-                ['1', '기능 선택', '요구사항 단위로 시나리오를 묶습니다.'],
-                ['2', '상태 정리', '초안·검토·확정 상태를 관리합니다.'],
-                ['3', '스위트 저장', '검증할 시나리오를 실행 묶음으로 전환합니다.'],
+                ['1', '범위', '기능 안에서 검증할 행동을 확인합니다.'],
+                ['2', '상태', '초안과 검토 완료 항목을 구분합니다.'],
+                ['3', '실행', '스위트에 넣을 시나리오만 남깁니다.'],
               ].map(([step, title, desc]) => (
                 <li key={step} className="flex gap-3">
                   <span className="bg-bg-3 text-text-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs">
@@ -340,11 +339,11 @@ export const ScenarioFeaturesView = () => {
           </div>
 
           <div className="border-primary/20 bg-primary/5 rounded-3 border p-4">
-            <h2 className="typo-body1-heading text-text-1">다음 추천 작업</h2>
+            <h2 className="typo-body1-heading text-text-1">최근 작업</h2>
             <p className="typo-body2-normal text-text-3 mt-2">
               {latestFeature
-                ? `${latestFeature.title} 기능의 시나리오를 검토하고 확정 상태로 정리하세요.`
-                : '첫 기능을 만들고 테스트 시나리오를 추가하세요.'}
+                ? `${latestFeature.title} 기능에서 정리 중인 시나리오를 확인하세요.`
+                : '기능을 먼저 등록하면 시나리오를 추가할 수 있습니다.'}
             </p>
             {latestFeature ? (
               <Link
