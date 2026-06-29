@@ -33,7 +33,7 @@ type Row = {
   precondition: string;
   steps: string[];
   expected: string;
-  reqs: number[];
+  dependsOn: number[];
 };
 
 const PRIORITY_LABEL: Record<Priority, string> = {
@@ -97,7 +97,7 @@ export const TestCaseExercise = ({
     precondition: '',
     steps: [''],
     expected: '',
-    reqs: index < reqTotal ? [index] : [],
+    dependsOn: [],
   });
   const [rows, setRows] = useState<Row[]>(() => [rowForIndex(0)]);
   const [result, setResult] = useState<GradeResult | null>(null);
@@ -108,7 +108,9 @@ export const TestCaseExercise = ({
   const named = rows.filter((r) => r.name.trim());
   const written = named.length;
   const coveredSet = new Set<number>();
-  named.forEach((r) => r.reqs.forEach((i) => coveredSet.add(i)));
+  named.forEach((_, i) => {
+    if (i < reqTotal) coveredSet.add(i);
+  });
   const reqCovered = coveredSet.size;
   const canSubmit = written >= 1;
 
@@ -132,11 +134,16 @@ export const TestCaseExercise = ({
         idx === ci && r.steps.length > 1 ? { ...r, steps: r.steps.filter((_, j) => j !== si) } : r
       )
     );
-  const toggleReq = (ci: number, ri: number) =>
+  const toggleDependency = (ci: number, dependencyIndex: number) =>
     setRows((rs) =>
       rs.map((r, idx) =>
         idx === ci
-          ? { ...r, reqs: r.reqs.includes(ri) ? r.reqs.filter((x) => x !== ri) : [...r.reqs, ri] }
+          ? {
+              ...r,
+              dependsOn: r.dependsOn.includes(dependencyIndex)
+                ? r.dependsOn.filter((x) => x !== dependencyIndex)
+                : [...r.dependsOn, dependencyIndex],
+            }
           : r
       )
     );
@@ -266,7 +273,7 @@ export const TestCaseExercise = ({
     'border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary w-full border px-3 text-sm transition-colors outline-none';
 
   return (
-    <section className="border-line-2 bg-bg-2 rounded-2xl border p-5 sm:p-6">
+    <section>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold">테스트 케이스 작성</h2>
         <span className="text-text-3 text-xs">
@@ -367,26 +374,26 @@ export const TestCaseExercise = ({
               className={`mt-2 resize-none py-2 ${fieldClass}`}
             />
 
-            {reqTotal > 0 && (
+            {i > 0 && (
               <div className="mt-2.5">
-                <span className="text-text-3 text-xs">연관 요구사항</span>
+                <span className="text-text-3 text-xs">종속 TC</span>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {/* 요구사항 총개수가 곧 작성할 케이스 수 힌트라서, 칩은 작성한 TC 개수만큼만 노출 */}
-                  {requirements.slice(0, rows.length).map((req, ri) => {
-                    const on = r.reqs.includes(ri);
+                  {rows.slice(0, i).map((candidate, dependencyIndex) => {
+                    const on = r.dependsOn.includes(dependencyIndex);
+                    const label = candidate.name.trim() || `TC-${dependencyIndex + 1}`;
                     return (
                       <button
-                        key={ri}
+                        key={dependencyIndex}
                         type="button"
-                        title={req}
-                        onClick={() => toggleReq(i, ri)}
-                        className={`rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                        title={`${label} 완료 후 실행`}
+                        onClick={() => toggleDependency(i, dependencyIndex)}
+                        className={`border px-2 py-0.5 text-xs transition-colors ${
                           on
                             ? 'border-primary bg-primary/15 text-primary'
                             : 'border-line-3 text-text-3 hover:text-text-1'
                         }`}
                       >
-                        요구 {ri + 1}
+                        TC-{dependencyIndex + 1}에 종속
                       </button>
                     );
                   })}

@@ -88,7 +88,7 @@ export const DefectReportExercise = ({
     'border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary w-full border px-3 text-sm transition-colors outline-none';
 
   return (
-    <section className="border-line-2 bg-bg-2 rounded-2xl border p-5 sm:p-6">
+    <section>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold">결함 리포트 작성</h2>
         <span className="text-text-3 text-xs">

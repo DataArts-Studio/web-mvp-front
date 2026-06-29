@@ -276,61 +276,73 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
     );
   }
 
-  // 매뉴얼 케이스(케이스 작성·버그 찾기): 얇은 메타바 + 좌 문제·요구사항(sticky) / 우 작성 폼
+  // 매뉴얼 케이스(케이스 작성·버그 찾기): 문제 읽기 흐름은 살리고 작성 영역은 풀높이 작업 화면으로 분리.
   if (challenge.modelTestCases || challenge.knownDefects) {
     return (
-      <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader containerClassName="max-w-6xl" />
-        <div className="border-line-2 border-b">
-          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5 sm:px-6">
-            <Link
-              href="/challenges"
-              aria-label="챌린지 목록"
-              className="text-text-3 hover:text-text-1 text-sm transition-colors"
-            >
-              ←
-            </Link>
-            <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
-            <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
-              {TRACK_LABEL[challenge.track]}
-            </span>
-            <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
-              {CATEGORY_LABEL[challenge.category]}
-            </span>
-            <span
-              className={`px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
-            >
-              {DIFFICULTY_LABEL[challenge.difficulty]}
-            </span>
+      <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans lg:h-screen lg:overflow-hidden">
+        <PlaygroundHeader containerClassName="max-w-none" />
+        <div className="border-line-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2.5 sm:px-6">
+          <Link
+            href="/challenges"
+            aria-label="챌린지 목록"
+            className="text-text-3 hover:text-text-1 text-sm transition-colors"
+          >
+            ←
+          </Link>
+          <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
+            {TRACK_LABEL[challenge.track]}
+          </span>
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
+            {CATEGORY_LABEL[challenge.category]}
+          </span>
+          <span
+            className={`px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+          >
+            {DIFFICULTY_LABEL[challenge.difficulty]}
+          </span>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <aside className="border-line-2 overflow-y-auto border-b p-5 sm:p-6 lg:w-2/5 lg:max-w-lg lg:border-r lg:border-b-0">
+            <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
+              {challenge.summary}
+            </p>
+            <div className="mt-6">
+              <RequirementList challenge={challenge} />
+            </div>
+            {challenge.knownDefects && challenge.sandboxSlug && (
+              <div className="border-line-2 bg-bg-2 mt-6 border p-4">
+                <h3 className="text-text-1 text-sm font-semibold">연습 대상</h3>
+                <p className="text-text-3 mt-1 text-xs leading-relaxed">
+                  결함 리포트는 실제 화면을 관찰하며 재현 절차와 실제 결과를 남기는 흐름이
+                  중요합니다.
+                </p>
+                <Link
+                  href={`/sandbox/${challenge.sandboxSlug}`}
+                  target="_blank"
+                  className="border-line-3 text-text-1 hover:bg-bg-3 mt-3 inline-flex h-9 items-center justify-center border px-4 text-sm transition-colors"
+                >
+                  연습 대상 열기 ↗
+                </Link>
+              </div>
+            )}
+          </aside>
+          <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+            {challenge.knownDefects ? (
+              <DefectReportExercise
+                slug={challenge.slug}
+                sandboxSlug={undefined}
+                knownDefects={challenge.knownDefects}
+              />
+            ) : (
+              <TestCaseExercise
+                slug={challenge.slug}
+                modelTestCases={challenge.modelTestCases!}
+                requirements={challenge.requirement}
+              />
+            )}
           </div>
         </div>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-          <div className="grid gap-8 lg:grid-cols-[2fr_3fr] lg:gap-10">
-            <div className="lg:sticky lg:top-24 lg:self-start">
-              <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
-                {challenge.summary}
-              </p>
-              <div className="mt-6">
-                <RequirementList challenge={challenge} />
-              </div>
-            </div>
-            <div>
-              {challenge.knownDefects ? (
-                <DefectReportExercise
-                  slug={challenge.slug}
-                  sandboxSlug={challenge.sandboxSlug}
-                  knownDefects={challenge.knownDefects}
-                />
-              ) : (
-                <TestCaseExercise
-                  slug={challenge.slug}
-                  modelTestCases={challenge.modelTestCases!}
-                  requirements={challenge.requirement}
-                />
-              )}
-            </div>
-          </div>
-        </main>
       </div>
     );
   }
