@@ -32,19 +32,6 @@ const LANGUAGE_LABEL: Record<string, string> = {
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
-const statItems = (analyses: RequirementAnalysisListItem[]) => {
-  const functionalCount = analyses.reduce((sum, item) => sum + item.functionalCount, 0);
-  const scenarioCount = analyses.reduce((sum, item) => sum + item.scenarioCount, 0);
-  const savedSuiteCount = analyses.reduce((sum, item) => sum + item.savedSuiteCount, 0);
-
-  return [
-    { label: '분석서', value: analyses.length, icon: FileText },
-    { label: '기능 요구사항', value: functionalCount, icon: ListChecks },
-    { label: '시나리오', value: scenarioCount, icon: FolderTree },
-    { label: '저장된 스위트', value: savedSuiteCount, icon: Sparkles },
-  ];
-};
-
 export const RequirementsView = () => {
   const params = useParams();
   const slug = params.slug as string;
@@ -85,7 +72,6 @@ export const RequirementsView = () => {
     );
   }, [allAnalyses, searchQuery]);
 
-  const stats = useMemo(() => statItems(allAnalyses), [allAnalyses]);
   const latestAnalysis = allAnalyses[0];
   const languageCount = useMemo(
     () =>
@@ -124,29 +110,13 @@ export const RequirementsView = () => {
 
   return (
     <MainContainer className="mx-auto grid h-screen w-full max-w-[1280px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-5 overflow-hidden px-10 py-8">
-      <header className="col-span-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <p className="typo-caption text-primary">AI 요구사항 분석</p>
-          <h1 className="typo-title-heading text-text-1">요구사항 생성</h1>
-          <p className="typo-body1-normal text-text-3 max-w-2xl">
-            요구사항을 입력하면 분석서, 기능 요구사항, 테스트 시나리오를 생성하고 후속 작업으로
-            연결합니다.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:w-[30rem]">
-          {stats.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.label} className="border-line-2 bg-bg-2 rounded-3 border px-3 py-2.5">
-                <div className="text-text-3 flex items-center gap-1.5">
-                  <Icon className="h-3.5 w-3.5" />
-                  <span className="typo-caption truncate">{item.label}</span>
-                </div>
-                <p className="typo-h3-heading text-text-1 mt-1">{item.value}</p>
-              </div>
-            );
-          })}
-        </div>
+      <header className="col-span-6 flex min-w-0 flex-col gap-1.5">
+        <p className="typo-caption text-primary">AI 요구사항 분석</p>
+        <h1 className="typo-title-heading text-text-1">요구사항 생성</h1>
+        <p className="typo-body1-normal text-text-3 max-w-2xl">
+          요구사항을 입력하면 분석서, 기능 요구사항, 테스트 시나리오를 생성하고 후속 작업으로
+          연결합니다.
+        </p>
       </header>
 
       <ActionToolbar.Root ariaLabel="요구사항 분석 컨트롤">
