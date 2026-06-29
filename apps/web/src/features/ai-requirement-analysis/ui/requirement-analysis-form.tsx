@@ -47,7 +47,7 @@ export const RequirementAnalysisForm = ({
             type="button"
             onClick={() => onLanguageChange(l)}
             className={cn(
-              'typo-caption rounded-full px-2.5 py-0.5 transition-colors',
+              'typo-caption rounded-2 px-2.5 py-0.5 transition-colors',
               language === l
                 ? 'bg-primary/10 text-primary'
                 : 'bg-bg-3 text-text-3 hover:text-text-1'

@@ -135,7 +135,7 @@ export const RequirementsView = () => {
                     : `전체 ${allAnalyses.length}개 분석`}
                 </p>
               </div>
-              <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-1">
+              <span className="typo-caption bg-bg-3 text-text-3 rounded-2 shrink-0 px-2 py-1">
                 최신순
               </span>
             </div>
@@ -148,7 +148,7 @@ export const RequirementsView = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="제목·요약으로 검색"
-                className="border-line-2 bg-bg-1 typo-body2-normal text-text-1 placeholder:text-text-4 focus:border-primary h-9 w-full rounded-full border px-9 transition-colors outline-none"
+                className="border-line-2 bg-bg-1 typo-body2-normal text-text-1 placeholder:text-text-4 focus:border-primary rounded-2 h-9 w-full border px-9 transition-colors outline-none"
               />
             </div>
           </div>
@@ -229,7 +229,7 @@ export const RequirementsView = () => {
                           <h3 className="typo-body1-heading text-text-1 group-hover:text-primary truncate">
                             {a.title}
                           </h3>
-                          <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-0.5">
+                          <span className="typo-caption bg-bg-3 text-text-3 rounded-2 shrink-0 px-2 py-0.5">
                             {LANGUAGE_LABEL[a.language] ?? a.language}
                           </span>
                         </div>
@@ -278,7 +278,7 @@ export const RequirementsView = () => {
                 ['3', '검증', '시나리오와 스위트로 옮길 기준을 남깁니다.'],
               ].map(([step, title, desc]) => (
                 <li key={step} className="flex gap-3">
-                  <span className="bg-bg-3 text-text-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs">
+                  <span className="bg-bg-3 text-text-2 rounded-2 flex h-6 w-6 shrink-0 items-center justify-center text-xs">
                     {step}
                   </span>
                   <span className="min-w-0">

@@ -62,7 +62,7 @@ export const RequirementAnalysisPreview = ({
             {analysis.functionalRequirements.map((fr) => (
               <div key={fr.id} className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="typo-caption bg-bg-3 text-text-3 rounded-full px-2 py-0.5">
+                  <span className="typo-caption bg-bg-3 text-text-3 rounded-2 px-2 py-0.5">
                     {fr.id}
                   </span>
                   <span className="typo-body2-heading text-text-1">{fr.title}</span>
@@ -167,9 +167,7 @@ export const RequirementAnalysisPreview = ({
                     <span className="typo-body2-heading text-text-1 flex-1 truncate">
                       {scenario.name}
                     </span>
-                    <span
-                      className={cn('typo-caption shrink-0 rounded-full px-2 py-0.5', type.cls)}
-                    >
+                    <span className={cn('typo-caption rounded-2 shrink-0 px-2 py-0.5', type.cls)}>
                       {type.text}
                     </span>
                   </div>
@@ -183,7 +181,7 @@ export const RequirementAnalysisPreview = ({
                       {scenario.relatedRequirementIds.map((rid) => (
                         <span
                           key={rid}
-                          className="typo-caption bg-bg-3 text-text-4 rounded-full px-2 py-0.5"
+                          className="typo-caption bg-bg-3 text-text-4 rounded-2 px-2 py-0.5"
                         >
                           {rid}
                         </span>

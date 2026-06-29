@@ -161,7 +161,7 @@ export const ScenarioFeaturesView = () => {
                     : `전체 ${allFeatures.length}개 기능 · 시나리오 ${totalScenarioCount}개`}
                 </p>
               </div>
-              <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-1">
+              <span className="typo-caption bg-bg-3 text-text-3 rounded-2 shrink-0 px-2 py-1">
                 상태별 관리
               </span>
             </div>
@@ -174,7 +174,7 @@ export const ScenarioFeaturesView = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="기능 이름·요약으로 검색"
-                className="border-line-2 bg-bg-1 typo-body2-normal text-text-1 placeholder:text-text-4 focus:border-primary h-9 w-full rounded-full border px-9 transition-colors outline-none"
+                className="border-line-2 bg-bg-1 typo-body2-normal text-text-1 placeholder:text-text-4 focus:border-primary rounded-2 h-9 w-full border px-9 transition-colors outline-none"
               />
             </div>
           </div>
@@ -267,7 +267,7 @@ export const ScenarioFeaturesView = () => {
                             {f.title}
                           </h3>
                           {f.isManual && (
-                            <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-0.5">
+                            <span className="typo-caption bg-bg-3 text-text-3 rounded-2 shrink-0 px-2 py-0.5">
                               수동
                             </span>
                           )}
@@ -295,7 +295,7 @@ export const ScenarioFeaturesView = () => {
                         {STATUS_ORDER.filter((s) => f.statusCounts[s] > 0).map((s) => (
                           <span
                             key={s}
-                            className={`typo-caption rounded-full px-2 py-0.5 ${SCENARIO_STATUS_META[s].cls}`}
+                            className={`typo-caption rounded-2 px-2 py-0.5 ${SCENARIO_STATUS_META[s].cls}`}
                           >
                             {SCENARIO_STATUS_META[s].label} {f.statusCounts[s]}
                           </span>
@@ -320,7 +320,7 @@ export const ScenarioFeaturesView = () => {
               {statusTotals.map(({ status, count }) => (
                 <div key={status} className="flex items-center justify-between gap-3">
                   <span
-                    className={`typo-caption rounded-full px-2 py-0.5 ${SCENARIO_STATUS_META[status].cls}`}
+                    className={`typo-caption rounded-2 px-2 py-0.5 ${SCENARIO_STATUS_META[status].cls}`}
                   >
                     {SCENARIO_STATUS_META[status].label}
                   </span>
@@ -339,7 +339,7 @@ export const ScenarioFeaturesView = () => {
                 ['3', '실행', '스위트에 넣을 시나리오만 남깁니다.'],
               ].map(([step, title, desc]) => (
                 <li key={step} className="flex gap-3">
-                  <span className="bg-bg-3 text-text-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs">
+                  <span className="bg-bg-3 text-text-2 rounded-2 flex h-6 w-6 shrink-0 items-center justify-center text-xs">
                     {step}
                   </span>
                   <span className="min-w-0">
