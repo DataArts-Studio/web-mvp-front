@@ -597,6 +597,11 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
           { path: 'data', type: 'array', required: true, desc: '상품 배열' },
           { path: 'data.0.id', type: 'number', required: true },
           { path: 'data.0.name', type: 'string', required: true },
+          { path: 'data.0.category', type: 'string', required: true },
+          { path: 'data.0.price', type: 'number', required: true },
+          { path: 'data.0.inStock', type: 'boolean', required: true },
+          { path: 'page', type: 'number', required: true },
+          { path: 'limit', type: 'number', required: true },
           { path: 'total', type: 'number', required: true },
           { path: 'totalPages', type: 'number', required: true },
         ],
@@ -615,6 +620,7 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         response: [
           { path: 'id', type: 'number', required: true },
           { path: 'name', type: 'string', required: true },
+          { path: 'category', type: 'string', required: true },
           { path: 'price', type: 'number', required: true },
           { path: 'inStock', type: 'boolean', required: true },
         ],
@@ -653,7 +659,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         response: [
           { path: 'id', type: 'number', required: true },
           { path: 'name', type: 'string', required: true },
+          { path: 'category', type: 'string', required: true },
           { path: 'price', type: 'number', required: true },
+          { path: 'inStock', type: 'boolean', required: true },
         ],
         responseExample: {
           id: 13,

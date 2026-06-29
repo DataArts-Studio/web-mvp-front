@@ -33,6 +33,7 @@ type Row = {
   precondition: string;
   steps: string[];
   expected: string;
+  covers: number[];
   dependsOn: number[];
 };
 
@@ -103,6 +104,7 @@ export const TestCaseExercise = ({
     precondition: '',
     steps: [''],
     expected: '',
+    covers: index < reqTotal ? [index] : [],
     dependsOn: [],
   });
   const [rows, setRows] = useState<Row[]>(() => [rowForIndex(0)]);
@@ -114,8 +116,8 @@ export const TestCaseExercise = ({
   const named = rows.filter((r) => r.name.trim());
   const written = named.length;
   const coveredSet = new Set<number>();
-  named.forEach((_, i) => {
-    if (i < reqTotal) coveredSet.add(i);
+  named.forEach((r) => {
+    r.covers.forEach((reqIndex) => coveredSet.add(reqIndex));
   });
   const reqCovered = coveredSet.size;
   const canSubmit = written >= 1;
@@ -147,6 +149,13 @@ export const TestCaseExercise = ({
         message: '기대 결과를 관찰 가능한 상태로 더 구체화하세요.',
       });
     }
+    if (r.covers.length === 0 && r.name.trim()) {
+      issues.push({
+        caseNo: index + 1,
+        severity: 'error',
+        message: '검증할 요구사항을 하나 이상 선택하세요.',
+      });
+    }
     if (index > 0 && r.dependsOn.length === 0 && r.name.trim()) {
       issues.push({
         caseNo: index + 1,
@@ -171,7 +180,20 @@ export const TestCaseExercise = ({
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [key]: v } : r)));
   const addRow = () => setRows((rs) => [...rs, rowForIndex(rs.length)]);
   const removeRow = (i: number) =>
-    setRows((rs) => (rs.length > 1 ? rs.filter((_, idx) => idx !== i) : rs));
+    setRows((rs) =>
+      rs.length > 1
+        ? rs
+            .filter((_, idx) => idx !== i)
+            .map((r) => ({
+              ...r,
+              dependsOn: r.dependsOn
+                .filter((dependencyIndex) => dependencyIndex !== i)
+                .map((dependencyIndex) =>
+                  dependencyIndex > i ? dependencyIndex - 1 : dependencyIndex
+                ),
+            }))
+        : rs
+    );
 
   const updateStep = (ci: number, si: number, v: string) =>
     setRows((rs) =>
@@ -200,6 +222,19 @@ export const TestCaseExercise = ({
           : r
       )
     );
+  const toggleCoverage = (ci: number, reqIndex: number) =>
+    setRows((rs) =>
+      rs.map((r, idx) =>
+        idx === ci
+          ? {
+              ...r,
+              covers: r.covers.includes(reqIndex)
+                ? r.covers.filter((x) => x !== reqIndex)
+                : [...r.covers, reqIndex].sort((a, b) => a - b),
+            }
+          : r
+      )
+    );
 
   // AI 채점 시도. 키 미설정·오류·타임아웃이면 null → 커버리지로 폴백한다.
   const fetchAiGrade = async (): Promise<AiGrade | null> => {
@@ -217,6 +252,7 @@ export const TestCaseExercise = ({
               precondition: r.precondition,
               steps: r.steps.filter((s) => s.trim()),
               expected: r.expected,
+              covers: r.covers.map((reqIndex) => '요구-' + (reqIndex + 1)),
               dependsOn: r.dependsOn.map((dependencyIndex) => 'TC-' + (dependencyIndex + 1)),
             })),
           },
@@ -456,6 +492,30 @@ export const TestCaseExercise = ({
               placeholder="기대 결과 — 예: 적용되지 않고 안내가 표시됨"
               className={`mt-2 resize-none py-2 ${fieldClass}`}
             />
+
+            <div className="mt-2.5">
+              <span className="text-text-3 text-xs">요구사항 커버리지</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {requirements.map((requirement, reqIndex) => {
+                  const on = r.covers.includes(reqIndex);
+                  return (
+                    <button
+                      key={requirement}
+                      type="button"
+                      title={requirement}
+                      onClick={() => toggleCoverage(i, reqIndex)}
+                      className={`border px-2 py-0.5 text-xs transition-colors ${
+                        on
+                          ? 'border-primary bg-primary/15 text-primary'
+                          : 'border-line-3 text-text-3 hover:text-text-1'
+                      }`}
+                    >
+                      요구 {reqIndex + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {i > 0 && (
               <div className="mt-2.5">

@@ -260,6 +260,21 @@ function endpointKey(endpoint: ApiEndpoint): string {
   return `${endpoint.method} ${endpoint.path}`;
 }
 
+function defaultExpectedForKind(kind: AssertKind) {
+  if (kind === 'status') return '200';
+  if (kind === 'type') return 'string';
+  if (kind === 'arrayLength') return '0';
+  return '';
+}
+
+function executablePathForEndpoint(path: string) {
+  return path.replace(/:([A-Za-z_$][\w$]*)/g, (_, name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.endsWith('id') || lower.includes('id')) return '1';
+    return 'demo';
+  });
+}
+
 function SchemaFieldList({ title, fields }: { title: string; fields?: ApiSchemaField[] }) {
   if (!fields?.length) return null;
 
@@ -481,7 +496,7 @@ export const ApiTesterExercise = ({
         id: nextId++,
         kind,
         path: '',
-        expected: kind === 'type' ? 'string' : kind === 'arrayLength' ? '0' : '',
+        expected: defaultExpectedForKind(kind),
       },
     ]);
   const removeAssertion = (id: number) => setAssertions((as) => as.filter((a) => a.id !== id));
@@ -489,18 +504,18 @@ export const ApiTesterExercise = ({
   const applyEndpoint = (endpoint: ApiEndpoint) => {
     setSelectedEndpointKey(endpointKey(endpoint));
     setMethod(endpoint.method);
-    setPath(endpoint.path);
-    if (endpoint.body?.length) {
-      setBody(
-        JSON.stringify(
-          Object.fromEntries(
-            endpoint.body.map((field) => [field.path, defaultValueForSchemaType(field.type)])
-          ),
-          null,
-          2
-        )
-      );
-    }
+    setPath(executablePathForEndpoint(endpoint.path));
+    setBody(
+      endpoint.body?.length
+        ? JSON.stringify(
+            Object.fromEntries(
+              endpoint.body.map((field) => [field.path, defaultValueForSchemaType(field.type)])
+            ),
+            null,
+            2
+          )
+        : ''
+    );
   };
 
   const run = async () => {
@@ -574,8 +589,9 @@ export const ApiTesterExercise = ({
         };
       });
 
-      const scriptResults = script.trim()
-        ? runPmScript(script, { status: res.status, json, bodyText })
+      const userScript = script.trim() === DEFAULT_SCRIPT.trim() ? '' : script;
+      const scriptResults = userScript.trim()
+        ? runPmScript(userScript, { status: res.status, json, bodyText })
         : [];
 
       const attempt: ApiAttemptForGrade = {
@@ -583,7 +599,7 @@ export const ApiTesterExercise = ({
         path,
         status: res.status,
         assertions,
-        script,
+        script: userScript,
         checks,
         scriptResults,
       };
@@ -632,7 +648,7 @@ export const ApiTesterExercise = ({
           path,
           headers: redactHeaders(headers),
           assertions,
-          script,
+          script: userScript,
           attempts: nextAttempts,
         },
         result: { passed, total: totalChecks },
@@ -918,7 +934,11 @@ export const ApiTesterExercise = ({
                     <select
                       value={a.kind}
                       onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                        updateAssertion(a.id, { kind: e.target.value as AssertKind })
+                        updateAssertion(a.id, {
+                          kind: e.target.value as AssertKind,
+                          path: e.target.value === 'status' ? '' : a.path,
+                          expected: defaultExpectedForKind(e.target.value as AssertKind),
+                        })
                       }
                       className={`h-9 ${fieldClass}`}
                     >
@@ -1022,10 +1042,18 @@ export const ApiTesterExercise = ({
         role="separator"
         aria-orientation="horizontal"
         aria-label="API 결과 높이 조절"
+        aria-valuemin={120}
+        aria-valuemax={520}
+        aria-valuenow={resultH}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowUp') setResultH((h) => Math.min(h + 16, 520));
+          if (e.key === 'ArrowDown') setResultH((h) => Math.max(h - 16, 120));
+        }}
         onPointerDown={onResizeDown}
         onPointerMove={onResizeMove}
         onPointerUp={onResizeUp}
-        className="border-line-2 bg-bg-2 hover:bg-primary/20 group flex h-2 shrink-0 cursor-row-resize touch-none items-center justify-center border-t transition-colors"
+        className="border-line-2 bg-bg-2 hover:bg-primary/20 focus:bg-primary/20 group flex h-2 shrink-0 cursor-row-resize touch-none items-center justify-center border-t transition-colors outline-none"
       >
         <span
           aria-hidden
