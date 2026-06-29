@@ -13,7 +13,9 @@ export const Pagination = ({
   onPageChange,
   className,
 }: PaginationProps) => {
-  const pages = totalPages || 1;
+  if (totalPages <= 1) return null;
+
+  const pages = totalPages;
 
   return (
     <div className={cn('flex items-center justify-center px-6 py-3', className)}>
