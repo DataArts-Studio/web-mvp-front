@@ -7,10 +7,12 @@ import { IssueReportButton } from './issue-report-button';
 export const PlaygroundHeader = ({
   containerClassName = 'max-w-5xl',
   showIssueReportButton = true,
+  authVariant = 'inline',
 }: {
   /** 내부 컨테이너 max-width. 상세 페이지는 콘텐츠 폭에 맞춘다(자동화=full, 매뉴얼=6xl 등). */
   containerClassName?: string;
   showIssueReportButton?: boolean;
+  authVariant?: 'inline' | 'dropdown';
 } = {}) => {
   return (
     <header className="border-line-2 bg-bg-1/80 sticky top-0 z-50 border-b backdrop-blur">
@@ -36,7 +38,7 @@ export const PlaygroundHeader = ({
           >
             커뮤니티
           </Link>
-          <AuthStatus />
+          <AuthStatus variant={authVariant} />
           {showIssueReportButton ? <IssueReportButton /> : null}
         </div>
       </div>

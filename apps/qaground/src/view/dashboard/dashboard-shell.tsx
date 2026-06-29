@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { CHALLENGES } from '@/shared/challenges/registry';
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
 import { createSupabaseBrowserAuthClient } from '@testea/db/src/client/supabase/auth-client';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   ChevronDown,
   LayoutDashboard,
@@ -61,6 +62,7 @@ export function DashboardShell({
   const [authState, setAuthState] = useState<AuthState>('checking');
   const [user, setUser] = useState<DashboardUser | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!supabase) {
@@ -106,7 +108,11 @@ export function DashboardShell({
   if (authState === 'checking') {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
+        <PlaygroundHeader
+          containerClassName="max-w-7xl"
+          showIssueReportButton={false}
+          authVariant="dropdown"
+        />
         <main className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-4 py-16 sm:px-6">
           <p className="text-text-2 text-sm">로그인 상태를 확인하고 있습니다...</p>
         </main>
@@ -117,7 +123,11 @@ export function DashboardShell({
   if (authState === 'unavailable') {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
+        <PlaygroundHeader
+          containerClassName="max-w-7xl"
+          showIssueReportButton={false}
+          authVariant="dropdown"
+        />
         <main className="mx-auto flex w-full max-w-5xl flex-1 items-center px-4 py-16 sm:px-6">
           <section className="border-line-2 bg-bg-2 w-full rounded-lg border p-6">
             <h1 className="text-xl font-bold">로그인 환경변수가 필요합니다.</h1>
@@ -133,7 +143,11 @@ export function DashboardShell({
   if (authState !== 'authenticated') {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
+        <PlaygroundHeader
+          containerClassName="max-w-7xl"
+          showIssueReportButton={false}
+          authVariant="dropdown"
+        />
         <main className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-4 py-16 sm:px-6">
           <p className="text-text-2 text-sm">로그인 화면으로 이동하고 있습니다...</p>
         </main>
@@ -143,7 +157,11 @@ export function DashboardShell({
 
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-      <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
+      <PlaygroundHeader
+        containerClassName="max-w-7xl"
+        showIssueReportButton={false}
+        authVariant="dropdown"
+      />
       <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[248px_1fr] lg:py-10">
         <aside className="border-line-2 bg-bg-2 h-fit rounded-lg border p-4 lg:sticky lg:top-6">
           <div className="relative px-1 py-2">
@@ -203,7 +221,10 @@ export function DashboardShell({
             ) : null}
           </div>
 
-          <nav className="mt-4 grid gap-1" aria-label="대시보드 메뉴">
+          <nav
+            className="border-line-2 bg-bg-1 mt-4 grid gap-1 rounded-lg border p-1"
+            aria-label="대시보드 메뉴"
+          >
             {sidebarItems.map(({ key, label, href, icon: Icon }) => {
               const isActive = key === active;
               return (
@@ -217,7 +238,13 @@ export function DashboardShell({
                   }`}
                 >
                   <Icon size={16} aria-hidden="true" />
-                  {label}
+                  <span>{label}</span>
+                  {isActive ? (
+                    <motion.span
+                      layoutId="dashboard-active-menu-dot"
+                      className="bg-primary ml-auto size-1.5 rounded-full"
+                    />
+                  ) : null}
                 </Link>
               );
             })}
@@ -255,17 +282,28 @@ export function DashboardShell({
           </div>
         </aside>
 
-        <div className="min-w-0">
-          <header className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-            <div>
-              <p className="text-primary text-sm font-semibold">{eyebrow}</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>
-              <p className="text-text-2 mt-2 max-w-2xl text-sm">{description}</p>
-            </div>
-            {actions ? <div className="flex flex-wrap gap-2 xl:justify-end">{actions}</div> : null}
-          </header>
-          {children}
-        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={active}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+            animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="min-w-0"
+          >
+            <header className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+              <div>
+                <p className="text-primary text-sm font-semibold">{eyebrow}</p>
+                <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>
+                <p className="text-text-2 mt-2 max-w-2xl text-sm">{description}</p>
+              </div>
+              {actions ? (
+                <div className="flex flex-wrap gap-2 xl:justify-end">{actions}</div>
+              ) : null}
+            </header>
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState } from 'react';
 
@@ -10,6 +10,7 @@ import {
   DIFFICULTY_LABEL,
   TRACK_LABEL,
 } from '@/shared/challenges/registry';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Search } from 'lucide-react';
 
 import { DashboardShell } from './dashboard-shell';
@@ -55,6 +56,7 @@ function statusClass(status: ProblemRow['status']) {
 export function PracticeDashboardView() {
   const [query, setQuery] = useState('');
   const [year, setYear] = useState<(typeof YEARS)[number]>('전체');
+  const shouldReduceMotion = useReducedMotion();
 
   const filteredRows = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -70,6 +72,9 @@ export function PracticeDashboardView() {
       return matchesYear && matchesKeyword;
     });
   }, [query, year]);
+
+  const enterHidden = shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 };
+  const enterVisible = shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 };
 
   return (
     <DashboardShell
@@ -88,7 +93,12 @@ export function PracticeDashboardView() {
         </Link>
       }
     >
-      <section className="border-line-2 bg-bg-2 rounded-lg border p-4">
+      <motion.section
+        initial={enterHidden}
+        animate={enterVisible}
+        transition={{ duration: 0.16, ease: 'easeOut' }}
+        className="border-line-2 bg-bg-2 rounded-lg border p-4"
+      >
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_160px]">
           <label className="border-line-2 bg-bg-1 focus-within:border-primary/60 flex h-11 items-center gap-3 rounded-md border px-3 transition-colors">
             <Search className="text-text-3" size={17} aria-hidden="true" />
@@ -119,9 +129,14 @@ export function PracticeDashboardView() {
           <span>{filteredRows.length}개 풀이 기록</span>
           <span>제출 이력 저장 API 연동 전까지는 예시 기록 1건만 표시합니다.</span>
         </div>
-      </section>
+      </motion.section>
 
-      <section className="border-line-2 bg-bg-2 mt-4 overflow-hidden rounded-lg border">
+      <motion.section
+        initial={enterHidden}
+        animate={enterVisible}
+        transition={{ duration: 0.18, delay: shouldReduceMotion ? 0 : 0.04, ease: 'easeOut' }}
+        className="border-line-2 bg-bg-2 mt-4 overflow-hidden rounded-lg border"
+      >
         <div className="border-line-2 text-text-3 hidden grid-cols-[88px_minmax(0,1.45fr)_96px_112px_104px_112px] border-b px-4 py-3 text-xs font-medium lg:grid">
           <span>상태</span>
           <span>문제</span>
@@ -132,8 +147,18 @@ export function PracticeDashboardView() {
         </div>
 
         <ul className="divide-line-2 divide-y">
-          {filteredRows.map((row) => (
-            <li key={row.slug}>
+          {filteredRows.map((row, index) => (
+            <motion.li
+              key={row.slug}
+              layout
+              initial={enterHidden}
+              animate={enterVisible}
+              transition={{
+                duration: 0.16,
+                delay: shouldReduceMotion ? 0 : index * 0.035,
+                ease: 'easeOut',
+              }}
+            >
               <Link
                 href={`/challenges/${row.slug}`}
                 className="hover:bg-bg-3/45 grid gap-3 px-4 py-4 transition-colors lg:grid-cols-[88px_minmax(0,1.45fr)_96px_112px_104px_112px] lg:items-center"
@@ -154,19 +179,24 @@ export function PracticeDashboardView() {
                 <span className="text-text-2 text-sm">{TRACK_LABEL[row.track]}</span>
                 <span className="text-text-3 text-sm lg:text-right">{row.lastActivity}</span>
               </Link>
-            </li>
+            </motion.li>
           ))}
         </ul>
 
         {filteredRows.length === 0 ? (
-          <div className="px-4 py-12 text-center">
+          <motion.div
+            initial={enterHidden}
+            animate={enterVisible}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="px-4 py-12 text-center"
+          >
             <p className="text-sm font-medium">풀이 기록이 없습니다.</p>
             <p className="text-text-3 mt-2 text-xs">
               검색어를 줄이거나 연도 필터를 전체로 바꿔보세요.
             </p>
-          </div>
+          </motion.div>
         ) : null}
-      </section>
+      </motion.section>
     </DashboardShell>
   );
 }
