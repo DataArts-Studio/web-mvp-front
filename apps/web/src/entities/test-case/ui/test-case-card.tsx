@@ -9,34 +9,11 @@ import { formatRelativeTime } from '@testea/util';
 import { cn } from '@testea/util';
 import { Copy, MoreHorizontal } from 'lucide-react';
 
-const STATUS_CONFIG: Record<
-  TestCaseResultStatus,
-  { bar: string; dot: string; label: string; badge: string }
-> = {
-  untested: {
-    bar: 'bg-text-4',
-    dot: 'bg-text-4',
-    label: 'Untested',
-    badge: 'bg-bg-3 text-text-3',
-  },
-  pass: {
-    bar: 'bg-emerald-500',
-    dot: 'bg-emerald-500',
-    label: 'Pass',
-    badge: 'bg-emerald-500/10 text-emerald-600',
-  },
-  fail: {
-    bar: 'bg-red-500',
-    dot: 'bg-red-500',
-    label: 'Fail',
-    badge: 'bg-red-500/10 text-red-600',
-  },
-  blocked: {
-    bar: 'bg-amber-500',
-    dot: 'bg-amber-500',
-    label: 'Blocked',
-    badge: 'bg-amber-500/10 text-amber-600',
-  },
+const STATUS_CONFIG: Record<TestCaseResultStatus, { dot: string; label: string }> = {
+  untested: { dot: 'bg-text-4', label: '미실행' },
+  pass: { dot: 'bg-emerald-500', label: '통과' },
+  fail: { dot: 'bg-red-500', label: '실패' },
+  blocked: { dot: 'bg-amber-500', label: '차단' },
 };
 
 interface TestCaseCardProps {
@@ -50,53 +27,35 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <div className="flex w-full min-w-0 items-stretch gap-0">
-      {/* Left color bar */}
-      <div className={cn('w-[3px] shrink-0 self-stretch rounded-full', status.bar)} />
+    <div className="grid w-full min-w-0 grid-cols-1 gap-2 md:grid-cols-[88px_minmax(0,1fr)_180px_96px_112px_32px] md:items-center md:gap-4">
+      <span className="typo-caption-heading text-text-4 tabular-nums">{testCase.caseKey}</span>
 
-      {/* Content */}
-      <div className="flex min-w-0 flex-1 flex-col gap-1 pl-3">
-        {/* Line 1: caseKey + title + time */}
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="typo-caption-normal text-text-3 shrink-0">{testCase.caseKey}</span>
-          <span className="typo-body2-normal text-text-1 group-hover:text-primary w-[600px] shrink-0 truncate transition-colors">
-            {testCase.title}
-          </span>
-          <span className="typo-caption-normal text-text-4 ml-auto shrink-0">
-            {formatRelativeTime(testCase.updatedAt)}
-          </span>
-        </div>
-
-        {/* Line 2: status badge + suite pill */}
-        <div className="flex items-center gap-2">
-          {testCase.resultStatus !== 'untested' && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                status.badge
-              )}
-            >
-              <span className={cn('h-1.5 w-1.5 rounded-full', status.dot)} />
-              {status.label}
-            </span>
-          )}
-
-          {testCase.suiteTitle && (
-            <span className="bg-bg-3 text-text-3 inline-flex max-w-[160px] items-center truncate rounded-full px-2 py-0.5 text-xs">
-              {testCase.suiteTitle}
-            </span>
-          )}
-        </div>
+      <div className="min-w-0">
+        <p className="typo-body2-heading text-text-1 group-hover:text-primary truncate transition-colors">
+          {testCase.title}
+        </p>
       </div>
 
-      {/* Hover-reveal menu */}
-      <div className="relative flex shrink-0 items-center pl-2">
+      <span className="typo-caption-normal text-text-3 truncate">
+        {testCase.suiteTitle || '미분류'}
+      </span>
+
+      <span className="typo-caption-normal text-text-3 inline-flex items-center gap-1.5">
+        <span className={cn('h-1.5 w-1.5 rounded-full', status.dot)} aria-hidden="true" />
+        {status.label}
+      </span>
+
+      <span className="typo-caption-normal text-text-4 md:text-right">
+        {formatRelativeTime(testCase.updatedAt)}
+      </span>
+
+      <div className="relative flex shrink-0 items-center md:justify-end">
         <button
           type="button"
           aria-label={t('ui.caseActions')}
           aria-haspopup="menu"
           aria-expanded={isMenuOpen}
-          className="rounded-1 text-text-4 hover:bg-bg-4 hover:text-text-1 focus-visible:ring-primary cursor-pointer p-1 opacity-0 transition-all group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
+          className="text-text-4 hover:bg-bg-3 hover:text-text-1 focus-visible:ring-primary flex h-8 w-8 cursor-pointer items-center justify-center opacity-0 transition-all group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
           onClick={(e) => {
             e.stopPropagation();
             setIsMenuOpen((prev) => !prev);
@@ -117,7 +76,7 @@ export const TestCaseCard = ({ testCase, onDuplicate }: TestCaseCardProps) => {
             <div
               role="menu"
               aria-label={t('ui.caseActions')}
-              className="bg-bg-2 border-line-2 rounded-2 absolute top-full right-0 z-50 mt-1 min-w-[120px] border py-1 shadow-lg"
+              className="bg-bg-2 border-line-2 absolute top-full right-0 z-50 mt-1 min-w-[120px] border py-1 shadow-lg"
             >
               <button
                 type="button"

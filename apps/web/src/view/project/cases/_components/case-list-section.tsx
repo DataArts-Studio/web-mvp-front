@@ -147,10 +147,7 @@ export const CaseListSection = ({
       <section
         aria-label={t('ui.listAriaLabel')}
         aria-busy={isFetching && hasData ? true : undefined}
-        className={cn(
-          'rounded-3 border-line-2 bg-bg-2 shadow-1 border transition-opacity',
-          isFetching && hasData ? 'opacity-60' : 'opacity-100'
-        )}
+        className={cn('transition-opacity', isFetching && hasData ? 'opacity-60' : 'opacity-100')}
       >
         <QuickCreateRow projectId={projectId} selectedSuiteId={selectedSuiteId} />
 
@@ -179,7 +176,7 @@ export const CaseListSection = ({
               items={displayItems.map((i) => i.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="divide-line-2 divide-y">
+              <div className="border-line-2 divide-line-2 divide-y border-y">
                 {displayItems.map((item) => (
                   <SortableTestCaseRow
                     key={item.isOptimistic ? item.id : item.caseKey}
@@ -194,7 +191,7 @@ export const CaseListSection = ({
                         title: item.title,
                       })}
                       className={cn(
-                        'group hover:bg-bg-3 flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors',
+                        'group hover:bg-bg-2 flex cursor-pointer items-center overflow-hidden px-1 py-4 transition-colors',
                         'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
                         item.isOptimistic && 'pointer-events-none animate-pulse opacity-50'
                       )}
@@ -228,7 +225,6 @@ export const CaseListSection = ({
             </SortableContext>
           </DndContext>
         )}
-
         {pagination && (
           <TestTable.Pagination
             page={pagination.page}

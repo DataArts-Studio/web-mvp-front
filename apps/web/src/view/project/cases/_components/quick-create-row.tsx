@@ -41,10 +41,10 @@ export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowPro
   };
 
   return (
-    <div className="border-line-2 bg-primary/5 hover:bg-primary/10 flex items-center gap-3 border-b px-4 py-3 transition-colors">
+    <div className="border-line-2 hover:bg-bg-2 grid grid-cols-[88px_minmax(0,1fr)] items-center gap-4 border-y px-1 py-3 transition-colors">
       <div
         aria-hidden="true"
-        className="rounded-1 bg-primary/20 text-primary flex h-6 w-6 shrink-0 items-center justify-center"
+        className="text-text-4 flex h-7 w-7 shrink-0 items-center justify-center"
       >
         <Plus className="h-4 w-4" />
       </div>
@@ -53,7 +53,7 @@ export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowPro
         type="text"
         aria-label={t('ui.quickCreateAriaLabel')}
         placeholder={t('ui.quickCreatePlaceholder')}
-        className="typo-body2-normal text-text-1 placeholder:text-text-3 flex-1 bg-transparent focus:outline-none"
+        className="typo-body2-normal text-text-1 placeholder:text-text-4 h-8 flex-1 bg-transparent focus:outline-none"
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleCreate();
         }}
