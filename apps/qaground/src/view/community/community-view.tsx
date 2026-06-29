@@ -111,7 +111,7 @@ export function CommunityView() {
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
       <PlaygroundHeader containerClassName="max-w-6xl" />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
+      <main className="mx-auto flex min-h-[calc(100vh-64px)] w-full max-w-6xl flex-1 flex-col px-4 py-10 sm:px-6">
         <header className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <p className="text-primary text-sm font-semibold">질문과 풀이 노트</p>
@@ -130,8 +130,8 @@ export function CommunityView() {
           </button>
         </header>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[240px_1fr]">
-          <aside className="border-line-2 bg-bg-2 min-h-[420px] rounded-lg border p-4 lg:sticky lg:top-20">
+        <div className="grid flex-1 items-stretch gap-6 lg:grid-cols-[240px_1fr]">
+          <aside className="border-line-2 bg-bg-2 min-h-[560px] rounded-lg border p-4 lg:sticky lg:top-20 lg:h-full">
             <h2 className="text-sm font-semibold">카테고리</h2>
             <nav className="mt-4 grid gap-1" aria-label="커뮤니티 카테고리">
               {CATEGORIES.map((item) => {
@@ -155,7 +155,7 @@ export function CommunityView() {
             </nav>
           </aside>
 
-          <section className="border-line-2 bg-bg-2 min-h-[420px] min-w-0 rounded-lg border p-4">
+          <section className="border-line-2 bg-bg-2 flex min-h-[560px] min-w-0 flex-col rounded-lg border p-4">
             <div>
               <label className="border-line-2 bg-bg-1 focus-within:border-primary/60 flex h-11 items-center gap-3 rounded-md border px-3 transition-colors">
                 <Search className="text-text-3" size={17} aria-hidden="true" />
@@ -286,7 +286,7 @@ export function CommunityView() {
                 ))}
               </ul>
             ) : (
-              <div className="border-line-2 bg-bg-1 mt-4 flex min-h-[300px] flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center">
+              <div className="border-line-2 bg-bg-1 mt-4 flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center">
                 <p className="text-sm font-medium">아직 게시글이 없습니다.</p>
                 <p className="text-text-3 mx-auto mt-2 max-w-md text-xs leading-5">
                   글쓰기 버튼으로 질문, 풀이노트, 자유 글을 작성해보세요.
