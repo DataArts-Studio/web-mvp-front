@@ -92,7 +92,7 @@ export function DashboardShell({
   if (authState === 'checking') {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader containerClassName="max-w-7xl" />
+        <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
         <main className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-4 py-16 sm:px-6">
           <p className="text-text-2 text-sm">로그인 상태를 확인하고 있습니다...</p>
         </main>
@@ -103,7 +103,7 @@ export function DashboardShell({
   if (authState === 'unavailable') {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader containerClassName="max-w-7xl" />
+        <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
         <main className="mx-auto flex w-full max-w-5xl flex-1 items-center px-4 py-16 sm:px-6">
           <section className="border-line-2 bg-bg-2 w-full rounded-lg border p-6">
             <h1 className="text-xl font-bold">로그인 환경변수가 필요합니다.</h1>
@@ -119,7 +119,7 @@ export function DashboardShell({
   if (authState !== 'authenticated') {
     return (
       <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader containerClassName="max-w-7xl" />
+        <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
         <main className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-4 py-16 sm:px-6">
           <p className="text-text-2 text-sm">로그인 화면으로 이동하고 있습니다...</p>
         </main>
@@ -129,7 +129,7 @@ export function DashboardShell({
 
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-      <PlaygroundHeader containerClassName="max-w-7xl" />
+      <PlaygroundHeader containerClassName="max-w-7xl" showIssueReportButton={false} />
       <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[248px_1fr] lg:py-10">
         <aside className="border-line-2 bg-bg-2 h-fit rounded-lg border p-4 lg:sticky lg:top-6">
           <div className="flex items-center gap-3 px-1 py-2">
