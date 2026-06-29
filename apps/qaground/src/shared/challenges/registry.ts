@@ -28,6 +28,14 @@ export interface ChallengeSelector {
 }
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type ApiSchemaType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'null';
+
+export interface ApiSchemaField {
+  path: string;
+  type: ApiSchemaType;
+  required?: boolean;
+  desc?: string;
+}
 
 export interface ApiEndpoint {
   method: HttpMethod;
@@ -35,6 +43,10 @@ export interface ApiEndpoint {
   /** 인증(토큰) 필요 여부. */
   auth?: boolean;
   desc: string;
+  query?: ApiSchemaField[];
+  body?: ApiSchemaField[];
+  response?: ApiSchemaField[];
+  responseExample?: unknown;
 }
 
 export interface Challenge {
@@ -554,10 +566,81 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         method: 'GET',
         path: '/products?page=1&limit=5',
         desc: '상품 목록 (페이지네이션·category 필터)',
+        query: [
+          { path: 'page', type: 'number', desc: '1부터 시작하는 페이지 번호' },
+          { path: 'limit', type: 'number', desc: '페이지 크기' },
+          { path: 'category', type: 'string', desc: '카테고리 필터' },
+        ],
+        response: [
+          { path: 'data', type: 'array', required: true, desc: '상품 배열' },
+          { path: 'data.0.id', type: 'number', required: true },
+          { path: 'data.0.name', type: 'string', required: true },
+          { path: 'total', type: 'number', required: true },
+          { path: 'totalPages', type: 'number', required: true },
+        ],
+        responseExample: {
+          data: [{ id: 1, name: '무선 키보드', category: '주변기기', price: 39000, inStock: true }],
+          page: 1,
+          limit: 5,
+          total: 12,
+          totalPages: 3,
+        },
       },
-      { method: 'GET', path: '/products/:id', desc: '상품 단건 (없으면 404)' },
-      { method: 'POST', path: '/auth/login', desc: '로그인 → 토큰 (무효 시 401)' },
-      { method: 'POST', path: '/products', auth: true, desc: '상품 생성 (검증 400 / 성공 201)' },
+      {
+        method: 'GET',
+        path: '/products/:id',
+        desc: '상품 단건 (없으면 404)',
+        response: [
+          { path: 'id', type: 'number', required: true },
+          { path: 'name', type: 'string', required: true },
+          { path: 'price', type: 'number', required: true },
+          { path: 'inStock', type: 'boolean', required: true },
+        ],
+        responseExample: {
+          id: 1,
+          name: '무선 키보드',
+          category: '주변기기',
+          price: 39000,
+          inStock: true,
+        },
+      },
+      {
+        method: 'POST',
+        path: '/auth/login',
+        desc: '로그인 → 토큰 (무효 시 401)',
+        body: [
+          { path: 'email', type: 'string', required: true },
+          { path: 'password', type: 'string', required: true },
+        ],
+        response: [
+          { path: 'token', type: 'string', required: true },
+          { path: 'user.email', type: 'string', required: true },
+        ],
+        responseExample: { token: 'qaground-demo-token', user: { email: 'tester@qaground.dev' } },
+      },
+      {
+        method: 'POST',
+        path: '/products',
+        auth: true,
+        desc: '상품 생성 (검증 400 / 성공 201)',
+        body: [
+          { path: 'name', type: 'string', required: true },
+          { path: 'price', type: 'number', required: true },
+          { path: 'category', type: 'string' },
+        ],
+        response: [
+          { path: 'id', type: 'number', required: true },
+          { path: 'name', type: 'string', required: true },
+          { path: 'price', type: 'number', required: true },
+        ],
+        responseExample: {
+          id: 13,
+          name: '테스트 상품',
+          category: '기타',
+          price: 12000,
+          inStock: true,
+        },
+      },
       { method: 'DELETE', path: '/products/:id', auth: true, desc: '상품 삭제 (204 / 404)' },
     ],
     apiNote:
