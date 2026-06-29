@@ -4,6 +4,11 @@ import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
+const POSTS = [
+  { id: 701, deleted: false },
+  { id: 702, deleted: true },
+];
+
 const CommentSchema = z.object({ body: z.string().trim().min(1).max(300) }).strict();
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,10 +16,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!/^\d+$/.test(id)) {
     return NextResponse.json({ error: 'id는 숫자여야 합니다.' }, { status: 400 });
   }
-  if (id === '999') {
+
+  const post = POSTS.find((item) => item.id === Number(id));
+  if (!post) {
     return NextResponse.json({ error: '게시글을 찾을 수 없습니다.' }, { status: 404 });
   }
-  if (id === '702') {
+  if (post.deleted) {
     return NextResponse.json({ error: 'deleted_post' }, { status: 409 });
   }
 

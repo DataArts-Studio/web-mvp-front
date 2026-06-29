@@ -6,6 +6,12 @@ import dynamic from 'next/dynamic';
 
 import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
+import {
+  type ApiAttemptForGrade,
+  type ApiTargetForGrade,
+  type HiddenGradeResult,
+  gradeApiAttempts,
+} from '@/shared/challenges/api-hidden-grader';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -39,6 +45,7 @@ interface RunResult {
   bodyText: string;
   checks: Check[];
   scriptResults: PmResult[];
+  hiddenGrade: HiddenGradeResult;
 }
 
 const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -180,6 +187,36 @@ pm.test('상태 코드는 200', () => {
 // });
 `;
 
+function parseHeaderInput(input: string): Record<string, string> {
+  const trimmed = input.trim();
+  if (!trimmed) return {};
+
+  if (trimmed.startsWith('{')) {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('추가 헤더 JSON은 객체여야 합니다.');
+    }
+    return Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value)]));
+  }
+
+  return Object.fromEntries(
+    trimmed.split('\n').map((line) => {
+      const separator = line.indexOf(':');
+      if (separator <= 0) throw new Error('추가 헤더는 "이름: 값" 형식이어야 합니다.');
+      return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+    })
+  );
+}
+const SENSITIVE_HEADER_NAME = /^(authorization|cookie|set-cookie|x-api-key|x-qaground-signature)$/i;
+
+function redactHeaders(headers: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => [
+      key,
+      SENSITIVE_HEADER_NAME.test(key) ? '[REDACTED]' : value,
+    ])
+  );
+}
 let nextId = 2;
 
 /**
@@ -188,10 +225,19 @@ let nextId = 2;
  * 포스트맨처럼 요청을 구성하고, (1) 구조화된 단언 또는 (2) pm.test 스크립트로 응답을 검증한다.
  * 스크립트는 사용자 브라우저에서만 평가하므로 격리 러너·서버 코드 실행이 필요 없다.
  */
-export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: string }) => {
+export const ApiTesterExercise = ({
+  apiBase,
+  slug,
+  endpoints,
+}: {
+  apiBase: string;
+  slug: string;
+  endpoints: ApiTargetForGrade[];
+}) => {
   const [method, setMethod] = useState<Method>('GET');
   const [path, setPath] = useState('/products?page=1&limit=5');
   const [token, setToken] = useState('');
+  const [customHeaders, setCustomHeaders] = useState('');
   const [body, setBody] = useState('');
   const [assertions, setAssertions] = useState<Assertion[]>([
     { id: 1, kind: 'status', path: '', expected: '200' },
@@ -200,6 +246,7 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<RunResult | null>(null);
+  const [attempts, setAttempts] = useState<ApiAttemptForGrade[]>([]);
 
   const updateAssertion = (id: number, patch: Partial<Assertion>) =>
     setAssertions((as) => as.map((a) => (a.id === id ? { ...a, ...patch } : a)));
@@ -212,7 +259,7 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
     setError('');
     setResult(null);
     try {
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = parseHeaderInput(customHeaders);
       if (token.trim()) headers['Authorization'] = `Bearer ${token.trim()}`;
       const hasBody = method !== 'GET' && body.trim();
       if (hasBody) headers['Content-Type'] = 'application/json';
@@ -252,16 +299,36 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
         ? runPmScript(script, { status: res.status, json, bodyText })
         : [];
 
+      const attempt: ApiAttemptForGrade = {
+        method,
+        path,
+        status: res.status,
+        assertions,
+        script,
+        checks,
+        scriptResults,
+      };
+      const nextAttempts = [...attempts, attempt];
+      const hiddenGrade = gradeApiAttempts(nextAttempts, { targets: endpoints });
+      setAttempts(nextAttempts);
+
       const pretty = json !== undefined ? JSON.stringify(json, null, 2) : bodyText;
-      setResult({ status: res.status, bodyText: pretty, checks, scriptResults });
+      setResult({ status: res.status, bodyText: pretty, checks, scriptResults, hiddenGrade });
       const passed =
         checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length;
       const totalChecks = checks.length + scriptResults.length;
-      track('api_run', { passed, total: totalChecks });
+      track('api_run', { passed, total: totalChecks, score: hiddenGrade.score });
       recordSubmission({
         slug,
         kind: 'api',
-        content: { method, path, assertions, script },
+        content: {
+          method,
+          path,
+          headers: redactHeaders(headers),
+          assertions,
+          script,
+          attempts: nextAttempts,
+        },
         result: { passed, total: totalChecks },
       });
     } catch (e) {
@@ -321,6 +388,15 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
           placeholder="Bearer 토큰 (보호된 요청에만, 예: qaground-demo-token)"
           className={`h-button-md ${fieldClass}`}
+        />
+
+        <textarea
+          data-testid="api-headers"
+          value={customHeaders}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomHeaders(e.target.value)}
+          rows={2}
+          placeholder={'추가 헤더 (선택)\nx-qaground-signature: test-signature'}
+          className={`py-2 font-mono ${fieldClass}`}
         />
 
         {method !== 'GET' && (
@@ -446,6 +522,36 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
             >
               {passCount}/{total} 통과
             </span>
+          </div>
+
+          <div className="border-line-2 bg-bg-3 mt-4 rounded-xl border p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-text-1 text-sm font-semibold">숨김 채점</span>
+              <span
+                className={`font-mono text-sm font-semibold ${
+                  result.hiddenGrade.score === result.hiddenGrade.maxScore
+                    ? 'text-primary'
+                    : 'text-text-1'
+                }`}
+              >
+                {result.hiddenGrade.score}/{result.hiddenGrade.maxScore}점
+              </span>
+            </div>
+            <p className="text-text-3 mt-1 text-xs">
+              숨김 케이스 {result.hiddenGrade.passed}/{result.hiddenGrade.total} 통과
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+              {result.hiddenGrade.cases.map((item, index) => (
+                <span
+                  key={item.id}
+                  className={`border-line-2 rounded-lg border px-2 py-1 text-center text-xs font-medium ${
+                    item.pass ? 'text-primary' : 'text-text-3'
+                  }`}
+                >
+                  #{index + 1} {item.pass ? '통과' : '실패'}
+                </span>
+              ))}
+            </div>
           </div>
 
           {result.checks.length > 0 && (
