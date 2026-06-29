@@ -24,7 +24,7 @@ const RouteLoadingContext = createContext<RouteLoadingContextType>({
 
 export const useRouteLoading = () => useContext(RouteLoadingContext);
 
-const LOADING_DELAY_MS = 150;
+const LOADING_DELAY_MS = 450;
 
 export const RouteLoadingProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +32,10 @@ export const RouteLoadingProvider = ({ children }: { children: ReactNode }) => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startRouteLoading = useCallback(() => {
-    // 짧은 딜레이 후 로딩 표시 (빠른 전환 시 깜빡임 방지)
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    // 짧은 전환에서는 전체 화면 스피너를 띄우지 않는다.
     timerRef.current = setTimeout(() => {
       setIsLoading(true);
     }, LOADING_DELAY_MS);

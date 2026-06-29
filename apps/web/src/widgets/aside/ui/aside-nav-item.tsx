@@ -26,7 +26,6 @@ export const AsideNavItem = ({ label, href, icon: Icon, active, onMouseEnter }: 
   return (
     <Link
       href={href}
-      prefetch={false}
       onMouseEnter={onMouseEnter}
       onClick={handleClick}
       className={cn(
