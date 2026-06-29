@@ -49,6 +49,12 @@ const PRIORITY_BADGE: Record<Priority, string> = {
 };
 
 type GradeStatus = 'passed' | 'partial' | 'failed';
+type QualitySeverity = 'warn' | 'error';
+interface QualityIssue {
+  caseNo: number;
+  severity: QualitySeverity;
+  message: string;
+}
 interface GradeResult {
   status: GradeStatus;
   written: number;
@@ -113,6 +119,53 @@ export const TestCaseExercise = ({
   });
   const reqCovered = coveredSet.size;
   const canSubmit = written >= 1;
+  const qualityIssues = rows.flatMap<QualityIssue>((r, index) => {
+    const touched =
+      r.name.trim() ||
+      r.precondition.trim() ||
+      r.steps.some((step) => step.trim()) ||
+      r.expected.trim();
+    if (!touched) return [];
+
+    const issues: QualityIssue[] = [];
+    if (!r.name.trim()) {
+      issues.push({
+        caseNo: index + 1,
+        severity: 'error',
+        message: '케이스 이름이 비어 있습니다.',
+      });
+    }
+    if (!r.steps.some((step) => step.trim())) {
+      issues.push({ caseNo: index + 1, severity: 'error', message: '실행 절차가 없습니다.' });
+    }
+    if (!r.expected.trim()) {
+      issues.push({ caseNo: index + 1, severity: 'error', message: '기대 결과가 비어 있습니다.' });
+    } else if (r.expected.trim().length < 10) {
+      issues.push({
+        caseNo: index + 1,
+        severity: 'warn',
+        message: '기대 결과를 관찰 가능한 상태로 더 구체화하세요.',
+      });
+    }
+    if (index > 0 && r.dependsOn.length === 0 && r.name.trim()) {
+      issues.push({
+        caseNo: index + 1,
+        severity: 'warn',
+        message: '선행 TC가 있다면 종속 관계를 지정하세요.',
+      });
+    }
+    r.dependsOn.forEach((dependencyIndex) => {
+      if (!rows[dependencyIndex]?.name.trim()) {
+        issues.push({
+          caseNo: index + 1,
+          severity: 'warn',
+          message: `종속 대상 TC-${dependencyIndex + 1}의 이름이 비어 있습니다.`,
+        });
+      }
+    });
+    return issues;
+  });
+  const visibleQualityIssues = qualityIssues.slice(0, 5);
 
   const update = (i: number, key: 'name' | 'priority' | 'precondition' | 'expected', v: string) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [key]: v } : r)));
@@ -164,6 +217,7 @@ export const TestCaseExercise = ({
               precondition: r.precondition,
               steps: r.steps.filter((s) => s.trim()),
               expected: r.expected,
+              dependsOn: r.dependsOn.map((dependencyIndex) => 'TC-' + (dependencyIndex + 1)),
             })),
           },
         }),
@@ -277,13 +331,42 @@ export const TestCaseExercise = ({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold">테스트 케이스 작성</h2>
         <span className="text-text-3 text-xs">
-          작성 {written}개 · 요구사항 연결 {reqCovered}개
+          작성 {written}개 · 커버리지 {reqCovered}/{reqTotal}
         </span>
       </div>
       <p className="text-text-2 mt-2 text-sm leading-relaxed">
-        요구사항을 분석해 케이스를 작성하고, 각 케이스가 검증하는 요구사항을 연결하세요. 모든
-        요구사항에 케이스를 연결하면 통과입니다. 제출하면 채점 결과와 모범 답안이 나타납니다.
+        요구사항을 분석해 케이스를 작성하고, 선행 TC가 필요한 경우 종속 관계를 지정하세요. 모든
+        요구사항을 검증할 수 있을 만큼 케이스를 작성하면 통과입니다.
       </p>
+
+      {(visibleQualityIssues.length > 0 || written > 0) && (
+        <div className="border-line-2 bg-bg-2 mt-4 border-l-2 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-text-2 text-xs font-semibold">품질 점검</span>
+            <span className="text-text-3 text-xs">
+              {qualityIssues.length === 0
+                ? '주요 누락 없음'
+                : `${qualityIssues.length}개 확인 필요`}
+            </span>
+          </div>
+          {visibleQualityIssues.length > 0 && (
+            <ul className="mt-2 flex flex-col gap-1">
+              {visibleQualityIssues.map((issue, index) => (
+                <li
+                  key={`${issue.caseNo}-${index}`}
+                  className={
+                    issue.severity === 'error'
+                      ? 'text-system-red text-xs'
+                      : 'text-xs text-[#d29922]'
+                  }
+                >
+                  TC-{issue.caseNo}: {issue.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <ol className="mt-5 flex flex-col gap-3">
         {rows.map((r, i) => (

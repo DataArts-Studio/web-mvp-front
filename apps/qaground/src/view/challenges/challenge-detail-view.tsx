@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import {
   CATEGORY_LABEL,
+  CHALLENGES,
   type Challenge,
   type ChallengeDifficulty,
   DIFFICULTY_LABEL,
@@ -54,6 +55,61 @@ function ChallengeMeta({ challenge }: { challenge: Challenge }) {
   );
 }
 
+const CHALLENGE_TITLE_BY_SLUG = new Map(CHALLENGES.map((item) => [item.slug, item.title]));
+
+function ChallengeLearningMeta({ challenge }: { challenge: Challenge }) {
+  const prerequisites = challenge.prerequisites ?? [];
+  const next = challenge.recommendedNext ?? [];
+  if (!challenge.estimatedMinutes && prerequisites.length === 0 && next.length === 0) return null;
+
+  const linkItems = (slugs: string[]) =>
+    slugs.map((slug) => ({ slug, title: CHALLENGE_TITLE_BY_SLUG.get(slug) ?? slug }));
+
+  return (
+    <div className="border-line-2 bg-bg-2 mt-5 border-l-2 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        {challenge.estimatedMinutes && (
+          <span className="text-text-2">예상 {challenge.estimatedMinutes}분</span>
+        )}
+        <span className={`px-2 py-0.5 font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}>
+          {DIFFICULTY_LABEL[challenge.difficulty]}
+        </span>
+      </div>
+      {prerequisites.length > 0 && (
+        <div className="mt-3">
+          <p className="text-text-3 text-xs font-medium">먼저 풀면 좋은 문제</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {linkItems(prerequisites).map((item) => (
+              <Link
+                key={item.slug}
+                href={`/challenges/${item.slug}`}
+                className="border-line-3 text-text-2 hover:text-text-1 border px-2 py-1 text-xs transition-colors"
+              >
+                {item.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      {next.length > 0 && (
+        <div className="mt-3">
+          <p className="text-text-3 text-xs font-medium">다음 추천</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {linkItems(next).map((item) => (
+              <Link
+                key={item.slug}
+                href={`/challenges/${item.slug}`}
+                className="border-line-3 text-text-2 hover:text-text-1 border px-2 py-1 text-xs transition-colors"
+              >
+                {item.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 function RequirementList({ challenge }: { challenge: Challenge }) {
   return (
     <>
@@ -152,6 +208,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
               {challenge.summary}
             </p>
+            <ChallengeLearningMeta challenge={challenge} />
             <h2 className="mt-6 text-base font-semibold">요구사항</h2>
             <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
               {challenge.requirement.map((r) => (
@@ -221,6 +278,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
               {challenge.summary}
             </p>
+            <ChallengeLearningMeta challenge={challenge} />
             <h2 className="mt-6 text-base font-semibold">요구사항</h2>
             <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
               {challenge.requirement.map((r) => (
@@ -249,6 +307,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6">
           {backLink}
           <ChallengeMeta challenge={challenge} />
+          <ChallengeLearningMeta challenge={challenge} />
           <div className="mt-8 grid gap-8 lg:grid-cols-[4fr_6fr] lg:gap-10">
             <div className="lg:sticky lg:top-24 lg:self-start">
               <RequirementList challenge={challenge} />
@@ -307,6 +366,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
               {challenge.summary}
             </p>
+            <ChallengeLearningMeta challenge={challenge} />
             <div className="mt-6">
               <RequirementList challenge={challenge} />
             </div>
@@ -353,6 +413,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
         {backLink}
         <ChallengeMeta challenge={challenge} />
+        <ChallengeLearningMeta challenge={challenge} />
         <section className="mt-8">
           <RequirementList challenge={challenge} />
         </section>

@@ -43,10 +43,22 @@ interface PmResult {
 }
 interface RunResult {
   status: number;
+  durationMs: number;
+  responseHeaders: Record<string, string>;
   bodyText: string;
   checks: Check[];
   scriptResults: PmResult[];
   hiddenGrade: HiddenGradeResult;
+}
+interface RequestHistoryItem {
+  id: string;
+  method: Method;
+  path: string;
+  status: number;
+  durationMs: number;
+  passed: number;
+  total: number;
+  createdAt: string;
 }
 
 const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -454,6 +466,7 @@ export const ApiTesterExercise = ({
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<RunResult | null>(null);
+  const [history, setHistory] = useState<RequestHistoryItem[]>([]);
   const [attempts, setAttempts] = useState<ApiAttemptForGrade[]>([]);
   const [activePanel, setActivePanel] = useState<'test' | 'docs' | 'script'>('test');
   const [resultH, setResultH] = useState(288);
@@ -500,11 +513,14 @@ export const ApiTesterExercise = ({
       const hasBody = method !== 'GET' && body.trim();
       if (hasBody) headers['Content-Type'] = 'application/json';
 
+      const startedAt = performance.now();
       const res = await fetch(apiBase + path, {
         method,
         headers,
         body: hasBody ? body : undefined,
       });
+      const durationMs = Math.round(performance.now() - startedAt);
+      const responseHeaders = Object.fromEntries(res.headers.entries());
 
       const bodyText = await res.text();
       let json: unknown = undefined;
@@ -576,10 +592,37 @@ export const ApiTesterExercise = ({
       setAttempts(nextAttempts);
 
       const pretty = json !== undefined ? JSON.stringify(json, null, 2) : bodyText;
-      setResult({ status: res.status, bodyText: pretty, checks, scriptResults, hiddenGrade });
       const passed =
         checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length;
       const totalChecks = checks.length + scriptResults.length;
+      setResult({
+        status: res.status,
+        durationMs,
+        responseHeaders,
+        bodyText: pretty,
+        checks,
+        scriptResults,
+        hiddenGrade,
+      });
+      setHistory((prev) =>
+        [
+          {
+            id: `${Date.now()}-${nextAttempts.length}`,
+            method,
+            path,
+            status: res.status,
+            durationMs,
+            passed,
+            total: totalChecks,
+            createdAt: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+          },
+          ...prev,
+        ].slice(0, 6)
+      );
       track('api_run', { passed, total: totalChecks, score: hiddenGrade.score });
       recordSubmission({
         slug,
@@ -745,6 +788,51 @@ export const ApiTesterExercise = ({
               <p className="text-system-red mt-3 text-sm" role="alert">
                 {error}
               </p>
+            )}
+
+            {history.length > 0 && (
+              <div className="border-line-2 bg-bg-3 mt-4 border">
+                <div className="border-line-2 flex items-center justify-between border-b px-3 py-2">
+                  <span className="text-text-2 text-xs font-semibold">최근 요청</span>
+                  <span className="text-text-3 text-xs">최근 {history.length}개</span>
+                </div>
+                <div className="divide-line-2 divide-y">
+                  {history.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setMethod(item.method);
+                        setPath(item.path);
+                      }}
+                      className="hover:bg-bg-1 grid w-full grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-left transition-colors"
+                    >
+                      <span
+                        className={`w-fit border px-1.5 py-0.5 font-mono text-[11px] font-semibold ${METHOD_TONE[item.method]}`}
+                      >
+                        {item.method}
+                      </span>
+                      <span className="min-w-0">
+                        <code className="text-text-1 block truncate font-mono text-xs">
+                          {item.path}
+                        </code>
+                        <span className="text-text-3 text-[11px]">
+                          {item.createdAt} · HTTP {item.status} · {item.durationMs}ms
+                        </span>
+                      </span>
+                      <span
+                        className={
+                          item.passed === item.total
+                            ? 'text-xs text-[#3fb950]'
+                            : 'text-xs text-[#f85149]'
+                        }
+                      >
+                        {item.passed}/{item.total}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -951,7 +1039,11 @@ export const ApiTesterExercise = ({
       >
         <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-2">
           <span className="font-mono text-xs text-[#8b949e]">api result</span>
-          {result && <span className="font-mono text-xs text-[#c9d1d9]">HTTP {result.status}</span>}
+          {result && (
+            <span className="font-mono text-xs text-[#c9d1d9]">
+              HTTP {result.status} · {result.durationMs}ms
+            </span>
+          )}
           {result && (
             <span
               className={`ml-auto font-mono text-xs ${passCount === total ? 'text-[#3fb950]' : 'text-[#f85149]'}`}
@@ -975,6 +1067,19 @@ export const ApiTesterExercise = ({
                   </span>
                 ))}
               </div>
+              <details className="mt-3 border border-white/10">
+                <summary className="cursor-pointer px-3 py-2 text-[#8b949e] hover:text-[#c9d1d9]">
+                  response headers · {Object.keys(result.responseHeaders).length}
+                </summary>
+                <div className="border-t border-white/10 px-3 py-2">
+                  {Object.entries(result.responseHeaders).map(([key, value]) => (
+                    <div key={key} className="grid gap-2 sm:grid-cols-[11rem_minmax(0,1fr)]">
+                      <span className="text-[#8b949e]">{key}</span>
+                      <span className="break-all text-[#c9d1d9]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
               {(result.checks.length > 0 || result.scriptResults.length > 0) && (
                 <div className="mt-3 space-y-1">
                   {result.checks.map((c, i) => (
