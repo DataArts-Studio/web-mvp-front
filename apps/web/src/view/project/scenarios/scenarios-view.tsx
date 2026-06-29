@@ -12,11 +12,18 @@ import {
 } from '@/entities/test-scenario';
 import { RequirementAnalysisModal } from '@/features/ai-requirement-analysis';
 import { SCENARIO_STATUS_META } from '@/features/scenario-management';
-import { ActionToolbar } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { useDisclosure } from '@testea/lib';
-import { MainContainer, ProjectErrorFallback, Skeleton } from '@testea/ui';
-import { CalendarDays, FileText, FolderTree, ListChecks, Plus, Sparkles } from 'lucide-react';
+import { DSButton, MainContainer, ProjectErrorFallback, Skeleton } from '@testea/ui';
+import {
+  CalendarDays,
+  FileText,
+  FolderTree,
+  ListChecks,
+  Plus,
+  Search,
+  Sparkles,
+} from 'lucide-react';
 
 import { NewFeatureModal } from './_components/new-feature-modal';
 
@@ -109,25 +116,17 @@ export const ScenarioFeaturesView = () => {
   }
 
   return (
-    <MainContainer className="mx-auto grid h-screen w-full max-w-[1280px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-5 overflow-hidden px-10 py-8">
-      <header className="col-span-6 flex flex-col gap-1.5">
-        <p className="typo-caption text-primary">시나리오</p>
-        <h1 className="typo-title-heading text-text-1">시나리오 관리</h1>
-        <p className="typo-body1-normal text-text-3 max-w-2xl">
-          기능별 시나리오와 상태를 확인하고 테스트 스위트로 넘길 항목을 정리합니다.
-        </p>
-      </header>
-
-      <ActionToolbar.Root ariaLabel="기능 목록 컨트롤">
-        <ActionToolbar.Group>
-          <ActionToolbar.Search
-            placeholder="기능 이름·요약으로 검색"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </ActionToolbar.Group>
+    <MainContainer className="mx-auto grid h-screen w-full max-w-[1280px] flex-1 grid-cols-6 grid-rows-[auto_1fr] gap-x-5 gap-y-5 overflow-hidden px-10 py-8">
+      <header className="col-span-6 flex min-w-0 flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="typo-caption text-primary">시나리오</p>
+          <h1 className="typo-title-heading text-text-1 mt-1">시나리오 관리</h1>
+          <p className="typo-body1-normal text-text-3 mt-1.5 max-w-2xl">
+            기능별 시나리오와 상태를 확인하고 테스트 스위트로 넘길 항목을 정리합니다.
+          </p>
+        </div>
         <div className="flex shrink-0 items-center gap-2">
-          <ActionToolbar.Action
+          <DSButton
             size="small"
             type="button"
             variant="ghost"
@@ -136,8 +135,8 @@ export const ScenarioFeaturesView = () => {
           >
             <Sparkles className="h-4 w-4" />
             <span className="leading-none">요구사항 정리</span>
-          </ActionToolbar.Action>
-          <ActionToolbar.Action
+          </DSButton>
+          <DSButton
             size="small"
             type="button"
             variant="solid"
@@ -146,24 +145,38 @@ export const ScenarioFeaturesView = () => {
           >
             <Plus className="h-4 w-4" />
             <span className="leading-none">새 기능</span>
-          </ActionToolbar.Action>
+          </DSButton>
         </div>
-      </ActionToolbar.Root>
+      </header>
 
       <section className="col-span-6 grid min-h-0 gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="border-line-2 bg-bg-2 rounded-3 flex min-h-0 flex-col overflow-hidden border">
-          <div className="border-line-2 flex items-center justify-between gap-4 border-b px-5 py-4">
-            <div className="min-w-0">
-              <h2 className="typo-body1-heading text-text-1">기능별 시나리오</h2>
-              <p className="typo-label-normal text-text-3 mt-0.5">
-                {searchQuery.trim()
-                  ? `검색 결과 ${features.length}개 / 전체 ${allFeatures.length}개`
-                  : `전체 ${allFeatures.length}개 기능 · 시나리오 ${totalScenarioCount}개`}
-              </p>
+          <div className="border-line-2 flex flex-col gap-3 border-b px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="typo-body1-heading text-text-1">기능별 시나리오</h2>
+                <p className="typo-label-normal text-text-3 mt-0.5">
+                  {searchQuery.trim()
+                    ? `검색 결과 ${features.length}개 / 전체 ${allFeatures.length}개`
+                    : `전체 ${allFeatures.length}개 기능 · 시나리오 ${totalScenarioCount}개`}
+                </p>
+              </div>
+              <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-1">
+                상태별 관리
+              </span>
             </div>
-            <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-1">
-              상태별 관리
-            </span>
+            <div className="relative w-full max-w-2xl lg:max-w-3xl">
+              <Search
+                className="text-text-4 pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+                aria-hidden="true"
+              />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="기능 이름·요약으로 검색"
+                className="border-line-2 bg-bg-1 typo-body2-normal text-text-1 placeholder:text-text-4 focus:border-primary h-9 w-full rounded-full border px-9 transition-colors outline-none"
+              />
+            </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
