@@ -5,7 +5,7 @@ import { PlaygroundHeader } from '@/view/challenges/playground-header';
 import { GuideToc } from '@/view/guide/guide-toc';
 
 const DESCRIPTION =
-  'qaground 사용 가이드. 자동화(Playwright)·메뉴얼(테스트 케이스·결함 리포트)·API(Postman) 트랙이 무엇인지, 챌린지를 어떻게 풀고 채점받는지, 셀렉터·단언·좋은 테스트 케이스 작성법까지 한 번에 정리했습니다.';
+  'qaground 사용 가이드. 자동화(Playwright)·메뉴얼(테스트 케이스·결함 리포트)·API(Postman)·성능·접근성 트랙이 무엇인지, 챌린지를 어떻게 풀고 채점받는지, 셀렉터·단언·좋은 테스트 케이스 작성법까지 한 번에 정리했습니다.';
 
 export const metadata: Metadata = {
   title: '가이드',
@@ -59,6 +59,20 @@ const TRACKS = [
     title: 'API · Postman 스타일',
     desc: '요청을 구성하고 상태 코드·JSON·pm.test로 응답을 검증합니다. 브라우저 안에서 실제로 요청을 보내 바로 채점됩니다.',
   },
+  {
+    tag: 'PERF',
+    bar: 'bg-[#a371f7]',
+    text: 'text-[#a371f7]',
+    title: '성능 · Web Vitals',
+    desc: 'Core Web Vitals와 리소스 병목을 측정하고, 재현 가능한 성능 리포트와 개선 우선순위를 정리합니다.',
+  },
+  {
+    tag: 'A11Y',
+    bar: 'bg-[#f778ba]',
+    text: 'text-[#f778ba]',
+    title: '접근성 · Keyboard & Screen Reader',
+    desc: '키보드 탐색, 포커스 표시, 라벨·에러 전달, 색 대비처럼 실제 사용성에 영향을 주는 접근성 문제를 점검합니다.',
+  },
 ];
 
 const STEPS = [
@@ -85,7 +99,7 @@ const Terminal = ({ label, children }: { label: string; children: string }) => (
 );
 
 const TOC = [
-  ['01', '세 가지 트랙', 'tracks'],
+  ['01', '다섯 가지 트랙', 'tracks'],
   ['02', '푸는 흐름', 'flow'],
   ['03', '채점 방식', 'grading'],
   ['04', '셀렉터 전략', 'selector'],
@@ -129,7 +143,7 @@ export default function GuidePage() {
 
           <div className="mt-14 flex flex-col gap-16">
             {/* 트랙 */}
-            <Section id="tracks" n="01" title="세 가지 트랙">
+            <Section id="tracks" n="01" title="다섯 가지 트랙">
               <p className="text-text-3">
                 관심사와 도구로 고르세요. 한 챌린지는 한 트랙에 속합니다.
               </p>

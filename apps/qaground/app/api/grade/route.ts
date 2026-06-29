@@ -78,7 +78,7 @@ interface GradeOk {
 /**
  * POST /api/grade
  *
- * 수동 트랙(테스트 케이스·결함 리포트) 제출을 LLM(OpenAI gpt-4o-mini)으로 내용 기반 채점한다.
+ * 수동·성능·접근성 트랙(테스트 케이스·결함 리포트) 제출을 LLM(OpenAI gpt-4o-mini)으로 내용 기반 채점한다.
  * 요구사항별 커버 여부 + 맞춤 피드백을 구조화 JSON 으로 돌려준다.
  *
  * - OPENAI_API_KEY 미설정: 503(llm_disabled) → 클라이언트는 기존 커버리지 채점으로 폴백한다.
@@ -107,7 +107,11 @@ export async function POST(request: Request) {
   }
 
   const challenge = getChallenge(parsed.data.slug);
-  if (!challenge || (challenge.track !== 'manual' && parsed.data.kind === 'testcase')) {
+  const acceptsTestcaseSubmission =
+    challenge?.track === 'manual' ||
+    challenge?.track === 'performance' ||
+    challenge?.track === 'accessibility';
+  if (!challenge || (!acceptsTestcaseSubmission && parsed.data.kind === 'testcase')) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 

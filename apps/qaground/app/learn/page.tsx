@@ -10,7 +10,7 @@ import { PlaygroundHeader } from '@/view/challenges/playground-header';
 import { GuideToc } from '@/view/guide/guide-toc';
 
 const DESCRIPTION =
-  'qaground 학습 경로. 자동화(Playwright)·메뉴얼(테스트 설계)·API(Postman) 트랙을 난이도 순서로 따라가며 QA 실력을 단계별로 쌓는 커리큘럼입니다.';
+  'qaground 학습 경로. 자동화(Playwright)·메뉴얼(테스트 설계)·API(Postman)·성능·접근성 트랙을 난이도 순서로 따라가며 QA 실력을 단계별로 쌓는 커리큘럼입니다.';
 
 export const metadata: Metadata = {
   title: '학습 경로',
@@ -74,6 +74,24 @@ const TRACKS: {
     title: 'API · Postman',
     desc: '요청을 구성하고 상태 코드·응답을 단언하며 API 테스트를 연습합니다.',
   },
+  {
+    key: 'performance',
+    n: '04',
+    tag: 'PERF',
+    bar: 'bg-[#a371f7]',
+    text: 'text-[#a371f7]',
+    title: '성능 · Web Vitals',
+    desc: 'Core Web Vitals, 네트워크, 리소스 병목을 측정하고 재현 가능한 성능 리포트로 정리합니다.',
+  },
+  {
+    key: 'accessibility',
+    n: '05',
+    tag: 'A11Y',
+    bar: 'bg-[#f778ba]',
+    text: 'text-[#f778ba]',
+    title: '접근성 · Keyboard & Screen Reader',
+    desc: '키보드 탐색, 포커스, 라벨, 에러 전달, 색 대비를 점검하는 접근성 테스트를 연습합니다.',
+  },
 ];
 
 const TOC = TRACKS.map((t) => [t.n, t.title.split(' · ')[0], t.key]);
@@ -93,7 +111,7 @@ export default function LearnPage() {
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">학습 경로</h1>
           <p className="text-text-2 mt-4 text-base leading-relaxed">
             트랙을 골라 입문부터 심화까지 순서대로 풀어 보세요. 처음이라면 자동화 입문(입문
-            배지)부터 시작해 메뉴얼 설계, API로 넓혀 가는 흐름을 권장합니다.
+            배지)부터 시작해 메뉴얼 설계, API, 성능, 접근성으로 넓혀 가는 흐름을 권장합니다.
           </p>
 
           <div className="mt-14 flex flex-col gap-16">
