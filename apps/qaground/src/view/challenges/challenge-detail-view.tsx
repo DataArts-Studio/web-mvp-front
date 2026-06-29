@@ -33,13 +33,13 @@ function ChallengeMeta({ challenge }: { challenge: Challenge }) {
   return (
     <>
       <div className="mb-3 flex items-center gap-2">
-        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+        <span className="bg-bg-3 text-text-2 px-2.5 py-1 text-xs">
           {TRACK_LABEL[challenge.track]}
         </span>
-        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+        <span className="bg-bg-3 text-text-2 px-2.5 py-1 text-xs">
           {CATEGORY_LABEL[challenge.category]}
         </span>
-        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+        <span className="bg-bg-3 text-text-2 px-2.5 py-1 text-xs">
           {DIFFICULTY_LABEL[challenge.difficulty]}
         </span>
         {challenge.tools.map((tool) => (
@@ -75,7 +75,7 @@ function ApiEndpoints({ challenge }: { challenge: Challenge }) {
       <p className="text-text-2 mt-2 text-sm">
         베이스 경로 <code className="text-primary font-mono text-xs">{challenge.apiBase}</code>
       </p>
-      <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden rounded-xl border">
+      <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden border">
         <div className="border-line-2 text-text-3 grid grid-cols-[3.5rem_1fr_2.5rem] gap-3 border-b px-4 py-2.5 text-xs">
           <span>메서드</span>
           <span>경로</span>
@@ -98,7 +98,7 @@ function ApiEndpoints({ challenge }: { challenge: Challenge }) {
         ))}
       </div>
       {challenge.apiNote && (
-        <p className="border-line-2 bg-bg-2 text-text-2 mt-3 rounded-xl border px-4 py-3 text-xs leading-relaxed">
+        <p className="border-line-2 bg-bg-2 text-text-2 mt-3 border px-4 py-3 text-xs leading-relaxed">
           {challenge.apiNote}
         </p>
       )}
@@ -135,14 +135,14 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             ←
           </Link>
           <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
-          <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
             {TRACK_LABEL[challenge.track]}
           </span>
-          <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
             {CATEGORY_LABEL[challenge.category]}
           </span>
           <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+            className={`px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
           >
             {DIFFICULTY_LABEL[challenge.difficulty]}
           </span>
@@ -183,6 +183,57 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
               sandboxSlug={challenge.sandboxSlug!}
               selectors={challenge.selectors!}
               starterSpec={challenge.starterSpec}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // API 트랙: 자동화 코드 작성 화면과 같은 풀높이 2단 레이아웃.
+  if (isApiTester) {
+    return (
+      <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans lg:h-screen lg:overflow-hidden">
+        <PlaygroundHeader containerClassName="max-w-none" />
+        <div className="border-line-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2.5 sm:px-6">
+          <Link
+            href="/challenges"
+            aria-label="챌린지 목록"
+            className="text-text-3 hover:text-text-1 text-sm transition-colors"
+          >
+            ←
+          </Link>
+          <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
+            {TRACK_LABEL[challenge.track]}
+          </span>
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
+            {CATEGORY_LABEL[challenge.category]}
+          </span>
+          <span
+            className={`px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+          >
+            {DIFFICULTY_LABEL[challenge.difficulty]}
+          </span>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="border-line-2 overflow-y-auto border-b p-5 sm:p-6 lg:w-2/5 lg:max-w-lg lg:border-r lg:border-b-0">
+            <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
+              {challenge.summary}
+            </p>
+            <h2 className="mt-6 text-base font-semibold">요구사항</h2>
+            <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
+              {challenge.requirement.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ol>
+            <ApiEndpoints challenge={challenge} />
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ApiTesterExercise
+              apiBase={challenge.apiBase!}
+              slug={challenge.slug}
+              endpoints={challenge.endpoints!}
             />
           </div>
         </div>
@@ -240,14 +291,14 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
               ←
             </Link>
             <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
-            <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+            <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
               {TRACK_LABEL[challenge.track]}
             </span>
-            <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+            <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
               {CATEGORY_LABEL[challenge.category]}
             </span>
             <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+              className={`px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
             >
               {DIFFICULTY_LABEL[challenge.difficulty]}
             </span>
@@ -315,7 +366,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             <Link
               href={`/sandbox/${challenge.sandboxSlug}`}
               target="_blank"
-              className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-4 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors"
+              className="bg-primary h-button-md hover:bg-primary/90 active:bg-primary/80 mt-4 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors"
             >
               연습 대상 열기
             </Link>
@@ -323,7 +374,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
         ) : null}
 
         {!challenge.knownDefects && !challenge.modelTestCases && (
-          <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
+          <section className="border-line-3 mt-8 border border-dashed p-6">
             <h2 className="text-base font-semibold">
               {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
             </h2>
