@@ -140,9 +140,9 @@ export const RequirementsView = () => {
       </ActionToolbar.Root>
 
       <section className="col-span-6 grid min-h-0 gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="flex min-h-0 flex-col">
-          <div className="border-line-2 bg-bg-2 rounded-3 mb-3 flex items-center justify-between border px-4 py-3">
-            <div>
+        <div className="border-line-2 bg-bg-2 rounded-3 flex min-h-0 flex-col overflow-hidden border">
+          <div className="border-line-2 flex items-center justify-between gap-4 border-b px-5 py-4">
+            <div className="min-w-0">
               <h2 className="typo-body1-heading text-text-1">요구사항 분석</h2>
               <p className="typo-label-normal text-text-3 mt-0.5">
                 {searchQuery.trim()
@@ -150,12 +150,14 @@ export const RequirementsView = () => {
                   : `전체 ${allAnalyses.length}개 분석`}
               </p>
             </div>
-            <span className="typo-caption bg-bg-3 text-text-3 rounded-full px-2 py-1">최신순</span>
+            <span className="typo-caption bg-bg-3 text-text-3 shrink-0 rounded-full px-2 py-1">
+              최신순
+            </span>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {analyses.length === 0 ? (
-              <div className="border-line-2 bg-bg-2 rounded-3 grid h-full min-h-[360px] overflow-hidden border lg:grid-cols-[minmax(0,1fr)_18rem]">
+              <div className="grid h-full min-h-[360px] overflow-hidden lg:grid-cols-[minmax(0,1fr)_18rem]">
                 <div className="flex min-w-0 flex-col justify-center px-8 py-10">
                   <div className="bg-bg-3 text-primary border-line-2 rounded-3 flex h-11 w-11 items-center justify-center border">
                     <FileSearch className="h-5 w-5" strokeWidth={1.7} />
@@ -205,7 +207,7 @@ export const RequirementsView = () => {
                 </div>
               </div>
             ) : (
-              <div className="border-line-2 bg-bg-2 rounded-3 overflow-hidden border">
+              <div className="min-h-full">
                 <div className="border-line-2 text-text-4 grid grid-cols-[minmax(0,1fr)_8rem_8rem_8rem] gap-4 border-b px-5 py-2.5 text-xs max-lg:hidden">
                   <span>분석 결과</span>
                   <span>요구사항</span>
