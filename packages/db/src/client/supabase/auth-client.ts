@@ -1,8 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { type SupabaseClient, createClient } from '@supabase/supabase-js';
 
 import type { Database } from './types';
 
+let browserAuthClient: SupabaseClient<Database> | null = null;
+
 export const createSupabaseBrowserAuthClient = () => {
+  if (browserAuthClient) return browserAuthClient;
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -11,7 +15,7 @@ export const createSupabaseBrowserAuthClient = () => {
     throw new Error('Supabase URL or Publishable Key is missing in environment variables.');
   }
 
-  return createClient<Database>(supabaseUrl, supabaseKey, {
+  browserAuthClient = createClient<Database>(supabaseUrl, supabaseKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -19,4 +23,6 @@ export const createSupabaseBrowserAuthClient = () => {
       storageKey: 'testea-auth',
     },
   });
+
+  return browserAuthClient;
 };
