@@ -45,12 +45,19 @@ export interface HiddenGradeResult {
   cases: HiddenGradeCase[];
 }
 
+interface NormalizedRequest {
+  method: string;
+  pathname: string;
+  search: string;
+  segments: string[];
+}
+
 function hasPassingUserChecks(attempt: ApiAttemptForGrade): boolean {
   const checks = [...attempt.checks, ...attempt.scriptResults];
   return checks.length > 0 && checks.every((check) => check.pass);
 }
 
-function stripJavaScriptComments(script: string): string {
+function stripNonExecutableJavaScript(script: string): string {
   let output = '';
   let quote: 'single' | 'double' | 'template' | null = null;
   let escaped = false;
@@ -60,7 +67,6 @@ function stripJavaScriptComments(script: string): string {
     const next = script[i + 1];
 
     if (quote) {
-      output += current;
       if (escaped) {
         escaped = false;
       } else if (current === '\\') {
@@ -72,22 +78,23 @@ function stripJavaScriptComments(script: string): string {
       ) {
         quote = null;
       }
+      output += current === '\n' ? '\n' : ' ';
       continue;
     }
 
     if (current === "'") {
       quote = 'single';
-      output += current;
+      output += ' ';
       continue;
     }
     if (current === '"') {
       quote = 'double';
-      output += current;
+      output += ' ';
       continue;
     }
     if (current === '`') {
       quote = 'template';
-      output += current;
+      output += ' ';
       continue;
     }
     if (current === '/' && next === '/') {
@@ -97,7 +104,10 @@ function stripJavaScriptComments(script: string): string {
     }
     if (current === '/' && next === '*') {
       i += 2;
-      while (i < script.length && !(script[i] === '*' && script[i + 1] === '/')) i += 1;
+      while (i < script.length && !(script[i] === '*' && script[i + 1] === '/')) {
+        output += script[i] === '\n' ? '\n' : ' ';
+        i += 1;
+      }
       i += 1;
       continue;
     }
@@ -110,8 +120,12 @@ function stripJavaScriptComments(script: string): string {
 
 function hasStatusAssertion(attempt: ApiAttemptForGrade): boolean {
   if (attempt.assertions.some((assertion) => assertion.kind === 'status')) return true;
-  return /pm\.response\.to\.have\.status\s*\(|pm\.response\.code|response\.status/i.test(
-    stripJavaScriptComments(attempt.script)
+  const executable = stripNonExecutableJavaScript(attempt.script);
+  return (
+    /pm\.response\.to\.have\.status\s*\(/i.test(executable) ||
+    /pm\.expect\s*\(\s*(?:pm\.response\.code|response\.status)\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|above|below)\s*\(/i.test(
+      executable
+    )
   );
 }
 
@@ -119,36 +133,74 @@ function hasBodyAssertion(attempt: ApiAttemptForGrade): boolean {
   if (attempt.assertions.some((assertion) => assertion.kind === 'json' && assertion.path.trim())) {
     return true;
   }
-  return /pm\.response\.json\s*\(\)[\s\S]*(pm\.expect|\.to\.|\.have\.|\.eql\s*\(|\.equal\s*\()/i.test(
-    stripJavaScriptComments(attempt.script)
+  const executable = stripNonExecutableJavaScript(attempt.script);
+  return /pm\.expect\s*\(\s*pm\.response\.json\s*\(\s*\)\s*(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])*\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|include|lengthOf|property|a|above|below)\s*\(/i.test(
+    executable
   );
 }
 
-function normalizeRequestPath(path: string): string {
-  const rawPath = path.trim() || '/';
+function normalizeRequest(input: ApiAttemptForGrade | ApiTargetForGrade): NormalizedRequest {
+  const rawPath = input.path.trim() || '/';
+  let pathname = '/';
+  let search = '';
+
   try {
     const url = new URL(rawPath, 'https://qaground.local');
-    return `${url.pathname}${url.search}`;
+    pathname = url.pathname || '/';
+    search = url.search;
   } catch {
     const [withoutHash] = rawPath.split('#');
-    return withoutHash.startsWith('/') ? withoutHash : `/${withoutHash}`;
+    const [rawPathname, rawSearch] = withoutHash.split('?');
+    pathname = rawPathname.startsWith('/') ? rawPathname : `/${rawPathname}`;
+    search = rawSearch ? `?${rawSearch}` : '';
   }
+
+  return {
+    method: input.method.toUpperCase(),
+    pathname,
+    search,
+    segments: pathname.split('/').filter(Boolean),
+  };
 }
 
-function normalizeRequestKey(input: ApiAttemptForGrade | ApiTargetForGrade): string {
-  return `${input.method.toUpperCase()} ${normalizeRequestPath(input.path)}`;
+function matchesTarget(attempt: ApiAttemptForGrade, target: ApiTargetForGrade): boolean {
+  const actual = normalizeRequest(attempt);
+  const expected = normalizeRequest(target);
+  if (actual.method !== expected.method) return false;
+  if (actual.search !== expected.search) return false;
+  if (actual.segments.length !== expected.segments.length) return false;
+
+  return expected.segments.every((segment, index) => {
+    if (segment.startsWith(':')) return actual.segments[index].length > 0;
+    return segment === actual.segments[index];
+  });
+}
+
+function getTargetAttempts(
+  attempts: ApiAttemptForGrade[],
+  options?: ApiGradeOptions
+): ApiAttemptForGrade[] {
+  const targets = options?.targets ?? [];
+  if (targets.length === 0) return attempts;
+  return attempts.filter((attempt) => targets.some((target) => matchesTarget(attempt, target)));
 }
 
 function hasRequestCoverage(attempts: ApiAttemptForGrade[], options?: ApiGradeOptions): boolean {
-  const attemptedKeys = new Set(
-    attempts.filter(hasPassingUserChecks).map((attempt) => normalizeRequestKey(attempt))
-  );
-  const targetKeys = options?.targets?.map((target) => normalizeRequestKey(target)) ?? [];
+  const targets = options?.targets ?? [];
+  const passingAttempts = attempts.filter(hasPassingUserChecks);
 
-  if (targetKeys.length > 0) {
-    return targetKeys.every((targetKey) => attemptedKeys.has(targetKey));
+  if (targets.length > 0) {
+    return targets.every((target) =>
+      passingAttempts.some((attempt) => matchesTarget(attempt, target))
+    );
   }
 
+  const attemptedKeys = new Set(
+    passingAttempts.map((attempt) => {
+      const normalized = normalizeRequest(attempt);
+      return `${normalized.method} ${normalized.pathname}${normalized.search}`;
+    })
+  );
   return attemptedKeys.size >= 2;
 }
 
@@ -156,18 +208,21 @@ export function gradeApiAttempts(
   attempts: ApiAttemptForGrade[],
   options?: ApiGradeOptions
 ): HiddenGradeResult {
+  const targetAttempts = getTargetAttempts(attempts, options);
   const cases: HiddenGradeCase[] = [
     {
       id: 'success-path',
       points: 20,
-      pass: attempts.some(
+      pass: targetAttempts.some(
         (attempt) => attempt.status >= 200 && attempt.status < 300 && hasPassingUserChecks(attempt)
       ),
     },
     {
       id: 'failure-path',
       points: 20,
-      pass: attempts.some((attempt) => attempt.status >= 400 && hasPassingUserChecks(attempt)),
+      pass: targetAttempts.some(
+        (attempt) => attempt.status >= 400 && hasPassingUserChecks(attempt)
+      ),
     },
     {
       id: 'request-coverage',
@@ -177,14 +232,16 @@ export function gradeApiAttempts(
     {
       id: 'status-assertion',
       points: 20,
-      pass: attempts.some(
+      pass: targetAttempts.some(
         (attempt) => hasPassingUserChecks(attempt) && hasStatusAssertion(attempt)
       ),
     },
     {
       id: 'body-assertion',
       points: 20,
-      pass: attempts.some((attempt) => hasPassingUserChecks(attempt) && hasBodyAssertion(attempt)),
+      pass: targetAttempts.some(
+        (attempt) => hasPassingUserChecks(attempt) && hasBodyAssertion(attempt)
+      ),
     },
   ];
 

@@ -62,16 +62,47 @@ describe('gradeApiAttempts', () => {
     expect(result.cases.find((item) => item.id === 'status-assertion')?.pass).toBe(false);
   });
 
-  it('주석 처리된 pm.response.json 예시는 본문 단언으로 세지 않는다', () => {
+  it('주석과 문자열 안의 pm.response 참조는 단언으로 세지 않는다', () => {
     const result = gradeApiAttempts([
       {
         ...baseAttempt,
-        script: `// pm.expect(pm.response.json().total).to.eql(12);`,
+        assertions: [],
+        script: `
+          // pm.expect(pm.response.json().total).to.eql(12);
+          const note = "pm.response.code";
+          console.log(response.status);
+        `,
         scriptResults: [{ pass: true }],
       },
     ]);
 
+    expect(result.cases.find((item) => item.id === 'status-assertion')?.pass).toBe(false);
     expect(result.cases.find((item) => item.id === 'body-assertion')?.pass).toBe(false);
+  });
+
+  it('본문 단언은 pm.response.json 값을 실제 expect 대상으로 묶은 경우만 인정한다', () => {
+    const parseOnly = gradeApiAttempts([
+      {
+        ...baseAttempt,
+        assertions: [],
+        script: `
+          const body = pm.response.json();
+          pm.response.to.have.status(200);
+        `,
+        scriptResults: [{ pass: true }],
+      },
+    ]);
+    const bodyAssert = gradeApiAttempts([
+      {
+        ...baseAttempt,
+        assertions: [],
+        script: `pm.expect(pm.response.json().total).to.eql(12);`,
+        scriptResults: [{ pass: true }],
+      },
+    ]);
+
+    expect(parseOnly.cases.find((item) => item.id === 'body-assertion')?.pass).toBe(false);
+    expect(bodyAssert.cases.find((item) => item.id === 'body-assertion')?.pass).toBe(true);
   });
 
   it('쿼리 문자열이 다른 대상 엔드포인트를 서로 다른 coverage로 계산한다', () => {
@@ -103,7 +134,21 @@ describe('gradeApiAttempts', () => {
     expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(true);
   });
 
-  it('대상 챌린지 엔드포인트 밖의 요청은 coverage로 인정하지 않는다', () => {
+  it('템플릿 엔드포인트는 실제 경로 세그먼트와 매칭한다', () => {
+    const result = gradeApiAttempts(
+      [
+        {
+          ...baseAttempt,
+          path: '/products/1',
+        },
+      ],
+      { targets: [{ method: 'GET', path: '/products/:id' }] }
+    );
+
+    expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(true);
+  });
+
+  it('대상 챌린지 엔드포인트 밖의 요청은 숨김 점수로 인정하지 않는다', () => {
     const result = gradeApiAttempts(
       [
         baseAttempt,
@@ -116,6 +161,9 @@ describe('gradeApiAttempts', () => {
       { targets: [{ method: 'GET', path: '/admin/reports' }] }
     );
 
+    expect(result.cases.find((item) => item.id === 'success-path')?.pass).toBe(false);
+    expect(result.cases.find((item) => item.id === 'failure-path')?.pass).toBe(false);
     expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(false);
+    expect(result.cases.find((item) => item.id === 'status-assertion')?.pass).toBe(false);
   });
 });

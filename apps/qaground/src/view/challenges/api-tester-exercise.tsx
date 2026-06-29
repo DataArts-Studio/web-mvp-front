@@ -207,7 +207,16 @@ function parseHeaderInput(input: string): Record<string, string> {
     })
   );
 }
+const SENSITIVE_HEADER_NAME = /^(authorization|cookie|set-cookie|x-api-key|x-qaground-signature)$/i;
 
+function redactHeaders(headers: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => [
+      key,
+      SENSITIVE_HEADER_NAME.test(key) ? '[REDACTED]' : value,
+    ])
+  );
+}
 let nextId = 2;
 
 /**
@@ -250,7 +259,7 @@ export const ApiTesterExercise = ({
     setError('');
     setResult(null);
     try {
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = parseHeaderInput(customHeaders);
       if (token.trim()) headers['Authorization'] = `Bearer ${token.trim()}`;
       const hasBody = method !== 'GET' && body.trim();
       if (hasBody) headers['Content-Type'] = 'application/json';
@@ -312,8 +321,15 @@ export const ApiTesterExercise = ({
       recordSubmission({
         slug,
         kind: 'api',
-        content: { method, path, headers: customHeaders, assertions, script },
-        result: { passed, total: totalChecks, hiddenGrade },
+        content: {
+          method,
+          path,
+          headers: redactHeaders(headers),
+          assertions,
+          script,
+          attempts: nextAttempts,
+        },
+        result: { passed, total: totalChecks },
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : '요청 실패');

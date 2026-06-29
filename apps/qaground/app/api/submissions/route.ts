@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { gradeApiAttempts } from '@/shared/challenges/api-hidden-grader';
 import { getChallenge } from '@/shared/challenges/registry';
 import { getDatabase, qagroundSubmissions } from '@testea/db';
 import { z } from 'zod';
@@ -16,6 +17,34 @@ const BodySchema = z
     anonId: z.string().max(64).optional(),
   })
   .strict();
+
+const ApiAssertionSchema = z
+  .object({
+    kind: z.enum(['status', 'json']),
+    path: z.string(),
+    expected: z.string(),
+  })
+  .strict();
+
+const ApiCheckSchema = z.object({ pass: z.boolean() }).passthrough();
+
+const ApiAttemptSchema = z
+  .object({
+    method: z.string(),
+    path: z.string(),
+    status: z.number().int(),
+    assertions: z.array(ApiAssertionSchema),
+    script: z.string(),
+    checks: z.array(ApiCheckSchema),
+    scriptResults: z.array(ApiCheckSchema),
+  })
+  .strict();
+
+const ApiContentSchema = z
+  .object({
+    attempts: z.array(ApiAttemptSchema).max(100),
+  })
+  .passthrough();
 
 // 제출 내용 jsonb 크기 상한(직렬화 기준). 남용·과대 페이로드 차단.
 const MAX_CONTENT_BYTES = 50_000;
@@ -73,6 +102,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'content_too_large' }, { status: 413 });
   }
 
+  const apiContent =
+    parsed.data.kind === 'api' ? ApiContentSchema.safeParse(parsed.data.content) : null;
+  const serverResult =
+    apiContent?.success && challenge.endpoints
+      ? {
+          ...(parsed.data.result && typeof parsed.data.result === 'object'
+            ? parsed.data.result
+            : {}),
+          hiddenGrade: gradeApiAttempts(apiContent.data.attempts, { targets: challenge.endpoints }),
+        }
+      : (parsed.data.result ?? null);
+
   try {
     const db = getDatabase();
     await db.insert(qagroundSubmissions).values({
@@ -80,7 +121,7 @@ export async function POST(request: Request) {
       track: challenge.track,
       kind: parsed.data.kind,
       content: parsed.data.content ?? {},
-      result: parsed.data.result ?? null,
+      result: serverResult,
       anon_id: parsed.data.anonId ?? null,
     });
     return NextResponse.json({ ok: true });
