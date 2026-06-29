@@ -87,3 +87,67 @@ export const ORDERS: Order[] = [
 export function findOrder(id: number): Order | undefined {
   return ORDERS.find((o) => o.id === id);
 }
+export type TicketStatus = 'open' | 'pending' | 'resolved';
+export type TicketPriority = 'low' | 'medium' | 'high';
+
+export interface Ticket {
+  id: number;
+  title: string;
+  customerEmail: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  assignee: string | null;
+  createdAt: string;
+}
+
+export const TICKETS: Ticket[] = [
+  {
+    id: 501,
+    title: '로그인 인증 메일이 오지 않아요',
+    customerEmail: 'minji@example.com',
+    status: 'open',
+    priority: 'high',
+    assignee: null,
+    createdAt: '2026-06-01T09:00:00.000Z',
+  },
+  {
+    id: 502,
+    title: '결제 영수증 재발급 요청',
+    customerEmail: 'billing@example.com',
+    status: 'pending',
+    priority: 'medium',
+    assignee: 'support-a',
+    createdAt: '2026-06-02T10:30:00.000Z',
+  },
+  {
+    id: 503,
+    title: '프로젝트 멤버 초대 오류',
+    customerEmail: 'lead@example.com',
+    status: 'open',
+    priority: 'medium',
+    assignee: 'support-b',
+    createdAt: '2026-06-03T14:20:00.000Z',
+  },
+  {
+    id: 504,
+    title: 'CSV 내보내기 파일이 깨져요',
+    customerEmail: 'qa@example.com',
+    status: 'resolved',
+    priority: 'low',
+    assignee: 'support-a',
+    createdAt: '2026-06-04T08:15:00.000Z',
+  },
+  {
+    id: 505,
+    title: '자동화 실행 결과가 지연됩니다',
+    customerEmail: 'runner@example.com',
+    status: 'pending',
+    priority: 'high',
+    assignee: null,
+    createdAt: '2026-06-05T16:45:00.000Z',
+  },
+];
+
+export function findTicket(id: number): Ticket | undefined {
+  return TICKETS.find((ticket) => ticket.id === id);
+}
