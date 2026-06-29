@@ -143,11 +143,11 @@ export const RequirementsView = () => {
         <div className="flex min-h-0 flex-col">
           <div className="border-line-2 bg-bg-2 rounded-3 mb-3 flex items-center justify-between border px-4 py-3">
             <div>
-              <h2 className="typo-body1-heading text-text-1">분석서 목록</h2>
+              <h2 className="typo-body1-heading text-text-1">요구사항 분석</h2>
               <p className="typo-label-normal text-text-3 mt-0.5">
                 {searchQuery.trim()
                   ? `검색 결과 ${analyses.length}개 / 전체 ${allAnalyses.length}개`
-                  : `전체 ${allAnalyses.length}개 분석서`}
+                  : `전체 ${allAnalyses.length}개 분석`}
               </p>
             </div>
             <span className="typo-caption bg-bg-3 text-text-3 rounded-full px-2 py-1">최신순</span>
@@ -155,28 +155,53 @@ export const RequirementsView = () => {
 
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {analyses.length === 0 ? (
-              <div className="rounded-3 border-line-2 bg-bg-2/50 flex h-full min-h-[320px] flex-col items-center justify-center gap-4 border-2 border-dashed py-20 text-center">
-                <div className="bg-bg-3 text-text-3 flex h-12 w-12 items-center justify-center rounded-full">
-                  <FileSearch className="h-6 w-6" strokeWidth={1.5} />
-                </div>
-                <div className="flex flex-col gap-1">
+              <div className="border-line-2 bg-bg-2 rounded-3 grid h-full min-h-[360px] overflow-hidden border lg:grid-cols-[minmax(0,1fr)_18rem]">
+                <div className="flex min-w-0 flex-col justify-center px-8 py-10">
+                  <div className="bg-bg-3 text-primary border-line-2 rounded-3 flex h-11 w-11 items-center justify-center border">
+                    <FileSearch className="h-5 w-5" strokeWidth={1.7} />
+                  </div>
                   {searchQuery.trim() ? (
                     <>
-                      <p className="typo-h3-heading text-text-1">검색 결과가 없습니다.</p>
-                      <p className="typo-body2-normal text-text-3">
-                        다른 키워드로 다시 검색해보세요.
+                      <h3 className="typo-h2-heading text-text-1 mt-5">검색 결과가 없습니다.</h3>
+                      <p className="typo-body2-normal text-text-3 mt-2 max-w-xl">
+                        제목이나 요약에 포함된 다른 키워드로 다시 검색해보세요.
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="typo-h3-heading text-text-1">
-                        아직 생성한 요구사항 분석이 없습니다.
+                      <h3 className="typo-h2-heading text-text-1 mt-5">
+                        첫 요구사항 분석을 시작하세요.
+                      </h3>
+                      <p className="typo-body2-normal text-text-3 mt-2 max-w-xl">
+                        기능 설명, 정책 문서, 회의록을 입력하면 분석 결과와 테스트 시나리오로
+                        이어지는 작업 단위를 만듭니다.
                       </p>
-                      <p className="typo-body2-normal text-text-3">
-                        요구사항을 입력해 분석서와 테스트 시나리오를 만들어보세요.
-                      </p>
+                      <button
+                        type="button"
+                        onClick={onOpen}
+                        disabled={!projectId}
+                        className="bg-primary hover:bg-primary/90 typo-label-heading rounded-2 mt-5 inline-flex h-9 w-fit items-center justify-center gap-2 px-4 text-white transition-colors disabled:opacity-50"
+                      >
+                        <Plus className="h-4 w-4" />새 요구사항 분석
+                      </button>
                     </>
                   )}
+                </div>
+                <div className="border-line-2 bg-bg-1/60 flex flex-col justify-center gap-4 border-t px-6 py-8 lg:border-t-0 lg:border-l">
+                  <div>
+                    <p className="typo-label-heading text-text-2">권장 입력</p>
+                    <ul className="typo-label-normal text-text-4 mt-2 flex flex-col gap-1.5">
+                      <li>사용자 역할과 주요 행동</li>
+                      <li>정상 흐름과 예외 조건</li>
+                      <li>화면, API, 데이터 제약</li>
+                    </ul>
+                  </div>
+                  <div className="border-line-2 border-t pt-4">
+                    <p className="typo-label-heading text-text-2">생성 후 이동</p>
+                    <p className="typo-label-normal text-text-4 mt-1">
+                      분석 결과를 확인한 뒤 시나리오 관리에서 케이스와 스위트로 확장합니다.
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
