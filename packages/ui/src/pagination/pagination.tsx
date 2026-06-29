@@ -34,9 +34,12 @@ export const Pagination = ({
             <button
               key={p}
               type="button"
+              disabled={p === currentPage}
               onClick={() => onPageChange(p)}
               className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
-                p === currentPage ? 'bg-bg-4 text-text-1 font-bold' : 'text-text-2 hover:bg-bg-3'
+                p === currentPage
+                  ? 'bg-bg-4 text-text-1 font-bold disabled:opacity-100'
+                  : 'text-text-2 hover:bg-bg-3'
               }`}
             >
               {p}
