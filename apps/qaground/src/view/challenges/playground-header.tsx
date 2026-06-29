@@ -28,6 +28,12 @@ export const PlaygroundHeader = ({
           >
             챌린지
           </Link>
+          <Link
+            href="/community"
+            className="text-text-2 hover:text-text-1 text-sm transition-colors"
+          >
+            커뮤니티
+          </Link>
           <AuthStatus />
           <IssueReportButton />
         </div>

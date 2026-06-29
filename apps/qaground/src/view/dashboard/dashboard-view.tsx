@@ -249,13 +249,16 @@ export function DashboardView() {
 
         <div className="border-line-2 bg-bg-2 rounded-lg border p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">작성한 글</h2>
+            <div>
+              <h2 className="text-lg font-semibold">내가 쓴 글</h2>
+              <p className="text-text-3 mt-1 text-xs">커뮤니티에 작성한 글입니다.</p>
+            </div>
             <FileText className="text-primary" size={20} aria-hidden="true" />
           </div>
           <div className="border-line-2 bg-bg-1 rounded-lg border border-dashed p-6 text-center">
             <p className="text-text-2 text-sm">아직 작성한 글이 없습니다.</p>
             <p className="text-text-3 mt-2 text-xs">
-              글쓰기 기능이 열리면 풀이 노트와 회고가 여기에 표시됩니다.
+              커뮤니티에 작성한 글이 생기면 여기에 표시됩니다.
             </p>
           </div>
         </div>
