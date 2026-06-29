@@ -8,6 +8,7 @@ import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
 import {
   type ApiAttemptForGrade,
+  type ApiTargetForGrade,
   type HiddenGradeResult,
   gradeApiAttempts,
 } from '@/shared/challenges/api-hidden-grader';
@@ -186,6 +187,27 @@ pm.test('상태 코드는 200', () => {
 // });
 `;
 
+function parseHeaderInput(input: string): Record<string, string> {
+  const trimmed = input.trim();
+  if (!trimmed) return {};
+
+  if (trimmed.startsWith('{')) {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('추가 헤더 JSON은 객체여야 합니다.');
+    }
+    return Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value)]));
+  }
+
+  return Object.fromEntries(
+    trimmed.split('\n').map((line) => {
+      const separator = line.indexOf(':');
+      if (separator <= 0) throw new Error('추가 헤더는 "이름: 값" 형식이어야 합니다.');
+      return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+    })
+  );
+}
+
 let nextId = 2;
 
 /**
@@ -194,10 +216,19 @@ let nextId = 2;
  * 포스트맨처럼 요청을 구성하고, (1) 구조화된 단언 또는 (2) pm.test 스크립트로 응답을 검증한다.
  * 스크립트는 사용자 브라우저에서만 평가하므로 격리 러너·서버 코드 실행이 필요 없다.
  */
-export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: string }) => {
+export const ApiTesterExercise = ({
+  apiBase,
+  slug,
+  endpoints,
+}: {
+  apiBase: string;
+  slug: string;
+  endpoints: ApiTargetForGrade[];
+}) => {
   const [method, setMethod] = useState<Method>('GET');
   const [path, setPath] = useState('/products?page=1&limit=5');
   const [token, setToken] = useState('');
+  const [customHeaders, setCustomHeaders] = useState('');
   const [body, setBody] = useState('');
   const [assertions, setAssertions] = useState<Assertion[]>([
     { id: 1, kind: 'status', path: '', expected: '200' },
@@ -269,7 +300,7 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
         scriptResults,
       };
       const nextAttempts = [...attempts, attempt];
-      const hiddenGrade = gradeApiAttempts(nextAttempts);
+      const hiddenGrade = gradeApiAttempts(nextAttempts, { targets: endpoints });
       setAttempts(nextAttempts);
 
       const pretty = json !== undefined ? JSON.stringify(json, null, 2) : bodyText;
@@ -281,7 +312,7 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
       recordSubmission({
         slug,
         kind: 'api',
-        content: { method, path, assertions, script },
+        content: { method, path, headers: customHeaders, assertions, script },
         result: { passed, total: totalChecks, hiddenGrade },
       });
     } catch (e) {
@@ -341,6 +372,15 @@ export const ApiTesterExercise = ({ apiBase, slug }: { apiBase: string; slug: st
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
           placeholder="Bearer 토큰 (보호된 요청에만, 예: qaground-demo-token)"
           className={`h-button-md ${fieldClass}`}
+        />
+
+        <textarea
+          data-testid="api-headers"
+          value={customHeaders}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomHeaders(e.target.value)}
+          rows={2}
+          placeholder={'추가 헤더 (선택)\nx-qaground-signature: test-signature'}
+          className={`py-2 font-mono ${fieldClass}`}
         />
 
         {method !== 'GET' && (

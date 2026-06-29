@@ -22,6 +22,15 @@ export interface ApiAttemptForGrade {
   scriptResults: ApiScriptResultForGrade[];
 }
 
+export interface ApiTargetForGrade {
+  method: string;
+  path: string;
+}
+
+export interface ApiGradeOptions {
+  targets?: ApiTargetForGrade[];
+}
+
 export interface HiddenGradeCase {
   id: string;
   points: number;
@@ -41,10 +50,68 @@ function hasPassingUserChecks(attempt: ApiAttemptForGrade): boolean {
   return checks.length > 0 && checks.every((check) => check.pass);
 }
 
+function stripJavaScriptComments(script: string): string {
+  let output = '';
+  let quote: 'single' | 'double' | 'template' | null = null;
+  let escaped = false;
+
+  for (let i = 0; i < script.length; i += 1) {
+    const current = script[i];
+    const next = script[i + 1];
+
+    if (quote) {
+      output += current;
+      if (escaped) {
+        escaped = false;
+      } else if (current === '\\') {
+        escaped = true;
+      } else if (
+        (quote === 'single' && current === "'") ||
+        (quote === 'double' && current === '"') ||
+        (quote === 'template' && current === '`')
+      ) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (current === "'") {
+      quote = 'single';
+      output += current;
+      continue;
+    }
+    if (current === '"') {
+      quote = 'double';
+      output += current;
+      continue;
+    }
+    if (current === '`') {
+      quote = 'template';
+      output += current;
+      continue;
+    }
+    if (current === '/' && next === '/') {
+      while (i < script.length && script[i] !== '\n') i += 1;
+      output += '\n';
+      continue;
+    }
+    if (current === '/' && next === '*') {
+      i += 2;
+      while (i < script.length && !(script[i] === '*' && script[i + 1] === '/')) i += 1;
+      i += 1;
+      continue;
+    }
+
+    output += current;
+  }
+
+  return output;
+}
+
 function hasStatusAssertion(attempt: ApiAttemptForGrade): boolean {
   if (attempt.assertions.some((assertion) => assertion.kind === 'status')) return true;
   return /pm\.response\.to\.have\.status\s*\(|pm\.response\.code|response\.status/i.test(
-    attempt.script
+    stripJavaScriptComments(attempt.script)
   );
 }
 
@@ -53,17 +120,42 @@ function hasBodyAssertion(attempt: ApiAttemptForGrade): boolean {
     return true;
   }
   return /pm\.response\.json\s*\(\)[\s\S]*(pm\.expect|\.to\.|\.have\.|\.eql\s*\(|\.equal\s*\()/i.test(
-    attempt.script
+    stripJavaScriptComments(attempt.script)
   );
 }
 
-function normalizeRequestKey(attempt: ApiAttemptForGrade): string {
-  const rawPath = attempt.path.trim() || '/';
-  const [pathname] = rawPath.split('?');
-  return `${attempt.method.toUpperCase()} ${pathname}`;
+function normalizeRequestPath(path: string): string {
+  const rawPath = path.trim() || '/';
+  try {
+    const url = new URL(rawPath, 'https://qaground.local');
+    return `${url.pathname}${url.search}`;
+  } catch {
+    const [withoutHash] = rawPath.split('#');
+    return withoutHash.startsWith('/') ? withoutHash : `/${withoutHash}`;
+  }
 }
 
-export function gradeApiAttempts(attempts: ApiAttemptForGrade[]): HiddenGradeResult {
+function normalizeRequestKey(input: ApiAttemptForGrade | ApiTargetForGrade): string {
+  return `${input.method.toUpperCase()} ${normalizeRequestPath(input.path)}`;
+}
+
+function hasRequestCoverage(attempts: ApiAttemptForGrade[], options?: ApiGradeOptions): boolean {
+  const attemptedKeys = new Set(
+    attempts.filter(hasPassingUserChecks).map((attempt) => normalizeRequestKey(attempt))
+  );
+  const targetKeys = options?.targets?.map((target) => normalizeRequestKey(target)) ?? [];
+
+  if (targetKeys.length > 0) {
+    return targetKeys.every((targetKey) => attemptedKeys.has(targetKey));
+  }
+
+  return attemptedKeys.size >= 2;
+}
+
+export function gradeApiAttempts(
+  attempts: ApiAttemptForGrade[],
+  options?: ApiGradeOptions
+): HiddenGradeResult {
   const cases: HiddenGradeCase[] = [
     {
       id: 'success-path',
@@ -80,7 +172,7 @@ export function gradeApiAttempts(attempts: ApiAttemptForGrade[]): HiddenGradeRes
     {
       id: 'request-coverage',
       points: 20,
-      pass: new Set(attempts.map(normalizeRequestKey)).size >= 2,
+      pass: hasRequestCoverage(attempts, options),
     },
     {
       id: 'status-assertion',
