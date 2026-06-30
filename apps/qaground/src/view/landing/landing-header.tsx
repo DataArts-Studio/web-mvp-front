@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 const NAV = [
-  { label: '연습', href: '#playground' },
+  { label: '플레이그라운드', href: '/playground' },
   { label: '작동 방식', href: '#how' },
   { label: '과제전형', href: '#assessment' },
 ];
