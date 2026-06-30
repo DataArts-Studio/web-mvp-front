@@ -14,6 +14,40 @@ function splitLines(code: string): string[] {
   return lines.length === 1 && lines[0] === '' ? [] : lines;
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function highlightCodeLine(line: string): string {
+  const escaped = escapeHtml(line);
+  if (escaped.trimStart().startsWith('//')) {
+    return `<span class="text-[#8b949e] italic">${escaped}</span>`;
+  }
+
+  return escaped
+    .replace(/(\/[^\/\n]+\/[gimsuy]*)/g, '<span class="text-[#a5d6ff]">$1</span>')
+    .replace(/(['`"])(.*?)(\1)/g, '<span class="text-[#a5d6ff]">$1$2$3</span>')
+    .replace(
+      /\b(async|await|const|let|return|import|from|test|expect|true|false)\b/g,
+      '<span class="text-[#ff7b72]">$1</span>'
+    )
+    .replace(/\b(page|locator|success|error)\b/g, '<span class="text-[#d2a8ff]">$1</span>')
+    .replace(
+      /\b(fill|click|goto|getByTestId|toHaveText|toBeVisible|not)\b/g,
+      '<span class="text-[#79c0ff]">$1</span>'
+    )
+    .replace(/\b(\d+)\b/g, '<span class="text-[#79c0ff]">$1</span>');
+}
+
+function CodeLine({ line }: { line: string }) {
+  return (
+    <code
+      className="block min-w-0 break-words whitespace-pre-wrap text-[#c9d1d9]"
+      dangerouslySetInnerHTML={{ __html: highlightCodeLine(line || ' ') }}
+    />
+  );
+}
+
 function buildLineDiff(submittedCode: string, solutionCode: string): DiffLine[] {
   const submitted = splitLines(submittedCode);
   const solution = splitLines(solutionCode);
@@ -39,15 +73,13 @@ function CodePanel({ code, title }: { code: string; title: string }) {
         <span className="text-text-2 text-sm font-medium">{title}</span>
         <span className="text-text-3 ml-auto font-mono text-[11px]">spec.ts</span>
       </div>
-      <div className="max-h-[38rem] overflow-y-auto bg-[#0d1117] py-3 font-mono text-xs leading-5">
+      <div className="qg-code-scrollbar max-h-[38rem] overflow-y-auto bg-[#0d1117] py-3 font-mono text-xs leading-5">
         {lines.map((line, index) => (
           <div key={`${index}-${line}`} className="grid grid-cols-[3rem_minmax(0,1fr)] px-3">
             <span className="pr-4 text-right text-[#6e7681] tabular-nums select-none">
               {index + 1}
             </span>
-            <pre className="min-w-0 break-words whitespace-pre-wrap text-[#c9d1d9]">
-              {line || ' '}
-            </pre>
+            <CodeLine line={line} />
           </div>
         ))}
       </div>
@@ -73,7 +105,7 @@ function DiffPanel({
         <span className="text-text-2 text-sm font-medium">Diff</span>
         <span className="text-text-3 ml-auto font-mono text-[11px]">submitted ↔ solution</span>
       </div>
-      <div className="max-h-[38rem] overflow-y-auto bg-[#0d1117] py-3 font-mono text-xs leading-5">
+      <div className="qg-code-scrollbar max-h-[38rem] overflow-y-auto bg-[#0d1117] py-3 font-mono text-xs leading-5">
         {diffLines.map((line, index) => {
           if (line.type === 'same') {
             return (
@@ -82,9 +114,7 @@ function DiffPanel({
                   {index + 1}
                 </span>
                 <span className="text-[#6e7681]"> </span>
-                <pre className="min-w-0 break-words whitespace-pre-wrap text-[#c9d1d9]">
-                  {line.submitted || ' '}
-                </pre>
+                <CodeLine line={line.submitted} />
               </div>
             );
           }
@@ -99,9 +129,7 @@ function DiffPanel({
                   {index + 1}
                 </span>
                 <span className="text-[#3fb950]">+</span>
-                <pre className="min-w-0 break-words whitespace-pre-wrap text-[#c9d1d9]">
-                  {line.solution || ' '}
-                </pre>
+                <CodeLine line={line.solution} />
               </div>
             );
           }
@@ -116,9 +144,7 @@ function DiffPanel({
                   {index + 1}
                 </span>
                 <span className="text-[#f85149]">-</span>
-                <pre className="min-w-0 break-words whitespace-pre-wrap text-[#c9d1d9]">
-                  {line.submitted || ' '}
-                </pre>
+                <CodeLine line={line.submitted} />
               </div>
             );
           }
@@ -130,18 +156,14 @@ function DiffPanel({
                   {index + 1}
                 </span>
                 <span className="text-[#f85149]">-</span>
-                <pre className="min-w-0 break-words whitespace-pre-wrap text-[#c9d1d9]">
-                  {line.submitted || ' '}
-                </pre>
+                <CodeLine line={line.submitted} />
               </div>
               <div className="grid grid-cols-[3rem_1.5rem_minmax(0,1fr)] bg-[#1f6f43]/20 px-3">
                 <span className="pr-4 text-right text-[#6e7681] tabular-nums select-none">
                   {index + 1}
                 </span>
                 <span className="text-[#3fb950]">+</span>
-                <pre className="min-w-0 break-words whitespace-pre-wrap text-[#c9d1d9]">
-                  {line.solution || ' '}
-                </pre>
+                <CodeLine line={line.solution} />
               </div>
             </div>
           );
