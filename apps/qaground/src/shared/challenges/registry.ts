@@ -75,6 +75,12 @@ export interface Challenge {
   modelTestCases?: { title: string; detail: string }[];
   /** 코드 채점: 코드 에디터 초기 Playwright 스펙 템플릿. */
   starterSpec?: string;
+  /** 학습 UX: 예상 풀이 시간(분). */
+  estimatedMinutes?: number;
+  /** 학습 UX: 먼저 풀면 좋은 챌린지 slug 목록. */
+  prerequisites?: string[];
+  /** 학습 UX: 완료 후 추천할 챌린지 slug 목록. */
+  recommendedNext?: string[];
 }
 
 export const TRACK_LABEL: Record<ChallengeTrack, string> = {
@@ -125,6 +131,8 @@ export const CHALLENGES: Challenge[] = [
     track: 'automation',
     category: 'auth',
     difficulty: 'easy',
+    estimatedMinutes: 20,
+    recommendedNext: ['signup-validation', 'test-design-password-reset'],
     tools: ['Playwright'],
     summary: '유효·무효 자격증명에 따른 로그인 동작을 검증하는 자동화 테스트를 작성하세요.',
     requirement: [
@@ -156,6 +164,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'automation',
     category: 'forms',
     difficulty: 'easy',
+    estimatedMinutes: 25,
+    prerequisites: ['login-basic'],
+    recommendedNext: ['profile-form', 'realtime-validation'],
     tools: ['Playwright'],
     summary: '이메일 형식, 비밀번호 규칙, 비밀번호 확인 일치를 검증하는 테스트를 작성하세요.',
     requirement: [
@@ -212,6 +223,8 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'automation',
     category: 'data',
     difficulty: 'medium',
+    estimatedMinutes: 30,
+    recommendedNext: ['wizard-form', 'cart-checkout'],
     tools: ['Playwright'],
     summary: '검색 필터, 컬럼 정렬, 페이지 이동이 있는 테이블을 검증하는 테스트를 작성하세요.',
     requirement: [
@@ -366,6 +379,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'automation',
     category: 'forms',
     difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['signup-validation'],
+    recommendedNext: ['cart-checkout'],
     tools: ['Playwright'],
     summary: '단계별 검증·이동·이전 복귀가 있는 3단계 위저드 폼을 검증하는 테스트를 작성하세요.',
     requirement: [
@@ -482,6 +498,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'automation',
     category: 'commerce',
     difficulty: 'hard',
+    estimatedMinutes: 45,
+    prerequisites: ['data-table', 'wizard-form'],
+    recommendedNext: ['test-case-coupon', 'rest-api-products'],
     tools: ['Playwright'],
     summary:
       '수량 변경에 따라 소계·배송비·쿠폰 할인이 연쇄로 합계에 반영되는 장바구니를 검증하세요. 재고 한도와 쿠폰 최소 금액 규칙이 얽혀 있습니다.',
@@ -550,6 +569,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'api',
     category: 'data',
     difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['login-basic'],
+    recommendedNext: ['rest-api-auth-session', 'rest-api-product-crud-auth'],
     tools: ['Postman'],
     summary:
       '상품 REST API의 목록·조회·생성·삭제와 인증을 검증하는 API 테스트를 작성하세요. 브라우저가 아니라 HTTP 요청으로 검증합니다.',
@@ -575,6 +597,11 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
           { path: 'data', type: 'array', required: true, desc: '상품 배열' },
           { path: 'data.0.id', type: 'number', required: true },
           { path: 'data.0.name', type: 'string', required: true },
+          { path: 'data.0.category', type: 'string', required: true },
+          { path: 'data.0.price', type: 'number', required: true },
+          { path: 'data.0.inStock', type: 'boolean', required: true },
+          { path: 'page', type: 'number', required: true },
+          { path: 'limit', type: 'number', required: true },
           { path: 'total', type: 'number', required: true },
           { path: 'totalPages', type: 'number', required: true },
         ],
@@ -593,6 +620,7 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         response: [
           { path: 'id', type: 'number', required: true },
           { path: 'name', type: 'string', required: true },
+          { path: 'category', type: 'string', required: true },
           { path: 'price', type: 'number', required: true },
           { path: 'inStock', type: 'boolean', required: true },
         ],
@@ -631,7 +659,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         response: [
           { path: 'id', type: 'number', required: true },
           { path: 'name', type: 'string', required: true },
+          { path: 'category', type: 'string', required: true },
           { path: 'price', type: 'number', required: true },
+          { path: 'inStock', type: 'boolean', required: true },
         ],
         responseExample: {
           id: 13,
@@ -652,6 +682,8 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'manual',
     category: 'fundamentals',
     difficulty: 'medium',
+    estimatedMinutes: 25,
+    recommendedNext: ['test-design-password-reset'],
     tools: ['Testea'],
     summary:
       '주문 폼에 의도적으로 심은 결함을 탐색적 테스트로 찾고, 결함 리포트를 작성해 제출하세요. 제출하면 정답과 피드백을 보여줍니다.',
@@ -684,6 +716,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'manual',
     category: 'fundamentals',
     difficulty: 'medium',
+    estimatedMinutes: 30,
+    prerequisites: ['login-basic'],
+    recommendedNext: ['test-design-login-lockout', 'test-case-coupon'],
     tools: ['Testea'],
     summary:
       '비밀번호 재설정 기능의 테스트 케이스를 설계하세요. 정상·예외·경계 시나리오를 빠짐없이 도출하는 메뉴얼 테스트 연습입니다.',
@@ -725,6 +760,8 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'manual',
     category: 'fundamentals',
     difficulty: 'easy',
+    estimatedMinutes: 35,
+    prerequisites: ['cart-checkout', 'test-design-password-reset'],
     tools: ['Testea'],
     summary:
       '할인 쿠폰 적용 기능의 테스트 케이스를 작성하세요. 정상·예외·경계 시나리오를 표로 정리하는 연습입니다.',
@@ -1162,6 +1199,8 @@ test('내 테스트', async ({ page }) => {
     track: 'manual',
     category: 'fundamentals',
     difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['test-design-password-reset'],
     tools: ['Testea'],
     summary:
       '로그인 실패 잠금 정책의 테스트 케이스를 설계하세요. 실패 누적·잠금·해제·카운터 리셋을 경계값과 함께 빠짐없이 도출하는 연습입니다.',
@@ -1533,6 +1572,9 @@ test('내 테스트', async ({ page }) => {
     track: 'api',
     category: 'auth',
     difficulty: 'medium',
+    estimatedMinutes: 40,
+    prerequisites: ['rest-api-products'],
+    recommendedNext: ['rest-api-product-crud-auth'],
     tools: ['Postman'],
     summary:
       '로그인 후 보호된 /me API를 호출하고, 누락·만료·잘못된 토큰과 refresh token 갱신 경로를 검증하세요.',
@@ -1784,6 +1826,8 @@ test('내 테스트', async ({ page }) => {
     track: 'api',
     category: 'commerce',
     difficulty: 'medium',
+    estimatedMinutes: 50,
+    prerequisites: ['rest-api-products', 'rest-api-auth-session'],
     tools: ['Postman'],
     summary:
       '로그인으로 토큰을 발급받고, 보호된 상품 생성·수정·삭제 API의 인증, 입력 검증, 상태 코드를 검증하세요. 성공 경로뿐 아니라 401·400·404·204 같은 API 경계 응답까지 함께 확인해야 합니다.',
