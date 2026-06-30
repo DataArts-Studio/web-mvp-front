@@ -13,6 +13,7 @@ import Link from 'next/link';
 import type { ApiEndpoint } from '@/shared/challenges/registry';
 import { ApiTesterExercise } from '@/view/challenges/api-tester-exercise';
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
+import { ArrowLeft } from 'lucide-react';
 
 const API_BASE = '/api/practice';
 const DEFAULT_RAIL_WIDTH = 340;
@@ -158,11 +159,20 @@ export const PostmanV1PlaygroundView = () => {
       <PlaygroundHeader containerClassName="max-w-none" />
       <main className="flex min-h-0 w-full flex-1 flex-col">
         <header className="border-line-2 flex items-start justify-between gap-4 border-b px-4 py-2">
-          <div className="min-w-0">
-            <h1 className="text-base font-semibold tracking-tight">Postman v1 플레이그라운드</h1>
-            <p className="text-text-3 mt-0.5 truncate text-sm">
-              제공된 API를 선택해 요청을 보내고 pm.test 스크립트를 작성합니다.
-            </p>
+          <div className="flex min-w-0 items-start gap-2">
+            <Link
+              href="/playground"
+              aria-label="플레이그라운드 목록으로 이동"
+              className="border-line-2 text-text-3 hover:text-text-1 hover:bg-bg-2 flex size-7 shrink-0 items-center justify-center border transition-colors"
+            >
+              <ArrowLeft className="size-4" aria-hidden="true" />
+            </Link>
+            <div className="min-w-0">
+              <h1 className="text-base font-semibold tracking-tight">Postman v1 플레이그라운드</h1>
+              <p className="text-text-3 mt-0.5 truncate text-sm">
+                제공된 API를 선택해 요청을 보내고 pm.test 스크립트를 작성합니다.
+              </p>
+            </div>
           </div>
           <div className="text-text-3 flex shrink-0 items-center gap-2 pt-0.5 text-sm">
             <Link href="/playground" className="hover:text-text-1 transition-colors">
