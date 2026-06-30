@@ -24,7 +24,7 @@ const PLAYGROUNDS = [
     status: '사용 가능',
     href: '/playground/postman-v1',
     summary:
-      '제공된 qaground 데모 API를 대상으로 Postman처럼 요청을 구성하고 응답을 관찰합니다. 정답 제출이나 채점 없이, 헤더·본문·상태 코드·JSON 응답을 자유롭게 실험하는 공간입니다.',
+      'qaground 데모 API를 대상으로 요청 헤더, 본문, 상태 코드, JSON 응답을 자유롭게 실험합니다.',
     resources: ['Auth API', 'Products API', 'Status API', 'pm.test 예시'],
   },
   {
@@ -111,49 +111,43 @@ const PLAYGROUNDS = [
   },
 ];
 
-const availableCount = PLAYGROUNDS.filter((item) => item.status === '사용 가능').length;
-
 function PlaygroundCard({ item }: { item: (typeof PLAYGROUNDS)[number] }) {
   const body = (
     <>
-      <div className="border-line-2 bg-bg-3/50 border-b p-5">
-        <div className="flex items-center gap-2">
-          <span className="bg-primary/12 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
-            {item.environment}
-          </span>
-          <span className="bg-bg-1 text-text-2 rounded-full px-2.5 py-0.5 text-xs">
-            {item.version}
-          </span>
-          <span className="text-text-3 ml-auto text-xs">{item.status}</span>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="bg-primary/12 text-primary rounded px-2 py-0.5 text-xs font-medium">
+              {item.environment}
+            </span>
+            <span className="bg-bg-3 text-text-2 rounded px-2 py-0.5 text-xs">{item.version}</span>
+            <span className="text-text-3 text-xs">{item.status}</span>
+          </div>
+          <h3 className="truncate text-base font-semibold tracking-tight">{item.title}</h3>
+          <p className="text-text-2 mt-1 line-clamp-2 text-sm leading-relaxed">{item.subtitle}</p>
         </div>
-        <h3 className="mt-5 text-xl font-semibold tracking-tight">{item.title}</h3>
-        <p className="text-text-2 mt-2 text-sm leading-relaxed">{item.subtitle}</p>
+        <span className="text-text-3 shrink-0 text-sm" aria-hidden>
+          {item.href ? '→' : '예정'}
+        </span>
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
-        <p className="text-text-2 text-sm leading-relaxed">{item.summary}</p>
+      <p className="text-text-2 mt-4 line-clamp-2 text-sm leading-relaxed">{item.summary}</p>
 
-        <div className="mt-5 flex flex-wrap gap-1.5">
-          {item.resources.map((resource) => (
-            <span
-              key={resource}
-              className="border-line-3 text-text-3 rounded-full border px-2 py-0.5 text-xs"
-            >
-              {resource}
-            </span>
-          ))}
-        </div>
-
-        <div className="border-line-2 text-text-2 group-hover:text-text-1 mt-auto flex items-center justify-between border-t pt-4 text-sm transition-colors">
-          <span>{item.status === '사용 가능' ? '환경 열기' : '환경 준비중'}</span>
-          <span aria-hidden>{item.href ? '→' : '예정'}</span>
-        </div>
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {item.resources.map((resource) => (
+          <span
+            key={resource}
+            className="border-line-3 text-text-3 rounded border px-2 py-0.5 text-xs"
+          >
+            {resource}
+          </span>
+        ))}
       </div>
     </>
   );
 
   const className =
-    'group border-line-2 bg-bg-2 flex min-h-80 flex-col overflow-hidden rounded-2xl border transition-colors';
+    'group border-line-2 bg-bg-2 block min-h-56 rounded-lg border p-4 transition-colors';
 
   if (!item.href) {
     return <article className={`${className} opacity-75`}>{body}</article>;
@@ -169,19 +163,31 @@ function PlaygroundCard({ item }: { item: (typeof PLAYGROUNDS)[number] }) {
 export const PlaygroundListView = () => {
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-      <PlaygroundHeader />
-      <main className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[280px_1fr]">
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="border-line-2 bg-bg-2 rounded-2xl border p-4">
+      <PlaygroundHeader containerClassName="max-w-[1440px]" />
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-6 py-8 lg:px-8">
+        <header className="border-line-2 border-b pb-6">
+          <span className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+            qaground Playground
+          </span>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">플레이그라운드</h1>
+          <p className="text-text-2 mt-3 max-w-4xl text-sm leading-relaxed">
+            qaground가 웹사이트와 API를 제공하고, 사용자는 그 위에서 자유롭게 요청을 보내고
+            자동화하고 관찰하는 공간입니다. 정답 제출이나 채점보다 실무처럼 시스템을 만져보며 테스트
+            아이디어를 실험하는 데 초점을 둡니다.
+          </p>
+        </header>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr]">
+          <aside className="lg:sticky lg:top-24 lg:self-start">
             <h2 className="text-sm font-semibold">제공 환경</h2>
-            <nav className="mt-4 flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+            <nav className="mt-3 flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
               {ENVIRONMENTS.map((environment) => (
                 <button
                   key={environment.label}
                   type="button"
                   disabled={!environment.active}
                   className={[
-                    'flex min-w-40 items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors lg:min-w-0',
+                    'flex min-w-40 items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors lg:min-w-0',
                     environment.active
                       ? 'bg-bg-3 text-text-1 font-medium'
                       : 'text-text-3 cursor-not-allowed opacity-75',
@@ -192,41 +198,12 @@ export const PlaygroundListView = () => {
                 </button>
               ))}
             </nav>
-          </div>
-        </aside>
+          </aside>
 
-        <div className="min-w-0">
-          <header className="border-line-2 bg-bg-2 overflow-hidden rounded-2xl border">
-            <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_280px] lg:items-end">
-              <div>
-                <span className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
-                  qaground Playground
-                </span>
-                <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-                  플레이그라운드
-                </h1>
-                <p className="text-text-2 mt-4 max-w-2xl text-sm leading-relaxed">
-                  qaground가 웹사이트와 API를 제공하고, 사용자는 그 위에서 자유롭게 요청을 보내고
-                  자동화하고 관찰하는 공간입니다. 정답 제출이나 채점보다, 실무처럼 시스템을 만져보며
-                  테스트 아이디어를 직접 실험하는 데 초점을 둡니다.
-                </p>
-              </div>
-              <div className="border-line-2 bg-bg-1 rounded-xl border p-4">
-                <p className="text-text-3 text-xs">사용 가능 / 준비중 환경</p>
-                <p className="mt-2 text-3xl font-bold">
-                  {availableCount} / {PLAYGROUNDS.length}
-                </p>
-                <p className="text-text-2 mt-1 text-sm">
-                  첫 환경은 Postman 형식 API Sandbox입니다.
-                </p>
-              </div>
-            </div>
-          </header>
-
-          <section className="mt-8">
+          <section className="min-w-0">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold">Sandbox Catalog</h2>
+                <h2 className="text-lg font-semibold">Sandbox Catalog</h2>
                 <p className="text-text-2 mt-1 text-sm">
                   제공된 웹/API 환경을 열고 원하는 방식으로 요청, 자동화, 디버깅을 실험하세요.
                 </p>
@@ -234,7 +211,7 @@ export const PlaygroundListView = () => {
               <span className="text-text-3 text-sm">{PLAYGROUNDS.length}개</span>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {PLAYGROUNDS.map((item) => (
                 <PlaygroundCard key={item.slug} item={item} />
               ))}
