@@ -1,3 +1,13 @@
+'use client';
+
+import type {
+  CSSProperties,
+  KeyboardEvent,
+  ReactNode,
+  PointerEvent as ReactPointerEvent,
+} from 'react';
+import { useState } from 'react';
+
 import Link from 'next/link';
 
 import type { ApiEndpoint } from '@/shared/challenges/registry';
@@ -5,6 +15,9 @@ import { ApiTesterExercise } from '@/view/challenges/api-tester-exercise';
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
 
 const API_BASE = '/api/practice';
+const DEFAULT_RAIL_WIDTH = 340;
+const MIN_RAIL_WIDTH = 300;
+const MAX_RAIL_WIDTH = 520;
 
 const ENDPOINTS: ApiEndpoint[] = [
   {
@@ -96,7 +109,11 @@ const METHOD_CLASS: Record<ApiEndpoint['method'], string> = {
   DELETE: 'text-[#f85149]',
 };
 
-function RailSection({ title, children }: { title: string; children: React.ReactNode }) {
+function clampRailWidth(width: number) {
+  return Math.min(MAX_RAIL_WIDTH, Math.max(MIN_RAIL_WIDTH, width));
+}
+
+function RailSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="py-5 first:pt-0">
       <h2 className="text-text-3 text-[11px] font-semibold tracking-[0.14em] uppercase">{title}</h2>
@@ -106,6 +123,36 @@ function RailSection({ title, children }: { title: string; children: React.React
 }
 
 export const PostmanV1PlaygroundView = () => {
+  const [railWidth, setRailWidth] = useState(DEFAULT_RAIL_WIDTH);
+
+  const startRailResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+
+    const startX = event.clientX;
+    const startWidth = railWidth;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      setRailWidth(clampRailWidth(startWidth + moveEvent.clientX - startX));
+    };
+
+    const stopResize = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', stopResize);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', stopResize);
+  };
+
+  const handleRailResizeKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+      return;
+    }
+
+    event.preventDefault();
+    setRailWidth((width) => clampRailWidth(width + (event.key === 'ArrowRight' ? 20 : -20)));
+  };
+
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
       <PlaygroundHeader containerClassName="max-w-none" />
@@ -126,7 +173,10 @@ export const PostmanV1PlaygroundView = () => {
           </div>
         </header>
 
-        <div className="grid min-h-0 flex-1 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <div
+          className="grid min-h-0 flex-1 lg:grid-cols-[var(--playground-rail-width)_6px_minmax(0,1fr)]"
+          style={{ '--playground-rail-width': `${railWidth}px` } as CSSProperties}
+        >
           <aside className="border-line-2 qg-panel-scrollbar overflow-auto px-4 py-4 text-sm lg:border-r">
             <RailSection title="Environment">
               <dl className="space-y-2 text-xs">
@@ -175,6 +225,18 @@ export const PostmanV1PlaygroundView = () => {
               </ol>
             </RailSection>
           </aside>
+
+          <div
+            aria-label="좌측 패널 너비 조절"
+            aria-orientation="vertical"
+            className="group border-line-2 hidden cursor-col-resize border-r lg:block"
+            onKeyDown={handleRailResizeKeyDown}
+            onPointerDown={startRailResize}
+            role="separator"
+            tabIndex={0}
+          >
+            <div className="group-hover:bg-primary/25 h-full w-full transition-colors" />
+          </div>
 
           <div className="min-h-0 overflow-hidden">
             <ApiTesterExercise
