@@ -1,35 +1,41 @@
-﻿import { cn } from '@testea/util';
+import { cn } from '@testea/util';
 
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  maxVisible?: number;
 }
 
-type PageItem = number | 'ellipsis-start' | 'ellipsis-end';
+const DOTS = 'dots';
 
-const getVisiblePages = (currentPage: number, totalPages: number): PageItem[] => {
-  const pages = Math.max(totalPages, 1);
+type PageItem = number | typeof DOTS;
 
-  if (pages <= 7) {
-    return Array.from({ length: pages }, (_, i) => i + 1);
+const getPageItems = (currentPage: number, totalPages: number, maxVisible: number): PageItem[] => {
+  if (totalPages <= maxVisible) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
 
-  const safeCurrent = Math.min(Math.max(currentPage, 1), pages);
-  const start = Math.max(2, safeCurrent - 1);
-  const end = Math.min(pages - 1, safeCurrent + 1);
-  const items: PageItem[] = [1];
+  const middleSlots = Math.max(1, maxVisible - 4);
+  const half = Math.floor(middleSlots / 2);
+  let start = Math.max(2, currentPage - half);
+  let end = Math.min(totalPages - 1, start + middleSlots - 1);
 
-  if (start > 2) items.push('ellipsis-start');
+  if (end - start + 1 < middleSlots) {
+    start = Math.max(2, end - middleSlots + 1);
+  }
+
+  const items: PageItem[] = [1];
+  if (start > 2) items.push(DOTS);
 
   for (let page = start; page <= end; page += 1) {
     items.push(page);
   }
 
-  if (end < pages - 1) items.push('ellipsis-end');
+  if (end < totalPages - 1) items.push(DOTS);
+  items.push(totalPages);
 
-  items.push(pages);
   return items;
 };
 
@@ -38,10 +44,12 @@ export const Pagination = ({
   totalPages,
   onPageChange,
   className,
+  maxVisible = 9,
 }: PaginationProps) => {
-  const pages = Math.max(totalPages, 1);
-  const safeCurrentPage = Math.min(Math.max(currentPage, 1), pages);
-  const visiblePages = getVisiblePages(safeCurrentPage, pages);
+  if (totalPages <= 1) return null;
+
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const pageItems = getPageItems(safeCurrentPage, totalPages, Math.max(5, maxVisible));
 
   return (
     <div className={cn('flex items-center justify-center px-6 py-3', className)}>
@@ -55,36 +63,35 @@ export const Pagination = ({
         >
           &lt;
         </button>
-        <div className="flex min-w-[17rem] items-center justify-center gap-1">
-          {visiblePages.map((item) =>
-            typeof item === 'number' ? (
-              <button
-                key={item}
-                type="button"
-                onClick={() => onPageChange(item)}
-                aria-current={item === safeCurrentPage ? 'page' : undefined}
-                className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
-                  item === safeCurrentPage
-                    ? 'bg-bg-4 text-text-1 font-bold'
-                    : 'text-text-2 hover:bg-bg-3'
-                }`}
-              >
-                {item}
-              </button>
-            ) : (
-              <span
-                key={item}
-                className="typo-caption-normal text-text-4 flex h-8 w-8 shrink-0 items-center justify-center"
-                aria-hidden="true"
-              >
-                ...
-              </span>
-            )
-          )}
-        </div>
+        {pageItems.map((item, index) =>
+          item === DOTS ? (
+            <span
+              key={`${item}-${index}`}
+              className="typo-caption-normal text-text-4 flex h-8 w-8 items-center justify-center"
+              aria-hidden="true"
+            >
+              ...
+            </span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              disabled={item === safeCurrentPage}
+              onClick={() => onPageChange(item)}
+              aria-current={item === safeCurrentPage ? 'page' : undefined}
+              className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
+                item === safeCurrentPage
+                  ? 'bg-bg-4 text-text-1 font-bold disabled:opacity-100'
+                  : 'text-text-2 hover:bg-bg-3'
+              }`}
+            >
+              {item}
+            </button>
+          )
+        )}
         <button
           type="button"
-          disabled={safeCurrentPage >= pages}
+          disabled={safeCurrentPage >= totalPages}
           onClick={() => onPageChange(safeCurrentPage + 1)}
           className="typo-caption-normal rounded-1 text-text-2 hover:bg-bg-3 flex h-8 w-8 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
           aria-label="다음 페이지"

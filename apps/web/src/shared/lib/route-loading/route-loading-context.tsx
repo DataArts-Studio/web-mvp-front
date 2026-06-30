@@ -12,8 +12,6 @@ import {
 
 import { usePathname } from 'next/navigation';
 
-import { LoadingSpinner } from '@testea/ui';
-
 type RouteLoadingContextType = {
   startRouteLoading: () => void;
 };
@@ -24,7 +22,7 @@ const RouteLoadingContext = createContext<RouteLoadingContextType>({
 
 export const useRouteLoading = () => useContext(RouteLoadingContext);
 
-const LOADING_DELAY_MS = 150;
+const LOADING_DELAY_MS = 250;
 
 export const RouteLoadingProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +30,10 @@ export const RouteLoadingProvider = ({ children }: { children: ReactNode }) => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startRouteLoading = useCallback(() => {
-    // 짧은 딜레이 후 로딩 표시 (빠른 전환 시 깜빡임 방지)
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    // 짧은 전환에서는 전체 화면 스피너를 띄우지 않는다.
     timerRef.current = setTimeout(() => {
       setIsLoading(true);
     }, LOADING_DELAY_MS);
@@ -51,7 +52,9 @@ export const RouteLoadingProvider = ({ children }: { children: ReactNode }) => {
   return (
     <RouteLoadingContext.Provider value={{ startRouteLoading }}>
       {children}
-      {isLoading && <LoadingSpinner fullScreen size="md" />}
+      {isLoading && (
+        <div className="bg-primary fixed top-0 right-0 left-0 z-[1000] h-0.5 animate-pulse" />
+      )}
     </RouteLoadingContext.Provider>
   );
 };

@@ -123,10 +123,13 @@ const TestTablePagination = ({
           <button
             key={p}
             type="button"
+            disabled={p === page}
             onClick={() => onPageChange(p)}
             className={cn(
               'typo-caption-normal rounded-1 flex h-8 min-w-8 items-center justify-center px-1.5 transition-colors',
-              p === page ? 'bg-primary font-medium text-white' : 'text-text-2 hover:bg-bg-3'
+              p === page
+                ? 'bg-primary font-medium text-white disabled:opacity-100'
+                : 'text-text-2 hover:bg-bg-3'
             )}
           >
             {p}

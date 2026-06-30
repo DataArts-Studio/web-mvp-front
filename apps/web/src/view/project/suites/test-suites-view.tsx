@@ -64,32 +64,28 @@ export const TestSuitesView = () => {
 
   const totalItems = filteredSuites.length;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
-  const paginatedSuites = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredSuites.slice(start, start + PAGE_SIZE);
-  }, [filteredSuites, currentPage]);
 
   useEffect(() => {
     if (totalPages === 0) {
       if (currentPage !== 1) setCurrentPage(1);
       return;
     }
-
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
+
+  const handlePageChange = (page: number) => {
+    const safePage = Math.min(Math.max(1, page), Math.max(1, totalPages));
+    if (safePage === currentPage) return;
+    setCurrentPage(safePage);
+  };
+  const paginatedSuites = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredSuites.slice(start, start + PAGE_SIZE);
+  }, [filteredSuites, currentPage]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1);
-  };
-
-  const handlePageChange = (page: number) => {
-    if (totalPages === 0) {
-      setCurrentPage(1);
-      return;
-    }
-
-    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
   };
 
   const handleEdit = (suite: TestSuiteCard) => {
