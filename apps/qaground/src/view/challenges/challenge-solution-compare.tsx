@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type Tab = 'submitted' | 'solution' | 'diff';
 type DiffLine =
@@ -188,10 +188,20 @@ export function ChallengeSolutionCompare({
   slug: string;
   solutionCode: string;
 }) {
-  const [submittedCode] = useState(() => readSubmittedCode(slug));
-  const [activeTab, setActiveTab] = useState<Tab>(() =>
-    readSubmittedCode(slug) ? 'submitted' : 'solution'
-  );
+  const [submittedCode, setSubmittedCode] = useState('');
+  const [activeTab, setActiveTab] = useState<Tab>('solution');
+
+  useEffect(() => {
+    const storedCode = readSubmittedCode(slug);
+    if (!storedCode) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      setSubmittedCode(storedCode);
+      setActiveTab('submitted');
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [slug]);
 
   const tabs: { id: Tab; label: string; disabled?: boolean }[] = [
     { id: 'submitted', label: '제출 코드', disabled: !submittedCode },

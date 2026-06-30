@@ -38,6 +38,11 @@ interface ParsedFunction {
   body: string;
 }
 
+interface ParsedFunctionRange extends ParsedFunction {
+  start: number;
+  bodyEnd: number;
+}
+
 /** 라인/블록 주석 제거. 주석 속 TODO 힌트(`// expect ...`)가 채점에 끼지 않게 한다. */
 function stripComments(src: string): string {
   return src
@@ -153,52 +158,51 @@ function findCallbackBodyStart(src: string, openParen: number): number {
   return -1;
 }
 
-function stripNestedFunctionBodies(src: string): string {
-  let output = '';
-  let i = 0;
+function collectFunctionRanges(src: string): ParsedFunctionRange[] {
+  const ranges: ParsedFunctionRange[] = [];
+  const patterns = [
+    /\b(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g,
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?function\b[^{}]*\{/g,
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*\{/g,
+  ];
 
-  while (i < src.length) {
-    const functionMatch = /\b(?:async\s+)?function\s+[A-Za-z_$][\w$]*\s*\(/g;
-    functionMatch.lastIndex = i;
-    const found = functionMatch.exec(src);
-    if (!found || found.index < i) {
-      output += src.slice(i);
-      break;
-    }
-
-    const bodyStart = src.indexOf('{', found.index);
-    if (bodyStart < 0) {
-      output += src.slice(i);
-      break;
-    }
+  const addRange = (name: string, start: number, bodyStart: number) => {
     const bodyEnd = findMatchingBrace(src, bodyStart);
-    if (bodyEnd < 0) {
-      output += src.slice(i);
-      break;
+    if (bodyEnd < 0) return;
+    ranges.push({ name, start, bodyEnd, body: src.slice(bodyStart + 1, bodyEnd) });
+  };
+
+  patterns.forEach((pattern) => {
+    for (const match of src.matchAll(pattern)) {
+      const start = match.index ?? 0;
+      const bodyStart = src.indexOf('{', start);
+      if (bodyStart < 0) continue;
+      addRange(match[1], start, bodyStart);
     }
+  });
 
-    output += src.slice(i, found.index) + ' ';
-    i = bodyEnd + 1;
-  }
+  return ranges
+    .sort((a, b) => a.start - b.start)
+    .filter((range, index, sorted) => index === 0 || range.start !== sorted[index - 1].start);
+}
 
-  return output;
+function stripNestedFunctionBodies(src: string): string {
+  const ranges = collectFunctionRanges(src);
+  let output = '';
+  let cursor = 0;
+
+  ranges.forEach((range) => {
+    if (range.start < cursor) return;
+    output += src.slice(cursor, range.start) + ' ';
+    cursor = range.bodyEnd + 1;
+  });
+
+  return output + src.slice(cursor);
 }
 
 function extractNamedFunctions(src: string): ParsedFunction[] {
-  const functions: ParsedFunction[] = [];
-  const re = /\b(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g;
-
-  for (const match of src.matchAll(re)) {
-    const bodyStart = src.indexOf('{', match.index ?? 0);
-    if (bodyStart < 0) continue;
-    const bodyEnd = findMatchingBrace(src, bodyStart);
-    if (bodyEnd < 0) continue;
-    functions.push({ name: match[1], body: src.slice(bodyStart + 1, bodyEnd) });
-  }
-
-  return functions;
+  return collectFunctionRanges(src).map(({ name, body }) => ({ name, body }));
 }
-
 function extractHookBodies(src: string): string[] {
   const bodies: string[] = [];
   const re = /\btest\.beforeEach\s*\(/g;

@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, type KeyboardEvent, type PointerEvent, useRef } from 'react';
+import { type CSSProperties, type KeyboardEvent, type PointerEvent, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -167,6 +167,7 @@ function ApiEndpoints({ challenge }: { challenge: Challenge }) {
 }
 
 export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => {
+  const [problemPaneWidth, setProblemPaneWidth] = useState(40);
   const problemPaneWidthRef = useRef(40);
   const splitRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
@@ -177,7 +178,9 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   const isApiTester = !!challenge.endpoints && !!challenge.apiBase;
   const isSplit = isAutomationCode || isApiTester;
 
-  const splitStyle = { '--problem-pane-width': '40%' } as CSSProperties;
+  const splitStyle = {
+    '--problem-pane-width': `${problemPaneWidth}%`,
+  } as CSSProperties;
 
   const applyProblemPaneWidth = (nextWidth: number) => {
     const clamped = Math.min(Math.max(nextWidth, 28), 50);
@@ -219,7 +222,9 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   const onProblemResizeKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
-    applyProblemPaneWidth(problemPaneWidthRef.current + (event.key === 'ArrowLeft' ? -2 : 2));
+    const nextWidth = problemPaneWidthRef.current + (event.key === 'ArrowLeft' ? -2 : 2);
+    applyProblemPaneWidth(nextWidth);
+    setProblemPaneWidth(problemPaneWidthRef.current);
   };
 
   const resizeHandle = (
@@ -230,7 +235,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
       aria-label="문제와 풀이 영역 너비 조절"
       aria-valuemin={28}
       aria-valuemax={50}
-      aria-valuenow={40}
+      aria-valuenow={Math.round(problemPaneWidth)}
       tabIndex={0}
       onPointerDown={onProblemResizeDown}
       onPointerMove={onProblemResizeMove}

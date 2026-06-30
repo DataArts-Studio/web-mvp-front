@@ -167,6 +167,50 @@ test('helper login', async ({ page }) => {
     const r = validateAutomationSubmissionShape(code);
     expect(r).toBeNull();
   });
+
+  it('호출하지 않은 arrow helper 안의 액션과 단언은 인정하지 않는다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+test('nested arrow helper', async ({ page }) => {
+  const helper = async () => {
+    await page.getByRole('button').click();
+    await expect(page.getByText('Saved')).toBeVisible();
+  };
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('expect');
+    expect(r?.errorMessage).toContain('상호작용');
+  });
+
+  it('호출한 arrow helper의 액션과 단언은 인정한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+const login = async (page) => {
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('login-success')).toBeVisible();
+};
+test('arrow helper login', async ({ page }) => {
+  await login(page);
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
+
+  it('호출한 function expression helper의 액션과 단언은 인정한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+const login = async function (page) {
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('login-success')).toBeVisible();
+};
+test('function expression helper login', async ({ page }) => {
+  await login(page);
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
   it('스타터를 수정하지 않으면 실패한다', () => {
     const r = gradeSubmissionStatically(challenge, challenge.starterSpec!);
     expect(r.ok).toBe(false);

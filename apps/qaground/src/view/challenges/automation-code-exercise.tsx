@@ -150,7 +150,7 @@ export const AutomationCodeExercise = ({
         const res = await fetch(`/api/challenges/${slug}/run`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code, shouldRecord }),
         });
         httpStatus = res.status;
         return (await res.json().catch(() => null)) as (RunResult & { error?: string }) | null;

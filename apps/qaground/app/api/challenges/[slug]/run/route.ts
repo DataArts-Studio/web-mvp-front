@@ -15,6 +15,7 @@ export const runtime = 'nodejs';
 const BodySchema = z
   .object({
     code: z.string().min(1).max(20_000),
+    shouldRecord: z.boolean().optional().default(false),
   })
   .strict();
 
@@ -60,7 +61,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return NextResponse.json({
       ...result,
       mode: 'static',
-      ...(result.ok ? { resultToken: createChallengeResultToken(slug) } : {}),
+      ...(result.ok && parsed.data.shouldRecord
+        ? { resultToken: createChallengeResultToken(slug) }
+        : {}),
     });
   }
 
@@ -95,7 +98,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     }
     return NextResponse.json({
       ...data,
-      ...(data.ok ? { resultToken: createChallengeResultToken(slug) } : {}),
+      ...(data.ok && parsed.data.shouldRecord
+        ? { resultToken: createChallengeResultToken(slug) }
+        : {}),
     });
   } catch (error) {
     console.error('[challenges/run] 러너 호출 실패', error);
