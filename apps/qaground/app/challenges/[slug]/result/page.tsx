@@ -9,7 +9,7 @@ import {
   TRACK_LABEL,
   getChallenge,
 } from '@/shared/challenges/registry';
-import { ChallengeSolutionCompare } from '@/view/challenges/challenge-solution-compare';
+import { ChallengeResultTabs } from '@/view/challenges/challenge-result-tabs';
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
 
 const SITE = 'https://qaground.gettestea.com';
@@ -87,53 +87,7 @@ export default async function ChallengeResultPage({
         </section>
 
         <div className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
-          <section className="min-w-0">
-            <h2 className="text-lg font-semibold">모범 풀이 포인트</h2>
-            <div className="border-line-2 bg-bg-2 mt-4 border">
-              {(solution?.approach?.length ? solution.approach : challenge.requirement).map(
-                (item, index) => (
-                  <div key={item} className="border-line-2 border-b px-4 py-3 last:border-b-0">
-                    <div className="flex gap-3">
-                      <span className="text-primary mt-0.5 font-mono text-xs">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <p className="text-text-2 text-sm leading-relaxed">{item}</p>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-
-            {solution?.code && (
-              <ChallengeSolutionCompare slug={challenge.slug} solutionCode={solution.code} />
-            )}
-
-            {!!solution?.notes?.length && (
-              <section className="mt-8">
-                <h2 className="text-lg font-semibold">리뷰 메모</h2>
-                <ul className="text-text-2 mt-3 flex list-disc flex-col gap-2 pl-5 text-sm leading-relaxed">
-                  {solution.notes.map((note) => (
-                    <li key={note}>{note}</li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            <section className="border-line-2 mt-8 border-t pt-8">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold">다른 사람 풀이</h2>
-                  <p className="text-text-3 mt-1 text-sm leading-relaxed">
-                    추후 로그인 제출 이력을 기반으로 공개 풀이, 인기 풀이, 내 풀이 비교를
-                    연결합니다.
-                  </p>
-                </div>
-                <span className="border-line-3 text-text-3 shrink-0 border px-3 py-1 text-xs">
-                  준비중
-                </span>
-              </div>
-            </section>
-          </section>
+          <ChallengeResultTabs challenge={challenge} />
 
           <aside className="border-line-2 bg-bg-2 h-fit border p-4">
             <h2 className="text-sm font-semibold">다음 행동</h2>
