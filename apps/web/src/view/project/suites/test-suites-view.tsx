@@ -203,6 +203,7 @@ export const TestSuitesView = () => {
                     <SuiteCard
                       key={suite.id}
                       href={`/projects/${params.slug}/suites/${suite.id}`}
+                      projectSlug={params.slug as string}
                       suite={suite}
                       onEdit={() => handleEdit(suite)}
                     />

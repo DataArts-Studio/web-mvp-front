@@ -42,6 +42,8 @@ export const RunsListToolbar = ({
 }: RunsListToolbarProps) => {
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const statusMenuId = React.useId();
+  const sortMenuId = React.useId();
 
   useOutsideClick(sortDropdownRef, onSortDropdownClose);
   useOutsideClick(statusDropdownRef, onStatusDropdownClose);
@@ -78,6 +80,9 @@ export const RunsListToolbar = ({
         <div className="relative" ref={statusDropdownRef}>
           <button
             type="button"
+            aria-haspopup="menu"
+            aria-expanded={isStatusDropdownOpen}
+            aria-controls={isStatusDropdownOpen ? statusMenuId : undefined}
             onClick={onStatusDropdownToggle}
             className={`typo-body2-heading inline-flex h-9 items-center gap-2 border px-3 transition-colors ${
               statusFilter !== 'ALL'
@@ -94,12 +99,18 @@ export const RunsListToolbar = ({
           </button>
 
           {isStatusDropdownOpen && (
-            <div className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-10 mt-1 min-w-[160px] overflow-hidden border">
+            <div
+              id={statusMenuId}
+              role="menu"
+              className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-10 mt-1 min-w-[160px] overflow-hidden border"
+            >
               {(['ALL', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as RunStatusFilter[]).map(
                 (status) => (
                   <button
                     key={status}
                     type="button"
+                    role="menuitemradio"
+                    aria-checked={statusFilter === status}
                     onClick={() => onStatusFilterChange(status)}
                     className={`typo-body2-normal hover:bg-bg-3 flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors ${
                       statusFilter === status ? 'bg-bg-3 text-primary' : 'text-text-2'
@@ -119,6 +130,9 @@ export const RunsListToolbar = ({
         <div className="relative" ref={sortDropdownRef}>
           <button
             type="button"
+            aria-haspopup="menu"
+            aria-expanded={isSortDropdownOpen}
+            aria-controls={isSortDropdownOpen ? sortMenuId : undefined}
             onClick={onSortDropdownToggle}
             className="typo-body2-heading border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 inline-flex h-9 items-center gap-2 border px-3 transition-colors"
           >
@@ -131,7 +145,11 @@ export const RunsListToolbar = ({
           </button>
 
           {isSortDropdownOpen && (
-            <div className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-10 mt-1 min-w-[160px] overflow-hidden border">
+            <div
+              id={sortMenuId}
+              role="menu"
+              className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-10 mt-1 min-w-[160px] overflow-hidden border"
+            >
               {(
                 [
                   ['UPDATED', '최근 수정 순'],
@@ -141,6 +159,8 @@ export const RunsListToolbar = ({
                 <button
                   key={value}
                   type="button"
+                  role="menuitemradio"
+                  aria-checked={sortOption === value}
                   onClick={() => onSortOptionChange(value)}
                   className={`typo-body2-normal hover:bg-bg-3 flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors ${
                     sortOption === value ? 'bg-bg-3 text-primary' : 'text-text-2'

@@ -2,8 +2,8 @@
 
 import React from 'react';
 
-import { Pagination } from '@testea/ui';
-import { ListTodo } from 'lucide-react';
+import { EmptyState, Pagination } from '@testea/ui';
+import { AlertCircle, ListTodo, Search } from 'lucide-react';
 
 import {
   type ITestRun,
@@ -107,17 +107,21 @@ export const RunsListTable = ({
   if (hasError && totalRunsCount === 0) {
     return (
       <section className="col-span-6 flex min-h-0 flex-col">
-        <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 px-6 text-center">
-          <p className="typo-body2-heading text-text-1">데이터를 불러오지 못했습니다.</p>
-          <p className="typo-body2-normal text-text-3">일시적인 오류가 발생했습니다.</p>
-          <button
-            type="button"
-            onClick={onRefetch}
-            className="typo-body2-heading text-primary hover:underline"
-          >
-            다시 시도
-          </button>
-        </div>
+        <EmptyState
+          icon={<AlertCircle className="h-10 w-10" />}
+          title="데이터를 불러오지 못했습니다."
+          description="일시적인 오류가 발생했습니다."
+          className="h-full min-h-[280px] px-6"
+          action={
+            <button
+              type="button"
+              onClick={onRefetch}
+              className="typo-body2-heading text-primary hover:underline"
+            >
+              다시 시도
+            </button>
+          }
+        />
       </section>
     );
   }
@@ -125,42 +129,47 @@ export const RunsListTable = ({
   if (totalRunsCount === 0) {
     return (
       <section className="col-span-6 flex min-h-0 flex-col">
-        <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 px-6 text-center">
-          <ListTodo className="text-text-4 h-6 w-6" aria-hidden="true" />
-          <p className="typo-body2-heading text-text-1">생성된 테스트 실행이 없습니다.</p>
-          <p className="typo-body2-normal text-text-3">
-            새로운 테스트 실행을 생성하여 결과를 기록해보세요.
-          </p>
-          <button
-            type="button"
-            onClick={onCreateRun}
-            className="typo-body2-heading text-primary hover:underline"
-          >
-            테스트 실행 생성
-          </button>
-        </div>
+        <EmptyState
+          icon={<ListTodo className="h-10 w-10" />}
+          title="생성된 테스트 실행이 없습니다."
+          description="새로운 테스트 실행을 생성하여 결과를 기록해보세요."
+          className="h-full min-h-[280px] px-6"
+          action={
+            <button
+              type="button"
+              onClick={onCreateRun}
+              className="typo-body2-heading text-primary hover:underline"
+            >
+              테스트 실행 생성
+            </button>
+          }
+        />
       </section>
     );
   }
 
   if (sortedRunsCount === 0) {
+    const description = searchTerm
+      ? `"${searchTerm}"에 대한 결과가 없습니다.`
+      : `상태: ${getStatusFilterLabel(statusFilter)}`;
+
     return (
       <section className="col-span-6 flex min-h-0 flex-col">
-        <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 px-6 text-center">
-          <p className="typo-body2-heading text-text-1">검색 결과가 없습니다.</p>
-          <p className="typo-body2-normal text-text-3">
-            {searchTerm
-              ? `"${searchTerm}"에 대한 결과가 없습니다.`
-              : `상태: ${getStatusFilterLabel(statusFilter)}`}
-          </p>
-          <button
-            type="button"
-            onClick={onResetFilters}
-            className="typo-body2-heading text-primary hover:underline"
-          >
-            필터 초기화
-          </button>
-        </div>
+        <EmptyState
+          icon={<Search className="h-10 w-10" />}
+          title="검색 결과가 없습니다."
+          description={description}
+          className="h-full min-h-[280px] px-6"
+          action={
+            <button
+              type="button"
+              onClick={onResetFilters}
+              className="typo-body2-heading text-primary hover:underline"
+            >
+              필터 초기화
+            </button>
+          }
+        />
       </section>
     );
   }

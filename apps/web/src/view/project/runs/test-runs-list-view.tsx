@@ -51,7 +51,9 @@ export const TestRunsListView = () => {
   const { data: projectIdData } = useQuery(projectIdQueryOptions(projectSlug));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
-  const { isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(projectSlug));
+  const { isLoading: isLoadingProject, refetch: refetchDashboard } = useQuery(
+    dashboardQueryOptions.stats(projectSlug)
+  );
 
   const {
     data: fetchedRunsData,
@@ -222,7 +224,10 @@ export const TestRunsListView = () => {
           onDeleteClick={setDeleteTarget}
           onRerunClick={setRerunTarget}
           rerunPendingId={rerunMutation.isPending ? (rerunTarget?.id ?? null) : null}
-          onRefetch={() => refetchRuns()}
+          onRefetch={() => {
+            refetchRuns();
+            refetchDashboard();
+          }}
           onResetFilters={handleResetFilters}
           onCreateRun={() => router.push(`/projects/${projectSlug}/runs/create`)}
         />
