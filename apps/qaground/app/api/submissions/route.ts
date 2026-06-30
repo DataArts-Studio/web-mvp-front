@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { gradeApiAttempts } from '@/shared/challenges/api-hidden-grader';
+import { createChallengeResultToken } from '@/shared/challenges/result-access.server';
 import { getChallenge } from '@/shared/challenges/registry';
 import { getDatabase, qagroundSubmissions } from '@testea/db';
 import { z } from 'zod';
@@ -20,7 +21,7 @@ const BodySchema = z
 
 const ApiAssertionSchema = z
   .object({
-    kind: z.enum(['status', 'json']),
+    kind: z.enum(['status', 'json', 'exists', 'type', 'arrayLength']),
     path: z.string(),
     expected: z.string(),
   })
@@ -104,16 +105,19 @@ export async function POST(request: Request) {
 
   const apiContent =
     parsed.data.kind === 'api' ? ApiContentSchema.safeParse(parsed.data.content) : null;
-  const serverResult =
+  const hiddenGrade =
     apiContent?.success && challenge.endpoints
+      ? gradeApiAttempts(apiContent.data.attempts, { targets: challenge.endpoints })
+      : null;
+  const serverResult =
+    hiddenGrade
       ? {
           ...(parsed.data.result && typeof parsed.data.result === 'object'
             ? parsed.data.result
             : {}),
-          hiddenGrade: gradeApiAttempts(apiContent.data.attempts, { targets: challenge.endpoints }),
+          hiddenGrade,
         }
       : (parsed.data.result ?? null);
-
   try {
     const db = getDatabase();
     await db.insert(qagroundSubmissions).values({
@@ -124,7 +128,13 @@ export async function POST(request: Request) {
       result: serverResult,
       anon_id: parsed.data.anonId ?? null,
     });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      resultToken:
+        hiddenGrade && hiddenGrade.score === hiddenGrade.maxScore
+          ? createChallengeResultToken(challenge.slug)
+          : undefined,
+    });
   } catch (error) {
     console.error('[submissions] 저장 실패', error);
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 });

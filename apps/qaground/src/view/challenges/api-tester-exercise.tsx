@@ -3,8 +3,10 @@
 import { type ReactNode, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 
-import { recordSubmission } from '@/shared/analytics/record-submission';
+import { DsCheckbox } from '@testea/ui';
+
 import { track } from '@/shared/analytics/track';
 import {
   type ApiAttemptForGrade,
@@ -25,11 +27,36 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 type AssertKind = 'status' | 'json' | 'exists' | 'type' | 'arrayLength';
+type ResultTab = 'body' | 'checks' | 'script' | 'headers' | 'grade';
+type AuthKind = 'none' | 'bearer' | 'basic' | 'apiKey';
+type HeaderKey =
+  | 'Accept'
+  | 'Content-Type'
+  | 'Authorization'
+  | 'x-api-key'
+  | 'x-qaground-signature'
+  | 'x-request-id';
+interface HeaderRow {
+  id: number;
+  key: HeaderKey;
+  value: string;
+  enabled: boolean;
+}
 interface Assertion {
   id: number;
   kind: AssertKind;
   path: string;
   expected: string;
+}
+interface ApiRequestCase {
+  key: string;
+  label: string;
+  endpoint: ApiEndpoint;
+  method: Method;
+  path: string;
+  expectedStatus: string;
+  authType?: AuthKind;
+  body?: string;
 }
 interface Check {
   label: string;
@@ -48,6 +75,7 @@ interface RunResult {
   bodyText: string;
   checks: Check[];
   scriptResults: PmResult[];
+  declaredScriptCount: number;
   hiddenGrade: HiddenGradeResult;
 }
 interface RequestHistoryItem {
@@ -61,6 +89,36 @@ interface RequestHistoryItem {
   createdAt: string;
 }
 
+type ApiTermKind = 'cmd' | 'dim' | 'pass' | 'fail' | 'run';
+interface ApiTermLine {
+  id: string;
+  text: string;
+  kind: ApiTermKind;
+}
+
+const API_TERM_CLASS: Record<ApiTermKind, string> = {
+  cmd: 'text-[#c9d1d9]',
+  dim: 'text-[#8b949e]',
+  pass: 'text-[#3fb950]',
+  fail: 'text-[#f85149]',
+  run: 'text-[#d29922]',
+};
+
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+function getAnonId(): string {
+  try {
+    let id = window.localStorage.getItem('qaground_anon_id');
+    if (!id) {
+      id = crypto.randomUUID();
+      window.localStorage.setItem('qaground_anon_id', id);
+    }
+    return id;
+  } catch {
+    return '';
+  }
+}
+
 const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const METHOD_TONE: Record<Method, string> = {
   GET: 'text-primary bg-primary/10 border-primary/20',
@@ -70,7 +128,20 @@ const METHOD_TONE: Record<Method, string> = {
   DELETE: 'text-system-red bg-system-red/10 border-system-red/20',
 };
 const SCHEMA_TYPES: ApiSchemaType[] = ['string', 'number', 'boolean', 'array', 'object', 'null'];
-
+const AUTH_TYPES: { key: AuthKind; label: string; placeholder: string }[] = [
+  { key: 'none', label: 'No Auth', placeholder: '토큰 없음' },
+  { key: 'bearer', label: 'Bearer Token', placeholder: 'qaground-demo-token' },
+  { key: 'basic', label: 'Basic Auth', placeholder: 'username:password' },
+  { key: 'apiKey', label: 'API Key', placeholder: 'api key value' },
+];
+const HEADER_KEYS: HeaderKey[] = [
+  'Accept',
+  'Content-Type',
+  'Authorization',
+  'x-api-key',
+  'x-qaground-signature',
+  'x-request-id',
+];
 /** 점(.) 경로로 JSON 값 탐색. eval 없이 구조적 접근만 한다. (`data.0.id` 등) */
 function getByPath(obj: unknown, path: string): unknown {
   if (!path.trim()) return obj;
@@ -140,7 +211,10 @@ function makeExpect(actual: unknown): Expectation {
       actual != null && typeof actual === 'object' && k in actual
         ? exp
         : fail(`expected object to have property ${k}`),
-    a: (t) => (typeof actual === t ? exp : fail(`expected type ${t} but got ${typeof actual}`)),
+    a: (t) => {
+      const actualType = Array.isArray(actual) ? 'array' : typeof actual;
+      return actualType === t ? exp : fail(`expected type ${t} but got ${actualType}`);
+    },
     get to() {
       return exp;
     },
@@ -216,25 +290,118 @@ pm.test('상태 코드는 200', () => {
 // });
 `;
 
-function parseHeaderInput(input: string): Record<string, string> {
-  const trimmed = input.trim();
-  if (!trimmed) return {};
+function defaultAssertionsForCase(requestCase?: ApiRequestCase): Assertion[] {
+  return [{ id: nextId++, kind: 'status', path: '', expected: requestCase?.expectedStatus ?? '200' }];
+}
 
-  if (trimmed.startsWith('{')) {
-    const parsed = JSON.parse(trimmed) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('추가 헤더 JSON은 객체여야 합니다.');
+function defaultScriptForCase(requestCase?: ApiRequestCase): string {
+  const expected = requestCase?.expectedStatus ?? '200';
+  const title = requestCase ? `${requestCase.method} ${requestCase.path}` : 'API 요청';
+  if (expected === '204') {
+    return `// ${title} 검증
+
+pm.test('상태 코드는 ${expected}', () => {
+  pm.response.to.have.status(${expected});
+});
+`;
+  }
+  if (expected === '404') {
+    return `// ${title} 검증
+const json = pm.response.json();
+
+pm.test('상태 코드는 404', () => {
+  pm.response.to.have.status(404);
+});
+
+pm.test('에러 메시지를 반환한다', () => {
+  pm.expect(json.error).to.eql('상품을 찾을 수 없습니다.');
+});
+`;
+  }
+  return `// ${title} 검증
+const json = pm.response.json();
+
+pm.test('상태 코드는 ${expected}', () => {
+  pm.response.to.have.status(${expected});
+});
+`;
+}
+function countDeclaredPmTests(script: string): number {
+  return stripNonExecutableScriptText(script).match(/pm\.test\s*\(/g)?.length ?? 0;
+}
+
+function stripNonExecutableScriptText(script: string): string {
+  let output = '';
+  let quote: 'single' | 'double' | 'template' | null = null;
+  let escaped = false;
+
+  for (let i = 0; i < script.length; i += 1) {
+    const current = script[i];
+    const next = script[i + 1];
+
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (current === '\\') escaped = true;
+      else if (
+        (quote === 'single' && current === "'") ||
+        (quote === 'double' && current === '"') ||
+        (quote === 'template' && current === '`')
+      ) {
+        quote = null;
+      }
+      output += current === '\n' ? '\n' : ' ';
+      continue;
     }
-    return Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value)]));
+
+    if (current === "'") {
+      quote = 'single';
+      output += ' ';
+      continue;
+    }
+    if (current === '"') {
+      quote = 'double';
+      output += ' ';
+      continue;
+    }
+    if (current === '`') {
+      quote = 'template';
+      output += ' ';
+      continue;
+    }
+    if (current === '/' && next === '/') {
+      while (i < script.length && script[i] !== '\n') i += 1;
+      output += '\n';
+      continue;
+    }
+    if (current === '/' && next === '*') {
+      i += 2;
+      while (i < script.length && !(script[i] === '*' && script[i + 1] === '/')) {
+        output += script[i] === '\n' ? '\n' : ' ';
+        i += 1;
+      }
+      i += 1;
+      continue;
+    }
+
+    output += current;
   }
 
+  return output;
+}
+function headersFromRows(rows: HeaderRow[]): Record<string, string> {
   return Object.fromEntries(
-    trimmed.split('\n').map((line) => {
-      const separator = line.indexOf(':');
-      if (separator <= 0) throw new Error('추가 헤더는 "이름: 값" 형식이어야 합니다.');
-      return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
-    })
+    rows
+      .filter((row) => row.enabled && row.value.trim())
+      .map((row) => [row.key, row.value.trim()])
   );
+}
+
+function applyAuthHeader(headers: Record<string, string>, authType: AuthKind, token: string): void {
+  const trimmed = token.trim();
+  if (!trimmed || authType === 'none') return;
+  if (authType === 'bearer') headers.Authorization = `Bearer ${trimmed}`;
+  if (authType === 'basic') headers.Authorization = `Basic ${btoa(trimmed)}`;
+  if (authType === 'apiKey') headers['x-api-key'] = trimmed;
 }
 const SENSITIVE_HEADER_NAME = /^(authorization|cookie|set-cookie|x-api-key|x-qaground-signature)$/i;
 
@@ -275,6 +442,88 @@ function executablePathForEndpoint(path: string) {
   });
 }
 
+function missingPathForEndpoint(path: string) {
+  return path.replace(/:([A-Za-z_$][\w$]*)/g, (_, name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.endsWith('id') || lower.includes('id')) return '9999';
+    return 'missing';
+  });
+}
+
+function statusFromDesc(endpoint: ApiEndpoint, fallback: string) {
+  return endpoint.desc.match(/\b(200|201|204|400|401|404)\b/)?.[1] ?? fallback;
+}
+
+function requestCaseKey(endpoint: ApiEndpoint, suffix: string) {
+  return `${endpointKey(endpoint)}::${suffix}`;
+}
+
+function buildRequestCases(endpoints: ApiEndpoint[]): ApiRequestCase[] {
+  return endpoints.flatMap((endpoint) => {
+    const method = endpoint.method as Method;
+    const successStatus = method === 'POST' ? '201' : method === 'DELETE' ? '204' : '200';
+    const baseBody = endpoint.body?.length
+      ? JSON.stringify(
+          Object.fromEntries(
+            endpoint.body.map((field) => [field.path, defaultValueForSchemaType(field.type)])
+          ),
+          null,
+          2
+        )
+      : '';
+    const cases: ApiRequestCase[] = [
+      {
+        key: requestCaseKey(endpoint, 'success'),
+        label: `${method} ${executablePathForEndpoint(endpoint.path)} · 정상`,
+        endpoint,
+        method,
+        path: executablePathForEndpoint(endpoint.path),
+        expectedStatus: statusFromDesc(endpoint, successStatus),
+        authType: endpoint.auth ? 'bearer' : undefined,
+        body: baseBody,
+      },
+    ];
+
+    if (/\b404\b/.test(endpoint.desc)) {
+      cases.push({
+        key: requestCaseKey(endpoint, 'not-found'),
+        label: `${method} ${missingPathForEndpoint(endpoint.path)} · 404`,
+        endpoint,
+        method,
+        path: missingPathForEndpoint(endpoint.path),
+        expectedStatus: '404',
+        authType: endpoint.auth ? 'bearer' : undefined,
+        body: baseBody,
+      });
+    }
+    if (endpoint.auth) {
+      cases.push({
+        key: requestCaseKey(endpoint, 'unauthorized'),
+        label: `${method} ${executablePathForEndpoint(endpoint.path)} · 인증 없음`,
+        endpoint,
+        method,
+        path: executablePathForEndpoint(endpoint.path),
+        expectedStatus: '401',
+        authType: 'none',
+        body: baseBody,
+      });
+    }
+    if (/\b400\b/.test(endpoint.desc) && endpoint.body?.length) {
+      cases.push({
+        key: requestCaseKey(endpoint, 'invalid-body'),
+        label: `${method} ${executablePathForEndpoint(endpoint.path)} · 잘못된 본문`,
+        endpoint,
+        method,
+        path: executablePathForEndpoint(endpoint.path),
+        expectedStatus: '400',
+        authType: endpoint.auth ? 'bearer' : undefined,
+        body: '{}',
+      });
+    }
+
+    return cases;
+  });
+}
 function SchemaFieldList({ title, fields }: { title: string; fields?: ApiSchemaField[] }) {
   if (!fields?.length) return null;
 
@@ -450,6 +699,7 @@ function ApiDocsPanel({
   );
 }
 let nextId = 2;
+let nextHeaderId = 2;
 
 /**
  * 인앱 API 테스터 + 자동 채점 (API 트랙).
@@ -466,32 +716,47 @@ export const ApiTesterExercise = ({
   slug: string;
   endpoints: ApiEndpoint[];
 }) => {
-  const [method, setMethod] = useState<Method>(endpoints[0]?.method ?? 'GET');
-  const [path, setPath] = useState(endpoints[0]?.path ?? '/products?page=1&limit=5');
-  const [selectedEndpointKey, setSelectedEndpointKey] = useState(
-    endpoints[0] ? endpointKey(endpoints[0]) : ''
-  );
+  const router = useRouter();
+  const requestCases = buildRequestCases(endpoints);
+  const [selectedCaseKey, setSelectedCaseKey] = useState(requestCases[0]?.key ?? '');
+  const selectedCase = requestCases.find((item) => item.key === selectedCaseKey);
+  const [method, setMethod] = useState<Method>(selectedCase?.method ?? 'GET');
+  const [path, setPath] = useState(selectedCase?.path ?? '/products?page=1&limit=5');
+  const [authType, setAuthType] = useState<AuthKind>(selectedCase?.authType ?? 'bearer');
   const [token, setToken] = useState('');
-  const [customHeaders, setCustomHeaders] = useState('');
-  const [body, setBody] = useState('');
-  const [assertions, setAssertions] = useState<Assertion[]>([
-    { id: 1, kind: 'status', path: '', expected: '200' },
+  const [headerRows, setHeaderRows] = useState<HeaderRow[]>([
+    { id: 1, key: 'x-qaground-signature', value: '', enabled: true },
   ]);
-  const [script, setScript] = useState(DEFAULT_SCRIPT);
+  const [body, setBody] = useState(selectedCase?.body ?? '');
+  const [assertionsByCase, setAssertionsByCase] = useState<Record<string, Assertion[]>>(() =>
+    requestCases[0] ? { [requestCases[0].key]: defaultAssertionsForCase(requestCases[0]) } : {}
+  );
+  const [scriptsByCase, setScriptsByCase] = useState<Record<string, string>>(() =>
+    requestCases[0] ? { [requestCases[0].key]: defaultScriptForCase(requestCases[0]) } : {}
+  );
+  const assertions = assertionsByCase[selectedCaseKey] ?? defaultAssertionsForCase(selectedCase);
+  const script = scriptsByCase[selectedCaseKey] ?? defaultScriptForCase(selectedCase);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<RunResult | null>(null);
+  const [term, setTerm] = useState<ApiTermLine[]>([]);
+  const [resultTab, setResultTab] = useState<ResultTab>('body');
   const [history, setHistory] = useState<RequestHistoryItem[]>([]);
   const [attempts, setAttempts] = useState<ApiAttemptForGrade[]>([]);
   const [activePanel, setActivePanel] = useState<'test' | 'docs' | 'script'>('test');
   const [resultH, setResultH] = useState(288);
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
 
+  const setCaseAssertions = (updater: (items: Assertion[]) => Assertion[]) =>
+    setAssertionsByCase((prev) => {
+      const current = prev[selectedCaseKey] ?? defaultAssertionsForCase(selectedCase);
+      return { ...prev, [selectedCaseKey]: updater(current) };
+    });
   const updateAssertion = (id: number, patch: Partial<Assertion>) =>
-    setAssertions((as) => as.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+    setCaseAssertions((items) => items.map((a) => (a.id === id ? { ...a, ...patch } : a)));
   const addAssertion = (kind: AssertKind = 'json') =>
-    setAssertions((as) => [
-      ...as,
+    setCaseAssertions((items) => [
+      ...items,
       {
         id: nextId++,
         kind,
@@ -499,34 +764,58 @@ export const ApiTesterExercise = ({
         expected: defaultExpectedForKind(kind),
       },
     ]);
-  const removeAssertion = (id: number) => setAssertions((as) => as.filter((a) => a.id !== id));
+  const removeAssertion = (id: number) =>
+    setCaseAssertions((items) => items.filter((a) => a.id !== id));  const updateHeaderRow = (id: number, patch: Partial<HeaderRow>) =>
+    setHeaderRows((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  const addHeaderRow = () =>
+    setHeaderRows((rows) => [
+      ...rows,
+      { id: nextHeaderId++, key: 'x-request-id', value: '', enabled: true },
+    ]);
+  const removeHeaderRow = (id: number) =>
+    setHeaderRows((rows) => rows.filter((row) => row.id !== id));
 
-  const applyEndpoint = (endpoint: ApiEndpoint) => {
-    setSelectedEndpointKey(endpointKey(endpoint));
-    setMethod(endpoint.method);
-    setPath(executablePathForEndpoint(endpoint.path));
-    setBody(
-      endpoint.body?.length
-        ? JSON.stringify(
-            Object.fromEntries(
-              endpoint.body.map((field) => [field.path, defaultValueForSchemaType(field.type)])
-            ),
-            null,
-            2
-          )
-        : ''
+  const applyRequestCase = (requestCase: ApiRequestCase) => {
+    setSelectedCaseKey(requestCase.key);
+    setAssertionsByCase((prev) =>
+      prev[requestCase.key]
+        ? prev
+        : { ...prev, [requestCase.key]: defaultAssertionsForCase(requestCase) }
     );
+    setScriptsByCase((prev) =>
+      prev[requestCase.key] ? prev : { ...prev, [requestCase.key]: defaultScriptForCase(requestCase) }
+    );
+    setMethod(requestCase.method);
+    setPath(requestCase.path);
+    setAuthType(requestCase.authType ?? 'bearer');
+    setBody(requestCase.body ?? '');
   };
 
-  const run = async () => {
+  const applyEndpoint = (endpoint: ApiEndpoint) => {
+    const requestCase = requestCases.find((item) => item.endpoint === endpoint) ?? requestCases[0];
+    if (requestCase) applyRequestCase(requestCase);
+  };
+  const run = async (shouldSubmit = false) => {
+    const push = (line: ApiTermLine) => setTerm((prev) => [...prev, line]);
     setRunning(true);
     setError('');
     setResult(null);
+    setResultTab('body');
+    setTerm([]);
     try {
-      const headers: Record<string, string> = parseHeaderInput(customHeaders);
-      if (token.trim()) headers['Authorization'] = `Bearer ${token.trim()}`;
+      push({ id: 'cmd', text: shouldSubmit ? '$ qaground api submit' : '$ qaground api run', kind: 'cmd' });
+      await delay(180);
+      push({ id: 'prepare', text: '  ◌  요청 구성 중', kind: 'run' });
+      const headers = headersFromRows(headerRows);
+      applyAuthHeader(headers, authType, token);
       const hasBody = method !== 'GET' && body.trim();
-      if (hasBody) headers['Content-Type'] = 'application/json';
+      if (hasBody && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+      setTerm((prev) =>
+        prev.map((line) =>
+          line.id === 'prepare' ? { ...line, text: '  ✓  요청 구성 완료', kind: 'pass' } : line
+        )
+      );
+      push({ id: 'request', text: '  ◌  ' + method + ' ' + path + ' 호출 중', kind: 'run' });
 
       const startedAt = performance.now();
       const res = await fetch(apiBase + path, {
@@ -536,6 +825,14 @@ export const ApiTesterExercise = ({
       });
       const durationMs = Math.round(performance.now() - startedAt);
       const responseHeaders = Object.fromEntries(res.headers.entries());
+      setTerm((prev) =>
+        prev.map((line) =>
+          line.id === 'request'
+            ? { ...line, text: '  ✓  HTTP ' + res.status + ' 응답 수신 (' + durationMs + 'ms)', kind: 'pass' }
+            : line
+        )
+      );
+      push({ id: 'parse', text: '  ◌  응답 본문 분석 중', kind: 'run' });
 
       const bodyText = await res.text();
       let json: unknown = undefined;
@@ -544,6 +841,12 @@ export const ApiTesterExercise = ({
       } catch {
         json = undefined;
       }
+      setTerm((prev) =>
+        prev.map((line) =>
+          line.id === 'parse' ? { ...line, text: '  ✓  응답 본문 분석 완료', kind: 'pass' } : line
+        )
+      );
+      push({ id: 'checks', text: '  ◌  사용자 검증 실행 중', kind: 'run' });
 
       const checks: Check[] = assertions.map((a) => {
         if (a.kind === 'status') {
@@ -590,9 +893,31 @@ export const ApiTesterExercise = ({
       });
 
       const userScript = script.trim() === DEFAULT_SCRIPT.trim() ? '' : script;
+      const declaredScriptCount = userScript.trim() ? countDeclaredPmTests(userScript) : 0;
       const scriptResults = userScript.trim()
         ? runPmScript(userScript, { status: res.status, json, bodyText })
         : [];
+      const checkPass = checks.every((check) => check.pass) && scriptResults.every((item) => item.pass);
+      setTerm((prev) =>
+        prev.map((line) =>
+          line.id === 'checks'
+            ? {
+                ...line,
+                text:
+                  '  ' +
+                  (checkPass ? '✓' : '✗') +
+                  '  사용자 검증 ' +
+                  (checkPass ? '통과' : '실패'),
+                kind: checkPass ? 'pass' : 'fail',
+              }
+            : line
+        )
+      );
+      push({
+        id: 'grade',
+        text: shouldSubmit ? '  ◌  제출 결과 정리 중' : '  ◌  채점 결과 정리 중',
+        kind: 'run',
+      });
 
       const attempt: ApiAttemptForGrade = {
         method,
@@ -611,6 +936,18 @@ export const ApiTesterExercise = ({
       const passed =
         checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length;
       const totalChecks = checks.length + scriptResults.length;
+      const gradePassed = hiddenGrade.score === hiddenGrade.maxScore;
+      setTerm((prev) =>
+        prev.map((line) =>
+          line.id === 'grade'
+            ? {
+                ...line,
+                text: '  ' + (gradePassed ? '✓' : '◌') + '  ' + (shouldSubmit ? '제출' : '채점') + ' 결과 준비 완료',
+                kind: gradePassed ? 'pass' : 'run',
+              }
+            : line
+        )
+      );
       setResult({
         status: res.status,
         durationMs,
@@ -618,8 +955,10 @@ export const ApiTesterExercise = ({
         bodyText: pretty,
         checks,
         scriptResults,
+        declaredScriptCount,
         hiddenGrade,
       });
+      setResultTab('body');
       setHistory((prev) =>
         [
           {
@@ -639,21 +978,35 @@ export const ApiTesterExercise = ({
           ...prev,
         ].slice(0, 6)
       );
-      track('api_run', { passed, total: totalChecks, score: hiddenGrade.score });
-      recordSubmission({
-        slug,
-        kind: 'api',
-        content: {
-          method,
-          path,
-          headers: redactHeaders(headers),
-          assertions,
-          script: userScript,
-          attempts: nextAttempts,
-        },
-        result: { passed, total: totalChecks },
-      });
-    } catch (e) {
+      track(shouldSubmit ? 'api_submit' : 'api_run', { passed, total: totalChecks, score: hiddenGrade.score });
+      if (shouldSubmit) {
+        const submitResponse = await fetch('/api/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug,
+            kind: 'api',
+            anonId: getAnonId(),
+            content: {
+              method,
+              path,
+              headers: redactHeaders(headers),
+              assertions,
+              script: userScript,
+              attempts: nextAttempts,
+            },
+            result: { passed, total: totalChecks },
+          }),
+        });
+        const submitResult = (await submitResponse.json().catch(() => null)) as {
+          ok?: boolean;
+          resultToken?: string;
+        } | null;
+        if (submitResult?.resultToken) {
+          router.push(`/challenges/${slug}/result?token=${encodeURIComponent(submitResult.resultToken)}`);
+        }
+      }    } catch (e) {
+      push({ id: 'error', text: '  ✗  요청 실행 실패', kind: 'fail' });
       setError(e instanceof Error ? e.message : '요청 실패');
     } finally {
       setRunning(false);
@@ -684,6 +1037,17 @@ export const ApiTesterExercise = ({
     (result?.checks.filter((c) => c.pass).length ?? 0) +
     (result?.scriptResults.filter((r) => r.pass).length ?? 0);
   const total = (result?.checks.length ?? 0) + (result?.scriptResults.length ?? 0);
+  const resultTabs: { key: ResultTab; label: string; count?: number }[] = [
+    { key: 'body', label: 'Body' },
+    { key: 'checks', label: '검증', count: result?.checks.length },
+    { key: 'script', label: '스크립트', count: result?.scriptResults.length },
+    {
+      key: 'headers',
+      label: 'Headers',
+      count: result ? Object.keys(result.responseHeaders).length : 0,
+    },
+    { key: 'grade', label: '채점' },
+  ];
 
   return (
     <section className="border-line-2 bg-bg-2 flex h-full min-h-0 flex-col overflow-hidden border-0 lg:border-l">
@@ -724,45 +1088,47 @@ export const ApiTesterExercise = ({
         <button
           data-testid="api-run"
           type="button"
-          onClick={run}
+          onClick={() => run(false)}
           disabled={running}
           className="bg-primary hover:bg-primary/90 active:bg-primary/80 inline-flex h-9 items-center justify-center gap-2 px-4 text-sm font-medium text-white transition-colors disabled:opacity-60"
         >
           <Play className="size-4" aria-hidden="true" />
           {running ? '실행 중' : '실행'}
         </button>
+        <button
+          data-testid="api-submit"
+          type="button"
+          onClick={() => run(true)}
+          disabled={running}
+          className="border-primary text-primary hover:bg-primary/10 active:bg-primary/15 inline-flex h-9 items-center justify-center gap-2 border px-4 text-sm font-medium transition-colors disabled:opacity-60"
+        >
+          <Send className="size-4" aria-hidden="true" />
+          제출
+        </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="qg-panel-scrollbar min-h-0 flex-1 overflow-auto">
         {activePanel === 'test' && (
           <div className="p-4 sm:p-5">
             {!!endpoints.length && (
-              <div className="border-line-2 mb-4 flex gap-2 overflow-x-auto border-b pb-3">
-                {endpoints.map((endpoint) => {
-                  const isActive = endpointKey(endpoint) === selectedEndpointKey;
-                  return (
-                    <button
-                      key={endpointKey(endpoint)}
-                      type="button"
-                      onClick={() => applyEndpoint(endpoint)}
-                      className={`border-line-2 shrink-0 border px-3 py-2 text-left transition-colors ${
-                        isActive ? 'bg-bg-1' : 'bg-bg-3 hover:bg-bg-1'
-                      }`}
-                    >
-                      <span
-                        className={`inline-flex border px-1.5 py-0.5 font-mono text-[11px] font-semibold ${METHOD_TONE[endpoint.method]}`}
-                      >
-                        {endpoint.method}
-                      </span>
-                      <code className="text-text-1 mt-1 block max-w-52 truncate font-mono text-xs">
-                        {endpoint.path}
-                      </code>
-                    </button>
-                  );
-                })}
-              </div>
+              <label className="mb-4 grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center">
+                <span className="text-text-2 text-sm font-medium">Endpoint</span>
+                <select
+                  value={selectedCaseKey}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    const requestCase = requestCases.find((item) => item.key === e.target.value);
+                    if (requestCase) applyRequestCase(requestCase);
+                  }}
+                  className={`h-button-md min-w-0 font-mono ${fieldClass}`}
+                >
+                  {requestCases.map((requestCase) => (
+                    <option key={requestCase.key} value={requestCase.key}>
+                      {requestCase.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
-
             <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_auto]">
               <select
                 data-testid="api-method"
@@ -792,7 +1158,7 @@ export const ApiTesterExercise = ({
               </div>
               <button
                 type="button"
-                onClick={run}
+                onClick={() => run(false)}
                 disabled={running}
                 className="border-line-2 bg-bg-3 hover:bg-bg-1 border px-4 text-sm font-medium transition-colors disabled:opacity-60"
               >
@@ -851,31 +1217,117 @@ export const ApiTesterExercise = ({
               </div>
             )}
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              <label className="flex min-w-0 flex-col gap-2">
-                <span className="text-text-2 text-sm font-medium">토큰</span>
-                <input
-                  data-testid="api-token"
-                  value={token}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
-                  placeholder="qaground-demo-token"
-                  className={`h-button-md ${fieldClass}`}
-                />
-              </label>
-              <label className="flex min-w-0 flex-col gap-2">
-                <span className="text-text-2 text-sm font-medium">추가 헤더</span>
-                <input
-                  data-testid="api-headers"
-                  value={customHeaders}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setCustomHeaders(e.target.value)
-                  }
-                  placeholder="x-qaground-signature: test-signature"
-                  className={`h-button-md font-mono ${fieldClass}`}
-                />
-              </label>
-            </div>
+            <div className="mt-5 space-y-4">
+              <section className="border-line-2 bg-bg-3 border">
+                <div className="border-line-2 flex items-center justify-between border-b px-3 py-2">
+                  <div>
+                    <h3 className="text-text-1 text-sm font-semibold">Authorization</h3>
+                    <p className="text-text-3 mt-0.5 text-xs">요청에 사용할 인증 방식을 선택합니다.</p>
+                  </div>
+                </div>
+                <div className="grid gap-3 p-3 md:grid-cols-[14rem_minmax(0,1fr)] md:items-end">
+                  <label className="flex min-w-0 flex-col gap-1.5">
+                    <span className="text-text-3 text-xs font-medium">Type</span>
+                    <select
+                      value={authType}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                        setAuthType(e.target.value as AuthKind)
+                      }
+                      className={`h-10 ${fieldClass}`}
+                    >
+                      {AUTH_TYPES.map((item) => (
+                        <option key={item.key} value={item.key}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex min-w-0 flex-col gap-1.5">
+                    <span className="text-text-3 text-xs font-medium">Value</span>
+                    <input
+                      data-testid="api-token"
+                      value={token}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
+                      placeholder={AUTH_TYPES.find((item) => item.key === authType)?.placeholder}
+                      disabled={authType === 'none'}
+                      className={`h-10 min-w-0 font-mono disabled:opacity-50 ${fieldClass}`}
+                    />
+                  </label>
+                </div>
+              </section>
 
+              <section className="border-line-2 bg-bg-3 border">
+                <div className="border-line-2 flex items-center justify-between gap-3 border-b px-3 py-2">
+                  <div>
+                    <h3 className="text-text-1 text-sm font-semibold">Headers</h3>
+                    <p className="text-text-3 mt-0.5 text-xs">키는 선택하고 값만 직접 입력합니다.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addHeaderRow}
+                    className="border-line-2 bg-bg-2 hover:bg-bg-1 inline-flex h-8 items-center gap-1 border px-2.5 text-xs transition-colors"
+                  >
+                    <Plus className="size-3.5" aria-hidden="true" /> Add
+                  </button>
+                </div>
+                <div className="divide-line-2 divide-y">
+                  <div className="text-text-3 hidden grid-cols-[2.5rem_14rem_minmax(0,1fr)_2.5rem] gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-normal md:grid">
+                    <span>Use</span>
+                    <span>Key</span>
+                    <span>Value</span>
+                    <span />
+                  </div>
+                  {headerRows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="grid gap-2 p-3 md:grid-cols-[2.5rem_14rem_minmax(0,1fr)_2.5rem] md:items-center"
+                    >
+                      <label className="flex items-center gap-2 md:justify-center">
+                        <DsCheckbox
+                          checked={row.enabled}
+                          onCheckedChange={(checked) => updateHeaderRow(row.id, { enabled: checked })}
+                          aria-label="헤더 사용"
+                          className="border-line-3 bg-bg-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                        <span className="text-text-3 text-xs md:hidden">사용</span>
+                      </label>
+                      <select
+                        data-testid="api-header-key"
+                        value={row.key}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                          updateHeaderRow(row.id, { key: e.target.value as HeaderKey })
+                        }
+                        className={`h-9 font-mono ${fieldClass}`}
+                      >
+                        {HEADER_KEYS.map((key) => (
+                          <option key={key} value={key}>
+                            {key}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        data-testid="api-headers"
+                        value={row.value}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          updateHeaderRow(row.id, { value: e.target.value })
+                        }
+                        placeholder={row.key === 'x-qaground-signature' ? 'test-signature' : 'value'}
+                        className={`h-9 min-w-0 font-mono ${fieldClass}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeHeaderRow(row.id)}
+                        className="text-text-3 hover:text-system-red flex size-9 items-center justify-center transition-colors"
+                        aria-label="헤더 삭제"
+                        title="헤더 삭제"
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
             {method !== 'GET' && (
               <label className="mt-4 flex min-w-0 flex-col gap-2">
                 <span className="text-text-2 text-sm font-medium">본문</span>
@@ -1022,7 +1474,12 @@ export const ApiTesterExercise = ({
                 defaultLanguage="javascript"
                 theme="vs-dark"
                 value={script}
-                onChange={(value) => setScript(value ?? '')}
+                onChange={(value) =>
+                  setScriptsByCase((prev) => ({
+                    ...prev,
+                    [selectedCaseKey]: value ?? '',
+                  }))
+                }
                 options={{
                   minimap: { enabled: false },
                   fontSize: 13,
@@ -1080,26 +1537,81 @@ export const ApiTesterExercise = ({
             </span>
           )}
         </div>
-        <div className="min-h-0 flex-1 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed text-[#c9d1d9]">
+        {result && (
+          <div className="flex shrink-0 items-center gap-1 border-b border-white/10 px-3 py-1.5">
+            {resultTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setResultTab(tab.key)}
+                className={`px-2.5 py-1 font-mono text-xs transition-colors ${
+                  resultTab === tab.key
+                    ? 'bg-white/10 text-[#f0f6fc]'
+                    : 'text-[#8b949e] hover:bg-white/5 hover:text-[#c9d1d9]'
+                }`}
+              >
+                {tab.label}
+                {typeof tab.count === 'number' ? (
+                  <span className="ml-1 text-[#8b949e]">{tab.count}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="qg-code-scrollbar min-h-0 flex-1 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed text-[#c9d1d9]">
           {!result ? (
-            <span className="text-[#8b949e]">실행하면 응답과 채점 결과가 여기에 표시됩니다.</span>
+            term.length > 0 ? (
+              <div className="space-y-1">
+                {term.map((line) => (
+                  <div key={line.id} className={API_TERM_CLASS[line.kind]}>
+                    {line.text || ' '}
+                  </div>
+                ))}
+                {running && <span className="animate-pulse text-[#8b949e]">▋</span>}
+              </div>
+            ) : (
+              <span className="text-[#8b949e]">실행하면 응답과 채점 결과가 여기에 표시됩니다.</span>
+            )
           ) : (
             <>
-              <div className="text-[#8b949e]">
-                hidden grade {result.hiddenGrade.score}/{result.hiddenGrade.maxScore}
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-5">
-                {result.hiddenGrade.cases.map((item, index) => (
-                  <span key={item.id} className={item.pass ? 'text-[#3fb950]' : 'text-[#8b949e]'}>
-                    #{index + 1} {item.pass ? 'pass' : 'fail'}
-                  </span>
-                ))}
-              </div>
-              <details className="mt-3 border border-white/10">
-                <summary className="cursor-pointer px-3 py-2 text-[#8b949e] hover:text-[#c9d1d9]">
-                  response headers · {Object.keys(result.responseHeaders).length}
-                </summary>
-                <div className="border-t border-white/10 px-3 py-2">
+              {resultTab === 'body' && (
+                <pre className="whitespace-pre-wrap text-[#c9d1d9]">{result.bodyText}</pre>
+              )}
+              {resultTab === 'checks' && (
+                <div className="space-y-1">
+                  {result.checks.length === 0 ? (
+                    <span className="text-[#8b949e]">추가한 검증 조건이 없습니다.</span>
+                  ) : (
+                    result.checks.map((c, i) => (
+                      <div key={i} className={c.pass ? 'text-[#3fb950]' : 'text-[#f85149]'}>
+                        {c.pass ? '✓' : '✗'} {c.label} · actual: {c.actual}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+              {resultTab === 'script' && (
+                <div className="space-y-1">
+                  {result.declaredScriptCount > result.scriptResults.length && (
+                    <div className="mb-2 border border-[#d29922]/30 bg-[#d29922]/10 px-3 py-2 text-[#d29922]">
+                      작성한 pm.test {result.declaredScriptCount}개 중 {result.scriptResults.length}개만
+                      실행됐습니다. 조건문이 false이면 그 안의 테스트는 결과와 채점에 포함되지 않습니다.
+                    </div>
+                  )}
+                  {result.scriptResults.length === 0 ? (
+                    <span className="text-[#8b949e]">실행된 pm.test 스크립트가 없습니다.</span>
+                  ) : (
+                    result.scriptResults.map((r, i) => (
+                      <div key={i} className={r.pass ? 'text-[#3fb950]' : 'text-[#f85149]'}>
+                        {r.pass ? '✓' : '✗'} {r.name}
+                        {r.error ? ` · ${r.error}` : ''}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+              {resultTab === 'headers' && (
+                <div className="space-y-1">
                   {Object.entries(result.responseHeaders).map(([key, value]) => (
                     <div key={key} className="grid gap-2 sm:grid-cols-[11rem_minmax(0,1fr)]">
                       <span className="text-[#8b949e]">{key}</span>
@@ -1107,26 +1619,28 @@ export const ApiTesterExercise = ({
                     </div>
                   ))}
                 </div>
-              </details>
-              {(result.checks.length > 0 || result.scriptResults.length > 0) && (
-                <div className="mt-3 space-y-1">
-                  {result.checks.map((c, i) => (
-                    <div key={i} className={c.pass ? 'text-[#3fb950]' : 'text-[#f85149]'}>
-                      {c.pass ? '✓' : '✗'} {c.label} · actual: {c.actual}
-                    </div>
-                  ))}
-                  {result.scriptResults.map((r, i) => (
-                    <div
-                      key={`script-${i}`}
-                      className={r.pass ? 'text-[#3fb950]' : 'text-[#f85149]'}
-                    >
-                      {r.pass ? '✓' : '✗'} {r.name}
-                      {r.error ? ` · ${r.error}` : ''}
-                    </div>
-                  ))}
+              )}
+              {resultTab === 'grade' && (
+                <div className="space-y-3">
+                  <div className="text-[#8b949e]">
+                    채점 결과 {result.hiddenGrade.score}/{result.hiddenGrade.maxScore}
+                  </div>
+                  <div
+                    className={`border px-3 py-2 ${
+                      result.hiddenGrade.score === result.hiddenGrade.maxScore
+                        ? 'border-[#3fb950]/30 bg-[#3fb950]/10 text-[#3fb950]'
+                        : 'border-[#d29922]/30 bg-[#d29922]/10 text-[#d29922]'
+                    }`}
+                  >
+                    {result.hiddenGrade.score === result.hiddenGrade.maxScore
+                      ? '제출 기준을 통과했습니다.'
+                      : '아직 제출 기준을 모두 만족하지 못했습니다.'}
+                  </div>
+                  <p className="text-[#8b949e]">
+                    세부 채점 항목과 보완 포인트는 제출 후 결과 페이지에서 확인할 수 있습니다.
+                  </p>
                 </div>
               )}
-              <pre className="mt-4 whitespace-pre-wrap text-[#c9d1d9]">{result.bodyText}</pre>
             </>
           )}
         </div>

@@ -25,6 +25,8 @@ export interface ApiAttemptForGrade {
 export interface ApiTargetForGrade {
   method: string;
   path: string;
+  desc?: string;
+  auth?: boolean;
 }
 
 export interface ApiGradeOptions {
@@ -50,6 +52,11 @@ interface NormalizedRequest {
   pathname: string;
   search: string;
   segments: string[];
+}
+
+interface ExpectedStatusSet {
+  success: Set<number>;
+  failure: Set<number>;
 }
 
 function hasPassingUserChecks(attempt: ApiAttemptForGrade): boolean {
@@ -129,6 +136,10 @@ function hasStatusAssertion(attempt: ApiAttemptForGrade): boolean {
   );
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function hasBodyAssertion(attempt: ApiAttemptForGrade): boolean {
   if (
     attempt.assertions.some(
@@ -140,11 +151,33 @@ function hasBodyAssertion(attempt: ApiAttemptForGrade): boolean {
     return true;
   }
   const executable = stripNonExecutableJavaScript(attempt.script);
-  return /pm\.expect\s*\(\s*pm\.response\.json\s*\(\s*\)\s*(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])*\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|include|lengthOf|property|a|above|below)\s*\(/i.test(
-    executable
-  );
-}
+  const matcherChain = String.raw`(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|include|lengthOf|property|a|above|below)\s*\(`;
+  const jsonAccess = String.raw`(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])`;
+  const directJsonAssert = new RegExp(
+    String.raw`pm\.expect\s*\(\s*pm\.response\.json\s*\(\s*\)\s*${jsonAccess}*\s*\)\s*${matcherChain}`,
+    'i'
+  ).test(executable);
+  if (directJsonAssert) return true;
 
+  const aliases = [
+    ...executable.matchAll(
+      /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*pm\.response\.json\s*\(\s*\)/gi
+    ),
+  ].map((match) => match[1]);
+
+  return aliases.some((alias) => {
+    const escapedAlias = escapeRegExp(alias);
+    const aliasPathAssert = new RegExp(
+      String.raw`pm\.expect\s*\(\s*${escapedAlias}${jsonAccess}+\s*\)\s*${matcherChain}`,
+      'i'
+    ).test(executable);
+    const aliasPropertyAssert = new RegExp(
+      String.raw`pm\.expect\s*\(\s*${escapedAlias}\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.property\s*\(`,
+      'i'
+    ).test(executable);
+    return aliasPathAssert || aliasPropertyAssert;
+  });
+}
 function normalizeRequest(input: ApiAttemptForGrade | ApiTargetForGrade): NormalizedRequest {
   const rawPath = input.path.trim() || '/';
   let pathname = '/';
@@ -182,6 +215,86 @@ function matchesTarget(attempt: ApiAttemptForGrade, target: ApiTargetForGrade): 
   });
 }
 
+function explicitStatusesForTarget(target: ApiTargetForGrade): number[] {
+  return `${target.desc ?? ''} ${target.path}`.match(/\b[1-5]\d{2}\b/g)?.map(Number) ?? [];
+}
+
+function expectedStatusesForTarget(target: ApiTargetForGrade): ExpectedStatusSet {
+  const statuses = explicitStatusesForTarget(target);
+  const success = new Set(statuses.filter((status) => status >= 200 && status < 300));
+  const failure = new Set(statuses.filter((status) => status >= 400));
+
+  if (success.size === 0) {
+    const method = target.method.toUpperCase();
+    if (method === 'DELETE') success.add(204);
+    else if (method === 'POST' && !/\/auth\//.test(target.path)) success.add(201);
+    else success.add(200);
+  }
+  if (target.auth) failure.add(401);
+
+  return { success, failure };
+}
+
+function statusMatchesExpected(attempt: ApiAttemptForGrade, target: ApiTargetForGrade): boolean {
+  if (explicitStatusesForTarget(target).length === 0 && !target.auth) return true;
+  const expected = expectedStatusesForTarget(target);
+  return expected.success.has(attempt.status) || expected.failure.has(attempt.status);
+}
+function hasExpectedStatusAttempt(
+  attempts: ApiAttemptForGrade[],
+  target: ApiTargetForGrade,
+  statuses: Set<number>
+): boolean {
+  return attempts.some(
+    (attempt) =>
+      statuses.has(attempt.status) && matchesTarget(attempt, target) && hasPassingUserChecks(attempt)
+  );
+}
+
+function hasExpectedSuccessPath(
+  attempts: ApiAttemptForGrade[],
+  targets: ApiTargetForGrade[]
+): boolean {
+  if (targets.length === 0) {
+    return attempts.some(
+      (attempt) => attempt.status >= 200 && attempt.status < 300 && hasPassingUserChecks(attempt)
+    );
+  }
+
+  return targets.some((target) =>
+    hasExpectedStatusAttempt(attempts, target, expectedStatusesForTarget(target).success)
+  );
+}
+
+function hasExpectedFailurePath(
+  attempts: ApiAttemptForGrade[],
+  targets: ApiTargetForGrade[]
+): boolean {
+  if (targets.length === 0) {
+    return attempts.some((attempt) => attempt.status >= 400 && hasPassingUserChecks(attempt));
+  }
+
+  return targets.some((target) => {
+    const expected = expectedStatusesForTarget(target).failure;
+    return expected.size > 0 && hasExpectedStatusAttempt(attempts, target, expected);
+  });
+}
+
+function hasExpectedRequestCoverage(
+  attempts: ApiAttemptForGrade[],
+  options?: ApiGradeOptions
+): boolean {
+  const targets = options?.targets ?? [];
+  if (targets.length === 0) return hasRequestCoverage(attempts, options);
+  const passingAttempts = attempts.filter(hasPassingUserChecks);
+
+  return targets.every((target) =>
+    passingAttempts.some(
+      (attempt) => matchesTarget(attempt, target) && statusMatchesExpected(attempt, target)
+    )
+  );
+}
+
 function getTargetAttempts(
   attempts: ApiAttemptForGrade[],
   options?: ApiGradeOptions
@@ -210,30 +323,138 @@ function hasRequestCoverage(attempts: ApiAttemptForGrade[], options?: ApiGradeOp
   return attemptedKeys.size >= 2;
 }
 
+function concretePathPattern(path: string): RegExp {
+  const [pathname, search = ''] = path.split('?');
+  const escapedPath = pathname
+    .split('/')
+    .map((segment) => {
+      if (!segment) return '';
+      if (segment.startsWith(':')) return '[^/?#]+';
+      return escapeRegExp(segment);
+    })
+    .join('/');
+  const escapedSearch = search ? `\\?${escapeRegExp(search)}` : '(?:\\?[^\\s)]*)?';
+  return new RegExp(`${escapedPath}${escapedSearch}`, 'i');
+}
+
+function hasRequestCall(code: string, target: ApiTargetForGrade): boolean {
+  const method = target.method.toUpperCase();
+  const methodPattern = new RegExp(
+    String.raw`\bmethod\s*:\s*['"\`]${method}['"\`]|\bmethod\s*:\s*['"\`]${target.method.toLowerCase()}['"\`]`,
+    'i'
+  );
+  return (
+    /\bpm\.sendRequest\s*\(/i.test(code) &&
+    methodPattern.test(code) &&
+    concretePathPattern(target.path).test(code)
+  );
+}
+
+function hasExpectedStatusInCode(code: string, statuses: Set<number>): boolean {
+  if (statuses.size === 0) return false;
+  return [...statuses].some((status) => {
+    const statusText = String(status);
+    return new RegExp(
+      String.raw`pm\.expect\s*\(\s*(?:res|response)\.(?:code|status)\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|above|below)\s*\(\s*${statusText}\s*\)`,
+      'i'
+    ).test(code);
+  });
+}
+
+function hasJsonBodyAssertionInCode(code: string): boolean {
+  const aliases = [
+    ...code.matchAll(
+      /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:res|response)\.json\s*\(\s*\)/gi
+    ),
+  ].map((match) => match[1]);
+
+  return aliases.some((alias) => {
+    const escapedAlias = escapeRegExp(alias);
+    return new RegExp(
+      String.raw`pm\.expect\s*\(\s*${escapedAlias}(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])+`,
+      'i'
+    ).test(code);
+  });
+}
+
+function hasApiCodeShape(code: string): boolean {
+  return /\bpm\.sendRequest\s*\(/i.test(code) && /\bpm\.test\s*\(/i.test(code);
+}
+
+export function gradeApiCodeSubmission(
+  code: string,
+  options?: ApiGradeOptions
+): HiddenGradeResult {
+  const targets = options?.targets ?? [];
+  const cases: HiddenGradeCase[] = [
+    {
+      id: 'success-path',
+      points: 20,
+      pass:
+        hasApiCodeShape(code) &&
+        targets.some((target) => {
+          const expected = expectedStatusesForTarget(target).success;
+          return hasRequestCall(code, target) && hasExpectedStatusInCode(code, expected);
+        }),
+    },
+    {
+      id: 'failure-path',
+      points: 20,
+      pass:
+        hasApiCodeShape(code) &&
+        targets.some((target) => {
+          const expected = expectedStatusesForTarget(target).failure;
+          return expected.size > 0 && hasRequestCall(code, target) && hasExpectedStatusInCode(code, expected);
+        }),
+    },
+    {
+      id: 'request-coverage',
+      points: 20,
+      pass: targets.length > 0 && targets.every((target) => hasRequestCall(code, target)),
+    },
+    {
+      id: 'status-assertion',
+      points: 20,
+      pass: hasExpectedStatusInCode(code, new Set([200, 201, 204, 400, 401, 404])),
+    },
+    {
+      id: 'body-assertion',
+      points: 20,
+      pass: hasJsonBodyAssertionInCode(code),
+    },
+  ];
+  const score = cases.filter((item) => item.pass).reduce((sum, item) => sum + item.points, 0);
+  const maxScore = cases.reduce((sum, item) => sum + item.points, 0);
+
+  return {
+    score,
+    maxScore,
+    passed: cases.filter((item) => item.pass).length,
+    total: cases.length,
+    cases,
+  };
+}
 export function gradeApiAttempts(
   attempts: ApiAttemptForGrade[],
   options?: ApiGradeOptions
 ): HiddenGradeResult {
+  const targets = options?.targets ?? [];
   const targetAttempts = getTargetAttempts(attempts, options);
   const cases: HiddenGradeCase[] = [
     {
       id: 'success-path',
       points: 20,
-      pass: targetAttempts.some(
-        (attempt) => attempt.status >= 200 && attempt.status < 300 && hasPassingUserChecks(attempt)
-      ),
+      pass: hasExpectedSuccessPath(attempts, targets),
     },
     {
       id: 'failure-path',
       points: 20,
-      pass: targetAttempts.some(
-        (attempt) => attempt.status >= 400 && hasPassingUserChecks(attempt)
-      ),
+      pass: hasExpectedFailurePath(attempts, targets),
     },
     {
       id: 'request-coverage',
       points: 20,
-      pass: hasRequestCoverage(attempts, options),
+      pass: hasExpectedRequestCoverage(attempts, options),
     },
     {
       id: 'status-assertion',
@@ -262,3 +483,6 @@ export function gradeApiAttempts(
     cases,
   };
 }
+
+
+
