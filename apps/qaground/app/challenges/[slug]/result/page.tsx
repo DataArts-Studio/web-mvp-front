@@ -50,6 +50,9 @@ export default async function ChallengeResultPage({
   if (!challenge) notFound();
 
   const solution = challenge.modelSolution;
+  const recommendedChallenges = (challenge.recommendedNext ?? [])
+    .map((nextSlug) => getChallenge(nextSlug))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
@@ -152,6 +155,26 @@ export default async function ChallengeResultPage({
                 다른 챌린지 풀기
               </Link>
             </div>
+
+            {recommendedChallenges.length > 0 && (
+              <section className="border-line-2 mt-5 border-t pt-5">
+                <h2 className="text-sm font-semibold">추천 문제</h2>
+                <div className="mt-3 flex flex-col gap-2">
+                  {recommendedChallenges.map((item) => (
+                    <Link
+                      key={item.slug}
+                      href={`/challenges/${item.slug}`}
+                      className="border-line-3 hover:bg-bg-3 block border px-3 py-2 transition-colors"
+                    >
+                      <span className="text-text-1 block text-sm font-medium">{item.title}</span>
+                      <span className="text-text-3 mt-1 block text-xs">
+                        {TRACK_LABEL[item.track]} · {DIFFICULTY_LABEL[item.difficulty]}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
           </aside>
         </div>
       </main>
