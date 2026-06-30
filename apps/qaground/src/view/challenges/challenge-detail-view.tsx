@@ -1,3 +1,7 @@
+'use client';
+
+import { type CSSProperties, type PointerEvent, useRef, useState } from 'react';
+
 import Link from 'next/link';
 
 import {
@@ -163,10 +167,56 @@ function ApiEndpoints({ challenge }: { challenge: Challenge }) {
 }
 
 export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => {
+  const [problemPaneWidth, setProblemPaneWidth] = useState(40);
+  const splitRef = useRef<HTMLDivElement>(null);
+  const splitDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
   const isAutomationCode =
     challenge.track === 'automation' && !!challenge.sandboxSlug && !!challenge.selectors?.length;
   const isApiTester = !!challenge.endpoints && !!challenge.apiBase;
   const isSplit = isAutomationCode || isApiTester;
+
+  const splitStyle = { '--problem-pane-width': `${problemPaneWidth}%` } as CSSProperties;
+
+  const onProblemResizeDown = (event: PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    splitDragRef.current = { startX: event.clientX, startWidth: problemPaneWidth };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onProblemResizeMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!splitDragRef.current) return;
+
+    const totalWidth = splitRef.current?.clientWidth ?? 1200;
+    const deltaPercent = ((event.clientX - splitDragRef.current.startX) / totalWidth) * 100;
+    const nextWidth = splitDragRef.current.startWidth + deltaPercent;
+
+    setProblemPaneWidth(Math.min(Math.max(nextWidth, 28), 50));
+  };
+
+  const onProblemResizeUp = (event: PointerEvent<HTMLDivElement>) => {
+    splitDragRef.current = null;
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture can already be released if the pointer leaves the window.
+    }
+  };
+
+  const resizeHandle = (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="문제와 풀이 영역 너비 조절"
+      onPointerDown={onProblemResizeDown}
+      onPointerMove={onProblemResizeMove}
+      onPointerUp={onProblemResizeUp}
+      className="border-line-2 bg-bg-2 hover:bg-primary/20 group hidden w-2 shrink-0 cursor-col-resize touch-none items-center justify-center border-r border-l transition-colors lg:flex"
+    >
+      <span aria-hidden className="bg-line-3 group-hover:bg-primary h-8 w-0.5 transition-colors" />
+    </div>
+  );
 
   const backLink = (
     <Link
@@ -203,8 +253,12 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             {DIFFICULTY_LABEL[challenge.difficulty]}
           </span>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div className="border-line-2 overflow-y-auto border-b p-5 sm:p-6 lg:w-2/5 lg:max-w-lg lg:border-r lg:border-b-0">
+        <div
+          ref={splitRef}
+          style={splitStyle}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row"
+        >
+          <div className="qg-problem-scrollbar border-line-2 w-full overflow-y-auto border-b p-5 sm:p-6 lg:w-[var(--problem-pane-width)] lg:max-w-[42rem] lg:min-w-[20rem] lg:flex-none lg:border-b-0">
             <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
               {challenge.summary}
             </p>
@@ -220,21 +274,32 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
                 <h3 className="text-text-3 text-xs font-semibold tracking-wide uppercase">
                   참고 셀렉터
                 </h3>
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <p className="text-text-3 mt-1.5 text-xs leading-relaxed">
+                  테스트 코드에서 화면 요소를 안정적으로 찾기 위한 식별자입니다. 문구가 바뀌어도
+                  같은 요소를 선택할 수 있으며, 화면에 직접 보이는 문구보다 안정적인 테스트 기준으로
+                  사용합니다.
+                </p>
+                <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden border">
                   {challenge.selectors.map((s) => (
-                    <code
+                    <div
                       key={s.testid}
-                      title={s.desc}
-                      className="bg-bg-3 text-text-2 rounded px-2 py-0.5 font-mono text-xs"
+                      className="border-line-2 min-w-0 border-b px-3 py-2.5 last:border-b-0"
                     >
-                      {s.testid}
-                    </code>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="text-text-1 shrink-0 text-xs font-medium">{s.name}</span>
+                        <code className="bg-bg-3 text-primary shrink-0 px-1.5 py-0.5 font-mono text-[11px]">
+                          {s.testid}
+                        </code>
+                        <span className="text-text-3 min-w-0 truncate text-xs">{s.desc}</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col">
+          {resizeHandle}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <AutomationCodeExercise
               slug={challenge.slug}
               sandboxSlug={challenge.sandboxSlug!}
@@ -273,8 +338,12 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             {DIFFICULTY_LABEL[challenge.difficulty]}
           </span>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div className="border-line-2 overflow-y-auto border-b p-5 sm:p-6 lg:w-2/5 lg:max-w-lg lg:border-r lg:border-b-0">
+        <div
+          ref={splitRef}
+          style={splitStyle}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row"
+        >
+          <div className="qg-problem-scrollbar border-line-2 w-full overflow-y-auto border-b p-5 sm:p-6 lg:w-[var(--problem-pane-width)] lg:max-w-[42rem] lg:min-w-[20rem] lg:flex-none lg:border-b-0">
             <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
               {challenge.summary}
             </p>
@@ -287,7 +356,8 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             </ol>
             <ApiEndpoints challenge={challenge} />
           </div>
-          <div className="flex min-h-0 flex-1 flex-col">
+          {resizeHandle}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <ApiTesterExercise
               apiBase={challenge.apiBase!}
               slug={challenge.slug}
@@ -361,7 +431,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             {DIFFICULTY_LABEL[challenge.difficulty]}
           </span>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
           <aside className="border-line-2 overflow-y-auto border-b p-5 sm:p-6 lg:w-2/5 lg:max-w-lg lg:border-r lg:border-b-0">
             <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
               {challenge.summary}
