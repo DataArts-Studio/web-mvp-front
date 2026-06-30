@@ -109,8 +109,8 @@ export const PostmanV1PlaygroundView = () => {
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
       <PlaygroundHeader containerClassName="max-w-[1440px]" />
-      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 py-4 lg:px-6">
-        <header className="border-line-2 mb-4 border-b pb-3">
+      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-3 py-3 lg:px-4">
+        <header className="border-line-2 mb-3 border-b pb-2">
           <div className="text-text-3 flex items-center gap-2 text-sm">
             <Link href="/playground" className="hover:text-text-1 transition-colors">
               플레이그라운드
@@ -118,17 +118,19 @@ export const PostmanV1PlaygroundView = () => {
             <span>/</span>
             <span className="text-text-2">Postman v1</span>
           </div>
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="text-xl font-semibold tracking-tight">Postman 형식 API Sandbox v1</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <span className="text-primary text-xs font-medium">API Sandbox</span>
             <span className="text-text-3 text-xs">v1 engine</span>
+            <h1 className="basis-full text-xl font-semibold tracking-tight">
+              Postman 형식 API Sandbox v1
+            </h1>
           </div>
-          <p className="text-text-3 mt-1 text-sm">
+          <p className="text-text-3 mt-0.5 text-sm">
             제공된 API를 선택해 요청을 보내고 pm.test 스크립트를 작성합니다.
           </p>
         </header>
 
-        <div className="grid min-h-[760px] flex-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <div className="grid min-h-[760px] flex-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
           <aside className="border-line-2 text-sm lg:border-r lg:pr-5">
             <RailSection title="Environment">
               <dl className="space-y-2 text-xs">
