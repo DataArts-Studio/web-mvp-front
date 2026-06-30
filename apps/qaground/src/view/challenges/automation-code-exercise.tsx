@@ -66,6 +66,9 @@ const TERM_CLASS: Record<TermKind, string> = {
 };
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+function shouldSendProductionTelemetry(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname === 'qaground.gettestea.com';
+}
 
 /** 제출 코드에서 test('제목')·it('제목') 의 제목을 추출한다. */
 function parseTestTitles(code: string): string[] {
@@ -249,24 +252,30 @@ export const AutomationCodeExercise = ({
 
     setResult(data);
     setStatus('result');
-    track(shouldRecord ? 'code_submit' : 'code_grade', { slug, status: data.status, ok: data.ok });
-    if (shouldRecord) {
-      recordSubmission({
-        slug,
-        kind: 'code',
-        content: { code },
-        result: { status: data.status, ok: data.ok },
-      });
+    if (shouldSendProductionTelemetry()) {
+      track(shouldRecord ? 'code_submit' : 'code_grade', { slug, status: data.status, ok: data.ok });
+      if (shouldRecord) {
+        recordSubmission({
+          slug,
+          kind: 'code',
+          content: { code },
+          result: { status: data.status, ok: data.ok },
+        });
+      }
     }
 
     if (shouldRecord && data.ok) {
+      if (!data.resultToken) {
+        setMessage('결과 접근 토큰을 발급받지 못했습니다. 다시 제출해 주세요.');
+        setStatus('error');
+        return;
+      }
       try {
         window.sessionStorage.setItem(`qaground:last-submission:${slug}`, code);
       } catch {
         // 결과 페이지 비교는 부가 기능이므로 저장 실패는 무시한다.
       }
-      const tokenQuery = data.resultToken ? `?token=${encodeURIComponent(data.resultToken)}` : '';
-      router.push(`/challenges/${slug}/result${tokenQuery}`);
+      router.push(`/challenges/${slug}/result?token=${encodeURIComponent(data.resultToken)}`);
     }
   };
 

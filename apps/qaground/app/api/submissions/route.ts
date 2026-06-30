@@ -105,19 +105,21 @@ export async function POST(request: Request) {
 
   const apiContent =
     parsed.data.kind === 'api' ? ApiContentSchema.safeParse(parsed.data.content) : null;
+  if (parsed.data.kind === 'api' && (!apiContent?.success || !challenge.endpoints)) {
+    return NextResponse.json({ ok: false, error: 'invalid_api_submission' }, { status: 400 });
+  }
+
   const hiddenGrade =
     apiContent?.success && challenge.endpoints
       ? gradeApiAttempts(apiContent.data.attempts, { targets: challenge.endpoints })
       : null;
-  const serverResult =
-    hiddenGrade
-      ? {
-          ...(parsed.data.result && typeof parsed.data.result === 'object'
-            ? parsed.data.result
-            : {}),
-          hiddenGrade,
-        }
-      : (parsed.data.result ?? null);
+  const serverVerified = !!hiddenGrade && hiddenGrade.score === hiddenGrade.maxScore;
+  const serverResult = hiddenGrade
+    ? {
+        ...(parsed.data.result && typeof parsed.data.result === 'object' ? parsed.data.result : {}),
+        hiddenGrade,
+      }
+    : (parsed.data.result ?? null);
   try {
     const db = getDatabase();
     await db.insert(qagroundSubmissions).values({
@@ -131,9 +133,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       resultToken:
-        hiddenGrade && hiddenGrade.score === hiddenGrade.maxScore
-          ? createChallengeResultToken(challenge.slug)
-          : undefined,
+        serverVerified ? createChallengeResultToken(challenge.slug) : undefined,
     });
   } catch (error) {
     console.error('[submissions] 저장 실패', error);

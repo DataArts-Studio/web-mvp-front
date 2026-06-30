@@ -4,14 +4,18 @@ import 'server-only';
 const TOKEN_TTL_MS = 1000 * 60 * 30;
 
 function secret(): string {
-  const value =
-    process.env.QAGROUND_RESULT_TOKEN_SECRET ??
-    process.env.QAGROUND_MAGIC_SECRET ??
-    process.env.QAGROUND_RUNNER_SECRET;
+  const dedicated = process.env.QAGROUND_RESULT_TOKEN_SECRET;
+  if (dedicated) return dedicated;
 
-  if (value) return value;
-  if (process.env.NODE_ENV !== 'production') return 'qaground-local-result-token-secret';
-  throw new Error('QAGROUND_RESULT_TOKEN_SECRET is required in production.');
+  if (process.env.VERCEL_ENV === 'production') {
+    throw new Error('QAGROUND_RESULT_TOKEN_SECRET is required in production.');
+  }
+
+  return (
+    process.env.QAGROUND_MAGIC_SECRET ??
+    process.env.QAGROUND_RUNNER_SECRET ??
+    'qaground-local-result-token-secret'
+  );
 }
 
 function sign(payload: string): string {

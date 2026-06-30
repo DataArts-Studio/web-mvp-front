@@ -206,6 +206,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   };
 
   const onProblemResizeUp = (event: PointerEvent<HTMLDivElement>) => {
+    setProblemPaneWidth(problemPaneWidthRef.current);
     splitDragRef.current = null;
 
     try {
@@ -216,6 +217,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   };
 
   const onProblemResizeCancel = () => {
+    setProblemPaneWidth(problemPaneWidthRef.current);
     splitDragRef.current = null;
   };
 

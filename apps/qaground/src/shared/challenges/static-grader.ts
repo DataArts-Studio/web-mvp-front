@@ -117,6 +117,31 @@ function findMatchingBrace(src: string, openIndex: number): number {
   return -1;
 }
 
+
+function findMatchingParen(src: string, openIndex: number): number {
+  let depth = 0;
+  for (let i = openIndex; i < src.length; i += 1) {
+    const ch = src[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      i = skipStringLiteral(src, i);
+      continue;
+    }
+    if (ch === '(') depth += 1;
+    if (ch === ')') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function findFunctionBodyStart(src: string, functionStart: number): number {
+  const openParen = src.indexOf('(', functionStart);
+  if (openParen < 0) return -1;
+  const closeParen = findMatchingParen(src, openParen);
+  if (closeParen < 0) return -1;
+  return src.indexOf('{', closeParen);
+}
 function readFirstStringArgument(
   src: string,
   openParen: number
@@ -151,8 +176,7 @@ function findCallbackBodyStart(src: string, openParen: number): number {
       return src[bodyStart] === '{' ? bodyStart : -1;
     }
     if (src.startsWith('function', i)) {
-      const bodyStart = src.indexOf('{', i + 'function'.length);
-      return bodyStart;
+      return findFunctionBodyStart(src, i);
     }
   }
   return -1;
@@ -175,7 +199,10 @@ function collectFunctionRanges(src: string): ParsedFunctionRange[] {
   patterns.forEach((pattern) => {
     for (const match of src.matchAll(pattern)) {
       const start = match.index ?? 0;
-      const bodyStart = src.indexOf('{', start);
+      const matchText = match[0];
+      const bodyStart = matchText.endsWith('{')
+        ? start + matchText.length - 1
+        : findFunctionBodyStart(src, start);
       if (bodyStart < 0) continue;
       addRange(match[1], start, bodyStart);
     }
@@ -249,6 +276,29 @@ function callsHelper(body: string, helperName: string): boolean {
   return new RegExp(`\\b${escapeRegExp(helperName)}\\s*\\(`).test(body);
 }
 
+
+function callsHelperSafely(body: string, helperName: string): boolean {
+  const name = escapeRegExp(helperName);
+  return new RegExp(String.raw`\b(?:await|return)\s+${name}\s*\(`).test(body);
+}
+
+function helperRequiresAwait(helper: ParsedFunction): boolean {
+  return /\bawait\b/.test(helper.body) || AWAITED_ASSERTION_RE.test(helper.body) || ASYNC_ACTION_RE.test(helper.body);
+}
+
+function stripStaticDeadBranches(src: string): string {
+  let output = src;
+  let match: RegExpExecArray | null;
+  const re = /\bif\s*\(\s*false\s*\)\s*\{/g;
+  while ((match = re.exec(output))) {
+    const open = output.indexOf('{', match.index);
+    const close = findMatchingBrace(output, open);
+    if (close < 0) break;
+    output = `${output.slice(0, match.index)} ${output.slice(close + 1)}`;
+    re.lastIndex = match.index;
+  }
+  return output;
+}
 function validateTestBlocks(stripped: string): { failures: string[]; blocks: TestBlock[] } {
   const blocks = extractTestBlocks(stripped);
   const hooks = extractHookBodies(stripped);
@@ -263,8 +313,9 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
   blocks.forEach((block) => {
     const title = block.title.trim() || '이름 없는 테스트';
     const body = block.body.trim();
-    const executableBody = stripNestedFunctionBodies(body);
-    const calledHelpers = helpers.filter((helper) => callsHelper(executableBody, helper.name));
+    const executableBody = stripStaticDeadBranches(stripNestedFunctionBodies(body));
+    const unsafeHelpers = helpers.filter((helper) => callsHelper(executableBody, helper.name) && !callsHelperSafely(executableBody, helper.name));
+    const calledHelpers = helpers.filter((helper) => callsHelperSafely(executableBody, helper.name));
     const assertions =
       countMatches(executableBody, ASSERTION_RE) +
       calledHelpers.reduce((sum, helper) => sum + countMatches(helper.body, ASSERTION_RE), 0);
@@ -285,6 +336,12 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
         `"${title}" 테스트에서 page 를 사용하지만 Playwright page fixture 를 받지 않았습니다.`
       );
     }
+    unsafeHelpers
+      .filter(helperRequiresAwait)
+      .forEach((helper) =>
+        failures.push(`"${title}" 테스트에서 helper ${helper.name}(...) 호출은 await 또는 return 으로 기다려야 합니다.`)
+      );
+
     if (assertions < 1) {
       failures.push(`"${title}" 테스트에 expect(...) 단언이 없습니다.`);
     } else if (

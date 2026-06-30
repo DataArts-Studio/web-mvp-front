@@ -47,6 +47,9 @@ const TERM_CLASS: Record<TermKind, string> = {
 };
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+function shouldSendProductionTelemetry(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname === 'qaground.gettestea.com';
+}
 
 function configureEditor(monaco: Monaco) {
   monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
@@ -56,27 +59,55 @@ function configureEditor(monaco: Monaco) {
   });
 }
 
+function expectedStatusForEndpoint(endpoint?: ApiEndpoint): number {
+  if (!endpoint) return 200;
+  const explicit = endpoint.desc.match(/\b[1-5]\d{2}\b/)?.[0];
+  if (explicit) return Number(explicit);
+  if (endpoint.method === 'DELETE') return 204;
+  if (endpoint.method === 'POST' && !endpoint.path.includes('/auth/')) return 201;
+  return 200;
+}
+
+function defaultBodyValue(type: string): unknown {
+  if (type === 'number') return 1;
+  if (type === 'boolean') return true;
+  if (type === 'array') return [];
+  if (type === 'object') return {};
+  if (type === 'null') return null;
+  return 'demo';
+}
+
 function starterForApi(apiBase: string, endpoints: ApiEndpoint[]): string {
   const first = endpoints[0];
   const firstPath = first?.path ?? '/products?page=1&limit=5';
+  const method = first?.method ?? 'GET';
+  const expectedStatus = expectedStatusForEndpoint(first);
+  const bodyFields = first?.body?.length
+    ? Object.fromEntries(first.body.map((field) => [field.path, defaultBodyValue(field.type)]))
+    : null;
+  const bodyLine = bodyFields
+    ? `  body: JSON.stringify(${JSON.stringify(bodyFields, null, 2).replace(/\n/g, '\n  ')}),\n`
+    : '';
+  const responseField = first?.response?.find((field) => field.path && field.type !== 'object');
+  const responseKey = responseField?.path.split('.')[0] ?? 'id';
+  const bodyAssert =
+    expectedStatus === 204
+      ? ''
+      : `\n    const json = res.json();\n    pm.expect(json).to.have.property('${responseKey}');`;
+
   return `// Postman 테스트 스크립트 문법으로 작성합니다.
 // pm.sendRequest 로 API를 호출하고, pm.test / pm.expect 로 검증하세요.
 pm.sendRequest({
   url: '${apiBase}${firstPath}',
-  method: 'GET',
-}, (err, res) => {
-  pm.test('상품 목록과 페이지 메타데이터를 반환한다', () => {
+  method: '${method}',
+${bodyLine}}, (err, res) => {
+  pm.test('${method} ${firstPath} 응답을 검증한다', () => {
     pm.expect(err).to.eql(null);
-    pm.expect(res.code).to.eql(200);
-
-    const json = res.json();
-    pm.expect(json.page).to.eql(1);
-    // TODO: 요구사항에 맞춰 limit, total, data 길이도 검증하세요.
+    pm.expect(res.code).to.eql(${expectedStatus});${bodyAssert}
   });
 });
 `;
 }
-
 function parseTestTitles(code: string): string[] {
   return Array.from(code.matchAll(/\b(?:test|it)\s*\(\s*['"`]([^'"`]+)['"`]/g)).map((match) => match[1]);
 }
@@ -210,29 +241,40 @@ export function ApiCodeExercise({
       });
     }
 
-    track(shouldRecord ? 'api_code_submit' : 'api_code_grade', {
-      slug,
-      status: data.status,
-      score: data.score,
-    });
-
-    if (shouldRecord) {
-      recordSubmission({
+    if (shouldSendProductionTelemetry()) {
+      track(shouldRecord ? 'api_code_submit' : 'api_code_grade', {
         slug,
-        kind: 'api',
-        content: { code },
-        result: { status: data.status, score: data.score, maxScore: data.maxScore },
+        status: data.status,
+        score: data.score,
       });
+
+      if (shouldRecord) {
+        recordSubmission({
+          slug,
+          kind: 'api',
+          content: { code },
+          result: { status: data.status, score: data.score, maxScore: data.maxScore },
+        });
+      }
     }
 
     if (shouldRecord && data.ok) {
+      if (!data.resultToken) {
+        push({
+          id: 'missing-token',
+          text: '  ✗  결과 접근 토큰을 발급받지 못했습니다.',
+          kind: 'fail',
+        });
+        setMessage('결과 접근 토큰을 발급받지 못했습니다. 다시 제출해 주세요.');
+        setRunning(false);
+        return;
+      }
       try {
         window.sessionStorage.setItem(`qaground:last-submission:${slug}`, code);
       } catch {
         // 결과 페이지 비교는 부가 기능이므로 저장 실패는 무시한다.
       }
-      const tokenQuery = data.resultToken ? `?token=${encodeURIComponent(data.resultToken)}` : '';
-      router.push(`/challenges/${slug}/result${tokenQuery}`);
+      router.push(`/challenges/${slug}/result?token=${encodeURIComponent(data.resultToken)}`);
     }
     setRunning(false);
   };
@@ -292,10 +334,21 @@ export function ApiCodeExercise({
         role="separator"
         aria-orientation="horizontal"
         aria-label="실행 결과 높이 조절"
+        aria-valuemin={96}
+        aria-valuemax={520}
+        aria-valuenow={termH}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowUp') {
+            const max = Math.max(160, (sectionRef.current?.clientHeight ?? 800) - 220);
+            setTermH((h) => Math.min(h + 16, max));
+          }
+          if (e.key === 'ArrowDown') setTermH((h) => Math.max(h - 16, 96));
+        }}
         onPointerDown={onResizeDown}
         onPointerMove={onResizeMove}
         onPointerUp={onResizeUp}
-        className="border-line-2 bg-bg-2 hover:bg-primary/20 group flex h-2 shrink-0 cursor-row-resize touch-none items-center justify-center border-t transition-colors"
+        className="border-line-2 bg-bg-2 hover:bg-primary/20 focus:bg-primary/20 group flex h-2 shrink-0 cursor-row-resize touch-none items-center justify-center border-t transition-colors outline-none"
       >
         <span aria-hidden className="bg-line-3 group-hover:bg-primary h-0.5 w-8 transition-colors" />
       </div>

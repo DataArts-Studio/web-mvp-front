@@ -386,7 +386,12 @@ pm.sendRequest({ url: '/auth/login', method: 'POST' }, (err, res) => {
   });
 });
 
-pm.sendRequest({ url: '/products', method: 'POST' }, (err, res) => {
+pm.sendRequest({
+  url: '/products',
+  method: 'POST',
+  headers: { Authorization: 'Bearer qaground-demo-token' },
+  body: JSON.stringify({ name: '테스트 상품', price: 12000 })
+}, (err, res) => {
   pm.test('상품 생성은 201을 반환한다', () => {
     pm.expect(res.code).to.eql(201);
     const json = res.json();
@@ -394,7 +399,11 @@ pm.sendRequest({ url: '/products', method: 'POST' }, (err, res) => {
   });
 });
 
-pm.sendRequest({ url: '/products/1', method: 'DELETE' }, (err, res) => {
+pm.sendRequest({
+  url: '/products/1',
+  method: 'DELETE',
+  headers: { Authorization: 'Bearer qaground-demo-token' }
+}, (err, res) => {
   pm.test('상품 삭제는 204를 반환한다', () => {
     pm.expect(res.code).to.eql(204);
   });
@@ -412,5 +421,87 @@ pm.sendRequest({ url: '/products/1', method: 'DELETE' }, (err, res) => {
 
     expect(result.score).toBe(result.maxScore);
     expect(result.passed).toBe(result.total);
+  });
+  it('주석에만 있는 API 테스트 코드는 채점에 반영하지 않는다', () => {
+    const code = `// pm.sendRequest({ url: '/products/1', method: 'GET' }, (err, res) => {
+//   pm.test('fake', () => {
+//     pm.expect(res.code).to.eql(200);
+//     pm.expect(res.json().id).to.eql(1);
+//   });
+// });`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [{ method: 'GET', path: '/products/:id' }],
+    });
+
+    expect(result.cases.find((item) => item.id === 'failure-path')?.pass).toBe(true);
+    expect(result.cases.find((item) => item.id === 'success-path')?.pass).toBe(false);
+    expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(false);
+  });
+
+  it('method와 path가 서로 다른 sendRequest에 흩어져 있으면 커버리지로 인정하지 않는다', () => {
+    const code = `pm.sendRequest({ url: '/products/1', method: 'POST' }, (err, res) => {
+  pm.test('status', () => pm.expect(res.code).to.eql(201));
+});
+pm.sendRequest({ url: '/orders/1', method: 'GET' }, (err, res) => {
+  pm.test('status', () => pm.expect(res.code).to.eql(200));
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [{ method: 'GET', path: '/products/:id' }],
+    });
+
+    expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(false);
+  });
+
+  it('보호 API는 헤더와 본문을 포함해야 요청 커버리지로 인정한다', () => {
+    const missingAuthAndBody = `pm.sendRequest({ url: '/products', method: 'POST' }, (err, res) => {
+  pm.test('created', () => pm.expect(res.code).to.eql(201));
+});`;
+    const withAuthAndBody = `pm.sendRequest({
+  url: '/products',
+  method: 'POST',
+  headers: { Authorization: 'Bearer qaground-demo-token' },
+  body: JSON.stringify({ name: '테스트 상품', price: 12000 })
+}, (err, res) => {
+  pm.test('created', () => {
+    pm.expect(res.code).to.eql(201);
+    pm.expect(res.json().name).to.eql('테스트 상품');
+  });
+});`;
+
+    const target = {
+      method: 'POST',
+      path: '/products',
+      auth: true,
+      desc: '상품 생성 (검증 400 / 성공 201)',
+    };
+
+    expect(
+      gradeApiCodeSubmission(missingAuthAndBody, { targets: [target] }).cases.find(
+        (item) => item.id === 'request-coverage'
+      )?.pass
+    ).toBe(false);
+    expect(
+      gradeApiCodeSubmission(withAuthAndBody, { targets: [target] }).cases.find(
+        (item) => item.id === 'request-coverage'
+      )?.pass
+    ).toBe(true);
+  });
+
+  it('실패 상태가 없는 챌린지는 failure-path 없이도 만점 가능하다', () => {
+    const code = `pm.sendRequest({ url: '/health', method: 'GET' }, (err, res) => {
+  pm.test('health', () => {
+    pm.response.to.have.status(200);
+    pm.expect(res.json().status).to.eql('ok');
+  });
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [{ method: 'GET', path: '/health', desc: '헬스 체크' }],
+    });
+
+    expect(result.cases.find((item) => item.id === 'failure-path')?.pass).toBe(true);
+    expect(result.score).toBe(result.maxScore);
   });
 });

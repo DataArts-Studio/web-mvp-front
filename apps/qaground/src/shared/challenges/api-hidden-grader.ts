@@ -125,6 +125,52 @@ function stripNonExecutableJavaScript(script: string): string {
   return output;
 }
 
+function stripCommentsPreserveStrings(script: string): string {
+  let output = '';
+  let quote: 'single' | 'double' | 'template' | null = null;
+  let escaped = false;
+
+  for (let i = 0; i < script.length; i += 1) {
+    const current = script[i];
+    const next = script[i + 1];
+
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (current === '\\') escaped = true;
+      else if (
+        (quote === 'single' && current === "'") ||
+        (quote === 'double' && current === '"') ||
+        (quote === 'template' && current === '`')
+      ) {
+        quote = null;
+      }
+      output += current;
+      continue;
+    }
+
+    if (current === "'") quote = 'single';
+    if (current === '"') quote = 'double';
+    if (current === '`') quote = 'template';
+    if (current === '/' && next === '/') {
+      while (i < script.length && script[i] !== '\n') i += 1;
+      output += '\n';
+      continue;
+    }
+    if (current === '/' && next === '*') {
+      i += 2;
+      while (i < script.length && !(script[i] === '*' && script[i + 1] === '/')) {
+        output += script[i] === '\n' ? '\n' : ' ';
+        i += 1;
+      }
+      i += 1;
+      continue;
+    }
+
+    output += current;
+  }
+
+  return output;
+}
 function hasStatusAssertion(attempt: ApiAttemptForGrade): boolean {
   if (attempt.assertions.some((assertion) => assertion.kind === 'status')) return true;
   const executable = stripNonExecutableJavaScript(attempt.script);
@@ -337,16 +383,38 @@ function concretePathPattern(path: string): RegExp {
   return new RegExp(`${escapedPath}${escapedSearch}`, 'i');
 }
 
+function sendRequestBlocks(code: string): string[] {
+  const blocks: string[] = [];
+  const re = /\bpm\.sendRequest\s*\(/gi;
+  const matches = [...code.matchAll(re)];
+  matches.forEach((match, index) => {
+    const start = match.index ?? 0;
+    const end = matches[index + 1]?.index ?? code.length;
+    blocks.push(code.slice(start, end));
+  });
+  return blocks;
+}
+
+function hasRequiredRequestDetails(block: string, target: ApiTargetForGrade): boolean {
+  const method = target.method.toUpperCase();
+  const hasAuth =
+    !target.auth || /\b(?:Authorization|x-api-key)\b/i.test(block) || /\bheaders\s*:/i.test(block);
+  const needsBody = method !== 'GET' && method !== 'DELETE' && !/\/auth\//.test(target.path);
+  const hasBody = !needsBody || /\b(?:body|raw)\s*:/i.test(block);
+  return hasAuth && hasBody;
+}
+
 function hasRequestCall(code: string, target: ApiTargetForGrade): boolean {
   const method = target.method.toUpperCase();
   const methodPattern = new RegExp(
     String.raw`\bmethod\s*:\s*['"\`]${method}['"\`]|\bmethod\s*:\s*['"\`]${target.method.toLowerCase()}['"\`]`,
     'i'
   );
-  return (
-    /\bpm\.sendRequest\s*\(/i.test(code) &&
-    methodPattern.test(code) &&
-    concretePathPattern(target.path).test(code)
+  const pathPattern = concretePathPattern(target.path);
+
+  return sendRequestBlocks(code).some(
+    (block) =>
+      methodPattern.test(block) && pathPattern.test(block) && hasRequiredRequestDetails(block, target)
   );
 }
 
@@ -354,14 +422,26 @@ function hasExpectedStatusInCode(code: string, statuses: Set<number>): boolean {
   if (statuses.size === 0) return false;
   return [...statuses].some((status) => {
     const statusText = String(status);
-    return new RegExp(
-      String.raw`pm\.expect\s*\(\s*(?:res|response)\.(?:code|status)\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|above|below)\s*\(\s*${statusText}\s*\)`,
+    const expectStatus = new RegExp(
+      String.raw`pm\.expect\s*\(\s*(?:res|response|pm\.response)\.(?:code|status)\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|above|below)\s*\(\s*${statusText}\s*\)`,
       'i'
-    ).test(code);
+    );
+    const responseHaveStatus = new RegExp(
+      String.raw`pm\.response\.to\.have\.status\s*\(\s*${statusText}\s*\)`,
+      'i'
+    );
+    return expectStatus.test(code) || responseHaveStatus.test(code);
   });
 }
 
 function hasJsonBodyAssertionInCode(code: string): boolean {
+  const matcherChain = String.raw`(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|include|lengthOf|property|a|above|below)\s*\(`;
+  const directJsonAssert = new RegExp(
+    String.raw`pm\.expect\s*\(\s*(?:res|response)\.json\s*\(\s*\)(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])*\s*\)\s*${matcherChain}`,
+    'i'
+  ).test(code);
+  if (directJsonAssert) return true;
+
   const aliases = [
     ...code.matchAll(
       /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:res|response)\.json\s*\(\s*\)/gi
@@ -386,41 +466,48 @@ export function gradeApiCodeSubmission(
   options?: ApiGradeOptions
 ): HiddenGradeResult {
   const targets = options?.targets ?? [];
+  const executableCode = stripCommentsPreserveStrings(code);
+  const hasFailureTarget = targets.some((target) => expectedStatusesForTarget(target).failure.size > 0);
   const cases: HiddenGradeCase[] = [
     {
       id: 'success-path',
       points: 20,
       pass:
-        hasApiCodeShape(code) &&
+        hasApiCodeShape(executableCode) &&
         targets.some((target) => {
           const expected = expectedStatusesForTarget(target).success;
-          return hasRequestCall(code, target) && hasExpectedStatusInCode(code, expected);
+          return hasRequestCall(executableCode, target) && hasExpectedStatusInCode(executableCode, expected);
         }),
     },
     {
       id: 'failure-path',
       points: 20,
       pass:
-        hasApiCodeShape(code) &&
-        targets.some((target) => {
-          const expected = expectedStatusesForTarget(target).failure;
-          return expected.size > 0 && hasRequestCall(code, target) && hasExpectedStatusInCode(code, expected);
-        }),
+        !hasFailureTarget ||
+        (hasApiCodeShape(executableCode) &&
+          targets.some((target) => {
+            const expected = expectedStatusesForTarget(target).failure;
+            return (
+              expected.size > 0 &&
+              hasRequestCall(executableCode, target) &&
+              hasExpectedStatusInCode(executableCode, expected)
+            );
+          })),
     },
     {
       id: 'request-coverage',
       points: 20,
-      pass: targets.length > 0 && targets.every((target) => hasRequestCall(code, target)),
+      pass: targets.length > 0 && targets.every((target) => hasRequestCall(executableCode, target)),
     },
     {
       id: 'status-assertion',
       points: 20,
-      pass: hasExpectedStatusInCode(code, new Set([200, 201, 204, 400, 401, 404])),
+      pass: hasExpectedStatusInCode(executableCode, new Set([200, 201, 204, 400, 401, 404])),
     },
     {
       id: 'body-assertion',
       points: 20,
-      pass: hasJsonBodyAssertionInCode(code),
+      pass: hasJsonBodyAssertionInCode(executableCode),
     },
   ];
   const score = cases.filter((item) => item.pass).reduce((sum, item) => sum + item.points, 0);
@@ -440,6 +527,7 @@ export function gradeApiAttempts(
 ): HiddenGradeResult {
   const targets = options?.targets ?? [];
   const targetAttempts = getTargetAttempts(attempts, options);
+  const hasFailureTarget = targets.some((target) => expectedStatusesForTarget(target).failure.size > 0);
   const cases: HiddenGradeCase[] = [
     {
       id: 'success-path',
@@ -449,7 +537,7 @@ export function gradeApiAttempts(
     {
       id: 'failure-path',
       points: 20,
-      pass: hasExpectedFailurePath(attempts, targets),
+      pass: (!hasFailureTarget && targets.length > 0 && hasExpectedRequestCoverage(attempts, options)) || hasExpectedFailurePath(attempts, targets),
     },
     {
       id: 'request-coverage',

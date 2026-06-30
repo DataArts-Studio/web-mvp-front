@@ -105,6 +105,9 @@ const API_TERM_CLASS: Record<ApiTermKind, string> = {
 };
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+function shouldSendProductionTelemetry(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname === 'qaground.gettestea.com';
+}
 
 function getAnonId(): string {
   try {
@@ -978,7 +981,13 @@ export const ApiTesterExercise = ({
           ...prev,
         ].slice(0, 6)
       );
-      track(shouldSubmit ? 'api_submit' : 'api_run', { passed, total: totalChecks, score: hiddenGrade.score });
+      if (shouldSendProductionTelemetry()) {
+        track(shouldSubmit ? 'api_submit' : 'api_run', {
+          passed,
+          total: totalChecks,
+          score: hiddenGrade.score,
+        });
+      }
       if (shouldSubmit) {
         const submitResponse = await fetch('/api/submissions', {
           method: 'POST',
@@ -986,7 +995,7 @@ export const ApiTesterExercise = ({
           body: JSON.stringify({
             slug,
             kind: 'api',
-            anonId: getAnonId(),
+            ...(shouldSendProductionTelemetry() ? { anonId: getAnonId() } : {}),
             content: {
               method,
               path,
@@ -1001,11 +1010,20 @@ export const ApiTesterExercise = ({
         const submitResult = (await submitResponse.json().catch(() => null)) as {
           ok?: boolean;
           resultToken?: string;
+          error?: string;
         } | null;
-        if (submitResult?.resultToken) {
-          router.push(`/challenges/${slug}/result?token=${encodeURIComponent(submitResult.resultToken)}`);
+        if (!submitResponse.ok || !submitResult?.resultToken) {
+          push({
+            id: 'submit-error',
+            text: `  ✗  ${submitResult?.error ?? '제출 결과 토큰을 발급받지 못했습니다.'}`,
+            kind: 'fail',
+          });
+          setError(submitResult?.error ?? '제출에 실패했습니다. 다시 시도해 주세요.');
+          return;
         }
-      }    } catch (e) {
+        router.push(`/challenges/${slug}/result?token=${encodeURIComponent(submitResult.resultToken)}`);
+      }
+    } catch (e) {
       push({ id: 'error', text: '  ✗  요청 실행 실패', kind: 'fail' });
       setError(e instanceof Error ? e.message : '요청 실패');
     } finally {
