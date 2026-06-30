@@ -58,9 +58,7 @@ function buildLineDiff(submittedCode: string, solutionCode: string): DiffLine[] 
   for (let i = submitted.length - 1; i >= 0; i -= 1) {
     for (let j = solution.length - 1; j >= 0; j -= 1) {
       dp[i][j] =
-        submitted[i] === solution[j]
-          ? dp[i + 1][j + 1] + 1
-          : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        submitted[i] === solution[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
     }
   }
 

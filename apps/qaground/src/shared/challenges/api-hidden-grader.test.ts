@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { type ApiAttemptForGrade, gradeApiAttempts, gradeApiCodeSubmission } from './api-hidden-grader';
+import {
+  type ApiAttemptForGrade,
+  gradeApiAttempts,
+  gradeApiCodeSubmission,
+} from './api-hidden-grader';
 
 const baseAttempt: ApiAttemptForGrade = {
   method: 'GET',

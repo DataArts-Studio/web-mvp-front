@@ -565,5 +565,3 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
     </div>
   );
 };
-
-

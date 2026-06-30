@@ -5,8 +5,6 @@ import { type ReactNode, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
-import { DsCheckbox } from '@testea/ui';
-
 import { track } from '@/shared/analytics/track';
 import {
   type ApiAttemptForGrade,
@@ -14,6 +12,7 @@ import {
   gradeApiAttempts,
 } from '@/shared/challenges/api-hidden-grader';
 import type { ApiEndpoint, ApiSchemaField, ApiSchemaType } from '@/shared/challenges/registry';
+import { DsCheckbox } from '@testea/ui';
 import { Play, Plus, Send, Trash2 } from 'lucide-react';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
@@ -294,7 +293,9 @@ pm.test('상태 코드는 200', () => {
 `;
 
 function defaultAssertionsForCase(requestCase?: ApiRequestCase): Assertion[] {
-  return [{ id: nextId++, kind: 'status', path: '', expected: requestCase?.expectedStatus ?? '200' }];
+  return [
+    { id: nextId++, kind: 'status', path: '', expected: requestCase?.expectedStatus ?? '200' },
+  ];
 }
 
 function defaultScriptForCase(requestCase?: ApiRequestCase): string {
@@ -393,9 +394,7 @@ function stripNonExecutableScriptText(script: string): string {
 }
 function headersFromRows(rows: HeaderRow[]): Record<string, string> {
   return Object.fromEntries(
-    rows
-      .filter((row) => row.enabled && row.value.trim())
-      .map((row) => [row.key, row.value.trim()])
+    rows.filter((row) => row.enabled && row.value.trim()).map((row) => [row.key, row.value.trim()])
   );
 }
 
@@ -768,7 +767,8 @@ export const ApiTesterExercise = ({
       },
     ]);
   const removeAssertion = (id: number) =>
-    setCaseAssertions((items) => items.filter((a) => a.id !== id));  const updateHeaderRow = (id: number, patch: Partial<HeaderRow>) =>
+    setCaseAssertions((items) => items.filter((a) => a.id !== id));
+  const updateHeaderRow = (id: number, patch: Partial<HeaderRow>) =>
     setHeaderRows((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   const addHeaderRow = () =>
     setHeaderRows((rows) => [
@@ -786,7 +786,9 @@ export const ApiTesterExercise = ({
         : { ...prev, [requestCase.key]: defaultAssertionsForCase(requestCase) }
     );
     setScriptsByCase((prev) =>
-      prev[requestCase.key] ? prev : { ...prev, [requestCase.key]: defaultScriptForCase(requestCase) }
+      prev[requestCase.key]
+        ? prev
+        : { ...prev, [requestCase.key]: defaultScriptForCase(requestCase) }
     );
     setMethod(requestCase.method);
     setPath(requestCase.path);
@@ -806,7 +808,11 @@ export const ApiTesterExercise = ({
     setResultTab('body');
     setTerm([]);
     try {
-      push({ id: 'cmd', text: shouldSubmit ? '$ qaground api submit' : '$ qaground api run', kind: 'cmd' });
+      push({
+        id: 'cmd',
+        text: shouldSubmit ? '$ qaground api submit' : '$ qaground api run',
+        kind: 'cmd',
+      });
       await delay(180);
       push({ id: 'prepare', text: '  ◌  요청 구성 중', kind: 'run' });
       const headers = headersFromRows(headerRows);
@@ -831,7 +837,11 @@ export const ApiTesterExercise = ({
       setTerm((prev) =>
         prev.map((line) =>
           line.id === 'request'
-            ? { ...line, text: '  ✓  HTTP ' + res.status + ' 응답 수신 (' + durationMs + 'ms)', kind: 'pass' }
+            ? {
+                ...line,
+                text: '  ✓  HTTP ' + res.status + ' 응답 수신 (' + durationMs + 'ms)',
+                kind: 'pass',
+              }
             : line
         )
       );
@@ -900,17 +910,15 @@ export const ApiTesterExercise = ({
       const scriptResults = userScript.trim()
         ? runPmScript(userScript, { status: res.status, json, bodyText })
         : [];
-      const checkPass = checks.every((check) => check.pass) && scriptResults.every((item) => item.pass);
+      const checkPass =
+        checks.every((check) => check.pass) && scriptResults.every((item) => item.pass);
       setTerm((prev) =>
         prev.map((line) =>
           line.id === 'checks'
             ? {
                 ...line,
                 text:
-                  '  ' +
-                  (checkPass ? '✓' : '✗') +
-                  '  사용자 검증 ' +
-                  (checkPass ? '통과' : '실패'),
+                  '  ' + (checkPass ? '✓' : '✗') + '  사용자 검증 ' + (checkPass ? '통과' : '실패'),
                 kind: checkPass ? 'pass' : 'fail',
               }
             : line
@@ -945,7 +953,12 @@ export const ApiTesterExercise = ({
           line.id === 'grade'
             ? {
                 ...line,
-                text: '  ' + (gradePassed ? '✓' : '◌') + '  ' + (shouldSubmit ? '제출' : '채점') + ' 결과 준비 완료',
+                text:
+                  '  ' +
+                  (gradePassed ? '✓' : '◌') +
+                  '  ' +
+                  (shouldSubmit ? '제출' : '채점') +
+                  ' 결과 준비 완료',
                 kind: gradePassed ? 'pass' : 'run',
               }
             : line
@@ -1021,7 +1034,9 @@ export const ApiTesterExercise = ({
           setError(submitResult?.error ?? '제출에 실패했습니다. 다시 시도해 주세요.');
           return;
         }
-        router.push(`/challenges/${slug}/result?token=${encodeURIComponent(submitResult.resultToken)}`);
+        router.push(
+          `/challenges/${slug}/result?token=${encodeURIComponent(submitResult.resultToken)}`
+        );
       }
     } catch (e) {
       push({ id: 'error', text: '  ✗  요청 실행 실패', kind: 'fail' });
@@ -1240,7 +1255,9 @@ export const ApiTesterExercise = ({
                 <div className="border-line-2 flex items-center justify-between border-b px-3 py-2">
                   <div>
                     <h3 className="text-text-1 text-sm font-semibold">Authorization</h3>
-                    <p className="text-text-3 mt-0.5 text-xs">요청에 사용할 인증 방식을 선택합니다.</p>
+                    <p className="text-text-3 mt-0.5 text-xs">
+                      요청에 사용할 인증 방식을 선택합니다.
+                    </p>
                   </div>
                 </div>
                 <div className="grid gap-3 p-3 md:grid-cols-[14rem_minmax(0,1fr)] md:items-end">
@@ -1265,7 +1282,9 @@ export const ApiTesterExercise = ({
                     <input
                       data-testid="api-token"
                       value={token}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setToken(e.target.value)
+                      }
                       placeholder={AUTH_TYPES.find((item) => item.key === authType)?.placeholder}
                       disabled={authType === 'none'}
                       className={`h-10 min-w-0 font-mono disabled:opacity-50 ${fieldClass}`}
@@ -1278,7 +1297,9 @@ export const ApiTesterExercise = ({
                 <div className="border-line-2 flex items-center justify-between gap-3 border-b px-3 py-2">
                   <div>
                     <h3 className="text-text-1 text-sm font-semibold">Headers</h3>
-                    <p className="text-text-3 mt-0.5 text-xs">키는 선택하고 값만 직접 입력합니다.</p>
+                    <p className="text-text-3 mt-0.5 text-xs">
+                      키는 선택하고 값만 직접 입력합니다.
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -1289,7 +1310,7 @@ export const ApiTesterExercise = ({
                   </button>
                 </div>
                 <div className="divide-line-2 divide-y">
-                  <div className="text-text-3 hidden grid-cols-[2.5rem_14rem_minmax(0,1fr)_2.5rem] gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-normal md:grid">
+                  <div className="text-text-3 hidden grid-cols-[2.5rem_14rem_minmax(0,1fr)_2.5rem] gap-2 px-3 py-2 text-[11px] font-semibold tracking-normal uppercase md:grid">
                     <span>Use</span>
                     <span>Key</span>
                     <span>Value</span>
@@ -1303,7 +1324,9 @@ export const ApiTesterExercise = ({
                       <label className="flex items-center gap-2 md:justify-center">
                         <DsCheckbox
                           checked={row.enabled}
-                          onCheckedChange={(checked) => updateHeaderRow(row.id, { enabled: checked })}
+                          onCheckedChange={(checked) =>
+                            updateHeaderRow(row.id, { enabled: checked })
+                          }
                           aria-label="헤더 사용"
                           className="border-line-3 bg-bg-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                         />
@@ -1329,7 +1352,9 @@ export const ApiTesterExercise = ({
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           updateHeaderRow(row.id, { value: e.target.value })
                         }
-                        placeholder={row.key === 'x-qaground-signature' ? 'test-signature' : 'value'}
+                        placeholder={
+                          row.key === 'x-qaground-signature' ? 'test-signature' : 'value'
+                        }
                         className={`h-9 min-w-0 font-mono ${fieldClass}`}
                       />
                       <button
@@ -1612,8 +1637,9 @@ export const ApiTesterExercise = ({
                 <div className="space-y-1">
                   {result.declaredScriptCount > result.scriptResults.length && (
                     <div className="mb-2 border border-[#d29922]/30 bg-[#d29922]/10 px-3 py-2 text-[#d29922]">
-                      작성한 pm.test {result.declaredScriptCount}개 중 {result.scriptResults.length}개만
-                      실행됐습니다. 조건문이 false이면 그 안의 테스트는 결과와 채점에 포함되지 않습니다.
+                      작성한 pm.test {result.declaredScriptCount}개 중 {result.scriptResults.length}
+                      개만 실행됐습니다. 조건문이 false이면 그 안의 테스트는 결과와 채점에 포함되지
+                      않습니다.
                     </div>
                   )}
                   {result.scriptResults.length === 0 ? (

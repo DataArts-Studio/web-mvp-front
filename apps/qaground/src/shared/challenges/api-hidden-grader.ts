@@ -293,7 +293,9 @@ function hasExpectedStatusAttempt(
 ): boolean {
   return attempts.some(
     (attempt) =>
-      statuses.has(attempt.status) && matchesTarget(attempt, target) && hasPassingUserChecks(attempt)
+      statuses.has(attempt.status) &&
+      matchesTarget(attempt, target) &&
+      hasPassingUserChecks(attempt)
   );
 }
 
@@ -414,7 +416,9 @@ function hasRequestCall(code: string, target: ApiTargetForGrade): boolean {
 
   return sendRequestBlocks(code).some(
     (block) =>
-      methodPattern.test(block) && pathPattern.test(block) && hasRequiredRequestDetails(block, target)
+      methodPattern.test(block) &&
+      pathPattern.test(block) &&
+      hasRequiredRequestDetails(block, target)
   );
 }
 
@@ -461,13 +465,12 @@ function hasApiCodeShape(code: string): boolean {
   return /\bpm\.sendRequest\s*\(/i.test(code) && /\bpm\.test\s*\(/i.test(code);
 }
 
-export function gradeApiCodeSubmission(
-  code: string,
-  options?: ApiGradeOptions
-): HiddenGradeResult {
+export function gradeApiCodeSubmission(code: string, options?: ApiGradeOptions): HiddenGradeResult {
   const targets = options?.targets ?? [];
   const executableCode = stripCommentsPreserveStrings(code);
-  const hasFailureTarget = targets.some((target) => expectedStatusesForTarget(target).failure.size > 0);
+  const hasFailureTarget = targets.some(
+    (target) => expectedStatusesForTarget(target).failure.size > 0
+  );
   const cases: HiddenGradeCase[] = [
     {
       id: 'success-path',
@@ -476,7 +479,10 @@ export function gradeApiCodeSubmission(
         hasApiCodeShape(executableCode) &&
         targets.some((target) => {
           const expected = expectedStatusesForTarget(target).success;
-          return hasRequestCall(executableCode, target) && hasExpectedStatusInCode(executableCode, expected);
+          return (
+            hasRequestCall(executableCode, target) &&
+            hasExpectedStatusInCode(executableCode, expected)
+          );
         }),
     },
     {
@@ -527,7 +533,9 @@ export function gradeApiAttempts(
 ): HiddenGradeResult {
   const targets = options?.targets ?? [];
   const targetAttempts = getTargetAttempts(attempts, options);
-  const hasFailureTarget = targets.some((target) => expectedStatusesForTarget(target).failure.size > 0);
+  const hasFailureTarget = targets.some(
+    (target) => expectedStatusesForTarget(target).failure.size > 0
+  );
   const cases: HiddenGradeCase[] = [
     {
       id: 'success-path',
@@ -537,7 +545,11 @@ export function gradeApiAttempts(
     {
       id: 'failure-path',
       points: 20,
-      pass: (!hasFailureTarget && targets.length > 0 && hasExpectedRequestCoverage(attempts, options)) || hasExpectedFailurePath(attempts, targets),
+      pass:
+        (!hasFailureTarget &&
+          targets.length > 0 &&
+          hasExpectedRequestCoverage(attempts, options)) ||
+        hasExpectedFailurePath(attempts, targets),
     },
     {
       id: 'request-coverage',
@@ -571,6 +583,3 @@ export function gradeApiAttempts(
     cases,
   };
 }
-
-
-

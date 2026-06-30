@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { gradeApiAttempts } from '@/shared/challenges/api-hidden-grader';
-import { createChallengeResultToken } from '@/shared/challenges/result-access.server';
 import { getChallenge } from '@/shared/challenges/registry';
+import { createChallengeResultToken } from '@/shared/challenges/result-access.server';
 import { getDatabase, qagroundSubmissions } from '@testea/db';
 import { z } from 'zod';
 
@@ -132,8 +132,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({
       ok: true,
-      resultToken:
-        serverVerified ? createChallengeResultToken(challenge.slug) : undefined,
+      resultToken: serverVerified ? createChallengeResultToken(challenge.slug) : undefined,
     });
   } catch (error) {
     console.error('[submissions] 저장 실패', error);

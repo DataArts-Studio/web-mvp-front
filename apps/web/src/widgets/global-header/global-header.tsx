@@ -56,6 +56,14 @@ export const GlobalHeader = () => {
           >
             {t('docs')}
           </Link>
+          <a
+            href="https://qaground.gettestea.com"
+            aria-label={t('qagroundAria')}
+            className="text-body2 text-text-2 hover:text-primary transition-colors"
+            onClick={() => track(NAVIGATION_EVENTS.NAV_CLICK, { menu_label: 'qaground' })}
+          >
+            {t('qaground')}
+          </a>
           <button
             type="button"
             onClick={() => {

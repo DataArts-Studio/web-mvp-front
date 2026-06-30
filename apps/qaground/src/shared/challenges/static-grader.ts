@@ -117,7 +117,6 @@ function findMatchingBrace(src: string, openIndex: number): number {
   return -1;
 }
 
-
 function findMatchingParen(src: string, openIndex: number): number {
   let depth = 0;
   for (let i = openIndex; i < src.length; i += 1) {
@@ -276,14 +275,17 @@ function callsHelper(body: string, helperName: string): boolean {
   return new RegExp(`\\b${escapeRegExp(helperName)}\\s*\\(`).test(body);
 }
 
-
 function callsHelperSafely(body: string, helperName: string): boolean {
   const name = escapeRegExp(helperName);
   return new RegExp(String.raw`\b(?:await|return)\s+${name}\s*\(`).test(body);
 }
 
 function helperRequiresAwait(helper: ParsedFunction): boolean {
-  return /\bawait\b/.test(helper.body) || AWAITED_ASSERTION_RE.test(helper.body) || ASYNC_ACTION_RE.test(helper.body);
+  return (
+    /\bawait\b/.test(helper.body) ||
+    AWAITED_ASSERTION_RE.test(helper.body) ||
+    ASYNC_ACTION_RE.test(helper.body)
+  );
 }
 
 function stripStaticDeadBranches(src: string): string {
@@ -314,8 +316,13 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
     const title = block.title.trim() || '이름 없는 테스트';
     const body = block.body.trim();
     const executableBody = stripStaticDeadBranches(stripNestedFunctionBodies(body));
-    const unsafeHelpers = helpers.filter((helper) => callsHelper(executableBody, helper.name) && !callsHelperSafely(executableBody, helper.name));
-    const calledHelpers = helpers.filter((helper) => callsHelperSafely(executableBody, helper.name));
+    const unsafeHelpers = helpers.filter(
+      (helper) =>
+        callsHelper(executableBody, helper.name) && !callsHelperSafely(executableBody, helper.name)
+    );
+    const calledHelpers = helpers.filter((helper) =>
+      callsHelperSafely(executableBody, helper.name)
+    );
     const assertions =
       countMatches(executableBody, ASSERTION_RE) +
       calledHelpers.reduce((sum, helper) => sum + countMatches(helper.body, ASSERTION_RE), 0);
@@ -339,7 +346,9 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
     unsafeHelpers
       .filter(helperRequiresAwait)
       .forEach((helper) =>
-        failures.push(`"${title}" 테스트에서 helper ${helper.name}(...) 호출은 await 또는 return 으로 기다려야 합니다.`)
+        failures.push(
+          `"${title}" 테스트에서 helper ${helper.name}(...) 호출은 await 또는 return 으로 기다려야 합니다.`
+        )
       );
 
     if (assertions < 1) {

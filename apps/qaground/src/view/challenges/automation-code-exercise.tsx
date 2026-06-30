@@ -253,7 +253,11 @@ export const AutomationCodeExercise = ({
     setResult(data);
     setStatus('result');
     if (shouldSendProductionTelemetry()) {
-      track(shouldRecord ? 'code_submit' : 'code_grade', { slug, status: data.status, ok: data.ok });
+      track(shouldRecord ? 'code_submit' : 'code_grade', {
+        slug,
+        status: data.status,
+        ok: data.ok,
+      });
       if (shouldRecord) {
         recordSubmission({
           slug,

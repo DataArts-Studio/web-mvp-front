@@ -130,4 +130,3 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return NextResponse.json({ error: '채점 서버에 연결하지 못했습니다.' }, { status: 502 });
   }
 }
-

@@ -109,7 +109,9 @@ ${bodyLine}}, (err, res) => {
 `;
 }
 function parseTestTitles(code: string): string[] {
-  return Array.from(code.matchAll(/\b(?:test|it)\s*\(\s*['"`]([^'"`]+)['"`]/g)).map((match) => match[1]);
+  return Array.from(code.matchAll(/\b(?:test|it)\s*\(\s*['"`]([^'"`]+)['"`]/g)).map(
+    (match) => match[1]
+  );
 }
 
 export function ApiCodeExercise({
@@ -205,7 +207,11 @@ export function ApiCodeExercise({
       );
     }
 
-    push({ id: 'grade', text: shouldRecord ? '  ◌  제출 채점 중' : '  ◌  예제 채점 중', kind: 'run' });
+    push({
+      id: 'grade',
+      text: shouldRecord ? '  ◌  제출 채점 중' : '  ◌  예제 채점 중',
+      kind: 'run',
+    });
     const data = await grading;
     if (!alive()) return;
 
@@ -283,7 +289,9 @@ export function ApiCodeExercise({
     <section ref={sectionRef} className="flex h-full min-h-0 flex-col">
       <div className="border-line-2 flex shrink-0 items-center gap-3 border-b px-4 py-2">
         <span className="text-text-2 text-sm font-medium">API 테스트 코드</span>
-        <span className="text-text-3 hidden text-xs sm:inline">Postman 스크립트 문법으로 테스트를 작성하세요.</span>
+        <span className="text-text-3 hidden text-xs sm:inline">
+          Postman 스크립트 문법으로 테스트를 작성하세요.
+        </span>
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
@@ -350,7 +358,10 @@ export function ApiCodeExercise({
         onPointerUp={onResizeUp}
         className="border-line-2 bg-bg-2 hover:bg-primary/20 focus:bg-primary/20 group flex h-2 shrink-0 cursor-row-resize touch-none items-center justify-center border-t transition-colors outline-none"
       >
-        <span aria-hidden className="bg-line-3 group-hover:bg-primary h-0.5 w-8 transition-colors" />
+        <span
+          aria-hidden
+          className="bg-line-3 group-hover:bg-primary h-0.5 w-8 transition-colors"
+        />
       </div>
 
       <div
@@ -373,7 +384,9 @@ export function ApiCodeExercise({
         </div>
         <div className="qg-panel-scrollbar min-h-0 flex-1 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed">
           {term.length === 0 && !running ? (
-            <span className="text-[#8b949e]">예제 실행 또는 제출을 누르면 채점 로그가 표시됩니다.</span>
+            <span className="text-[#8b949e]">
+              예제 실행 또는 제출을 누르면 채점 로그가 표시됩니다.
+            </span>
           ) : (
             term.map((line) => (
               <div key={line.id} className={`${TERM_CLASS[line.kind]} whitespace-pre-wrap`}>
@@ -387,4 +400,3 @@ export function ApiCodeExercise({
     </section>
   );
 }
-

@@ -71,6 +71,8 @@
     "navAria": "메인 네비게이션",
     "docsLinkAria": "문서 페이지로 이동",
     "docs": "이용 가이드",
+    "qaground": "QA 연습",
+    "qagroundAria": "qaground QA 자동화 연습 플레이그라운드로 이동",
     "searchAria": "내 프로젝트 검색 모달 열기",
     "findProject": "내 프로젝트 찾기",
     "langSwitcher": "언어 선택",
