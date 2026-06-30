@@ -33,6 +33,11 @@ interface TestBlock {
   callbackHeader: string;
 }
 
+interface ParsedFunction {
+  name: string;
+  body: string;
+}
+
 /** 라인/블록 주석 제거. 주석 속 TODO 힌트(`// expect ...`)가 채점에 끼지 않게 한다. */
 function stripComments(src: string): string {
   return src
@@ -107,12 +112,15 @@ function findMatchingBrace(src: string, openIndex: number): number {
   return -1;
 }
 
-function readFirstStringArgument(src: string, openParen: number): string | undefined {
+function readFirstStringArgument(
+  src: string,
+  openParen: number
+): { value: string; end: number } | undefined {
   for (let i = openParen + 1; i < src.length; i += 1) {
     const ch = src[i];
     if (ch === '"' || ch === "'" || ch === '`') {
       const end = skipStringLiteral(src, i);
-      return end > i ? src.slice(i + 1, end) : undefined;
+      return end > i ? { value: src.slice(i + 1, end), end } : undefined;
     }
     if (ch === ')') return undefined;
   }
@@ -145,6 +153,69 @@ function findCallbackBodyStart(src: string, openParen: number): number {
   return -1;
 }
 
+function stripNestedFunctionBodies(src: string): string {
+  let output = '';
+  let i = 0;
+
+  while (i < src.length) {
+    const functionMatch = /\b(?:async\s+)?function\s+[A-Za-z_$][\w$]*\s*\(/g;
+    functionMatch.lastIndex = i;
+    const found = functionMatch.exec(src);
+    if (!found || found.index < i) {
+      output += src.slice(i);
+      break;
+    }
+
+    const bodyStart = src.indexOf('{', found.index);
+    if (bodyStart < 0) {
+      output += src.slice(i);
+      break;
+    }
+    const bodyEnd = findMatchingBrace(src, bodyStart);
+    if (bodyEnd < 0) {
+      output += src.slice(i);
+      break;
+    }
+
+    output += src.slice(i, found.index) + ' ';
+    i = bodyEnd + 1;
+  }
+
+  return output;
+}
+
+function extractNamedFunctions(src: string): ParsedFunction[] {
+  const functions: ParsedFunction[] = [];
+  const re = /\b(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g;
+
+  for (const match of src.matchAll(re)) {
+    const bodyStart = src.indexOf('{', match.index ?? 0);
+    if (bodyStart < 0) continue;
+    const bodyEnd = findMatchingBrace(src, bodyStart);
+    if (bodyEnd < 0) continue;
+    functions.push({ name: match[1], body: src.slice(bodyStart + 1, bodyEnd) });
+  }
+
+  return functions;
+}
+
+function extractHookBodies(src: string): string[] {
+  const bodies: string[] = [];
+  const re = /\btest\.beforeEach\s*\(/g;
+
+  for (const match of src.matchAll(re)) {
+    const openParen = src.indexOf('(', match.index ?? 0);
+    if (openParen < 0) continue;
+    const bodyStart = findCallbackBodyStart(src, openParen);
+    if (bodyStart < 0) continue;
+    const bodyEnd = findMatchingBrace(src, bodyStart);
+    if (bodyEnd < 0) continue;
+    bodies.push(src.slice(bodyStart + 1, bodyEnd));
+  }
+
+  return bodies;
+}
+
 function extractTestBlocks(src: string): TestBlock[] {
   const blocks: TestBlock[] = [];
   for (const match of src.matchAll(TEST_CALL_RE)) {
@@ -158,17 +229,26 @@ function extractTestBlocks(src: string): TestBlock[] {
     const bodyEnd = findMatchingBrace(src, bodyStart);
     if (bodyEnd < 0) continue;
 
+    const firstArg = readFirstStringArgument(src, openParen);
+    const callbackHeaderStart = firstArg ? firstArg.end + 1 : openParen + 1;
+
     blocks.push({
-      title: readFirstStringArgument(src, openParen) ?? `테스트 #${blocks.length + 1}`,
+      title: firstArg?.value ?? `테스트 #${blocks.length + 1}`,
       body: src.slice(bodyStart + 1, bodyEnd),
-      callbackHeader: src.slice(openParen + 1, bodyStart),
+      callbackHeader: src.slice(callbackHeaderStart, bodyStart),
     });
   }
   return blocks;
 }
 
+function callsHelper(body: string, helperName: string): boolean {
+  return new RegExp(`\\b${escapeRegExp(helperName)}\\s*\\(`).test(body);
+}
+
 function validateTestBlocks(stripped: string): { failures: string[]; blocks: TestBlock[] } {
   const blocks = extractTestBlocks(stripped);
+  const hooks = extractHookBodies(stripped);
+  const helpers = extractNamedFunctions(stripped);
   const failures: string[] = [];
 
   if (blocks.length === 0) {
@@ -179,28 +259,38 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
   blocks.forEach((block) => {
     const title = block.title.trim() || '이름 없는 테스트';
     const body = block.body.trim();
-    const assertions = countMatches(body, ASSERTION_RE);
-    const hasInteraction = INTERACTION_RE.test(body);
+    const executableBody = stripNestedFunctionBodies(body);
+    const calledHelpers = helpers.filter((helper) => callsHelper(executableBody, helper.name));
+    const assertions =
+      countMatches(executableBody, ASSERTION_RE) +
+      calledHelpers.reduce((sum, helper) => sum + countMatches(helper.body, ASSERTION_RE), 0);
+    const hasInteraction =
+      INTERACTION_RE.test(executableBody) ||
+      hooks.some((hook) => INTERACTION_RE.test(hook)) ||
+      calledHelpers.some((helper) => INTERACTION_RE.test(helper.body));
 
     if (!body) {
       failures.push(`"${title}" 테스트 본문이 비어 있습니다. 실제 동작과 단언을 작성하세요.`);
       return;
     }
-    if (/\bawait\b/.test(body) && !/\basync\b/.test(block.callbackHeader)) {
+    if (/\bawait\b/.test(executableBody) && !/\basync\b/.test(block.callbackHeader)) {
       failures.push(`"${title}" 테스트에서 await 를 사용하지만 콜백이 async 가 아닙니다.`);
     }
-    if (/\bpage\./.test(body) && !/\bpage\b/.test(block.callbackHeader)) {
+    if (/\bpage\./.test(executableBody) && !/\bpage\b/.test(block.callbackHeader)) {
       failures.push(
         `"${title}" 테스트에서 page 를 사용하지만 Playwright page fixture 를 받지 않았습니다.`
       );
     }
     if (assertions < 1) {
       failures.push(`"${title}" 테스트에 expect(...) 단언이 없습니다.`);
-    } else if (!AWAITED_ASSERTION_RE.test(body)) {
+    } else if (
+      !AWAITED_ASSERTION_RE.test(executableBody) &&
+      !calledHelpers.some((helper) => AWAITED_ASSERTION_RE.test(helper.body))
+    ) {
       failures.push(`"${title}" 테스트의 Playwright 단언은 await expect(...) 형태로 작성하세요.`);
     }
 
-    const unawaitedAction = body
+    const unawaitedAction = executableBody
       .split('\n')
       .map((line) => line.trim())
       .find((line) => ASYNC_ACTION_RE.test(line) && !/\bawait\b/.test(line));

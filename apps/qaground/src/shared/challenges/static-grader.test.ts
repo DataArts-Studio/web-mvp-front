@@ -123,6 +123,50 @@ test('대기를 빠뜨린 로그인 테스트', async ({ page }) => {
     expect(r?.errorMessage).toContain('await expect');
     expect(r?.errorMessage).toContain('액션은 await');
   });
+
+  it('테스트 제목의 async/page 단어를 콜백 시그니처로 오인하지 않는다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+test('async page wording only', () => {
+  await page.getByTestId('username').fill('tester');
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('async 가 아닙니다');
+    expect(r?.errorMessage).toContain('page fixture');
+  });
+
+  it('호출하지 않은 helper 안의 액션과 단언은 인정하지 않는다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+test('helper only', async ({ page }) => {
+  async function unused() {
+    await page.getByTestId('username').fill('tester');
+    await expect(page.getByTestId('login-success')).toBeVisible();
+  }
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('expect');
+    expect(r?.errorMessage).toContain('상호작용');
+  });
+
+  it('호출한 helper와 beforeEach 상호작용은 유효한 제출로 인정한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+async function login(page) {
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+}
+test.beforeEach(async ({ page }) => {
+  await page.goto('/');
+});
+test('helper login', async ({ page }) => {
+  await login(page);
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
   it('스타터를 수정하지 않으면 실패한다', () => {
     const r = gradeSubmissionStatically(challenge, challenge.starterSpec!);
     expect(r.ok).toBe(false);

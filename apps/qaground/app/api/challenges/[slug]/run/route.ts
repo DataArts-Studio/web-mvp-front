@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getChallenge } from '@/shared/challenges/registry';
+import { createChallengeResultToken } from '@/shared/challenges/result-access.server';
 import {
   gradeSubmissionStatically,
   validateAutomationSubmissionShape,
@@ -56,7 +57,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     // 임시: 러너 미연결 구간에는 정적 채점으로 폴백한다(코드를 실행하지 않고 구조·관련성만
     // 점검). 러너가 연결되면 아래 실제 실행 채점으로 자동 전환되고 이 분기는 제거 대상이다.
     const result = gradeSubmissionStatically(challenge, parsed.data.code);
-    return NextResponse.json({ ...result, mode: 'static' });
+    return NextResponse.json({
+      ...result,
+      mode: 'static',
+      ...(result.ok ? { resultToken: createChallengeResultToken(slug) } : {}),
+    });
   }
 
   // 러너가 spec 을 실행할 대상 URL. 현재는 qaground 가 서빙하는 샌드박스 주소.
@@ -88,7 +93,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     if (!res.ok || !data) {
       return NextResponse.json({ error: '러너 실행에 실패했습니다.' }, { status: 502 });
     }
-    return NextResponse.json(data);
+    return NextResponse.json({
+      ...data,
+      ...(data.ok ? { resultToken: createChallengeResultToken(slug) } : {}),
+    });
   } catch (error) {
     console.error('[challenges/run] 러너 호출 실패', error);
     return NextResponse.json({ error: '채점 서버에 연결하지 못했습니다.' }, { status: 502 });

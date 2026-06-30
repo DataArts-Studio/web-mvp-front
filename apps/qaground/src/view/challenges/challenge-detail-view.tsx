@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, type PointerEvent, useRef, useState } from 'react';
+import { type CSSProperties, type KeyboardEvent, type PointerEvent, useRef } from 'react';
 
 import Link from 'next/link';
 
@@ -167,8 +167,9 @@ function ApiEndpoints({ challenge }: { challenge: Challenge }) {
 }
 
 export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => {
-  const [problemPaneWidth, setProblemPaneWidth] = useState(40);
+  const problemPaneWidthRef = useRef(40);
   const splitRef = useRef<HTMLDivElement>(null);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
   const splitDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const isAutomationCode =
@@ -176,11 +177,18 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   const isApiTester = !!challenge.endpoints && !!challenge.apiBase;
   const isSplit = isAutomationCode || isApiTester;
 
-  const splitStyle = { '--problem-pane-width': `${problemPaneWidth}%` } as CSSProperties;
+  const splitStyle = { '--problem-pane-width': '40%' } as CSSProperties;
+
+  const applyProblemPaneWidth = (nextWidth: number) => {
+    const clamped = Math.min(Math.max(nextWidth, 28), 50);
+    problemPaneWidthRef.current = clamped;
+    splitRef.current?.style.setProperty('--problem-pane-width', `${clamped}%`);
+    resizeHandleRef.current?.setAttribute('aria-valuenow', String(Math.round(clamped)));
+  };
 
   const onProblemResizeDown = (event: PointerEvent<HTMLDivElement>) => {
     event.preventDefault();
-    splitDragRef.current = { startX: event.clientX, startWidth: problemPaneWidth };
+    splitDragRef.current = { startX: event.clientX, startWidth: problemPaneWidthRef.current };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -191,7 +199,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
     const deltaPercent = ((event.clientX - splitDragRef.current.startX) / totalWidth) * 100;
     const nextWidth = splitDragRef.current.startWidth + deltaPercent;
 
-    setProblemPaneWidth(Math.min(Math.max(nextWidth, 28), 50));
+    applyProblemPaneWidth(nextWidth);
   };
 
   const onProblemResizeUp = (event: PointerEvent<HTMLDivElement>) => {
@@ -204,15 +212,33 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
     }
   };
 
+  const onProblemResizeCancel = () => {
+    splitDragRef.current = null;
+  };
+
+  const onProblemResizeKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    applyProblemPaneWidth(problemPaneWidthRef.current + (event.key === 'ArrowLeft' ? -2 : 2));
+  };
+
   const resizeHandle = (
     <div
+      ref={resizeHandleRef}
       role="separator"
       aria-orientation="vertical"
       aria-label="문제와 풀이 영역 너비 조절"
+      aria-valuemin={28}
+      aria-valuemax={50}
+      aria-valuenow={40}
+      tabIndex={0}
       onPointerDown={onProblemResizeDown}
       onPointerMove={onProblemResizeMove}
       onPointerUp={onProblemResizeUp}
-      className="border-line-2 bg-bg-2 hover:bg-primary/20 group hidden w-2 shrink-0 cursor-col-resize touch-none items-center justify-center border-r border-l transition-colors lg:flex"
+      onPointerCancel={onProblemResizeCancel}
+      onLostPointerCapture={onProblemResizeCancel}
+      onKeyDown={onProblemResizeKeyDown}
+      className="border-line-2 bg-bg-2 hover:bg-primary/20 focus-visible:ring-primary group hidden w-2 shrink-0 cursor-col-resize touch-none items-center justify-center border-r border-l transition-colors focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-none lg:flex"
     >
       <span aria-hidden className="bg-line-3 group-hover:bg-primary h-8 w-0.5 transition-colors" />
     </div>

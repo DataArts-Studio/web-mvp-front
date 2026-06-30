@@ -9,6 +9,8 @@ import {
   TRACK_LABEL,
   getChallenge,
 } from '@/shared/challenges/registry';
+import { verifyChallengeResultToken } from '@/shared/challenges/result-access.server';
+import { getChallengeSolution } from '@/shared/challenges/solutions.server';
 import { ChallengeResultTabs } from '@/view/challenges/challenge-result-tabs';
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
 
@@ -43,14 +45,18 @@ export async function generateMetadata({
 
 export default async function ChallengeResultPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { slug } = await params;
+  const { token } = await searchParams;
   const challenge = getChallenge(slug);
   if (!challenge) notFound();
+  if (!verifyChallengeResultToken(token, challenge.slug)) notFound();
 
-  const solution = challenge.modelSolution;
+  const solution = getChallengeSolution(challenge.slug);
   const recommendedChallenges = (challenge.recommendedNext ?? [])
     .map((nextSlug) => getChallenge(nextSlug))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -87,7 +93,7 @@ export default async function ChallengeResultPage({
         </section>
 
         <div className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
-          <ChallengeResultTabs challenge={challenge} />
+          <ChallengeResultTabs challenge={challenge} solution={solution} />
 
           <aside className="border-line-2 bg-bg-2 h-fit border p-4">
             <h2 className="text-sm font-semibold">다음 행동</h2>

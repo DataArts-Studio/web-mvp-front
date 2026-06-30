@@ -47,6 +47,7 @@ interface RunResult {
   covered?: number;
   /** 부분 통과 시 미작성(추정) 요구사항 — 빨간 fail 로 표시. */
   uncovered?: string[];
+  resultToken?: string;
 }
 
 type TermKind = 'cmd' | 'dim' | 'pass' | 'fail' | 'run';
@@ -264,7 +265,8 @@ export const AutomationCodeExercise = ({
       } catch {
         // 결과 페이지 비교는 부가 기능이므로 저장 실패는 무시한다.
       }
-      router.push(`/challenges/${slug}/result`);
+      const tokenQuery = data.resultToken ? `?token=${encodeURIComponent(data.resultToken)}` : '';
+      router.push(`/challenges/${slug}/result${tokenQuery}`);
     }
   };
 

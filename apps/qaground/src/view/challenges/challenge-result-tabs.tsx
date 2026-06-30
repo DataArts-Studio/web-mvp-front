@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import type { Challenge } from '@/shared/challenges/registry';
+import type { ChallengeSolution } from '@/shared/challenges/solution-types';
 
 import { ChallengeSolutionCompare } from './challenge-solution-compare';
 
@@ -25,9 +26,14 @@ function EmptyPanel({ title, description }: { title: string; description: string
   );
 }
 
-export function ChallengeResultTabs({ challenge }: { challenge: Challenge }) {
+export function ChallengeResultTabs({
+  challenge,
+  solution,
+}: {
+  challenge: Challenge;
+  solution?: ChallengeSolution;
+}) {
   const [activeTab, setActiveTab] = useState<ResultTab>('result');
-  const solution = challenge.modelSolution;
 
   return (
     <section className="min-w-0">

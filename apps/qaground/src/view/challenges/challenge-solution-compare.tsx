@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 type Tab = 'submitted' | 'solution' | 'diff';
 type DiffLine =
@@ -173,6 +173,14 @@ function DiffPanel({
   );
 }
 
+function readSubmittedCode(slug: string): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return window.sessionStorage.getItem(`qaground:last-submission:${slug}`) ?? '';
+  } catch {
+    return '';
+  }
+}
 export function ChallengeSolutionCompare({
   slug,
   solutionCode,
@@ -180,18 +188,10 @@ export function ChallengeSolutionCompare({
   slug: string;
   solutionCode: string;
 }) {
-  const [submittedCode, setSubmittedCode] = useState('');
-  const [activeTab, setActiveTab] = useState<Tab>('solution');
-
-  useEffect(() => {
-    try {
-      const storedCode = window.sessionStorage.getItem(`qaground:last-submission:${slug}`) ?? '';
-      setSubmittedCode(storedCode);
-      if (storedCode) setActiveTab('submitted');
-    } catch {
-      setSubmittedCode('');
-    }
-  }, [slug]);
+  const [submittedCode] = useState(() => readSubmittedCode(slug));
+  const [activeTab, setActiveTab] = useState<Tab>(() =>
+    readSubmittedCode(slug) ? 'submitted' : 'solution'
+  );
 
   const tabs: { id: Tab; label: string; disabled?: boolean }[] = [
     { id: 'submitted', label: '제출 코드', disabled: !submittedCode },
