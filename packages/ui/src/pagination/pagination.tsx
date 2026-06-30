@@ -59,6 +59,7 @@ export const Pagination = ({
           disabled={safeCurrentPage <= 1}
           onClick={() => onPageChange(safeCurrentPage - 1)}
           className="typo-caption-normal rounded-1 text-text-2 hover:bg-bg-3 flex h-8 w-8 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
+          aria-label="이전 페이지"
         >
           &lt;
         </button>
@@ -67,6 +68,7 @@ export const Pagination = ({
             <span
               key={`${item}-${index}`}
               className="typo-caption-normal text-text-4 flex h-8 w-8 items-center justify-center"
+              aria-hidden="true"
             >
               ...
             </span>
@@ -76,6 +78,7 @@ export const Pagination = ({
               type="button"
               disabled={item === safeCurrentPage}
               onClick={() => onPageChange(item)}
+              aria-current={item === safeCurrentPage ? 'page' : undefined}
               className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
                 item === safeCurrentPage
                   ? 'bg-bg-4 text-text-1 font-bold disabled:opacity-100'
@@ -91,6 +94,7 @@ export const Pagination = ({
           disabled={safeCurrentPage >= totalPages}
           onClick={() => onPageChange(safeCurrentPage + 1)}
           className="typo-caption-normal rounded-1 text-text-2 hover:bg-bg-3 flex h-8 w-8 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
+          aria-label="다음 페이지"
         >
           &gt;
         </button>
