@@ -107,9 +107,8 @@ export const PostmanV1PlaygroundView = () => {
             <span className="bg-bg-3 text-text-2 rounded px-2 py-0.5 text-xs">v1 engine</span>
           </div>
           <h1 className="mt-2 text-2xl font-bold tracking-tight">Postman 형식 API Sandbox v1</h1>
-          <p className="text-text-2 mt-2 max-w-4xl text-sm leading-relaxed">
-            API 실행 엔진 v1을 그대로 사용하는 자유 실험 환경입니다. 요청 케이스, 인증, 헤더, 구조화
-            검증, pm.test 스크립트 작성, 응답 탭을 한 화면에서 사용합니다.
+          <p className="text-text-2 mt-2 max-w-3xl text-sm leading-relaxed">
+            제공된 API를 선택해 요청을 보내고, 응답을 보며 pm.test 스크립트를 자유롭게 작성합니다.
           </p>
         </div>
 
