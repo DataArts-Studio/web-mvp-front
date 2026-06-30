@@ -713,12 +713,15 @@ export const ApiTesterExercise = ({
   apiBase,
   slug,
   endpoints,
+  mode = 'challenge',
 }: {
   apiBase: string;
   slug: string;
   endpoints: ApiEndpoint[];
+  mode?: 'challenge' | 'playground';
 }) => {
   const router = useRouter();
+  const isPlayground = mode === 'playground';
   const requestCases = buildRequestCases(endpoints);
   const [selectedCaseKey, setSelectedCaseKey] = useState(requestCases[0]?.key ?? '');
   const selectedCase = requestCases.find((item) => item.key === selectedCaseKey);
@@ -924,11 +927,13 @@ export const ApiTesterExercise = ({
             : line
         )
       );
-      push({
-        id: 'grade',
-        text: shouldSubmit ? '  ◌  제출 결과 정리 중' : '  ◌  채점 결과 정리 중',
-        kind: 'run',
-      });
+      if (!isPlayground) {
+        push({
+          id: 'grade',
+          text: shouldSubmit ? '  ◌  제출 결과 정리 중' : '  ◌  채점 결과 정리 중',
+          kind: 'run',
+        });
+      }
 
       const attempt: ApiAttemptForGrade = {
         method,
@@ -948,22 +953,24 @@ export const ApiTesterExercise = ({
         checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length;
       const totalChecks = checks.length + scriptResults.length;
       const gradePassed = hiddenGrade.score === hiddenGrade.maxScore;
-      setTerm((prev) =>
-        prev.map((line) =>
-          line.id === 'grade'
-            ? {
-                ...line,
-                text:
-                  '  ' +
-                  (gradePassed ? '✓' : '◌') +
-                  '  ' +
-                  (shouldSubmit ? '제출' : '채점') +
-                  ' 결과 준비 완료',
-                kind: gradePassed ? 'pass' : 'run',
-              }
-            : line
-        )
-      );
+      if (!isPlayground) {
+        setTerm((prev) =>
+          prev.map((line) =>
+            line.id === 'grade'
+              ? {
+                  ...line,
+                  text:
+                    '  ' +
+                    (gradePassed ? '✓' : '◌') +
+                    '  ' +
+                    (shouldSubmit ? '제출' : '채점') +
+                    ' 결과 준비 완료',
+                  kind: gradePassed ? 'pass' : 'run',
+                }
+              : line
+          )
+        );
+      }
       setResult({
         status: res.status,
         durationMs,
@@ -994,14 +1001,14 @@ export const ApiTesterExercise = ({
           ...prev,
         ].slice(0, 6)
       );
-      if (shouldSendProductionTelemetry()) {
+      if (!isPlayground && shouldSendProductionTelemetry()) {
         track(shouldSubmit ? 'api_submit' : 'api_run', {
           passed,
           total: totalChecks,
           score: hiddenGrade.score,
         });
       }
-      if (shouldSubmit) {
+      if (!isPlayground && shouldSubmit) {
         const submitResponse = await fetch('/api/submissions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1079,7 +1086,7 @@ export const ApiTesterExercise = ({
       label: 'Headers',
       count: result ? Object.keys(result.responseHeaders).length : 0,
     },
-    { key: 'grade', label: '채점' },
+    ...(isPlayground ? [] : ([{ key: 'grade', label: '채점' }] as const)),
   ];
 
   return (
@@ -1090,7 +1097,9 @@ export const ApiTesterExercise = ({
             <Send className="text-primary size-4" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-text-1 text-sm font-semibold">API 테스트 워크벤치</h2>
+            <h2 className="text-text-1 text-sm font-semibold">
+              {isPlayground ? 'API Sandbox Workbench' : 'API 테스트 워크벤치'}
+            </h2>
             <div className="text-text-3 mt-0.5 flex flex-wrap items-center gap-2 text-xs">
               <span>{endpoints.length}개 엔드포인트</span>
               <span>·</span>
@@ -1128,16 +1137,18 @@ export const ApiTesterExercise = ({
           <Play className="size-4" aria-hidden="true" />
           {running ? '실행 중' : '실행'}
         </button>
-        <button
-          data-testid="api-submit"
-          type="button"
-          onClick={() => run(true)}
-          disabled={running}
-          className="border-primary text-primary hover:bg-primary/10 active:bg-primary/15 inline-flex h-9 items-center justify-center gap-2 border px-4 text-sm font-medium transition-colors disabled:opacity-60"
-        >
-          <Send className="size-4" aria-hidden="true" />
-          제출
-        </button>
+        {!isPlayground && (
+          <button
+            data-testid="api-submit"
+            type="button"
+            onClick={() => run(true)}
+            disabled={running}
+            className="border-primary text-primary hover:bg-primary/10 active:bg-primary/15 inline-flex h-9 items-center justify-center gap-2 border px-4 text-sm font-medium transition-colors disabled:opacity-60"
+          >
+            <Send className="size-4" aria-hidden="true" />
+            제출
+          </button>
+        )}
       </div>
 
       <div className="qg-panel-scrollbar min-h-0 flex-1 overflow-auto">
@@ -1613,7 +1624,7 @@ export const ApiTesterExercise = ({
                 {running && <span className="animate-pulse text-[#8b949e]">▋</span>}
               </div>
             ) : (
-              <span className="text-[#8b949e]">실행하면 응답과 채점 결과가 여기에 표시됩니다.</span>
+              <span className="text-[#8b949e]">실행하면 응답과 검증 결과가 여기에 표시됩니다.</span>
             )
           ) : (
             <>
