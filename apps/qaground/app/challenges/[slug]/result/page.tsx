@@ -9,6 +9,7 @@ import {
   TRACK_LABEL,
   getChallenge,
 } from '@/shared/challenges/registry';
+import { ChallengeSolutionCompare } from '@/view/challenges/challenge-solution-compare';
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
 
 const SITE = 'https://qaground.gettestea.com';
@@ -56,8 +57,8 @@ export default async function ChallengeResultPage({
 
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-      <PlaygroundHeader containerClassName="max-w-5xl" />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
+      <PlaygroundHeader containerClassName="max-w-7xl" />
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6">
         <Link
           href={`/challenges/${challenge.slug}`}
           className="text-text-3 hover:text-text-1 inline-flex text-sm transition-colors"
@@ -85,7 +86,7 @@ export default async function ChallengeResultPage({
           </p>
         </section>
 
-        <div className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
           <section className="min-w-0">
             <h2 className="text-lg font-semibold">모범 풀이 포인트</h2>
             <div className="border-line-2 bg-bg-2 mt-4 border">
@@ -104,12 +105,7 @@ export default async function ChallengeResultPage({
             </div>
 
             {solution?.code && (
-              <section className="mt-8">
-                <h2 className="text-lg font-semibold">예시 코드</h2>
-                <pre className="border-line-2 bg-bg-2 text-text-2 mt-4 overflow-x-auto border p-4 text-xs leading-relaxed">
-                  <code>{solution.code}</code>
-                </pre>
-              </section>
+              <ChallengeSolutionCompare slug={challenge.slug} solutionCode={solution.code} />
             )}
 
             {!!solution?.notes?.length && (

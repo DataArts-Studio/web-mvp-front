@@ -259,6 +259,11 @@ export const AutomationCodeExercise = ({
     }
 
     if (shouldRecord && data.ok) {
+      try {
+        window.sessionStorage.setItem(`qaground:last-submission:${slug}`, code);
+      } catch {
+        // 결과 페이지 비교는 부가 기능이므로 저장 실패는 무시한다.
+      }
       router.push(`/challenges/${slug}/result`);
     }
   };
