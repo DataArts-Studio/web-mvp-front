@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
@@ -46,6 +47,7 @@ interface RunResult {
   covered?: number;
   /** 부분 통과 시 미작성(추정) 요구사항 — 빨간 fail 로 표시. */
   uncovered?: string[];
+  resultToken?: string;
 }
 
 type TermKind = 'cmd' | 'dim' | 'pass' | 'fail' | 'run';
@@ -77,7 +79,7 @@ function genStarter(selectors: ChallengeSelector[]): string {
 // 참고 셀렉터: ${ids}
 test('내 테스트', async ({ page }) => {
   await page.goto('/');
-  // page.getByTestId('...') 로 동작을 수행하고 expect 로 검증하세요.
+  // 참고 셀렉터를 활용해 동작을 수행하고 expect 로 검증하세요.
 });
 `;
 }
@@ -93,6 +95,7 @@ export const AutomationCodeExercise = ({
   selectors: ChallengeSelector[];
   starterSpec?: string;
 }) => {
+  const router = useRouter();
   const [code, setCode] = useState(starterSpec ?? genStarter(selectors));
   const [status, setStatus] = useState<Status>('idle');
   const [result, setResult] = useState<RunResult | null>(null);
@@ -126,7 +129,7 @@ export const AutomationCodeExercise = ({
     }
   };
 
-  const submit = async () => {
+  const grade = async ({ shouldRecord }: { shouldRecord: boolean }) => {
     const runId = (runIdRef.current += 1);
     const alive = () => runIdRef.current === runId;
     const push = (line: TermLine) => {
@@ -147,7 +150,7 @@ export const AutomationCodeExercise = ({
         const res = await fetch(`/api/challenges/${slug}/run`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code, shouldRecord }),
         });
         httpStatus = res.status;
         return (await res.json().catch(() => null)) as (RunResult & { error?: string }) | null;
@@ -177,7 +180,7 @@ export const AutomationCodeExercise = ({
     }
     if (!data || httpStatus >= 400) {
       setStatus('error');
-      setMessage(data?.error ?? '제출에 실패했습니다.');
+      setMessage(data?.error ?? '채점에 실패했습니다.');
       return;
     }
 
@@ -246,20 +249,32 @@ export const AutomationCodeExercise = ({
 
     setResult(data);
     setStatus('result');
-    track('code_submit', { slug, status: data.status, ok: data.ok });
-    recordSubmission({
-      slug,
-      kind: 'code',
-      content: { code },
-      result: { status: data.status, ok: data.ok },
-    });
+    track(shouldRecord ? 'code_submit' : 'code_grade', { slug, status: data.status, ok: data.ok });
+    if (shouldRecord) {
+      recordSubmission({
+        slug,
+        kind: 'code',
+        content: { code },
+        result: { status: data.status, ok: data.ok },
+      });
+    }
+
+    if (shouldRecord && data.ok) {
+      try {
+        window.sessionStorage.setItem(`qaground:last-submission:${slug}`, code);
+      } catch {
+        // 결과 페이지 비교는 부가 기능이므로 저장 실패는 무시한다.
+      }
+      const tokenQuery = data.resultToken ? `?token=${encodeURIComponent(data.resultToken)}` : '';
+      router.push(`/challenges/${slug}/result${tokenQuery}`);
+    }
   };
 
   const running = status === 'running';
 
   return (
     <section ref={sectionRef} className="flex h-full min-h-0 flex-col">
-      {/* 툴바: 연습 대상 열기 + 제출 (IDE 스타일 상단 고정) */}
+      {/* 툴바: 연습 대상 열기 + 채점/제출 (IDE 스타일 상단 고정) */}
       <div className="border-line-2 flex shrink-0 items-center gap-3 border-b px-4 py-2">
         <Link
           href={`/sandbox/${sandboxSlug}`}
@@ -268,15 +283,26 @@ export const AutomationCodeExercise = ({
         >
           연습 대상 열기 ↗
         </Link>
-        <button
-          data-testid="code-submit"
-          type="button"
-          onClick={submit}
-          disabled={running}
-          className="bg-primary rounded-button hover:bg-primary/90 active:bg-primary/80 ml-auto inline-flex h-9 items-center justify-center px-4 text-sm font-medium text-white transition-colors disabled:opacity-60"
-        >
-          {running ? '실행 중...' : '제출하고 채점'}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            data-testid="code-grade"
+            type="button"
+            onClick={() => grade({ shouldRecord: false })}
+            disabled={running}
+            className="border-line-3 text-text-1 hover:bg-bg-3 active:bg-bg-4 rounded-button inline-flex h-9 items-center justify-center border px-4 text-sm font-medium transition-colors disabled:opacity-60"
+          >
+            {running ? '실행 중...' : '채점'}
+          </button>
+          <button
+            data-testid="code-submit"
+            type="button"
+            onClick={() => grade({ shouldRecord: true })}
+            disabled={running}
+            className="bg-primary rounded-button hover:bg-primary/90 active:bg-primary/80 inline-flex h-9 items-center justify-center px-4 text-sm font-medium text-white transition-colors disabled:opacity-60"
+          >
+            {running ? '실행 중...' : '제출하고 채점'}
+          </button>
+        </div>
       </div>
 
       {/* 에디터: 남는 높이를 채운다 (모바일은 고정 높이) */}
@@ -353,7 +379,7 @@ export const AutomationCodeExercise = ({
         </div>
         <div className="min-h-0 flex-1 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed">
           {term.length === 0 && !running ? (
-            <span className="text-[#8b949e]">제출하면 실행 결과가 여기에 표시됩니다.</span>
+            <span className="text-[#8b949e]">채점하면 실행 결과가 여기에 표시됩니다.</span>
           ) : (
             term.map((l) => (
               <div key={l.id} className={`${TERM_CLASS[l.kind]} whitespace-pre-wrap`}>

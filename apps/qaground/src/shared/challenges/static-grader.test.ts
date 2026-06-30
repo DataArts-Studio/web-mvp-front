@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Challenge } from './registry';
-import { gradeSubmissionStatically } from './static-grader';
+import { gradeSubmissionStatically, validateAutomationSubmissionShape } from './static-grader';
 
 const challenge: Challenge = {
   slug: 'login-basic',
@@ -47,6 +47,170 @@ describe('gradeSubmissionStatically', () => {
     expect(r.errorMessage).toContain('구조 점검 통과');
   });
 
+  it('빈 테스트 본문은 러너 실행 전 사전 검증에서 실패한다', () => {
+    const emptyBody = `import { test, expect } from '@playwright/test';
+
+test('잘못된 자격증명으로는 에러가 출력되고 성공 메세지가 출력되지 않는지 검증한다.', () => {
+
+});`;
+    const r = validateAutomationSubmissionShape(emptyBody);
+    expect(r).not.toBeNull();
+    expect(r?.ok).toBe(false);
+    expect(r?.errorMessage).toContain('테스트 본문이 비어 있습니다');
+  });
+
+  it('여러 테스트 중 하나가 비어 있으면 전체 제출을 실패시킨다', () => {
+    const mixed = `import { test, expect } from '@playwright/test';
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('/');
+});
+
+test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다', async ({ page }) => {
+  await page.getByLabel('username').fill('tester');
+  await page.getByLabel('password').fill('qaground123');
+  await page.getByLabel('login-submit').click();
+  await expect(page.getByLabel('login-success')).toHaveText(/환영합니다/);
+});
+
+test('잘못된 자격증명으로는 에러가 출력되고 성공 메세지가 출력되지 않는지 검증한다.', () => {
+
+});`;
+    const r = validateAutomationSubmissionShape(mixed);
+    expect(r).not.toBeNull();
+    expect(r?.ok).toBe(false);
+    expect(r?.errorMessage).toContain('잘못된 자격증명');
+    expect(r?.errorMessage).toContain('테스트 본문이 비어 있습니다');
+  });
+
+  it('beforeEach를 쓰더라도 각 테스트 본문이 채워져 있으면 통과한다', () => {
+    const multi = `import { test, expect } from '@playwright/test';
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('/');
+});
+
+test('성공 로그인', async ({ page }) => {
+  await page.getByLabel('username').fill('tester');
+  await page.getByLabel('password').fill('qaground123');
+  await page.getByLabel('login-submit').click();
+  await expect(page.getByLabel('login-success')).toHaveText(/환영합니다/);
+});
+
+test('실패 로그인', async ({ page }) => {
+  await page.getByLabel('username').fill('tester');
+  await page.getByLabel('password').fill('wrong');
+  await page.getByLabel('login-submit').click();
+  await expect(page.getByLabel('login-error')).toHaveText(/올바르지 않습니다/);
+});`;
+    const r = gradeSubmissionStatically(challenge, multi);
+    expect(r.ok).toBe(true);
+    expect(r.errorMessage).toContain('테스트 2개');
+  });
+
+  it('Playwright 액션과 locator 단언을 await 하지 않으면 실패한다', () => {
+    const unawaited = `import { test, expect } from '@playwright/test';
+
+test('대기를 빠뜨린 로그인 테스트', async ({ page }) => {
+  page.getByLabel('username').fill('tester');
+  page.getByLabel('password').fill('qaground123');
+  page.getByLabel('login-submit').click();
+  expect(page.getByLabel('login-success')).toHaveText(/환영합니다/);
+});`;
+    const r = validateAutomationSubmissionShape(unawaited);
+    expect(r).not.toBeNull();
+    expect(r?.ok).toBe(false);
+    expect(r?.errorMessage).toContain('await expect');
+    expect(r?.errorMessage).toContain('액션은 await');
+  });
+
+  it('테스트 제목의 async/page 단어를 콜백 시그니처로 오인하지 않는다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+test('async page wording only', () => {
+  await page.getByTestId('username').fill('tester');
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('async 가 아닙니다');
+    expect(r?.errorMessage).toContain('page fixture');
+  });
+
+  it('호출하지 않은 helper 안의 액션과 단언은 인정하지 않는다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+test('helper only', async ({ page }) => {
+  async function unused() {
+    await page.getByTestId('username').fill('tester');
+    await expect(page.getByTestId('login-success')).toBeVisible();
+  }
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('expect');
+    expect(r?.errorMessage).toContain('상호작용');
+  });
+
+  it('호출한 helper와 beforeEach 상호작용은 유효한 제출로 인정한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+async function login(page) {
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+}
+test.beforeEach(async ({ page }) => {
+  await page.goto('/');
+});
+test('helper login', async ({ page }) => {
+  await login(page);
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
+
+  it('호출하지 않은 arrow helper 안의 액션과 단언은 인정하지 않는다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+test('nested arrow helper', async ({ page }) => {
+  const helper = async () => {
+    await page.getByRole('button').click();
+    await expect(page.getByText('Saved')).toBeVisible();
+  };
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('expect');
+    expect(r?.errorMessage).toContain('상호작용');
+  });
+
+  it('호출한 arrow helper의 액션과 단언은 인정한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+const login = async (page) => {
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('login-success')).toBeVisible();
+};
+test('arrow helper login', async ({ page }) => {
+  await login(page);
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
+
+  it('호출한 function expression helper의 액션과 단언은 인정한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+const login = async function (page) {
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('login-success')).toBeVisible();
+};
+test('function expression helper login', async ({ page }) => {
+  await login(page);
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
   it('스타터를 수정하지 않으면 실패한다', () => {
     const r = gradeSubmissionStatically(challenge, challenge.starterSpec!);
     expect(r.ok).toBe(false);

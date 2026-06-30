@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { getChallenge } from '@/shared/challenges/registry';
-import { gradeSubmissionStatically } from '@/shared/challenges/static-grader';
+import { createChallengeResultToken } from '@/shared/challenges/result-access.server';
+import {
+  gradeSubmissionStatically,
+  validateAutomationSubmissionShape,
+} from '@/shared/challenges/static-grader';
 import { getRunnerAuthHeader } from '@/shared/runner/runner-identity';
 import { z } from 'zod';
 
@@ -11,6 +15,7 @@ export const runtime = 'nodejs';
 const BodySchema = z
   .object({
     code: z.string().min(1).max(20_000),
+    shouldRecord: z.boolean().optional().default(false),
   })
   .strict();
 
@@ -42,13 +47,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return NextResponse.json({ error: '제출 코드가 올바르지 않습니다.' }, { status: 400 });
   }
 
+  const shapeError = validateAutomationSubmissionShape(parsed.data.code);
+  if (shapeError) {
+    return NextResponse.json({ ...shapeError, mode: 'static' });
+  }
+
   const runnerUrl = process.env.QAGROUND_RUNNER_URL;
   const runnerSecret = process.env.QAGROUND_RUNNER_SECRET;
   if (!runnerUrl || !runnerSecret) {
     // 임시: 러너 미연결 구간에는 정적 채점으로 폴백한다(코드를 실행하지 않고 구조·관련성만
     // 점검). 러너가 연결되면 아래 실제 실행 채점으로 자동 전환되고 이 분기는 제거 대상이다.
     const result = gradeSubmissionStatically(challenge, parsed.data.code);
-    return NextResponse.json({ ...result, mode: 'static' });
+    return NextResponse.json({
+      ...result,
+      mode: 'static',
+      ...(result.ok && parsed.data.shouldRecord
+        ? { resultToken: createChallengeResultToken(slug) }
+        : {}),
+    });
   }
 
   // 러너가 spec 을 실행할 대상 URL. 현재는 qaground 가 서빙하는 샌드박스 주소.
@@ -80,7 +96,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     if (!res.ok || !data) {
       return NextResponse.json({ error: '러너 실행에 실패했습니다.' }, { status: 502 });
     }
-    return NextResponse.json(data);
+    return NextResponse.json({
+      ...data,
+      ...(data.ok && parsed.data.shouldRecord
+        ? { resultToken: createChallengeResultToken(slug) }
+        : {}),
+    });
   } catch (error) {
     console.error('[challenges/run] 러너 호출 실패', error);
     return NextResponse.json({ error: '채점 서버에 연결하지 못했습니다.' }, { status: 502 });
