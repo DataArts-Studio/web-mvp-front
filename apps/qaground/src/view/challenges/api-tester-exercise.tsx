@@ -1519,8 +1519,46 @@ export const ApiTesterExercise = ({
 
         {activePanel === 'script' && (
           <div className="flex h-full min-h-[420px] flex-col">
-            <div className="border-line-2 bg-bg-3 border-b px-4 py-2 text-sm font-semibold">
-              테스트 스크립트
+            <div className="border-line-2 bg-bg-3 border-b px-4 py-3">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,28rem)] lg:items-end">
+                <div className="min-w-0">
+                  <h3 className="text-text-1 text-sm font-semibold">테스트 스크립트</h3>
+                  <p className="text-text-3 mt-1 text-xs leading-relaxed">
+                    선택한 API 요청에 연결된 pm.test 스크립트를 작성합니다. 엔드포인트마다
+                    스크립트가 따로 저장됩니다.
+                  </p>
+                </div>
+                <label className="flex min-w-0 flex-col gap-1.5">
+                  <span className="text-text-3 text-xs font-medium">Script target</span>
+                  <select
+                    value={selectedCaseKey}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                      const requestCase = requestCases.find((item) => item.key === e.target.value);
+                      if (requestCase) applyRequestCase(requestCase);
+                    }}
+                    className={`h-9 min-w-0 font-mono ${fieldClass}`}
+                  >
+                    {requestCases.map((requestCase) => (
+                      <option key={requestCase.key} value={requestCase.key}>
+                        {requestCase.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="text-text-3 mt-3 flex flex-wrap items-center gap-2 text-xs">
+                <span
+                  className={`border px-1.5 py-0.5 font-mono font-semibold ${METHOD_TONE[method]}`}
+                >
+                  {method}
+                </span>
+                <code className="text-text-2 break-all">
+                  {apiBase}
+                  {path}
+                </code>
+                {selectedCase?.endpoint.auth && <span>인증 필요</span>}
+                <span>기대 상태 {selectedCase?.expectedStatus ?? '200'}</span>
+              </div>
             </div>
             <div className="min-h-0 flex-1">
               <MonacoEditor
