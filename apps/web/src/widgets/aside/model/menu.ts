@@ -1,6 +1,7 @@
 import {
   Bot,
   CheckSquare,
+  Dumbbell,
   FileText,
   Flag,
   FolderOpen,
@@ -91,6 +92,13 @@ export const createAsideMenus = (projectSlug: string) => {
         icon: Settings,
         matchPath: `${basePath}/settings`,
       },
+      {
+        label: 'items.qaground',
+        href: 'https://qaground.gettestea.com',
+        icon: Dumbbell,
+        matchPath: '',
+        external: true,
+      },
       { label: 'items.help', href: '#', icon: HelpCircle, matchPath: '' },
     ],
   };
@@ -117,6 +125,7 @@ const ASIDE_BOTTOM = [
 export type AsideSection = (typeof ASIDE_SECTIONS)[number];
 export type AsideMenuItem = (typeof ASIDE_SECTIONS)[number]['items'][number] & {
   matchPath?: string;
+  external?: boolean;
 };
 
 export const MENUS = {
