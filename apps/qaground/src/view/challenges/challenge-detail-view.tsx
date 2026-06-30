@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import {
   CATEGORY_LABEL,
+  CHALLENGES,
   type Challenge,
   type ChallengeDifficulty,
   DIFFICULTY_LABEL,
@@ -33,13 +34,13 @@ function ChallengeMeta({ challenge }: { challenge: Challenge }) {
   return (
     <>
       <div className="mb-3 flex items-center gap-2">
-        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+        <span className="bg-bg-3 text-text-2 px-2.5 py-1 text-xs">
           {TRACK_LABEL[challenge.track]}
         </span>
-        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+        <span className="bg-bg-3 text-text-2 px-2.5 py-1 text-xs">
           {CATEGORY_LABEL[challenge.category]}
         </span>
-        <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-1 text-xs">
+        <span className="bg-bg-3 text-text-2 px-2.5 py-1 text-xs">
           {DIFFICULTY_LABEL[challenge.difficulty]}
         </span>
         {challenge.tools.map((tool) => (
@@ -54,6 +55,61 @@ function ChallengeMeta({ challenge }: { challenge: Challenge }) {
   );
 }
 
+const CHALLENGE_TITLE_BY_SLUG = new Map(CHALLENGES.map((item) => [item.slug, item.title]));
+
+function ChallengeLearningMeta({ challenge }: { challenge: Challenge }) {
+  const prerequisites = challenge.prerequisites ?? [];
+  const next = challenge.recommendedNext ?? [];
+  if (!challenge.estimatedMinutes && prerequisites.length === 0 && next.length === 0) return null;
+
+  const linkItems = (slugs: string[]) =>
+    slugs.map((slug) => ({ slug, title: CHALLENGE_TITLE_BY_SLUG.get(slug) ?? slug }));
+
+  return (
+    <div className="border-line-2 bg-bg-2 mt-5 border-l-2 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        {challenge.estimatedMinutes && (
+          <span className="text-text-2">예상 {challenge.estimatedMinutes}분</span>
+        )}
+        <span className={`px-2 py-0.5 font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}>
+          {DIFFICULTY_LABEL[challenge.difficulty]}
+        </span>
+      </div>
+      {prerequisites.length > 0 && (
+        <div className="mt-3">
+          <p className="text-text-3 text-xs font-medium">먼저 풀면 좋은 문제</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {linkItems(prerequisites).map((item) => (
+              <Link
+                key={item.slug}
+                href={`/challenges/${item.slug}`}
+                className="border-line-3 text-text-2 hover:text-text-1 border px-2 py-1 text-xs transition-colors"
+              >
+                {item.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      {next.length > 0 && (
+        <div className="mt-3">
+          <p className="text-text-3 text-xs font-medium">다음 추천</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {linkItems(next).map((item) => (
+              <Link
+                key={item.slug}
+                href={`/challenges/${item.slug}`}
+                className="border-line-3 text-text-2 hover:text-text-1 border px-2 py-1 text-xs transition-colors"
+              >
+                {item.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 function RequirementList({ challenge }: { challenge: Challenge }) {
   return (
     <>
@@ -75,7 +131,7 @@ function ApiEndpoints({ challenge }: { challenge: Challenge }) {
       <p className="text-text-2 mt-2 text-sm">
         베이스 경로 <code className="text-primary font-mono text-xs">{challenge.apiBase}</code>
       </p>
-      <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden rounded-xl border">
+      <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden border">
         <div className="border-line-2 text-text-3 grid grid-cols-[3.5rem_1fr_2.5rem] gap-3 border-b px-4 py-2.5 text-xs">
           <span>메서드</span>
           <span>경로</span>
@@ -98,7 +154,7 @@ function ApiEndpoints({ challenge }: { challenge: Challenge }) {
         ))}
       </div>
       {challenge.apiNote && (
-        <p className="border-line-2 bg-bg-2 text-text-2 mt-3 rounded-xl border px-4 py-3 text-xs leading-relaxed">
+        <p className="border-line-2 bg-bg-2 text-text-2 mt-3 border px-4 py-3 text-xs leading-relaxed">
           {challenge.apiNote}
         </p>
       )}
@@ -135,14 +191,14 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             ←
           </Link>
           <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
-          <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
             {TRACK_LABEL[challenge.track]}
           </span>
-          <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
             {CATEGORY_LABEL[challenge.category]}
           </span>
           <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+            className={`px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
           >
             {DIFFICULTY_LABEL[challenge.difficulty]}
           </span>
@@ -152,6 +208,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
               {challenge.summary}
             </p>
+            <ChallengeLearningMeta challenge={challenge} />
             <h2 className="mt-6 text-base font-semibold">요구사항</h2>
             <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
               {challenge.requirement.map((r) => (
@@ -190,6 +247,58 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
     );
   }
 
+  // API 트랙: 자동화 코드 작성 화면과 같은 풀높이 2단 레이아웃.
+  if (isApiTester) {
+    return (
+      <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans lg:h-screen lg:overflow-hidden">
+        <PlaygroundHeader containerClassName="max-w-none" />
+        <div className="border-line-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2.5 sm:px-6">
+          <Link
+            href="/challenges"
+            aria-label="챌린지 목록"
+            className="text-text-3 hover:text-text-1 text-sm transition-colors"
+          >
+            ←
+          </Link>
+          <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
+            {TRACK_LABEL[challenge.track]}
+          </span>
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
+            {CATEGORY_LABEL[challenge.category]}
+          </span>
+          <span
+            className={`px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+          >
+            {DIFFICULTY_LABEL[challenge.difficulty]}
+          </span>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="border-line-2 overflow-y-auto border-b p-5 sm:p-6 lg:w-2/5 lg:max-w-lg lg:border-r lg:border-b-0">
+            <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
+              {challenge.summary}
+            </p>
+            <ChallengeLearningMeta challenge={challenge} />
+            <h2 className="mt-6 text-base font-semibold">요구사항</h2>
+            <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
+              {challenge.requirement.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ol>
+            <ApiEndpoints challenge={challenge} />
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ApiTesterExercise
+              apiBase={challenge.apiBase!}
+              slug={challenge.slug}
+              endpoints={challenge.endpoints!}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 프로그래머스식 2단: 좌 요구사항(+API 엔드포인트) / 우 작성·실행 폼
   if (isSplit) {
     return (
@@ -198,6 +307,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6">
           {backLink}
           <ChallengeMeta challenge={challenge} />
+          <ChallengeLearningMeta challenge={challenge} />
           <div className="mt-8 grid gap-8 lg:grid-cols-[4fr_6fr] lg:gap-10">
             <div className="lg:sticky lg:top-24 lg:self-start">
               <RequirementList challenge={challenge} />
@@ -225,61 +335,74 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
     );
   }
 
-  // 매뉴얼 케이스(케이스 작성·버그 찾기): 얇은 메타바 + 좌 문제·요구사항(sticky) / 우 작성 폼
+  // 매뉴얼 케이스(케이스 작성·버그 찾기): 문제 읽기 흐름은 살리고 작성 영역은 풀높이 작업 화면으로 분리.
   if (challenge.modelTestCases || challenge.knownDefects) {
     return (
-      <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-        <PlaygroundHeader containerClassName="max-w-6xl" />
-        <div className="border-line-2 border-b">
-          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5 sm:px-6">
-            <Link
-              href="/challenges"
-              aria-label="챌린지 목록"
-              className="text-text-3 hover:text-text-1 text-sm transition-colors"
-            >
-              ←
-            </Link>
-            <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
-            <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
-              {TRACK_LABEL[challenge.track]}
-            </span>
-            <span className="bg-bg-3 text-text-2 rounded-full px-2 py-0.5 text-xs">
-              {CATEGORY_LABEL[challenge.category]}
-            </span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
-            >
-              {DIFFICULTY_LABEL[challenge.difficulty]}
-            </span>
+      <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans lg:h-screen lg:overflow-hidden">
+        <PlaygroundHeader containerClassName="max-w-none" />
+        <div className="border-line-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2.5 sm:px-6">
+          <Link
+            href="/challenges"
+            aria-label="챌린지 목록"
+            className="text-text-3 hover:text-text-1 text-sm transition-colors"
+          >
+            ←
+          </Link>
+          <h1 className="mr-1 text-base font-semibold sm:text-lg">{challenge.title}</h1>
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
+            {TRACK_LABEL[challenge.track]}
+          </span>
+          <span className="bg-bg-3 text-text-2 px-2 py-0.5 text-xs">
+            {CATEGORY_LABEL[challenge.category]}
+          </span>
+          <span
+            className={`px-2 py-0.5 text-xs font-medium ${DIFFICULTY_BADGE[challenge.difficulty]}`}
+          >
+            {DIFFICULTY_LABEL[challenge.difficulty]}
+          </span>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <aside className="border-line-2 overflow-y-auto border-b p-5 sm:p-6 lg:w-2/5 lg:max-w-lg lg:border-r lg:border-b-0">
+            <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
+              {challenge.summary}
+            </p>
+            <ChallengeLearningMeta challenge={challenge} />
+            <div className="mt-6">
+              <RequirementList challenge={challenge} />
+            </div>
+            {challenge.knownDefects && challenge.sandboxSlug && (
+              <div className="border-line-2 bg-bg-2 mt-6 border p-4">
+                <h3 className="text-text-1 text-sm font-semibold">연습 대상</h3>
+                <p className="text-text-3 mt-1 text-xs leading-relaxed">
+                  결함 리포트는 실제 화면을 관찰하며 재현 절차와 실제 결과를 남기는 흐름이
+                  중요합니다.
+                </p>
+                <Link
+                  href={`/sandbox/${challenge.sandboxSlug}`}
+                  target="_blank"
+                  className="border-line-3 text-text-1 hover:bg-bg-3 mt-3 inline-flex h-9 items-center justify-center border px-4 text-sm transition-colors"
+                >
+                  연습 대상 열기 ↗
+                </Link>
+              </div>
+            )}
+          </aside>
+          <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+            {challenge.knownDefects ? (
+              <DefectReportExercise
+                slug={challenge.slug}
+                sandboxSlug={undefined}
+                knownDefects={challenge.knownDefects}
+              />
+            ) : (
+              <TestCaseExercise
+                slug={challenge.slug}
+                modelTestCases={challenge.modelTestCases!}
+                requirements={challenge.requirement}
+              />
+            )}
           </div>
         </div>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-          <div className="grid gap-8 lg:grid-cols-[2fr_3fr] lg:gap-10">
-            <div className="lg:sticky lg:top-24 lg:self-start">
-              <p className="text-text-2 text-sm leading-relaxed whitespace-pre-line">
-                {challenge.summary}
-              </p>
-              <div className="mt-6">
-                <RequirementList challenge={challenge} />
-              </div>
-            </div>
-            <div>
-              {challenge.knownDefects ? (
-                <DefectReportExercise
-                  slug={challenge.slug}
-                  sandboxSlug={challenge.sandboxSlug}
-                  knownDefects={challenge.knownDefects}
-                />
-              ) : (
-                <TestCaseExercise
-                  slug={challenge.slug}
-                  modelTestCases={challenge.modelTestCases!}
-                  requirements={challenge.requirement}
-                />
-              )}
-            </div>
-          </div>
-        </main>
       </div>
     );
   }
@@ -290,6 +413,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
         {backLink}
         <ChallengeMeta challenge={challenge} />
+        <ChallengeLearningMeta challenge={challenge} />
         <section className="mt-8">
           <RequirementList challenge={challenge} />
         </section>
@@ -315,7 +439,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
             <Link
               href={`/sandbox/${challenge.sandboxSlug}`}
               target="_blank"
-              className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-4 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors"
+              className="bg-primary h-button-md hover:bg-primary/90 active:bg-primary/80 mt-4 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors"
             >
               연습 대상 열기
             </Link>
@@ -323,7 +447,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
         ) : null}
 
         {!challenge.knownDefects && !challenge.modelTestCases && (
-          <section className="border-line-3 mt-8 rounded-2xl border border-dashed p-6">
+          <section className="border-line-3 mt-8 border border-dashed p-6">
             <h2 className="text-base font-semibold">
               {challenge.track === 'manual' ? '결과 제출' : '자동 채점 제출'}
             </h2>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 
@@ -12,11 +12,12 @@ import {
   gradeApiAttempts,
 } from '@/shared/challenges/api-hidden-grader';
 import type { ApiEndpoint, ApiSchemaField, ApiSchemaType } from '@/shared/challenges/registry';
+import { Play, Plus, Send, Trash2 } from 'lucide-react';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
-    <div className="border-line-2 bg-bg-1 text-text-3 flex h-[180px] items-center justify-center rounded-xl border text-sm">
+    <div className="border-line-2 bg-bg-1 text-text-3 flex h-[180px] items-center justify-center border text-sm">
       에디터를 불러오는 중...
     </div>
   ),
@@ -42,13 +43,32 @@ interface PmResult {
 }
 interface RunResult {
   status: number;
+  durationMs: number;
+  responseHeaders: Record<string, string>;
   bodyText: string;
   checks: Check[];
   scriptResults: PmResult[];
   hiddenGrade: HiddenGradeResult;
 }
+interface RequestHistoryItem {
+  id: string;
+  method: Method;
+  path: string;
+  status: number;
+  durationMs: number;
+  passed: number;
+  total: number;
+  createdAt: string;
+}
 
 const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+const METHOD_TONE: Record<Method, string> = {
+  GET: 'text-primary bg-primary/10 border-primary/20',
+  POST: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+  PUT: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+  PATCH: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+  DELETE: 'text-system-red bg-system-red/10 border-system-red/20',
+};
 const SCHEMA_TYPES: ApiSchemaType[] = ['string', 'number', 'boolean', 'array', 'object', 'null'];
 
 /** 점(.) 경로로 JSON 값 탐색. eval 없이 구조적 접근만 한다. (`data.0.id` 등) */
@@ -236,13 +256,32 @@ function defaultValueForSchemaType(type: ApiSchemaType): unknown {
   return '';
 }
 
+function endpointKey(endpoint: ApiEndpoint): string {
+  return `${endpoint.method} ${endpoint.path}`;
+}
+
+function defaultExpectedForKind(kind: AssertKind) {
+  if (kind === 'status') return '200';
+  if (kind === 'type') return 'string';
+  if (kind === 'arrayLength') return '0';
+  return '';
+}
+
+function executablePathForEndpoint(path: string) {
+  return path.replace(/:([A-Za-z_$][\w$]*)/g, (_, name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.endsWith('id') || lower.includes('id')) return '1';
+    return 'demo';
+  });
+}
+
 function SchemaFieldList({ title, fields }: { title: string; fields?: ApiSchemaField[] }) {
   if (!fields?.length) return null;
 
   return (
     <div className="mt-3">
       <span className="text-text-3 text-xs font-medium">{title}</span>
-      <div className="border-line-2 mt-1 overflow-hidden rounded-lg border">
+      <div className="border-line-2 mt-1 overflow-hidden border">
         <div className="border-line-2 bg-bg-2 text-text-3 hidden grid-cols-[minmax(7rem,1.2fr)_5rem_4rem_minmax(0,1.5fr)] gap-2 border-b px-3 py-2 text-[11px] font-medium sm:grid">
           <span>필드</span>
           <span>타입</span>
@@ -267,6 +306,53 @@ function SchemaFieldList({ title, fields }: { title: string; fields?: ApiSchemaF
   );
 }
 
+function DocsSection({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details className="border-line-2 bg-bg-2 border" open={defaultOpen}>
+      <summary className="text-text-2 hover:bg-bg-1 cursor-pointer px-3 py-2 text-xs font-medium transition-colors">
+        {title}
+      </summary>
+      <div className="border-line-2 border-t p-3">{children}</div>
+    </details>
+  );
+}
+
+function HeaderDoc({ endpoint }: { endpoint: ApiEndpoint }) {
+  return (
+    <div className="border-line-2 overflow-hidden border text-xs">
+      <div className="border-line-2 bg-bg-2 text-text-3 grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(0,1.5fr)] gap-2 border-b px-3 py-2 font-medium">
+        <span>헤더</span>
+        <span>값</span>
+        <span>설명</span>
+      </div>
+      <div className="border-line-2 grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(0,1.5fr)] gap-2 border-b px-3 py-2 last:border-b-0">
+        <code className="text-text-1 font-mono">Content-Type</code>
+        <code className="text-text-2 font-mono">application/json</code>
+        <span className="text-text-3">본문이 있는 요청에서 사용합니다.</span>
+      </div>
+      {endpoint.auth && (
+        <div className="grid grid-cols-[minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(0,1.5fr)] gap-2 px-3 py-2">
+          <code className="text-text-1 font-mono">Authorization</code>
+          <code className="text-text-2 font-mono">Bearer &lt;token&gt;</code>
+          <span className="text-text-3">보호된 API 요청에 필요합니다.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyDoc({ label }: { label: string }) {
+  return <p className="text-text-3 text-xs">{label}이 없습니다.</p>;
+}
+
 function ApiDocsPanel({
   apiBase,
   endpoints,
@@ -277,57 +363,89 @@ function ApiDocsPanel({
   onSelectEndpoint: (endpoint: ApiEndpoint) => void;
 }) {
   return (
-    <div className="mt-5 flex flex-col gap-4">
-      <div>
+    <div className="flex flex-col gap-3">
+      <div className="border-line-2 bg-bg-3 border px-4 py-3">
         <span className="text-text-2 text-sm font-medium">API 문서</span>
         <p className="text-text-3 mt-1 text-xs leading-relaxed">
-          엔드포인트, 인증 조건, 요청 스키마, 응답 예시를 확인하고 테스터에 바로 적용합니다.
+          엔드포인트별 요청 헤더, 쿼리, 본문, 응답 스키마와 예시를 펼쳐서 확인합니다.
         </p>
       </div>
 
-      {endpoints.map((endpoint) => (
-        <div
-          key={`${endpoint.method} ${endpoint.path}`}
-          className="border-line-2 bg-bg-3 rounded-xl border p-4"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-primary font-mono text-xs font-semibold">
+      <div className="flex flex-col gap-2">
+        {endpoints.map((endpoint, index) => (
+          <details
+            key={`${endpoint.method} ${endpoint.path}`}
+            className="border-line-2 bg-bg-3 border"
+            open={index === 0}
+          >
+            <summary className="hover:bg-bg-2 cursor-pointer px-4 py-3 transition-colors">
+              <div className="inline-flex min-w-0 flex-wrap items-center gap-2 align-middle">
+                <span
+                  className={`border px-1.5 py-0.5 font-mono text-[11px] font-semibold ${METHOD_TONE[endpoint.method]}`}
+                >
                   {endpoint.method}
                 </span>
                 <code className="text-text-1 font-mono text-xs break-all">
                   {apiBase}
                   {endpoint.path}
                 </code>
+                {endpoint.auth && <span className="text-text-3 text-xs">인증 필요</span>}
               </div>
               <p className="text-text-3 mt-1 text-xs">{endpoint.desc}</p>
+            </summary>
+
+            <div className="border-line-2 flex flex-col gap-3 border-t p-4">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => onSelectEndpoint(endpoint)}
+                  className="border-line-2 hover:bg-bg-2 border px-3 py-1.5 text-xs transition-colors"
+                >
+                  요청에 적용
+                </button>
+              </div>
+
+              <DocsSection title="요청 헤더" defaultOpen>
+                <HeaderDoc endpoint={endpoint} />
+              </DocsSection>
+
+              <DocsSection title="쿼리 파라미터" defaultOpen={!!endpoint.query?.length}>
+                {endpoint.query?.length ? (
+                  <SchemaFieldList title="쿼리 파라미터" fields={endpoint.query} />
+                ) : (
+                  <EmptyDoc label="쿼리 파라미터" />
+                )}
+              </DocsSection>
+
+              <DocsSection title="요청 본문" defaultOpen={!!endpoint.body?.length}>
+                {endpoint.body?.length ? (
+                  <SchemaFieldList title="요청 본문" fields={endpoint.body} />
+                ) : (
+                  <EmptyDoc label="요청 본문" />
+                )}
+              </DocsSection>
+
+              <DocsSection title="응답 스키마" defaultOpen={!!endpoint.response?.length}>
+                {endpoint.response?.length ? (
+                  <SchemaFieldList title="응답 스키마" fields={endpoint.response} />
+                ) : (
+                  <EmptyDoc label="응답 스키마" />
+                )}
+              </DocsSection>
+
+              <DocsSection title="응답 예시" defaultOpen={endpoint.responseExample !== undefined}>
+                {endpoint.responseExample !== undefined ? (
+                  <pre className="border-line-2 bg-bg-1 text-text-2 max-h-72 overflow-auto border p-3 font-mono text-xs">
+                    {JSON.stringify(endpoint.responseExample, null, 2)}
+                  </pre>
+                ) : (
+                  <EmptyDoc label="응답 예시" />
+                )}
+              </DocsSection>
             </div>
-            <button
-              type="button"
-              onClick={() => onSelectEndpoint(endpoint)}
-              className="border-line-2 hover:bg-bg-2 rounded-button border px-3 py-1.5 text-xs transition-colors"
-            >
-              요청에 적용
-            </button>
-          </div>
-
-          <div className="mt-3 text-xs">
-            <span className="text-text-3 font-medium">인증</span>
-            <p className="text-text-2 mt-1">{endpoint.auth ? 'Bearer 토큰 필요' : '불필요'}</p>
-          </div>
-
-          <SchemaFieldList title="쿼리 파라미터" fields={endpoint.query} />
-          <SchemaFieldList title="요청 본문" fields={endpoint.body} />
-          <SchemaFieldList title="응답 스키마" fields={endpoint.response} />
-
-          {endpoint.responseExample !== undefined && (
-            <pre className="border-line-2 bg-bg-1 text-text-2 mt-3 max-h-48 overflow-auto rounded-lg border p-3 font-mono text-xs">
-              {JSON.stringify(endpoint.responseExample, null, 2)}
-            </pre>
-          )}
-        </div>
-      ))}
+          </details>
+        ))}
+      </div>
     </div>
   );
 }
@@ -348,8 +466,11 @@ export const ApiTesterExercise = ({
   slug: string;
   endpoints: ApiEndpoint[];
 }) => {
-  const [method, setMethod] = useState<Method>('GET');
-  const [path, setPath] = useState('/products?page=1&limit=5');
+  const [method, setMethod] = useState<Method>(endpoints[0]?.method ?? 'GET');
+  const [path, setPath] = useState(endpoints[0]?.path ?? '/products?page=1&limit=5');
+  const [selectedEndpointKey, setSelectedEndpointKey] = useState(
+    endpoints[0] ? endpointKey(endpoints[0]) : ''
+  );
   const [token, setToken] = useState('');
   const [customHeaders, setCustomHeaders] = useState('');
   const [body, setBody] = useState('');
@@ -360,8 +481,11 @@ export const ApiTesterExercise = ({
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<RunResult | null>(null);
+  const [history, setHistory] = useState<RequestHistoryItem[]>([]);
   const [attempts, setAttempts] = useState<ApiAttemptForGrade[]>([]);
-  const [activeTab, setActiveTab] = useState<'tester' | 'docs'>('tester');
+  const [activePanel, setActivePanel] = useState<'test' | 'docs' | 'script'>('test');
+  const [resultH, setResultH] = useState(288);
+  const dragRef = useRef<{ startY: number; startH: number } | null>(null);
 
   const updateAssertion = (id: number, patch: Partial<Assertion>) =>
     setAssertions((as) => as.map((a) => (a.id === id ? { ...a, ...patch } : a)));
@@ -372,26 +496,26 @@ export const ApiTesterExercise = ({
         id: nextId++,
         kind,
         path: '',
-        expected: kind === 'type' ? 'string' : kind === 'arrayLength' ? '0' : '',
+        expected: defaultExpectedForKind(kind),
       },
     ]);
   const removeAssertion = (id: number) => setAssertions((as) => as.filter((a) => a.id !== id));
 
   const applyEndpoint = (endpoint: ApiEndpoint) => {
+    setSelectedEndpointKey(endpointKey(endpoint));
     setMethod(endpoint.method);
-    setPath(endpoint.path);
-    if (endpoint.body?.length) {
-      setBody(
-        JSON.stringify(
-          Object.fromEntries(
-            endpoint.body.map((field) => [field.path, defaultValueForSchemaType(field.type)])
-          ),
-          null,
-          2
-        )
-      );
-    }
-    setActiveTab('tester');
+    setPath(executablePathForEndpoint(endpoint.path));
+    setBody(
+      endpoint.body?.length
+        ? JSON.stringify(
+            Object.fromEntries(
+              endpoint.body.map((field) => [field.path, defaultValueForSchemaType(field.type)])
+            ),
+            null,
+            2
+          )
+        : ''
+    );
   };
 
   const run = async () => {
@@ -404,11 +528,14 @@ export const ApiTesterExercise = ({
       const hasBody = method !== 'GET' && body.trim();
       if (hasBody) headers['Content-Type'] = 'application/json';
 
+      const startedAt = performance.now();
       const res = await fetch(apiBase + path, {
         method,
         headers,
         body: hasBody ? body : undefined,
       });
+      const durationMs = Math.round(performance.now() - startedAt);
+      const responseHeaders = Object.fromEntries(res.headers.entries());
 
       const bodyText = await res.text();
       let json: unknown = undefined;
@@ -462,8 +589,9 @@ export const ApiTesterExercise = ({
         };
       });
 
-      const scriptResults = script.trim()
-        ? runPmScript(script, { status: res.status, json, bodyText })
+      const userScript = script.trim() === DEFAULT_SCRIPT.trim() ? '' : script;
+      const scriptResults = userScript.trim()
+        ? runPmScript(userScript, { status: res.status, json, bodyText })
         : [];
 
       const attempt: ApiAttemptForGrade = {
@@ -471,7 +599,7 @@ export const ApiTesterExercise = ({
         path,
         status: res.status,
         assertions,
-        script,
+        script: userScript,
         checks,
         scriptResults,
       };
@@ -480,10 +608,37 @@ export const ApiTesterExercise = ({
       setAttempts(nextAttempts);
 
       const pretty = json !== undefined ? JSON.stringify(json, null, 2) : bodyText;
-      setResult({ status: res.status, bodyText: pretty, checks, scriptResults, hiddenGrade });
       const passed =
         checks.filter((c) => c.pass).length + scriptResults.filter((r) => r.pass).length;
       const totalChecks = checks.length + scriptResults.length;
+      setResult({
+        status: res.status,
+        durationMs,
+        responseHeaders,
+        bodyText: pretty,
+        checks,
+        scriptResults,
+        hiddenGrade,
+      });
+      setHistory((prev) =>
+        [
+          {
+            id: `${Date.now()}-${nextAttempts.length}`,
+            method,
+            path,
+            status: res.status,
+            durationMs,
+            passed,
+            total: totalChecks,
+            createdAt: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+          },
+          ...prev,
+        ].slice(0, 6)
+      );
       track('api_run', { passed, total: totalChecks, score: hiddenGrade.score });
       recordSubmission({
         slug,
@@ -493,7 +648,7 @@ export const ApiTesterExercise = ({
           path,
           headers: redactHeaders(headers),
           assertions,
-          script,
+          script: userScript,
           attempts: nextAttempts,
         },
         result: { passed, total: totalChecks },
@@ -505,54 +660,117 @@ export const ApiTesterExercise = ({
     }
   };
 
+  const onResizeDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragRef.current = { startY: e.clientY, startH: resultH };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onResizeMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const next = dragRef.current.startH + (dragRef.current.startY - e.clientY);
+    setResultH(Math.min(Math.max(next, 120), 520));
+  };
+  const onResizeUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // 포인터 캡처가 없으면 무시
+    }
+  };
   const fieldClass =
-    'border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary border px-3 text-sm transition-colors outline-none';
+    'border-line-3 bg-bg-3 text-text-1 placeholder:text-text-3 focus:border-primary border px-3 text-sm transition-colors outline-none';
   const passCount =
     (result?.checks.filter((c) => c.pass).length ?? 0) +
     (result?.scriptResults.filter((r) => r.pass).length ?? 0);
   const total = (result?.checks.length ?? 0) + (result?.scriptResults.length ?? 0);
 
   return (
-    <section className="border-line-2 bg-bg-2 rounded-2xl border p-6">
-      <h2 className="text-base font-semibold">API 테스터 자동 채점</h2>
-      <p className="text-text-2 mt-2 text-sm leading-relaxed">
-        요청을 구성하고, 구조화된 단언이나 포스트맨 스타일{' '}
-        <code className="font-mono">pm.test</code> 스크립트로 응답을 검증해 채점합니다.
-      </p>
-
-      {!!endpoints.length && (
-        <div className="border-line-2 bg-bg-3 mt-5 inline-flex rounded-lg border p-1">
-          {(['tester', 'docs'] as const).map((tab) => (
+    <section className="border-line-2 bg-bg-2 flex h-full min-h-0 flex-col overflow-hidden border-0 lg:border-l">
+      <div className="border-line-2 flex shrink-0 flex-wrap items-center gap-3 border-b px-4 py-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="bg-bg-3 border-line-2 flex size-8 shrink-0 items-center justify-center border">
+            <Send className="text-primary size-4" aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-text-1 text-sm font-semibold">API 테스트 워크벤치</h2>
+            <div className="text-text-3 mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+              <span>{endpoints.length}개 엔드포인트</span>
+              <span>·</span>
+              <span>{attempts.length}회 실행</span>
+            </div>
+          </div>
+        </div>
+        <div className="border-line-2 bg-bg-3 flex border text-sm">
+          {(
+            [
+              ['test', 'API 테스트'],
+              ['docs', '문서'],
+              ['script', '스크립트 작성'],
+            ] as const
+          ).map(([key, label]) => (
             <button
-              key={tab}
+              key={key}
               type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                activeTab === tab ? 'bg-primary text-white' : 'text-text-2 hover:text-text-1'
+              onClick={() => setActivePanel(key)}
+              className={`border-line-2 border-r px-3 py-1.5 text-xs transition-colors last:border-r-0 ${
+                activePanel === key ? 'bg-bg-1 text-text-1' : 'text-text-3 hover:text-text-1'
               }`}
             >
-              {tab === 'tester' ? '테스터' : 'API 문서'}
+              {label}
             </button>
           ))}
         </div>
-      )}
+        <button
+          data-testid="api-run"
+          type="button"
+          onClick={run}
+          disabled={running}
+          className="bg-primary hover:bg-primary/90 active:bg-primary/80 inline-flex h-9 items-center justify-center gap-2 px-4 text-sm font-medium text-white transition-colors disabled:opacity-60"
+        >
+          <Play className="size-4" aria-hidden="true" />
+          {running ? '실행 중' : '실행'}
+        </button>
+      </div>
 
-      {activeTab === 'docs' && !!endpoints.length && (
-        <ApiDocsPanel apiBase={apiBase} endpoints={endpoints} onSelectEndpoint={applyEndpoint} />
-      )}
+      <div className="min-h-0 flex-1 overflow-auto">
+        {activePanel === 'test' && (
+          <div className="p-4 sm:p-5">
+            {!!endpoints.length && (
+              <div className="border-line-2 mb-4 flex gap-2 overflow-x-auto border-b pb-3">
+                {endpoints.map((endpoint) => {
+                  const isActive = endpointKey(endpoint) === selectedEndpointKey;
+                  return (
+                    <button
+                      key={endpointKey(endpoint)}
+                      type="button"
+                      onClick={() => applyEndpoint(endpoint)}
+                      className={`border-line-2 shrink-0 border px-3 py-2 text-left transition-colors ${
+                        isActive ? 'bg-bg-1' : 'bg-bg-3 hover:bg-bg-1'
+                      }`}
+                    >
+                      <span
+                        className={`inline-flex border px-1.5 py-0.5 font-mono text-[11px] font-semibold ${METHOD_TONE[endpoint.method]}`}
+                      >
+                        {endpoint.method}
+                      </span>
+                      <code className="text-text-1 mt-1 block max-w-52 truncate font-mono text-xs">
+                        {endpoint.path}
+                      </code>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-      {activeTab === 'tester' && (
-        <>
-          {/* 요청 */}
-          <div className="mt-5 flex flex-col gap-3">
-            <div className="flex gap-2">
+            <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_auto]">
               <select
                 data-testid="api-method"
                 value={method}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                   setMethod(e.target.value as Method)
                 }
-                className={`h-button-md w-28 ${fieldClass}`}
+                className={`h-button-md ${fieldClass}`}
               >
                 {METHODS.map((m) => (
                   <option key={m} value={m}>
@@ -560,86 +778,196 @@ export const ApiTesterExercise = ({
                   </option>
                 ))}
               </select>
-              <span className="text-text-3 h-button-md flex items-center font-mono text-xs">
-                {apiBase}
-              </span>
-              <input
-                data-testid="api-path"
-                value={path}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPath(e.target.value)}
-                placeholder="/products?page=1&limit=5"
-                className={`h-button-md flex-1 font-mono ${fieldClass}`}
-              />
+              <div className="border-line-3 bg-bg-3 focus-within:border-primary grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center border transition-colors">
+                <span className="text-text-3 border-line-2 h-full border-r px-3 py-2.5 font-mono text-xs">
+                  {apiBase}
+                </span>
+                <input
+                  data-testid="api-path"
+                  value={path}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPath(e.target.value)}
+                  placeholder="/products?page=1&limit=5"
+                  className="text-text-1 placeholder:text-text-3 min-w-0 bg-transparent px-3 py-2.5 font-mono text-sm outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={run}
+                disabled={running}
+                className="border-line-2 bg-bg-3 hover:bg-bg-1 border px-4 text-sm font-medium transition-colors disabled:opacity-60"
+              >
+                Send
+              </button>
             </div>
 
-            <input
-              data-testid="api-token"
-              value={token}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
-              placeholder="Bearer 토큰 (보호된 요청에만, 예: qaground-demo-token)"
-              className={`h-button-md ${fieldClass}`}
-            />
-            <textarea
-              data-testid="api-headers"
-              value={customHeaders}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setCustomHeaders(e.target.value)
-              }
-              rows={2}
-              placeholder={'추가 헤더 (선택)\nx-qaground-signature: test-signature'}
-              className={`py-2 font-mono ${fieldClass}`}
-            />
-            {method !== 'GET' && (
-              <textarea
-                data-testid="api-body"
-                value={body}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)}
-                rows={3}
-                placeholder={'요청 본문(JSON)\n{ "name": "테스트 상품", "price": 1000 }'}
-                className={`py-2 font-mono ${fieldClass}`}
-              />
+            {error && (
+              <p className="text-system-red mt-3 text-sm" role="alert">
+                {error}
+              </p>
             )}
-          </div>
 
-          {/* 단언 */}
-          <div className="mt-5">
-            <span className="text-text-2 text-sm font-medium">검증(단언)</span>
-            <div className="mt-2 flex flex-col gap-2">
-              {assertions.map((a) => (
-                <div key={a.id} className="flex items-center gap-2">
-                  <select
-                    value={a.kind}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                      updateAssertion(a.id, { kind: e.target.value as AssertKind })
-                    }
-                    className={`h-9 w-28 ${fieldClass}`}
+            {history.length > 0 && (
+              <div className="border-line-2 bg-bg-3 mt-4 border">
+                <div className="border-line-2 flex items-center justify-between border-b px-3 py-2">
+                  <span className="text-text-2 text-xs font-semibold">최근 요청</span>
+                  <span className="text-text-3 text-xs">최근 {history.length}개</span>
+                </div>
+                <div className="divide-line-2 divide-y">
+                  {history.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setMethod(item.method);
+                        setPath(item.path);
+                      }}
+                      className="hover:bg-bg-1 grid w-full grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-left transition-colors"
+                    >
+                      <span
+                        className={`w-fit border px-1.5 py-0.5 font-mono text-[11px] font-semibold ${METHOD_TONE[item.method]}`}
+                      >
+                        {item.method}
+                      </span>
+                      <span className="min-w-0">
+                        <code className="text-text-1 block truncate font-mono text-xs">
+                          {item.path}
+                        </code>
+                        <span className="text-text-3 text-[11px]">
+                          {item.createdAt} · HTTP {item.status} · {item.durationMs}ms
+                        </span>
+                      </span>
+                      <span
+                        className={
+                          item.passed === item.total
+                            ? 'text-xs text-[#3fb950]'
+                            : 'text-xs text-[#f85149]'
+                        }
+                      >
+                        {item.passed}/{item.total}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              <label className="flex min-w-0 flex-col gap-2">
+                <span className="text-text-2 text-sm font-medium">토큰</span>
+                <input
+                  data-testid="api-token"
+                  value={token}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
+                  placeholder="qaground-demo-token"
+                  className={`h-button-md ${fieldClass}`}
+                />
+              </label>
+              <label className="flex min-w-0 flex-col gap-2">
+                <span className="text-text-2 text-sm font-medium">추가 헤더</span>
+                <input
+                  data-testid="api-headers"
+                  value={customHeaders}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setCustomHeaders(e.target.value)
+                  }
+                  placeholder="x-qaground-signature: test-signature"
+                  className={`h-button-md font-mono ${fieldClass}`}
+                />
+              </label>
+            </div>
+
+            {method !== 'GET' && (
+              <label className="mt-4 flex min-w-0 flex-col gap-2">
+                <span className="text-text-2 text-sm font-medium">본문</span>
+                <textarea
+                  data-testid="api-body"
+                  value={body}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)}
+                  rows={5}
+                  placeholder={'{ "name": "테스트 상품", "price": 1000 }'}
+                  className={`resize-none py-2 font-mono ${fieldClass}`}
+                />
+              </label>
+            )}
+
+            <div className="border-line-2 mt-6 border-t pt-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-text-1 text-sm font-semibold">검증 조건</span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => addAssertion()}
+                    className="border-line-2 bg-bg-3 hover:bg-bg-1 inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs transition-colors"
                   >
-                    <option value="status">상태 코드</option>
-                    <option value="json">JSON 값</option>
-                    <option value="exists">필드 존재</option>
-                    <option value="type">타입</option>
-                    <option value="arrayLength">배열 길이</option>
-                  </select>
-                  {a.kind !== 'status' && (
-                    <input
-                      value={a.path}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        updateAssertion(a.id, { path: e.target.value })
+                    <Plus className="size-3.5" aria-hidden="true" /> JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addAssertion('exists')}
+                    className="border-line-2 bg-bg-3 hover:bg-bg-1 inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs transition-colors"
+                  >
+                    <Plus className="size-3.5" aria-hidden="true" /> 존재
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addAssertion('type')}
+                    className="border-line-2 bg-bg-3 hover:bg-bg-1 inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs transition-colors"
+                  >
+                    <Plus className="size-3.5" aria-hidden="true" /> 타입
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addAssertion('arrayLength')}
+                    className="border-line-2 bg-bg-3 hover:bg-bg-1 inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs transition-colors"
+                  >
+                    <Plus className="size-3.5" aria-hidden="true" /> 길이
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-col gap-2">
+                {assertions.map((a) => (
+                  <div
+                    key={a.id}
+                    className="border-line-2 bg-bg-3 grid gap-2 border p-2 sm:grid-cols-[8rem_minmax(0,1fr)_auto_auto] sm:items-center"
+                  >
+                    <select
+                      value={a.kind}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                        updateAssertion(a.id, {
+                          kind: e.target.value as AssertKind,
+                          path: e.target.value === 'status' ? '' : a.path,
+                          expected: defaultExpectedForKind(e.target.value as AssertKind),
+                        })
                       }
-                      placeholder="경로 (예: total, data.0.name)"
-                      className={`h-9 flex-1 font-mono ${fieldClass}`}
-                    />
-                  )}
-                  {a.kind !== 'exists' && (
-                    <>
-                      <span className="text-text-3 text-sm">==</span>
-                      {a.kind === 'type' ? (
+                      className={`h-9 ${fieldClass}`}
+                    >
+                      <option value="status">상태 코드</option>
+                      <option value="json">JSON 값</option>
+                      <option value="exists">필드 존재</option>
+                      <option value="type">타입</option>
+                      <option value="arrayLength">배열 길이</option>
+                    </select>
+                    {a.kind !== 'status' ? (
+                      <input
+                        value={a.path}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          updateAssertion(a.id, { path: e.target.value })
+                        }
+                        placeholder="total, data.0.name"
+                        className={`h-9 min-w-0 font-mono ${fieldClass}`}
+                      />
+                    ) : (
+                      <div className="hidden sm:block" />
+                    )}
+                    {a.kind !== 'exists' &&
+                      (a.kind === 'type' ? (
                         <select
                           value={a.expected}
                           onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                             updateAssertion(a.id, { expected: e.target.value })
                           }
-                          className={`h-9 w-28 font-mono ${fieldClass}`}
+                          className={`h-9 w-full font-mono sm:w-28 ${fieldClass}`}
                         >
                           {SCHEMA_TYPES.map((type) => (
                             <option key={type} value={type}>
@@ -654,66 +982,43 @@ export const ApiTesterExercise = ({
                             updateAssertion(a.id, { expected: e.target.value })
                           }
                           placeholder={a.kind === 'arrayLength' ? '길이' : '기대값'}
-                          className={`h-9 w-28 font-mono ${fieldClass}`}
+                          className={`h-9 w-full font-mono sm:w-28 ${fieldClass}`}
                         />
-                      )}
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeAssertion(a.id)}
-                    className="text-text-3 hover:text-system-red px-1 text-sm transition-colors"
-                    aria-label="단언 삭제"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+                      ))}
+                    <button
+                      type="button"
+                      onClick={() => removeAssertion(a.id)}
+                      className="text-text-3 hover:text-system-red flex size-9 items-center justify-center transition-colors"
+                      aria-label="단언 삭제"
+                      title="단언 삭제"
+                    >
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => addAssertion()}
-              className="text-text-2 hover:text-text-1 mt-2 text-sm transition-colors"
-            >
-              + JSON 값 검증 추가
-            </button>
-            <button
-              type="button"
-              onClick={() => addAssertion('exists')}
-              className="text-text-2 hover:text-text-1 mt-2 ml-3 text-sm transition-colors"
-            >
-              + 필드 존재
-            </button>
-            <button
-              type="button"
-              onClick={() => addAssertion('type')}
-              className="text-text-2 hover:text-text-1 mt-2 ml-3 text-sm transition-colors"
-            >
-              + 타입
-            </button>
-            <button
-              type="button"
-              onClick={() => addAssertion('arrayLength')}
-              className="text-text-2 hover:text-text-1 mt-2 ml-3 text-sm transition-colors"
-            >
-              + 배열 길이
-            </button>
           </div>
+        )}
 
-          {/* 테스트 스크립트 (Postman 스타일) */}
-          <div className="mt-6">
-            <span className="text-text-2 text-sm font-medium">
-              테스트 스크립트 (Postman 스타일, 선택)
-            </span>
-            <p className="text-text-3 mt-1 text-xs leading-relaxed">
-              <code className="font-mono">pm.response</code>,{' '}
-              <code className="font-mono">pm.expect</code>,{' '}
-              <code className="font-mono">pm.test</code> 로 응답을 검증합니다. 비워 두면 단언만
-              채점합니다.
-            </p>
-            <div className="border-line-2 mt-2 overflow-hidden rounded-xl border">
+        {activePanel === 'docs' && (
+          <div className="p-4 sm:p-5">
+            <ApiDocsPanel
+              apiBase={apiBase}
+              endpoints={endpoints}
+              onSelectEndpoint={applyEndpoint}
+            />
+          </div>
+        )}
+
+        {activePanel === 'script' && (
+          <div className="flex h-full min-h-[420px] flex-col">
+            <div className="border-line-2 bg-bg-3 border-b px-4 py-2 text-sm font-semibold">
+              테스트 스크립트
+            </div>
+            <div className="min-h-0 flex-1">
               <MonacoEditor
-                height="180px"
+                height="100%"
                 defaultLanguage="javascript"
                 theme="vs-dark"
                 value={script}
@@ -724,119 +1029,108 @@ export const ApiTesterExercise = ({
                   tabSize: 2,
                   scrollBeyondLastLine: false,
                   automaticLayout: true,
-                  lineNumbers: 'off',
                   padding: { top: 10, bottom: 10 },
+                  fixedOverflowWidgets: true,
                 }}
               />
             </div>
           </div>
+        )}
+      </div>
 
-          <button
-            data-testid="api-run"
-            type="button"
-            onClick={run}
-            disabled={running}
-            className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-5 inline-flex items-center justify-center px-5 text-sm font-medium text-white transition-colors disabled:opacity-60"
-          >
-            {running ? '실행 중...' : '실행하고 채점'}
-          </button>
-
-          {error && (
-            <p className="text-system-red mt-4 text-sm" role="alert">
-              {error}
-            </p>
-          )}
-
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="API 결과 높이 조절"
+        aria-valuemin={120}
+        aria-valuemax={520}
+        aria-valuenow={resultH}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowUp') setResultH((h) => Math.min(h + 16, 520));
+          if (e.key === 'ArrowDown') setResultH((h) => Math.max(h - 16, 120));
+        }}
+        onPointerDown={onResizeDown}
+        onPointerMove={onResizeMove}
+        onPointerUp={onResizeUp}
+        className="border-line-2 bg-bg-2 hover:bg-primary/20 focus:bg-primary/20 group flex h-2 shrink-0 cursor-row-resize touch-none items-center justify-center border-t transition-colors outline-none"
+      >
+        <span
+          aria-hidden
+          className="bg-line-3 group-hover:bg-primary h-0.5 w-8 transition-colors"
+        />
+      </div>
+      <div
+        data-testid="api-result"
+        style={{ height: resultH }}
+        className="flex shrink-0 flex-col overflow-hidden bg-[#0d1117]"
+      >
+        <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-2">
+          <span className="font-mono text-xs text-[#8b949e]">api result</span>
           {result && (
-            <div data-testid="api-result" className="border-line-2 mt-6 border-t pt-6">
-              <div className="flex items-center gap-2">
-                <span className="text-text-2 text-sm">응답 상태</span>
-                <span className="text-text-1 font-mono text-sm font-semibold">{result.status}</span>
-                <span
-                  className={`ml-auto text-sm font-semibold ${passCount === total ? 'text-primary' : 'text-system-red'}`}
-                >
-                  {passCount}/{total} 통과
-                </span>
-              </div>
-
-              <div className="border-line-2 bg-bg-3 mt-4 rounded-xl border p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-text-1 text-sm font-semibold">숨김 채점</span>
-                  <span
-                    className={`font-mono text-sm font-semibold ${
-                      result.hiddenGrade.score === result.hiddenGrade.maxScore
-                        ? 'text-primary'
-                        : 'text-text-1'
-                    }`}
-                  >
-                    {result.hiddenGrade.score}/{result.hiddenGrade.maxScore}점
-                  </span>
-                </div>
-                <p className="text-text-3 mt-1 text-xs">
-                  숨김 케이스 {result.hiddenGrade.passed}/{result.hiddenGrade.total} 통과
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
-                  {result.hiddenGrade.cases.map((item, index) => (
-                    <span
-                      key={item.id}
-                      className={`border-line-2 rounded-lg border px-2 py-1 text-center text-xs font-medium ${
-                        item.pass ? 'text-primary' : 'text-text-3'
-                      }`}
-                    >
-                      #{index + 1} {item.pass ? '통과' : '실패'}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {result.checks.length > 0 && (
-                <ul className="mt-3 flex flex-col gap-2">
-                  {result.checks.map((c, i) => (
-                    <li
-                      key={i}
-                      className="border-line-2 bg-bg-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-                    >
-                      <span className={c.pass ? 'text-primary' : 'text-system-red'}>
-                        {c.pass ? '통과' : '실패'}
-                      </span>
-                      <span className="text-text-1 font-mono text-xs">{c.label}</span>
-                      <span className="text-text-3 ml-auto font-mono text-xs">
-                        실제: {c.actual}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {result.scriptResults.length > 0 && (
-                <ul className="mt-3 flex flex-col gap-2">
-                  {result.scriptResults.map((r, i) => (
-                    <li
-                      key={i}
-                      className="border-line-2 bg-bg-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm"
-                    >
-                      <span className={r.pass ? 'text-primary' : 'text-system-red'}>
-                        {r.pass ? '통과' : '실패'}
-                      </span>
-                      <span className="flex flex-col gap-0.5">
-                        <span className="text-text-1 text-xs">{r.name}</span>
-                        {r.error && (
-                          <span className="text-system-red font-mono text-xs">{r.error}</span>
-                        )}
-                      </span>
-                      <span className="text-text-3 ml-auto font-mono text-xs">pm.test</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <pre className="border-line-2 bg-bg-1 text-text-2 mt-3 max-h-72 overflow-auto rounded-xl border p-4 font-mono text-xs">
-                {result.bodyText}
-              </pre>
-            </div>
+            <span className="font-mono text-xs text-[#c9d1d9]">
+              HTTP {result.status} · {result.durationMs}ms
+            </span>
           )}
-        </>
-      )}
+          {result && (
+            <span
+              className={`ml-auto font-mono text-xs ${passCount === total ? 'text-[#3fb950]' : 'text-[#f85149]'}`}
+            >
+              {passCount}/{total} passed
+            </span>
+          )}
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto px-4 py-3 font-mono text-xs leading-relaxed text-[#c9d1d9]">
+          {!result ? (
+            <span className="text-[#8b949e]">실행하면 응답과 채점 결과가 여기에 표시됩니다.</span>
+          ) : (
+            <>
+              <div className="text-[#8b949e]">
+                hidden grade {result.hiddenGrade.score}/{result.hiddenGrade.maxScore}
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-5">
+                {result.hiddenGrade.cases.map((item, index) => (
+                  <span key={item.id} className={item.pass ? 'text-[#3fb950]' : 'text-[#8b949e]'}>
+                    #{index + 1} {item.pass ? 'pass' : 'fail'}
+                  </span>
+                ))}
+              </div>
+              <details className="mt-3 border border-white/10">
+                <summary className="cursor-pointer px-3 py-2 text-[#8b949e] hover:text-[#c9d1d9]">
+                  response headers · {Object.keys(result.responseHeaders).length}
+                </summary>
+                <div className="border-t border-white/10 px-3 py-2">
+                  {Object.entries(result.responseHeaders).map(([key, value]) => (
+                    <div key={key} className="grid gap-2 sm:grid-cols-[11rem_minmax(0,1fr)]">
+                      <span className="text-[#8b949e]">{key}</span>
+                      <span className="break-all text-[#c9d1d9]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+              {(result.checks.length > 0 || result.scriptResults.length > 0) && (
+                <div className="mt-3 space-y-1">
+                  {result.checks.map((c, i) => (
+                    <div key={i} className={c.pass ? 'text-[#3fb950]' : 'text-[#f85149]'}>
+                      {c.pass ? '✓' : '✗'} {c.label} · actual: {c.actual}
+                    </div>
+                  ))}
+                  {result.scriptResults.map((r, i) => (
+                    <div
+                      key={`script-${i}`}
+                      className={r.pass ? 'text-[#3fb950]' : 'text-[#f85149]'}
+                    >
+                      {r.pass ? '✓' : '✗'} {r.name}
+                      {r.error ? ` · ${r.error}` : ''}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <pre className="mt-4 whitespace-pre-wrap text-[#c9d1d9]">{result.bodyText}</pre>
+            </>
+          )}
+        </div>
+      </div>
     </section>
   );
 };

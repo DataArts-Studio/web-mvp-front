@@ -131,7 +131,11 @@ function hasStatusAssertion(attempt: ApiAttemptForGrade): boolean {
 
 function hasBodyAssertion(attempt: ApiAttemptForGrade): boolean {
   if (
-    attempt.assertions.some((assertion) => assertion.kind !== 'status' && assertion.path.trim())
+    attempt.assertions.some(
+      (assertion) =>
+        assertion.kind !== 'status' &&
+        (assertion.path.trim() || assertion.kind === 'type' || assertion.kind === 'arrayLength')
+    )
   ) {
     return true;
   }
