@@ -108,30 +108,26 @@ function RailSection({ title, children }: { title: string; children: React.React
 export const PostmanV1PlaygroundView = () => {
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
-      <PlaygroundHeader containerClassName="max-w-[1440px]" />
-      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-3 py-3 lg:px-4">
-        <header className="border-line-2 mb-3 border-b pb-2">
-          <div className="text-text-3 flex items-center gap-2 text-sm">
+      <PlaygroundHeader containerClassName="max-w-none" />
+      <main className="flex min-h-0 w-full flex-1 flex-col">
+        <header className="border-line-2 flex items-start justify-between gap-4 border-b px-4 py-2">
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold tracking-tight">Postman v1 플레이그라운드</h1>
+            <p className="text-text-3 mt-0.5 truncate text-sm">
+              제공된 API를 선택해 요청을 보내고 pm.test 스크립트를 작성합니다.
+            </p>
+          </div>
+          <div className="text-text-3 flex shrink-0 items-center gap-2 pt-0.5 text-sm">
             <Link href="/playground" className="hover:text-text-1 transition-colors">
               플레이그라운드
             </Link>
             <span>/</span>
             <span className="text-text-2">Postman v1</span>
           </div>
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <span className="text-primary text-xs font-medium">API Sandbox</span>
-            <span className="text-text-3 text-xs">v1 engine</span>
-            <h1 className="basis-full text-xl font-semibold tracking-tight">
-              Postman 형식 API Sandbox v1
-            </h1>
-          </div>
-          <p className="text-text-3 mt-0.5 text-sm">
-            제공된 API를 선택해 요청을 보내고 pm.test 스크립트를 작성합니다.
-          </p>
         </header>
 
-        <div className="grid min-h-[760px] flex-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-          <aside className="border-line-2 text-sm lg:border-r lg:pr-5">
+        <div className="grid min-h-0 flex-1 lg:grid-cols-[300px_minmax(0,1fr)]">
+          <aside className="border-line-2 qg-panel-scrollbar overflow-auto px-4 py-4 text-sm lg:border-r">
             <RailSection title="Environment">
               <dl className="space-y-2 text-xs">
                 {[
@@ -180,7 +176,7 @@ export const PostmanV1PlaygroundView = () => {
             </RailSection>
           </aside>
 
-          <div className="border-line-2 bg-bg-2 min-h-[760px] overflow-hidden border">
+          <div className="min-h-0 overflow-hidden">
             <ApiTesterExercise
               apiBase={API_BASE}
               slug="playground-postman-v1"
