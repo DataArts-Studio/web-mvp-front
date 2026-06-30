@@ -27,6 +27,12 @@ export interface GradeResult {
   uncovered?: string[];
 }
 
+interface TestBlock {
+  title: string;
+  body: string;
+  callbackHeader: string;
+}
+
 /** 라인/블록 주석 제거. 주석 속 TODO 힌트(`// expect ...`)가 채점에 끼지 않게 한다. */
 function stripComments(src: string): string {
   return src
@@ -42,6 +48,19 @@ function countMatches(src: string, re: RegExp): number {
   return (src.match(re) ?? []).length;
 }
 
+function buildFailedResult(startedAt: number, failures: string[]): GradeResult {
+  return {
+    ok: false,
+    status: 'failed',
+    durationMs: Date.now() - startedAt,
+    errorMessage: `- ${failures.join('\n- ')}`,
+  };
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** 상호작용 신호: 페이지 이동/요소 조회/입력 등 실제 동작을 수행하는 호출. */
 const INTERACTION_RE =
   /\b(page\.goto|getByTestId|getByRole|getByLabel|getByPlaceholder|getByText|locator|\.click\(|\.fill\(|\.check\(|\.uncheck\(|\.selectOption\(|\.press\(|\.type\(|\.setInputFiles\()/;
@@ -51,6 +70,163 @@ const INTERACTION_RE =
  * 실무 권장 방식(getByRole/getByLabel)으로 작성한 정답이 testid 미사용을 이유로 막히지 않게 한다.
  */
 const SEMANTIC_LOCATOR_RE = /getBy(Role|Label|Text|Placeholder|Title|AltText)\s*\(/;
+const ASSERTION_RE = /\bexpect\s*\(/g;
+const AWAITED_ASSERTION_RE = /\bawait\s+expect\s*\(/;
+const ASYNC_ACTION_RE =
+  /\bpage\.goto\s*\(|\.(?:click|fill|check|uncheck|selectOption|press|type|setInputFiles)\s*\(/;
+const TEST_CALL_RE = /\b(?:test|it)\s*\(/g;
+
+function skipStringLiteral(src: string, start: number): number {
+  const quote = src[start];
+  let i = start + 1;
+  while (i < src.length) {
+    if (src[i] === '\\') {
+      i += 2;
+      continue;
+    }
+    if (src[i] === quote) return i;
+    i += 1;
+  }
+  return start;
+}
+
+function findMatchingBrace(src: string, openIndex: number): number {
+  let depth = 0;
+  for (let i = openIndex; i < src.length; i += 1) {
+    const ch = src[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      i = skipStringLiteral(src, i);
+      continue;
+    }
+    if (ch === '{') depth += 1;
+    if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function readFirstStringArgument(src: string, openParen: number): string | undefined {
+  for (let i = openParen + 1; i < src.length; i += 1) {
+    const ch = src[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const end = skipStringLiteral(src, i);
+      return end > i ? src.slice(i + 1, end) : undefined;
+    }
+    if (ch === ')') return undefined;
+  }
+  return undefined;
+}
+
+function findCallbackBodyStart(src: string, openParen: number): number {
+  let parenDepth = 1;
+  for (let i = openParen + 1; i < src.length; i += 1) {
+    const ch = src[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      i = skipStringLiteral(src, i);
+      continue;
+    }
+    if (ch === '(') parenDepth += 1;
+    if (ch === ')') {
+      parenDepth -= 1;
+      if (parenDepth === 0) return -1;
+    }
+    if (src.startsWith('=>', i)) {
+      let bodyStart = i + 2;
+      while (/\s/.test(src[bodyStart] ?? '')) bodyStart += 1;
+      return src[bodyStart] === '{' ? bodyStart : -1;
+    }
+    if (src.startsWith('function', i)) {
+      const bodyStart = src.indexOf('{', i + 'function'.length);
+      return bodyStart;
+    }
+  }
+  return -1;
+}
+
+function extractTestBlocks(src: string): TestBlock[] {
+  const blocks: TestBlock[] = [];
+  for (const match of src.matchAll(TEST_CALL_RE)) {
+    const callStart = match.index ?? 0;
+    const openParen = src.indexOf('(', callStart);
+    if (openParen < 0) continue;
+
+    const bodyStart = findCallbackBodyStart(src, openParen);
+    if (bodyStart < 0) continue;
+
+    const bodyEnd = findMatchingBrace(src, bodyStart);
+    if (bodyEnd < 0) continue;
+
+    blocks.push({
+      title: readFirstStringArgument(src, openParen) ?? `테스트 #${blocks.length + 1}`,
+      body: src.slice(bodyStart + 1, bodyEnd),
+      callbackHeader: src.slice(openParen + 1, bodyStart),
+    });
+  }
+  return blocks;
+}
+
+function validateTestBlocks(stripped: string): { failures: string[]; blocks: TestBlock[] } {
+  const blocks = extractTestBlocks(stripped);
+  const failures: string[] = [];
+
+  if (blocks.length === 0) {
+    failures.push('test(...) 블록이 없습니다. Playwright 테스트를 작성하세요.');
+    return { failures, blocks };
+  }
+
+  blocks.forEach((block) => {
+    const title = block.title.trim() || '이름 없는 테스트';
+    const body = block.body.trim();
+    const assertions = countMatches(body, ASSERTION_RE);
+    const hasInteraction = INTERACTION_RE.test(body);
+
+    if (!body) {
+      failures.push(`"${title}" 테스트 본문이 비어 있습니다. 실제 동작과 단언을 작성하세요.`);
+      return;
+    }
+    if (/\bawait\b/.test(body) && !/\basync\b/.test(block.callbackHeader)) {
+      failures.push(`"${title}" 테스트에서 await 를 사용하지만 콜백이 async 가 아닙니다.`);
+    }
+    if (/\bpage\./.test(body) && !/\bpage\b/.test(block.callbackHeader)) {
+      failures.push(
+        `"${title}" 테스트에서 page 를 사용하지만 Playwright page fixture 를 받지 않았습니다.`
+      );
+    }
+    if (assertions < 1) {
+      failures.push(`"${title}" 테스트에 expect(...) 단언이 없습니다.`);
+    } else if (!AWAITED_ASSERTION_RE.test(body)) {
+      failures.push(`"${title}" 테스트의 Playwright 단언은 await expect(...) 형태로 작성하세요.`);
+    }
+
+    const unawaitedAction = body
+      .split('\n')
+      .map((line) => line.trim())
+      .find((line) => ASYNC_ACTION_RE.test(line) && !/\bawait\b/.test(line));
+    if (unawaitedAction) {
+      failures.push(`"${title}" 테스트의 Playwright 액션은 await 로 기다려야 합니다.`);
+    }
+
+    if (!hasInteraction) {
+      failures.push(`"${title}" 테스트에 페이지 상호작용이 없습니다.`);
+    }
+  });
+
+  return { failures, blocks };
+}
+
+/**
+ * 러너 실행 전에도 항상 적용하는 최소 제출 검증.
+ * Playwright 는 빈 test 본문도 통과로 처리하므로, 교육용 채점에서는 의미 없는 green 을 먼저 차단한다.
+ */
+export function validateAutomationSubmissionShape(code: string): GradeResult | null {
+  const startedAt = Date.now();
+  const stripped = stripComments(code);
+  const { failures } = validateTestBlocks(stripped);
+  if (failures.length > 0) return buildFailedResult(startedAt, failures);
+  return null;
+}
 
 /**
  * 제출 코드를 정적으로 채점한다. 챌린지의 셀렉터·요구사항을 기준 삼는다.
@@ -58,33 +234,18 @@ const SEMANTIC_LOCATOR_RE = /getBy(Role|Label|Text|Placeholder|Title|AltText)\s*
 export function gradeSubmissionStatically(challenge: Challenge, code: string): GradeResult {
   const startedAt = Date.now();
   const stripped = stripComments(code);
-  const failures: string[] = [];
+  const { failures, blocks } = validateTestBlocks(stripped);
 
-  // R1: 테스트 블록 존재
-  const hasTest = /\b(test|it)\s*\(/.test(stripped);
-  if (!hasTest) failures.push('test(...) 블록이 없습니다. Playwright 테스트를 작성하세요.');
-
-  // R2: 단언 1개 이상
-  const assertions = countMatches(stripped, /\bexpect\s*\(/g);
-  if (assertions < 1) failures.push('expect(...) 단언이 없습니다. 결과를 검증하세요.');
-
-  // R3: 상호작용 존재
-  const hasInteraction = INTERACTION_RE.test(stripped);
-  if (!hasInteraction)
-    failures.push(
-      '페이지 상호작용이 없습니다. goto·getByTestId·click·fill 등으로 대상을 조작하세요.'
-    );
-
-  // R4: 스타터 그대로 제출 / 빈 본문 방지
+  // 스타터 그대로 제출 / 빈 본문 방지
   if (challenge.starterSpec && normalize(code) === normalize(challenge.starterSpec)) {
     failures.push('스타터 코드를 수정하지 않았습니다. 직접 테스트를 작성해 제출하세요.');
   }
 
-  // R5: 대상 요소를 안정적으로 선택했는지 (셀렉터 있는 챌린지 한정).
+  // 대상 요소를 안정적으로 선택했는지 (셀렉터 있는 챌린지 한정).
   // testid 직접 참조 OR 접근성 기반 로케이터(getByRole/getByLabel 등) 둘 다 인정한다.
   const selectorIds = (challenge.selectors ?? []).map((s) => s.testid);
   const usedTestids = selectorIds.filter((id) =>
-    new RegExp(`['"\`]${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"\`]`).test(stripped)
+    new RegExp(`['"\`]${escapeRegExp(id)}['"\`]`).test(stripped)
   ).length;
   const usesSemanticLocator = SEMANTIC_LOCATOR_RE.test(stripped);
   if (selectorIds.length > 0 && usedTestids < 1 && !usesSemanticLocator) {
@@ -95,19 +256,13 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
 
   const durationMs = Date.now() - startedAt;
 
-  if (failures.length > 0) {
-    return {
-      ok: false,
-      status: 'failed',
-      durationMs,
-      errorMessage: `- ${failures.join('\n- ')}`,
-    };
-  }
+  if (failures.length > 0) return buildFailedResult(startedAt, failures);
 
   // 요구사항 대비 커버리지로 통과/부분을 가른다. 정적 채점은 의미 매핑을 못 하므로
   // "작성한 테스트 수"와 "단언 수" 중 큰 값을 커버리지 추정치로 쓴다.
   const reqCount = challenge.requirement?.length ?? 0;
-  const testCount = countMatches(stripped, /\b(?:test|it)\s*\(/g);
+  const testCount = blocks.length;
+  const assertions = countMatches(stripped, ASSERTION_RE);
   const coverage = Math.max(testCount, assertions);
 
   const selectorSummary =
@@ -137,7 +292,7 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
   }
 
   // 요구사항 수만큼 작성한 전체 통과.
-  const note = `구조 점검 통과 (단언 ${assertions}개${selectorSummary}${
+  const note = `구조 점검 통과 (테스트 ${testCount}개 · 단언 ${assertions}개${selectorSummary}${
     reqCount > 0 ? `, 요구사항 ${reqCount}개 커버 추정` : ''
   }).`;
   return {

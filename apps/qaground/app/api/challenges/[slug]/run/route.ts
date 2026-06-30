@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 
 import { getChallenge } from '@/shared/challenges/registry';
-import { gradeSubmissionStatically } from '@/shared/challenges/static-grader';
+import {
+  gradeSubmissionStatically,
+  validateAutomationSubmissionShape,
+} from '@/shared/challenges/static-grader';
 import { getRunnerAuthHeader } from '@/shared/runner/runner-identity';
 import { z } from 'zod';
 
@@ -40,6 +43,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: '제출 코드가 올바르지 않습니다.' }, { status: 400 });
+  }
+
+  const shapeError = validateAutomationSubmissionShape(parsed.data.code);
+  if (shapeError) {
+    return NextResponse.json({ ...shapeError, mode: 'static' });
   }
 
   const runnerUrl = process.env.QAGROUND_RUNNER_URL;
