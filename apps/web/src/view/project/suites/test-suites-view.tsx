@@ -87,6 +87,20 @@ export const TestSuitesView = () => {
   // 페이지네이션 계산
   const totalItems = filteredSuites.length;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+
+  useEffect(() => {
+    if (totalPages === 0) {
+      if (currentPage !== 1) setCurrentPage(1);
+      return;
+    }
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const handlePageChange = (page: number) => {
+    const safePage = Math.min(Math.max(1, page), Math.max(1, totalPages));
+    if (safePage === currentPage) return;
+    setCurrentPage(safePage);
+  };
   const paginatedSuites = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     return filteredSuites.slice(start, start + PAGE_SIZE);
@@ -224,7 +238,7 @@ export const TestSuitesView = () => {
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
         />
       </section>
       {isOpen && projectId && <SuiteCreateForm onClose={onClose} projectId={projectId} />}

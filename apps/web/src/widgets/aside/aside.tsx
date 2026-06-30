@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 
+import { projectIdQueryOptions } from '@/entities/project';
 import { dashboardQueryKeys } from '@/features/dashboard';
 import { ProductLanguageSwitcher } from '@/features/locale-switcher';
 import { NAVIGATION_EVENTS, track } from '@/shared/lib/analytics';
@@ -44,6 +45,14 @@ type PrefetchOptions = {
 };
 // 메뉴 식별 키(menu.ts 의 label) → prefetch 쿼리 옵션 로더.
 const PREFETCH_LOADERS: Record<string, (pid: string) => Promise<PrefetchOptions>> = {
+  'items.requirements': async (pid) => {
+    const { requirementAnalysesQueryOptions } = await import('@/entities/requirement-analysis');
+    return requirementAnalysesQueryOptions(pid) as unknown as PrefetchOptions;
+  },
+  'items.scenarios': async (pid) => {
+    const { scenarioFeaturesQueryOptions } = await import('@/entities/test-scenario');
+    return scenarioFeaturesQueryOptions(pid) as unknown as PrefetchOptions;
+  },
   'items.cases': async (pid) => {
     const { testCasesQueryOptions } = await import('@/features/cases-list');
     return testCasesQueryOptions(pid) as unknown as PrefetchOptions;
@@ -83,16 +92,25 @@ export const Aside = () => {
       const loader = PREFETCH_LOADERS[label];
       if (!loader) return;
 
-      // 캐시에서 projectId를 가져옴 (이미 현재 프로젝트 페이지에 있으므로 캐시에 존재)
-      const statsData = queryClient.getQueryData<{
-        success: boolean;
-        data: { project: { id: string } };
-      }>(dashboardQueryKeys.stats(projectSlug));
-      const projectId = statsData?.success ? statsData.data.project.id : undefined;
-      if (!projectId) return;
+      try {
+        const statsData = queryClient.getQueryData<{
+          success: boolean;
+          data: { project: { id: string } };
+        }>(dashboardQueryKeys.stats(projectSlug));
+        let projectId = statsData?.success ? statsData.data.project.id : undefined;
+        if (!projectId) {
+          const projectIdResult = await queryClient.ensureQueryData(
+            projectIdQueryOptions(projectSlug)
+          );
+          projectId = projectIdResult.success ? projectIdResult.data.id : undefined;
+        }
+        if (!projectId) return;
 
-      const options = await loader(projectId);
-      await queryClient.prefetchQuery(options);
+        const options = await loader(projectId);
+        await queryClient.prefetchQuery(options);
+      } catch {
+        // Hover prefetch는 실패해도 실제 페이지 이동을 막지 않는다.
+      }
     },
     [queryClient, projectSlug]
   );
