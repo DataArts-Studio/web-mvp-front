@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { recordSubmission } from '@/shared/analytics/record-submission';
 import { track } from '@/shared/analytics/track';
@@ -93,6 +94,7 @@ export const AutomationCodeExercise = ({
   selectors: ChallengeSelector[];
   starterSpec?: string;
 }) => {
+  const router = useRouter();
   const [code, setCode] = useState(starterSpec ?? genStarter(selectors));
   const [status, setStatus] = useState<Status>('idle');
   const [result, setResult] = useState<RunResult | null>(null);
@@ -254,6 +256,10 @@ export const AutomationCodeExercise = ({
         content: { code },
         result: { status: data.status, ok: data.ok },
       });
+    }
+
+    if (shouldRecord && data.ok) {
+      router.push(`/challenges/${slug}/result`);
     }
   };
 

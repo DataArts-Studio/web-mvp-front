@@ -75,6 +75,12 @@ export interface Challenge {
   modelTestCases?: { title: string; detail: string }[];
   /** 코드 채점: 코드 에디터 초기 Playwright 스펙 템플릿. */
   starterSpec?: string;
+  /** 제출 통과 후 결과 페이지에서 보여줄 모범 풀이/리뷰 콘텐츠. */
+  modelSolution?: {
+    approach: string[];
+    code?: string;
+    notes?: string[];
+  };
   /** 학습 UX: 예상 풀이 시간(분). */
   estimatedMinutes?: number;
   /** 학습 UX: 먼저 풀면 좋은 챌린지 slug 목록. */
@@ -157,6 +163,17 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
   //       login-success 가 보이는지 expect 로 검증하세요.
 });
 `,
+    modelSolution: {
+      approach: [
+        '성공 경로와 실패 경로를 별도 테스트로 분리해 원인을 빠르게 찾을 수 있게 한다.',
+        '입력과 클릭 같은 사용자 행동은 await로 기다리고, 결과는 expect로 명시적으로 단언한다.',
+        '에러 상태 이후 재로그인처럼 상태 전환이 있는 흐름은 이전 메시지가 사라지는지도 함께 확인한다.',
+      ],
+      notes: [
+        '정상 로그인만 검증하면 실제 서비스에서 자주 깨지는 검증 메시지와 재시도 흐름을 놓친다.',
+        'toHaveText는 요소가 기대 문구가 될 때까지 기다리므로 비동기 UI에 적합하다.',
+      ],
+    },
   },
   {
     slug: 'signup-validation',
