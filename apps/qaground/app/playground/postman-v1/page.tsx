@@ -3,10 +3,10 @@ import type { Metadata } from 'next';
 import { PostmanV1PlaygroundView } from '@/view/playground';
 
 const DESCRIPTION =
-  'Postman 형식 v1 플레이그라운드. 요청, 헤더, 본문, pm.test 스타일 검증 스크립트를 한 흐름으로 연습합니다.';
+  'Postman 형식 API Sandbox v1. qaground가 제공하는 데모 API를 자유롭게 호출하고 응답을 관찰하는 플레이그라운드입니다.';
 
 export const metadata: Metadata = {
-  title: 'Postman 형식 v1',
+  title: 'Postman 형식 API Sandbox v1',
   description: DESCRIPTION,
   alternates: { canonical: '/playground/postman-v1' },
   keywords: ['Postman 형식', 'pm.test', 'API 테스트', 'qaground 플레이그라운드', '테스티아'],

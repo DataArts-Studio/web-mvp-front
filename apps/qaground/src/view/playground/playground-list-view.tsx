@@ -2,150 +2,112 @@ import Link from 'next/link';
 
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
 
-const TRACKS = [
-  { label: 'API Testing', count: 2, active: true },
-  { label: 'E2E Automation', count: 2, active: false },
-  { label: 'Test Design', count: 2, active: false },
-  { label: 'Debugging', count: 1, active: false },
-  { label: 'Data & DB', count: 1, active: false },
-  { label: 'Performance', count: 1, active: false },
-  { label: 'Accessibility', count: 1, active: false },
-  { label: 'Security Basics', count: 1, active: false },
-  { label: 'CI & Reporting', count: 1, active: false },
+const ENVIRONMENTS = [
+  { label: 'API Sandbox', count: 2, active: true },
+  { label: 'Web UI Sandbox', count: 2, active: false },
+  { label: 'Auth Flow', count: 1, active: false },
+  { label: 'Data Table', count: 1, active: false },
+  { label: 'File Upload', count: 1, active: false },
+  { label: 'Webhook', count: 1, active: false },
+  { label: 'Performance Lab', count: 1, active: false },
+  { label: 'Accessibility Lab', count: 1, active: false },
+  { label: 'Debug Lab', count: 1, active: false },
 ];
 
 const PLAYGROUNDS = [
   {
     slug: 'postman-v1',
-    title: 'Postman 형식 v1',
-    subtitle: 'API 요청과 pm.test 검증의 기본 흐름',
+    title: 'Postman 형식 API Sandbox v1',
+    subtitle: '로그인·상품·상태 코드 API를 자유롭게 호출해보는 환경',
     version: 'v1',
-    track: 'API Testing',
-    level: '입문',
+    environment: 'API Sandbox',
     status: '사용 가능',
-    progress: 0,
-    modules: 4,
     href: '/playground/postman-v1',
     summary:
-      '로그인 API를 대상으로 메서드, URL, 헤더, JSON 본문을 구성하고 상태 코드와 응답 필드를 검증합니다.',
-    lessons: ['Request 구성', 'Response 확인', 'pm.test 작성', 'API 챌린지 연결'],
+      '제공된 qaground 데모 API를 대상으로 Postman처럼 요청을 구성하고 응답을 관찰합니다. 정답 제출이나 채점 없이, 헤더·본문·상태 코드·JSON 응답을 자유롭게 실험하는 공간입니다.',
+    resources: ['Auth API', 'Products API', 'Status API', 'pm.test 예시'],
   },
   {
-    slug: 'api-contract-v1',
-    title: 'API 계약 검증 v1',
-    subtitle: '스키마, 에러 응답, 경계값을 검증하는 흐름',
+    slug: 'commerce-api-v1',
+    title: 'Commerce API Sandbox',
+    subtitle: '상품, 주문, 결제 웹훅을 연결해서 만져보는 API 환경',
     version: 'v1',
-    track: 'API Testing',
-    level: '초급',
+    environment: 'API Sandbox',
     status: '예정',
-    progress: 0,
-    modules: 5,
-    summary: '응답 스키마와 실패 케이스를 함께 검증해 깨지기 쉬운 API 변경을 빠르게 찾습니다.',
-    lessons: ['Schema 체크', 'Error contract', 'Boundary case', 'Regression set'],
+    summary: '커머스 도메인 API를 제공하고, 사용자가 직접 요청 순서와 테스트 포인트를 설계합니다.',
+    resources: ['Products', 'Orders', 'Payment webhook', 'Error cases'],
   },
   {
-    slug: 'playwright-locator-v1',
-    title: 'Playwright Locator v1',
-    subtitle: '안정적인 셀렉터와 사용자 행동 기반 자동화',
+    slug: 'login-ui-v1',
+    title: 'Login UI Sandbox',
+    subtitle: '로그인 폼과 인증 상태 화면을 자유롭게 자동화하는 웹 환경',
     version: 'v1',
-    track: 'E2E Automation',
-    level: '입문',
+    environment: 'Web UI Sandbox',
     status: '예정',
-    progress: 0,
-    modules: 5,
-    summary: 'role, label, test id를 상황에 맞게 선택하고 flaky한 CSS 셀렉터를 줄이는 연습입니다.',
-    lessons: ['Role selector', 'Form action', 'Assertion', 'Flake 제거'],
+    summary: '브라우저에서 직접 조작 가능한 로그인 화면을 제공하고 Playwright 자동화를 실험합니다.',
+    resources: ['Login form', 'Validation', 'Session state', 'Route guard'],
   },
   {
-    slug: 'test-design-v1',
-    title: '테스트 설계 v1',
-    subtitle: '요구사항에서 케이스와 우선순위를 뽑는 훈련',
+    slug: 'table-ui-v1',
+    title: 'Data Table Sandbox',
+    subtitle: '검색, 필터, 페이지네이션이 있는 목록 UI 환경',
     version: 'v1',
-    track: 'Test Design',
-    level: '입문',
+    environment: 'Data Table',
     status: '예정',
-    progress: 0,
-    modules: 4,
-    summary: '동등분할, 경계값, 상태 전이를 사용해 테스트 케이스를 누락 없이 구성합니다.',
-    lessons: ['Requirement 분석', 'Boundary value', 'State transition', 'Priority'],
+    summary:
+      '테이블 UI를 제공하고 사용자가 정렬, 필터, 빈 상태, 페이지 이동을 자유롭게 검증합니다.',
+    resources: ['Search', 'Filter', 'Pagination', 'Empty state'],
   },
   {
-    slug: 'bug-report-v1',
-    title: '결함 분석 리포트 v1',
-    subtitle: '재현 조건과 기대/실제 결과를 분리하는 결함 작성',
+    slug: 'upload-v1',
+    title: 'File Upload Sandbox',
+    subtitle: '파일 업로드, 제한, 실패 응답을 실험하는 환경',
     version: 'v1',
-    track: 'Debugging',
-    level: '초급',
+    environment: 'File Upload',
     status: '예정',
-    progress: 0,
-    modules: 4,
-    summary: '로그와 화면 단서를 바탕으로 재현 가능한 버그 리포트를 작성합니다.',
-    lessons: ['Repro step', 'Evidence', 'Severity', 'Root cause hint'],
+    summary: '파일 크기, MIME 타입, 업로드 실패/성공 응답을 직접 조합해 테스트할 수 있습니다.',
+    resources: ['Upload form', 'File API', 'Validation', 'Preview'],
   },
   {
-    slug: 'sql-validation-v1',
-    title: '데이터 검증 v1',
-    subtitle: 'DB 상태와 API 응답의 정합성 확인',
+    slug: 'webhook-v1',
+    title: 'Webhook Sandbox',
+    subtitle: '서명 헤더와 이벤트 페이로드를 바꿔보는 웹훅 환경',
     version: 'v1',
-    track: 'Data & DB',
-    level: '초급',
+    environment: 'Webhook',
     status: '예정',
-    progress: 0,
-    modules: 4,
-    summary: '목록, 필터, 생성 결과가 저장 데이터와 일치하는지 검증하는 QA 관점을 익힙니다.',
-    lessons: ['Seed data', 'Query check', 'Pagination', 'Consistency'],
+    summary: '웹훅 이벤트를 직접 보내고 서명 실패, 중복 이벤트, 잘못된 페이로드를 관찰합니다.',
+    resources: ['Signature', 'Event payload', 'Retry', 'Idempotency'],
   },
   {
-    slug: 'web-vitals-v1',
-    title: '성능 점검 v1',
-    subtitle: 'Core Web Vitals와 병목 원인 분류',
+    slug: 'perf-page-v1',
+    title: 'Performance Lab',
+    subtitle: '느린 이미지, 긴 JS 작업, 레이아웃 이동이 있는 페이지',
     version: 'v1',
-    track: 'Performance',
-    level: '초급',
+    environment: 'Performance Lab',
     status: '예정',
-    progress: 0,
-    modules: 4,
-    summary: 'LCP, CLS, INP 지표를 읽고 재현 가능한 성능 리포트로 정리합니다.',
-    lessons: ['Metric 읽기', 'Waterfall', 'Bottleneck', 'Report'],
+    summary:
+      '의도적으로 병목이 있는 페이지를 제공하고 DevTools와 Lighthouse로 자유롭게 분석합니다.',
+    resources: ['LCP case', 'CLS case', 'Long task', 'Network waterfall'],
   },
   {
-    slug: 'a11y-keyboard-v1',
-    title: '접근성 점검 v1',
-    subtitle: '키보드 탐색과 라벨링 기본 검증',
+    slug: 'a11y-page-v1',
+    title: 'Accessibility Lab',
+    subtitle: '키보드 탐색과 라벨 이슈가 섞인 화면 환경',
     version: 'v1',
-    track: 'Accessibility',
-    level: '입문',
+    environment: 'Accessibility Lab',
     status: '예정',
-    progress: 0,
-    modules: 4,
-    summary: '폼, 모달, 메뉴에서 키보드 사용성과 스크린리더 전달 정보를 점검합니다.',
-    lessons: ['Focus order', 'Label', 'Error message', 'Contrast'],
+    summary: '접근성 문제가 있는 UI를 제공하고 사용자가 직접 탐색, 관찰, 리포팅을 연습합니다.',
+    resources: ['Focus order', 'Labels', 'Dialog', 'Contrast'],
   },
   {
-    slug: 'security-smoke-v1',
-    title: '보안 스모크 v1',
-    subtitle: '권한, 입력값, 민감정보 노출의 기본 점검',
+    slug: 'debug-v1',
+    title: 'Debug Lab',
+    subtitle: '네트워크 실패와 콘솔 오류가 발생하는 디버깅 환경',
     version: 'v1',
-    track: 'Security Basics',
-    level: '초급',
+    environment: 'Debug Lab',
     status: '예정',
-    progress: 0,
-    modules: 4,
-    summary: 'QA가 기본으로 확인해야 할 인증 우회, 권한 경계, 민감정보 노출 시나리오를 다룹니다.',
-    lessons: ['Auth boundary', 'Input validation', 'Secret leak', 'Negative test'],
-  },
-  {
-    slug: 'ci-reporting-v1',
-    title: 'CI 리포팅 v1',
-    subtitle: '테스트 실패를 팀이 바로 읽을 수 있게 정리',
-    version: 'v1',
-    track: 'CI & Reporting',
-    level: '초급',
-    status: '예정',
-    progress: 0,
-    modules: 4,
-    summary: 'CI 실패 로그, 스크린샷, trace를 묶어 원인 파악 가능한 테스트 리포트를 구성합니다.',
-    lessons: ['CI signal', 'Trace', 'Screenshot', 'Failure summary'],
+    summary: '깨진 화면과 API 실패를 제공하고 원인 추적, 로그 수집, 재현 정리를 자유롭게 해봅니다.',
+    resources: ['Console error', 'Network failure', 'State bug', 'Repro notes'],
   },
 ];
 
@@ -157,7 +119,7 @@ function PlaygroundCard({ item }: { item: (typeof PLAYGROUNDS)[number] }) {
       <div className="border-line-2 bg-bg-3/50 border-b p-5">
         <div className="flex items-center gap-2">
           <span className="bg-primary/12 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
-            {item.track}
+            {item.environment}
           </span>
           <span className="bg-bg-1 text-text-2 rounded-full px-2.5 py-0.5 text-xs">
             {item.version}
@@ -171,38 +133,27 @@ function PlaygroundCard({ item }: { item: (typeof PLAYGROUNDS)[number] }) {
       <div className="flex flex-1 flex-col p-5">
         <p className="text-text-2 text-sm leading-relaxed">{item.summary}</p>
 
-        <div className="mt-5 space-y-2">
-          {item.lessons.map((lesson, index) => (
-            <div key={lesson} className="flex items-center gap-3 text-sm">
-              <span className="bg-bg-3 text-text-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs">
-                {index + 1}
-              </span>
-              <span>{lesson}</span>
-            </div>
+        <div className="mt-5 flex flex-wrap gap-1.5">
+          {item.resources.map((resource) => (
+            <span
+              key={resource}
+              className="border-line-3 text-text-3 rounded-full border px-2 py-0.5 text-xs"
+            >
+              {resource}
+            </span>
           ))}
         </div>
 
-        <div className="mt-auto pt-6">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="text-text-3">진행률</span>
-            <span className="text-text-2">{item.progress}%</span>
-          </div>
-          <div className="bg-bg-3 h-2 overflow-hidden rounded-full">
-            <div className="bg-primary h-full" style={{ width: `${item.progress}%` }} />
-          </div>
-          <div className="border-line-2 text-text-2 group-hover:text-text-1 mt-5 flex items-center justify-between border-t pt-4 text-sm transition-colors">
-            <span>
-              {item.modules}개 모듈 · {item.level}
-            </span>
-            <span aria-hidden>{item.href ? '→' : '예정'}</span>
-          </div>
+        <div className="border-line-2 text-text-2 group-hover:text-text-1 mt-auto flex items-center justify-between border-t pt-4 text-sm transition-colors">
+          <span>{item.status === '사용 가능' ? '환경 열기' : '환경 준비중'}</span>
+          <span aria-hidden>{item.href ? '→' : '예정'}</span>
         </div>
       </div>
     </>
   );
 
   const className =
-    'group border-line-2 bg-bg-2 flex min-h-96 flex-col overflow-hidden rounded-2xl border transition-colors';
+    'group border-line-2 bg-bg-2 flex min-h-80 flex-col overflow-hidden rounded-2xl border transition-colors';
 
   if (!item.href) {
     return <article className={`${className} opacity-75`}>{body}</article>;
@@ -222,22 +173,22 @@ export const PlaygroundListView = () => {
       <main className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[280px_1fr]">
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="border-line-2 bg-bg-2 rounded-2xl border p-4">
-            <h2 className="text-sm font-semibold">Hard Skills</h2>
+            <h2 className="text-sm font-semibold">제공 환경</h2>
             <nav className="mt-4 flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
-              {TRACKS.map((track) => (
+              {ENVIRONMENTS.map((environment) => (
                 <button
-                  key={track.label}
+                  key={environment.label}
                   type="button"
-                  disabled={!track.active}
+                  disabled={!environment.active}
                   className={[
                     'flex min-w-40 items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors lg:min-w-0',
-                    track.active
+                    environment.active
                       ? 'bg-bg-3 text-text-1 font-medium'
                       : 'text-text-3 cursor-not-allowed opacity-75',
                   ].join(' ')}
                 >
-                  <span>{track.label}</span>
-                  <span className="text-text-3 text-xs">{track.count}</span>
+                  <span>{environment.label}</span>
+                  <span className="text-text-3 text-xs">{environment.count}</span>
                 </button>
               ))}
             </nav>
@@ -255,18 +206,18 @@ export const PlaygroundListView = () => {
                   플레이그라운드
                 </h1>
                 <p className="text-text-2 mt-4 max-w-2xl text-sm leading-relaxed">
-                  챌린지 풀이 전에 QA 하드스킬을 주제별로 익히는 탐색 공간입니다. API, 자동화,
-                  테스트 설계, 데이터 검증, 성능, 접근성, 보안, CI 리포팅까지 실무 QA가 반복해서
-                  쓰는 기술 흐름을 카드 단위로 확장합니다.
+                  qaground가 웹사이트와 API를 제공하고, 사용자는 그 위에서 자유롭게 요청을 보내고
+                  자동화하고 관찰하는 공간입니다. 정답 제출이나 채점보다, 실무처럼 시스템을 만져보며
+                  테스트 아이디어를 직접 실험하는 데 초점을 둡니다.
                 </p>
               </div>
               <div className="border-line-2 bg-bg-1 rounded-xl border p-4">
-                <p className="text-text-3 text-xs">공개 / 예정 플레이그라운드</p>
+                <p className="text-text-3 text-xs">사용 가능 / 준비중 환경</p>
                 <p className="mt-2 text-3xl font-bold">
                   {availableCount} / {PLAYGROUNDS.length}
                 </p>
                 <p className="text-text-2 mt-1 text-sm">
-                  첫 공개 버전은 Postman 형식 API 테스트입니다.
+                  첫 환경은 Postman 형식 API Sandbox입니다.
                 </p>
               </div>
             </div>
@@ -275,9 +226,9 @@ export const PlaygroundListView = () => {
           <section className="mt-8">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold">Hard Skill Roadmap</h2>
+                <h2 className="text-xl font-semibold">Sandbox Catalog</h2>
                 <p className="text-text-2 mt-1 text-sm">
-                  사용 가능한 카드부터 열고, 예정 카드는 다음 플레이그라운드 범위를 보여줍니다.
+                  제공된 웹/API 환경을 열고 원하는 방식으로 요청, 자동화, 디버깅을 실험하세요.
                 </p>
               </div>
               <span className="text-text-3 text-sm">{PLAYGROUNDS.length}개</span>

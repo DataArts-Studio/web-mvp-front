@@ -24,10 +24,17 @@ const SCRIPT_LINES = [
   '});',
 ];
 
-const STEPS = [
-  ['요청 구성', '메서드, 엔드포인트, 헤더, JSON 본문을 Postman처럼 한 번에 정리합니다.'],
-  ['응답 확인', '상태 코드와 JSON 필드를 분리해 실제 실패 지점을 찾을 수 있게 봅니다.'],
-  ['검증 스크립트 작성', 'pm.test와 pm.expect 문법으로 채점 가능한 단언을 만듭니다.'],
+const ENDPOINTS = [
+  ['POST', '/api/practice/auth/login', '데모 계정으로 토큰을 발급받습니다.'],
+  ['GET', '/api/practice/auth/me', 'Bearer 토큰으로 현재 사용자를 조회합니다.'],
+  ['GET', '/api/practice/products', '상품 목록, 검색, 필터 응답을 확인합니다.'],
+  ['GET', '/api/practice/status/[code]', '원하는 HTTP 상태 코드를 직접 관찰합니다.'],
+];
+
+const FREE_PLAY_ITEMS = [
+  ['요청 바꿔보기', '메서드, 헤더, 본문을 바꾸며 응답이 어떻게 달라지는지 확인합니다.'],
+  ['검증 스크립트 실험', 'pm.test 예시는 출발점일 뿐이며 원하는 단언을 자유롭게 추가합니다.'],
+  ['실패 케이스 관찰', '잘못된 토큰, 누락된 본문, 4xx/5xx 상태를 직접 만들어 봅니다.'],
 ];
 
 export const PostmanV1PlaygroundView = () => {
@@ -46,30 +53,33 @@ export const PostmanV1PlaygroundView = () => {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="bg-primary/12 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
-                Postman
+                API Sandbox
               </span>
               <span className="bg-bg-3 text-text-2 rounded-full px-2.5 py-0.5 text-xs">v1</span>
             </div>
-            <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">Postman 형식 v1</h1>
+            <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
+              Postman 형식 API Sandbox v1
+            </h1>
             <p className="text-text-2 mt-4 max-w-2xl text-sm leading-relaxed">
-              API 테스트를 요청 구성, 응답 관찰, 검증 스크립트 작성 순서로 연습합니다. 이후 API
-              챌린지에서 같은 형식의 요청과 pm.test 단언을 제출하게 됩니다.
+              qaground가 제공하는 데모 API를 Postman 스타일로 자유롭게 호출해보는 공간입니다.
+              채점이나 제출 없이 요청을 바꾸고, 응답을 관찰하고, 필요한 검증 스크립트를 직접
+              실험합니다.
             </p>
           </div>
 
           <div className="border-line-2 bg-bg-2 rounded-2xl border p-5">
-            <h2 className="text-sm font-semibold">v1 범위</h2>
+            <h2 className="text-sm font-semibold">제공 리소스</h2>
             <ul className="text-text-2 mt-3 space-y-2 text-sm">
-              <li>상태 코드 검증</li>
-              <li>JSON 응답 필드 검증</li>
-              <li>Bearer 인증 흐름 준비</li>
-              <li>pm.test / pm.expect 기본 문법</li>
+              <li>데모 인증 계정: tester@qaground.dev / qaground123</li>
+              <li>로그인, 사용자, 상품, 상태 코드 API</li>
+              <li>Bearer 토큰과 JSON 응답 예시</li>
+              <li>pm.test 스타일 검증 스크립트 샘플</li>
             </ul>
           </div>
         </header>
 
         <section className="mt-12 grid gap-4 md:grid-cols-3">
-          {STEPS.map(([title, desc], index) => (
+          {FREE_PLAY_ITEMS.map(([title, desc], index) => (
             <article key={title} className="border-line-2 bg-bg-2 rounded-2xl border p-5">
               <span className="text-primary text-xs font-semibold">0{index + 1}</span>
               <h2 className="mt-3 font-semibold">{title}</h2>
@@ -78,7 +88,25 @@ export const PostmanV1PlaygroundView = () => {
           ))}
         </section>
 
-        <section className="mt-10 grid gap-6 lg:grid-cols-2">
+        <section className="mt-10 grid gap-6 lg:grid-cols-[1fr_1fr]">
+          <article className="border-line-2 bg-bg-2 overflow-hidden rounded-2xl border">
+            <div className="border-line-2 flex items-center justify-between border-b px-5 py-3">
+              <h2 className="text-sm font-semibold">제공 API</h2>
+              <span className="text-text-3 font-mono text-xs">endpoints</span>
+            </div>
+            <div className="divide-line-2 divide-y">
+              {ENDPOINTS.map(([method, path, desc]) => (
+                <div key={`${method}-${path}`} className="grid gap-2 p-5 sm:grid-cols-[72px_1fr]">
+                  <span className="text-primary font-mono text-xs font-semibold">{method}</span>
+                  <div>
+                    <p className="font-mono text-sm">{path}</p>
+                    <p className="text-text-2 mt-1 text-sm leading-relaxed">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
           <article className="border-line-2 bg-bg-2 overflow-hidden rounded-2xl border">
             <div className="border-line-2 flex items-center justify-between border-b px-5 py-3">
               <h2 className="text-sm font-semibold">요청 예시</h2>
@@ -88,30 +116,16 @@ export const PostmanV1PlaygroundView = () => {
               <code>{REQUEST_LINES.join('\n')}</code>
             </pre>
           </article>
-
-          <article className="border-line-2 bg-bg-2 overflow-hidden rounded-2xl border">
-            <div className="border-line-2 flex items-center justify-between border-b px-5 py-3">
-              <h2 className="text-sm font-semibold">검증 스크립트</h2>
-              <span className="text-text-3 font-mono text-xs">pm.test</span>
-            </div>
-            <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
-              <code>{SCRIPT_LINES.join('\n')}</code>
-            </pre>
-          </article>
         </section>
 
-        <section className="border-line-2 bg-bg-2 mt-10 rounded-2xl border p-6">
-          <h2 className="text-lg font-semibold">다음 단계</h2>
-          <p className="text-text-2 mt-2 text-sm leading-relaxed">
-            형식이 익숙해지면 API 챌린지에서 실제 엔드포인트를 호출하고, 성공·실패 경로를 모두
-            검증하는 제출 코드를 작성합니다.
-          </p>
-          <Link
-            href="/challenges?category=api"
-            className="bg-primary rounded-button hover:bg-primary/90 mt-5 inline-flex h-10 items-center justify-center px-5 text-sm font-semibold text-white transition-colors"
-          >
-            API 챌린지로 이동
-          </Link>
+        <section className="border-line-2 bg-bg-2 mt-6 overflow-hidden rounded-2xl border">
+          <div className="border-line-2 flex items-center justify-between border-b px-5 py-3">
+            <h2 className="text-sm font-semibold">검증 스크립트 샘플</h2>
+            <span className="text-text-3 font-mono text-xs">optional</span>
+          </div>
+          <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
+            <code>{SCRIPT_LINES.join('\n')}</code>
+          </pre>
         </section>
       </main>
     </div>
