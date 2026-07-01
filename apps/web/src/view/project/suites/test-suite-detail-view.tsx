@@ -261,39 +261,39 @@ const TestSuiteDetailView = () => {
   const tagLabel = t(tagToneLabelKey[suite.tag?.tone ?? 'neutral'] ?? 'ui.tagNeutral');
 
   return (
-    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
-      {/* 뒤로가기 + 헤더 */}
-      <header className="col-span-6 flex flex-col gap-4">
-        <Link
-          href={`/projects/${params.slug}/suites`}
-          className="text-text-3 hover:text-text-1 flex w-fit items-center gap-1 text-sm transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          {t('ui.backToList')}
-        </Link>
-
-        <div className="flex items-start justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <h1 className="typo-title-heading">{suite.title}</h1>
+    <MainContainer className="grid min-h-screen w-full max-w-none flex-1 grid-cols-1 grid-rows-[auto_auto_auto] gap-x-7 px-5 py-5 lg:h-screen lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden lg:px-8 lg:py-6">
+      <header className="border-line-2 flex flex-col gap-4 border-b pb-4 lg:col-span-2 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <Link
+            href={`/projects/${params.slug}/suites`}
+            aria-label={t('ui.backToList')}
+            className="border-line-2 text-text-3 hover:bg-bg-2 hover:text-text-1 focus-visible:ring-primary inline-flex h-9 w-9 shrink-0 items-center justify-center border transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-3">
+              <h1 className="text-text-1 truncate text-[22px] leading-7 font-semibold tracking-normal">
+                {suite.title}
+              </h1>
               {suite.tag && (
-                <span className={cn('rounded-full px-3 py-1 text-sm font-medium', tagToneStyle)}>
+                <span className={cn('shrink-0 px-2 py-0.5 text-xs font-medium', tagToneStyle)}>
                   {tagLabel}
                 </span>
               )}
             </div>
-            <div className="text-text-3 flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-                <span>{t('ui.createdAt', { date: formatDate(suite.createdAt) })}</span>
-              </div>
+            <div className="text-text-3 mt-1 flex min-w-0 items-center gap-4 text-xs">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
+                {t('ui.createdAt', { date: formatDate(suite.createdAt) })}
+              </span>
               {suite.linkedMilestone && (
                 <Link
                   href={`/projects/${params.slug}/milestones/${suite.linkedMilestone.id}`}
-                  className="hover:text-text-1 flex items-center gap-1.5 transition-colors"
+                  className="hover:text-text-1 inline-flex min-w-0 items-center gap-1.5 transition-colors"
                 >
-                  <Tag className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-                  <span className="hover:underline">
+                  <Tag className="h-3.5 w-3.5 shrink-0" strokeWidth={1.7} aria-hidden="true" />
+                  <span className="truncate">
                     {suite.linkedMilestone.title} ({suite.linkedMilestone.versionLabel})
                   </span>
                 </Link>
@@ -301,106 +301,106 @@ const TestSuiteDetailView = () => {
               <LastRunFreshnessLabel lastExecutedAt={suite.lastExecutedAt} />
             </div>
           </div>
+        </div>
 
-          <div className="flex gap-2">
-            <DSButton
-              variant="ghost"
-              className="flex items-center gap-2"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit2 className="h-4 w-4" aria-hidden="true" />
-              {t('ui.edit')}
-            </DSButton>
-            <ArchiveButton
-              targetType="suite"
-              targetId={suite.id}
-              onSuccess={() => router.push(`/projects/${params.slug}/suites`)}
-            />
-          </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <DSButton
+            variant="ghost"
+            className="flex h-9 items-center gap-2 px-3"
+            onClick={() => setIsEditing(true)}
+          >
+            <Edit2 className="h-4 w-4" aria-hidden="true" />
+            {t('ui.edit')}
+          </DSButton>
+          <ArchiveButton
+            targetType="suite"
+            targetId={suite.id}
+            onSuccess={() => router.push(`/projects/${params.slug}/suites`)}
+          />
         </div>
       </header>
 
-      {/* 설명 */}
-      <section className="col-span-6">
-        <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-          <p className="text-text-2">{suite.description || t('ui.noDescription')}</p>
-        </div>
-      </section>
+      <main className="min-h-[520px] overflow-hidden py-5 lg:min-h-0">
+        <SuiteCaseListSection
+          sections={sections}
+          testCases={testCases}
+          casesBySection={casesBySection}
+          uncategorizedCases={uncategorizedCases}
+          collapsedSections={collapsedSections}
+          editingSectionId={editingSectionId}
+          editingSectionName={editingSectionName}
+          menuOpenSectionId={menuOpenSectionId}
+          isCreatingSection={isCreatingSection}
+          newSectionName={newSectionName}
+          createSectionIsPending={createSectionMutation.isPending}
+          createSectionError={createSectionError}
+          newSectionInputRef={newSectionInputRef}
+          editSectionInputRef={editSectionInputRef}
+          onToggleSection={toggleSection}
+          onSetMenuOpenSectionId={setMenuOpenSectionId}
+          onSetEditingSectionName={setEditingSectionName}
+          onStartRename={(id, name) => {
+            setEditingSectionId(id);
+            setEditingSectionName(name);
+          }}
+          onRenameSection={handleRenameSection}
+          onCancelRename={() => setEditingSectionId(null)}
+          onDeleteSection={handleDeleteSection}
+          onSelectTestCase={setSelectedTestCaseId}
+          onStartCreatingSection={() => {
+            setIsCreatingSection(true);
+            setTimeout(() => newSectionInputRef.current?.focus(), 0);
+          }}
+          onSetNewSectionName={(name) => {
+            setNewSectionName(name);
+            setCreateSectionError(null);
+          }}
+          onCreateSection={handleCreateSection}
+          onCancelCreateSection={() => {
+            setIsCreatingSection(false);
+            setNewSectionName('');
+            setCreateSectionError(null);
+          }}
+          onAddCases={() => setIsAddingCases(true)}
+        />
+      </main>
 
-      {/* 포함 경로 */}
-      {suite.includedPaths && suite.includedPaths.length > 0 && (
-        <section className="col-span-6">
-          <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+      <aside className="border-line-2 flex min-h-0 flex-col gap-6 border-t py-5 lg:overflow-y-auto lg:border-t-0 lg:border-l lg:pl-6">
+        <section className="border-line-2 border-b pb-5">
+          <h2 className="text-text-3 mb-2 text-xs font-semibold tracking-wide uppercase">
+            Summary
+          </h2>
+          <p className="text-text-2 text-sm leading-6">
+            {suite.description || t('ui.noDescription')}
+          </p>
+        </section>
+
+        {suite.includedPaths && suite.includedPaths.length > 0 && (
+          <section className="border-line-2 border-b pb-5">
             <div className="mb-3 flex items-center gap-2">
-              <FolderTree className="text-text-3 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-              <h3 className="text-text-3 font-semibold">{t('ui.includedPaths')}</h3>
+              <FolderTree className="text-text-3 h-4 w-4" strokeWidth={1.7} aria-hidden="true" />
+              <h2 className="text-text-3 text-xs font-semibold tracking-wide uppercase">
+                {t('ui.includedPaths')}
+              </h2>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-1.5">
               {suite.includedPaths.map((path, index) => (
                 <code
                   key={index}
-                  className="bg-bg-3 text-primary rounded px-2 py-1 font-mono text-sm"
+                  className="border-line-2 bg-bg-2 text-text-2 truncate border px-2 py-1.5 font-mono text-xs"
+                  title={path}
                 >
                   {path}
                 </code>
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      {/* 통계 카드 */}
-      <SuiteStatsSection suite={suite} />
-
-      {/* 마지막 실행 요약 */}
-      {suite.lastRun && <SuiteLastRunSection lastRun={suite.lastRun} />}
-
-      {/* 테스트 케이스 목록 (섹션별 그룹화) */}
-      <SuiteCaseListSection
-        sections={sections}
-        testCases={testCases}
-        casesBySection={casesBySection}
-        uncategorizedCases={uncategorizedCases}
-        collapsedSections={collapsedSections}
-        editingSectionId={editingSectionId}
-        editingSectionName={editingSectionName}
-        menuOpenSectionId={menuOpenSectionId}
-        isCreatingSection={isCreatingSection}
-        newSectionName={newSectionName}
-        createSectionIsPending={createSectionMutation.isPending}
-        createSectionError={createSectionError}
-        newSectionInputRef={newSectionInputRef}
-        editSectionInputRef={editSectionInputRef}
-        onToggleSection={toggleSection}
-        onSetMenuOpenSectionId={setMenuOpenSectionId}
-        onSetEditingSectionName={setEditingSectionName}
-        onStartRename={(id, name) => {
-          setEditingSectionId(id);
-          setEditingSectionName(name);
-        }}
-        onRenameSection={handleRenameSection}
-        onCancelRename={() => setEditingSectionId(null)}
-        onDeleteSection={handleDeleteSection}
-        onSelectTestCase={setSelectedTestCaseId}
-        onStartCreatingSection={() => {
-          setIsCreatingSection(true);
-          setTimeout(() => newSectionInputRef.current?.focus(), 0);
-        }}
-        onSetNewSectionName={(name) => {
-          setNewSectionName(name);
-          setCreateSectionError(null);
-        }}
-        onCreateSection={handleCreateSection}
-        onCancelCreateSection={() => {
-          setIsCreatingSection(false);
-          setNewSectionName('');
-          setCreateSectionError(null);
-        }}
-        onAddCases={() => setIsAddingCases(true)}
-      />
-
-      {/* 최근 실행 이력 */}
-      <SuiteRecentRuns recentRuns={suite.recentRuns} />
+        <SuiteStatsSection suite={suite} />
+        {suite.lastRun && <SuiteLastRunSection lastRun={suite.lastRun} />}
+        <SuiteRecentRuns recentRuns={suite.recentRuns} />
+      </aside>
 
       {isEditing && suite && <SuiteEditForm suite={suite} onClose={() => setIsEditing(false)} />}
       {isAddingCases && suite && (
