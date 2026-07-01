@@ -19,7 +19,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/projects/*/access', '/api/'],
+      disallow: ['/projects/', '/api/'],
     },
     sitemap: 'https://gettestea.com/sitemap.xml',
   };

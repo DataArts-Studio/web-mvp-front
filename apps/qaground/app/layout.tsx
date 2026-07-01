@@ -95,6 +95,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Testea', url: 'https://gettestea.com' }],
   creator: 'Testea',
   publisher: 'Testea',
+  manifest: '/manifest.webmanifest',
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: 'website',
@@ -103,11 +104,13 @@ export const metadata: Metadata = {
     siteName: 'qaground',
     title: TITLE,
     description: DESCRIPTION,
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'qaground' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
