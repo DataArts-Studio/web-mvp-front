@@ -13,7 +13,7 @@ import { useDisclosure } from '@testea/lib';
 import { MainContainer, Pagination, ProjectErrorFallback, Skeleton } from '@testea/ui';
 import { Plus, Search } from 'lucide-react';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 export const MilestonesView = () => {
   const params = useParams();
