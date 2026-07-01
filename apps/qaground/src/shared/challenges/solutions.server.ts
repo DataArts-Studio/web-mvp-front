@@ -3,6 +3,239 @@ import 'server-only';
 import type { ChallengeSolution } from './solution-types';
 
 const SOLUTIONS: Record<string, ChallengeSolution> = {
+  'rest-api-products': {
+    approach: [
+      '엔드포인트별로 pm.sendRequest를 분리해 목록, 상세, 404, 로그인, 생성, 삭제 흐름을 각각 검증합니다.',
+      '상태 코드는 res.code로 먼저 확인하고, JSON 응답이 있는 경우에만 res.json()으로 본문 필드를 검증합니다.',
+      '무효 로그인, 토큰 없는 생성, 잘못된 생성 본문처럼 요구사항의 실패 경로를 성공 경로와 함께 검증합니다.',
+      '인증이 필요한 상품 생성과 삭제 요청에는 Authorization 헤더를 포함해 실제 보호 API 흐름을 검증합니다.',
+      '204 응답은 본문이 없으므로 res.json()을 호출하지 않고 상태 코드만 검증합니다.',
+    ],
+    code: `const baseUrl = '/api/practice';
+const token = 'qaground-demo-token';
+
+pm.sendRequest(
+  { url: baseUrl + '/products?page=1&limit=5', method: 'GET' },
+  (err, res) => {
+    pm.test('상품 목록은 200과 페이지 메타데이터를 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(200);
+
+      const json = res.json();
+      pm.expect(json.page).to.eql(1);
+      pm.expect(json.limit).to.eql(5);
+      pm.expect(json.total).to.eql(12);
+      pm.expect(json.totalPages).to.eql(3);
+      pm.expect(json.data.length).to.eql(5);
+    });
+  }
+);
+
+pm.sendRequest(
+  { url: baseUrl + '/products/1', method: 'GET' },
+  (err, res) => {
+    pm.test('상품 상세는 200과 상품 필드를 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(200);
+
+      const json = res.json();
+      pm.expect(json.id).to.eql(1);
+      pm.expect(json.name).to.eql('무선 키보드');
+      pm.expect(json.category).to.eql('주변기기');
+      pm.expect(json.price).to.eql(39000);
+      pm.expect(json.inStock).to.eql(true);
+    });
+  }
+);
+
+pm.sendRequest(
+  { url: baseUrl + '/products/9999', method: 'GET' },
+  (err, res) => {
+    pm.test('존재하지 않는 상품은 404를 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(404);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('상품을 찾을 수 없습니다.');
+    });
+  }
+);
+
+pm.sendRequest(
+  {
+    url: baseUrl + '/auth/login',
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    body: {
+      mode: 'raw',
+      raw: JSON.stringify({
+        email: 'tester@qaground.dev',
+        password: 'qaground123',
+      }),
+    },
+  },
+  (err, res) => {
+    pm.test('로그인은 200과 토큰을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(200);
+
+      const json = res.json();
+      pm.expect(json.token).to.eql(token);
+    });
+  }
+);
+pm.sendRequest(
+  {
+    url: baseUrl + '/auth/login',
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    body: {
+      mode: 'raw',
+      raw: JSON.stringify({
+        email: 'tester@qaground.dev',
+        password: 'wrong-password',
+      }),
+    },
+  },
+  (err, res) => {
+    pm.test('무효 로그인은 401을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(401);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('자격증명이 올바르지 않습니다.');
+    });
+  }
+);
+
+pm.sendRequest(
+  {
+    url: baseUrl + '/products',
+    method: 'POST',
+    header: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + token,
+    },
+    body: {
+      mode: 'raw',
+      raw: JSON.stringify({
+        name: '테스트 상품',
+        price: 12000,
+        category: '기타',
+      }),
+    },
+  },
+  (err, res) => {
+    pm.test('상품 생성은 201과 생성된 상품을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(201);
+
+      const json = res.json();
+      pm.expect(json.name).to.eql('테스트 상품');
+      pm.expect(json.price).to.eql(12000);
+      pm.expect(json.category).to.eql('기타');
+    });
+  }
+);
+pm.sendRequest(
+  {
+    url: baseUrl + '/products',
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    body: {
+      mode: 'raw',
+      raw: JSON.stringify({
+        name: '토큰 없는 상품',
+        price: 1000,
+      }),
+    },
+  },
+  (err, res) => {
+    pm.test('토큰 없는 상품 생성은 401을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(401);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('인증이 필요합니다.');
+    });
+  }
+);
+
+pm.sendRequest(
+  {
+    url: baseUrl + '/products',
+    method: 'POST',
+    header: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + token,
+    },
+    body: {
+      mode: 'raw',
+      raw: JSON.stringify({ price: 0 }),
+    },
+  },
+  (err, res) => {
+    pm.test('잘못된 상품 생성 본문은 400을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(400);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('입력이 올바르지 않습니다.');
+      pm.expect(Array.isArray(json.issues)).to.eql(true);
+    });
+  }
+);
+
+pm.sendRequest(
+  {
+    url: baseUrl + '/products/1',
+    method: 'DELETE',
+    header: { Authorization: 'Bearer ' + token },
+  },
+  (err, res) => {
+    pm.test('상품 삭제는 204를 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(204);
+    });
+  }
+);
+
+pm.sendRequest(
+  {
+    url: baseUrl + '/products/9999',
+    method: 'DELETE',
+    header: { Authorization: 'Bearer ' + token },
+  },
+  (err, res) => {
+    pm.test('없는 상품 삭제는 404를 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(404);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('상품을 찾을 수 없습니다.');
+    });
+  }
+);
+
+pm.sendRequest(
+  { url: baseUrl + '/products/1', method: 'DELETE' },
+  (err, res) => {
+    pm.test('토큰 없는 상품 삭제는 401을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(401);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('인증이 필요합니다.');
+    });
+  }
+);
+`,
+    notes: [
+      'Postman 테스트 스크립트에서는 request.get 같은 Playwright 문법 대신 pm.sendRequest를 사용합니다.',
+      '여러 엔드포인트를 검증하는 문제는 하나의 제출 스크립트 안에 요청별 pm.sendRequest 블록을 나눠 작성합니다.',
+      '본문이 없는 204 응답에서는 JSON 파싱을 하지 않는 것이 안정적입니다.',
+    ],
+  },
   'login-basic': {
     approach: [
       '성공 경로와 실패 경로를 별도 테스트로 분리해 원인을 빠르게 찾을 수 있게 한다.',

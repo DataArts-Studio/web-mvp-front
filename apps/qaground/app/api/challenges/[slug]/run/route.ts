@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { gradeApiCodeSubmission } from '@/shared/challenges/api-hidden-grader';
 import { getChallenge } from '@/shared/challenges/registry';
 import { createChallengeResultToken } from '@/shared/challenges/result-access.server';
 import {
@@ -32,7 +33,7 @@ const BodySchema = z
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const challenge = getChallenge(slug);
-  if (!challenge || !challenge.sandboxSlug) {
+  if (!challenge) {
     return NextResponse.json({ error: '챌린지를 찾을 수 없습니다.' }, { status: 404 });
   }
 
@@ -45,6 +46,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: '제출 코드가 올바르지 않습니다.' }, { status: 400 });
+  }
+
+  if (challenge.track === 'api' && challenge.endpoints) {
+    const startedAt = performance.now();
+    const hiddenGrade = gradeApiCodeSubmission(parsed.data.code, { targets: challenge.endpoints });
+    const ok = hiddenGrade.score === hiddenGrade.maxScore;
+    const status = ok ? 'passed' : hiddenGrade.score > 0 ? 'partial' : 'failed';
+
+    return NextResponse.json({
+      ok,
+      status,
+      score: hiddenGrade.score,
+      maxScore: hiddenGrade.maxScore,
+      passed: hiddenGrade.passed,
+      total: hiddenGrade.total,
+      durationMs: Math.round(performance.now() - startedAt),
+      ...(ok && parsed.data.shouldRecord ? { resultToken: createChallengeResultToken(slug) } : {}),
+    });
+  }
+
+  if (!challenge.sandboxSlug) {
+    return NextResponse.json({ error: '챌린지를 찾을 수 없습니다.' }, { status: 404 });
   }
 
   const shapeError = validateAutomationSubmissionShape(parsed.data.code);

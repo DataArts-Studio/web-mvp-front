@@ -16,6 +16,7 @@
       "automation": "Automation",
       "trash": "Trash",
       "settings": "Settings",
+      "qaground": "QA Practice",
       "help": "Help"
     },
     "dashboardAria": "Go to dashboard",
@@ -71,6 +72,8 @@
     "navAria": "Main navigation",
     "docsLinkAria": "Go to docs page",
     "docs": "User guide",
+    "qaground": "QA Practice",
+    "qagroundAria": "Go to qaground QA automation practice playground",
     "searchAria": "Open my project search dialog",
     "findProject": "Find my project",
     "langSwitcher": "Select language",

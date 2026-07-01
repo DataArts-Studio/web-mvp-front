@@ -310,4 +310,60 @@ test('전체', async ({ page }) => {
     expect(r.ok).toBe(true);
     expect(r.status).toBe('passed');
   });
+  it('구조분해 page 파라미터가 있는 function callback도 본문을 정확히 추출한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+test('function callback', async function ({ page }) {
+  await page.goto('/');
+  await page.getByTestId('username').fill('tester');
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
+
+  it('return await로 호출한 async helper의 액션과 단언은 인정한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+async function login(page) {
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('login-success')).toBeVisible();
+}
+test('return await helper login', async ({ page }) => {
+  return await login(page);
+});`;
+
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
+  it('async helper를 await 없이 호출하면 helper 단언을 인정하지 않는다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+async function login(page) {
+  await page.getByTestId('username').fill('tester');
+  await expect(page.getByTestId('login-success')).toBeVisible();
+}
+test('unawaited helper login', async ({ page }) => {
+  login(page);
+});`;
+
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('helper login');
+  });
+
+  it('if false 내부 dead code의 단언과 셀렉터는 커버리지로 인정하지 않는다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+test('dead code only', async ({ page }) => {
+  if (false) {
+    await page.getByTestId('username').fill('tester');
+    await expect(page.getByTestId('login-success')).toBeVisible();
+  }
+});`;
+
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('expect');
+    expect(r?.errorMessage).toContain('상호작용');
+  });
 });

@@ -169,6 +169,7 @@ export const Aside = () => {
                     href={item.href}
                     icon={item.icon}
                     active={isPathActive(pathname, item.matchPath || '')}
+                    external={item.external}
                     onMouseEnter={() => handlePrefetch(item.label)}
                   />
                 </div>
@@ -188,6 +189,7 @@ export const Aside = () => {
                 href={item.href}
                 icon={item.icon}
                 active={isPathActive(pathname, item.matchPath || '')}
+                external={item.external}
               />
             </div>
           ))}

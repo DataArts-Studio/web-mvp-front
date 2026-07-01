@@ -14,7 +14,7 @@ import {
   TRACK_LABEL,
 } from '@/shared/challenges/registry';
 
-import { ApiTesterExercise } from './api-tester-exercise';
+import { ApiCodeExercise } from './api-code-exercise';
 import { AutomationCodeExercise } from './automation-code-exercise';
 import { DefectReportExercise } from './defect-report-exercise';
 import { PlaygroundHeader } from './playground-header';
@@ -206,6 +206,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   };
 
   const onProblemResizeUp = (event: PointerEvent<HTMLDivElement>) => {
+    setProblemPaneWidth(problemPaneWidthRef.current);
     splitDragRef.current = null;
 
     try {
@@ -216,6 +217,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
   };
 
   const onProblemResizeCancel = () => {
+    setProblemPaneWidth(problemPaneWidthRef.current);
     splitDragRef.current = null;
   };
 
@@ -389,7 +391,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
           </div>
           {resizeHandle}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <ApiTesterExercise
+            <ApiCodeExercise
               apiBase={challenge.apiBase!}
               slug={challenge.slug}
               endpoints={challenge.endpoints!}
@@ -423,7 +425,7 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
                   starterSpec={challenge.starterSpec}
                 />
               ) : (
-                <ApiTesterExercise
+                <ApiCodeExercise
                   apiBase={challenge.apiBase!}
                   slug={challenge.slug}
                   endpoints={challenge.endpoints!}

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 const NAV = [
-  { label: '연습', href: '#playground' },
+  { label: '플레이그라운드', href: '/playground' },
   { label: '작동 방식', href: '#how' },
   { label: '과제전형', href: '#assessment' },
 ];
@@ -25,15 +25,24 @@ export const LandingHeader = () => {
         </div>
 
         <nav className="flex items-center gap-1 sm:gap-2">
-          {NAV.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="text-text-2 hover:text-text-1 hidden rounded-md px-3 py-2 text-sm transition-colors sm:inline-block"
-            >
-              {item.label}
-            </a>
-          ))}
+          {NAV.map((item) => {
+            const className =
+              'text-text-2 hover:text-text-1 hidden rounded-md px-3 py-2 text-sm transition-colors sm:inline-block';
+
+            if (item.href.startsWith('/')) {
+              return (
+                <Link key={item.href} href={item.href} className={className}>
+                  {item.label}
+                </Link>
+              );
+            }
+
+            return (
+              <a key={item.href} href={item.href} className={className}>
+                {item.label}
+              </a>
+            );
+          })}
           <Link
             href="/challenges"
             className="bg-primary rounded-button hover:bg-primary/90 active:bg-primary/80 ml-1 inline-flex h-9 items-center justify-center px-4 text-sm font-medium text-white transition-colors"

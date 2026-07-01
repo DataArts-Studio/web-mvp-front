@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { type ApiAttemptForGrade, gradeApiAttempts } from './api-hidden-grader';
+import {
+  type ApiAttemptForGrade,
+  gradeApiAttempts,
+  gradeApiCodeSubmission,
+} from './api-hidden-grader';
 
 const baseAttempt: ApiAttemptForGrade = {
   method: 'GET',
@@ -165,5 +169,483 @@ describe('gradeApiAttempts', () => {
     expect(result.cases.find((item) => item.id === 'failure-path')?.pass).toBe(false);
     expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(false);
     expect(result.cases.find((item) => item.id === 'status-assertion')?.pass).toBe(false);
+  });
+  it('pm.response.json을 변수에 담아 단언해도 본문 단언으로 인정한다', () => {
+    const result = gradeApiAttempts([
+      {
+        ...baseAttempt,
+        assertions: [],
+        script: `
+          const json = pm.response.json();
+          pm.test('total 검증', () => {
+            pm.expect(json.total).to.eql(12);
+          });
+        `,
+        scriptResults: [{ pass: true }],
+      },
+    ]);
+
+    expect(result.cases.find((item) => item.id === 'body-assertion')?.pass).toBe(true);
+  });
+
+  it('타겟에 404가 명시된 경우 실제 404 응답을 보내야 실패 경로를 인정한다', () => {
+    const onlyBodyCheck = gradeApiAttempts(
+      [
+        {
+          ...baseAttempt,
+          method: 'GET',
+          path: '/products/9999',
+          status: 200,
+          assertions: [{ kind: 'status', path: '', expected: '200' }],
+        },
+      ],
+      { targets: [{ method: 'GET', path: '/products/:id', desc: '상품 단건 (없으면 404)' }] }
+    );
+    const realNotFound = gradeApiAttempts(
+      [
+        {
+          ...baseAttempt,
+          method: 'GET',
+          path: '/products/9999',
+          status: 404,
+          assertions: [{ kind: 'status', path: '', expected: '404' }],
+        },
+      ],
+      { targets: [{ method: 'GET', path: '/products/:id', desc: '상품 단건 (없으면 404)' }] }
+    );
+
+    expect(onlyBodyCheck.cases.find((item) => item.id === 'failure-path')?.pass).toBe(false);
+    expect(realNotFound.cases.find((item) => item.id === 'failure-path')?.pass).toBe(true);
+  });
+  it('실제 Postman 스타일 alias와 배열 길이 단언을 본문 단언으로 인정한다', () => {
+    const result = gradeApiAttempts([
+      {
+        ...baseAttempt,
+        assertions: [],
+        script: `
+          const json = pm.response.json();
+
+          pm.test('상품 목록 메타데이터를 반환한다', () => {
+            pm.expect(json.page).to.eql(1);
+            pm.expect(json.data.length).to.eql(5);
+          });
+        `,
+        scriptResults: [{ pass: true }],
+      },
+    ]);
+
+    expect(result.cases.find((item) => item.id === 'body-assertion')?.pass).toBe(true);
+  });
+
+  it('상품 REST API 정답 스크립트 흐름은 만점으로 계산한다', () => {
+    const attempts: ApiAttemptForGrade[] = [
+      {
+        ...baseAttempt,
+        method: 'GET',
+        path: '/products?page=1&limit=5',
+        status: 200,
+        assertions: [],
+        script: `
+          const json = pm.response.json();
+          pm.test('상태 코드는 200', () => {
+            pm.response.to.have.status(200);
+          });
+          pm.test('상품 목록과 페이지 메타데이터를 반환한다', () => {
+            pm.expect(json.page).to.eql(1);
+            pm.expect(json.limit).to.eql(5);
+            pm.expect(json.total).to.eql(12);
+            pm.expect(json.data.length).to.eql(5);
+          });
+        `,
+        checks: [],
+        scriptResults: [{ pass: true }, { pass: true }],
+      },
+      {
+        ...baseAttempt,
+        method: 'GET',
+        path: '/products/1',
+        status: 200,
+        assertions: [],
+        script: `
+          const json = pm.response.json();
+          pm.test('상품 상세를 반환한다', () => {
+            pm.response.to.have.status(200);
+            pm.expect(json.id).to.eql(1);
+            pm.expect(json.name).to.eql('무선 키보드');
+          });
+        `,
+        checks: [],
+        scriptResults: [{ pass: true }],
+      },
+      {
+        ...baseAttempt,
+        method: 'GET',
+        path: '/products/9999',
+        status: 404,
+        assertions: [],
+        script: `
+          const json = pm.response.json();
+          pm.test('없는 상품은 404를 반환한다', () => {
+            pm.response.to.have.status(404);
+            pm.expect(json.error).to.eql('상품을 찾을 수 없습니다.');
+          });
+        `,
+        checks: [],
+        scriptResults: [{ pass: true }],
+      },
+      {
+        ...baseAttempt,
+        method: 'POST',
+        path: '/auth/login',
+        status: 200,
+        assertions: [],
+        script: `
+          const json = pm.response.json();
+          pm.test('로그인 토큰을 반환한다', () => {
+            pm.response.to.have.status(200);
+            pm.expect(json.token).to.eql('qaground-demo-token');
+          });
+        `,
+        checks: [],
+        scriptResults: [{ pass: true }],
+      },
+      {
+        ...baseAttempt,
+        method: 'POST',
+        path: '/products',
+        status: 201,
+        assertions: [],
+        script: `
+          const json = pm.response.json();
+          pm.test('상품 생성은 201을 반환한다', () => {
+            pm.response.to.have.status(201);
+            pm.expect(json.name).to.eql('테스트 상품');
+            pm.expect(json.price).to.eql(12000);
+          });
+        `,
+        checks: [],
+        scriptResults: [{ pass: true }],
+      },
+      {
+        ...baseAttempt,
+        method: 'DELETE',
+        path: '/products/1',
+        status: 204,
+        assertions: [],
+        script: `
+          pm.test('상품 삭제는 204를 반환한다', () => {
+            pm.response.to.have.status(204);
+          });
+        `,
+        checks: [],
+        scriptResults: [{ pass: true }],
+      },
+    ];
+
+    const result = gradeApiAttempts(attempts, {
+      targets: [
+        { method: 'GET', path: '/products?page=1&limit=5', desc: '상품 목록' },
+        { method: 'GET', path: '/products/:id', desc: '상품 단건 (없으면 404)' },
+        { method: 'POST', path: '/auth/login', desc: '로그인 → 토큰 (무효 시 401)' },
+        { method: 'POST', path: '/products', auth: true, desc: '상품 생성 (검증 400 / 성공 201)' },
+        { method: 'DELETE', path: '/products/:id', auth: true, desc: '상품 삭제 (204 / 404)' },
+      ],
+    });
+
+    expect(result.score).toBe(result.maxScore);
+    expect(result.passed).toBe(result.total);
+  });
+  it('API v2 Postman 스크립트 풀이가 요구사항 커버리지를 만족하면 만점으로 계산한다', () => {
+    const code = `pm.sendRequest({ url: '/products?page=1&limit=5', method: 'GET' }, (err, res) => {
+  pm.test('상품 목록과 페이지 메타데이터를 반환한다', () => {
+    pm.expect(err).to.eql(null);
+    pm.expect(res.code).to.eql(200);
+    const json = res.json();
+    pm.expect(json.page).to.eql(1);
+    pm.expect(json.data.length).to.eql(5);
+  });
+});
+
+pm.sendRequest({ url: '/products/1', method: 'GET' }, (err, res) => {
+  pm.test('상품 상세를 반환한다', () => {
+    pm.expect(res.code).to.eql(200);
+    const json = res.json();
+    pm.expect(json.id).to.eql(1);
+  });
+});
+
+pm.sendRequest({ url: '/products/9999', method: 'GET' }, (err, res) => {
+  pm.test('없는 상품은 404를 반환한다', () => {
+    pm.expect(res.code).to.eql(404);
+    const json = res.json();
+    pm.expect(json.error).to.eql('상품을 찾을 수 없습니다.');
+  });
+});
+
+pm.sendRequest({ url: '/auth/login', method: 'POST' }, (err, res) => {
+  pm.test('로그인 토큰을 반환한다', () => {
+    pm.expect(res.code).to.eql(200);
+    const json = res.json();
+    pm.expect(json.token).to.eql('qaground-demo-token');
+  });
+});
+
+pm.sendRequest({ url: '/auth/login', method: 'POST' }, (err, res) => {
+  pm.test('무효 로그인은 401을 반환한다', () => {
+    pm.expect(res.code).to.eql(401);
+    const json = res.json();
+    pm.expect(json.error).to.eql('자격증명이 올바르지 않습니다.');
+  });
+});
+
+pm.sendRequest({
+  url: '/products',
+  method: 'POST',
+  headers: { Authorization: 'Bearer qaground-demo-token' },
+  body: JSON.stringify({ name: '테스트 상품', price: 12000 })
+}, (err, res) => {
+  pm.test('상품 생성은 201을 반환한다', () => {
+    pm.expect(res.code).to.eql(201);
+    const json = res.json();
+    pm.expect(json.name).to.eql('테스트 상품');
+  });
+});
+
+pm.sendRequest({
+  url: '/products',
+  method: 'POST',
+  headers: { Authorization: 'Bearer qaground-demo-token' },
+  body: JSON.stringify({ price: 0 })
+}, (err, res) => {
+  pm.test('잘못된 상품 생성은 400을 반환한다', () => {
+    pm.expect(res.code).to.eql(400);
+    const json = res.json();
+    pm.expect(json.error).to.eql('입력이 올바르지 않습니다.');
+  });
+});
+
+pm.sendRequest({
+  url: '/products',
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: '토큰 없는 상품', price: 1000 })
+}, (err, res) => {
+  pm.test('토큰 없는 상품 생성은 401을 반환한다', () => {
+    pm.expect(res.code).to.eql(401);
+    const json = res.json();
+    pm.expect(json.error).to.eql('인증이 필요합니다.');
+  });
+});
+
+pm.sendRequest({
+  url: '/products/1',
+  method: 'DELETE',
+  headers: { Authorization: 'Bearer qaground-demo-token' }
+}, (err, res) => {
+  pm.test('상품 삭제는 204를 반환한다', () => {
+    pm.expect(res.code).to.eql(204);
+  });
+});
+
+pm.sendRequest({
+  url: '/products/9999',
+  method: 'DELETE',
+  headers: { Authorization: 'Bearer qaground-demo-token' }
+}, (err, res) => {
+  pm.test('없는 상품 삭제는 404를 반환한다', () => {
+    pm.expect(res.code).to.eql(404);
+    const json = res.json();
+    pm.expect(json.error).to.eql('상품을 찾을 수 없습니다.');
+  });
+});
+
+pm.sendRequest({ url: '/products/1', method: 'DELETE' }, (err, res) => {
+  pm.test('토큰 없는 상품 삭제는 401을 반환한다', () => {
+    pm.expect(res.code).to.eql(401);
+    const json = res.json();
+    pm.expect(json.error).to.eql('인증이 필요합니다.');
+  });
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [
+        { method: 'GET', path: '/products?page=1&limit=5', desc: '상품 목록' },
+        { method: 'GET', path: '/products/:id', desc: '상품 단건 (없으면 404)' },
+        { method: 'POST', path: '/auth/login', desc: '로그인 → 토큰 (무효 시 401)' },
+        { method: 'POST', path: '/products', auth: true, desc: '상품 생성 (검증 400 / 성공 201)' },
+        { method: 'DELETE', path: '/products/:id', auth: true, desc: '상품 삭제 (204 / 404)' },
+      ],
+    });
+
+    expect(result.score).toBe(result.maxScore);
+    expect(result.passed).toBe(result.total);
+  });
+  it('GET shorthand sendRequest를 GET 요청 커버리지로 인정한다', () => {
+    const code = `pm.sendRequest('/products?page=1&limit=5', (err, res) => {
+  pm.test('상품 목록은 200과 본문을 반환한다', () => {
+    pm.expect(res.code).to.eql(200);
+    const json = res.json();
+    pm.expect(json.data.length).to.eql(5);
+  });
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [{ method: 'GET', path: '/products?page=1&limit=5', desc: '상품 목록' }],
+    });
+
+    expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(true);
+    expect(result.cases.find((item) => item.id === 'success-path')?.pass).toBe(true);
+  });
+
+  it('각 타깃의 성공 상태를 모두 검증해야 success-path를 통과한다', () => {
+    const code = `pm.sendRequest('/products?page=1&limit=5', (err, res) => {
+  pm.test('list', () => {
+    pm.expect(res.code).to.eql(200);
+    pm.expect(res.json().data.length).to.eql(5);
+  });
+});
+
+pm.sendRequest({ url: '/products', method: 'POST', headers: { Authorization: 'Bearer token' }, body: JSON.stringify({ name: 'A', price: 1 }) }, (err, res) => {
+  pm.test('create body only', () => {
+    pm.expect(res.json().name).to.eql('A');
+  });
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [
+        { method: 'GET', path: '/products?page=1&limit=5', desc: '상품 목록' },
+        { method: 'POST', path: '/products', auth: true, desc: '상품 생성 (검증 400 / 성공 201)' },
+      ],
+    });
+
+    expect(result.cases.find((item) => item.id === 'success-path')?.pass).toBe(false);
+  });
+
+  it('타깃의 모든 실패 상태를 검증해야 failure-path를 통과한다', () => {
+    const code = `pm.sendRequest({ url: '/files', method: 'POST', body: JSON.stringify({}) }, (err, res) => {
+  pm.test('bad request', () => {
+    pm.expect(res.code).to.eql(400);
+    pm.expect(res.json().error).to.eql('bad_request');
+  });
+});
+
+pm.sendRequest({ url: '/files', method: 'POST', body: JSON.stringify({ file: 'large' }) }, (err, res) => {
+  pm.test('too large', () => {
+    pm.expect(res.code).to.eql(413);
+    pm.expect(res.json().error).to.eql('too_large');
+  });
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [{ method: 'POST', path: '/files', desc: '파일 업로드 (400 / 413 / 415 / 201)' }],
+    });
+
+    expect(result.cases.find((item) => item.id === 'failure-path')?.pass).toBe(false);
+  });
+
+  it('본문 단언은 각 타깃의 sendRequest 블록 안에 있어야 한다', () => {
+    const code = `pm.sendRequest('/products?page=1&limit=5', (err, res) => {
+  pm.test('list', () => {
+    pm.expect(res.code).to.eql(200);
+    pm.expect(res.json().data.length).to.eql(5);
+  });
+});
+
+pm.sendRequest({ url: '/products/1', method: 'GET' }, (err, res) => {
+  pm.test('detail status only', () => {
+    pm.expect(res.code).to.eql(200);
+  });
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [
+        { method: 'GET', path: '/products?page=1&limit=5', desc: '상품 목록' },
+        { method: 'GET', path: '/products/:id', desc: '상품 단건' },
+      ],
+    });
+
+    expect(result.cases.find((item) => item.id === 'body-assertion')?.pass).toBe(false);
+  });
+  it('주석에만 있는 API 테스트 코드는 채점에 반영하지 않는다', () => {
+    const code = `// pm.sendRequest({ url: '/products/1', method: 'GET' }, (err, res) => {
+//   pm.test('fake', () => {
+//     pm.expect(res.code).to.eql(200);
+//     pm.expect(res.json().id).to.eql(1);
+//   });
+// });`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [{ method: 'GET', path: '/products/:id' }],
+    });
+
+    expect(result.cases.find((item) => item.id === 'failure-path')?.pass).toBe(true);
+    expect(result.cases.find((item) => item.id === 'success-path')?.pass).toBe(false);
+    expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(false);
+  });
+
+  it('method와 path가 서로 다른 sendRequest에 흩어져 있으면 커버리지로 인정하지 않는다', () => {
+    const code = `pm.sendRequest({ url: '/products/1', method: 'POST' }, (err, res) => {
+  pm.test('status', () => pm.expect(res.code).to.eql(201));
+});
+pm.sendRequest({ url: '/orders/1', method: 'GET' }, (err, res) => {
+  pm.test('status', () => pm.expect(res.code).to.eql(200));
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [{ method: 'GET', path: '/products/:id' }],
+    });
+
+    expect(result.cases.find((item) => item.id === 'request-coverage')?.pass).toBe(false);
+  });
+
+  it('보호 API는 헤더와 본문을 포함해야 요청 커버리지로 인정한다', () => {
+    const missingAuthAndBody = `pm.sendRequest({ url: '/products', method: 'POST' }, (err, res) => {
+  pm.test('created', () => pm.expect(res.code).to.eql(201));
+});`;
+    const withAuthAndBody = `pm.sendRequest({
+  url: '/products',
+  method: 'POST',
+  headers: { Authorization: 'Bearer qaground-demo-token' },
+  body: JSON.stringify({ name: '테스트 상품', price: 12000 })
+}, (err, res) => {
+  pm.test('created', () => {
+    pm.expect(res.code).to.eql(201);
+    pm.expect(res.json().name).to.eql('테스트 상품');
+  });
+});`;
+
+    const target = {
+      method: 'POST',
+      path: '/products',
+      auth: true,
+      desc: '상품 생성 (검증 400 / 성공 201)',
+    };
+
+    expect(
+      gradeApiCodeSubmission(missingAuthAndBody, { targets: [target] }).cases.find(
+        (item) => item.id === 'request-coverage'
+      )?.pass
+    ).toBe(false);
+    expect(
+      gradeApiCodeSubmission(withAuthAndBody, { targets: [target] }).cases.find(
+        (item) => item.id === 'request-coverage'
+      )?.pass
+    ).toBe(true);
+  });
+
+  it('실패 상태가 없는 챌린지는 failure-path 없이도 만점 가능하다', () => {
+    const code = `pm.sendRequest({ url: '/health', method: 'GET' }, (err, res) => {
+  pm.test('health', () => {
+    pm.response.to.have.status(200);
+    pm.expect(res.json().status).to.eql('ok');
+  });
+});`;
+
+    const result = gradeApiCodeSubmission(code, {
+      targets: [{ method: 'GET', path: '/health', desc: '헬스 체크' }],
+    });
+
+    expect(result.cases.find((item) => item.id === 'failure-path')?.pass).toBe(true);
+    expect(result.score).toBe(result.maxScore);
   });
 });

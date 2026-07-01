@@ -51,17 +51,47 @@ function CodeLine({ line }: { line: string }) {
 function buildLineDiff(submittedCode: string, solutionCode: string): DiffLine[] {
   const submitted = splitLines(submittedCode);
   const solution = splitLines(solutionCode);
-  const max = Math.max(submitted.length, solution.length);
+  const dp = Array.from({ length: submitted.length + 1 }, () =>
+    Array<number>(solution.length + 1).fill(0)
+  );
 
-  return Array.from({ length: max }, (_, index) => {
-    const left = submitted[index];
-    const right = solution[index];
+  for (let i = submitted.length - 1; i >= 0; i -= 1) {
+    for (let j = solution.length - 1; j >= 0; j -= 1) {
+      dp[i][j] =
+        submitted[i] === solution[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
 
-    if (left === undefined) return { type: 'added', solution: right ?? '' };
-    if (right === undefined) return { type: 'removed', submitted: left };
-    if (left === right) return { type: 'same', submitted: left, solution: right };
-    return { type: 'changed', submitted: left, solution: right };
-  });
+  const raw: DiffLine[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < submitted.length || j < solution.length) {
+    if (i < submitted.length && j < solution.length && submitted[i] === solution[j]) {
+      raw.push({ type: 'same', submitted: submitted[i], solution: solution[j] });
+      i += 1;
+      j += 1;
+    } else if (j < solution.length && (i === submitted.length || dp[i][j + 1] >= dp[i + 1][j])) {
+      raw.push({ type: 'added', solution: solution[j] });
+      j += 1;
+    } else if (i < submitted.length) {
+      raw.push({ type: 'removed', submitted: submitted[i] });
+      i += 1;
+    }
+  }
+
+  const merged: DiffLine[] = [];
+  for (let index = 0; index < raw.length; index += 1) {
+    const current = raw[index];
+    const next = raw[index + 1];
+    if (current?.type === 'removed' && next?.type === 'added') {
+      merged.push({ type: 'changed', submitted: current.submitted, solution: next.solution });
+      index += 1;
+    } else {
+      merged.push(current);
+    }
+  }
+
+  return merged;
 }
 
 function CodePanel({ code, title }: { code: string; title: string }) {
