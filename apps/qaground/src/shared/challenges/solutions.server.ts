@@ -199,6 +199,36 @@ pm.sendRequest(
     });
   }
 );
+
+pm.sendRequest(
+  {
+    url: baseUrl + '/products/9999',
+    method: 'DELETE',
+    header: { Authorization: 'Bearer ' + token },
+  },
+  (err, res) => {
+    pm.test('없는 상품 삭제는 404를 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(404);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('상품을 찾을 수 없습니다.');
+    });
+  }
+);
+
+pm.sendRequest(
+  { url: baseUrl + '/products/1', method: 'DELETE' },
+  (err, res) => {
+    pm.test('토큰 없는 상품 삭제는 401을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(401);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('인증이 필요합니다.');
+    });
+  }
+);
 `,
     notes: [
       'Postman 테스트 스크립트에서는 request.get 같은 Playwright 문법 대신 pm.sendRequest를 사용합니다.',

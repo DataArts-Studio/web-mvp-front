@@ -61,8 +61,9 @@ function configureEditor(monaco: Monaco) {
 
 function expectedStatusForEndpoint(endpoint?: ApiEndpoint): number {
   if (!endpoint) return 200;
-  const explicit = endpoint.desc.match(/\b[1-5]\d{2}\b/)?.[0];
-  if (explicit) return Number(explicit);
+  const explicitStatuses = endpoint.desc.match(/\b[1-5]\d{2}\b/g)?.map(Number) ?? [];
+  const explicitSuccess = explicitStatuses.find((status) => status >= 200 && status < 300);
+  if (explicitSuccess) return explicitSuccess;
   if (endpoint.method === 'DELETE') return 204;
   if (endpoint.method === 'POST' && !endpoint.path.includes('/auth/')) return 201;
   return 200;
@@ -83,7 +84,9 @@ function starterForApi(apiBase: string, endpoints: ApiEndpoint[]): string {
   const method = first?.method ?? 'GET';
   const expectedStatus = expectedStatusForEndpoint(first);
   const bodyFields = first?.body?.length
-    ? Object.fromEntries(first.body.map((field) => [field.path, defaultBodyValue(field.type)]))
+    ? Object.fromEntries(
+        first.body.map((field) => [field.path, field.example ?? defaultBodyValue(field.type)])
+      )
     : null;
   const bodyLine = bodyFields
     ? `  body: JSON.stringify(${JSON.stringify(bodyFields, null, 2).replace(/\n/g, '\n  ')}),\n`

@@ -322,6 +322,21 @@ test('function callback', async function ({ page }) {
     expect(r).toBeNull();
   });
 
+  it('return await로 호출한 async helper의 액션과 단언은 인정한다', () => {
+    const code = `import { test, expect } from '@playwright/test';
+async function login(page) {
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('login-success')).toBeVisible();
+}
+test('return await helper login', async ({ page }) => {
+  return await login(page);
+});`;
+
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).toBeNull();
+  });
   it('async helper를 await 없이 호출하면 helper 단언을 인정하지 않는다', () => {
     const code = `import { test, expect } from '@playwright/test';
 async function login(page) {

@@ -406,36 +406,66 @@ function hasRequiredRequestDetails(block: string, target: ApiTargetForGrade): bo
   return hasAuth && hasBody;
 }
 
-function hasRequestCall(code: string, target: ApiTargetForGrade): boolean {
+function requestBlockHasMethodAndPath(block: string, target: ApiTargetForGrade): boolean {
   const method = target.method.toUpperCase();
   const methodPattern = new RegExp(
     String.raw`\bmethod\s*:\s*['"\`]${method}['"\`]|\bmethod\s*:\s*['"\`]${target.method.toLowerCase()}['"\`]`,
     'i'
   );
   const pathPattern = concretePathPattern(target.path);
+  const hasMethod = methodPattern.test(block) || (method === 'GET' && !/\bmethod\s*:/i.test(block));
 
-  return sendRequestBlocks(code).some(
-    (block) =>
-      methodPattern.test(block) &&
-      pathPattern.test(block) &&
-      hasRequiredRequestDetails(block, target)
+  return hasMethod && pathPattern.test(block);
+}
+
+function requestBlockMatchesTarget(block: string, target: ApiTargetForGrade): boolean {
+  return requestBlockHasMethodAndPath(block, target) && hasRequiredRequestDetails(block, target);
+}
+
+function matchingRequestBlocks(code: string, target: ApiTargetForGrade): string[] {
+  return sendRequestBlocks(code).filter((block) => requestBlockMatchesTarget(block, target));
+}
+
+function hasRequestCall(code: string, target: ApiTargetForGrade): boolean {
+  return matchingRequestBlocks(code, target).length > 0;
+}
+
+function hasStatusAssertionInCode(code: string, status: number): boolean {
+  const statusText = String(status);
+  const expectStatus = new RegExp(
+    String.raw`pm\.expect\s*\(\s*(?:res|response|pm\.response)\.(?:code|status)\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|above|below)\s*\(\s*${statusText}\s*\)`,
+    'i'
   );
+  const responseHaveStatus = new RegExp(
+    String.raw`pm\.response\.to\.have\.status\s*\(\s*${statusText}\s*\)`,
+    'i'
+  );
+  return expectStatus.test(code) || responseHaveStatus.test(code);
 }
 
 function hasExpectedStatusInCode(code: string, statuses: Set<number>): boolean {
   if (statuses.size === 0) return false;
-  return [...statuses].some((status) => {
-    const statusText = String(status);
-    const expectStatus = new RegExp(
-      String.raw`pm\.expect\s*\(\s*(?:res|response|pm\.response)\.(?:code|status)\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.(?:eql|equal|above|below)\s*\(\s*${statusText}\s*\)`,
-      'i'
-    );
-    const responseHaveStatus = new RegExp(
-      String.raw`pm\.response\.to\.have\.status\s*\(\s*${statusText}\s*\)`,
-      'i'
-    );
-    return expectStatus.test(code) || responseHaveStatus.test(code);
-  });
+  return [...statuses].some((status) => hasStatusAssertionInCode(code, status));
+}
+
+function hasExpectedStatusForTarget(
+  code: string,
+  target: ApiTargetForGrade,
+  status: number
+): boolean {
+  const blocks =
+    status === 401
+      ? sendRequestBlocks(code).filter((block) => requestBlockHasMethodAndPath(block, target))
+      : matchingRequestBlocks(code, target);
+  return blocks.some((block) => hasStatusAssertionInCode(block, status));
+}
+
+function hasEveryExpectedStatusForTarget(
+  code: string,
+  target: ApiTargetForGrade,
+  statuses: Set<number>
+): boolean {
+  return [...statuses].every((status) => hasExpectedStatusForTarget(code, target, status));
 }
 
 function hasJsonBodyAssertionInCode(code: string): boolean {
@@ -454,11 +484,25 @@ function hasJsonBodyAssertionInCode(code: string): boolean {
 
   return aliases.some((alias) => {
     const escapedAlias = escapeRegExp(alias);
-    return new RegExp(
-      String.raw`pm\.expect\s*\(\s*${escapedAlias}(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])+`,
+    const aliasPathAssert = new RegExp(
+      String.raw`pm\.expect\s*\(\s*${escapedAlias}(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])+\s*\)\s*${matcherChain}`,
       'i'
     ).test(code);
+    const aliasPropertyAssert = new RegExp(
+      String.raw`pm\.expect\s*\(\s*${escapedAlias}\s*\)\s*(?:\.to|\.be|\.that|\.have)*\s*\.property\s*\(`,
+      'i'
+    ).test(code);
+    return aliasPathAssert || aliasPropertyAssert;
   });
+}
+
+function targetRequiresBodyAssertion(target: ApiTargetForGrade): boolean {
+  const expected = expectedStatusesForTarget(target);
+  return [...expected.success].some((status) => status !== 204) || expected.failure.size > 0;
+}
+
+function hasBodyAssertionForTarget(code: string, target: ApiTargetForGrade): boolean {
+  return matchingRequestBlocks(code, target).some((block) => hasJsonBodyAssertionInCode(block));
 }
 
 function hasApiCodeShape(code: string): boolean {
@@ -477,13 +521,13 @@ export function gradeApiCodeSubmission(code: string, options?: ApiGradeOptions):
       points: 20,
       pass:
         hasApiCodeShape(executableCode) &&
-        targets.some((target) => {
-          const expected = expectedStatusesForTarget(target).success;
-          return (
-            hasRequestCall(executableCode, target) &&
-            hasExpectedStatusInCode(executableCode, expected)
-          );
-        }),
+        targets.every((target) =>
+          hasEveryExpectedStatusForTarget(
+            executableCode,
+            target,
+            expectedStatusesForTarget(target).success
+          )
+        ),
     },
     {
       id: 'failure-path',
@@ -491,14 +535,13 @@ export function gradeApiCodeSubmission(code: string, options?: ApiGradeOptions):
       pass:
         !hasFailureTarget ||
         (hasApiCodeShape(executableCode) &&
-          targets.some((target) => {
-            const expected = expectedStatusesForTarget(target).failure;
-            return (
-              expected.size > 0 &&
-              hasRequestCall(executableCode, target) &&
-              hasExpectedStatusInCode(executableCode, expected)
-            );
-          })),
+          targets.every((target) =>
+            hasEveryExpectedStatusForTarget(
+              executableCode,
+              target,
+              expectedStatusesForTarget(target).failure
+            )
+          )),
     },
     {
       id: 'request-coverage',
@@ -513,7 +556,12 @@ export function gradeApiCodeSubmission(code: string, options?: ApiGradeOptions):
     {
       id: 'body-assertion',
       points: 20,
-      pass: hasJsonBodyAssertionInCode(executableCode),
+      pass:
+        targets.length > 0
+          ? targets
+              .filter(targetRequiresBodyAssertion)
+              .every((target) => hasBodyAssertionForTarget(executableCode, target))
+          : hasJsonBodyAssertionInCode(executableCode),
     },
   ];
   const score = cases.filter((item) => item.pass).reduce((sum, item) => sum + item.points, 0);

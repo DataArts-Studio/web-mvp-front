@@ -703,6 +703,8 @@ function ApiDocsPanel({
     </div>
   );
 }
+const DEMO_TOKEN = 'qaground-demo-token';
+
 let nextId = 2;
 let nextHeaderId = 2;
 
@@ -731,7 +733,9 @@ export const ApiTesterExercise = ({
   const [method, setMethod] = useState<Method>(selectedCase?.method ?? 'GET');
   const [path, setPath] = useState(selectedCase?.path ?? '/products?page=1&limit=5');
   const [authType, setAuthType] = useState<AuthKind>(selectedCase?.authType ?? 'bearer');
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(() =>
+    isPlayground && selectedCase?.authType === 'bearer' ? DEMO_TOKEN : ''
+  );
   const [headerRows, setHeaderRows] = useState<HeaderRow[]>([
     { id: 1, key: 'x-qaground-signature', value: '', enabled: true },
   ]);
@@ -799,6 +803,9 @@ export const ApiTesterExercise = ({
     setMethod(requestCase.method);
     setPath(requestCase.path);
     setAuthType(requestCase.authType ?? 'bearer');
+    if (isPlayground && requestCase.authType === 'bearer') {
+      setToken((current) => current.trim() || DEMO_TOKEN);
+    }
     setBody(requestCase.body ?? '');
   };
 
