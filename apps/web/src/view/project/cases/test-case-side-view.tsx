@@ -10,21 +10,19 @@ import { ArchiveButton } from '@/features/archive/ui/archive-button';
 import { TestCaseEditForm } from '@/features/cases-edit';
 import { testCaseByIdQueryOptions } from '@/features/cases-list';
 import { useVersionsList } from '@/features/version-timeline';
-// import { SaveAsTemplateModal } from '@/features/templates-save-from-case'; // 템플릿 기능 펜딩
 import { testSuitesQueryOptions } from '@/widgets';
 import { useQuery } from '@tanstack/react-query';
 import { DSButton } from '@testea/ui';
 import { formatDateKR, formatRelativeTime } from '@testea/util';
+import { motion } from 'framer-motion';
 import {
   Calendar,
   Clock,
-  Copy,
   Edit2,
+  ExternalLink,
   Flag,
   FolderOpen,
   History,
-  Maximize2,
-  Play,
   Tag,
   X,
 } from 'lucide-react';
@@ -34,9 +32,14 @@ interface TestCaseSideViewProps {
   onClose: () => void;
 }
 
+type MetaItem = {
+  label: string;
+  value: React.ReactNode;
+  icon?: React.ComponentType<{ className?: string }>;
+};
+
 export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideViewProps) => {
   const t = useTranslations('cases');
-  // 목록 데이터에서 빠진 상세 필드(steps, preCondition, expectedResult)를 별도 조회
   const { data: detailData, isLoading: isDetailLoading } = useQuery({
     ...testCaseByIdQueryOptions(listItem?.id ?? ''),
     enabled: !!listItem?.id,
@@ -46,12 +49,10 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
     : listItem
       ? ({ ...listItem, preCondition: '', testSteps: '', expectedResult: '' } as TestCase)
       : undefined;
-  // 상세 데이터 로딩 중인지 여부 (fallback 빈 데이터와 실제 빈 데이터를 구분)
   const isStepsLoading = !!listItem?.id && isDetailLoading;
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);
-  // const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false); // 템플릿 기능 펜딩
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(testCase?.projectId || ''),
@@ -65,10 +66,6 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
   const latestVersion = versions[0];
   const versionCount = versionsData?.success ? versionsData.data.total : 0;
 
-  const handleRunTest = () => {
-    router.push(`/projects/${params.slug}/runs/create`);
-  };
-
   const handleEdit = () => {
     setIsEditOpen(true);
   };
@@ -77,157 +74,197 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
     setIsEditOpen(false);
   };
 
+  const metaItems: MetaItem[] = [
+    {
+      label: t('ui.testType'),
+      value: testCase?.testType || t('ui.emptyValue'),
+      icon: Flag,
+    },
+    {
+      label: t('ui.suites'),
+      value: currentSuite?.title || t('ui.noSuite'),
+      icon: FolderOpen,
+    },
+    {
+      label: t('ui.createdAt', { date: '' }),
+      value: formatDateKR(testCase?.createdAt),
+      icon: Calendar,
+    },
+    {
+      label: t('ui.estimatedTime'),
+      value: t('ui.emptyValue'),
+      icon: Clock,
+    },
+  ];
+
+  if (latestVersion) {
+    metaItems.push({
+      label: t('ui.versionHistory'),
+      value: (
+        <span className="flex items-center gap-1.5">
+          <span>v{latestVersion.versionNumber}</span>
+          {versionCount > 0 && <span className="text-text-4 text-xs">{versionCount}</span>}
+        </span>
+      ),
+      icon: History,
+    });
+  }
+
   return (
     <>
-      {/* 배경 오버레이 - 클릭 시 사이드뷰 닫힘 */}
-      <div
+      <motion.div
         role="button"
         tabIndex={-1}
         onKeyDown={(e) => {
           if (e.key === 'Escape') onClose();
         }}
-        className="fixed inset-0 z-40 bg-black/50"
+        className="fixed inset-0 z-40 bg-black/30"
         onClick={onClose}
         aria-hidden="true"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.16, ease: 'easeOut' }}
       />
-      <section className="bg-bg-1 border-bg-4 fixed top-0 right-0 z-50 h-full w-[600px] overflow-y-auto border-l p-4">
-        <div className="flex flex-col gap-6">
-          <header className="flex flex-col gap-2">
-            <div className="flex justify-between">
-              <DSButton size="small" variant="ghost" className="px-2" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </DSButton>
-              <div className="flex gap-1">
-                <DSButton
-                  size="small"
-                  variant="ghost"
-                  className="px-2"
-                  onClick={() => {
-                    if (testCase) {
-                      router.push(`/projects/${params.slug}/cases/${testCase.id}`);
-                    }
-                  }}
-                  disabled={!testCase}
-                  title={t('ui.openDetailPage')}
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </DSButton>
-                <DSButton
-                  size="small"
-                  variant="ghost"
-                  className="flex items-center gap-1 px-2"
-                  onClick={handleEdit}
-                  disabled={!testCase || isStepsLoading}
-                >
-                  <Edit2 className="h-4 w-4" />
-                  <span>{t('ui.edit')}</span>
-                </DSButton>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-primary text-xl font-semibold">
+      <motion.section
+        className="bg-bg-1 border-line-2 fixed top-0 right-0 z-50 flex h-full w-[min(920px,calc(100vw-48px))] flex-col border-l shadow-[-16px_0_40px_rgba(15,23,42,0.12)]"
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', stiffness: 420, damping: 38, mass: 0.9 }}
+      >
+        <header className="border-line-2 flex shrink-0 items-start justify-between gap-4 border-b px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-center gap-2 text-sm">
+              <span className="text-primary font-semibold">
                 {testCase?.caseKey || t('ui.defaultCaseKey')}
               </span>
-              <span className="flex items-center gap-1">
-                <Flag className="h-4 w-4" />
+              <span className="text-text-4">/</span>
+              <span className="text-text-3 truncate">{currentSuite?.title || t('ui.noSuite')}</span>
+            </div>
+            <h2 className="text-text-1 line-clamp-2 text-xl leading-7 font-semibold">
+              {testCase?.title || t('ui.defaultCaseTitle')}
+            </h2>
+            <div className="text-text-3 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span className="flex items-center gap-1.5">
+                <Flag className="h-3.5 w-3.5" />
                 {testCase?.testType || t('ui.emptyValue')}
               </span>
-            </div>
-            <h2 className="text-xl">{testCase?.title || t('ui.defaultCaseTitle')}</h2>
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
-              <div className="text-text-3 flex items-center gap-1 text-sm">
-                <FolderOpen className="h-4 w-4" />
-                <span>{currentSuite?.title || t('ui.noSuite')}</span>
-              </div>
-              <div className="text-text-3 flex items-center gap-1 text-sm">
-                <Calendar className="h-4 w-4" />
-                <span>{formatDateKR(testCase?.createdAt)}</span>
-              </div>
               {latestVersion && (
-                <div className="text-text-3 flex items-center gap-1 text-sm">
-                  <History className="h-4 w-4" />
-                  <span>
-                    {t('ui.lastUpdated', { date: formatRelativeTime(latestVersion.createdAt) })}
-                  </span>
-                  {versionCount > 0 && (
-                    <span className="bg-primary/10 text-primary ml-1 rounded-full px-1.5 py-0.5 text-xs font-medium">
-                      v{latestVersion.versionNumber}
-                    </span>
-                  )}
-                </div>
+                <span className="flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5" />
+                  {t('ui.lastUpdated', { date: formatRelativeTime(latestVersion.createdAt) })}
+                </span>
               )}
             </div>
-          </header>
-          {/* 태그 */}
-          <div className="flex flex-wrap gap-2">
-            <h3 className="text-text-3 flex items-center gap-1">
-              <Tag className="h-4 w-4" />
-              Tags
-            </h3>
-            {testCase?.tags && testCase.tags.length > 0 ? (
-              testCase.tags.map((tag, index) => (
-                <span key={index} className="bg-bg-3 rounded-2 px-2 py-1 text-sm">
-                  {tag}
-                </span>
-              ))
-            ) : (
-              <span className="text-text-3 text-sm">{t('ui.noTags')}</span>
-            )}
           </div>
-          {/* 사이드뷰 본문 */}
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-text-3 text-lg font-semibold">{t('ui.preconditions')}</h3>
-              <SideStepsList
-                steps={testCase?.preCondition}
-                emptyText={t('ui.noPreconditions')}
-                isLoading={isStepsLoading}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-text-3 text-lg font-semibold">{t('ui.testSteps')}</h3>
-              <SideStepsList
-                steps={testCase?.testSteps}
-                emptyText={t('ui.noTestSteps')}
-                isLoading={isStepsLoading}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-text-3 text-lg font-semibold">{t('ui.expectedResults')}</h3>
-              <SideStepsList
-                steps={testCase?.expectedResult}
-                emptyText={t('ui.noExpectedResults')}
-                isLoading={isStepsLoading}
-              />
-            </div>
-          </div>
-          {/* 테스트 정보 */}
-          <div className="flex gap-2">
-            <div className="bg-bg-2 border-line-2 rounded-4 flex-1 border p-4">
-              <h3 className="text-text-3 mb-1">{t('ui.testType')}</h3>
-              <p>{testCase?.testType || t('ui.emptyValue')}</p>
-            </div>
-            <div className="bg-bg-2 border-line-2 rounded-4 flex-1 border p-4">
-              <h3 className="text-text-3 mb-1">{t('ui.estimatedTime')}</h3>
-              <div className="flex items-center gap-2">
-                <Clock className="text-primary h-4 w-4" />
-                <span>{t('ui.emptyValue')}</span>
-              </div>
-            </div>
-          </div>
-          {/* 테스트 실행 */}
-          <div className="flex gap-2">
-            <DSButton className="flex flex-1 items-center gap-2" onClick={handleRunTest}>
-              <Play className="h-4 w-4" />
-              {t('ui.runTest')}
+
+          <div className="flex shrink-0 items-center gap-1">
+            <DSButton
+              size="small"
+              variant="ghost"
+              className="px-2"
+              onClick={() => {
+                if (testCase) {
+                  router.push(`/projects/${params.slug}/cases/${testCase.id}`);
+                }
+              }}
+              disabled={!testCase}
+              title={t('ui.openDetailPage')}
+            >
+              <ExternalLink className="h-4 w-4" />
             </DSButton>
-            {/* TODO: 복사 기능 일시 비활성화
-          <DSButton variant="ghost" className="flex items-center gap-2">
-            <Copy className="h-4 w-4" />
-            Copy
-          </DSButton>
-          */}
-            {/* 템플릿 기능 펜딩 */}
+
+            <DSButton size="small" variant="ghost" className="px-2" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </DSButton>
+          </div>
+        </header>
+
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_280px]">
+          <main className="min-w-0 overflow-y-auto px-5 py-4">
+            <div className="flex flex-col gap-5">
+              <ContentSection title={t('ui.preconditions')}>
+                <SideStepsList
+                  steps={testCase?.preCondition}
+                  emptyText={t('ui.noPreconditions')}
+                  isLoading={isStepsLoading}
+                />
+              </ContentSection>
+
+              <ContentSection title={t('ui.testSteps')}>
+                <SideStepsList
+                  steps={testCase?.testSteps}
+                  emptyText={t('ui.noTestSteps')}
+                  isLoading={isStepsLoading}
+                  ordered
+                />
+              </ContentSection>
+
+              <ContentSection title={t('ui.expectedResults')}>
+                <SideStepsList
+                  steps={testCase?.expectedResult}
+                  emptyText={t('ui.noExpectedResults')}
+                  isLoading={isStepsLoading}
+                />
+              </ContentSection>
+            </div>
+          </main>
+
+          <aside className="bg-bg-2/60 border-line-2 min-w-0 overflow-y-auto border-t px-4 py-4 lg:border-t-0 lg:border-l">
+            <div className="flex flex-col gap-5">
+              <section>
+                <h3 className="text-text-4 mb-2 text-xs font-semibold tracking-[0.08em] uppercase">
+                  {t('ui.details')}
+                </h3>
+                <dl className="border-line-2 divide-line-2 overflow-hidden border-y">
+                  {metaItems.map((item) => (
+                    <MetaRow key={item.label} item={item} />
+                  ))}
+                </dl>
+              </section>
+
+              <section>
+                <h3 className="text-text-4 mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-[0.08em] uppercase">
+                  <Tag className="h-3.5 w-3.5" />
+                  {t('ui.tags')}
+                </h3>
+                {testCase?.tags && testCase.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {testCase.tags.map((tag, index) => (
+                      <span
+                        key={`${tag}-${index}`}
+                        className="border-line-2 bg-bg-1 text-text-2 rounded-sm border px-2 py-1 text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-text-4 border-line-2 border-y py-3 text-sm">
+                    {t('ui.noTags')}
+                  </p>
+                )}
+              </section>
+            </div>
+          </aside>
+        </div>
+
+        <footer className="border-line-2 bg-bg-1 flex shrink-0 items-center justify-between gap-2 border-t px-5 py-3">
+          <div className="text-text-4 min-w-0 truncate text-xs">
+            {testCase?.id || t('ui.emptyValue')}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <DSButton
+              size="small"
+              variant="ghost"
+              className="flex items-center gap-1.5 px-2"
+              onClick={handleEdit}
+              disabled={!testCase || isStepsLoading}
+            >
+              <Edit2 className="h-4 w-4" />
+              <span>{t('ui.edit')}</span>
+            </DSButton>
             {testCase && (
               <ArchiveButton
                 targetType="case"
@@ -237,8 +274,8 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
               />
             )}
           </div>
-        </div>
-      </section>
+        </footer>
+      </motion.section>
       {isEditOpen && detailData?.success && (
         <TestCaseEditForm
           testCase={detailData.data}
@@ -246,23 +283,47 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
           onSuccess={handleEditClose}
         />
       )}
-      {/* 템플릿 기능 펜딩 */}
     </>
   );
 };
 
+function ContentSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="border-line-2 min-w-0 border-t pt-3">
+      <h3 className="text-text-2 mb-2 text-sm font-semibold">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function MetaRow({ item }: { item: MetaItem }) {
+  const Icon = item.icon;
+
+  return (
+    <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3 py-3 text-sm">
+      <dt className="text-text-4 flex items-center gap-1.5">
+        {Icon && <Icon className="h-3.5 w-3.5" />}
+        <span>{item.label}</span>
+      </dt>
+      <dd className="text-text-1 min-w-0 font-medium break-words">{item.value}</dd>
+    </div>
+  );
+}
+
 function SideStepsList({
   steps,
-  emptyText = '항목이 없습니다.',
+  emptyText = 'No items.',
   isLoading = false,
+  ordered = false,
 }: {
   steps?: string;
   emptyText?: string;
   isLoading?: boolean;
+  ordered?: boolean;
 }) {
   if (isLoading) {
     return (
-      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
+      <div className="py-2">
         <div className="flex flex-col gap-2">
           <div className="bg-bg-3 h-4 w-3/4 animate-pulse rounded" />
           <div className="bg-bg-3 h-4 w-1/2 animate-pulse rounded" />
@@ -273,8 +334,8 @@ function SideStepsList({
 
   if (!steps?.trim()) {
     return (
-      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-        <p className="whitespace-pre-wrap">{emptyText}</p>
+      <div className="py-2">
+        <p className="text-text-4 text-sm whitespace-pre-wrap">{emptyText}</p>
       </div>
     );
   }
@@ -284,24 +345,22 @@ function SideStepsList({
 
   if (!hasContent) {
     return (
-      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-        <p className="whitespace-pre-wrap">{emptyText}</p>
+      <div className="py-2">
+        <p className="text-text-4 text-sm whitespace-pre-wrap">{emptyText}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
-      <ol className="divide-line-2 divide-y">
-        {parsed.map((step, i) => (
-          <li key={i} className="flex items-start gap-3 px-4 py-2.5">
-            <span className="bg-primary/10 text-primary mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium">
-              {i + 1}
-            </span>
-            <p className="text-text-1 text-sm whitespace-pre-wrap">{step || '-'}</p>
-          </li>
-        ))}
-      </ol>
-    </div>
+    <ol className="divide-line-2 divide-y">
+      {parsed.map((step, i) => (
+        <li key={i} className="grid grid-cols-[32px_minmax(0,1fr)] gap-3 py-3 text-sm">
+          <span className="text-text-4 font-mono text-xs leading-5">
+            {ordered ? String(i + 1).padStart(2, '0') : '-'}
+          </span>
+          <p className="text-text-1 min-w-0 whitespace-pre-wrap">{step || '-'}</p>
+        </li>
+      ))}
+    </ol>
   );
 }

@@ -26,12 +26,17 @@ import {
   Flag,
   FolderOpen,
   History,
-  Play,
   Tag,
   XCircle,
 } from 'lucide-react';
 
 type DetailTab = 'details' | 'versions';
+
+type MetaItem = {
+  label: string;
+  value: React.ReactNode;
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+};
 
 export const TestCaseDetailView = () => {
   const params = useParams();
@@ -59,10 +64,6 @@ export const TestCaseDetailView = () => {
   const suites = suitesData?.success ? suitesData.data : [];
   const currentSuite = suites.find((s) => s.id === testCase?.testSuiteId);
 
-  const handleRunTest = () => {
-    router.push(`/projects/${projectSlug}/runs/create`);
-  };
-
   if (isLoading) {
     return (
       <MainContainer className="flex flex-1 items-center justify-center">
@@ -85,30 +86,46 @@ export const TestCaseDetailView = () => {
     );
   }
 
+  const typeLabel = testCase.testType ? getTestTypeLabel(testCase.testType) : t('ui.emptyValue');
+  const metaItems: MetaItem[] = [
+    {
+      label: t('ui.suites'),
+      value: currentSuite?.title || t('ui.noSuite'),
+      icon: FolderOpen,
+    },
+    {
+      label: t('ui.testType'),
+      value: typeLabel,
+      icon: Flag,
+    },
+    {
+      label: t('ui.createdAt', { date: '' }),
+      value: formatDateTime(testCase.createdAt),
+      icon: Calendar,
+    },
+    {
+      label: t('ui.updatedAt', { date: '' }),
+      value: formatDateTime(testCase.updatedAt),
+      icon: Clock,
+    },
+  ];
+
   return (
-    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
-      {/* 뒤로가기 + 헤더 */}
-      <header className="col-span-6 flex flex-col gap-4">
-        <Link
-          href={`/projects/${projectSlug}/cases`}
-          className="text-text-3 hover:text-text-1 flex w-fit items-center gap-1 text-sm transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t('ui.backToCaseList')}
-        </Link>
-
-        <div className="flex items-start justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <span className="text-primary text-xl font-semibold">{testCase.caseKey}</span>
-              <h1 className="typo-title-heading">{testCase.title}</h1>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
+    <MainContainer className="bg-bg-2/40 min-h-screen w-full flex-1 overflow-y-auto px-4 py-4">
+      <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={`/projects/${projectSlug}/cases`}
+            className="text-text-3 hover:text-text-1 flex w-fit items-center gap-1.5 text-sm transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t('ui.backToCaseList')}
+          </Link>
+          <div className="flex shrink-0 items-center gap-2">
             <DSButton
+              size="small"
               variant="ghost"
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5"
               onClick={() => setIsEditing(true)}
             >
               <Edit2 className="h-4 w-4" />
@@ -121,154 +138,191 @@ export const TestCaseDetailView = () => {
             />
           </div>
         </div>
-      </header>
 
-      {/* 메타 정보 */}
-      <section className="col-span-6 flex flex-wrap items-center gap-4">
-        <div className="text-text-3 flex items-center gap-1.5 text-sm">
-          <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-          <span>{currentSuite?.title || t('ui.noSuite')}</span>
-        </div>
-        <div className="text-text-3 flex items-center gap-1.5 text-sm">
-          <Flag className="h-4 w-4" strokeWidth={1.5} />
-          <span>
-            {testCase.testType ? getTestTypeLabel(testCase.testType) : t('ui.emptyValue')}
-          </span>
-        </div>
-        <div className="text-text-3 flex items-center gap-1.5 text-sm">
-          <Calendar className="h-4 w-4" strokeWidth={1.5} />
-          <span>{t('ui.createdAt', { date: formatDateTime(testCase.createdAt) })}</span>
-        </div>
-        <div className="text-text-3 flex items-center gap-1.5 text-sm">
-          <Clock className="h-4 w-4" strokeWidth={1.5} />
-          <span>{t('ui.updatedAt', { date: formatDateTime(testCase.updatedAt) })}</span>
-        </div>
-      </section>
+        <header className="border-line-2 bg-bg-1 border px-4 py-3">
+          <div className="mb-1.5 flex min-w-0 items-center gap-2 text-sm">
+            <span className="text-primary font-semibold">{testCase.caseKey}</span>
+            <span className="text-text-4">/</span>
+            <span className="text-text-3 truncate">{currentSuite?.title || t('ui.noSuite')}</span>
+          </div>
+          <h1 className="text-text-1 text-xl leading-7 font-semibold">{testCase.title}</h1>
+        </header>
 
-      {/* 탭 네비게이션 */}
-      <nav className="border-line-2 col-span-6 flex gap-0 border-b">
-        <button
-          className={`px-4 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === 'details'
-              ? 'text-primary border-primary border-b-2'
-              : 'text-text-3 hover:text-text-1'
-          }`}
-          onClick={() => setActiveTab('details')}
-        >
-          {t('ui.details')}
-        </button>
-        <button
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === 'versions'
-              ? 'text-primary border-primary border-b-2'
-              : 'text-text-3 hover:text-text-1'
-          }`}
-          onClick={() => setActiveTab('versions')}
-        >
-          <History className="h-4 w-4" />
-          {t('ui.versionHistory')}
-        </button>
-      </nav>
+        <nav className="border-line-2 bg-bg-1 flex border-x border-t">
+          <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>
+            {t('ui.details')}
+          </TabButton>
+          <TabButton active={activeTab === 'versions'} onClick={() => setActiveTab('versions')}>
+            <History className="h-4 w-4" />
+            {t('ui.versionHistory')}
+          </TabButton>
+        </nav>
 
-      {/* 탭 콘텐츠 */}
-      {activeTab === 'details' && (
-        <>
-          {/* 태그 */}
-          <section className="col-span-6 flex flex-wrap items-center gap-2">
-            <span className="text-text-3 flex items-center gap-1 text-sm">
-              <Tag className="h-4 w-4" />
-              Tags
-            </span>
-            {testCase.tags && testCase.tags.length > 0 ? (
-              testCase.tags.map((tag, index) => (
-                <span key={index} className="bg-bg-3 rounded-2 px-2 py-1 text-sm">
-                  {tag}
-                </span>
-              ))
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <main className="min-w-0">
+            {activeTab === 'details' ? (
+              <div className="flex flex-col gap-3">
+                <ContentPanel title={t('ui.preconditions')}>
+                  <StepsList steps={testCase.preCondition} emptyText={t('ui.noPreconditions')} />
+                </ContentPanel>
+
+                <ContentPanel title={t('ui.testSteps')}>
+                  <StepsList steps={testCase.testSteps} emptyText={t('ui.noTestSteps')} ordered />
+                </ContentPanel>
+
+                <ContentPanel title={t('ui.expectedResults')}>
+                  <StepsList
+                    steps={testCase.expectedResult}
+                    emptyText={t('ui.noExpectedResults')}
+                  />
+                </ContentPanel>
+
+                <PlainPanel>
+                  <AttachmentSection testCaseId={testCase.id} projectId={testCase.projectId} />
+                </PlainPanel>
+
+                <PlainPanel>
+                  <ExternalLinksSection
+                    testCaseId={testCase.id}
+                    projectId={testCase.projectId}
+                    testCaseName={testCase.title}
+                    displayId={testCase.displayId}
+                    resultStatus={testCase.resultStatus}
+                  />
+                </PlainPanel>
+              </div>
             ) : (
-              <span className="text-text-3 text-sm">{t('ui.noTags')}</span>
+              <div className="border-line-2 bg-bg-1 border px-4 py-3">
+                <VersionHistoryTab testCaseId={testCase.id} />
+              </div>
             )}
-          </section>
+          </main>
 
-          {/* 전제 조건 */}
-          <section className="col-span-6 flex flex-col gap-2">
-            <h2 className="typo-h2-heading">{t('ui.preconditions')}</h2>
-            <StepsList steps={testCase.preCondition} emptyText={t('ui.noPreconditions')} />
-          </section>
+          <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
+            <div className="border-line-2 bg-bg-1 border">
+              <section>
+                <h2 className="bg-bg-3 border-line-2 text-text-2 border-b px-3 py-2 text-xs font-semibold tracking-[0.08em] uppercase">
+                  {t('ui.details')}
+                </h2>
+                <dl className="divide-line-2 divide-y">
+                  {metaItems.map((item) => (
+                    <MetaRow key={item.label} item={item} />
+                  ))}
+                </dl>
+              </section>
 
-          {/* 테스트 단계 */}
-          <section className="col-span-6 flex flex-col gap-2">
-            <h2 className="typo-h2-heading">{t('ui.testSteps')}</h2>
-            <StepsList steps={testCase.testSteps} emptyText={t('ui.noTestSteps')} />
-          </section>
-
-          {/* 예상 결과 */}
-          <section className="col-span-6 flex flex-col gap-2">
-            <h2 className="typo-h2-heading">{t('ui.expectedResults')}</h2>
-            <StepsList steps={testCase.expectedResult} emptyText={t('ui.noExpectedResults')} />
-          </section>
-
-          {/* 첨부파일 */}
-          <AttachmentSection testCaseId={testCase.id} projectId={testCase.projectId} />
-
-          {/* GitHub 연결 */}
-          <section className="col-span-6 flex flex-col gap-2">
-            <ExternalLinksSection
-              testCaseId={testCase.id}
-              projectId={testCase.projectId}
-              testCaseName={testCase.title}
-              displayId={testCase.displayId}
-              resultStatus={testCase.resultStatus}
-            />
-          </section>
-
-          {/* 액션 버튼 */}
-          <section className="col-span-6">
-            <DSButton className="flex items-center gap-2" onClick={handleRunTest}>
-              <Play className="h-4 w-4" />
-              {t('ui.runTestCreate')}
-            </DSButton>
-          </section>
-        </>
-      )}
-
-      {activeTab === 'versions' && <VersionHistoryTab testCaseId={testCase.id} />}
+              <section className="border-line-2 border-t">
+                <h2 className="bg-bg-3 border-line-2 text-text-2 flex items-center gap-1.5 border-b px-3 py-2 text-xs font-semibold tracking-[0.08em] uppercase">
+                  <Tag className="h-3.5 w-3.5" />
+                  {t('ui.tags')}
+                </h2>
+                {testCase.tags && testCase.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 px-3 py-3">
+                    {testCase.tags.map((tag, index) => (
+                      <span
+                        key={`${tag}-${index}`}
+                        className="border-line-2 bg-bg-1 text-text-2 rounded-sm border px-2 py-1 text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-text-4 px-3 py-3 text-sm">{t('ui.noTags')}</p>
+                )}
+              </section>
+            </div>
+          </aside>
+        </div>
+      </div>
 
       {isEditing && <TestCaseEditForm testCase={testCase} onClose={() => setIsEditing(false)} />}
     </MainContainer>
   );
 };
 
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      className={`border-line-2 flex items-center gap-1.5 border-r px-4 py-2.5 text-sm font-medium transition-colors ${
+        active
+          ? 'bg-bg-1 text-primary border-t-primary border-t-2'
+          : 'bg-bg-2 text-text-3 hover:text-text-1'
+      }`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ContentPanel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="border-line-2 bg-bg-1 border">
+      <h2 className="bg-bg-3 border-line-2 text-text-2 border-b px-3 py-2 text-sm font-semibold">
+        {title}
+      </h2>
+      <div className="px-3 py-1">{children}</div>
+    </section>
+  );
+}
+
+function PlainPanel({ children }: { children: React.ReactNode }) {
+  return <div className="border-line-2 bg-bg-1 border px-3 py-3">{children}</div>;
+}
+
+function MetaRow({ item }: { item: MetaItem }) {
+  const Icon = item.icon;
+
+  return (
+    <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 px-3 py-2.5 text-sm">
+      <dt className="text-text-4 flex items-center gap-1.5">
+        {Icon && <Icon className="h-3.5 w-3.5" strokeWidth={1.5} />}
+        <span>{item.label}</span>
+      </dt>
+      <dd className="text-text-1 min-w-0 font-medium break-words">{item.value}</dd>
+    </div>
+  );
+}
+
 function StepsList({
   steps,
-  emptyText = '항목이 없습니다.',
+  emptyText = 'No items.',
+  ordered = false,
 }: {
   steps: string;
   emptyText?: string;
+  ordered?: boolean;
 }) {
   const parsed = parseSteps(steps);
   const hasContent = parsed.some((s) => s.trim());
 
   if (!hasContent) {
     return (
-      <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-        <p className="text-text-2">{emptyText}</p>
+      <div className="py-2">
+        <p className="text-text-4 text-sm whitespace-pre-wrap">{emptyText}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
-      <ol className="divide-line-2 divide-y">
-        {parsed.map((step, i) => (
-          <li key={i} className="flex items-start gap-3 px-4 py-3">
-            <span className="bg-primary/10 text-primary mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium">
-              {i + 1}
-            </span>
-            <p className="text-text-1 text-sm whitespace-pre-wrap">{step || '-'}</p>
-          </li>
-        ))}
-      </ol>
-    </div>
+    <ol className="divide-line-2 divide-y">
+      {parsed.map((step, i) => (
+        <li key={i} className="grid grid-cols-[32px_minmax(0,1fr)] gap-3 py-2.5 text-sm">
+          <span className="text-text-4 font-mono text-xs leading-5">
+            {ordered ? String(i + 1).padStart(2, '0') : '-'}
+          </span>
+          <p className="text-text-1 min-w-0 whitespace-pre-wrap">{step || '-'}</p>
+        </li>
+      ))}
+    </ol>
   );
 }
