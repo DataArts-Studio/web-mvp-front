@@ -10,7 +10,6 @@ import { useRerunRun } from '@/features/runs-edit';
 import { TESTRUN_EVENTS, track } from '@/shared/lib/analytics';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MainContainer } from '@testea/ui';
-import { DSButton } from '@testea/ui';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -52,7 +51,9 @@ export const TestRunsListView = () => {
   const { data: projectIdData } = useQuery(projectIdQueryOptions(projectSlug));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
-  const { isLoading: isLoadingProject } = useQuery(dashboardQueryOptions.stats(projectSlug));
+  const { isLoading: isLoadingProject, refetch: refetchDashboard } = useQuery(
+    dashboardQueryOptions.stats(projectSlug)
+  );
 
   const {
     data: fetchedRunsData,
@@ -172,34 +173,42 @@ export const TestRunsListView = () => {
 
   return (
     <>
-      <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-8 overflow-hidden px-10 py-8">
-        <header className="border-line-2 col-span-6 flex items-start justify-between border-b pb-6">
-          <div className="flex flex-col gap-1">
-            <h2 className="typo-h1-heading text-text-1">테스트 실행 목록</h2>
+      <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-4 overflow-hidden px-10 py-8">
+        <header className="border-line-2 col-span-6 border-b pb-4">
+          <div className="min-w-0">
+            <h2 className="typo-title-heading text-text-1">테스트 실행 목록</h2>
             <p className="typo-body2-normal text-text-2">
-              프로젝트의 모든 테스트 실행(Test Run) 진행 상황을 확인하고 관리합니다.
+              프로젝트의 테스트 실행 진행 상황과 결과를 확인합니다.
             </p>
           </div>
-          <DSButton variant="solid" className="flex items-center gap-2" onClick={handleCreateRun}>
-            <Plus className="h-4 w-4" />
-            테스트 실행 생성
-          </DSButton>
         </header>
 
-        <RunsListToolbar
-          searchTerm={searchTerm}
-          onSearchChange={handleSearchChange}
-          statusFilter={statusFilter}
-          onStatusFilterChange={handleStatusFilterChange}
-          sortOption={sortOption}
-          onSortOptionChange={handleSortOptionChange}
-          isSortDropdownOpen={isSortDropdownOpen}
-          onSortDropdownToggle={handleSortDropdownToggle}
-          onSortDropdownClose={() => setIsSortDropdownOpen(false)}
-          isStatusDropdownOpen={isStatusDropdownOpen}
-          onStatusDropdownToggle={handleStatusDropdownToggle}
-          onStatusDropdownClose={() => setIsStatusDropdownOpen(false)}
-        />
+        <section className="bg-bg-1 col-span-6 py-3">
+          <div className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
+            <button
+              type="button"
+              onClick={handleCreateRun}
+              className="typo-body2-heading bg-primary hover:bg-primary/90 inline-flex h-9 shrink-0 items-center justify-center gap-2 px-3 text-white transition-colors"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              테스트 실행 생성
+            </button>
+            <RunsListToolbar
+              searchTerm={searchTerm}
+              onSearchChange={handleSearchChange}
+              statusFilter={statusFilter}
+              onStatusFilterChange={handleStatusFilterChange}
+              sortOption={sortOption}
+              onSortOptionChange={handleSortOptionChange}
+              isSortDropdownOpen={isSortDropdownOpen}
+              onSortDropdownToggle={handleSortDropdownToggle}
+              onSortDropdownClose={() => setIsSortDropdownOpen(false)}
+              isStatusDropdownOpen={isStatusDropdownOpen}
+              onStatusDropdownToggle={handleStatusDropdownToggle}
+              onStatusDropdownClose={() => setIsStatusDropdownOpen(false)}
+            />
+          </div>
+        </section>
 
         <RunsListTable
           paginatedRuns={paginatedRuns}
@@ -215,7 +224,10 @@ export const TestRunsListView = () => {
           onDeleteClick={setDeleteTarget}
           onRerunClick={setRerunTarget}
           rerunPendingId={rerunMutation.isPending ? (rerunTarget?.id ?? null) : null}
-          onRefetch={() => refetchRuns()}
+          onRefetch={() => {
+            refetchRuns();
+            refetchDashboard();
+          }}
           onResetFilters={handleResetFilters}
           onCreateRun={() => router.push(`/projects/${projectSlug}/runs/create`)}
         />

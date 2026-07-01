@@ -5,49 +5,96 @@ interface PaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  maxVisible?: number;
 }
+
+const DOTS = 'dots';
+
+type PageItem = number | typeof DOTS;
+
+const getPageItems = (currentPage: number, totalPages: number, maxVisible: number): PageItem[] => {
+  if (totalPages <= maxVisible) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const middleSlots = Math.max(1, maxVisible - 4);
+  const half = Math.floor(middleSlots / 2);
+  let start = Math.max(2, currentPage - half);
+  let end = Math.min(totalPages - 1, start + middleSlots - 1);
+
+  if (end - start + 1 < middleSlots) {
+    start = Math.max(2, end - middleSlots + 1);
+  }
+
+  const items: PageItem[] = [1];
+  if (start > 2) items.push(DOTS);
+
+  for (let page = start; page <= end; page += 1) {
+    items.push(page);
+  }
+
+  if (end < totalPages - 1) items.push(DOTS);
+  items.push(totalPages);
+
+  return items;
+};
 
 export const Pagination = ({
   currentPage,
   totalPages,
   onPageChange,
   className,
+  maxVisible = 9,
 }: PaginationProps) => {
-  const pages = totalPages || 1;
+  if (totalPages <= 1) return null;
+
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const pageItems = getPageItems(safeCurrentPage, totalPages, Math.max(5, maxVisible));
 
   return (
     <div className={cn('flex items-center justify-center px-6 py-3', className)}>
-      <div className="flex items-center">
+      <div className="flex items-center gap-1">
         <button
           type="button"
-          disabled={currentPage <= 1}
-          onClick={() => onPageChange(currentPage - 1)}
+          disabled={safeCurrentPage <= 1}
+          onClick={() => onPageChange(safeCurrentPage - 1)}
           className="typo-caption-normal rounded-1 text-text-2 hover:bg-bg-3 flex h-8 w-8 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
+          aria-label="이전 페이지"
         >
           &lt;
         </button>
-        <div
-          className="flex items-center justify-center gap-1"
-          style={{ width: 'calc(2rem * 10 + 0.25rem * 9)' }}
-        >
-          {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+        {pageItems.map((item, index) =>
+          item === DOTS ? (
+            <span
+              key={`${item}-${index}`}
+              className="typo-caption-normal text-text-4 flex h-8 w-8 items-center justify-center"
+              aria-hidden="true"
+            >
+              ...
+            </span>
+          ) : (
             <button
-              key={p}
+              key={item}
               type="button"
-              onClick={() => onPageChange(p)}
+              disabled={item === safeCurrentPage}
+              onClick={() => onPageChange(item)}
+              aria-current={item === safeCurrentPage ? 'page' : undefined}
               className={`typo-caption-normal rounded-1 flex h-8 w-8 shrink-0 items-center justify-center transition-colors ${
-                p === currentPage ? 'bg-bg-4 text-text-1 font-bold' : 'text-text-2 hover:bg-bg-3'
+                item === safeCurrentPage
+                  ? 'bg-bg-4 text-text-1 font-bold disabled:opacity-100'
+                  : 'text-text-2 hover:bg-bg-3'
               }`}
             >
-              {p}
+              {item}
             </button>
-          ))}
-        </div>
+          )
+        )}
         <button
           type="button"
-          disabled={currentPage >= pages}
-          onClick={() => onPageChange(currentPage + 1)}
+          disabled={safeCurrentPage >= totalPages}
+          onClick={() => onPageChange(safeCurrentPage + 1)}
           className="typo-caption-normal rounded-1 text-text-2 hover:bg-bg-3 flex h-8 w-8 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-30"
+          aria-label="다음 페이지"
         >
           &gt;
         </button>

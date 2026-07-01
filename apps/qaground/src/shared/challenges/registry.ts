@@ -6,7 +6,7 @@
  * - sandboxSlug 가 가리키는 `/sandbox/[slug]` 가 실제 테스트 대상 페이지다.
  */
 
-export type ChallengeTrack = 'automation' | 'manual' | 'api';
+export type ChallengeTrack = 'automation' | 'manual' | 'api' | 'performance' | 'accessibility';
 export type ChallengeDifficulty = 'easy' | 'medium' | 'hard';
 /** 주제 카테고리. 트랙(테스트 방식)과 별개인 도메인 축. */
 export type ChallengeCategory =
@@ -17,6 +17,8 @@ export type ChallengeCategory =
   | 'async'
   | 'commerce'
   | 'fintech'
+  | 'performance'
+  | 'accessibility'
   | 'fundamentals';
 
 export interface ChallengeSelector {
@@ -26,6 +28,15 @@ export interface ChallengeSelector {
 }
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type ApiSchemaType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'null';
+
+export interface ApiSchemaField {
+  path: string;
+  type: ApiSchemaType;
+  required?: boolean;
+  desc?: string;
+  example?: unknown;
+}
 
 export interface ApiEndpoint {
   method: HttpMethod;
@@ -33,6 +44,10 @@ export interface ApiEndpoint {
   /** 인증(토큰) 필요 여부. */
   auth?: boolean;
   desc: string;
+  query?: ApiSchemaField[];
+  body?: ApiSchemaField[];
+  response?: ApiSchemaField[];
+  responseExample?: unknown;
 }
 
 export interface Challenge {
@@ -61,12 +76,20 @@ export interface Challenge {
   modelTestCases?: { title: string; detail: string }[];
   /** 코드 채점: 코드 에디터 초기 Playwright 스펙 템플릿. */
   starterSpec?: string;
+  /** 학습 UX: 예상 풀이 시간(분). */
+  estimatedMinutes?: number;
+  /** 학습 UX: 먼저 풀면 좋은 챌린지 slug 목록. */
+  prerequisites?: string[];
+  /** 학습 UX: 완료 후 추천할 챌린지 slug 목록. */
+  recommendedNext?: string[];
 }
 
 export const TRACK_LABEL: Record<ChallengeTrack, string> = {
   automation: 'Automation',
   manual: 'Manual',
   api: 'API',
+  performance: 'Performance',
+  accessibility: 'Accessibility',
 };
 
 export const DIFFICULTY_LABEL: Record<ChallengeDifficulty, string> = {
@@ -83,6 +106,8 @@ export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
   async: '비동기',
   commerce: '커머스',
   fintech: '핀테크',
+  performance: '성능',
+  accessibility: '접근성',
   fundamentals: '테스팅 기초',
 };
 
@@ -95,6 +120,8 @@ export const CATEGORY_ORDER: ChallengeCategory[] = [
   'async',
   'commerce',
   'fintech',
+  'performance',
+  'accessibility',
   'fundamentals',
 ];
 
@@ -105,6 +132,8 @@ export const CHALLENGES: Challenge[] = [
     track: 'automation',
     category: 'auth',
     difficulty: 'easy',
+    estimatedMinutes: 20,
+    recommendedNext: ['signup-validation', 'test-design-password-reset'],
     tools: ['Playwright'],
     summary: '유효·무효 자격증명에 따른 로그인 동작을 검증하는 자동화 테스트를 작성하세요.',
     requirement: [
@@ -136,6 +165,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'automation',
     category: 'forms',
     difficulty: 'easy',
+    estimatedMinutes: 25,
+    prerequisites: ['login-basic'],
+    recommendedNext: ['profile-form', 'realtime-validation'],
     tools: ['Playwright'],
     summary: '이메일 형식, 비밀번호 규칙, 비밀번호 확인 일치를 검증하는 테스트를 작성하세요.',
     requirement: [
@@ -192,6 +224,8 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'automation',
     category: 'data',
     difficulty: 'medium',
+    estimatedMinutes: 30,
+    recommendedNext: ['wizard-form', 'cart-checkout'],
     tools: ['Playwright'],
     summary: '검색 필터, 컬럼 정렬, 페이지 이동이 있는 테이블을 검증하는 테스트를 작성하세요.',
     requirement: [
@@ -346,6 +380,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'automation',
     category: 'forms',
     difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['signup-validation'],
+    recommendedNext: ['cart-checkout'],
     tools: ['Playwright'],
     summary: '단계별 검증·이동·이전 복귀가 있는 3단계 위저드 폼을 검증하는 테스트를 작성하세요.',
     requirement: [
@@ -462,6 +499,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'automation',
     category: 'commerce',
     difficulty: 'hard',
+    estimatedMinutes: 45,
+    prerequisites: ['data-table', 'wizard-form'],
+    recommendedNext: ['test-case-coupon', 'rest-api-products'],
     tools: ['Playwright'],
     summary:
       '수량 변경에 따라 소계·배송비·쿠폰 할인이 연쇄로 합계에 반영되는 장바구니를 검증하세요. 재고 한도와 쿠폰 최소 금액 규칙이 얽혀 있습니다.',
@@ -530,6 +570,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'api',
     category: 'data',
     difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['login-basic'],
+    recommendedNext: ['rest-api-auth-session', 'rest-api-product-crud-auth'],
     tools: ['Postman'],
     summary:
       '상품 REST API의 목록·조회·생성·삭제와 인증을 검증하는 API 테스트를 작성하세요. 브라우저가 아니라 HTTP 요청으로 검증합니다.',
@@ -546,10 +589,86 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         method: 'GET',
         path: '/products?page=1&limit=5',
         desc: '상품 목록 (페이지네이션·category 필터)',
+        query: [
+          { path: 'page', type: 'number', desc: '1부터 시작하는 페이지 번호' },
+          { path: 'limit', type: 'number', desc: '페이지 크기' },
+          { path: 'category', type: 'string', desc: '카테고리 필터' },
+        ],
+        response: [
+          { path: 'data', type: 'array', required: true, desc: '상품 배열' },
+          { path: 'data.0.id', type: 'number', required: true },
+          { path: 'data.0.name', type: 'string', required: true },
+          { path: 'data.0.category', type: 'string', required: true },
+          { path: 'data.0.price', type: 'number', required: true },
+          { path: 'data.0.inStock', type: 'boolean', required: true },
+          { path: 'page', type: 'number', required: true },
+          { path: 'limit', type: 'number', required: true },
+          { path: 'total', type: 'number', required: true },
+          { path: 'totalPages', type: 'number', required: true },
+        ],
+        responseExample: {
+          data: [{ id: 1, name: '무선 키보드', category: '주변기기', price: 39000, inStock: true }],
+          page: 1,
+          limit: 5,
+          total: 12,
+          totalPages: 3,
+        },
       },
-      { method: 'GET', path: '/products/:id', desc: '상품 단건 (없으면 404)' },
-      { method: 'POST', path: '/auth/login', desc: '로그인 → 토큰 (무효 시 401)' },
-      { method: 'POST', path: '/products', auth: true, desc: '상품 생성 (검증 400 / 성공 201)' },
+      {
+        method: 'GET',
+        path: '/products/:id',
+        desc: '상품 단건 (없으면 404)',
+        response: [
+          { path: 'id', type: 'number', required: true },
+          { path: 'name', type: 'string', required: true, example: '테스트 상품' },
+          { path: 'category', type: 'string', required: true },
+          { path: 'price', type: 'number', required: true, example: 12000 },
+          { path: 'inStock', type: 'boolean', required: true },
+        ],
+        responseExample: {
+          id: 1,
+          name: '무선 키보드',
+          category: '주변기기',
+          price: 39000,
+          inStock: true,
+        },
+      },
+      {
+        method: 'POST',
+        path: '/auth/login',
+        desc: '로그인 → 토큰 (무효 시 401)',
+        body: [
+          { path: 'email', type: 'string', required: true, example: 'tester@qaground.dev' },
+          { path: 'password', type: 'string', required: true, example: 'qaground123' },
+        ],
+        response: [{ path: 'token', type: 'string', required: true }],
+        responseExample: { token: 'qaground-demo-token' },
+      },
+      {
+        method: 'POST',
+        path: '/products',
+        auth: true,
+        desc: '상품 생성 (검증 400 / 성공 201)',
+        body: [
+          { path: 'name', type: 'string', required: true, example: '테스트 상품' },
+          { path: 'price', type: 'number', required: true, example: 12000 },
+          { path: 'category', type: 'string', example: '기타' },
+        ],
+        response: [
+          { path: 'id', type: 'number', required: true },
+          { path: 'name', type: 'string', required: true, example: '테스트 상품' },
+          { path: 'category', type: 'string', required: true },
+          { path: 'price', type: 'number', required: true, example: 12000 },
+          { path: 'inStock', type: 'boolean', required: true },
+        ],
+        responseExample: {
+          id: 13,
+          name: '테스트 상품',
+          category: '기타',
+          price: 12000,
+          inStock: true,
+        },
+      },
       { method: 'DELETE', path: '/products/:id', auth: true, desc: '상품 삭제 (204 / 404)' },
     ],
     apiNote:
@@ -561,6 +680,8 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'manual',
     category: 'fundamentals',
     difficulty: 'medium',
+    estimatedMinutes: 25,
+    recommendedNext: ['test-design-password-reset'],
     tools: ['Testea'],
     summary:
       '주문 폼에 의도적으로 심은 결함을 탐색적 테스트로 찾고, 결함 리포트를 작성해 제출하세요. 제출하면 정답과 피드백을 보여줍니다.',
@@ -593,9 +714,12 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'manual',
     category: 'fundamentals',
     difficulty: 'medium',
+    estimatedMinutes: 30,
+    prerequisites: ['login-basic'],
+    recommendedNext: ['test-design-login-lockout', 'test-case-coupon'],
     tools: ['Testea'],
     summary:
-      '비밀번호 재설정 기능의 테스트 케이스를 설계하세요. 정상·예외·경계 시나리오를 빠짐없이 도출하는 수동 테스트 연습입니다.',
+      '비밀번호 재설정 기능의 테스트 케이스를 설계하세요. 정상·예외·경계 시나리오를 빠짐없이 도출하는 메뉴얼 테스트 연습입니다.',
     requirement: [
       '기능 규칙: 가입된 이메일로 재설정 링크를 발송하고, 링크는 24시간 동안만 유효하며, 새 비밀번호는 8자 이상이어야 한다.',
       '정상 흐름과 함께 만료된 링크, 이미 사용한 링크, 미가입 이메일, 비밀번호 규칙 위반을 케이스로 도출하세요.',
@@ -634,6 +758,8 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     track: 'manual',
     category: 'fundamentals',
     difficulty: 'easy',
+    estimatedMinutes: 35,
+    prerequisites: ['cart-checkout', 'test-design-password-reset'],
     tools: ['Testea'],
     summary:
       '할인 쿠폰 적용 기능의 테스트 케이스를 작성하세요. 정상·예외·경계 시나리오를 표로 정리하는 연습입니다.',
@@ -1071,6 +1197,8 @@ test('내 테스트', async ({ page }) => {
     track: 'manual',
     category: 'fundamentals',
     difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['test-design-password-reset'],
     tools: ['Testea'],
     summary:
       '로그인 실패 잠금 정책의 테스트 케이스를 설계하세요. 실패 누적·잠금·해제·카운터 리셋을 경계값과 함께 빠짐없이 도출하는 연습입니다.',
@@ -1437,6 +1565,288 @@ test('내 테스트', async ({ page }) => {
 `,
   },
   {
+    slug: 'rest-api-auth-session',
+    title: '인증·세션 API: 토큰 만료와 갱신',
+    track: 'api',
+    category: 'auth',
+    difficulty: 'medium',
+    estimatedMinutes: 40,
+    prerequisites: ['rest-api-products'],
+    recommendedNext: ['rest-api-product-crud-auth'],
+    tools: ['Postman'],
+    summary:
+      '로그인 후 보호된 /me API를 호출하고, 누락·만료·잘못된 토큰과 refresh token 갱신 경로를 검증하세요.',
+    requirement: [
+      '유효한 로그인은 token을 반환하고, 잘못된 자격증명은 401을 반환한다.',
+      'GET /auth/me 는 유효한 Bearer 토큰에서 200과 사용자 정보를 반환한다.',
+      '토큰이 없거나 expired-token 이면 각각 401과 에러 코드를 반환한다.',
+      'POST /auth/refresh 는 유효한 refreshToken 에서 새 token을 반환하고, 잘못된 refreshToken 은 401을 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/auth/login', desc: '로그인' },
+      { method: 'GET', path: '/auth/me', auth: true, desc: '내 정보 조회' },
+      { method: 'POST', path: '/auth/refresh', desc: '토큰 갱신' },
+    ],
+    apiNote:
+      '데모 계정은 tester@qaground.dev / qaground123, refreshToken은 qaground-refresh-token 입니다. expired-token으로 만료 토큰 경로를 검증할 수 있습니다.',
+  },
+  {
+    slug: 'rest-api-reservations',
+    title: '예약 API: 슬롯 조회와 중복 방지',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '날짜별 예약 가능 슬롯을 조회하고, 만석 슬롯·잘못된 날짜·필수값 누락 같은 예약 API 경계 조건을 검증하세요.',
+    requirement: [
+      'GET /reservations/slots 는 YYYY-MM-DD 날짜에서 슬롯 목록과 available 값을 반환한다.',
+      '날짜 형식이 없거나 잘못되면 400을 반환한다.',
+      'POST /reservations 는 유효한 슬롯과 고객 정보에서 201 confirmed를 반환한다.',
+      '만석 슬롯은 409, 없는 슬롯은 404, 잘못된 이메일이나 이름 누락은 400을 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/reservations/slots?date=2026-07-01', desc: '날짜별 슬롯 조회' },
+      { method: 'POST', path: '/reservations', desc: '예약 생성 (400 / 404 / 409 / 201)' },
+    ],
+    apiNote:
+      '예약 생성 예: { "slotId": "slot-0900", "name": "김테스터", "email": "tester@example.com" }. slot-1000은 만석이라 409를 반환합니다.',
+  },
+  {
+    slug: 'rest-api-file-metadata',
+    title: '파일 메타데이터 API: 형식·용량 검증',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      'JSON 기반 파일 메타데이터 업로드 API로 MIME type, 파일 크기, 단건 메타데이터 조회를 검증하세요.',
+    requirement: [
+      '허용 MIME(image/png, image/jpeg, application/pdf)과 5MB 이하 크기에서는 201 uploaded를 반환한다.',
+      '허용되지 않은 MIME type은 415를 반환한다.',
+      '5MB 초과 파일은 413과 maxSize를 반환한다.',
+      'GET /files/:id 는 존재하는 파일에서 200, 없는 파일에서 404를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/files', desc: '파일 메타데이터 업로드 (400 / 413 / 415 / 201)' },
+      { method: 'GET', path: '/files/file-1001', desc: '파일 메타데이터 조회' },
+    ],
+    apiNote:
+      '요청 본문 예: { "fileName": "report.pdf", "mimeType": "application/pdf", "size": 204800 }. 브라우저 내 API 테스터 특성상 multipart 대신 메타데이터 API로 연습합니다.',
+  },
+  {
+    slug: 'rest-api-notifications',
+    title: '알림 API: 읽음 처리와 unread count',
+    track: 'api',
+    category: 'async',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      '알림 목록과 읽음 처리 API에서 unreadOnly 필터, unreadCount, 없는 알림 처리와 멱등적 PATCH 응답을 검증하세요.',
+    requirement: [
+      'GET /notifications 는 unreadCount와 전체 알림 목록을 반환한다.',
+      'unreadOnly=true 는 읽지 않은 알림만 반환한다.',
+      'PATCH /notifications/:id/read 는 존재하는 알림에서 200과 read=true를 반환한다.',
+      '숫자가 아닌 ID는 400, 없는 ID는 404를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/notifications', desc: '알림 목록' },
+      { method: 'GET', path: '/notifications?unreadOnly=true', desc: '읽지 않은 알림만' },
+      { method: 'PATCH', path: '/notifications/301/read', desc: '읽음 처리' },
+    ],
+  },
+  {
+    slug: 'rest-api-rbac-admin',
+    title: '권한 API: 관리자 전용 리포트',
+    track: 'api',
+    category: 'auth',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '관리자 전용 API에서 미인증 401, 일반 사용자 403, 관리자 200 경계를 구분해 검증하세요.',
+    requirement: [
+      'Authorization 헤더가 없으면 401을 반환한다.',
+      '일반 토큰(qaground-demo-token)은 인증은 되었지만 관리자 권한이 없어 403을 반환한다.',
+      '관리자 토큰(qaground-admin-token)은 200과 운영 리포트 데이터를 반환한다.',
+      '401과 403을 같은 실패로 뭉개지 않고 각각 다른 의미로 단언한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [{ method: 'GET', path: '/admin/reports', auth: true, desc: '관리자 전용 리포트' }],
+    apiNote:
+      '일반 토큰은 qaground-demo-token, 관리자 토큰은 qaground-admin-token 입니다. 같은 엔드포인트를 토큰별로 반복 실행해 401/403/200을 비교하세요.',
+  },
+  {
+    slug: 'rest-api-articles-search',
+    title: '검색 API: 키워드·태그·정렬 조합',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary: '문서 검색 API에서 q, tag, sort, order 파라미터 조합과 total 메타데이터를 검증하세요.',
+    requirement: [
+      'q는 제목 부분검색으로 동작하고 total이 결과 수와 일치한다.',
+      'tag=api 는 API 태그 문서만 반환한다.',
+      'sort=views&order=desc 는 조회수 내림차순으로 정렬한다.',
+      '검색어와 태그를 조합해도 결과 집합과 total이 일관된다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/articles?q=API', desc: '키워드 검색' },
+      { method: 'GET', path: '/articles?tag=api&sort=views&order=desc', desc: '태그+정렬 조합' },
+    ],
+  },
+  {
+    slug: 'rest-api-webhook-signature',
+    title: '웹훅 API: 서명 검증과 중복 이벤트',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'hard',
+    tools: ['Postman'],
+    summary: '결제 웹훅 수신 API에서 서명 헤더, payload 검증, 중복 eventId 처리를 검증하세요.',
+    requirement: [
+      'x-qaground-signature 헤더가 없거나 틀리면 401을 반환한다.',
+      '유효 서명과 올바른 payload는 200과 ok=true를 반환한다.',
+      '필수 필드 누락, 허용되지 않은 type, 0 이하 amount는 400을 반환한다.',
+      'eventId=evt-duplicate 는 200과 duplicate=true를 반환해 멱등 처리 경로를 드러낸다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/webhooks/payment', desc: '결제 웹훅 수신 (401 / 400 / 200)' },
+    ],
+    apiNote:
+      '헤더 x-qaground-signature: test-signature 를 넣어야 합니다. 본문 예: { "eventId": "evt-100", "type": "payment.succeeded", "amount": 39000 }.',
+  },
+  {
+    slug: 'rest-api-wallet-transfer',
+    title: '지갑 API: 잔액과 송금 검증',
+    track: 'api',
+    category: 'fintech',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '지갑 잔액·거래내역 조회와 송금 API에서 금액 검증, 잔액 부족, 거래내역 필터를 검증하세요.',
+    requirement: [
+      'GET /wallet/transactions 는 balance, total, 거래내역 배열을 반환한다.',
+      'type=deposit/withdrawal 필터가 적용되고 total이 결과 수와 일치한다.',
+      '송금 금액은 양의 정수여야 하며 0·음수·누락은 400을 반환한다.',
+      '잔액보다 큰 송금은 409 insufficient_balance를 반환하고, 정상 송금은 201과 balanceAfter를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/wallet/transactions?type=withdrawal', desc: '거래내역 필터' },
+      { method: 'POST', path: '/wallet/transfer', desc: '송금 (400 / 409 / 201)' },
+    ],
+    apiNote: '송금 예: { "to": "bank-001", "amount": 12000 }. 현재 데모 잔액은 138000입니다.',
+  },
+  {
+    slug: 'rest-api-content-moderation',
+    title: '콘텐츠 API: 댓글·신고·금칙어',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '게시글 생성, 댓글 작성, 신고 API에서 금칙어, 삭제된 글 댓글 금지, 중복 신고 같은 콘텐츠 정책을 검증하세요.',
+    requirement: [
+      '게시글 목록은 삭제되지 않은 글만 반환한다.',
+      '게시글 생성은 유효 제목에서 201, 짧은 제목은 400, 금칙어 포함은 422를 반환한다.',
+      '댓글 작성은 존재하는 글에서 201, 삭제된 글에서 409, 없는 글에서 404를 반환한다.',
+      '신고 생성은 정상 요청에서 201, 중복 신고 대상에서는 409를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/posts', desc: '게시글 목록' },
+      { method: 'POST', path: '/posts', desc: '게시글 생성 (400 / 422 / 201)' },
+      { method: 'POST', path: '/posts/701/comments', desc: '댓글 작성 (400 / 404 / 409 / 201)' },
+      { method: 'POST', path: '/reports', desc: '신고 생성 (400 / 409 / 201)' },
+    ],
+  },
+  {
+    slug: 'rest-api-health-monitoring',
+    title: '운영 API: 헬스체크와 장애 응답',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      '헬스체크 API에서 정상 상태와 degraded 상태의 HTTP status, JSON checks 필드를 검증하세요.',
+    requirement: [
+      'GET /health 는 200과 status=ok, database=ok, queue=ok를 반환한다.',
+      'GET /health?mode=degraded 는 503과 status=degraded, queue=slow를 반환한다.',
+      '운영 API 테스트에서는 HTTP 상태와 body 상태 필드를 함께 단언한다.',
+      '503도 JSON body를 반환하므로 실패 응답 본문을 파싱해 검증한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/health', desc: '정상 헬스체크' },
+      { method: 'GET', path: '/health?mode=degraded', desc: '장애 상태 헬스체크' },
+    ],
+  },
+  {
+    slug: 'rest-api-support-tickets',
+    title: '고객지원 티켓 API: 필터·상태 변경',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'medium',
+    tools: ['Postman'],
+    summary:
+      '고객지원 티켓 API에서 상태·우선순위·담당자 필터, 티켓 생성 입력 검증, 보호된 상태 변경 API를 검증하세요. 실무 API 테스트에서 자주 만나는 목록 메타데이터와 권한 경계, 부분 수정(PATCH)을 함께 연습합니다.',
+    requirement: [
+      '티켓 목록은 page·limit 메타데이터를 포함하고, status·priority·assignee·q 필터가 조합되어 적용된다.',
+      '단건 조회는 존재하는 ID에서 200과 티켓 객체를 반환하고, 없는 ID는 404, 숫자가 아닌 ID는 400을 반환한다.',
+      '티켓 생성은 유효한 title·customerEmail·priority 에서 201과 open 상태 티켓을 반환하고, 잘못된 이메일·빈 제목은 400을 반환한다.',
+      '상태 변경(PATCH)은 Authorization 헤더가 없으면 401을 반환하고, 정상 토큰과 유효한 status/assignee 에서 200을 반환한다.',
+      'PATCH 본문이 비어 있거나 허용되지 않는 status 값이면 400을 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/tickets?status=open&priority=high', desc: '상태·우선순위 필터' },
+      { method: 'GET', path: '/tickets?assignee=unassigned&q=로그인', desc: '미배정 티켓 검색' },
+      { method: 'GET', path: '/tickets/501', desc: '티켓 단건 조회 (400 / 404 / 200)' },
+      { method: 'POST', path: '/tickets', desc: '티켓 생성 (400 / 201)' },
+      {
+        method: 'PATCH',
+        path: '/tickets/501',
+        auth: true,
+        desc: '상태·담당자 변경 (401 / 400 / 404 / 200)',
+      },
+    ],
+    apiNote:
+      'PATCH 는 Bearer qaground-demo-token 인증이 필요합니다. 생성 예: { "title": "비밀번호 재설정 문의", "customerEmail": "user@example.com", "priority": "high" }. 수정 예: { "status": "pending", "assignee": "support-a" }. assignee=unassigned 는 미배정 티켓만 반환합니다.',
+  },
+  {
+    slug: 'rest-api-product-crud-auth',
+    title: '상품 관리 API: 인증·CRUD 검증',
+    track: 'api',
+    category: 'commerce',
+    difficulty: 'medium',
+    estimatedMinutes: 50,
+    prerequisites: ['rest-api-products', 'rest-api-auth-session'],
+    tools: ['Postman'],
+    summary:
+      '로그인으로 토큰을 발급받고, 보호된 상품 생성·수정·삭제 API의 인증, 입력 검증, 상태 코드를 검증하세요. 성공 경로뿐 아니라 401·400·404·204 같은 API 경계 응답까지 함께 확인해야 합니다.',
+    requirement: [
+      'POST /auth/login 은 유효한 데모 계정으로 200과 token 을 반환하고, 잘못된 자격증명은 401 을 반환한다.',
+      '보호된 상품 생성·수정·삭제 요청은 Authorization 헤더가 없으면 401 을 반환한다.',
+      '정상 토큰으로 상품을 생성하면 201과 생성된 상품 객체를 반환하고, 필수값 누락·잘못된 price 는 400 을 반환한다.',
+      '상품 수정은 존재하는 ID와 유효한 본문에서 200을 반환하고, 빈 본문·없는 ID·숫자가 아닌 ID는 각각 에러 상태를 반환한다.',
+      '상품 삭제는 정상 토큰과 존재하는 ID에서 204 No Content 를 반환하고, 없는 ID는 404 를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'POST', path: '/auth/login', desc: '데모 계정 로그인 후 토큰 발급' },
+      { method: 'POST', path: '/products', auth: true, desc: '상품 생성 (401 / 400 / 201)' },
+      { method: 'PUT', path: '/products/1', auth: true, desc: '상품 수정 (401 / 400 / 404 / 200)' },
+      { method: 'DELETE', path: '/products/1', auth: true, desc: '상품 삭제 (401 / 404 / 204)' },
+    ],
+    apiNote:
+      '데모 계정은 tester@qaground.dev / qaground123 입니다. 로그인 응답의 token 또는 qaground-demo-token 을 Bearer 토큰으로 사용하세요. 상품 생성 예: { "name": "테스트 상품", "price": 12000, "category": "기타" }. 데모 API는 실제로 영속하지 않으므로 삭제·수정 후 목록 변경을 전제로 두지 마세요.',
+  },
+  {
     slug: 'rest-api-products-advanced',
     title: '상품 목록 API: 검색·정렬·필터',
     track: 'api',
@@ -1508,6 +1918,30 @@ test('내 테스트', async ({ page }) => {
       '요청 본문 예: { "customer": "홍길동", "items": [{ "name": "키보드", "qty": 2, "price": 39000 }] }. total 은 서버가 계산합니다. 빈 items·음수 수량 등 실패 케이스도 검증하세요.',
   },
   {
+    slug: 'rest-api-status-basic',
+    title: '상태 코드 API 입문: 200·404 검증',
+    track: 'api',
+    category: 'fundamentals',
+    difficulty: 'easy',
+    tools: ['Postman'],
+    summary:
+      '상태 코드 시뮬레이터로 API 응답의 status code와 JSON 본문을 함께 검증하는 입문 챌린지입니다. 성공 응답과 실패 응답을 나란히 확인하며 기본 단언 흐름을 익히세요.',
+    requirement: [
+      'GET /status/200 은 HTTP 200과 본문 { status: 200, message: "OK" }를 반환한다.',
+      'GET /status/404 는 HTTP 404와 본문 { status: 404, message: "Not Found" }를 반환한다.',
+      'HTTP 상태 코드뿐 아니라 응답 JSON의 status·message 필드를 함께 단언한다.',
+      '숫자가 아닌 상태 코드 요청은 400과 error 필드를 반환한다.',
+    ],
+    apiBase: '/api/practice',
+    endpoints: [
+      { method: 'GET', path: '/status/200', desc: '성공 응답 기본 검증' },
+      { method: 'GET', path: '/status/404', desc: 'Not Found 응답 검증' },
+      { method: 'GET', path: '/status/abc', desc: '잘못된 코드 → 400' },
+    ],
+    apiNote:
+      '처음에는 구조화된 단언으로 상태 코드와 JSON 필드를 검증해 보세요. 예: status == 200, message == OK. 이후 pm.test 스크립트로 같은 검증을 옮겨 보면 좋습니다.',
+  },
+  {
     slug: 'rest-api-errors',
     title: '에러 처리·상태 코드 검증',
     track: 'api',
@@ -1531,6 +1965,792 @@ test('내 테스트', async ({ page }) => {
     ],
     apiNote:
       '/status/:code 는 200~599 범위의 코드로 응답합니다. 자동화에서 에러 응답의 상태와 본문을 어떻게 단언할지 연습하세요.',
+  },
+  {
+    slug: 'web-vitals-basic-audit',
+    title: 'Core Web Vitals 성능 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'easy',
+    tools: ['Lighthouse', 'DevTools'],
+    summary:
+      '랜딩 페이지를 기준으로 Core Web Vitals와 주요 리소스 병목을 점검하는 성능 테스트 계획을 작성하세요.',
+    requirement: [
+      'LCP, CLS, INP를 어떤 도구와 기준으로 측정할지 정의한다.',
+      '모바일과 데스크톱을 분리해 측정하고, 네트워크/CPU 조건을 명시한다.',
+      '이미지, 폰트, JavaScript 번들 등 주요 병목 후보를 확인하는 절차를 포함한다.',
+      '성능 저하를 재현 가능한 리포트로 남기기 위한 증거(스크린샷, trace, 측정값)를 정의한다.',
+    ],
+    modelTestCases: [
+      {
+        title: 'Core Web Vitals 기준 측정',
+        detail:
+          'Lighthouse 또는 DevTools Performance로 모바일/데스크톱 각각 LCP·CLS·INP를 측정하고, 기준값과 실제값을 함께 기록한다.',
+      },
+      {
+        title: '리소스 병목 분석',
+        detail:
+          'Network/Performance 탭에서 큰 이미지, render-blocking CSS, 과도한 JS 실행 시간을 확인하고 영향도를 정리한다.',
+      },
+      {
+        title: '재현 가능한 증거 수집',
+        detail:
+          '측정 환경, URL, throttling 조건, trace 또는 Lighthouse 결과 파일, 개선 전후 비교 기준을 리포트에 포함한다.',
+      },
+    ],
+  },
+  {
+    slug: 'api-response-time-slo',
+    title: 'API 응답 시간 SLO 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'easy',
+    tools: ['DevTools', 'k6'],
+    summary:
+      '상품 목록과 주문 생성 API를 기준으로 응답 시간 목표와 측정 방법을 정의하는 성능 테스트 케이스를 작성하세요.',
+    requirement: [
+      '목록 조회, 단건 조회, 생성 요청처럼 성격이 다른 엔드포인트를 구분해 측정 대상을 정의한다.',
+      'p50, p95, p99 중 어떤 지표를 기준으로 볼지와 목표 응답 시간을 명시한다.',
+      '콜드 스타트, 인증, 네트워크 변동처럼 측정값을 흔드는 조건을 통제하는 방법을 포함한다.',
+      'SLO 초과 시 재현 절차와 서버/클라이언트 로그 확인 항목을 함께 정의한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '엔드포인트별 응답 시간 기준',
+        detail:
+          'GET 목록, GET 단건, POST 생성 요청을 나누고 각 요청의 p95 목표값과 허용 오차를 명시한다.',
+      },
+      {
+        title: '측정 조건 통제',
+        detail:
+          '동일한 환경, 반복 횟수, 인증 토큰, payload 크기, 워밍업 여부를 고정하고 결과를 비교한다.',
+      },
+      {
+        title: '초과 시 분석 절차',
+        detail:
+          'SLO 초과 요청의 trace, 서버 로그, DB 쿼리 시간, 응답 payload 크기를 확인하는 후속 절차를 포함한다.',
+      },
+    ],
+  },
+  {
+    slug: 'image-loading-performance',
+    title: '이미지 로딩 성능 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'medium',
+    tools: ['Lighthouse', 'Network'],
+    summary:
+      '상품 카드와 상세 화면의 이미지가 LCP와 네트워크 비용에 미치는 영향을 검증하는 성능 테스트 계획을 작성하세요.',
+    requirement: [
+      'LCP 후보 이미지가 무엇인지 식별하고 로딩 우선순위가 적절한지 확인한다.',
+      '이미지 포맷, 크기, DPR, lazy loading 적용 여부를 검증하는 절차를 포함한다.',
+      '느린 네트워크에서 placeholder, layout shift, 이미지 실패 상태를 함께 확인한다.',
+      '개선 전후를 비교할 수 있도록 bytes, request 수, LCP 값을 증거로 남긴다.',
+    ],
+    modelTestCases: [
+      {
+        title: 'LCP 이미지 식별',
+        detail:
+          'Performance 또는 Lighthouse 결과에서 LCP element를 확인하고 preload/fetchpriority 적용 여부를 점검한다.',
+      },
+      {
+        title: '이미지 최적화 검증',
+        detail:
+          '원본 크기 대비 렌더링 크기, WebP/AVIF 등 적절한 포맷, lazy loading 대상 분리를 확인한다.',
+      },
+      {
+        title: '저속 네트워크 경험',
+        detail:
+          'Slow 4G 조건에서 레이아웃 밀림, 빈 이미지 영역, 로딩 실패 fallback이 사용성을 해치지 않는지 검증한다.',
+      },
+    ],
+  },
+  {
+    slug: 'bundle-regression-budget',
+    title: '번들 크기 회귀 예산 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'medium',
+    tools: ['Bundle Analyzer', 'Lighthouse CI'],
+    summary:
+      '새 기능 추가 후 JavaScript 번들 크기와 초기 로딩 지표가 회귀하지 않았는지 확인하는 성능 게이트를 설계하세요.',
+    requirement: [
+      '초기 로딩에 포함되는 JS/CSS 번들 크기와 chunk 증가량 기준을 정의한다.',
+      '동적 import, tree shaking, 중복 의존성 여부를 확인하는 분석 절차를 포함한다.',
+      'PR 또는 배포 전 자동 확인할 수 있는 budget 기준과 실패 조건을 제안한다.',
+      '회귀가 발생했을 때 어느 화면/기능이 원인인지 추적하는 방법을 포함한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '번들 예산 기준',
+        detail:
+          'route별 initial JS와 total JS 예산을 정하고 기준 초과 시 실패하도록 Lighthouse CI 또는 analyzer 결과를 활용한다.',
+      },
+      {
+        title: '의존성 증가 원인 분석',
+        detail:
+          '새 라이브러리 추가 시 중복 패키지, client boundary 확장, 불필요한 전역 import를 확인한다.',
+      },
+      {
+        title: '회귀 추적 리포트',
+        detail:
+          '이전 main 빌드와 현재 빌드의 chunk diff, 영향 route, 사용자 지표 영향도를 함께 기록한다.',
+      },
+    ],
+  },
+  {
+    slug: 'checkout-load-test-plan',
+    title: '체크아웃 부하 테스트 설계',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'hard',
+    tools: ['k6', 'Grafana'],
+    summary:
+      '동시 주문 상황에서 체크아웃 API가 지연·실패·중복 주문 없이 동작하는지 검증하는 부하 테스트 계획을 작성하세요.',
+    requirement: [
+      '정상 주문, 재시도, 결제 실패 등 현실적인 사용자 시나리오와 비율을 정의한다.',
+      '동시 사용자 수, ramp-up, duration, think time 같은 부하 모델을 명시한다.',
+      '응답 시간, 오류율, 중복 주문, 재고 차감 정확성 등 관찰 지표를 정의한다.',
+      '테스트 데이터 격리, 결제 모킹, 운영 영향 방지 전략을 포함한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '현실적인 부하 모델',
+        detail:
+          '브라우징→장바구니→체크아웃 흐름과 실패/재시도 비율을 포함해 ramp-up과 peak 구간을 설계한다.',
+      },
+      {
+        title: '성능과 정합성 지표',
+        detail: 'p95 응답 시간, 5xx 비율, timeout, 중복 주문 수, 재고 음수 여부를 함께 관찰한다.',
+      },
+      {
+        title: '안전한 실행 조건',
+        detail:
+          '스테이징 환경, 결제 모킹, 테스트 계정/상품 분리, 실행 시간 제한과 중단 조건을 명시한다.',
+      },
+    ],
+  },
+  {
+    slug: 'screen-reader-form-audit',
+    title: '스크린리더 폼 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'easy',
+    tools: ['NVDA', 'VoiceOver', 'Accessibility Tree'],
+    summary:
+      '회원가입 폼에서 스크린리더 사용자가 입력 목적과 오류를 이해할 수 있는지 검증하는 접근성 테스트 케이스를 작성하세요.',
+    requirement: [
+      '각 입력 필드의 accessible name이 화면 라벨과 일치하는지 확인한다.',
+      '필수 여부, 도움말, 형식 안내가 보조기술에 전달되는지 검증한다.',
+      '유효성 오류 발생 시 오류 메시지와 필드가 연결되어 읽히는지 확인한다.',
+      '오류 수정 후 상태가 갱신되고 성공 메시지가 적절히 전달되는지 검증한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '입력 필드 이름과 설명',
+        detail:
+          '이메일, 비밀번호, 확인 입력의 accessible name과 description을 접근성 트리 또는 스크린리더로 확인한다.',
+      },
+      {
+        title: '오류 메시지 연결',
+        detail:
+          '잘못된 입력 후 aria-describedby 또는 동등한 방식으로 해당 필드의 오류가 읽히는지 확인한다.',
+      },
+      {
+        title: '상태 변화 전달',
+        detail:
+          '오류가 사라지거나 제출 성공 시 사용자가 상태 변화를 인지할 수 있는 live region 또는 포커스 전략을 점검한다.',
+      },
+    ],
+  },
+  {
+    slug: 'modal-focus-accessibility',
+    title: '모달 포커스 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'medium',
+    tools: ['Keyboard', 'Screen Reader'],
+    summary:
+      '삭제 확인 모달이 키보드와 보조기술 사용자에게 안전하게 동작하는지 검증하는 접근성 테스트 케이스를 작성하세요.',
+    requirement: [
+      '모달이 열리면 포커스가 모달 내부의 적절한 요소로 이동하는지 확인한다.',
+      'Tab 순환이 모달 내부에 갇히고 배경 요소로 빠져나가지 않는지 검증한다.',
+      'Escape, 취소, 확인 동작 후 포커스가 호출 버튼으로 복귀하는지 확인한다.',
+      'dialog 역할, 제목, 설명이 보조기술에 전달되는지 검증한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '초기 포커스와 포커스 트랩',
+        detail:
+          '모달 오픈 시 취소 또는 제목으로 포커스가 이동하고 Tab/Shift+Tab이 모달 내부에서 순환하는지 확인한다.',
+      },
+      {
+        title: '닫힘 후 포커스 복귀',
+        detail:
+          'Escape, 취소, 확인 각각에서 모달이 닫히고 포커스가 모달을 연 버튼으로 돌아오는지 검증한다.',
+      },
+      {
+        title: '보조기술 정보',
+        detail:
+          'role=dialog, aria-modal, accessible name/description이 모달 목적과 위험성을 설명하는지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'color-contrast-audit',
+    title: '색 대비와 상태 표현 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'medium',
+    tools: ['axe', 'Contrast Checker'],
+    summary:
+      '상태 배지, 버튼, 에러 메시지가 색에만 의존하지 않고 충분한 대비로 전달되는지 검증하는 접근성 테스트 계획을 작성하세요.',
+    requirement: [
+      '본문, 보조 텍스트, 버튼, 배지의 색 대비가 WCAG 기준을 만족하는지 확인한다.',
+      '성공/실패/경고 상태가 색상 외 텍스트나 아이콘 등으로도 구분되는지 검증한다.',
+      'hover, focus, disabled 상태에서도 의미와 대비가 유지되는지 확인한다.',
+      '다크 모드 또는 고대비 설정에서 정보 손실이 없는지 점검한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '텍스트와 UI 대비 측정',
+        detail:
+          '일반 텍스트 4.5:1, 큰 텍스트 3:1, UI 컴포넌트 3:1 기준으로 주요 색 조합을 측정한다.',
+      },
+      {
+        title: '색상 단독 전달 방지',
+        detail:
+          '완료/실패/경고가 색상만이 아니라 텍스트, 아이콘, aria-label 등으로 구분되는지 확인한다.',
+      },
+      {
+        title: '상태별 대비 유지',
+        detail:
+          'hover, focus, disabled, selected 상태에서 대비와 의미 전달이 유지되는지 스냅샷과 측정값으로 기록한다.',
+      },
+    ],
+  },
+  {
+    slug: 'accessible-data-table-audit',
+    title: '데이터 테이블 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'hard',
+    tools: ['Screen Reader', 'Keyboard', 'axe'],
+    summary:
+      '검색·정렬·페이지네이션이 있는 데이터 테이블을 스크린리더와 키보드로 탐색 가능한지 검증하는 접근성 테스트 케이스를 작성하세요.',
+    requirement: [
+      '테이블 헤더와 셀이 의미적으로 연결되어 행·열 맥락을 이해할 수 있는지 확인한다.',
+      '정렬 가능한 컬럼의 현재 정렬 상태가 보조기술에 전달되는지 검증한다.',
+      '검색과 페이지 이동 후 결과 수와 현재 페이지 상태가 사용자가 인지 가능하게 갱신되는지 확인한다.',
+      '키보드만으로 검색, 정렬, 페이지 이동을 완료할 수 있는지 검증한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '테이블 구조와 헤더 연결',
+        detail:
+          'th, scope, caption 또는 accessible name으로 테이블 목적과 각 셀의 열 맥락이 전달되는지 확인한다.',
+      },
+      {
+        title: '정렬 상태 전달',
+        detail:
+          '정렬 버튼의 이름과 aria-sort 또는 동등한 상태 정보가 오름차순/내림차순 변화를 정확히 알리는지 검증한다.',
+      },
+      {
+        title: '동적 결과 갱신',
+        detail:
+          '검색·페이지네이션 후 결과 수와 현재 페이지가 화면과 보조기술 모두에서 인지 가능하게 갱신되는지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'third-party-script-performance',
+    title: '서드파티 스크립트 성능 영향 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'medium',
+    tools: ['Performance', 'Network', 'Lighthouse'],
+    summary:
+      '분석, 채팅, 광고 같은 서드파티 스크립트가 초기 로딩과 상호작용 지연에 미치는 영향을 검증하는 성능 테스트 계획을 작성하세요.',
+    requirement: [
+      '서드파티 스크립트별 요청 수, 전송량, main thread 점유 시간을 측정한다.',
+      '스크립트 로딩 전략(async, defer, lazy load)이 초기 렌더링에 미치는 영향을 확인한다.',
+      '서드파티 장애나 지연 상황에서도 핵심 기능이 사용 가능한지 검증한다.',
+      '제거 또는 지연 로딩 전후의 LCP, INP, TBT 변화를 비교할 증거를 정의한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '스크립트별 비용 분리',
+        detail:
+          'Network와 Performance 결과에서 서드파티 도메인별 요청 수, bytes, long task 기여도를 분리해 기록한다.',
+      },
+      {
+        title: '로딩 전략 검증',
+        detail:
+          'async/defer/lazy load 적용 전후로 초기 렌더링과 상호작용 가능 시점이 개선되는지 비교한다.',
+      },
+      {
+        title: '장애 내성 확인',
+        detail:
+          '서드파티 요청 실패 또는 지연을 시뮬레이션해 로그인, 탐색, 제출 같은 핵심 흐름이 막히지 않는지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'cache-revalidation-performance',
+    title: '캐시와 재검증 성능 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'medium',
+    tools: ['Network', 'Headers', 'Lighthouse'],
+    summary:
+      '정적 자산과 API 응답의 캐시 정책이 반복 방문 성능과 데이터 신선도에 미치는 영향을 검증하는 테스트 케이스를 작성하세요.',
+    requirement: [
+      '정적 자산의 Cache-Control, ETag, immutable 정책이 의도와 맞는지 확인한다.',
+      'API 응답 캐시가 stale 데이터와 과도한 재요청을 만들지 않는지 검증한다.',
+      '첫 방문과 재방문에서 요청 수, 전송량, 로딩 시간을 비교한다.',
+      '배포 후 자산 해시 변경과 오래된 캐시 무효화가 정상 동작하는지 확인한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '정적 자산 캐시 정책',
+        detail:
+          'JS/CSS/이미지의 Cache-Control과 파일 해시를 확인해 장기 캐시와 배포 후 갱신이 양립하는지 검증한다.',
+      },
+      {
+        title: 'API 재검증 동작',
+        detail:
+          '목록/상세 API가 필요한 순간에만 재검증되고 stale 데이터가 사용자에게 오래 노출되지 않는지 확인한다.',
+      },
+      {
+        title: '첫 방문과 재방문 비교',
+        detail:
+          'Disable cache와 일반 캐시 상태를 비교해 request 수, transferred bytes, load event 시간을 기록한다.',
+      },
+    ],
+  },
+  {
+    slug: 'mobile-interaction-latency',
+    title: '모바일 상호작용 지연 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'hard',
+    tools: ['Performance', 'CPU Throttling'],
+    summary:
+      '저사양 모바일 환경에서 검색, 필터, 입력 같은 상호작용이 지연 없이 반응하는지 검증하는 성능 테스트 계획을 작성하세요.',
+    requirement: [
+      'CPU throttling과 모바일 viewport 조건을 명시하고 반복 가능한 측정 환경을 정의한다.',
+      '검색 입력, 필터 변경, 모달 열기처럼 사용자가 자주 하는 상호작용을 측정 대상으로 정한다.',
+      'long task, scripting time, input delay를 관찰해 지연 원인을 분리한다.',
+      'debounce, virtualization, memoization 등 개선 전후를 비교할 기준을 포함한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '모바일 측정 조건',
+        detail:
+          '모바일 viewport, Slow 4G 또는 Fast 3G, 4x CPU throttling 등 재현 가능한 조건을 고정한다.',
+      },
+      {
+        title: '상호작용별 지연 측정',
+        detail:
+          '검색 타이핑, 필터 변경, 모달 오픈에서 input delay와 long task 발생 여부를 trace로 확인한다.',
+      },
+      {
+        title: '개선 전후 비교',
+        detail:
+          'debounce나 리스트 최적화 적용 전후의 scripting time, dropped frame, INP 추정값을 비교한다.',
+      },
+    ],
+  },
+  {
+    slug: 'search-result-rendering-performance',
+    title: '검색 결과 렌더링 성능 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'medium',
+    tools: ['Performance', 'React Profiler'],
+    summary:
+      '검색 결과가 많아질 때 렌더링 비용과 스크롤 성능이 악화되지 않는지 검증하는 성능 테스트 케이스를 작성하세요.',
+    requirement: [
+      '결과 수가 적을 때와 많을 때 렌더링 시간과 프레임 드랍을 비교한다.',
+      '검색어 변경 시 불필요한 전체 재렌더링이 발생하는지 확인한다.',
+      '페이지네이션 또는 가상화가 필요한 임계점을 정의한다.',
+      '빈 결과, 빠른 연속 입력, 긴 제목 같은 경계 조건을 포함한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '결과 규모별 렌더링 비교',
+        detail: '10개, 100개, 1000개 결과에서 commit time, scripting time, scroll FPS를 비교한다.',
+      },
+      {
+        title: '불필요한 재렌더링 확인',
+        detail: 'React Profiler로 검색 입력 시 변경되지 않은 카드/행까지 재렌더링되는지 확인한다.',
+      },
+      {
+        title: '경계 조건 검증',
+        detail:
+          '빈 결과, 매우 긴 문자열, 빠른 연속 입력에서 UI 멈춤이나 레이아웃 흔들림이 없는지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'landmark-skiplink-accessibility',
+    title: '랜드마크와 본문 건너뛰기 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'easy',
+    tools: ['Keyboard', 'Screen Reader'],
+    summary:
+      '반복되는 네비게이션을 건너뛰고 페이지 구조를 빠르게 파악할 수 있는지 검증하는 접근성 테스트 케이스를 작성하세요.',
+    requirement: [
+      '키보드 사용자가 본문으로 바로 이동할 수 있는 skip link가 있는지 확인한다.',
+      'header, nav, main, footer 같은 landmark가 의미 있게 구성되어 있는지 검증한다.',
+      '페이지 제목과 h1이 현재 페이지 목적을 명확히 설명하는지 확인한다.',
+      '스크린리더 landmark 목록에서 주요 영역이 중복이나 누락 없이 탐색되는지 확인한다.',
+    ],
+    modelTestCases: [
+      {
+        title: 'skip link 동작',
+        detail:
+          '첫 Tab에서 본문 건너뛰기 링크가 노출되고 Enter 후 main 영역으로 포커스가 이동하는지 확인한다.',
+      },
+      {
+        title: '랜드마크 구조',
+        detail:
+          'nav, main, footer가 역할에 맞게 구성되고 중첩/중복 landmark가 혼란을 만들지 않는지 점검한다.',
+      },
+      {
+        title: '제목 구조',
+        detail:
+          'document title, h1, 섹션 heading이 페이지 목적과 구조를 일관되게 전달하는지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'live-region-notification-accessibility',
+    title: '동적 알림 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'medium',
+    tools: ['Screen Reader', 'Keyboard'],
+    summary:
+      '토스트, 저장 완료, 오류 배너처럼 동적으로 나타나는 메시지가 보조기술 사용자에게 적절히 전달되는지 검증하세요.',
+    requirement: [
+      '저장 완료, 오류, 로딩 완료 메시지가 스크린리더에 자동으로 전달되는지 확인한다.',
+      '중요도에 따라 polite/assertive live region 사용이 적절한지 검증한다.',
+      '알림이 너무 빨리 사라져 읽을 수 없는 문제가 없는지 확인한다.',
+      '포커스를 강제로 빼앗지 않으면서도 사용자가 상태 변화를 인지할 수 있는지 확인한다.',
+    ],
+    modelTestCases: [
+      {
+        title: 'live region 발표',
+        detail:
+          '저장 성공과 실패 메시지가 aria-live 또는 role=status/alert로 스크린리더에 발표되는지 확인한다.',
+      },
+      {
+        title: '알림 지속 시간',
+        detail:
+          '토스트가 사용자가 읽기에 충분한 시간 유지되고 hover/focus 시 사라지지 않는지 확인한다.',
+      },
+      {
+        title: '포커스 유지',
+        detail:
+          '비치명적 알림은 현재 작업 포커스를 유지하고, 치명적 오류는 적절한 요약 영역으로 안내하는지 점검한다.',
+      },
+    ],
+  },
+  {
+    slug: 'touch-target-accessibility',
+    title: '모바일 터치 타깃 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'medium',
+    tools: ['Mobile Viewport', 'axe'],
+    summary:
+      '모바일 화면에서 버튼, 링크, 체크박스 같은 조작 대상이 충분한 크기와 간격을 갖는지 검증하는 접근성 테스트 계획을 작성하세요.',
+    requirement: [
+      '주요 터치 타깃의 크기와 간격이 WCAG 권장 기준을 만족하는지 확인한다.',
+      '작은 아이콘 버튼도 accessible name과 충분한 클릭 영역을 갖는지 검증한다.',
+      '한 손 사용 또는 확대 상태에서 오작동 위험이 없는지 확인한다.',
+      '가로/세로 화면과 작은 viewport에서 텍스트 겹침이나 타깃 중첩이 없는지 점검한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '터치 타깃 크기 측정',
+        detail:
+          '버튼, 링크, 체크박스, 아이콘 버튼의 실제 hit area가 최소 권장 크기와 간격을 만족하는지 측정한다.',
+      },
+      {
+        title: '아이콘 버튼 접근성',
+        detail:
+          '아이콘만 있는 버튼에 accessible name이 있고, 시각적 아이콘과 동작이 일치하는지 확인한다.',
+      },
+      {
+        title: '작은 화면 회귀 확인',
+        detail:
+          '320px 폭과 확대 상태에서 텍스트/타깃 겹침, 인접 버튼 오탭 위험, 가로 스크롤 발생 여부를 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'reduced-motion-accessibility',
+    title: '모션 민감 사용자 설정 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'hard',
+    tools: ['prefers-reduced-motion', 'DevTools'],
+    summary:
+      '애니메이션과 전환 효과가 모션 민감 사용자에게 부담을 주지 않도록 reduced motion 설정을 검증하는 접근성 테스트 케이스를 작성하세요.',
+    requirement: [
+      'prefers-reduced-motion 설정에서 큰 이동, 확대, 반복 애니메이션이 줄어드는지 확인한다.',
+      '모션이 줄어도 상태 변화와 화면 전환 의미가 사라지지 않는지 검증한다.',
+      '자동 재생, 깜박임, 반복 효과가 사용자의 제어 없이 지속되지 않는지 확인한다.',
+      '기본 모션과 reduced motion 각각에서 핵심 작업 흐름이 동일하게 가능한지 확인한다.',
+    ],
+    modelTestCases: [
+      {
+        title: 'reduced motion 적용',
+        detail:
+          'OS 또는 DevTools에서 prefers-reduced-motion을 켠 뒤 페이지 전환, 모달, 리스트 등장 효과가 축소되는지 확인한다.',
+      },
+      {
+        title: '의미 보존 확인',
+        detail:
+          '모션이 제거되어도 선택됨, 완료, 오류 같은 상태 변화가 텍스트나 스타일로 명확히 전달되는지 검증한다.',
+      },
+      {
+        title: '반복/깜박임 제어',
+        detail:
+          '자동 재생 애니메이션, 깜박임, skeleton 효과가 과도하지 않고 멈춤 또는 축소 전략을 갖는지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'font-loading-performance',
+    title: '웹폰트 로딩 성능 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'easy',
+    tools: ['Network', 'Lighthouse'],
+    summary:
+      '웹폰트가 렌더링 지연, 레이아웃 변화, 텍스트 표시 경험에 미치는 영향을 검증하는 성능 테스트 케이스를 작성하세요.',
+    requirement: [
+      '폰트 파일 크기, 요청 수, preload 적용 여부를 확인한다.',
+      'font-display 전략이 FOIT/FOUT와 사용자 경험에 미치는 영향을 검증한다.',
+      '폰트 로딩 전후 레이아웃 변화와 CLS 영향을 확인한다.',
+      '서브셋, 가변 폰트, 시스템 폰트 fallback 개선 여부를 비교한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '폰트 요청 비용 확인',
+        detail:
+          'Network 탭에서 폰트 파일 수, 크기, 캐시 여부, preload 적용 여부를 확인하고 초기 렌더링 영향도를 기록한다.',
+      },
+      {
+        title: '텍스트 표시 전략 검증',
+        detail:
+          'font-display 설정에 따라 텍스트가 보이지 않는 시간이 발생하는지, fallback 전환이 과도하게 튀지 않는지 확인한다.',
+      },
+      {
+        title: '레이아웃 변화 측정',
+        detail:
+          '웹폰트 적용 전후 텍스트 폭 변화로 CLS가 증가하는지 확인하고 fallback metric 조정 필요성을 정리한다.',
+      },
+    ],
+  },
+  {
+    slug: 'memory-leak-performance',
+    title: '장시간 사용 메모리 누수 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'hard',
+    tools: ['Memory', 'Performance Monitor'],
+    summary:
+      '대시보드나 리스트 화면을 장시간 사용할 때 메모리 사용량이 계속 증가하지 않는지 검증하는 성능 테스트 계획을 작성하세요.',
+    requirement: [
+      '반복 탐색, 검색, 모달 열기/닫기 같은 장시간 사용 시나리오를 정의한다.',
+      'heap snapshot, detached node, event listener 증가 여부를 확인한다.',
+      '동일 작업 반복 후 메모리가 안정화되는지 또는 지속 증가하는지 측정한다.',
+      '누수 의심 지점을 재현 가능한 최소 절차와 증거로 정리한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '반복 사용 시나리오',
+        detail:
+          '목록 검색, 상세 진입, 모달 열기/닫기, 페이지 전환을 20회 이상 반복하는 측정 절차를 정의한다.',
+      },
+      {
+        title: '메모리 증가 관찰',
+        detail:
+          'Performance Monitor와 heap snapshot으로 JS heap, DOM node, event listener 수가 반복 후 안정화되는지 확인한다.',
+      },
+      {
+        title: '누수 증거 수집',
+        detail:
+          'detached DOM tree 또는 해제되지 않은 listener를 snapshot diff로 확인하고 재현 URL과 단계로 리포트한다.',
+      },
+    ],
+  },
+  {
+    slug: 'server-rendering-ttfb-performance',
+    title: '서버 렌더링 TTFB 점검',
+    track: 'performance',
+    category: 'performance',
+    difficulty: 'medium',
+    tools: ['Network', 'WebPageTest'],
+    summary:
+      'SSR/동적 페이지에서 서버 응답 지연이 초기 표시 성능에 미치는 영향을 검증하는 성능 테스트 케이스를 작성하세요.',
+    requirement: [
+      'TTFB, server timing, HTML 응답 크기와 초기 렌더링 관계를 측정한다.',
+      '캐시 hit/miss, 로그인 여부, 지역 차이에 따른 응답 시간을 비교한다.',
+      '느린 DB/API 의존성이 TTFB에 미치는 영향을 추적하는 절차를 포함한다.',
+      'TTFB 회귀를 배포 전 감지할 기준과 알림 조건을 정의한다.',
+    ],
+    modelTestCases: [
+      {
+        title: 'TTFB 측정 기준',
+        detail:
+          '동일 URL에서 cache hit/miss, 로그인/비로그인, 지역 조건을 나누어 TTFB와 server timing을 기록한다.',
+      },
+      {
+        title: '서버 병목 추적',
+        detail:
+          '느린 API 호출, DB 쿼리, 동기 작업이 HTML 응답 시작을 지연시키는지 로그와 trace로 확인한다.',
+      },
+      {
+        title: '회귀 감지 기준',
+        detail: '주요 동적 route의 p95 TTFB 예산과 이전 배포 대비 증가율 기준을 정의한다.',
+      },
+    ],
+  },
+  {
+    slug: 'accessible-error-summary',
+    title: '폼 오류 요약 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'medium',
+    tools: ['Keyboard', 'Screen Reader'],
+    summary:
+      '여러 필드 오류가 동시에 발생했을 때 사용자가 오류 위치와 수정 방법을 빠르게 이해할 수 있는지 검증하세요.',
+    requirement: [
+      '제출 실패 시 오류 요약이 제공되고 각 오류가 해당 필드로 이동 가능한지 확인한다.',
+      '오류 요약과 개별 필드 오류가 중복되더라도 혼란스럽지 않게 전달되는지 검증한다.',
+      '키보드와 스크린리더 사용자가 첫 오류 또는 요약으로 안내되는지 확인한다.',
+      '오류 수정 후 요약과 필드 상태가 정확히 갱신되는지 검증한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '오류 요약 제공',
+        detail:
+          '필수값 누락 제출 후 페이지 상단 또는 폼 상단에 오류 요약이 표시되고 스크린리더가 인지 가능한지 확인한다.',
+      },
+      {
+        title: '필드 이동 연결',
+        detail:
+          '요약의 각 오류 링크가 해당 입력 필드로 포커스를 이동시키고 필드 오류 메시지가 함께 읽히는지 검증한다.',
+      },
+      {
+        title: '수정 후 상태 갱신',
+        detail: '오류를 수정하면 요약 항목과 aria-invalid 상태가 제거되거나 갱신되는지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'language-and-i18n-accessibility',
+    title: '언어와 다국어 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'medium',
+    tools: ['Screen Reader', 'HTML Validator'],
+    summary:
+      '한국어/영문이 섞인 화면에서 문서 언어와 부분 언어 표시가 올바르게 전달되는지 검증하는 접근성 테스트 케이스를 작성하세요.',
+    requirement: [
+      'html lang 값이 페이지 기본 언어와 일치하는지 확인한다.',
+      '다른 언어 문구, 코드, 약어가 필요한 경우 적절히 구분되는지 검증한다.',
+      '날짜, 숫자, 통화, 단위가 지역화 규칙에 맞게 읽히는지 확인한다.',
+      '언어 전환 또는 번역 누락이 스크린리더 이해를 방해하지 않는지 점검한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '문서 기본 언어',
+        detail:
+          'html lang이 ko 또는 페이지 실제 기본 언어와 일치하고 스크린리더 발음이 과도하게 어긋나지 않는지 확인한다.',
+      },
+      {
+        title: '부분 언어와 약어 처리',
+        detail:
+          '영문 제품명, 코드, 약어, 외국어 문구가 필요한 경우 lang 또는 설명으로 의미가 전달되는지 점검한다.',
+      },
+      {
+        title: '지역화 포맷 확인',
+        detail: '날짜, 시간, 가격, 단위가 사용자 지역과 문맥에 맞게 표시되고 읽히는지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'accessible-empty-loading-states',
+    title: '빈 상태와 로딩 상태 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'easy',
+    tools: ['Screen Reader', 'Keyboard'],
+    summary:
+      '목록의 빈 상태, 로딩, 오류 상태가 시각 사용자와 보조기술 사용자 모두에게 명확히 전달되는지 검증하세요.',
+    requirement: [
+      '로딩 중 상태가 텍스트와 보조기술 모두에 전달되는지 확인한다.',
+      '빈 상태에서 다음 행동이 무엇인지 명확히 안내되는지 검증한다.',
+      '오류 상태가 재시도 방법과 함께 전달되는지 확인한다.',
+      '로딩 완료 후 포커스와 읽기 순서가 예상치 못하게 이동하지 않는지 점검한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '로딩 상태 전달',
+        detail:
+          '스피너만 보이는 상태를 피하고 role=status 또는 텍스트로 현재 로딩 중임이 전달되는지 확인한다.',
+      },
+      {
+        title: '빈 상태 행동 안내',
+        detail:
+          '검색 결과 없음 또는 작성 글 없음 상태에서 원인과 다음 행동이 텍스트로 명확히 제공되는지 검증한다.',
+      },
+      {
+        title: '오류와 재시도',
+        detail:
+          '데이터 로딩 실패 시 오류 원인, 재시도 버튼, 포커스 유지가 키보드/스크린리더 사용자에게 적절한지 확인한다.',
+      },
+    ],
+  },
+  {
+    slug: 'keyboard-accessibility-audit',
+    title: '키보드 접근성 점검',
+    track: 'accessibility',
+    category: 'accessibility',
+    difficulty: 'easy',
+    tools: ['Keyboard', 'Screen Reader', 'axe'],
+    summary:
+      '로그인/폼 화면을 기준으로 키보드 탐색, 포커스 표시, 라벨·에러 전달을 점검하는 접근성 테스트 케이스를 작성하세요.',
+    requirement: [
+      'Tab/Shift+Tab만으로 주요 입력, 버튼, 링크에 순서대로 접근 가능한지 검증한다.',
+      '현재 포커스 위치가 시각적으로 명확히 보이는지 확인한다.',
+      '입력 필드의 이름, 설명, 에러 메시지가 보조기술에 전달되는지 검증한다.',
+      '색 대비와 아이콘 단독 정보 전달처럼 시각 의존 문제가 없는지 확인한다.',
+    ],
+    modelTestCases: [
+      {
+        title: '키보드 탐색 순서',
+        detail:
+          '마우스 없이 Tab/Shift+Tab으로 전체 컨트롤을 이동하며 포커스 순서가 화면 흐름과 일치하고 키보드 함정이 없는지 확인한다.',
+      },
+      {
+        title: '폼 라벨과 에러 접근성',
+        detail:
+          '각 입력의 접근 가능한 이름과 에러 메시지 연결을 스크린리더 또는 브라우저 접근성 트리로 확인한다.',
+      },
+      {
+        title: '시각 의존성 점검',
+        detail:
+          '포커스 링, 색 대비, 아이콘 버튼의 accessible name을 확인해 색상이나 아이콘만으로 의미가 전달되지 않게 검증한다.',
+      },
+    ],
   },
 ];
 

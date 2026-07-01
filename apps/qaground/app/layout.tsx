@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 
 import '@/app-shell/globals.css';
-import { ProductionScripts } from '@/shared/analytics/production-scripts';
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const SITE_URL = 'https://qaground.gettestea.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID;
 
 const DESCRIPTION =
-  'qaground(큐에이그라운드)는 테스티아(Testea)가 만든 QA 연습 플레이그라운드입니다. 로그인 없이 로그인 폼·API·결제 같은 실제형 연습 대상에 Playwright·Postman 테스트를 직접 작성해 실행하고 채점받으세요. QA 과제전형·과제 연습·과제 테스트 준비에도 활용할 수 있습니다.';
+  'qaground(큐에이그라운드)는 테스티아(Testea)가 만든 QA 연습 플레이그라운드입니다. 로그인 없이 로그인 폼·API·결제 같은 실제형 연습 대상에 Playwright·Postman 테스트를 직접 작성하고, 성능·접근성 테스트 계획까지 연습하세요. QA 과제전형·과제 연습·과제 테스트 준비에도 활용할 수 있습니다.';
 
 const TITLE = 'qaground — QA 자동화 연습 플레이그라운드 | 테스티아';
 
@@ -65,6 +66,15 @@ export const metadata: Metadata = {
     'Postman',
     'Postman 연습',
     'API 테스트',
+    '성능 테스트',
+    '성능 테스트 연습',
+    'Core Web Vitals',
+    'Lighthouse',
+    '접근성 테스트',
+    '웹 접근성',
+    'WCAG',
+    '스크린리더 테스트',
+    '키보드 접근성',
     'API 테스트 연습',
     'Selenium 대안',
     'Cypress 대안',
@@ -134,7 +144,8 @@ const jsonLd = {
       alternateName: '테스티아',
       url: 'https://gettestea.com',
       sameAs: ['https://gettestea.com'],
-      description: '테스티아(Testea)가 운영하는 QA 자동화 연습 플레이그라운드 qaground',
+      description:
+        '테스티아(Testea)가 운영하는 QA 자동화·API·성능·접근성 연습 플레이그라운드 qaground',
     },
   ],
 };
@@ -144,9 +155,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // GA/AdSense는 production 배포 + 운영 호스트에서만 로드. dev 서브도메인은 production 배포여도 차단.
+  // GA는 production 배포에서만 로드. preview(dev 브랜치)·로컬은 GA_ID가 주입돼도 차단.
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const gaEnabled = !!gaId && process.env.VERCEL_ENV === 'production';
+  // AdSense도 동일하게 production + ID 주입 시에만 로더 주입.
   const adsEnabled = !!ADSENSE_ID && process.env.VERCEL_ENV === 'production';
 
   return (
@@ -157,13 +169,17 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {children}
+        {gaEnabled && <GoogleAnalytics gaId={gaId} />}
+        {adsEnabled && (
+          <Script
+            id="adsbygoogle-loader"
+            async
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`}
+          />
+        )}
       </body>
-      {(gaEnabled || adsEnabled) && (
-        <ProductionScripts
-          gaId={gaEnabled ? gaId : undefined}
-          adsenseId={adsEnabled ? ADSENSE_ID : undefined}
-        />
-      )}
     </html>
   );
 }

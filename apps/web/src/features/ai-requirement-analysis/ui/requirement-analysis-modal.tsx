@@ -153,13 +153,13 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
   };
 
   return (
-    <Dialog.Root defaultOpen>
+    <Dialog.Root defaultOpen onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay onClick={step !== 'loading' ? onClose : undefined} />
-        <Dialog.Content className="bg-bg-2 border-line-2 rounded-5 flex max-h-[85vh] w-full max-w-[720px] flex-col border p-0">
+        <Dialog.Content className="bg-bg-2 border-line-2 rounded-3 flex max-h-[85vh] w-full max-w-[720px] flex-col border p-0">
           {/* 헤더 */}
           <div className="border-line-2 flex items-center justify-between border-b px-6 py-4">
-            <Dialog.Title className="typo-h2-heading text-text-1">AI 요구사항 분석</Dialog.Title>
+            <Dialog.Title className="typo-h2-heading text-text-1">요구사항 생성</Dialog.Title>
             {step !== 'loading' && (
               <button
                 type="button"
@@ -176,7 +176,7 @@ export const RequirementAnalysisModal = ({ projectId, onClose }: Props) => {
           <div className="flex-1 overflow-y-auto p-6">
             {!hasConfig ? (
               <div className="flex flex-col items-center gap-4 py-10 text-center">
-                <div className="bg-primary/10 flex h-14 w-14 items-center justify-center rounded-full">
+                <div className="bg-primary/10 rounded-3 flex h-14 w-14 items-center justify-center">
                   <Bot className="text-primary h-7 w-7" />
                 </div>
                 <div className="flex flex-col gap-1">

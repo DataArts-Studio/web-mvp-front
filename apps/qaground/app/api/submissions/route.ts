@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
+import { gradeApiAttempts } from '@/shared/challenges/api-hidden-grader';
 import { getChallenge } from '@/shared/challenges/registry';
+import { createChallengeResultToken } from '@/shared/challenges/result-access.server';
 import { getDatabase, qagroundSubmissions } from '@testea/db';
 import { z } from 'zod';
 
@@ -17,24 +19,41 @@ const BodySchema = z
   })
   .strict();
 
+const ApiAssertionSchema = z
+  .object({
+    kind: z.enum(['status', 'json', 'exists', 'type', 'arrayLength']),
+    path: z.string(),
+    expected: z.string(),
+  })
+  .strict();
+
+const ApiCheckSchema = z.object({ pass: z.boolean() }).passthrough();
+
+const ApiAttemptSchema = z
+  .object({
+    method: z.string(),
+    path: z.string(),
+    status: z.number().int(),
+    assertions: z.array(ApiAssertionSchema),
+    script: z.string(),
+    checks: z.array(ApiCheckSchema),
+    scriptResults: z.array(ApiCheckSchema),
+  })
+  .strict();
+
+const ApiContentSchema = z
+  .object({
+    attempts: z.array(ApiAttemptSchema).max(100),
+  })
+  .passthrough();
+
 // 제출 내용 jsonb 크기 상한(직렬화 기준). 남용·과대 페이로드 차단.
 const MAX_CONTENT_BYTES = 50_000;
-const SUBMISSION_HOSTS = new Set(['qaground.gettestea.com']);
 
 // 간단 인메모리 레이트리밋(서버 인스턴스별). 제출은 빈번하므로 이슈보다 넉넉히.
 const WINDOW_MS = 60 * 60 * 1000;
 const MAX_PER_WINDOW = 60;
 const hits = new Map<string, number[]>();
-function getHostname(request: Request): string {
-  const forwardedHost = request.headers.get('x-forwarded-host');
-  const host = forwardedHost ?? request.headers.get('host') ?? '';
-  return host.split(',')[0].trim().split(':')[0].toLowerCase();
-}
-
-function shouldRecordSubmission(request: Request): boolean {
-  return SUBMISSION_HOSTS.has(getHostname(request));
-}
-
 function rateLimited(ip: string): boolean {
   const now = Date.now();
   const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
@@ -58,10 +77,6 @@ function rateLimited(ip: string): boolean {
  * - DB 접근은 서버(연결) 경유. 테이블은 RLS deny-anon.
  */
 export async function POST(request: Request) {
-  if (!shouldRecordSubmission(request)) {
-    return NextResponse.json({ ok: true, skipped: true });
-  }
-
   const ip = (request.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
   if (rateLimited(ip)) {
     return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 });
@@ -88,6 +103,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'content_too_large' }, { status: 413 });
   }
 
+  const apiContent =
+    parsed.data.kind === 'api' ? ApiContentSchema.safeParse(parsed.data.content) : null;
+  if (parsed.data.kind === 'api' && (!apiContent?.success || !challenge.endpoints)) {
+    return NextResponse.json({ ok: false, error: 'invalid_api_submission' }, { status: 400 });
+  }
+
+  const hiddenGrade =
+    apiContent?.success && challenge.endpoints
+      ? gradeApiAttempts(apiContent.data.attempts, { targets: challenge.endpoints })
+      : null;
+  const serverVerified = !!hiddenGrade && hiddenGrade.score === hiddenGrade.maxScore;
+  const serverResult = hiddenGrade
+    ? {
+        ...(parsed.data.result && typeof parsed.data.result === 'object' ? parsed.data.result : {}),
+        hiddenGrade,
+      }
+    : (parsed.data.result ?? null);
   try {
     const db = getDatabase();
     await db.insert(qagroundSubmissions).values({
@@ -95,10 +127,13 @@ export async function POST(request: Request) {
       track: challenge.track,
       kind: parsed.data.kind,
       content: parsed.data.content ?? {},
-      result: parsed.data.result ?? null,
+      result: serverResult,
       anon_id: parsed.data.anonId ?? null,
     });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      resultToken: serverVerified ? createChallengeResultToken(challenge.slug) : undefined,
+    });
   } catch (error) {
     console.error('[submissions] 저장 실패', error);
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 });
