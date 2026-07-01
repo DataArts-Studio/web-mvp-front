@@ -44,7 +44,14 @@ export const AsideNavItem = ({
 
   if (external) {
     return (
-      <a href={href} onMouseEnter={onMouseEnter} onClick={handleClick} className={className}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onMouseEnter={onMouseEnter}
+        onClick={handleClick}
+        className={className}
+      >
         {content}
       </a>
     );

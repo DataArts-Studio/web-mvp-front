@@ -467,7 +467,10 @@ function buildRequestCases(endpoints: ApiEndpoint[]): ApiRequestCase[] {
     const baseBody = endpoint.body?.length
       ? JSON.stringify(
           Object.fromEntries(
-            endpoint.body.map((field) => [field.path, defaultValueForSchemaType(field.type)])
+            endpoint.body.map((field) => [
+              field.path,
+              field.example ?? defaultValueForSchemaType(field.type),
+            ])
           ),
           null,
           2

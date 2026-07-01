@@ -7,6 +7,7 @@ const SOLUTIONS: Record<string, ChallengeSolution> = {
     approach: [
       '엔드포인트별로 pm.sendRequest를 분리해 목록, 상세, 404, 로그인, 생성, 삭제 흐름을 각각 검증합니다.',
       '상태 코드는 res.code로 먼저 확인하고, JSON 응답이 있는 경우에만 res.json()으로 본문 필드를 검증합니다.',
+      '무효 로그인, 토큰 없는 생성, 잘못된 생성 본문처럼 요구사항의 실패 경로를 성공 경로와 함께 검증합니다.',
       '인증이 필요한 상품 생성과 삭제 요청에는 Authorization 헤더를 포함해 실제 보호 API 흐름을 검증합니다.',
       '204 응답은 본문이 없으므로 res.json()을 호출하지 않고 상태 코드만 검증합니다.',
     ],
@@ -80,7 +81,29 @@ pm.sendRequest(
 
       const json = res.json();
       pm.expect(json.token).to.eql(token);
-      pm.expect(json.user.email).to.eql('tester@qaground.dev');
+    });
+  }
+);
+pm.sendRequest(
+  {
+    url: baseUrl + '/auth/login',
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    body: {
+      mode: 'raw',
+      raw: JSON.stringify({
+        email: 'tester@qaground.dev',
+        password: 'wrong-password',
+      }),
+    },
+  },
+  (err, res) => {
+    pm.test('무효 로그인은 401을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(401);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('자격증명이 올바르지 않습니다.');
     });
   }
 );
@@ -111,6 +134,54 @@ pm.sendRequest(
       pm.expect(json.name).to.eql('테스트 상품');
       pm.expect(json.price).to.eql(12000);
       pm.expect(json.category).to.eql('기타');
+    });
+  }
+);
+pm.sendRequest(
+  {
+    url: baseUrl + '/products',
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    body: {
+      mode: 'raw',
+      raw: JSON.stringify({
+        name: '토큰 없는 상품',
+        price: 1000,
+      }),
+    },
+  },
+  (err, res) => {
+    pm.test('토큰 없는 상품 생성은 401을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(401);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('인증이 필요합니다.');
+    });
+  }
+);
+
+pm.sendRequest(
+  {
+    url: baseUrl + '/products',
+    method: 'POST',
+    header: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + token,
+    },
+    body: {
+      mode: 'raw',
+      raw: JSON.stringify({ price: 0 }),
+    },
+  },
+  (err, res) => {
+    pm.test('잘못된 상품 생성 본문은 400을 반환한다', () => {
+      pm.expect(err).to.eql(null);
+      pm.expect(res.code).to.eql(400);
+
+      const json = res.json();
+      pm.expect(json.error).to.eql('입력이 올바르지 않습니다.');
+      pm.expect(Array.isArray(json.issues)).to.eql(true);
     });
   }
 );

@@ -2,18 +2,6 @@ import Link from 'next/link';
 
 import { PlaygroundHeader } from '@/view/challenges/playground-header';
 
-const ENVIRONMENTS = [
-  { label: 'API Sandbox', count: 2, active: true },
-  { label: 'Web UI Sandbox', count: 2, active: false },
-  { label: 'Auth Flow', count: 1, active: false },
-  { label: 'Data Table', count: 1, active: false },
-  { label: 'File Upload', count: 1, active: false },
-  { label: 'Webhook', count: 1, active: false },
-  { label: 'Performance Lab', count: 1, active: false },
-  { label: 'Accessibility Lab', count: 1, active: false },
-  { label: 'Debug Lab', count: 1, active: false },
-];
-
 const PLAYGROUNDS = [
   {
     slug: 'postman-v1',
@@ -111,6 +99,25 @@ const PLAYGROUNDS = [
   },
 ];
 
+function getEnvironmentSummary() {
+  const summaries = new Map<string, { label: string; count: number; available: boolean }>();
+
+  for (const playground of PLAYGROUNDS) {
+    const current = summaries.get(playground.environment) ?? {
+      label: playground.environment,
+      count: 0,
+      available: false,
+    };
+
+    summaries.set(playground.environment, {
+      ...current,
+      count: current.count + 1,
+      available: current.available || playground.status === '사용 가능',
+    });
+  }
+
+  return Array.from(summaries.values());
+}
 function PlaygroundCard({ item }: { item: (typeof PLAYGROUNDS)[number] }) {
   const body = (
     <>
@@ -181,21 +188,19 @@ export const PlaygroundListView = () => {
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <h2 className="text-sm font-semibold">제공 환경</h2>
             <nav className="mt-3 flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
-              {ENVIRONMENTS.map((environment) => (
-                <button
+              {getEnvironmentSummary().map((environment) => (
+                <div
                   key={environment.label}
-                  type="button"
-                  disabled={!environment.active}
                   className={[
-                    'flex min-w-40 items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors lg:min-w-0',
-                    environment.active
+                    'flex min-w-40 items-center justify-between rounded-md px-3 py-2 text-left text-sm lg:min-w-0',
+                    environment.available
                       ? 'bg-bg-3 text-text-1 font-medium'
-                      : 'text-text-3 cursor-not-allowed opacity-75',
+                      : 'text-text-3 opacity-75',
                   ].join(' ')}
                 >
                   <span>{environment.label}</span>
                   <span className="text-text-3 text-xs">{environment.count}</span>
-                </button>
+                </div>
               ))}
             </nav>
           </aside>

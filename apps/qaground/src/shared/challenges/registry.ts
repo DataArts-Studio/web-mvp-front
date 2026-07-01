@@ -35,6 +35,7 @@ export interface ApiSchemaField {
   type: ApiSchemaType;
   required?: boolean;
   desc?: string;
+  example?: unknown;
 }
 
 export interface ApiEndpoint {
@@ -619,9 +620,9 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         desc: '상품 단건 (없으면 404)',
         response: [
           { path: 'id', type: 'number', required: true },
-          { path: 'name', type: 'string', required: true },
+          { path: 'name', type: 'string', required: true, example: '테스트 상품' },
           { path: 'category', type: 'string', required: true },
-          { path: 'price', type: 'number', required: true },
+          { path: 'price', type: 'number', required: true, example: 12000 },
           { path: 'inStock', type: 'boolean', required: true },
         ],
         responseExample: {
@@ -637,14 +638,11 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         path: '/auth/login',
         desc: '로그인 → 토큰 (무효 시 401)',
         body: [
-          { path: 'email', type: 'string', required: true },
-          { path: 'password', type: 'string', required: true },
+          { path: 'email', type: 'string', required: true, example: 'tester@qaground.dev' },
+          { path: 'password', type: 'string', required: true, example: 'qaground123' },
         ],
-        response: [
-          { path: 'token', type: 'string', required: true },
-          { path: 'user.email', type: 'string', required: true },
-        ],
-        responseExample: { token: 'qaground-demo-token', user: { email: 'tester@qaground.dev' } },
+        response: [{ path: 'token', type: 'string', required: true }],
+        responseExample: { token: 'qaground-demo-token' },
       },
       {
         method: 'POST',
@@ -652,15 +650,15 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
         auth: true,
         desc: '상품 생성 (검증 400 / 성공 201)',
         body: [
-          { path: 'name', type: 'string', required: true },
-          { path: 'price', type: 'number', required: true },
-          { path: 'category', type: 'string' },
+          { path: 'name', type: 'string', required: true, example: '테스트 상품' },
+          { path: 'price', type: 'number', required: true, example: 12000 },
+          { path: 'category', type: 'string', example: '기타' },
         ],
         response: [
           { path: 'id', type: 'number', required: true },
-          { path: 'name', type: 'string', required: true },
+          { path: 'name', type: 'string', required: true, example: '테스트 상품' },
           { path: 'category', type: 'string', required: true },
-          { path: 'price', type: 'number', required: true },
+          { path: 'price', type: 'number', required: true, example: 12000 },
           { path: 'inStock', type: 'boolean', required: true },
         ],
         responseExample: {
