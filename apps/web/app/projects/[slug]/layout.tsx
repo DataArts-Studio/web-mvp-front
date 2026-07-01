@@ -1,10 +1,16 @@
 import { ReactNode } from 'react';
 
+import type { Metadata } from 'next';
+
 import { QueryProvider } from '@/app-shell/providers/query-provider';
 import { CommandPalette } from '@/features/command-palette';
 import { RouteLoadingProvider } from '@/shared/lib/route-loading';
 import { Aside } from '@/widgets/aside';
 import { Container } from '@testea/ui';
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default function ProjectLayout({ children }: { children: ReactNode }) {
   return (

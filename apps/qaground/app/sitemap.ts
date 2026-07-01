@@ -2,30 +2,54 @@ import type { MetadataRoute } from 'next';
 
 import { CHALLENGES } from '@/shared/challenges/registry';
 
-// 챌린지 추가 시 자동 반영되는 사이트맵.
+// Sitemap for public crawlable qaground pages.
 const SITE_URL = 'https://qaground.gettestea.com';
+const CONTENT_UPDATED_AT = new Date('2026-07-01');
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
   const staticPages: MetadataRoute.Sitemap = [
-    { url: SITE_URL, lastModified: now, changeFrequency: 'weekly', priority: 1 },
-    { url: `${SITE_URL}/preview`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${SITE_URL}/playground`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: SITE_URL, lastModified: CONTENT_UPDATED_AT, changeFrequency: 'weekly', priority: 1 },
+    {
+      url: `${SITE_URL}/playground`,
+      lastModified: CONTENT_UPDATED_AT,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
     {
       url: `${SITE_URL}/playground/postman-v1`,
-      lastModified: now,
+      lastModified: CONTENT_UPDATED_AT,
       changeFrequency: 'monthly',
       priority: 0.8,
     },
-    { url: `${SITE_URL}/challenges`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${SITE_URL}/learn`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${SITE_URL}/guide`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
+    {
+      url: `${SITE_URL}/challenges`,
+      lastModified: CONTENT_UPDATED_AT,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/learn`,
+      lastModified: CONTENT_UPDATED_AT,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/guide`,
+      lastModified: CONTENT_UPDATED_AT,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/privacy`,
+      lastModified: CONTENT_UPDATED_AT,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
   ];
 
   const challengePages: MetadataRoute.Sitemap = CHALLENGES.map((c) => ({
     url: `${SITE_URL}/challenges/${c.slug}`,
-    lastModified: now,
+    lastModified: CONTENT_UPDATED_AT,
     changeFrequency: 'monthly',
     priority: 0.7,
   }));
