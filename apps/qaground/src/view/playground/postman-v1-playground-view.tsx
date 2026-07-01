@@ -6,7 +6,7 @@ import type {
   ReactNode,
   PointerEvent as ReactPointerEvent,
 } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -136,9 +136,17 @@ function RailSection({ title, children }: { title: string; children: ReactNode }
 
 export const PostmanV1PlaygroundView = () => {
   const [railWidth, setRailWidth] = useState(DEFAULT_RAIL_WIDTH);
+  const stopRailResizeRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      stopRailResizeRef.current?.();
+    };
+  }, []);
 
   const startRailResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
+    stopRailResizeRef.current?.();
 
     const startX = event.clientX;
     const startWidth = railWidth;
@@ -150,10 +158,14 @@ export const PostmanV1PlaygroundView = () => {
     const stopResize = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', stopResize);
+      window.removeEventListener('pointercancel', stopResize);
+      stopRailResizeRef.current = null;
     };
 
+    stopRailResizeRef.current = stopResize;
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', stopResize);
+    window.addEventListener('pointercancel', stopResize);
   };
 
   const handleRailResizeKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -250,10 +262,13 @@ export const PostmanV1PlaygroundView = () => {
           <div
             aria-label="좌측 패널 너비 조절"
             aria-orientation="vertical"
+            aria-valuemax={MAX_RAIL_WIDTH}
+            aria-valuemin={MIN_RAIL_WIDTH}
+            aria-valuenow={railWidth}
             className="group border-line-2 hidden cursor-col-resize border-r lg:block"
             onKeyDown={handleRailResizeKeyDown}
             onPointerDown={startRailResize}
-            role="separator"
+            role="slider"
             tabIndex={0}
           >
             <div className="group-hover:bg-primary/25 h-full w-full transition-colors" />
