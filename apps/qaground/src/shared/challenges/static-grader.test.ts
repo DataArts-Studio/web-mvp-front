@@ -250,7 +250,7 @@ test('t', async ({ page }) => {
 });`;
     const r = gradeSubmissionStatically(challenge, cssOnly);
     expect(r.ok).toBe(false);
-    expect(r.errorMessage).toContain('셀렉터');
+    expect(r.errorMessage).toContain('Selector reference values');
   });
 
   it('role·label 기반 접근성 셀렉터도 통과로 인정한다', () => {
@@ -264,7 +264,7 @@ test('로그인 성공', async ({ page }) => {
 });`;
     const r = gradeSubmissionStatically(challenge, roleBased);
     expect(r.ok).toBe(true);
-    expect(r.errorMessage).toContain('접근성 기반 셀렉터');
+    expect(r.errorMessage).toContain('semantic locator');
   });
 
   it('상호작용이 없으면 실패한다', () => {

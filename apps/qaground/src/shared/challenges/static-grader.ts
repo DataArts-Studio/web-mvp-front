@@ -83,9 +83,9 @@ const SEMANTIC_LOCATOR_RE = /getBy(Role|Label|Text|Placeholder|Title|AltText)\s*
 const ASSERTION_RE = /\bexpect\s*\(/g;
 const AWAITED_ASSERTION_RE = /\bawait\s+expect\s*\(/;
 const POM_METHOD_CALL_RE =
-  /\bawait\s+[A-Za-z_$][\w$]*\.(?:goto|open|visit|login|submit|fill|click|add|goTo|select|search|complete|expect|assert|should)[A-Za-z_$\w]*\s*\(/;
+  /\bawait\s+[A-Za-z_$][\w$]*\.(?:goto|open|visit|navigate|login|submit|fill|click|add|goTo|select|search|complete|expect|assert|should|verify)[A-Za-z_$\w]*\s*\(/;
 const POM_ASSERTION_METHOD_CALL_RE =
-  /\bawait\s+[A-Za-z_$][\w$]*\.(?:expect|assert|should)[A-Za-z_$\w]*\s*\(/g;
+  /\bawait\s+[A-Za-z_$][\w$]*\.(?:expect|assert|should|verify)[A-Za-z_$\w]*\s*\(/g;
 const ASYNC_ACTION_RE =
   /\bpage\.goto\s*\(|\.(?:click|fill|check|uncheck|selectOption|press|type|setInputFiles)\s*\(/;
 const TEST_CALL_RE = /\b(?:test|it)\s*\(/g;
@@ -396,6 +396,24 @@ export function validateAutomationSubmissionShape(code: string): GradeResult | n
   return null;
 }
 
+function getSelectorReferenceValues(challenge: Challenge): string[] {
+  return Array.from(
+    new Set(
+      (challenge.selectors ?? []).flatMap((selector) => [
+        selector.testid,
+        ...(selector.options ?? []).map((option) => option.value),
+      ])
+    )
+  );
+}
+
+function countUsedSelectorReferences(code: string, values: string[]): number {
+  return values.filter((value) => {
+    const escaped = escapeRegExp(value);
+    return new RegExp(String.raw`['"\`][^'"\`]*${escaped}[^'"\`]*['"\`]`).test(code);
+  }).length;
+}
+
 export function validateChallengeStaticChecks(
   challenge: Challenge,
   code: string
@@ -428,14 +446,12 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
 
   // 대상 요소를 안정적으로 선택했는지 (셀렉터 있는 챌린지 한정).
   // testid 직접 참조 OR 접근성 기반 로케이터(getByRole/getByLabel 등) 둘 다 인정한다.
-  const selectorIds = (challenge.selectors ?? []).map((s) => s.testid);
-  const usedTestids = selectorIds.filter((id) =>
-    new RegExp(`['"\`]${escapeRegExp(id)}['"\`]`).test(stripped)
-  ).length;
+  const selectorValues = getSelectorReferenceValues(challenge);
+  const usedSelectorValues = countUsedSelectorReferences(stripped, selectorValues);
   const usesSemanticLocator = SEMANTIC_LOCATOR_RE.test(stripped);
-  if (selectorIds.length > 0 && usedTestids < 1 && !usesSemanticLocator) {
+  if (selectorValues.length > 0 && usedSelectorValues < 1 && !usesSemanticLocator) {
     failures.push(
-      `대상 요소를 안정적으로 선택하지 않았습니다. getByTestId('${selectorIds[0]}') 같은 testid 나 getByRole/getByLabel 등 접근성 기반 셀렉터를 사용하세요. 참고 testid: ${selectorIds.join(', ')}`
+      `Use a stable selector with page.locator(...), getByRole/getByLabel, or another reliable locator. Selector reference values: ${selectorValues.join(', ')}`
     );
   }
 
@@ -457,14 +473,13 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
   const coverage = Math.max(testCount, assertions);
 
   const selectorSummary =
-    selectorIds.length === 0
+    selectorValues.length === 0
       ? ''
-      : usedTestids > 0
-        ? `, 셀렉터 ${usedTestids}/${selectorIds.length}개`
+      : usedSelectorValues > 0
+        ? `, selectors ${usedSelectorValues}/${selectorValues.length}`
         : usesSemanticLocator
-          ? ', 접근성 기반 셀렉터'
+          ? ', semantic locator'
           : '';
-
   // 요구사항을 다 다루지 않은 부분 작성: 통과로 인정하지 않는다.
   if (reqCount > 0 && coverage < reqCount) {
     return {

@@ -5,7 +5,6 @@
  *   exercises 스키마로 옮긴다(FDD-QG05/QG09).
  * - sandboxSlug 가 가리키는 `/sandbox/[slug]` 가 실제 테스트 대상 페이지다.
  */
-
 export type ChallengeTrack = 'automation' | 'manual' | 'api' | 'performance' | 'accessibility';
 export type ChallengeDifficulty = 'easy' | 'medium' | 'hard';
 /** 주제 카테고리. 트랙(테스트 방식)과 별개인 도메인 축. */
@@ -21,23 +20,32 @@ export type ChallengeCategory =
   | 'accessibility'
   | 'fundamentals'
   | 'pom';
-
+export type ChallengeSelectorType = 'data-testid' | 'id' | 'class';
+export interface ChallengeSelectorOption {
+  type: ChallengeSelectorType;
+  value: string;
+}
 export interface ChallengeSelector {
   name: string;
+  /** Selector value without prefix. Existing challenges use data-testid by default. */
   testid: string;
+  selectorType?: ChallengeSelectorType;
+  options?: ChallengeSelectorOption[];
   desc: string;
 }
-
 export interface StaticCodeCheck {
   label: string;
   pattern: string;
   flags?: string;
   message: string;
 }
-
+export interface ChallengeTestData {
+  label: string;
+  value: string;
+  desc?: string;
+}
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export type ApiSchemaType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'null';
-
 export interface ApiSchemaField {
   path: string;
   type: ApiSchemaType;
@@ -45,7 +53,6 @@ export interface ApiSchemaField {
   desc?: string;
   example?: unknown;
 }
-
 export interface ApiEndpoint {
   method: HttpMethod;
   path: string;
@@ -57,7 +64,6 @@ export interface ApiEndpoint {
   response?: ApiSchemaField[];
   responseExample?: unknown;
 }
-
 export interface Challenge {
   slug: string;
   title: string;
@@ -86,12 +92,22 @@ export interface Challenge {
   starterSpec?: string;
   /** 코드 채점: 실행 전 반드시 포함해야 하는 구조적 코드 패턴. */
   staticChecks?: StaticCodeCheck[];
+  /** Test accounts and input values learners can use directly. */
+  testData?: ChallengeTestData[];
   /** 학습 UX: 예상 풀이 시간(분). */
   estimatedMinutes?: number;
   /** 학습 UX: 먼저 풀면 좋은 챌린지 slug 목록. */
   prerequisites?: string[];
   /** 학습 UX: 완료 후 추천할 챌린지 slug 목록. */
   recommendedNext?: string[];
+}
+
+function selectorOptions(value: string, classValue = `qa-${value}`): ChallengeSelectorOption[] {
+  return [
+    { type: 'data-testid', value },
+    { type: 'id', value },
+    { type: 'class', value: classValue },
+  ];
 }
 
 export const TRACK_LABEL: Record<ChallengeTrack, string> = {
@@ -101,13 +117,11 @@ export const TRACK_LABEL: Record<ChallengeTrack, string> = {
   performance: 'Performance',
   accessibility: 'Accessibility',
 };
-
 export const DIFFICULTY_LABEL: Record<ChallengeDifficulty, string> = {
   easy: '입문',
   medium: '중급',
   hard: '고급',
 };
-
 export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
   auth: '인증',
   forms: '폼',
@@ -121,7 +135,6 @@ export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
   fundamentals: '테스팅 기초',
   pom: 'POM',
 };
-
 /** 목록에 카테고리를 노출할 순서. */
 export const CATEGORY_ORDER: ChallengeCategory[] = [
   'auth',
@@ -136,7 +149,6 @@ export const CATEGORY_ORDER: ChallengeCategory[] = [
   'fundamentals',
   'pom',
 ];
-
 export const CHALLENGES: Challenge[] = [
   {
     slug: 'login-basic',
@@ -156,14 +168,13 @@ export const CHALLENGES: Challenge[] = [
     ],
     sandboxSlug: 'login-basic',
     selectors: [
-      { name: '아이디 입력', testid: 'username', desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', desc: '로그인 성공 시 노출' },
-      { name: '에러 메시지', testid: 'login-error', desc: '실패·검증 에러 시 노출' },
+      { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'login-submit', options: selectorOptions('login-submit'), desc: '제출 버튼' },
+      { name: '성공 메시지', testid: 'login-success', options: selectorOptions('login-success'), desc: '로그인 성공 시 노출' },
+      { name: '에러 메시지', testid: 'login-error', options: selectorOptions('login-error'), desc: '실패·검증 에러 시 노출' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다', async ({ page }) => {
   await page.goto('/');
   // TODO: username·password 를 채우고 로그인 버튼을 클릭한 뒤,
@@ -836,11 +847,16 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       'goto, login, expectLoggedIn 메서드로 이동·입력·단언을 캡슐화한다.',
     ],
     sandboxSlug: 'login-basic',
+    testData: [
+      { label: 'username', value: 'tester', desc: 'valid user' },
+      { label: 'password', value: 'qaground123', desc: 'valid password' },
+      { label: 'wrong password', value: 'wrong-password', desc: 'invalid login case' },
+    ],
     selectors: [
-      { name: '아이디 입력', testid: 'username', desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', desc: '로그인 성공 후 노출' },
+      { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'login-submit', options: selectorOptions('login-submit'), desc: '제출 버튼' },
+      { name: '성공 메시지', testid: 'login-success', options: selectorOptions('login-success'), desc: '로그인 성공 후 노출' },
     ],
     staticChecks: [
       {
@@ -860,18 +876,15 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       },
       {
         label: '상태 단언 메서드',
-        pattern: 'expectLoggedIn\\s*\\(',
+        pattern: '(?:expectLoggedIn|verify[A-Za-z_$\\w]*|assert[A-Za-z_$\\w]*|should[A-Za-z_$\\w]*)\\s*\\(',
         message: '성공 상태 검증을 expectLoggedIn 같은 의도 기반 메서드로 분리하세요.',
       },
     ],
     starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
-
 class LoginPage {
   constructor(private readonly page: Page) {}
-
   // TODO: declare readonly locators and POM methods.
 }
-
 test('valid user can sign in', async ({ page }) => {
   const loginPage = new LoginPage(page);
   await page.goto('/');
@@ -894,15 +907,20 @@ test('valid user can sign in', async ({ page }) => {
     requirement: [
       'LoginPage에 login 액션 메서드를 만들고 두 테스트가 재사용한다.',
       'expectLoggedIn, expectLoginError 단언 메서드를 만들어 성공·실패 검증을 분리한다.',
-      '테스트 본문에는 시나리오 순서만 남기고 getByTestId 반복을 Page Object 내부로 숨긴다.',
+      '테스트 본문에는 시나리오 순서만 남기고 raw locator 반복을 Page Object 내부로 숨긴다.',
     ],
     sandboxSlug: 'login-basic',
+    testData: [
+      { label: 'username', value: 'tester', desc: 'valid user' },
+      { label: 'password', value: 'qaground123', desc: 'valid password' },
+      { label: 'wrong password', value: 'wrong-password', desc: 'invalid login case' },
+    ],
     selectors: [
-      { name: '아이디 입력', testid: 'username', desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', desc: '로그인 성공 후 노출' },
-      { name: '에러 메시지', testid: 'login-error', desc: '인증 실패 시 노출' },
+      { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'login-submit', options: selectorOptions('login-submit'), desc: '제출 버튼' },
+      { name: '성공 메시지', testid: 'login-success', options: selectorOptions('login-success'), desc: '로그인 성공 후 노출' },
+      { name: '에러 메시지', testid: 'login-error', options: selectorOptions('login-error'), desc: '인증 실패 시 노출' },
     ],
     staticChecks: [
       {
@@ -912,12 +930,12 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '성공 단언 메서드',
-        pattern: 'expectLoggedIn\\s*\\(',
+        pattern: '(?:expectLoggedIn|verify[A-Za-z_$\\w]*|assert[A-Za-z_$\\w]*|should[A-Za-z_$\\w]*)\\s*\\(',
         message: '성공 메시지 검증을 expectLoggedIn 메서드로 캡슐화하세요.',
       },
       {
         label: '실패 단언 메서드',
-        pattern: 'expectLoginError\\s*\\(',
+        pattern: '(?:expectLoginError|verify[A-Za-z_$\\w]*Error|assert[A-Za-z_$\\w]*Error|should[A-Za-z_$\\w]*Error)\\s*\\(',
         message: '에러 메시지 검증을 expectLoginError 메서드로 캡슐화하세요.',
       },
       {
@@ -1084,11 +1102,16 @@ test('valid user can sign in', async ({ page }) => {
       '테스트 본문은 fixture로 받은 loginPage를 사용해 성공 로그인을 검증한다.',
     ],
     sandboxSlug: 'login-basic',
+    testData: [
+      { label: 'username', value: 'tester', desc: 'valid user' },
+      { label: 'password', value: 'qaground123', desc: 'valid password' },
+      { label: 'wrong password', value: 'wrong-password', desc: 'invalid login case' },
+    ],
     selectors: [
-      { name: '아이디 입력', testid: 'username', desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', desc: '로그인 성공 후 노출' },
+      { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'login-submit', options: selectorOptions('login-submit'), desc: '제출 버튼' },
+      { name: '성공 메시지', testid: 'login-success', options: selectorOptions('login-success'), desc: '로그인 성공 후 노출' },
     ],
     staticChecks: [
       {
@@ -1108,7 +1131,7 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '성공 단언 메서드',
-        pattern: 'expectLoggedIn\\s*\\(',
+        pattern: '(?:expectLoggedIn|verify[A-Za-z_$\\w]*|assert[A-Za-z_$\\w]*|should[A-Za-z_$\\w]*)\\s*\\(',
         message: '로그인 성공 검증은 Page Object의 단언 메서드로 캡슐화하세요.',
       },
     ],
@@ -1170,6 +1193,7 @@ test('valid user can sign in', async ({ page }) => {
     difficulty: 'medium',
     estimatedMinutes: 35,
     prerequisites: ['pom-table-filter-object'],
+    recommendedNext: ['pom-e2e-checkout-journey'],
     tools: ['Playwright', 'POM'],
     summary:
       '모달 열기, 취소, 확인, 결과 메시지 검증을 ModalPage로 캡슐화해 분기 흐름을 안정적으로 테스트하세요.',
@@ -1210,6 +1234,199 @@ test('valid user can sign in', async ({ page }) => {
     ],
   },
   {
+    slug: 'pom-e2e-checkout-journey',
+    title: 'POM 실전: 장바구니 E2E 여정 구성하기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 50,
+    prerequisites: ['pom-modal-dialog-object'],
+    recommendedNext: ['pom-authenticated-e2e-session'],
+    tools: ['Playwright', 'POM', 'E2E'],
+    summary:
+      '상품 탐색부터 장바구니, 배송 정보, 결제 선택, 주문 완료까지 하나의 E2E 여정을 여러 Page Object로 조합하세요.',
+    requirement: [
+      'CatalogPage, CartPage, CheckoutPage를 분리해 각 화면의 액션과 단언 책임을 나눈다.',
+      '테스트 본문은 상품 선택 → 장바구니 확인 → 배송 입력 → 결제 선택 → 주문 완료 순서만 읽히게 작성한다.',
+      '주문 완료 번호나 결제 금액 같은 최종 결과를 Page Object 단언 메서드로 검증한다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '상품 카드', testid: 'product-card', desc: '상품 목록 아이템' },
+      { name: '상품 상세 보기', testid: 'view-detail', desc: '상품 상세 화면 진입' },
+      { name: '상세 담기', testid: 'add-detail', desc: '상세 화면에서 장바구니 담기' },
+      { name: '장바구니 버튼', testid: 'cart-button', desc: '장바구니 화면 이동' },
+      { name: '주문하기 버튼', testid: 'checkout-button', desc: '배송/결제 단계 이동' },
+      { name: '주문 완료', testid: 'order-complete', desc: '주문 완료 화면' },
+      { name: '주문 번호', testid: 'order-number', desc: '생성된 주문 번호' },
+    ],
+    staticChecks: [
+      {
+        label: 'CatalogPage 클래스',
+        pattern: 'class\\s+CatalogPage\\b',
+        message: '상품 탐색 책임을 CatalogPage로 분리하세요.',
+      },
+      {
+        label: 'CartPage 클래스',
+        pattern: 'class\\s+CartPage\\b',
+        message: '장바구니 책임을 CartPage로 분리하세요.',
+      },
+      {
+        label: 'CheckoutPage 클래스',
+        pattern: 'class\\s+CheckoutPage\\b',
+        message: '배송·결제·주문 완료 책임을 CheckoutPage로 분리하세요.',
+      },
+      {
+        label: '주문 완료 단언',
+        pattern: 'expect(OrderComplete|OrderNumber|PaidAmount)\\s*\\(',
+        message: '최종 주문 결과는 Page Object의 expect 계열 메서드로 검증하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-authenticated-e2e-session',
+    title: 'POM 실전: 인증 세션을 재사용하는 E2E',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 45,
+    prerequisites: ['pom-fixture-injection'],
+    recommendedNext: ['pom-regression-suite-smoke'],
+    tools: ['Playwright', 'POM', 'Auth Fixture'],
+    summary:
+      '매 테스트마다 로그인하지 않고 인증 상태를 fixture로 준비한 뒤, 보호 화면 E2E를 빠르고 안정적으로 검증하세요.',
+    requirement: [
+      'LoginPage 또는 AuthPage로 로그인 흐름을 캡슐화한다.',
+      'test.use, storageState, authPage fixture 중 하나로 인증 상태를 재사용한다.',
+      '보호 페이지 진입과 로그아웃 후 접근 차단을 별도 테스트로 검증한다.',
+    ],
+    sandboxSlug: 'route-guard',
+    testData: [
+      { label: 'username', value: 'tester', desc: 'valid user' },
+      { label: 'password', value: 'qaground123', desc: 'valid password' },
+    ],
+    selectors: [
+      { name: '보호 페이지 링크', testid: 'guard-protected-link', desc: '보호 페이지 접근 시도' },
+      { name: '아이디 입력', testid: 'guard-username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'guard-password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'guard-login-submit', desc: '로그인 제출' },
+      { name: '보호 페이지', testid: 'guard-protected-view', desc: '인증 후 보이는 화면' },
+      { name: '로그아웃 버튼', testid: 'guard-logout', desc: '인증 해제' },
+    ],
+    staticChecks: [
+      {
+        label: '인증 Page Object',
+        pattern: 'class\\s+(LoginPage|AuthPage)\\b',
+        message: '인증 흐름은 LoginPage 또는 AuthPage로 분리하세요.',
+      },
+      {
+        label: '인증 상태 재사용',
+        pattern: '(storageState|test\\.use|authPage\\s*:)',
+        message: '반복 로그인을 줄이기 위해 storageState, test.use, fixture 중 하나를 사용하세요.',
+      },
+      {
+        label: '보호 화면 단언',
+        pattern: 'expect(Protected|Redirect|LoggedOut)\\s*\\(',
+        message: '보호 화면 접근 결과를 의도 기반 단언 메서드로 검증하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-regression-suite-smoke',
+    title: 'POM 실전: 스모크 회귀 스위트 구성하기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'hard',
+    estimatedMinutes: 55,
+    prerequisites: ['pom-e2e-checkout-journey', 'pom-authenticated-e2e-session'],
+    recommendedNext: ['pom-regression-suite-risk-based'],
+    tools: ['Playwright', 'POM', 'Regression'],
+    summary:
+      '핵심 사용자 여정을 Page Object로 재사용하면서 빠르게 도는 스모크 회귀 스위트를 구성하세요.',
+    requirement: [
+      '로그인, 주요 목록 진입, 생성 또는 주문 완료 같은 핵심 경로를 2개 이상 테스트로 구성한다.',
+      '공통 준비는 test.beforeEach 또는 fixture로 모으고, 화면 세부 동작은 Page Object에 숨긴다.',
+      '@smoke 또는 @regression 태그를 사용해 스모크 회귀 스위트로 실행 범위를 분리한다.',
+      '각 테스트는 최종 사용자 결과를 expect 계열 Page Object 메서드로 검증한다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '검색 입력', testid: 'search', desc: '상품 검색' },
+      { name: '상품 카드', testid: 'product-card', desc: '상품 목록 아이템' },
+      { name: '장바구니 수량', testid: 'cart-count', desc: '담긴 상품 수' },
+      { name: '주문 완료', testid: 'order-complete', desc: '최종 완료 화면' },
+    ],
+    staticChecks: [
+      {
+        label: '회귀 태그',
+        pattern: '@(smoke|regression)',
+        message: '스모크 또는 회귀 실행 범위를 분리할 수 있도록 테스트 제목에 태그를 넣으세요.',
+      },
+      {
+        label: 'Page Object 클래스',
+        pattern: 'class\\s+\\w+Page\\b[\\s\\S]*class\\s+\\w+Page\\b',
+        message: '최소 2개 이상의 Page Object로 핵심 경로 책임을 나누세요.',
+      },
+      {
+        label: '공통 준비',
+        pattern: '(test\\.beforeEach|test\\.extend|base\\.extend)',
+        message: '반복 준비 코드는 beforeEach 또는 fixture로 모으세요.',
+      },
+      {
+        label: '최종 결과 단언',
+        pattern: 'expect(.*Complete|.*Visible|.*Created|.*Result)\\s*\\(',
+        message: '각 회귀 테스트는 최종 사용자 결과를 Page Object 단언 메서드로 검증하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-regression-suite-risk-based',
+    title: 'POM 실전: 위험 기반 회귀 시나리오 나누기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'hard',
+    estimatedMinutes: 60,
+    prerequisites: ['pom-regression-suite-smoke'],
+    tools: ['Playwright', 'POM', 'Regression'],
+    summary:
+      '모든 것을 한 테스트에 넣지 않고 결제, 데이터 변경, 접근 제어처럼 위험도가 높은 영역을 회귀 시나리오로 나누세요.',
+    requirement: [
+      'describe 블록을 결제/데이터/접근 제어 같은 위험 영역 단위로 나눈다.',
+      '각 영역은 해당 Page Object를 재사용하되 테스트 간 상태가 새지 않도록 beforeEach나 fixture로 초기화한다.',
+      '@critical 또는 @regression 태그로 고위험 회귀 테스트를 구분한다.',
+      '실패 시 원인을 좁힐 수 있도록 테스트마다 하나의 사용자 결과를 명확히 단언한다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '상품 검색', testid: 'search', desc: '목록 상태 변경' },
+      { name: '장바구니 버튼', testid: 'cart-button', desc: '장바구니 화면 이동' },
+      { name: '결제 방식', testid: 'pay-method', desc: '결제 수단 선택' },
+      { name: '주문 완료', testid: 'order-complete', desc: '최종 완료 화면' },
+    ],
+    staticChecks: [
+      {
+        label: '위험 영역 describe',
+        pattern: 'describe\\s*\\(',
+        message: '위험 영역별로 describe 블록을 나눠 회귀 범위를 구조화하세요.',
+      },
+      {
+        label: '고위험 태그',
+        pattern: '@(critical|regression)',
+        message: '고위험 회귀 테스트를 태그로 구분하세요.',
+      },
+      {
+        label: '상태 초기화',
+        pattern: '(test\\.beforeEach|test\\.extend|base\\.extend)',
+        message: '테스트 간 상태가 새지 않도록 공통 초기화를 정의하세요.',
+      },
+      {
+        label: 'Page Object 재사용',
+        pattern: 'class\\s+\\w+Page\\b',
+        message: '위험 영역별 화면 동작은 Page Object로 재사용하세요.',
+      },
+    ],
+  },
+  {
     slug: 'page-navigation',
     title: '페이지 전환 내비게이션',
     track: 'automation',
@@ -1233,7 +1450,6 @@ test('valid user can sign in', async ({ page }) => {
       { name: '뒤로가기', testid: 'back-button', desc: '직전 페이지로 이동' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내비게이션으로 페이지를 전환한다', async ({ page }) => {
   await page.goto('/');
   // TODO: nav-orders 를 클릭해 page-title 이 '주문' 인지 검증한 뒤,
@@ -1267,7 +1483,6 @@ test('내비게이션으로 페이지를 전환한다', async ({ page }) => {
       { name: '에러 메시지', testid: 'token-error', desc: '인증 실패 시 노출' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('로그인하면 토큰이 저장된다', async ({ page }) => {
   await page.goto('/');
   // TODO: token-username·token-password 를 채우고 token-login 을 클릭한 뒤,
@@ -1302,7 +1517,6 @@ test('로그인하면 토큰이 저장된다', async ({ page }) => {
       { name: '로그아웃 버튼', testid: 'guard-logout', desc: '인증 해제' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('미인증 접근은 차단되고 로그인 후 진입된다', async ({ page }) => {
   await page.goto('/');
   // TODO: guard-protected-link 클릭 시 guard-redirect-notice 가 보이는지 확인하고,
@@ -1334,7 +1548,6 @@ test('미인증 접근은 차단되고 로그인 후 진입된다', async ({ pag
       { name: '제출 버튼', testid: 'draft-submit', desc: '제출 후 draft 제거' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('입력이 임시저장되고 새로고침 후 복원된다', async ({ page }) => {
   await page.goto('/');
   // TODO: draft-title·draft-body 를 입력하고 page.reload() 후에도
@@ -1376,7 +1589,6 @@ test('입력이 임시저장되고 새로고침 후 복원된다', async ({ page
       { name: '주문번호', testid: 'order-number', desc: '발급된 주문번호' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('상품 선택부터 주문 완료까지 진행한다', async ({ page }) => {
   await page.goto('/');
   // TODO: add-mouse 로 담고 go-cart→go-shipping 으로 진행한 뒤,
@@ -1415,7 +1627,6 @@ test('상품 선택부터 주문 완료까지 진행한다', async ({ page }) =>
       { name: '빈 상태', testid: 'empty-state', desc: '결과 없음 안내' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('필터와 검색으로 목록을 좁힌다', async ({ page }) => {
   await page.goto('/');
   // TODO: filter-electronics 를 선택하고 result-count·product-item 수를 검증한 뒤,
@@ -1450,7 +1661,6 @@ test('필터와 검색으로 목록을 좁힌다', async ({ page }) => {
       { name: '선택 요약', testid: 'selected-summary', desc: '선택한 옵션 표시' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('옵션을 모두 선택해야 담긴다', async ({ page }) => {
   await page.goto('/');
   // TODO: 옵션 없이 add-to-cart 시 option-error 를 확인하고,
@@ -1480,7 +1690,6 @@ test('옵션을 모두 선택해야 담긴다', async ({ page }) => {
       { name: '찜 개수', testid: 'wish-count', desc: '찜한 상품 수 배지' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('찜을 토글하면 개수가 갱신된다', async ({ page }) => {
   await page.goto('/');
   // TODO: wish-1 을 눌러 aria-pressed 와 wish-count 증가를 확인하고,
@@ -1516,7 +1725,6 @@ test('찜을 토글하면 개수가 갱신된다', async ({ page }) => {
       { name: '예매번호', testid: 'booking-number', desc: '발급된 예매번호' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/seat-booking');
   // 명세를 분석해 필요한 케이스를 직접 설계하세요.
@@ -1551,7 +1759,6 @@ test('내 테스트', async ({ page }) => {
       { name: '포인트 에러', testid: 'point-error', desc: '포인트 검증 실패 시' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/points-settlement');
   // 규칙을 분석해 필요한 케이스를 직접 설계하세요.
@@ -1586,7 +1793,6 @@ test('내 테스트', async ({ page }) => {
       { name: '환불액', testid: 'refund-amount', desc: '환불 금액' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/order-cancel');
   // 정책을 분석해 상태별 취소 동작을 직접 검증하세요.
@@ -1757,7 +1963,6 @@ test('내 테스트', async ({ page }) => {
       { name: '남은 개수', testid: 'remaining-count', desc: '남은(미완료) 개수' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/todo-list');
   // 명세를 분석해 추가·완료·수정·삭제·필터를 직접 검증하세요.
@@ -1794,7 +1999,6 @@ test('내 테스트', async ({ page }) => {
       { name: '작성', testid: 'post-submit', desc: '글 작성' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/post-board');
   // 검색·필터·페이지네이션·작성을 직접 검증하세요.
@@ -1825,7 +2029,6 @@ test('내 테스트', async ({ page }) => {
       { name: '봇 메시지', testid: 'bot-message', desc: '상대(봇) 응답' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/chat-room');
   // 메시지 전송·입력창 초기화·봇 자동 응답(비동기)을 직접 검증하세요.
@@ -1875,7 +2078,6 @@ test('내 테스트', async ({ page }) => {
       { name: '주문번호', testid: 'order-number', desc: '주문번호' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/shop');
   // 검색→담기→장바구니→결제→주문완료까지 직접 검증하세요.
@@ -1915,7 +2117,6 @@ test('내 테스트', async ({ page }) => {
       { name: '결제예정액', testid: 'cart-total', desc: '합계' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/shop');
   // 수량·쿠폰·무료배송 경계로 금액 계산을 직접 검증하세요.
@@ -1959,7 +2160,6 @@ test('내 테스트', async ({ page }) => {
       { name: '출금 후 잔액', testid: 'balance-after', desc: '이체 후 잔액' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/bank');
   // 이체 폼 검증(필수·잔액부족·한도)·정상 이체·거래내역 필터를 직접 검증하세요.
@@ -3155,11 +3355,9 @@ test('내 테스트', async ({ page }) => {
     ],
   },
 ];
-
 export function getChallenge(slug: string): Challenge | undefined {
   return CHALLENGES.find((c) => c.slug === slug);
 }
-
 /** 카테고리 순서대로 묶은 챌린지 그룹 (빈 카테고리는 제외). */
 export function challengesByCategory(): { category: ChallengeCategory; items: Challenge[] }[] {
   return CATEGORY_ORDER.map((category) => ({

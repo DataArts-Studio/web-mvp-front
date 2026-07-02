@@ -76,13 +76,12 @@ function parseTestTitles(code: string): string[] {
 }
 
 function genStarter(selectors: ChallengeSelector[]): string {
-  const ids = selectors.map((s) => s.testid).join(', ');
+  const hasSelectors = selectors.length > 0;
   return `import { test, expect } from '@playwright/test';
 
-// 참고 셀렉터: ${ids}
-test('내 테스트', async ({ page }) => {
+${hasSelectors ? '// Check the selector reference on the left, then choose data-testid, id, class, or semantic locators.\n' : ''}test('my test', async ({ page }) => {
   await page.goto('/');
-  // 참고 셀렉터를 활용해 동작을 수행하고 expect 로 검증하세요.
+  // Example only: page.locator('[data-testid="value"]'), page.locator('#id'), page.locator('.class')
 });
 `;
 }
