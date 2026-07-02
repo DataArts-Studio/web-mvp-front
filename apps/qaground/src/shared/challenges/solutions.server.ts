@@ -1,5 +1,6 @@
-import 'server-only';
+﻿import 'server-only';
 
+import { getChallenge } from './registry';
 import type { ChallengeSolution } from './solution-types';
 
 const SOLUTIONS: Record<string, ChallengeSolution> = {
@@ -324,6 +325,56 @@ test('에러 상태에서 다시 올바르게 로그인하면 성공할 수 있�
   },
 };
 
+function getPomChallengeSolution(slug: string): ChallengeSolution | undefined {
+  const challenge = getChallenge(slug);
+  if (!challenge || challenge.category !== 'pom') return undefined;
+
+  return {
+    approach: challenge.requirement,
+    code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class LoginPage {
+  readonly usernameInput: Locator;
+  readonly passwordInput: Locator;
+  readonly submitButton: Locator;
+  readonly successMessage: Locator;
+
+  constructor(private readonly page: Page) {
+    this.usernameInput = page.locator('[data-testid="username"]');
+    this.passwordInput = page.locator('[data-testid="password"]');
+    this.submitButton = page.locator('[data-testid="login-submit"]');
+    this.successMessage = page.locator('[data-testid="login-success"]');
+  }
+
+  async open() {
+    await this.page.goto('/sandbox/login-basic');
+  }
+
+  async signIn(username: string, password: string) {
+    await this.usernameInput.fill(username);
+    await this.passwordInput.fill(password);
+    await this.submitButton.click();
+  }
+
+  async assertSignedIn() {
+    await expect(this.successMessage).toBeVisible();
+  }
+}
+
+test('valid user can sign in through page object', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.open();
+  await loginPage.signIn('tester', 'qaground123');
+  await loginPage.assertSignedIn();
+});
+`,
+    notes: [
+      '메서드 이름 자체보다 테스트 본문에서 사용자 시나리오만 읽히는지가 중요합니다.',
+      'locator와 expect는 Page Object 내부로 숨기고, 스펙은 의도 기반 메서드만 호출하게 정리합니다.',
+      '실제 Playwright API는 page.locator(...)입니다. page.locators(...)는 실행 시 실패합니다.',
+    ],
+  };
+}
 export function getChallengeSolution(slug: string): ChallengeSolution | undefined {
-  return SOLUTIONS[slug];
+  return SOLUTIONS[slug] ?? getPomChallengeSolution(slug);
 }

@@ -1,4 +1,4 @@
-import type { Challenge } from './registry';
+﻿import type { Challenge } from './registry';
 
 /**
  * 임시 정적 채점기 (러너 미연결 구간 한정).
@@ -82,10 +82,8 @@ const INTERACTION_RE =
 const SEMANTIC_LOCATOR_RE = /getBy(Role|Label|Text|Placeholder|Title|AltText)\s*\(/;
 const ASSERTION_RE = /\bexpect\s*\(/g;
 const AWAITED_ASSERTION_RE = /\bawait\s+expect\s*\(/;
-const POM_METHOD_CALL_RE =
-  /\bawait\s+[A-Za-z_$][\w$]*\.(?:goto|open|visit|navigate|login|submit|fill|click|add|goTo|select|search|complete|expect|assert|should|verify)[A-Za-z_$\w]*\s*\(/;
-const POM_ASSERTION_METHOD_CALL_RE =
-  /\bawait\s+[A-Za-z_$][\w$]*\.(?:expect|assert|should|verify)[A-Za-z_$\w]*\s*\(/g;
+const POM_METHOD_CALL_RE = /\bawait\s+[A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*\s*\(/;
+const POM_ASSERTION_METHOD_CALL_RE = /a^/g;
 const ASYNC_ACTION_RE =
   /\bpage\.goto\s*\(|\.(?:click|fill|check|uncheck|selectOption|press|type|setInputFiles)\s*\(/;
 const TEST_CALL_RE = /\b(?:test|it)\s*\(/g;
@@ -191,6 +189,7 @@ function collectFunctionRanges(src: string): ParsedFunctionRange[] {
     /\b(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g,
     /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?function\b[^{}]*\{/g,
     /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*\{/g,
+    /\b(?:public\s+|private\s+|protected\s+)?(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/g,
   ];
 
   const addRange = (name: string, start: number, bodyStart: number) => {
@@ -276,12 +275,13 @@ function extractTestBlocks(src: string): TestBlock[] {
 }
 
 function callsHelper(body: string, helperName: string): boolean {
-  return new RegExp(`\\b${escapeRegExp(helperName)}\\s*\\(`).test(body);
+  const name = escapeRegExp(helperName);
+  return new RegExp(String.raw`(?:\b|\.)${name}\s*\(`).test(body);
 }
 
 function callsHelperSafely(body: string, helperName: string): boolean {
   const name = escapeRegExp(helperName);
-  return new RegExp(String.raw`\b(?:await|return)\s+${name}\s*\(`).test(body);
+  return new RegExp(String.raw`\b(?:await|return(?:\s+await)?)\s+(?:[A-Za-z_$][\w$]*\.)?${name}\s*\(`).test(body);
 }
 
 function helperRequiresAwait(helper: ParsedFunction): boolean {
@@ -470,7 +470,8 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
   const testCount = blocks.length;
   const assertions =
     countMatches(stripped, ASSERTION_RE) + countMatches(stripped, POM_ASSERTION_METHOD_CALL_RE);
-  const coverage = Math.max(testCount, assertions);
+  const structuralCoverage = (challenge.staticChecks?.length ?? 0) > 0 ? reqCount : 0;
+  const coverage = Math.max(testCount, assertions, structuralCoverage);
 
   const selectorSummary =
     selectorValues.length === 0

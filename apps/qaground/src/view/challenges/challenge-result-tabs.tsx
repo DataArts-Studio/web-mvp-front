@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 
@@ -78,7 +78,7 @@ export function ChallengeResultTabs({
 
           {!!solution?.notes?.length && (
             <section className="mt-8">
-              <h2 className="text-lg font-semibold">리뷰 메모</h2>
+              <h2 className="text-lg font-semibold">코드 리뷰</h2>
               <ul className="text-text-2 mt-3 flex list-disc flex-col gap-2 pl-5 text-sm leading-relaxed">
                 {solution.notes.map((note) => (
                   <li key={note}>{note}</li>

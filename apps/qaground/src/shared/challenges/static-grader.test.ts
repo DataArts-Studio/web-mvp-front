@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 
 import type { Challenge } from './registry';
 import {
@@ -380,7 +380,7 @@ test('dead code only', async ({ page }) => {
         { label: 'LoginPage', pattern: 'class\\s+LoginPage\\b', message: 'missing LoginPage' },
         {
           label: 'assertion method',
-          pattern: 'expectLoggedIn\\s*\\(',
+          pattern: 'async\\s+[A-Za-z_$\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
           message: 'missing assertion method',
         },
       ],
@@ -392,19 +392,19 @@ class LoginPage {
   readonly password = this.page.getByTestId('password');
   readonly submitButton = this.page.getByTestId('login-submit');
   readonly successMessage = this.page.getByTestId('login-success');
-  async goto() { await this.page.goto('/'); }
-  async login(username: string, password: string) {
+  async openScreen() { await this.page.goto('/'); }
+  async submitCredentials(username: string, password: string) {
     await this.username.fill(username);
     await this.password.fill(password);
     await this.submitButton.click();
   }
-  async expectLoggedIn() { await expect(this.successMessage).toBeVisible(); }
+  async checkWelcome() { await expect(this.successMessage).toBeVisible(); }
 }
 test('valid login', async ({ page }) => {
   const loginPage = new LoginPage(page);
-  await loginPage.goto();
-  await loginPage.login('tester', 'qaground123');
-  await loginPage.expectLoggedIn();
+  await loginPage.openScreen();
+  await loginPage.submitCredentials('tester', 'qaground123');
+  await loginPage.checkWelcome();
 });`;
 
     const r = gradeSubmissionStatically(pomChallenge, code);

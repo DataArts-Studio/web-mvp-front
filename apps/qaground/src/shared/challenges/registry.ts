@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 챌린지 레지스트리 (MVP).
  *
  * - 아직 DB 없이 정적 정의로 시작한다. 폐루프(제출→러너→채점)가 증명되면
@@ -844,13 +844,12 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     requirement: [
       'LoginPage 클래스를 만들고 constructor에서 Page를 받아 보관한다.',
       'username, password, submitButton, successMessage locator를 readonly 필드로 선언한다.',
-      'goto, login, expectLoggedIn 메서드로 이동·입력·단언을 캡슐화한다.',
+      '이동, 입력·제출, 성공 단언을 Page Object 메서드로 캡슐화한다.',
     ],
     sandboxSlug: 'login-basic',
     testData: [
-      { label: 'username', value: 'tester', desc: 'valid user' },
-      { label: 'password', value: 'qaground123', desc: 'valid password' },
-      { label: 'wrong password', value: 'wrong-password', desc: 'invalid login case' },
+      { label: '아이디', value: 'tester', desc: '정상 계정' },
+      { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
     ],
     selectors: [
       { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
@@ -871,13 +870,13 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       },
       {
         label: '로그인 액션 메서드',
-        pattern: 'async\\s+login\\s*\\(',
-        message: '아이디·비밀번호 입력과 제출을 login 메서드로 캡슐화하세요.',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*\\.click\\s*\\(',
+        message: '아이디·비밀번호 입력과 제출을 Page Object 메서드로 캡슐화하세요.',
       },
       {
         label: '상태 단언 메서드',
-        pattern: '(?:expectLoggedIn|verify[A-Za-z_$\\w]*|assert[A-Za-z_$\\w]*|should[A-Za-z_$\\w]*)\\s*\\(',
-        message: '성공 상태 검증을 expectLoggedIn 같은 의도 기반 메서드로 분리하세요.',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '성공 상태 검증을 Page Object 단언 메서드로 분리하세요.',
       },
     ],
     starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
@@ -905,15 +904,15 @@ test('valid user can sign in', async ({ page }) => {
     summary:
       '성공 로그인과 실패 로그인을 같은 LoginPage로 검증하되, 테스트마다 raw locator를 반복하지 않도록 정리하세요.',
     requirement: [
-      'LoginPage에 login 액션 메서드를 만들고 두 테스트가 재사용한다.',
-      'expectLoggedIn, expectLoginError 단언 메서드를 만들어 성공·실패 검증을 분리한다.',
+      'LoginPage에 로그인 액션 메서드를 만들고 두 테스트가 재사용한다.',
+      '성공·실패 검증을 각각 Page Object 단언 메서드로 분리한다.',
       '테스트 본문에는 시나리오 순서만 남기고 raw locator 반복을 Page Object 내부로 숨긴다.',
     ],
     sandboxSlug: 'login-basic',
     testData: [
-      { label: 'username', value: 'tester', desc: 'valid user' },
-      { label: 'password', value: 'qaground123', desc: 'valid password' },
-      { label: 'wrong password', value: 'wrong-password', desc: 'invalid login case' },
+      { label: '아이디', value: 'tester', desc: '정상 계정' },
+      { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
+      { label: '틀린 비밀번호', value: 'wrong-password', desc: '로그인 실패 검증용' },
     ],
     selectors: [
       { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
@@ -930,13 +929,13 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '성공 단언 메서드',
-        pattern: '(?:expectLoggedIn|verify[A-Za-z_$\\w]*|assert[A-Za-z_$\\w]*|should[A-Za-z_$\\w]*)\\s*\\(',
-        message: '성공 메시지 검증을 expectLoggedIn 메서드로 캡슐화하세요.',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '성공 메시지 검증을 Page Object 단언 메서드로 캡슐화하세요.',
       },
       {
         label: '실패 단언 메서드',
-        pattern: '(?:expectLoginError|verify[A-Za-z_$\\w]*Error|assert[A-Za-z_$\\w]*Error|should[A-Za-z_$\\w]*Error)\\s*\\(',
-        message: '에러 메시지 검증을 expectLoginError 메서드로 캡슐화하세요.',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '에러 메시지 검증을 Page Object 단언 메서드로 캡슐화하세요.',
       },
       {
         label: '복수 테스트',
@@ -979,17 +978,17 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '제출 메서드',
-        pattern: 'async\\s+(submitEmptyForm|submitSignup)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '폼 제출 동작을 Page Object 메서드로 캡슐화하세요.',
       },
       {
         label: '이메일 에러 단언',
-        pattern: 'expectEmailError\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '이메일 검증 메시지를 의도 기반 단언 메서드로 작성하세요.',
       },
       {
         label: '비밀번호 에러 단언',
-        pattern: 'expectPasswordError\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '비밀번호 검증 메시지를 의도 기반 단언 메서드로 작성하세요.',
       },
     ],
@@ -1032,7 +1031,7 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '제목 단언 메서드',
-        pattern: 'expectTitle\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '현재 페이지 제목 검증을 expectTitle 메서드로 캡슐화하세요.',
       },
     ],
@@ -1074,12 +1073,12 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '상품 추가 메서드',
-        pattern: 'addProduct\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '상품 담기 동작을 addProduct 같은 의도 기반 메서드로 작성하세요.',
       },
       {
         label: '장바구니 단언 메서드',
-        pattern: 'expectCartCount\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '장바구니 수량 검증을 expectCartCount 메서드로 캡슐화하세요.',
       },
     ],
@@ -1103,9 +1102,8 @@ test('valid user can sign in', async ({ page }) => {
     ],
     sandboxSlug: 'login-basic',
     testData: [
-      { label: 'username', value: 'tester', desc: 'valid user' },
-      { label: 'password', value: 'qaground123', desc: 'valid password' },
-      { label: 'wrong password', value: 'wrong-password', desc: 'invalid login case' },
+      { label: '아이디', value: 'tester', desc: '정상 계정' },
+      { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
     ],
     selectors: [
       { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
@@ -1131,7 +1129,7 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '성공 단언 메서드',
-        pattern: '(?:expectLoggedIn|verify[A-Za-z_$\\w]*|assert[A-Za-z_$\\w]*|should[A-Za-z_$\\w]*)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '로그인 성공 검증은 Page Object의 단언 메서드로 캡슐화하세요.',
       },
     ],
@@ -1170,17 +1168,17 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '검색 메서드',
-        pattern: 'async\\s+search\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '검색 입력은 search 메서드로 캡슐화하세요.',
       },
       {
         label: '정렬 메서드',
-        pattern: '(sortByName|sort)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '정렬 동작은 의도 기반 메서드로 표현하세요.',
       },
       {
         label: '결과 단언 메서드',
-        pattern: 'expect(RowsContain|Page|Result)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '검색·정렬 결과 검증은 Page Object 단언 메서드로 분리하세요.',
       },
     ],
@@ -1218,17 +1216,17 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '열기 메서드',
-        pattern: 'async\\s+open\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '모달 열기 동작은 open 메서드로 캡슐화하세요.',
       },
       {
         label: '확인/취소 메서드',
-        pattern: '(confirm|cancel)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '확인 또는 취소 액션을 Page Object 메서드로 표현하세요.',
       },
       {
         label: '상태 단언 메서드',
-        pattern: 'expect(Closed|Confirmed|Result)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '모달 상태와 결과 검증은 expect 계열 메서드로 분리하세요.',
       },
     ],
@@ -1278,7 +1276,7 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '주문 완료 단언',
-        pattern: 'expect(OrderComplete|OrderNumber|PaidAmount)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '최종 주문 결과는 Page Object의 expect 계열 메서드로 검증하세요.',
       },
     ],
@@ -1302,8 +1300,8 @@ test('valid user can sign in', async ({ page }) => {
     ],
     sandboxSlug: 'route-guard',
     testData: [
-      { label: 'username', value: 'tester', desc: 'valid user' },
-      { label: 'password', value: 'qaground123', desc: 'valid password' },
+      { label: '아이디', value: 'tester', desc: '정상 계정' },
+      { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
     ],
     selectors: [
       { name: '보호 페이지 링크', testid: 'guard-protected-link', desc: '보호 페이지 접근 시도' },
@@ -1326,7 +1324,7 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '보호 화면 단언',
-        pattern: 'expect(Protected|Redirect|LoggedOut)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '보호 화면 접근 결과를 의도 기반 단언 메서드로 검증하세요.',
       },
     ],
@@ -1374,7 +1372,7 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '최종 결과 단언',
-        pattern: 'expect(.*Complete|.*Visible|.*Created|.*Result)\\s*\\(',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
         message: '각 회귀 테스트는 최종 사용자 결과를 Page Object 단언 메서드로 검증하세요.',
       },
     ],

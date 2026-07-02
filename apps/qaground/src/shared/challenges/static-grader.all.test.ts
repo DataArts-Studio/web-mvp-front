@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 
 import { CHALLENGES, type Challenge } from './registry';
 import { gradeSubmissionStatically } from './static-grader';
@@ -10,14 +10,56 @@ function goodSubmission(c: Challenge): string {
   const ids = (c.selectors ?? []).map((s) => s.testid);
   const a = ids[0] ?? 'root';
   const b = ids[1] ?? a;
-  // 요구사항 수만큼 단언을 넣어 전체 통과(부분 아님)가 되도록 한다.
+  // Add enough assertions to avoid partial coverage.
   const reqCount = c.requirement?.length ?? 1;
   const asserts = Array.from(
     { length: reqCount },
     () => `  await expect(page.getByTestId('${b}')).toBeVisible();`
   ).join('\n');
+
+  if (c.category === 'pom') {
+    return `import { test as base, expect, type Locator, type Page } from '@playwright/test';
+const test = base.extend<{ loginPage: LoginPage }>({
+  loginPage: async ({ page }, use) => { await use(new LoginPage(page)); },
+});
+test.use({ storageState: 'auth.json' });
+class LoginPage {
+  readonly target: Locator;
+  constructor(private readonly page: Page) { this.target = page.getByTestId('${a}'); }
+  async moveToTarget() { await this.page.goto('/sandbox/${c.sandboxSlug}'); }
+  async performMainAction(value = 'tester') { await this.target.fill(value).catch(async () => this.target.click()); }
+  async checkMainState() { await expect(this.target).toBeVisible(); }
+}
+class SignupPage extends LoginPage {}
+class NavigationPage extends LoginPage {}
+class CatalogPage extends LoginPage {}
+class CartPage extends LoginPage {}
+class CheckoutPage extends LoginPage {}
+class AuthPage extends LoginPage {}
+class DataTablePage extends LoginPage {}
+class ModalPage extends LoginPage {}
+class ProductPage extends LoginPage {}
+class RegressionPage extends LoginPage {}
+
+test.beforeEach(async ({ loginPage }) => {
+  await loginPage.moveToTarget();
+});
+
+describe('risk area @regression @critical', () => {
+  test('faithful pom submission @smoke', async ({ loginPage }) => {
+    await loginPage.performMainAction();
+    await loginPage.checkMainState();
+  });
+
+  test('second faithful pom submission @regression', async ({ loginPage }) => {
+    await loginPage.performMainAction('qaground123');
+    await loginPage.checkMainState();
+  });
+});`;
+  }
+
   return `import { test, expect } from '@playwright/test';
-test('충실한 제출', async ({ page }) => {
+test('faithful submission', async ({ page }) => {
   await page.goto('/sandbox/${c.sandboxSlug}');
   await page.getByTestId('${a}').click();
 ${asserts}
