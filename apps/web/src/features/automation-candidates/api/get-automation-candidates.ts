@@ -6,7 +6,7 @@ import { getDatabase, testCaseRuns, testCases } from '@testea/db';
 import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 
 import { MIN_DISTINCT_RUNS } from '../lib/constants';
-import { computeScore, evaluateReasons } from '../lib/score';
+import { buildCandidateDecision, computeScore, evaluateReasons } from '../lib/score';
 import type { AutomationCandidatesResult, AutomationCandidatesStats, CandidateRow } from '../types';
 
 /**
@@ -40,6 +40,8 @@ export async function getAutomationCandidates(
         caseKey: testCases.case_key,
         displayId: testCases.display_id,
         suiteId: testCases.test_suite_id,
+        testType: testCases.test_type,
+        tags: testCases.tags,
         automationStatus: testCases.automation_status,
       })
       .from(testCases)
@@ -121,10 +123,12 @@ export async function getAutomationCandidates(
         evaluatedResults,
         passCount,
         failCount,
+        blockedCount,
         passRate,
         daysSinceLastRun,
       };
       const reasons = evaluateReasons(scoreInput);
+      const score = computeScore(scoreInput);
 
       const row: CandidateRow = {
         caseId: c.id,
@@ -132,6 +136,8 @@ export async function getAutomationCandidates(
         displayId: c.displayId,
         name: c.name,
         suiteId: c.suiteId,
+        testType: c.testType,
+        tags: c.tags,
         automationStatus: c.automationStatus,
         distinctRuns,
         evaluatedResults,
@@ -141,7 +147,8 @@ export async function getAutomationCandidates(
         passRate: Math.round(passRate * 1000) / 1000,
         lastExecutedAt: agg?.lastExecutedAt ? new Date(agg.lastExecutedAt).toISOString() : null,
         daysSinceLastRun,
-        score: computeScore(scoreInput),
+        score,
+        decision: buildCandidateDecision(scoreInput, reasons, score),
         reasons,
       };
 
@@ -151,8 +158,14 @@ export async function getAutomationCandidates(
         continue;
       }
 
-      // 후보 자격: 빈도·안정성·최근성 3신호를 모두 충족해야 추천.
-      if (reasons.frequent && reasons.stable && reasons.recent) {
+      // 후보 자격: 빈도·표본 수·안정성·최근성·blocked 비율을 모두 충족해야 추천.
+      if (
+        reasons.frequent &&
+        reasons.enoughHistory &&
+        reasons.stable &&
+        reasons.lowBlocked &&
+        reasons.recent
+      ) {
         candidates.push(row);
       }
     }

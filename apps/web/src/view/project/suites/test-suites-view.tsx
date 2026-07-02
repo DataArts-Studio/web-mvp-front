@@ -16,7 +16,7 @@ import { useDisclosure } from '@testea/lib';
 import { MainContainer, Pagination, ProjectErrorFallback, Skeleton } from '@testea/ui';
 import { Plus, Search } from 'lucide-react';
 
-const PAGE_SIZE = 7;
+const PAGE_SIZE = 10;
 
 export const TestSuitesView = () => {
   const params = useParams();
@@ -64,24 +64,17 @@ export const TestSuitesView = () => {
 
   const totalItems = filteredSuites.length;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
-
-  useEffect(() => {
-    if (totalPages === 0) {
-      if (currentPage !== 1) setCurrentPage(1);
-      return;
-    }
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), Math.max(totalPages, 1));
 
   const handlePageChange = (page: number) => {
     const safePage = Math.min(Math.max(1, page), Math.max(1, totalPages));
-    if (safePage === currentPage) return;
+    if (safePage === safeCurrentPage) return;
     setCurrentPage(safePage);
   };
   const paginatedSuites = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
+    const start = (safeCurrentPage - 1) * PAGE_SIZE;
     return filteredSuites.slice(start, start + PAGE_SIZE);
-  }, [filteredSuites, currentPage]);
+  }, [filteredSuites, safeCurrentPage]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -213,7 +206,7 @@ export const TestSuitesView = () => {
             </div>
 
             <Pagination
-              currentPage={currentPage}
+              currentPage={safeCurrentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
               className="border-line-2 border-t"

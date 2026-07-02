@@ -16,17 +16,18 @@ import { toast } from 'sonner';
 
 import {
   AutomationLoadingSkeleton,
+  BacklogSection,
   CandidateListSection,
   ColdStartEmpty,
   CoverageSection,
   FlakySection,
+  SuitePrioritySection,
 } from './_components';
 
 export const AutomationView = () => {
   const params = useParams();
   const projectSlug = params.slug as string;
 
-  // slug → projectId
   const { data: projectIdData } = useQuery(projectIdQueryOptions(projectSlug));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
@@ -65,7 +66,6 @@ export const AutomationView = () => {
     );
   };
 
-  // 로딩
   if (!projectId || isLoadingCandidates || isLoadingCoverage) {
     return <AutomationLoadingSkeleton />;
   }
@@ -73,18 +73,14 @@ export const AutomationView = () => {
   const candidatesResult = candidatesData?.success ? candidatesData.data : null;
   const coverageResult = coverageData?.success ? coverageData.data : null;
 
-  // 에러 (조회 실패): 마이그레이션 미적용 등으로 데이터 조회가 실패해도 화면이 깨지지 않게 방어.
   if (!candidatesResult || !coverageResult) {
     return (
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
-        <header className="border-line-2 col-span-6 flex flex-col gap-1 border-b pb-6">
-          <h2 className="typo-h1-heading text-text-1">자동화 후보</h2>
-          <p className="typo-body2-normal text-text-2">
-            자동화 효과가 큰 케이스를 추천하고 커버리지를 추적합니다.
-          </p>
+      <MainContainer className="mx-auto flex min-h-screen w-full max-w-[1180px] flex-1 flex-col gap-4 px-4 py-4">
+        <header className="border-line-3/70 border-b pb-3">
+          <h2 className="text-text-1 text-xl leading-7 font-semibold">자동화 후보</h2>
         </header>
-        <section className="rounded-4 border-line-2 bg-bg-2 col-span-6 flex flex-col items-center gap-4 border border-dashed py-12 text-center">
-          <p className="text-text-1 font-semibold">자동화 데이터를 불러오지 못했습니다.</p>
+        <section className="border-line-3/40 flex flex-col items-start gap-3 border-t py-6">
+          <p className="text-text-1 text-sm font-semibold">자동화 데이터를 불러오지 못했습니다.</p>
           <p className="text-text-3 text-sm">
             잠시 후 다시 시도해 주세요. 문제가 계속되면 관리자에게 문의하세요.
           </p>
@@ -104,16 +100,18 @@ export const AutomationView = () => {
   }
 
   const { candidates, flaky } = candidatesResult;
-  // 후보·플래키가 모두 없으면(이력이 적든, 기준 통과 케이스가 없든) 빈 화면 대신 안내를 노출한다.
+  const recommendedCandidates = candidates.filter((row) => row.automationStatus === 'manual');
+  const backlog = candidates.filter((row) => row.automationStatus === 'candidate');
+  const pendingCaseId = setStatus.isPending ? (setStatus.variables?.caseId ?? null) : null;
   const isColdStart = candidates.length === 0 && flaky.length === 0;
 
   return (
-    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-8 px-10 py-8">
-      <header className="border-line-2 col-span-6 flex flex-col gap-1 border-b pb-6">
-        <h2 className="typo-h1-heading text-text-1">자동화 후보</h2>
-        <p className="typo-body2-normal text-text-2">
-          자동화 효과가 큰 케이스를 추천하고 커버리지를 추적합니다.
-        </p>
+    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1180px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-5 px-4 py-4">
+      <header className="border-line-3/70 col-span-6 flex items-baseline gap-2 border-b pb-3">
+        <h2 className="text-text-1 text-xl leading-7 font-semibold">자동화 후보</h2>
+        <span className="text-text-4 text-sm">
+          추천 {recommendedCandidates.length}개 · 백로그 {backlog.length}개
+        </span>
       </header>
 
       <CoverageSection coverage={coverageResult} />
@@ -122,13 +120,21 @@ export const AutomationView = () => {
         <ColdStartEmpty projectSlug={projectSlug} />
       ) : (
         <>
-          {candidates.length > 0 && (
-            <CandidateListSection
-              candidates={candidates}
-              pendingCaseId={setStatus.isPending ? (setStatus.variables?.caseId ?? null) : null}
+          <div className="col-span-6 grid grid-cols-6 gap-x-5 gap-y-5">
+            {recommendedCandidates.length > 0 && (
+              <CandidateListSection
+                candidates={recommendedCandidates}
+                pendingCaseId={pendingCaseId}
+                onSetStatus={handleSetStatus}
+              />
+            )}
+            <BacklogSection
+              backlog={backlog}
+              pendingCaseId={pendingCaseId}
               onSetStatus={handleSetStatus}
             />
-          )}
+          </div>
+          <SuitePrioritySection coverage={coverageResult} candidates={candidates} flaky={flaky} />
           {flaky.length > 0 && <FlakySection flaky={flaky} />}
         </>
       )}

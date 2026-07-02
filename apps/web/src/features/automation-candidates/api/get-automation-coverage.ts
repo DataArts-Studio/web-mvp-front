@@ -59,6 +59,8 @@ export async function getAutomationCoverage(
         suiteName: r.suiteName ?? null,
         totalCases: r.totalCases,
         automatedCases: r.automatedCases,
+        candidateCases: r.candidateCases,
+        manualCases: r.manualCases,
         coveragePercent: r.totalCases > 0 ? Math.round((r.automatedCases / r.totalCases) * 100) : 0,
       };
     });

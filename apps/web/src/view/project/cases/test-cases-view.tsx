@@ -153,21 +153,18 @@ export const TestCasesView = () => {
     }
   }, [testCasesData?.success, projectId]);
 
-  useEffect(() => {
-    if (!pagination || pagination.page === currentPage) return;
-    setCurrentPage(pagination.page);
-  }, [pagination, currentPage]);
 
   const handlePageChange = useCallback(
     (page: number) => {
       const totalPages = pagination?.totalPages ?? 1;
+      const currentPaginationPage = pagination?.page ?? currentPage;
       const nextPage = Math.min(Math.max(1, page), totalPages);
-      if (nextPage === currentPage) return;
+      if (nextPage === currentPaginationPage) return;
 
       setCurrentPage(nextPage);
       listRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    [currentPage, pagination?.totalPages]
+    [currentPage, pagination?.page, pagination?.totalPages]
   );
 
   const handleResetFilters = useCallback(() => {

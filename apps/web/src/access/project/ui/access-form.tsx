@@ -44,11 +44,18 @@ export function AccessForm({
   const [serverError, setServerError] = useState<string | null>(null);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const [isClient, setIsClient] = useState(false);
   const turnstileRef = useRef<TurnstileInstance>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Turnstile 렌더 여부를 서버/첫 클라이언트 렌더와 맞춘 뒤 마운트 후 확정한다.
+    setIsClient(true);
+  }, []);
+
   const isLocalhost =
-    typeof window !== 'undefined' &&
+    isClient &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const siteKey = isLocalhost ? '' : ENV.CLIENT.TURNSTILE_SITE_KEY;
+  const siteKey = isClient && !isLocalhost ? ENV.CLIENT.TURNSTILE_SITE_KEY : '';
 
   const {
     register,

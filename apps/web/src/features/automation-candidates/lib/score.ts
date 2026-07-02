@@ -1,7 +1,10 @@
-import type { CandidateReasons } from '../types';
+import type { CandidateDecision, CandidateReasons } from '../types';
 import {
   FLAKY_PASS_RATE_CEILING,
+  MAX_BLOCKED_RATE,
+  MIN_CONFIDENCE_PASS_RATE,
   MIN_DISTINCT_RUNS,
+  MIN_EVALUATED_RESULTS,
   MIN_PASS_RATE,
   RECENCY_DAYS,
 } from './constants';
@@ -11,43 +14,117 @@ export interface ScoreInput {
   evaluatedResults: number;
   passCount: number;
   failCount: number;
+  blockedCount: number;
   passRate: number;
   daysSinceLastRun: number | null;
 }
 
-/**
- * 4신호를 결합해 후보 판정 근거(reasons)를 만든다.
- *
- * 플래키: pass 와 fail 이 둘 다 있으면서 passRate 가 ceiling 미만.
- * (결과가 왔다갔다 하는 케이스는 자동화해도 안정적인 단언을 만들기 어려워 별도 분리)
- */
 export function evaluateReasons(input: ScoreInput): CandidateReasons {
+  const blockedRate = input.evaluatedResults > 0 ? input.blockedCount / input.evaluatedResults : 0;
+  const confidencePassRate = wilsonLowerBound(input.passCount, input.evaluatedResults);
+
   const frequent = input.distinctRuns >= MIN_DISTINCT_RUNS;
-  const stable = input.passRate >= MIN_PASS_RATE;
+  const enoughHistory = input.evaluatedResults >= MIN_EVALUATED_RESULTS;
+  const lowBlocked = blockedRate <= MAX_BLOCKED_RATE;
+  const stable =
+    enoughHistory &&
+    lowBlocked &&
+    input.passRate >= MIN_PASS_RATE &&
+    confidencePassRate >= MIN_CONFIDENCE_PASS_RATE;
   const recent = input.daysSinceLastRun !== null && input.daysSinceLastRun <= RECENCY_DAYS;
   const flaky =
     input.passCount > 0 && input.failCount > 0 && input.passRate < FLAKY_PASS_RATE_CEILING;
 
-  return { frequent, stable, recent, flaky };
+  return { frequent, enoughHistory, stable, lowBlocked, recent, flaky };
 }
 
-/**
- * 정렬용 종합 점수. 절대 의미보다 상대 순위가 목적이다.
- *
- * - 빈도: 실행이 많을수록 자동화 ROI 가 크다 → 가장 큰 가중.
- * - 안정성: pass율이 높을수록 자동화 단언이 신뢰된다.
- * - 최근성: 최근에 돈 케이스일수록 현재 가치가 높다 → 경과일에 반비례.
- *
- * 수동 부담(단계 수)은 steps 형식이 혼재(plain text + JSON 문자열)라 신뢰도가 낮아
- * 1차 스코프에서 제외한다(FDD 위험 항목). 향후 steps 정규화 후 신호 추가 가능.
- */
 export function computeScore(input: ScoreInput): number {
-  const frequencyScore = input.distinctRuns * 10;
-  const stabilityScore = input.passRate * 50;
+  const confidencePassRate = wilsonLowerBound(input.passCount, input.evaluatedResults);
+  const blockedRate = input.evaluatedResults > 0 ? input.blockedCount / input.evaluatedResults : 0;
+
+  const frequencyScore = Math.min(input.distinctRuns, 12) * 8;
+  const stabilityScore = confidencePassRate * 70;
+  const rawPassRateScore = input.passRate * 20;
   const recencyScore =
     input.daysSinceLastRun === null
       ? 0
       : Math.max(0, RECENCY_DAYS - input.daysSinceLastRun) * (20 / RECENCY_DAYS);
+  const failurePenalty = input.failCount * 8;
+  const blockedPenalty = blockedRate * 30;
 
-  return Math.round((frequencyScore + stabilityScore + recencyScore) * 100) / 100;
+  return (
+    Math.round(
+      (frequencyScore +
+        stabilityScore +
+        rawPassRateScore +
+        recencyScore -
+        failurePenalty -
+        blockedPenalty) *
+        100
+    ) / 100
+  );
+}
+
+export function buildCandidateDecision(
+  input: ScoreInput,
+  reasons: CandidateReasons,
+  score: number
+): CandidateDecision {
+  const priority = score >= 150 ? 'high' : score >= 105 ? 'medium' : 'low';
+  const confidence = reasons.stable && input.evaluatedResults >= 10 ? 'high' : reasons.stable ? 'medium' : 'low';
+  const estimatedManualRunsSaved = Math.max(0, input.distinctRuns - 1);
+
+  const signalLabels = [
+    `${input.distinctRuns}회 반복 실행`,
+    `${Math.round(input.passRate * 100)}% pass`,
+  ];
+
+  if (input.evaluatedResults >= 10) signalLabels.push('충분한 표본');
+  if (reasons.recent) signalLabels.push('최근 실행됨');
+  if (input.blockedCount === 0) signalLabels.push('blocked 없음');
+
+  const riskLabels: string[] = [];
+  if (input.failCount > 0) riskLabels.push(`fail ${input.failCount}건`);
+  if (input.blockedCount > 0) riskLabels.push(`blocked ${input.blockedCount}건`);
+  if (!reasons.enoughHistory) riskLabels.push('표본 부족');
+  if (!reasons.recent) riskLabels.push('최근성 낮음');
+
+  return {
+    priority,
+    confidence,
+    estimatedManualRunsSaved,
+    recommendationReason: buildRecommendationReason(input, reasons),
+    signalLabels,
+    riskLabels,
+  };
+}
+
+function buildRecommendationReason(input: ScoreInput, reasons: CandidateReasons): string {
+  if (reasons.flaky) {
+    return '결과가 흔들려 자동화보다 안정화가 먼저 필요합니다.';
+  }
+
+  if (reasons.stable && reasons.frequent) {
+    return '반복 실행되고 결과가 안정적이라 회귀 자동화 우선순위가 높습니다.';
+  }
+
+  if (reasons.frequent && !reasons.stable) {
+    return '반복 실행은 많지만 실패나 blocked 이력이 있어 검토가 필요합니다.';
+  }
+
+  if (input.evaluatedResults > 0) {
+    return '실행 이력은 있으나 자동화 후보 기준을 일부만 충족합니다.';
+  }
+
+  return '실행 이력이 부족해 후보 판단을 보류합니다.';
+}
+
+export function wilsonLowerBound(passCount: number, total: number): number {
+  if (total <= 0) return 0;
+  const z = 1.96;
+  const p = passCount / total;
+  const denominator = 1 + (z * z) / total;
+  const centre = p + (z * z) / (2 * total);
+  const margin = z * Math.sqrt((p * (1 - p) + (z * z) / (4 * total)) / total);
+  return Math.max(0, (centre - margin) / denominator);
 }
