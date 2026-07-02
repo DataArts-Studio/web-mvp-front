@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { CHALLENGES, type Challenge } from './registry';
 import { gradeSubmissionStatically } from './static-grader';
@@ -38,6 +38,13 @@ class LoginPage {
   async checkMainState() { for (const target of this.allTargets) await expect(target).toBeVisible(); }
 }
 class SignupPage extends LoginPage {}
+class ProfilePage extends LoginPage {}
+class OrdersPage extends LoginPage {}
+class CartCheckoutPage extends LoginPage {}
+class ProductOptionsPage extends LoginPage {}
+class WishlistPage extends LoginPage {}
+class OrderCancelPage extends LoginPage {}
+class FileUploadPage extends LoginPage {}
 class NavigationPage extends LoginPage {}
 class CatalogPage extends LoginPage {}
 class CartPage extends LoginPage {}
@@ -85,8 +92,12 @@ describe('정적 채점: 모든 sandbox 챌린지', () => {
 
   it.each(sandboxChallenges)('충실한 제출은 통과: $slug', (c) => {
     const r = gradeSubmissionStatically(c, goodSubmission(c));
+    const requiredCount = c.coverage?.required?.length ?? c.requirement?.length ?? 0;
+
     expect(r.ok).toBe(true);
     expect(r.status).toBe('passed');
+    expect(r.requiredCoverage).toEqual({ total: requiredCount, covered: requiredCount, missing: [] });
+    expect(r.bonusCoverage?.total).toBeGreaterThan(0);
   });
 
   it.each(sandboxChallenges)('빈약한 제출은 실패: $slug', (c) => {

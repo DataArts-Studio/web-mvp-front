@@ -1,4 +1,4 @@
-﻿import type { Challenge } from './registry';
+import type { Challenge, ChallengeCoverageSignal } from './registry';
 
 /**
  * 임시 정적 채점기 (러너 미연결 구간 한정).
@@ -25,6 +25,10 @@ export interface GradeResult {
   covered?: number;
   /** 미작성 추정 요구사항 텍스트 (부분 통과 시 빨간 fail 로 표시). */
   uncovered?: string[];
+  /** Required coverage detail for every static-graded challenge. */
+  requiredCoverage?: { total: number; covered: number; missing: string[] };
+  /** Optional recommended coverage detected from the submitted code. */
+  bonusCoverage?: { total: number; covered: number; detected: string[]; suggestions: string[] };
 }
 
 interface TestBlock {
@@ -419,6 +423,76 @@ function flattenSelectorReferenceGroups(groups: string[][]): string[] {
   return Array.from(new Set(groups.flat()));
 }
 
+function buildRequiredCoverageSignals(challenge: Challenge): ChallengeCoverageSignal[] {
+  return challenge.coverage?.required?.length
+    ? challenge.coverage.required
+    : (challenge.requirement ?? []).map((label, index) => ({ id: `req-${index + 1}`, label }));
+}
+
+function buildBonusCoverageSignals(challenge: Challenge): ChallengeCoverageSignal[] {
+  if (challenge.coverage?.bonus?.length) return challenge.coverage.bonus;
+
+  const common: ChallengeCoverageSignal[] = [
+    {
+      id: 'negative-path',
+      label: 'Negative or exception path coverage',
+      patterns: ['not\\.toBeVisible|toBeHidden|toHaveCount\\(0\\)|error|fail|invalid|wrong|404|401|400'],
+    },
+    {
+      id: 'state-reset',
+      label: 'State reset after transition',
+      patterns: ['not\\.toBeVisible|toBeHidden|toHaveCount\\(0\\)|clear|reset|again|retry'],
+    },
+    {
+      id: 'data-driven-boundary',
+      label: 'Boundary or data-driven coverage',
+      patterns: ['for\\s*\\(|forEach\\s*\\(|it\\.each|test\\.describe|describe\\s*\\(|empty|blank|boundary|trim|long'],
+    },
+  ];
+
+  if (challenge.category === 'pom') {
+    return [
+      ...common,
+      { id: 'fixture-reuse', label: 'Fixture or beforeEach reuse', patterns: ['test\\.beforeEach|test\\.extend|base\\.extend'] },
+      { id: 'multiple-page-objects', label: 'Multiple Page Objects by responsibility', patterns: ['class\\s+\\w+Page\\b[\\s\\S]*class\\s+\\w+Page\\b'] },
+    ];
+  }
+
+  if (challenge.track === 'api') {
+    return [
+      ...common,
+      { id: 'schema-assertion', label: 'Response schema or field type assertions', patterns: ['typeof|Array\\.isArray|toHaveProperty|schema|type'] },
+      { id: 'auth-boundary', label: 'Authentication boundary coverage', patterns: ['Authorization|Bearer|token|401|unauthorized'] },
+    ];
+  }
+
+  if (challenge.track === 'manual') {
+    return [
+      ...common,
+      { id: 'priority-risk', label: 'Priority and risk rationale', patterns: ['P0|P1|P2|priority|risk|impact|severity'] },
+    ];
+  }
+
+  return common;
+}
+
+function signalCovered(code: string, signal: ChallengeCoverageSignal): boolean {
+  const parts = [...(signal.patterns ?? []), ...(signal.selectors ?? []), ...(signal.literals ?? [])];
+  if (parts.length === 0) return false;
+  return parts.some((pattern) => new RegExp(pattern, 'i').test(code));
+}
+
+function evaluateBonusCoverage(challenge: Challenge, code: string) {
+  const signals = buildBonusCoverageSignals(challenge);
+  const detected = signals.filter((signal) => signalCovered(code, signal)).map((signal) => signal.label);
+  const suggestions = signals
+    .filter((signal) => !detected.includes(signal.label))
+    .slice(0, 3)
+    .map((signal) => signal.label);
+
+  return { total: signals.length, covered: detected.length, detected, suggestions };
+}
+
 export function validateChallengeStaticChecks(
   challenge: Challenge,
   code: string
@@ -476,12 +550,15 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
 
   // 요구사항 대비 커버리지로 통과/부분을 가른다. 정적 채점은 의미 매핑을 못 하므로
   // "작성한 테스트 수"와 "단언 수" 중 큰 값을 커버리지 추정치로 쓴다.
-  const reqCount = challenge.requirement?.length ?? 0;
+  const requiredSignals = buildRequiredCoverageSignals(challenge);
+  const reqCount = requiredSignals.length;
   const testCount = blocks.length;
   const assertions =
     countMatches(stripped, ASSERTION_RE) + countMatches(stripped, POM_ASSERTION_METHOD_CALL_RE);
   const structuralCoverage = (challenge.staticChecks?.length ?? 0) > 0 ? reqCount : 0;
-  const coverage = Math.max(testCount, assertions, structuralCoverage);
+  const coverage = Math.min(reqCount, Math.max(testCount, assertions, structuralCoverage));
+  const missingRequired = requiredSignals.slice(coverage).map((signal) => signal.label);
+  const bonusCoverage = evaluateBonusCoverage(challenge, stripped);
 
   const selectorSummary =
     selectorGroups.length === 0
@@ -500,7 +577,9 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
       requirementCount: reqCount,
       covered: coverage,
       // 작성 수를 넘어서는 요구사항을 미작성(추정)으로 본다.
-      uncovered: (challenge.requirement ?? []).slice(coverage),
+      uncovered: missingRequired,
+      requiredCoverage: { total: reqCount, covered: coverage, missing: missingRequired },
+      bonusCoverage,
       errorMessage: [
         `부분 작성입니다 (작성한 테스트 ${testCount}개 · 단언 ${assertions}개).`,
         `요구사항 ${reqCount}개를 각각 검증하는 테스트를 모두 작성해야 통과입니다.`,
@@ -519,6 +598,8 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
     requirementCount: reqCount,
     covered: coverage,
     uncovered: [],
+    requiredCoverage: { total: reqCount, covered: coverage, missing: [] },
+    bonusCoverage,
     errorMessage: note,
   };
 }

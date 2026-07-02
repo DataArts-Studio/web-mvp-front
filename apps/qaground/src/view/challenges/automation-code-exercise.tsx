@@ -47,6 +47,8 @@ interface RunResult {
   covered?: number;
   /** 부분 통과 시 미작성(추정) 요구사항 — 빨간 fail 로 표시. */
   uncovered?: string[];
+  requiredCoverage?: { total: number; covered: number; missing: string[] };
+  bonusCoverage?: { total: number; covered: number; detected: string[]; suggestions: string[] };
   resultToken?: string;
 }
 
@@ -238,6 +240,19 @@ export const AutomationCodeExercise = ({
       push({ id: 'sum', text: '  채점 실패 — 아래를 보완하세요', kind: 'fail' });
     }
 
+    const bonus = data.bonusCoverage;
+    if ((ok || partial) && bonus && bonus.total > 0) {
+      push({ id: 'bonus-h', text: `  확장 커버리지 — ${bonus.covered}/${bonus.total}개 감지`, kind: 'dim' });
+      bonus.detected.slice(0, 3).forEach((item, i) =>
+        push({ id: `bonus-d-${i}`, text: `  +  ${item}`, kind: 'pass' })
+      );
+      if (bonus.suggestions.length > 0) {
+        push({ id: 'bonus-s-h', text: '  추천 보강:', kind: 'dim' });
+        bonus.suggestions.forEach((item, i) =>
+          push({ id: `bonus-s-${i}`, text: `  ·  ${item}`, kind: 'dim' })
+        );
+      }
+    }
     // 통과/실패 상세는 errorMessage 로. 부분 통과는 위 미작성 목록으로 대체한다.
     if (!partial) {
       (data.errorMessage ?? '')

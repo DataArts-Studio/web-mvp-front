@@ -1,4 +1,4 @@
-﻿import 'server-only';
+import 'server-only';
 
 import { getChallenge } from './registry';
 import type { ChallengeSolution } from './solution-types';
@@ -328,6 +328,395 @@ test('에러 상태에서 다시 올바르게 로그인하면 성공할 수 있�
 function getPomChallengeSolution(slug: string): ChallengeSolution | undefined {
   const challenge = getChallenge(slug);
   if (!challenge || challenge.category !== 'pom') return undefined;
+
+  if (slug.includes('profile')) {
+    return {
+      approach: challenge.requirement,
+      code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class ProfilePage {
+  readonly nameInput: Locator;
+  readonly phoneInput: Locator;
+  readonly ageInput: Locator;
+  readonly termsCheckbox: Locator;
+  readonly submitButton: Locator;
+  readonly successMessage: Locator;
+
+  constructor(private readonly page: Page) {
+    this.nameInput = page.locator('[data-testid="name"]');
+    this.phoneInput = page.locator('[data-testid="phone"]');
+    this.ageInput = page.locator('[data-testid="age"]');
+    this.termsCheckbox = page.locator('[data-testid="terms"]');
+    this.submitButton = page.locator('[data-testid="profile-submit"]');
+    this.successMessage = page.locator('[data-testid="profile-success"]');
+  }
+
+  async open() {
+    await this.page.goto('/sandbox/profile-form');
+  }
+
+  async registerProfile(name: string, phone: string, age: string) {
+    await this.nameInput.fill(name);
+    await this.phoneInput.fill(phone);
+    await this.ageInput.fill(age);
+    await this.termsCheckbox.check();
+    await this.submitButton.click();
+  }
+
+  async assertRegistered() {
+    await expect(this.successMessage).toBeVisible();
+  }
+}
+
+test('user can register profile through page object', async ({ page }) => {
+  const profilePage = new ProfilePage(page);
+  await profilePage.open();
+  await profilePage.registerProfile('김테스터', '010-0000-0000', '30');
+  await profilePage.assertRegistered();
+});
+`,
+      notes: [
+        '필드가 많은 폼은 입력 순서와 selector가 테스트마다 반복되기 쉬우므로 Page Object로 묶는 효과가 큽니다.',
+        '정상 등록 흐름은 registerProfile 같은 액션 메서드 하나로 읽히게 만들고, 성공 검증은 별도 단언 메서드로 분리합니다.',
+      ],
+    };
+  }
+
+  if (slug.includes('async-load')) {
+    return {
+      approach: challenge.requirement,
+      code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class OrdersPage {
+  readonly loadButton: Locator;
+  readonly loadingSpinner: Locator;
+  readonly loadedContent: Locator;
+
+  constructor(private readonly page: Page) {
+    this.loadButton = page.locator('[data-testid="load-btn"]');
+    this.loadingSpinner = page.locator('[data-testid="loading-spinner"]');
+    this.loadedContent = page.locator('[data-testid="loaded-content"]');
+  }
+
+  async open() {
+    await this.page.goto('/sandbox/async-load');
+  }
+
+  async loadOrders() {
+    await this.loadButton.click();
+  }
+
+  async assertLoading() {
+    await expect(this.loadingSpinner).toBeVisible();
+  }
+
+  async assertLoaded() {
+    await expect(this.loadedContent).toBeVisible();
+    await expect(this.loadingSpinner).not.toBeVisible();
+  }
+}
+
+test('order list loads after request', async ({ page }) => {
+  const ordersPage = new OrdersPage(page);
+  await ordersPage.open();
+  await ordersPage.loadOrders();
+  await ordersPage.assertLoading();
+  await ordersPage.assertLoaded();
+});
+`,
+      notes: [
+        '비동기 화면에서는 waitForTimeout 대신 expect의 자동 대기를 Page Object 단언 메서드에 넣는 편이 안정적입니다.',
+        '테스트 본문은 loadOrders, assertLoading, assertLoaded처럼 상태 전환만 드러나게 유지합니다.',
+      ],
+    };
+  }
+  if (slug.includes('product-options')) {
+    return {
+      approach: challenge.requirement,
+      code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class ProductOptionsPage {
+  readonly mediumSize: Locator;
+  readonly blackColor: Locator;
+  readonly summary: Locator;
+  readonly addToCartButton: Locator;
+  readonly addedConfirm: Locator;
+
+  constructor(private readonly page: Page) {
+    this.mediumSize = page.locator('[data-testid="size-m"]');
+    this.blackColor = page.locator('[data-testid="color-black"]');
+    this.summary = page.locator('[data-testid="selected-summary"]');
+    this.addToCartButton = page.locator('[data-testid="add-to-cart"]');
+    this.addedConfirm = page.locator('[data-testid="added-confirm"]');
+  }
+
+  async open() { await this.page.goto('/sandbox/product-options'); }
+  async selectRequiredOptions() { await this.mediumSize.click(); await this.blackColor.click(); }
+  async addToCart() { await this.addToCartButton.click(); }
+  async assertSelected() { await expect(this.summary).toContainText('M / 블랙'); }
+  async assertAdded() { await expect(this.addedConfirm).toBeVisible(); }
+}
+
+test('user can select options and add product to cart', async ({ page }) => {
+  const productPage = new ProductOptionsPage(page);
+  await productPage.open();
+  await productPage.selectRequiredOptions();
+  await productPage.assertSelected();
+  await productPage.addToCart();
+  await productPage.assertAdded();
+});
+`,
+      notes: [
+        '상품 옵션 화면은 선택 액션과 선택 결과 검증이 반복되기 쉬우므로 ProductOptionsPage로 묶기 좋습니다.',
+        '옵션 누락 에러 케이스를 추가할 때도 같은 Page Object에 실패 단언 메서드만 확장하면 됩니다.',
+      ],
+    };
+  }
+
+  if (slug.includes('wishlist')) {
+    return {
+      approach: challenge.requirement,
+      code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class WishlistPage {
+  readonly firstWishButton: Locator;
+  readonly secondWishButton: Locator;
+  readonly wishCount: Locator;
+
+  constructor(private readonly page: Page) {
+    this.firstWishButton = page.locator('[data-testid="wish-1"]');
+    this.secondWishButton = page.locator('[data-testid="wish-2"]');
+    this.wishCount = page.locator('[data-testid="wish-count"]');
+  }
+
+  async open() { await this.page.goto('/sandbox/wishlist'); }
+  async toggleFirstItem() { await this.firstWishButton.click(); }
+  async toggleSecondItem() { await this.secondWishButton.click(); }
+  async assertFirstItemWished() { await expect(this.firstWishButton).toHaveAttribute('aria-pressed', 'true'); }
+  async assertWishCount(count: number) { await expect(this.wishCount).toContainText(String(count)); }
+}
+
+test('user can toggle wishlist items', async ({ page }) => {
+  const wishlistPage = new WishlistPage(page);
+  await wishlistPage.open();
+  await wishlistPage.toggleFirstItem();
+  await wishlistPage.assertFirstItemWished();
+  await wishlistPage.toggleSecondItem();
+  await wishlistPage.assertWishCount(2);
+});
+`,
+      notes: [
+        '위시리스트는 버튼 텍스트보다 aria-pressed와 카운트가 핵심 상태입니다.',
+        '토글 UI는 상태 단언을 Page Object 안에 두면 테스트 본문이 훨씬 읽기 쉬워집니다.',
+      ],
+    };
+  }
+
+  if (slug.includes('order-cancel')) {
+    return {
+      approach: challenge.requirement,
+      code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class OrderCancelPage {
+  readonly setPaidButton: Locator;
+  readonly setShippingButton: Locator;
+  readonly orderStatus: Locator;
+  readonly cancelButton: Locator;
+  readonly cancelNotice: Locator;
+  readonly refundAmount: Locator;
+
+  constructor(private readonly page: Page) {
+    this.setPaidButton = page.locator('[data-testid="set-paid"]');
+    this.setShippingButton = page.locator('[data-testid="set-shipping"]');
+    this.orderStatus = page.locator('[data-testid="order-status"]');
+    this.cancelButton = page.locator('[data-testid="cancel-button"]');
+    this.cancelNotice = page.locator('[data-testid="cancel-notice"]');
+    this.refundAmount = page.locator('[data-testid="refund-amount"]');
+  }
+
+  async open() { await this.page.goto('/sandbox/order-cancel'); }
+  async setPaid() { await this.setPaidButton.click(); }
+  async setShipping() { await this.setShippingButton.click(); }
+  async cancelOrder() { await this.cancelButton.click(); }
+  async assertCancelled() { await expect(this.orderStatus).toHaveText('취소됨'); await expect(this.refundAmount).toContainText('50,000원'); }
+  async assertCannotCancelShipping() { await expect(this.cancelButton).toBeDisabled(); await expect(this.cancelNotice).toBeVisible(); }
+}
+
+test('order can be cancelled only before shipping', async ({ page }) => {
+  const orderPage = new OrderCancelPage(page);
+  await orderPage.open();
+  await orderPage.setPaid();
+  await orderPage.cancelOrder();
+  await orderPage.assertCancelled();
+});
+`,
+      notes: [
+        '상태 기반 기능은 상태 전환 액션과 결과 단언을 Page Object에 나누면 시나리오가 명확해집니다.',
+        '배송중 취소 불가 같은 반대 경로는 같은 Page Object 메서드를 재사용해 별도 테스트로 확장하면 됩니다.',
+      ],
+    };
+  }
+
+  if (slug.includes('file-upload')) {
+    return {
+      approach: challenge.requirement,
+      code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class FileUploadPage {
+  readonly fileInput: Locator;
+  readonly fileName: Locator;
+  readonly uploadButton: Locator;
+  readonly uploadResult: Locator;
+
+  constructor(private readonly page: Page) {
+    this.fileInput = page.locator('[data-testid="file-input"]');
+    this.fileName = page.locator('[data-testid="file-name"]');
+    this.uploadButton = page.locator('[data-testid="upload-submit"]');
+    this.uploadResult = page.locator('[data-testid="upload-result"]');
+  }
+
+  async open() { await this.page.goto('/sandbox/file-upload'); }
+  async selectFile(name: string) { await this.fileInput.setInputFiles({ name, mimeType: 'application/pdf', buffer: Buffer.from('test') }); }
+  async upload() { await this.uploadButton.click(); }
+  async assertSelected(name: string) { await expect(this.fileName).toContainText(name); }
+  async assertUploaded(name: string) { await expect(this.uploadResult).toContainText(name); }
+}
+
+test('user can upload evidence file', async ({ page }) => {
+  const uploadPage = new FileUploadPage(page);
+  await uploadPage.open();
+  await uploadPage.selectFile('receipt.pdf');
+  await uploadPage.assertSelected('receipt.pdf');
+  await uploadPage.upload();
+  await uploadPage.assertUploaded('receipt.pdf');
+});
+`,
+      notes: [
+        '파일 업로드는 setInputFiles 같은 구현 세부를 Page Object 내부에 숨기면 테스트 본문이 업무 흐름처럼 읽힙니다.',
+        '파일명 표시와 업로드 완료 메시지를 분리해서 검증하면 실패 지점을 더 쉽게 파악할 수 있습니다.',
+      ],
+    };
+  }
+  if (slug.includes('cart-checkout')) {
+    return {
+      approach: challenge.requirement,
+      code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class CartCheckoutPage {
+  readonly increaseMouseButton: Locator;
+  readonly mouseQuantity: Locator;
+  readonly couponInput: Locator;
+  readonly applyCouponButton: Locator;
+  readonly subtotal: Locator;
+  readonly shipping: Locator;
+  readonly discount: Locator;
+  readonly total: Locator;
+
+  constructor(private readonly page: Page) {
+    this.increaseMouseButton = page.locator('[data-testid="inc-mouse"]');
+    this.mouseQuantity = page.locator('[data-testid="qty-mouse"]');
+    this.couponInput = page.locator('[data-testid="coupon-input"]');
+    this.applyCouponButton = page.locator('[data-testid="apply-coupon"]');
+    this.subtotal = page.locator('[data-testid="subtotal"]');
+    this.shipping = page.locator('[data-testid="shipping"]');
+    this.discount = page.locator('[data-testid="discount"]');
+    this.total = page.locator('[data-testid="total"]');
+  }
+
+  async open() {
+    await this.page.goto('/sandbox/cart-checkout');
+  }
+
+  async increaseMouseQuantity(times: number) {
+    for (let i = 0; i < times; i += 1) {
+      await this.increaseMouseButton.click();
+    }
+  }
+
+  async applyCoupon(code: string) {
+    await this.couponInput.fill(code);
+    await this.applyCouponButton.click();
+  }
+
+  async assertSummary(expected: { qty: string; subtotal: string; shipping: string; discount: string; total: string }) {
+    await expect(this.mouseQuantity).toHaveText(expected.qty);
+    await expect(this.subtotal).toHaveText(expected.subtotal);
+    await expect(this.shipping).toHaveText(expected.shipping);
+    await expect(this.discount).toHaveText(expected.discount);
+    await expect(this.total).toHaveText(expected.total);
+  }
+}
+
+test('cart total changes after quantity and coupon updates', async ({ page }) => {
+  const cartPage = new CartCheckoutPage(page);
+  await cartPage.open();
+  await cartPage.increaseMouseQuantity(2);
+  await cartPage.applyCoupon('SAVE10');
+  await cartPage.assertSummary({
+    qty: '3',
+    subtotal: '60,000원',
+    shipping: '무료',
+    discount: '-6,000원',
+    total: '54,000원',
+  });
+});
+`,
+      notes: [
+        '장바구니는 수량, 쿠폰, 배송비, 합계가 연쇄로 바뀌므로 Page Object가 도메인 규칙을 읽기 쉽게 숨겨주는 효과가 큽니다.',
+        '테스트 본문은 수량 변경 → 쿠폰 적용 → 금액 검증이라는 구매자 관점의 시나리오만 남기는 것이 좋습니다.',
+      ],
+    };
+  }
+  if (slug.includes('signup')) {
+    return {
+      approach: challenge.requirement,
+      code: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class SignupPage {
+  readonly emailInput: Locator;
+  readonly passwordInput: Locator;
+  readonly confirmPasswordInput: Locator;
+  readonly submitButton: Locator;
+  readonly successMessage: Locator;
+
+  constructor(private readonly page: Page) {
+    this.emailInput = page.locator('[data-testid="email"]');
+    this.passwordInput = page.locator('[data-testid="password"]');
+    this.confirmPasswordInput = page.locator('[data-testid="confirm-password"]');
+    this.submitButton = page.locator('[data-testid="signup-submit"]');
+    this.successMessage = page.locator('[data-testid="signup-success"]');
+  }
+
+  async open() {
+    await this.page.goto('/sandbox/signup-validation');
+  }
+
+  async signUp(email: string, password: string, confirmPassword = password) {
+    await this.emailInput.fill(email);
+    await this.passwordInput.fill(password);
+    await this.confirmPasswordInput.fill(confirmPassword);
+    await this.submitButton.click();
+  }
+
+  async assertSignedUp() {
+    await expect(this.successMessage).toBeVisible();
+  }
+}
+
+test('new user can sign up through page object', async ({ page }) => {
+  const signupPage = new SignupPage(page);
+  await signupPage.open();
+  await signupPage.signUp('tester@example.com', 'qaground123');
+  await signupPage.assertSignedUp();
+});
+`,
+      notes: [
+        '회원가입처럼 입력 필드가 늘어나는 화면일수록 locator를 Page Object 필드로 모아두는 편이 유지보수에 유리합니다.',
+        '테스트 본문은 open, signUp, assertSignedUp처럼 사용자 흐름만 읽히게 두고 세부 selector는 SignupPage 내부에 둡니다.',
+        '검증 메시지까지 다루는 다음 단계에서는 성공 단언과 실패 단언 메서드를 분리해 확장하면 됩니다.',
+      ],
+    };
+  }
 
   return {
     approach: challenge.requirement,
