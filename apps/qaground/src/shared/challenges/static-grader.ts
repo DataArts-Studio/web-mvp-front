@@ -316,6 +316,10 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
     return { failures, blocks };
   }
 
+  if (/\bpage\.locators\s*\(/.test(stripped)) {
+    failures.push('page.locators(...) is not a Playwright API. Use page.locator(...) instead.');
+  }
+
   blocks.forEach((block) => {
     const title = block.title.trim() || '이름 없는 테스트';
     const body = block.body.trim();
@@ -396,22 +400,23 @@ export function validateAutomationSubmissionShape(code: string): GradeResult | n
   return null;
 }
 
-function getSelectorReferenceValues(challenge: Challenge): string[] {
-  return Array.from(
-    new Set(
-      (challenge.selectors ?? []).flatMap((selector) => [
-        selector.testid,
-        ...(selector.options ?? []).map((option) => option.value),
-      ])
-    )
+function getSelectorReferenceGroups(challenge: Challenge): string[][] {
+  return (challenge.selectors ?? []).map((selector) =>
+    Array.from(new Set([selector.testid, ...(selector.options ?? []).map((option) => option.value)]))
   );
 }
 
-function countUsedSelectorReferences(code: string, values: string[]): number {
-  return values.filter((value) => {
-    const escaped = escapeRegExp(value);
-    return new RegExp(String.raw`['"\`][^'"\`]*${escaped}[^'"\`]*['"\`]`).test(code);
-  }).length;
+function countCoveredSelectorGroups(code: string, groups: string[][]): number {
+  return groups.filter((values) =>
+    values.some((value) => {
+      const escaped = escapeRegExp(value);
+      return new RegExp(String.raw`['"\`][^'"\`]*${escaped}[^'"\`]*['"\`]`).test(code);
+    })
+  ).length;
+}
+
+function flattenSelectorReferenceGroups(groups: string[][]): string[] {
+  return Array.from(new Set(groups.flat()));
 }
 
 export function validateChallengeStaticChecks(
@@ -446,12 +451,17 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
 
   // 대상 요소를 안정적으로 선택했는지 (셀렉터 있는 챌린지 한정).
   // testid 직접 참조 OR 접근성 기반 로케이터(getByRole/getByLabel 등) 둘 다 인정한다.
-  const selectorValues = getSelectorReferenceValues(challenge);
-  const usedSelectorValues = countUsedSelectorReferences(stripped, selectorValues);
+  const selectorGroups = getSelectorReferenceGroups(challenge);
+  const selectorValues = flattenSelectorReferenceGroups(selectorGroups);
+  const coveredSelectorGroups = countCoveredSelectorGroups(stripped, selectorGroups);
   const usesSemanticLocator = SEMANTIC_LOCATOR_RE.test(stripped);
-  if (selectorValues.length > 0 && usedSelectorValues < 1 && !usesSemanticLocator) {
+  if (
+    selectorGroups.length > 0 &&
+    coveredSelectorGroups < selectorGroups.length &&
+    !usesSemanticLocator
+  ) {
     failures.push(
-      `Use a stable selector with page.locator(...), getByRole/getByLabel, or another reliable locator. Selector reference values: ${selectorValues.join(', ')}`
+      `Use stable selectors for every required element. Covered selectors: ${coveredSelectorGroups}/${selectorGroups.length}. Reference values: ${selectorValues.join(', ')}`
     );
   }
 
@@ -474,10 +484,10 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
   const coverage = Math.max(testCount, assertions, structuralCoverage);
 
   const selectorSummary =
-    selectorValues.length === 0
+    selectorGroups.length === 0
       ? ''
-      : usedSelectorValues > 0
-        ? `, selectors ${usedSelectorValues}/${selectorValues.length}`
+      : coveredSelectorGroups > 0
+        ? `, selectors ${coveredSelectorGroups}/${selectorGroups.length}`
         : usesSemanticLocator
           ? ', semantic locator'
           : '';

@@ -9,13 +9,16 @@ const sandboxChallenges = CHALLENGES.filter((c) => c.sandboxSlug);
 function goodSubmission(c: Challenge): string {
   const ids = (c.selectors ?? []).map((s) => s.testid);
   const a = ids[0] ?? 'root';
-  const b = ids[1] ?? a;
+  const selectorAssertions = ids
+    .map((id) => `  await expect(page.getByTestId('${id}')).toBeVisible();`)
+    .join('\n');
   // Add enough assertions to avoid partial coverage.
   const reqCount = c.requirement?.length ?? 1;
-  const asserts = Array.from(
-    { length: reqCount },
-    () => `  await expect(page.getByTestId('${b}')).toBeVisible();`
+  const extraAssertions = Array.from(
+    { length: Math.max(0, reqCount - ids.length) },
+    () => `  await expect(page.getByTestId('${a}')).toBeVisible();`
   ).join('\n');
+  const asserts = [selectorAssertions, extraAssertions].filter(Boolean).join('\n');
 
   if (c.category === 'pom') {
     return `import { test as base, expect, type Locator, type Page } from '@playwright/test';
@@ -25,10 +28,14 @@ const test = base.extend<{ loginPage: LoginPage }>({
 test.use({ storageState: 'auth.json' });
 class LoginPage {
   readonly target: Locator;
-  constructor(private readonly page: Page) { this.target = page.getByTestId('${a}'); }
+  readonly allTargets: Locator[];
+  constructor(private readonly page: Page) {
+    this.target = page.getByTestId('${a}');
+    this.allTargets = [${ids.map((id) => `page.getByTestId('${id}')`).join(', ')}];
+  }
   async moveToTarget() { await this.page.goto('/sandbox/${c.sandboxSlug}'); }
   async performMainAction(value = 'tester') { await this.target.fill(value).catch(async () => this.target.click()); }
-  async checkMainState() { await expect(this.target).toBeVisible(); }
+  async checkMainState() { for (const target of this.allTargets) await expect(target).toBeVisible(); }
 }
 class SignupPage extends LoginPage {}
 class NavigationPage extends LoginPage {}

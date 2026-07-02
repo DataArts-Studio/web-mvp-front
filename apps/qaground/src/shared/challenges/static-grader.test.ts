@@ -221,6 +221,23 @@ test('function expression helper login', async ({ page }) => {
     expect(r.errorMessage).toContain('스타터');
   });
 
+  it('fails clearly when page.locators typo is used', () => {
+    const code = `import { test, expect, type Page } from '@playwright/test';
+class LoginPage {
+  constructor(private readonly page: Page) {}
+  readonly username = this.page.locators('#username');
+  async open() { await this.page.goto('/'); }
+  async check() { await expect(this.username).toBeVisible(); }
+}
+test('typo locator api', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.open();
+  await loginPage.check();
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('page.locator(...)');
+  });
   it('단언이 없으면 실패한다', () => {
     const noAssert = `import { test } from '@playwright/test';
 test('t', async ({ page }) => {
@@ -250,9 +267,21 @@ test('t', async ({ page }) => {
 });`;
     const r = gradeSubmissionStatically(challenge, cssOnly);
     expect(r.ok).toBe(false);
-    expect(r.errorMessage).toContain('Selector reference values');
+    expect(r.errorMessage).toContain('Covered selectors: 0/4');
   });
 
+  it('일부 참고 셀렉터만 사용하면 누락으로 실패한다', () => {
+    const partialSelectors = `import { test, expect } from '@playwright/test';
+test('partial selectors', async ({ page }) => {
+  await page.goto('/sandbox/login-basic');
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+    const r = gradeSubmissionStatically(challenge, partialSelectors);
+    expect(r.ok).toBe(false);
+    expect(r.errorMessage).toContain('Covered selectors: 3/4');
+  });
   it('role·label 기반 접근성 셀렉터도 통과로 인정한다', () => {
     const roleBased = `import { test, expect } from '@playwright/test';
 test('로그인 성공', async ({ page }) => {
