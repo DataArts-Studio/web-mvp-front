@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -10,24 +10,12 @@ import {
   addChecklistItem,
   convertChecklistToTestCases,
   deleteChecklistItem,
-  reorderChecklistItems,
   toggleChecklistItem,
 } from '@/entities/checklist/api/server-actions';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MainContainer } from '@testea/ui';
-import { Skeleton } from '@testea/ui';
+import { MainContainer, Skeleton } from '@testea/ui';
 import { cn } from '@testea/util';
-import {
-  ArrowLeft,
-  ArrowRightLeft,
-  Check,
-  CheckSquare,
-  Plus,
-  RotateCcw,
-  Square,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, CheckSquare, Plus, RotateCcw, Square, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Props = {
@@ -51,7 +39,6 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
     queryClient.invalidateQueries({ queryKey: checklistQueryKeys.list(projectId) });
   }, [queryClient, checklistId, projectId]);
 
-  // --- 체크 토글 (낙관적 업데이트) ---
   const toggleMutation = useMutation({
     mutationFn: ({ itemId, isChecked }: { itemId: string; isChecked: boolean }) =>
       toggleChecklistItem(itemId, isChecked),
@@ -86,7 +73,6 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
     onSettled: () => invalidate(),
   });
 
-  // --- 항목 추가 ---
   const addMutation = useMutation({
     mutationFn: (content: string) => addChecklistItem({ checklistId, content }),
     onSuccess: (result) => {
@@ -99,13 +85,11 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
     },
   });
 
-  // --- 항목 삭제 ---
   const deleteMutation = useMutation({
     mutationFn: deleteChecklistItem,
     onSuccess: () => invalidate(),
   });
 
-  // --- TC 변환 ---
   const convertMutation = useMutation({
     mutationFn: () =>
       convertChecklistToTestCases(checklistId, Array.from(selectedForConvert), projectId),
@@ -123,12 +107,11 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
     },
   });
 
-  // --- 모두 초기화 ---
   const resetMutation = useMutation({
     mutationFn: async () => {
       if (!checklist) return;
-      const checkedItems = checklist.items.filter((i) => i.isChecked);
-      await Promise.all(checkedItems.map((i) => toggleChecklistItem(i.id, false)));
+      const checked = checklist.items.filter((i) => i.isChecked);
+      await Promise.all(checked.map((i) => toggleChecklistItem(i.id, false)));
     },
     onSuccess: () => {
       toast.success('모든 항목이 초기화되었습니다.');
@@ -139,29 +122,25 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
   const items = checklist?.items ?? [];
   const totalItems = items.length;
   const checkedItems = items.filter((i) => i.isChecked).length;
-  const percent = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0;
   const isCompleted = totalItems > 0 && checkedItems === totalItems;
 
-  const startedAt = checklist?.startedAt;
-  const completedAt = checklist?.completedAt;
-  const elapsedTime = useMemo(() => {
-    if (!startedAt) return null;
-    const end = completedAt ? new Date(completedAt) : new Date();
-    const start = new Date(startedAt);
+  const elapsedTime = (() => {
+    if (!checklist?.startedAt) return null;
+    const end = checklist.completedAt ? new Date(checklist.completedAt) : new Date();
+    const start = new Date(checklist.startedAt);
     const diffMs = end.getTime() - start.getTime();
     const mins = Math.floor(diffMs / 60000);
     const secs = Math.floor((diffMs % 60000) / 1000);
     if (mins > 0) return `${mins}분 ${secs}초`;
     return `${secs}초`;
-  }, [startedAt, completedAt]);
+  })();
 
   if (isLoading) {
     return (
-      <MainContainer className="mx-auto w-full max-w-[800px] flex-1 px-10 py-8">
-        <Skeleton className="mb-6 h-8 w-64" />
-        <Skeleton className="mb-4 h-4 w-full" />
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="rounded-2 mb-2 h-12 w-full" />
+      <MainContainer className="mx-auto w-full max-w-[1040px] flex-1 px-4 py-4">
+        <Skeleton className="mb-4 h-8 w-64" />
+        {Array.from({ length: 7 }).map((_, i) => (
+          <Skeleton key={i} className="mb-2 h-11 w-full rounded-none" />
         ))}
       </MainContainer>
     );
@@ -176,78 +155,39 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
   }
 
   return (
-    <MainContainer className="mx-auto w-full max-w-[800px] flex-1 overflow-y-auto px-10 py-8">
-      {/* 헤더 */}
-      <div className="mb-6 flex items-center gap-3">
+    <MainContainer className="mx-auto w-full max-w-[1040px] flex-1 overflow-y-auto px-4 py-4">
+      <header className="border-line-3/40 mb-3 flex items-center gap-3 border-b pb-3">
         <button
           type="button"
           onClick={() => router.push(`/projects/${slug}/checklists`)}
           className="text-text-3 hover:text-text-1 transition-colors"
+          aria-label="체크리스트 목록으로 이동"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="typo-title-heading text-text-1 flex-1">{checklist.title}</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-text-1 truncate text-xl leading-7 font-semibold">
+            {checklist.title}
+          </h1>
+          <p className="text-text-4 mt-0.5 text-sm">
+            {checkedItems}/{totalItems} 완료{elapsedTime && ` · ${elapsedTime}`}
+            {isCompleted && ' · 완료'}
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setShowConvert(!showConvert)}
-          className="typo-body2-normal text-text-3 hover:text-primary rounded-2 border-line-2 hover:border-primary/30 flex items-center gap-1.5 border px-3 py-1.5 transition-colors"
+          className="text-text-3 hover:text-primary hover:border-primary/30 border-line-3/40 flex h-8 items-center gap-1.5 border px-3 text-sm transition-colors"
         >
           <ArrowRightLeft className="h-3.5 w-3.5" />
-          <span>TC로 변환</span>
+          TC로 변환
         </button>
-      </div>
+      </header>
 
-      {/* 프로그레스 바 */}
-      <div className="mb-6">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="typo-body2-heading text-text-2">
-            {checkedItems}/{totalItems} 완료
-          </span>
-          <span className="typo-body2-normal text-text-3">
-            {percent}%{elapsedTime && ` · ${elapsedTime}`}
-          </span>
-        </div>
-        <div className="bg-bg-4 h-3 overflow-hidden rounded-full">
-          <div
-            className={cn(
-              'h-full rounded-full transition-all duration-300',
-              isCompleted ? 'bg-green-500' : 'bg-primary'
-            )}
-            style={{ width: `${percent}%` }}
-          />
-        </div>
-      </div>
-
-      {/* 완료 배너 */}
-      {isCompleted && (
-        <div className="rounded-3 mb-6 flex items-center justify-between border border-green-500/20 bg-green-500/10 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-green-500/20 p-2">
-              <Check className="h-5 w-5 text-green-400" />
-            </div>
-            <div>
-              <p className="typo-body1-heading text-green-400">체크리스트 완료!</p>
-              {elapsedTime && (
-                <p className="typo-label-normal text-green-400/70">소요 시간: {elapsedTime}</p>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => resetMutation.mutate()}
-            className="typo-body2-normal text-text-3 hover:text-text-1 flex items-center gap-1.5 transition-colors"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            모두 초기화
-          </button>
-        </div>
-      )}
-
-      {/* TC 변환 모드 안내 */}
       {showConvert && (
-        <div className="rounded-3 bg-primary/5 border-primary/20 mb-4 flex items-center justify-between border px-5 py-3">
-          <p className="typo-body2-normal text-text-2">
-            변환할 항목을 선택하세요 ({selectedForConvert.size}개 선택됨)
+        <div className="border-line-3/40 mb-3 flex items-center justify-between gap-3 border-b pb-3">
+          <p className="text-text-2 text-sm">
+            변환할 항목 선택 <span className="text-text-4">({selectedForConvert.size}개)</span>
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -256,7 +196,7 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
                 setShowConvert(false);
                 setSelectedForConvert(new Set());
               }}
-              className="typo-body2-normal text-text-3 hover:text-text-1 px-2 py-1"
+              className="text-text-3 hover:text-text-1 h-8 px-2 text-sm transition-colors"
             >
               취소
             </button>
@@ -264,7 +204,7 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
               type="button"
               onClick={() => convertMutation.mutate()}
               disabled={selectedForConvert.size === 0 || convertMutation.isPending}
-              className="typo-body2-heading bg-primary rounded-2 hover:bg-primary/90 px-3 py-1 text-white transition-colors disabled:opacity-50"
+              className="border-primary bg-primary hover:bg-primary/90 h-8 border px-3 text-sm font-medium text-white transition-colors disabled:opacity-50"
             >
               변환
             </button>
@@ -272,15 +212,17 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
         </div>
       )}
 
-      {/* 항목 리스트 */}
-      <div className="flex flex-col gap-1">
+      <section className="border-line-3/40 border-t">
+        <div className="text-text-4 border-line-3/40 grid grid-cols-[36px_minmax(0,1fr)_36px] border-b px-3 py-2 text-xs font-medium">
+          <span />
+          <span>항목</span>
+          <span />
+        </div>
+
         {items.map((item) => (
           <div
             key={item.id}
-            className={cn(
-              'group rounded-2 flex items-center gap-3 px-4 py-3 transition-colors',
-              item.isChecked ? 'bg-green-500/5' : 'hover:bg-bg-3'
-            )}
+            className="group hover:bg-bg-2 border-line-3/40 grid grid-cols-[36px_minmax(0,1fr)_36px] items-center border-b px-3 py-2.5 last:border-b-0"
           >
             {showConvert ? (
               <button
@@ -293,7 +235,8 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
                     return next;
                   });
                 }}
-                className="shrink-0"
+                className="justify-self-start"
+                aria-label="변환 항목 선택"
               >
                 {selectedForConvert.has(item.id) ? (
                   <CheckSquare className="text-primary h-5 w-5" />
@@ -307,7 +250,8 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
                 onClick={() =>
                   toggleMutation.mutate({ itemId: item.id, isChecked: !item.isChecked })
                 }
-                className="shrink-0"
+                className="justify-self-start"
+                aria-label="항목 완료 상태 변경"
               >
                 {item.isChecked ? (
                   <CheckSquare className="h-5 w-5 text-green-500" />
@@ -319,7 +263,7 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
 
             <span
               className={cn(
-                'typo-body2-normal flex-1',
+                'min-w-0 text-sm',
                 item.isChecked ? 'text-text-4 line-through' : 'text-text-1'
               )}
             >
@@ -330,18 +274,18 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
               <button
                 type="button"
                 onClick={() => deleteMutation.mutate(item.id)}
-                className="text-text-4 opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
+                className="text-text-4 justify-self-end opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
+                aria-label="항목 삭제"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
         ))}
-      </div>
+      </section>
 
-      {/* 항목 추가 */}
       {!showConvert && (
-        <div className="mt-2 flex items-center gap-3 px-4 py-2">
+        <div className="border-line-3/40 mt-3 flex items-center gap-2 border-b py-2">
           <Plus className="text-text-4 h-4 w-4 shrink-0" />
           <input
             type="text"
@@ -354,18 +298,17 @@ export const ChecklistDetailView = ({ checklistId, projectId, slug }: Props) => 
                 addMutation.mutate(newItemContent.trim());
               }
             }}
-            className="typo-body2-normal text-text-1 placeholder:text-text-4 flex-1 bg-transparent focus:outline-none"
+            className="text-text-1 placeholder:text-text-4 min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
         </div>
       )}
 
-      {/* 하단 초기화 버튼 (미완료 시) */}
       {!isCompleted && checkedItems > 0 && (
-        <div className="mt-6 flex justify-end">
+        <div className="mt-4 flex justify-end">
           <button
             type="button"
             onClick={() => resetMutation.mutate()}
-            className="typo-body2-normal text-text-4 hover:text-text-2 flex items-center gap-1.5 transition-colors"
+            className="text-text-4 hover:text-text-2 flex items-center gap-1.5 text-sm transition-colors"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             모두 초기화

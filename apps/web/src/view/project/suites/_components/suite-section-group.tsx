@@ -47,14 +47,14 @@ export const SuiteSectionGroup = ({
 }: SuiteSectionGroupProps) => {
   const t = useTranslations('suites');
   return (
-    <div className="bg-bg-2 border-line-2 rounded-4 overflow-hidden border">
+    <div className="border-line-2 overflow-hidden border">
       {/* 섹션 헤더 */}
-      <div className="border-line-2 flex items-center justify-between border-b px-4 py-2.5">
+      <div className="border-line-2 bg-bg-2 flex items-center justify-between border-b px-3 py-2">
         <button
           type="button"
           aria-expanded={!isCollapsed}
           aria-label={t('ui.sectionToggleAriaLabel', { name: section.name })}
-          className="flex flex-1 items-center gap-2 text-left"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
           onClick={() => onToggle(section.id)}
         >
           {isCollapsed ? (
@@ -81,7 +81,7 @@ export const SuiteSectionGroup = ({
             />
           ) : (
             <span
-              className="typo-body2-heading text-text-1"
+              className="text-text-1 text-sm font-medium"
               onClick={(e) => e.stopPropagation()}
               onDoubleClick={(e) => {
                 e.stopPropagation();
@@ -92,7 +92,7 @@ export const SuiteSectionGroup = ({
               {section.name}
             </span>
           )}
-          <span className="text-text-3 text-xs">
+          <span className="text-text-3 shrink-0 text-xs">
             {t('count.cases', { count: sectionCases.length })}
           </span>
         </button>
@@ -117,7 +117,7 @@ export const SuiteSectionGroup = ({
               <div
                 role="menu"
                 aria-label={t('ui.sectionActions')}
-                className="bg-bg-2 border-line-2 rounded-2 absolute top-full right-0 z-50 mt-1 min-w-[120px] border py-1 shadow-lg"
+                className="bg-bg-1 border-line-2 absolute top-full right-0 z-50 mt-1 min-w-[120px] border py-1 shadow-lg"
               >
                 <button
                   type="button"

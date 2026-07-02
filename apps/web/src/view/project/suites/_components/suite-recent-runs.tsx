@@ -16,63 +16,51 @@ type SuiteRecentRunsProps = {
 export const SuiteRecentRuns = ({ recentRuns }: SuiteRecentRunsProps) => {
   const t = useTranslations('suites');
   return (
-    <section aria-labelledby="suite-recent-runs-heading" className="col-span-6 flex flex-col gap-4">
-      <h2 id="suite-recent-runs-heading" className="typo-h2-heading">
+    <section aria-labelledby="suite-recent-runs-heading" className="flex flex-col gap-3">
+      <h2
+        id="suite-recent-runs-heading"
+        className="text-text-3 text-xs font-semibold tracking-wide uppercase"
+      >
         {t('ui.recentRunsTitle')}
       </h2>
 
       {recentRuns.length === 0 ? (
-        <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
+        <div className="border-line-2 border border-dashed py-6">
           <EmptyState
-            icon={<PlayCircle className="h-8 w-8" aria-hidden="true" />}
+            icon={<PlayCircle className="h-6 w-6" aria-hidden="true" />}
             title={t('ui.noRecentRunsTitle')}
             description={t('ui.noRecentRunsDescription')}
           />
         </div>
       ) : (
-        <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
+        <div className="border-line-2 divide-line-2 divide-y border">
           {recentRuns.map((run) => {
             const runStatusConfig = RUN_STATUS_CONFIG[run.status] ?? RUN_STATUS_CONFIG.not_run;
             const runPassRate = run.total > 0 ? Math.round((run.passed / run.total) * 100) : 0;
             return (
-              <div
-                key={run.runId}
-                className="hover:bg-bg-3 flex items-center justify-between px-4 py-3 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-xs font-medium',
-                      runStatusConfig.style
-                    )}
-                  >
+              <div key={run.runId} className="hover:bg-bg-2 px-3 py-3 transition-colors">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <span className={cn('px-2 py-0.5 text-xs font-medium', runStatusConfig.style)}>
                     {runStatusConfig.label}
                   </span>
-                  <span className="text-text-2">{formatDateTime(run.runAt)}</span>
+                  <span className="text-text-3 text-right text-xs tabular-nums">
+                    {runPassRate}%
+                  </span>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-green-400">{run.passed} passed</span>
-                    <span className="text-red-400">{run.failed} failed</span>
-                    <span className="text-amber-400">{run.blocked} blocked</span>
-                  </div>
-                  <div className="w-20">
-                    <div
-                      role="progressbar"
-                      aria-valuenow={runPassRate}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={t('ui.passRateAriaLabel', { rate: runPassRate })}
-                      className="bg-bg-3 h-2 w-full rounded-full"
-                    >
-                      <div
-                        className="bg-primary h-full rounded-full"
-                        style={{ width: `${runPassRate}%` }}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-text-3 w-12 text-right text-sm">{runPassRate}%</span>
+                <p className="text-text-2 mb-2 text-xs">{formatDateTime(run.runAt)}</p>
+                <div
+                  role="progressbar"
+                  aria-valuenow={runPassRate}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={t('ui.passRateAriaLabel', { rate: runPassRate })}
+                  className="bg-bg-3 h-1.5 w-full"
+                >
+                  <div className="bg-primary h-full" style={{ width: `${runPassRate}%` }} />
                 </div>
+                <p className="text-text-3 mt-2 text-xs">
+                  {run.passed} passed ? {run.failed} failed ? {run.blocked} blocked
+                </p>
               </div>
             );
           })}

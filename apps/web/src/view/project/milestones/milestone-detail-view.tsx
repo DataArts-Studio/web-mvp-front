@@ -25,15 +25,12 @@ import {
   MainContainer,
   RUN_STATUS_CONFIG,
   Skeleton,
-  SkeletonCircle,
   StatusBadge,
-  TEST_RESULT_STATUS_CONFIG,
 } from '@testea/ui';
 import { formatDateTime } from '@testea/util';
 import {
   ArrowLeft,
   Calendar,
-  ChevronRight,
   Edit2,
   FolderOpen,
   ListChecks,
@@ -62,11 +59,11 @@ export const MilestoneDetailView = () => {
   const milestoneId = params.milestoneId as string;
   const projectSlug = params.slug as string;
   const [isEditing, setIsEditing] = useState(false);
-
-  const { data, isLoading, isError } = useQuery(milestoneByIdQueryOptions(milestoneId));
   const [isAddingCases, setIsAddingCases] = useState(false);
   const [isAddingSuites, setIsAddingSuites] = useState(false);
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
+
+  const { data, isLoading, isError } = useQuery(milestoneByIdQueryOptions(milestoneId));
 
   React.useEffect(() => {
     if (data?.success) {
@@ -74,7 +71,6 @@ export const MilestoneDetailView = () => {
     }
   }, [data?.success, milestoneId]);
 
-  // 프로젝트의 테스트 케이스 조회
   const { data: casesResult } = useQuery({
     queryKey: ['testCases', 'forMilestone', milestoneId],
     queryFn: () => getTestCases({ project_id: data?.success ? data.data.projectId : '' }),
@@ -83,7 +79,6 @@ export const MilestoneDetailView = () => {
 
   const allCases = casesResult?.success ? (casesResult.data ?? []) : [];
 
-  // 프로젝트의 테스트 스위트 조회
   const { data: suitesResult } = useQuery({
     queryKey: ['testSuites', 'forMilestone', milestoneId],
     queryFn: () => getTestSuites({ projectId: data?.success ? data.data.projectId : '' }),
@@ -98,57 +93,17 @@ export const MilestoneDetailView = () => {
 
   if (isLoading) {
     return (
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
-        {/* Header skeleton */}
-        <header className="col-span-6 flex flex-col gap-4">
-          <Skeleton className="h-4 w-32" />
-          <div className="flex items-start justify-between">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-8 w-64" />
-                <SkeletonCircle className="h-7 w-16" />
-              </div>
-              <Skeleton className="h-4 w-48" />
-            </div>
-            <div className="flex gap-2">
-              <Skeleton className="h-9 w-16" />
-              <Skeleton className="h-9 w-16" />
-            </div>
-          </div>
+      <MainContainer className="grid min-h-screen w-full max-w-none flex-1 grid-cols-1 gap-6 px-5 py-5 lg:h-screen lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden lg:px-8 lg:py-6">
+        <header className="border-line-2 border-b pb-4 lg:col-span-2">
+          <Skeleton className="h-8 w-80" />
+          <Skeleton className="mt-3 h-4 w-96" />
         </header>
-        {/* Description skeleton */}
-        <section className="col-span-6">
-          <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-            <Skeleton className="h-5 w-full" />
-          </div>
-        </section>
-        {/* Stats skeleton */}
-        <section className="col-span-6 grid grid-cols-4 gap-4">
-          <div className="bg-bg-2 border-line-2 rounded-4 col-span-2 border p-4">
-            <Skeleton className="h-20" />
-          </div>
-          <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-            <Skeleton className="h-12" />
-          </div>
-          <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-            <Skeleton className="h-12" />
-          </div>
-        </section>
-        {/* Test cases skeleton */}
-        <section className="col-span-6 flex flex-col gap-4">
-          <Skeleton className="h-6 w-48" />
-          <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-48" />
-                </div>
-                <SkeletonCircle className="h-5 w-16" />
-              </div>
-            ))}
-          </div>
-        </section>
+        <main className="min-h-[520px] py-5 lg:min-h-0">
+          <Skeleton className="h-full min-h-[420px]" />
+        </main>
+        <aside className="border-line-2 border-t py-5 lg:border-t-0 lg:border-l lg:pl-6">
+          <Skeleton className="h-80" />
+        </aside>
       </MainContainer>
     );
   }
@@ -173,282 +128,263 @@ export const MilestoneDetailView = () => {
   const milestone = data.data;
   const statusInfo = MILESTONE_STATUS_CONFIG[milestone.progressStatus] || {
     label: milestone.progressStatus,
-    style: 'bg-gray-500/20 text-gray-300',
-  };
-
-  const stats = {
-    progressRate: milestone.progressRate,
-    completedCases: milestone.completedCases,
-    totalCases: milestone.totalCases,
-    runCount: milestone.runCount,
+    style: 'border border-line-2 text-text-3',
   };
   const testCases = milestone.testCases ?? [];
   const testSuites = milestone.testSuites ?? [];
   const testRuns = milestone.testRuns ?? [];
 
   return (
-    <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
-      {/* 뒤로가기 + 헤더 */}
-      <header className="col-span-6 flex flex-col gap-4">
-        <Link
-          href={`/projects/${projectSlug}/milestones`}
-          className="text-text-3 hover:text-text-1 flex w-fit items-center gap-1 text-sm transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          마일스톤 목록으로
-        </Link>
-
-        <div className="flex items-start justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <h1 className="typo-title-heading">{milestone.title}</h1>
-              <StatusBadge config={statusInfo} className="px-3 py-1 text-sm" />
+    <MainContainer className="grid min-h-screen w-full max-w-none flex-1 grid-cols-1 grid-rows-[auto_auto_auto] gap-x-7 px-5 py-5 lg:h-screen lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden lg:px-8 lg:py-6">
+      <header className="border-line-2 flex flex-col gap-4 border-b pb-4 lg:col-span-2 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <Link
+            href={`/projects/${projectSlug}/milestones`}
+            aria-label="마일스톤 목록으로"
+            className="border-line-2 text-text-3 hover:bg-bg-2 hover:text-text-1 focus-visible:ring-primary inline-flex h-9 w-9 shrink-0 items-center justify-center border transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-3">
+              <h1 className="text-text-1 truncate text-[22px] leading-7 font-semibold tracking-normal">
+                {milestone.title}
+              </h1>
+              <StatusBadge config={statusInfo} className="shrink-0 px-2 py-0.5 text-xs" />
             </div>
-            <div className="text-text-3 flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4" strokeWidth={1.5} />
-                <span>
-                  {formatDateTime(milestone.startDate)} ~ {formatDateTime(milestone.endDate)}
-                </span>
-              </div>
+            <div className="text-text-3 mt-1 flex min-w-0 items-center gap-4 text-xs">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
+                {formatDateTime(milestone.startDate)} ~ {formatDateTime(milestone.endDate)}
+              </span>
               <LastRunFreshnessLabel
                 lastExecutedAt={milestone.lastExecutedAt}
-                className="text-sm"
+                className="text-xs"
               />
             </div>
           </div>
+        </div>
 
-          <div className="flex gap-2">
-            <DSButton
-              variant="ghost"
-              className="flex items-center gap-2"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit2 className="h-4 w-4" />
-              수정
-            </DSButton>
-            <ArchiveButton
-              targetType="milestone"
-              targetId={milestoneId}
-              onSuccess={() => router.push(`/projects/${projectSlug}/milestones`)}
-            />
-          </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <DSButton className="flex h-9 items-center gap-2 px-3" onClick={handleRunTest}>
+            <Play className="h-4 w-4" aria-hidden="true" />
+            실행 생성
+          </DSButton>
+          <DSButton
+            variant="ghost"
+            className="flex h-9 items-center gap-2 px-3"
+            onClick={() => setIsEditing(true)}
+          >
+            <Edit2 className="h-4 w-4" aria-hidden="true" />
+            수정
+          </DSButton>
+          <ArchiveButton
+            targetType="milestone"
+            targetId={milestoneId}
+            onSuccess={() => router.push(`/projects/${projectSlug}/milestones`)}
+          />
         </div>
       </header>
 
-      {/* 설명 */}
-      <section className="col-span-6">
-        <div className="bg-bg-2 border-line-2 rounded-4 border p-4">
-          <p className="text-text-2">{milestone.description || '설명이 없습니다.'}</p>
-        </div>
-      </section>
+      <main className="min-h-[520px] overflow-hidden py-5 lg:min-h-0">
+        <div className="flex h-full min-h-0 flex-col gap-6">
+          <section className="flex min-h-0 flex-1 flex-col">
+            <div className="border-line-2 flex shrink-0 items-center justify-between border-b pb-3">
+              <div>
+                <h2 className="text-text-1 text-base font-semibold">포함된 테스트 케이스</h2>
+                <p className="text-text-3 mt-0.5 text-xs">마일스톤 범위에 포함된 케이스</p>
+              </div>
+              <DSButton
+                variant="ghost"
+                size="small"
+                className="flex h-8 items-center gap-1 px-2"
+                onClick={() => setIsAddingCases(true)}
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                케이스 추가
+              </DSButton>
+            </div>
 
-      {/* 진행률 + 통계 */}
-      <section className="col-span-6 grid grid-cols-4 gap-4">
-        {/* 진행률 */}
-        <div className="bg-bg-2 border-line-2 rounded-4 col-span-2 border p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-text-3 font-semibold">진행률</h3>
-            <span className="text-primary text-2xl font-bold">{stats.progressRate}%</span>
-          </div>
-          <div className="bg-bg-3 h-3 w-full rounded-full">
-            <div
-              className="bg-primary h-full rounded-full transition-all duration-300"
-              style={{ width: `${stats.progressRate}%` }}
-            />
-          </div>
-          <p className="text-text-3 mt-2 text-sm">
-            {stats.completedCases} / {stats.totalCases} 케이스 완료
+            {testCases.length === 0 ? (
+              <div className="border-line-2 mt-4 border border-dashed">
+                <EmptyState
+                  icon={<ListChecks className="h-8 w-8" aria-hidden="true" />}
+                  title="포함된 테스트 케이스가 없습니다."
+                  description="테스트 케이스를 추가하여 마일스톤 범위를 정의하세요."
+                  action={
+                    <DSButton
+                      variant="ghost"
+                      className="flex h-8 items-center gap-1 px-2"
+                      onClick={() => setIsAddingCases(true)}
+                    >
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      테스트 케이스 추가
+                    </DSButton>
+                  }
+                />
+              </div>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto pt-4">
+                <div className="border-line-2 text-text-3 bg-bg-2 grid grid-cols-[132px_minmax(0,1fr)] gap-4 border-x border-t px-3 py-2 text-[11px] font-medium tracking-wide uppercase">
+                  <span>Case ID</span>
+                  <span>Title</span>
+                </div>
+                <div className="border-line-2 divide-line-2 divide-y border">
+                  {testCases.map((testCase) => (
+                    <button
+                      key={testCase.id}
+                      type="button"
+                      className="hover:bg-bg-2 grid w-full grid-cols-[132px_minmax(0,1fr)] items-center gap-4 px-3 py-2.5 text-left transition-colors"
+                      onClick={() => setSelectedTestCaseId(testCase.id)}
+                    >
+                      <span className="text-primary truncate font-mono text-xs">
+                        {testCase.caseKey}
+                      </span>
+                      <span className="text-text-1 truncate text-sm">{testCase.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="flex min-h-0 flex-1 flex-col">
+            <div className="border-line-2 flex shrink-0 items-center justify-between border-b pb-3">
+              <div>
+                <h2 className="text-text-1 text-base font-semibold">포함된 테스트 스위트</h2>
+                <p className="text-text-3 mt-0.5 text-xs">마일스톤 범위에 포함된 스위트</p>
+              </div>
+              <DSButton
+                variant="ghost"
+                size="small"
+                className="flex h-8 items-center gap-1 px-2"
+                onClick={() => setIsAddingSuites(true)}
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                스위트 추가
+              </DSButton>
+            </div>
+
+            {testSuites.length === 0 ? (
+              <div className="border-line-2 mt-4 border border-dashed">
+                <EmptyState
+                  icon={<FolderOpen className="h-8 w-8" aria-hidden="true" />}
+                  title="포함된 테스트 스위트가 없습니다."
+                  description="테스트 스위트를 추가하여 마일스톤 범위를 정의하세요."
+                  action={
+                    <DSButton
+                      variant="ghost"
+                      className="flex h-8 items-center gap-1 px-2"
+                      onClick={() => setIsAddingSuites(true)}
+                    >
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      테스트 스위트 추가
+                    </DSButton>
+                  }
+                />
+              </div>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto pt-4">
+                <div className="border-line-2 text-text-3 bg-bg-2 grid grid-cols-[minmax(0,1fr)_120px] gap-4 border-x border-t px-3 py-2 text-[11px] font-medium tracking-wide uppercase">
+                  <span>Suite</span>
+                  <span className="text-right">Cases</span>
+                </div>
+                <div className="border-line-2 divide-line-2 divide-y border">
+                  {testSuites.map((suite) => {
+                    const suiteCaseCount = testCases.filter(
+                      (tc) =>
+                        tc.id &&
+                        allCases.some((ac) => ac.id === tc.id && ac.testSuiteId === suite.id)
+                    ).length;
+                    return (
+                      <Link
+                        key={suite.id}
+                        href={`/projects/${projectSlug}/suites/${suite.id}`}
+                        className="hover:bg-bg-2 grid grid-cols-[minmax(0,1fr)_120px] items-center gap-4 px-3 py-2.5 transition-colors"
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <FolderOpen className="text-text-3 h-4 w-4 shrink-0" aria-hidden="true" />
+                          <span className="text-text-1 truncate text-sm">{suite.title}</span>
+                        </span>
+                        <span className="text-text-3 text-right text-xs tabular-nums">
+                          {suiteCaseCount}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+
+      <aside className="border-line-2 flex min-h-0 flex-col gap-6 border-t py-5 lg:overflow-y-auto lg:border-t-0 lg:border-l lg:pl-6">
+        <section className="border-line-2 border-b pb-5">
+          <h2 className="text-text-3 mb-2 text-xs font-semibold tracking-wide uppercase">
+            Summary
+          </h2>
+          <p className="text-text-2 text-sm leading-6">
+            {milestone.description || '설명이 없습니다.'}
           </p>
-        </div>
+        </section>
 
-        {/* 통계 카드들 */}
-        <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
-          <div className="text-text-3 flex items-center gap-1.5 text-sm">
-            <ListChecks className="h-4 w-4" strokeWidth={1.5} />
-            <span>테스트 케이스</span>
-          </div>
-          <span className="text-text-1 text-2xl font-bold">{stats.totalCases}개</span>
-        </div>
+        <section className="border-line-2 border-b pb-5">
+          <h2 className="text-text-3 mb-3 text-xs font-semibold tracking-wide uppercase">
+            Properties
+          </h2>
+          <dl className="flex flex-col gap-2 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-text-3">테스트 케이스</dt>
+              <dd className="text-text-1 tabular-nums">{milestone.totalCases}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-text-3">테스트 스위트</dt>
+              <dd className="text-text-1 tabular-nums">{testSuites.length}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-text-3">테스트 실행</dt>
+              <dd className="text-text-1 tabular-nums">{milestone.runCount}</dd>
+            </div>
+          </dl>
+        </section>
 
-        <div className="bg-bg-2 border-line-2 rounded-4 flex flex-col gap-1 border p-4">
-          <div className="text-text-3 flex items-center gap-1.5 text-sm">
-            <PlayCircle className="h-4 w-4" strokeWidth={1.5} />
-            <span>테스트 실행</span>
-          </div>
-          <span className="text-text-1 text-2xl font-bold">{stats.runCount}회</span>
-        </div>
-      </section>
-
-      {/* 테스트 실행 생성 버튼 */}
-      <section className="col-span-6">
-        <DSButton className="flex items-center gap-2" onClick={handleRunTest}>
-          <Play className="h-4 w-4" />
-          마일스톤 기반 테스트 실행 생성
-        </DSButton>
-      </section>
-
-      {/* 테스트 케이스 목록 */}
-      <section className="col-span-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="typo-h2-heading">포함된 테스트 케이스</h2>
-          {testCases.length > 0 && (
-            <DSButton
-              variant="ghost"
-              size="small"
-              className="flex items-center gap-1"
-              onClick={() => setIsAddingCases(true)}
-            >
-              <Plus className="h-4 w-4" />
-              케이스 추가
-            </DSButton>
-          )}
-        </div>
-
-        {testCases.length === 0 ? (
-          <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
-            <EmptyState
-              icon={<ListChecks className="h-8 w-8" />}
-              title="포함된 테스트 케이스가 없습니다."
-              description="테스트 케이스를 추가하여 마일스톤 범위를 정의하세요."
-              action={
-                <DSButton
-                  variant="ghost"
-                  className="flex items-center gap-1"
-                  onClick={() => setIsAddingCases(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  테스트 케이스 추가
-                </DSButton>
-              }
-            />
-          </div>
-        ) : (
-          <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
-            {testCases.map((testCase) => {
-              const statusConfig =
-                TEST_RESULT_STATUS_CONFIG[testCase.lastStatus || 'untested'] ||
-                TEST_RESULT_STATUS_CONFIG.untested;
-              return (
-                <button
-                  key={testCase.id}
-                  type="button"
-                  className="hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 text-left transition-colors"
-                  onClick={() => setSelectedTestCaseId(testCase.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-primary font-mono text-sm">{testCase.caseKey}</span>
-                    <span className="text-text-1">{testCase.title}</span>
-                  </div>
-                  <StatusBadge config={statusConfig} />
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* 테스트 스위트 목록 */}
-      <section className="col-span-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="typo-h2-heading">포함된 테스트 스위트</h2>
-          {testSuites.length > 0 && (
-            <DSButton
-              variant="ghost"
-              size="small"
-              className="flex items-center gap-1"
-              onClick={() => setIsAddingSuites(true)}
-            >
-              <Plus className="h-4 w-4" />
-              스위트 추가
-            </DSButton>
-          )}
-        </div>
-
-        {testSuites.length === 0 ? (
-          <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
-            <EmptyState
-              icon={<ListChecks className="h-8 w-8" />}
-              title="포함된 테스트 스위트가 없습니다."
-              description="테스트 스위트를 추가하여 마일스톤 범위를 정의하세요."
-              action={
-                <DSButton
-                  variant="ghost"
-                  className="flex items-center gap-1"
-                  onClick={() => setIsAddingSuites(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  테스트 스위트 추가
-                </DSButton>
-              }
-            />
-          </div>
-        ) : (
-          <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
-            {testSuites.map((suite) => {
-              const suiteCaseCount = testCases.filter(
-                (tc) =>
-                  tc.id && allCases.some((ac) => ac.id === tc.id && ac.testSuiteId === suite.id)
-              ).length;
-              return (
-                <Link
-                  key={suite.id}
-                  href={`/projects/${projectSlug}/suites/${suite.id}`}
-                  className="hover:bg-bg-3 flex items-center justify-between px-4 py-3 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <FolderOpen className="text-text-3 h-4 w-4 shrink-0" />
-                    <div className="flex flex-col gap-1">
-                      <span className="text-text-1">{suite.title}</span>
-                      {suite.description && (
-                        <span className="text-text-3 text-sm">{suite.description}</span>
-                      )}
+        <section className="flex flex-col gap-3">
+          <h2 className="text-text-3 text-xs font-semibold tracking-wide uppercase">
+            Reference Runs
+          </h2>
+          {testRuns.length === 0 ? (
+            <div className="border-line-2 border border-dashed py-6">
+              <EmptyState
+                icon={<PlayCircle className="h-6 w-6" aria-hidden="true" />}
+                title="테스트 실행 이력이 없습니다."
+                description="마일스톤 기반 테스트 실행을 생성하세요."
+              />
+            </div>
+          ) : (
+            <div className="border-line-2 divide-line-2 divide-y border">
+              {testRuns.map((run) => {
+                const runStatusConfig =
+                  RUN_STATUS_CONFIG[run.status] || RUN_STATUS_CONFIG.NOT_STARTED;
+                return (
+                  <Link
+                    key={run.id}
+                    href={`/projects/${projectSlug}/runs/${run.id}`}
+                    className="hover:bg-bg-2 block px-3 py-3 transition-colors"
+                  >
+                    <div className="mb-1 flex items-center justify-between gap-3">
+                      <span className="text-text-1 truncate text-sm">{run.name}</span>
+                      <StatusBadge config={runStatusConfig} className="px-2 py-0.5 text-xs" />
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-3 text-sm">{suiteCaseCount}개 케이스</span>
-                    <ChevronRight className="text-text-3 h-4 w-4" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                    <span className="text-text-3 text-xs">{formatDateTime(run.updatedAt)}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </aside>
 
-      {/* 테스트 실행 이력 */}
-      <section className="col-span-6 flex flex-col gap-4">
-        <h2 className="typo-h2-heading">테스트 실행 이력</h2>
-        {testRuns.length === 0 ? (
-          <div className="bg-bg-2 border-line-2 rounded-4 border-2 border-dashed">
-            <EmptyState
-              icon={<PlayCircle className="h-8 w-8" />}
-              title="테스트 실행 이력이 없습니다."
-              description="마일스톤 기반 테스트 실행을 생성하세요."
-            />
-          </div>
-        ) : (
-          <div className="bg-bg-2 border-line-2 rounded-4 divide-line-2 divide-y border">
-            {testRuns.map((run) => {
-              const runStatusConfig =
-                RUN_STATUS_CONFIG[run.status] || RUN_STATUS_CONFIG.NOT_STARTED;
-              return (
-                <Link
-                  key={run.id}
-                  href={`/projects/${projectSlug}/runs/${run.id}`}
-                  className="hover:bg-bg-3 flex items-center justify-between px-4 py-3 transition-colors"
-                >
-                  <span className="text-text-1">{run.name}</span>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge config={runStatusConfig} />
-                    <span className="text-text-3 text-sm">{formatDateTime(run.updatedAt)}</span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </section>
       {isEditing && <MilestoneEditForm milestone={milestone} onClose={() => setIsEditing(false)} />}
       {isAddingCases && (
         <AddCasesToMilestoneModal
