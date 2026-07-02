@@ -14,6 +14,8 @@ export interface CandidateRow {
   displayId: number | null;
   name: string;
   suiteId: string | null;
+  testType: string | null;
+  tags: string[] | null;
   automationStatus: AutomationStatus;
 
   // --- 추천 근거 (signals) ---
@@ -33,15 +35,30 @@ export interface CandidateRow {
 
   /** 후보 정렬용 종합 점수 (높을수록 우선). */
   score: number;
+  /** 사람이 후보를 검토할 때 쓰는 파생 판단 데이터. */
+  decision: CandidateDecision;
   /** 각 신호 충족 여부 (frontend 가 배지/사유 표시에 사용). */
   reasons: CandidateReasons;
+}
+
+export interface CandidateDecision {
+  priority: 'high' | 'medium' | 'low';
+  confidence: 'high' | 'medium' | 'low';
+  estimatedManualRunsSaved: number;
+  recommendationReason: string;
+  signalLabels: string[];
+  riskLabels: string[];
 }
 
 export interface CandidateReasons {
   /** 빈도 충족 (distinctRuns >= MIN_DISTINCT_RUNS). */
   frequent: boolean;
-  /** 안정 충족 (passRate >= MIN_PASS_RATE). */
+  /** 표본 수 충족 (evaluatedResults >= MIN_EVALUATED_RESULTS). */
+  enoughHistory: boolean;
+  /** 안정 충족 (passRate + 신뢰도 보정 + blocked 비율). */
   stable: boolean;
+  /** blocked 비율이 허용 범위 이내. */
+  lowBlocked: boolean;
   /** 최근 충족 (daysSinceLastRun <= RECENCY_DAYS). */
   recent: boolean;
   /** 플래키 판정 (pass·fail 공존 + passRate < ceiling). true면 후보에서 제외됨. */
@@ -77,6 +94,8 @@ export interface CoverageBySuite {
   suiteName: string | null;
   totalCases: number;
   automatedCases: number;
+  candidateCases: number;
+  manualCases: number;
   /** 0~100 정수. totalCases 가 0이면 0. */
   coveragePercent: number;
 }

@@ -7,8 +7,17 @@
 /** 반복 빈도 임계: 서로 다른 테스트 실행(test_run) 회수가 이 값 이상이면 빈도 신호 충족. */
 export const MIN_DISTINCT_RUNS = 3;
 
+/** 안정성 판단에 필요한 최소 평가 결과 수. 표본이 적은 100% pass 후보를 막는다. */
+export const MIN_EVALUATED_RESULTS = 5;
+
 /** 결과 안정성 임계: pass율(0~1)이 이 값 이상이면 안정 신호 충족. */
-export const MIN_PASS_RATE = 0.8;
+export const MIN_PASS_RATE = 0.85;
+
+/** Wilson lower bound 안정성 임계. 표본 수가 적으면 실제 pass율보다 보수적으로 본다. */
+export const MIN_CONFIDENCE_PASS_RATE = 0.65;
+
+/** blocked 결과 비율이 이 값 이하면 자동화 후보로 허용한다. */
+export const MAX_BLOCKED_RATE = 0.2;
 
 /** 최근성 임계: 마지막 실행이 이 일수 이내이면 최근 신호 충족. */
 export const RECENCY_DAYS = 30;
@@ -20,4 +29,4 @@ export const RECENCY_DAYS = 30;
  * 점수가 높아도 후보에서 제외, 별도 flaky 그룹으로 내린다.
  * (자동화하면 매 실행마다 깨질 확률이 높아 자동화 ROI 가 낮은 케이스)
  */
-export const FLAKY_PASS_RATE_CEILING = 0.8;
+export const FLAKY_PASS_RATE_CEILING = 0.85;
