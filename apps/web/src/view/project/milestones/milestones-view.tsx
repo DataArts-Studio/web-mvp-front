@@ -1,5 +1,5 @@
-﻿'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+'use client';
+import React, { useMemo, useState } from 'react';
 
 import { useParams } from 'next/navigation';
 
@@ -51,19 +51,11 @@ export const MilestonesView = () => {
 
   const totalItems = filteredMilestones.length;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), Math.max(totalPages, 1));
   const paginatedMilestones = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
+    const start = (safeCurrentPage - 1) * PAGE_SIZE;
     return filteredMilestones.slice(start, start + PAGE_SIZE);
-  }, [filteredMilestones, currentPage]);
-
-  useEffect(() => {
-    if (totalPages === 0) {
-      if (currentPage !== 1) setCurrentPage(1);
-      return;
-    }
-
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
+  }, [filteredMilestones, safeCurrentPage]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -208,7 +200,7 @@ export const MilestonesView = () => {
           </div>
         </div>
         <Pagination
-          currentPage={currentPage}
+          currentPage={safeCurrentPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
           className="border-line-2 border-t"
