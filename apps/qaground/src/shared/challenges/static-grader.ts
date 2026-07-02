@@ -82,6 +82,10 @@ const INTERACTION_RE =
 const SEMANTIC_LOCATOR_RE = /getBy(Role|Label|Text|Placeholder|Title|AltText)\s*\(/;
 const ASSERTION_RE = /\bexpect\s*\(/g;
 const AWAITED_ASSERTION_RE = /\bawait\s+expect\s*\(/;
+const POM_METHOD_CALL_RE =
+  /\bawait\s+[A-Za-z_$][\w$]*\.(?:goto|open|visit|login|submit|fill|click|add|goTo|select|search|complete|expect|assert|should)[A-Za-z_$\w]*\s*\(/;
+const POM_ASSERTION_METHOD_CALL_RE =
+  /\bawait\s+[A-Za-z_$][\w$]*\.(?:expect|assert|should)[A-Za-z_$\w]*\s*\(/g;
 const ASYNC_ACTION_RE =
   /\bpage\.goto\s*\(|\.(?:click|fill|check|uncheck|selectOption|press|type|setInputFiles)\s*\(/;
 const TEST_CALL_RE = /\b(?:test|it)\s*\(/g;
@@ -323,11 +327,14 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
     const calledHelpers = helpers.filter((helper) =>
       callsHelperSafely(executableBody, helper.name)
     );
+    const pomAssertionCalls = countMatches(executableBody, POM_ASSERTION_METHOD_CALL_RE);
     const assertions =
       countMatches(executableBody, ASSERTION_RE) +
-      calledHelpers.reduce((sum, helper) => sum + countMatches(helper.body, ASSERTION_RE), 0);
+      calledHelpers.reduce((sum, helper) => sum + countMatches(helper.body, ASSERTION_RE), 0) +
+      pomAssertionCalls;
     const hasInteraction =
       INTERACTION_RE.test(executableBody) ||
+      POM_METHOD_CALL_RE.test(executableBody) ||
       hooks.some((hook) => INTERACTION_RE.test(hook)) ||
       calledHelpers.some((helper) => INTERACTION_RE.test(helper.body));
 
@@ -355,6 +362,7 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
       failures.push(`"${title}" 테스트에 expect(...) 단언이 없습니다.`);
     } else if (
       !AWAITED_ASSERTION_RE.test(executableBody) &&
+      pomAssertionCalls < 1 &&
       !calledHelpers.some((helper) => AWAITED_ASSERTION_RE.test(helper.body))
     ) {
       failures.push(`"${title}" 테스트의 Playwright 단언은 await expect(...) 형태로 작성하세요.`);
@@ -388,6 +396,23 @@ export function validateAutomationSubmissionShape(code: string): GradeResult | n
   return null;
 }
 
+export function validateChallengeStaticChecks(
+  challenge: Challenge,
+  code: string
+): GradeResult | null {
+  const checks = challenge.staticChecks ?? [];
+  if (checks.length === 0) return null;
+
+  const startedAt = Date.now();
+  const stripped = stripComments(code);
+  const failures = checks
+    .filter((check) => !new RegExp(check.pattern, check.flags).test(stripped))
+    .map((check) => `${check.label}: ${check.message}`);
+
+  if (failures.length > 0) return buildFailedResult(startedAt, failures);
+  return null;
+}
+
 /**
  * 제출 코드를 정적으로 채점한다. 챌린지의 셀렉터·요구사항을 기준 삼는다.
  */
@@ -414,6 +439,11 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
     );
   }
 
+  const staticCheckError = validateChallengeStaticChecks(challenge, code);
+  if (staticCheckError?.errorMessage) {
+    failures.push(staticCheckError.errorMessage.replace(/^- /, ''));
+  }
+
   const durationMs = Date.now() - startedAt;
 
   if (failures.length > 0) return buildFailedResult(startedAt, failures);
@@ -422,7 +452,8 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
   // "작성한 테스트 수"와 "단언 수" 중 큰 값을 커버리지 추정치로 쓴다.
   const reqCount = challenge.requirement?.length ?? 0;
   const testCount = blocks.length;
-  const assertions = countMatches(stripped, ASSERTION_RE);
+  const assertions =
+    countMatches(stripped, ASSERTION_RE) + countMatches(stripped, POM_ASSERTION_METHOD_CALL_RE);
   const coverage = Math.max(testCount, assertions);
 
   const selectorSummary =

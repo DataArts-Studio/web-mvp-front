@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Challenge } from './registry';
-import { gradeSubmissionStatically, validateAutomationSubmissionShape } from './static-grader';
+import {
+  gradeSubmissionStatically,
+  validateAutomationSubmissionShape,
+  validateChallengeStaticChecks,
+} from './static-grader';
 
 const challenge: Challenge = {
   slug: 'login-basic',
@@ -365,5 +369,66 @@ test('dead code only', async ({ page }) => {
     expect(r).not.toBeNull();
     expect(r?.errorMessage).toContain('expect');
     expect(r?.errorMessage).toContain('상호작용');
+  });
+
+  it('POM method calls count as interaction and assertion intent', () => {
+    const pomChallenge: Challenge = {
+      ...challenge,
+      category: 'pom',
+      requirement: ['page object', 'assertion method'],
+      staticChecks: [
+        { label: 'LoginPage', pattern: 'class\\s+LoginPage\\b', message: 'missing LoginPage' },
+        {
+          label: 'assertion method',
+          pattern: 'expectLoggedIn\\s*\\(',
+          message: 'missing assertion method',
+        },
+      ],
+    };
+    const code = `import { test, expect, type Page } from '@playwright/test';
+class LoginPage {
+  constructor(private readonly page: Page) {}
+  readonly username = this.page.getByTestId('username');
+  readonly password = this.page.getByTestId('password');
+  readonly submitButton = this.page.getByTestId('login-submit');
+  readonly successMessage = this.page.getByTestId('login-success');
+  async goto() { await this.page.goto('/'); }
+  async login(username: string, password: string) {
+    await this.username.fill(username);
+    await this.password.fill(password);
+    await this.submitButton.click();
+  }
+  async expectLoggedIn() { await expect(this.successMessage).toBeVisible(); }
+}
+test('valid login', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await loginPage.login('tester', 'qaground123');
+  await loginPage.expectLoggedIn();
+});`;
+
+    const r = gradeSubmissionStatically(pomChallenge, code);
+    expect(r.ok).toBe(true);
+    expect(r.status).toBe('passed');
+  });
+
+  it('challenge-specific static checks reject missing POM structure', () => {
+    const pomChallenge: Challenge = {
+      ...challenge,
+      category: 'pom',
+      staticChecks: [
+        { label: 'LoginPage', pattern: 'class\\s+LoginPage\\b', message: 'missing LoginPage' },
+      ],
+    };
+    const code = `import { test, expect } from '@playwright/test';
+test('raw login', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('username').fill('tester');
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+
+    const r = validateChallengeStaticChecks(pomChallenge, code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('LoginPage');
   });
 });

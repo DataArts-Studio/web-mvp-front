@@ -19,12 +19,20 @@ export type ChallengeCategory =
   | 'fintech'
   | 'performance'
   | 'accessibility'
-  | 'fundamentals';
+  | 'fundamentals'
+  | 'pom';
 
 export interface ChallengeSelector {
   name: string;
   testid: string;
   desc: string;
+}
+
+export interface StaticCodeCheck {
+  label: string;
+  pattern: string;
+  flags?: string;
+  message: string;
 }
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -76,6 +84,8 @@ export interface Challenge {
   modelTestCases?: { title: string; detail: string }[];
   /** 코드 채점: 코드 에디터 초기 Playwright 스펙 템플릿. */
   starterSpec?: string;
+  /** 코드 채점: 실행 전 반드시 포함해야 하는 구조적 코드 패턴. */
+  staticChecks?: StaticCodeCheck[];
   /** 학습 UX: 예상 풀이 시간(분). */
   estimatedMinutes?: number;
   /** 학습 UX: 먼저 풀면 좋은 챌린지 slug 목록. */
@@ -109,6 +119,7 @@ export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
   performance: '성능',
   accessibility: '접근성',
   fundamentals: '테스팅 기초',
+  pom: 'POM',
 };
 
 /** 목록에 카테고리를 노출할 순서. */
@@ -123,6 +134,7 @@ export const CATEGORY_ORDER: ChallengeCategory[] = [
   'performance',
   'accessibility',
   'fundamentals',
+  'pom',
 ];
 
 export const CHALLENGES: Challenge[] = [
@@ -805,6 +817,393 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       '탐색 목표(미션)와 다룰 영역, 제외할 영역을 정하세요.',
       '사용할 휴리스틱·아이디어(경계·중단·동시성 등)와 준비물(테스트 데이터)을 적으세요.',
       '세션 시간(예: 60분)과 기록 방법, 발견 시 후속 처리를 정하세요.',
+    ],
+  },
+  {
+    slug: 'pom-login-page-object',
+    title: 'POM 기초: 로그인 Page Object 만들기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 25,
+    recommendedNext: ['pom-login-actions-and-assertions', 'login-basic'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '로그인 화면의 locator와 동작을 LoginPage 클래스로 분리하고, 테스트 본문은 사용자 시나리오만 읽히도록 정리하세요.',
+    requirement: [
+      'LoginPage 클래스를 만들고 constructor에서 Page를 받아 보관한다.',
+      'username, password, submitButton, successMessage locator를 readonly 필드로 선언한다.',
+      'goto, login, expectLoggedIn 메서드로 이동·입력·단언을 캡슐화한다.',
+    ],
+    sandboxSlug: 'login-basic',
+    selectors: [
+      { name: '아이디 입력', testid: 'username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'login-submit', desc: '제출 버튼' },
+      { name: '성공 메시지', testid: 'login-success', desc: '로그인 성공 후 노출' },
+    ],
+    staticChecks: [
+      {
+        label: 'LoginPage 클래스',
+        pattern: 'class\\s+LoginPage\\b',
+        message: 'LoginPage 클래스를 만들어 화면 세부 구현을 테스트에서 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '로그인 액션 메서드',
+        pattern: 'async\\s+login\\s*\\(',
+        message: '아이디·비밀번호 입력과 제출을 login 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '상태 단언 메서드',
+        pattern: 'expectLoggedIn\\s*\\(',
+        message: '성공 상태 검증을 expectLoggedIn 같은 의도 기반 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+
+class LoginPage {
+  constructor(private readonly page: Page) {}
+
+  // TODO: declare readonly locators and POM methods.
+}
+
+test('valid user can sign in', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-login-actions-and-assertions',
+    title: 'POM 기초: 액션과 단언 메서드 나누기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 30,
+    prerequisites: ['pom-login-page-object'],
+    recommendedNext: ['pom-signup-validation-errors'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '성공 로그인과 실패 로그인을 같은 LoginPage로 검증하되, 테스트마다 raw locator를 반복하지 않도록 정리하세요.',
+    requirement: [
+      'LoginPage에 login 액션 메서드를 만들고 두 테스트가 재사용한다.',
+      'expectLoggedIn, expectLoginError 단언 메서드를 만들어 성공·실패 검증을 분리한다.',
+      '테스트 본문에는 시나리오 순서만 남기고 getByTestId 반복을 Page Object 내부로 숨긴다.',
+    ],
+    sandboxSlug: 'login-basic',
+    selectors: [
+      { name: '아이디 입력', testid: 'username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'login-submit', desc: '제출 버튼' },
+      { name: '성공 메시지', testid: 'login-success', desc: '로그인 성공 후 노출' },
+      { name: '에러 메시지', testid: 'login-error', desc: '인증 실패 시 노출' },
+    ],
+    staticChecks: [
+      {
+        label: 'LoginPage 클래스',
+        pattern: 'class\\s+LoginPage\\b',
+        message: '성공/실패 로그인 흐름을 LoginPage 하나로 표현하세요.',
+      },
+      {
+        label: '성공 단언 메서드',
+        pattern: 'expectLoggedIn\\s*\\(',
+        message: '성공 메시지 검증을 expectLoggedIn 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '실패 단언 메서드',
+        pattern: 'expectLoginError\\s*\\(',
+        message: '에러 메시지 검증을 expectLoginError 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '복수 테스트',
+        pattern: 'test\\s*\\([\\s\\S]*test\\s*\\(',
+        message: '성공 케이스와 실패 케이스를 별도 test 블록으로 작성하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-signup-validation-errors',
+    title: 'POM 기초: 폼 검증 메시지 캡슐화',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-login-actions-and-assertions'],
+    recommendedNext: ['pom-navigation-before-each'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '회원가입 폼의 입력, 제출, 필드별 에러 검증을 SignupPage 메서드로 분리해 검증 메시지 테스트를 작성하세요.',
+    requirement: [
+      'SignupPage 클래스를 만들고 이메일·비밀번호·약관·제출 locator를 필드로 선언한다.',
+      'submitEmptyForm 또는 submitSignup 메서드로 폼 제출 동작을 캡슐화한다.',
+      'expectEmailError, expectPasswordError 같은 필드별 단언 메서드를 작성한다.',
+    ],
+    sandboxSlug: 'signup-validation',
+    selectors: [
+      { name: '이메일 입력', testid: 'email', desc: '이메일 입력 필드' },
+      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
+      { name: '약관 동의', testid: 'terms', desc: '약관 체크박스' },
+      { name: '이메일 에러', testid: 'email-error', desc: '이메일 검증 메시지' },
+      { name: '비밀번호 에러', testid: 'password-error', desc: '비밀번호 검증 메시지' },
+      { name: '가입 버튼', testid: 'signup-submit', desc: '제출 버튼' },
+    ],
+    staticChecks: [
+      {
+        label: 'SignupPage 클래스',
+        pattern: 'class\\s+SignupPage\\b',
+        message: '회원가입 화면을 SignupPage 클래스로 분리하세요.',
+      },
+      {
+        label: '제출 메서드',
+        pattern: 'async\\s+(submitEmptyForm|submitSignup)\\s*\\(',
+        message: '폼 제출 동작을 Page Object 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '이메일 에러 단언',
+        pattern: 'expectEmailError\\s*\\(',
+        message: '이메일 검증 메시지를 의도 기반 단언 메서드로 작성하세요.',
+      },
+      {
+        label: '비밀번호 에러 단언',
+        pattern: 'expectPasswordError\\s*\\(',
+        message: '비밀번호 검증 메시지를 의도 기반 단언 메서드로 작성하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-navigation-before-each',
+    title: 'POM 기초: beforeEach와 페이지 상태 초기화',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-signup-validation-errors'],
+    recommendedNext: ['pom-commerce-flow-objects'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '내비게이션 화면을 NavigationPage로 감싸고, beforeEach에서 매 테스트의 시작 상태를 일관되게 준비하세요.',
+    requirement: [
+      'NavigationPage 클래스로 메뉴 클릭과 현재 제목 검증을 캡슐화한다.',
+      'test.beforeEach에서 페이지 진입과 Page Object 생성을 준비한다.',
+      '주문·설정 이동과 뒤로가기 동작을 별도 테스트로 검증한다.',
+    ],
+    sandboxSlug: 'page-navigation',
+    selectors: [
+      { name: '대시보드 메뉴', testid: 'nav-dashboard', desc: '대시보드로 이동' },
+      { name: '주문 메뉴', testid: 'nav-orders', desc: '주문으로 이동' },
+      { name: '설정 메뉴', testid: 'nav-settings', desc: '설정으로 이동' },
+      { name: '현재 페이지 제목', testid: 'page-title', desc: '현재 페이지 제목' },
+      { name: '뒤로가기', testid: 'back-button', desc: '직전 페이지로 이동' },
+    ],
+    staticChecks: [
+      {
+        label: 'NavigationPage 클래스',
+        pattern: 'class\\s+NavigationPage\\b',
+        message: '내비게이션 화면 조작을 NavigationPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'beforeEach 준비',
+        pattern: 'test\\.beforeEach\\s*\\(',
+        message: '반복되는 페이지 진입과 준비 코드는 test.beforeEach로 모으세요.',
+      },
+      {
+        label: '제목 단언 메서드',
+        pattern: 'expectTitle\\s*\\(',
+        message: '현재 페이지 제목 검증을 expectTitle 메서드로 캡슐화하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-commerce-flow-objects',
+    title: 'POM 기초: 플로우를 여러 Page Object로 나누기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 45,
+    prerequisites: ['pom-navigation-before-each'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '장바구니 플로우를 CatalogPage와 CartPage로 나누고, 테스트 본문에서는 사용자의 구매 여정만 보이게 작성하세요.',
+    requirement: [
+      'CatalogPage와 CartPage를 분리해 상품 추가와 장바구니 검증 책임을 나눈다.',
+      'addProduct, openCart, expectCartCount 같은 의도 기반 메서드를 작성한다.',
+      '테스트는 Page Object 메서드를 조합해 상품 추가부터 장바구니 확인까지 검증한다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '상품 카드', testid: 'product-card', desc: '상품 목록 아이템' },
+      { name: '담기 버튼', testid: 'add-to-cart', desc: '상품 목록에서 장바구니 담기' },
+      { name: '장바구니 버튼', testid: 'cart-button', desc: '장바구니 화면으로 이동' },
+      { name: '장바구니 수량', testid: 'cart-count', desc: '담긴 상품 수' },
+      { name: '장바구니 아이템', testid: 'cart-item', desc: '장바구니 상품 행' },
+    ],
+    staticChecks: [
+      {
+        label: 'CatalogPage 클래스',
+        pattern: 'class\\s+CatalogPage\\b',
+        message: '상품 목록 책임을 CatalogPage로 분리하세요.',
+      },
+      {
+        label: 'CartPage 클래스',
+        pattern: 'class\\s+CartPage\\b',
+        message: '장바구니 검증 책임을 CartPage로 분리하세요.',
+      },
+      {
+        label: '상품 추가 메서드',
+        pattern: 'addProduct\\s*\\(',
+        message: '상품 담기 동작을 addProduct 같은 의도 기반 메서드로 작성하세요.',
+      },
+      {
+        label: '장바구니 단언 메서드',
+        pattern: 'expectCartCount\\s*\\(',
+        message: '장바구니 수량 검증을 expectCartCount 메서드로 캡슐화하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-fixture-injection',
+    title: 'POM ??: fixture? Page Object ????',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 40,
+    prerequisites: ['pom-login-actions-and-assertions'],
+    recommendedNext: ['pom-table-filter-object'],
+    tools: ['Playwright', 'POM', 'Fixture'],
+    summary: '???? Page Object? ?? new ?? ?? test.extend fixture? ??? ??? ??? ? ?? ????.',
+    requirement: [
+      'LoginPage ???? ??? ??? ??? ?? ??? ?????.',
+      'test.extend ?? base.extend? loginPage fixture? ????.',
+      '??? ??? fixture? ?? loginPage? ??? ?? ???? ????.',
+    ],
+    sandboxSlug: 'login-basic',
+    selectors: [
+      { name: '??? ??', testid: 'username', desc: '??? ?? ??' },
+      { name: '???? ??', testid: 'password', desc: '???? ?? ??' },
+      { name: '??? ??', testid: 'login-submit', desc: '?? ??' },
+      { name: '?? ???', testid: 'login-success', desc: '??? ?? ? ??' },
+    ],
+    staticChecks: [
+      {
+        label: 'LoginPage ???',
+        pattern: 'class\s+LoginPage\b',
+        message: '??? ?? ??? LoginPage ???? ?????.',
+      },
+      {
+        label: 'fixture ??',
+        pattern: '(test|base)\.extend\s*<|(?:test|base)\.extend\s*\(',
+        message: 'Page Object? test.extend fixture? ?????.',
+      },
+      {
+        label: 'loginPage fixture',
+        pattern: 'loginPage\s*:',
+        message: 'fixture ??? loginPage?? ??? ??? ???? ?????.',
+      },
+      {
+        label: '?? ?? ???',
+        pattern: 'expectLoggedIn\s*\(',
+        message: '??? ?? ??? Page Object? ?? ???? ??????.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-table-filter-object',
+    title: 'POM ??: ??? ????? Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 40,
+    prerequisites: ['pom-fixture-injection'],
+    recommendedNext: ['pom-modal-dialog-object'],
+    tools: ['Playwright', 'POM'],
+    summary: '??? ???? ??, ??, ??? ??, ?? ??? DataTablePage? ?? ?? ???? ?? ?? ????.',
+    requirement: [
+      'DataTablePage ???? ??? ?????????? ???? locator? ??? ????.',
+      'search, sortByName, nextPage ?? ?? ???? ????.',
+      'expectRowsContain ?? expectPage ?? ?? ???? ?? ??? ?????.',
+    ],
+    sandboxSlug: 'data-table',
+    selectors: [
+      { name: '?? ??', testid: 'table-search', desc: '??? ??? ??' },
+      { name: '?? ??', testid: 'sort-name', desc: '?? ?? ??' },
+      { name: '??? ?', testid: 'table-row', desc: '????? ?? ?' },
+      { name: '?? ???', testid: 'page-prev', desc: '?? ??? ??' },
+      { name: '?? ???', testid: 'page-indicator', desc: '??? ?? ??' },
+      { name: '?? ???', testid: 'page-next', desc: '?? ??? ??' },
+    ],
+    staticChecks: [
+      {
+        label: 'DataTablePage ???',
+        pattern: 'class\s+DataTablePage\b',
+        message: '??? ?? ??? DataTablePage ???? ?????.',
+      },
+      {
+        label: '?? ???',
+        pattern: 'async\s+search\s*\(',
+        message: '?? ??? search ???? ??????.',
+      },
+      {
+        label: '?? ???',
+        pattern: '(sortByName|sort)\s*\(',
+        message: '?? ??? ?? ?? ???? ?????.',
+      },
+      {
+        label: '?? ?? ???',
+        pattern: 'expect(RowsContain|Page|Result)\s*\(',
+        message: '????? ?? ??? Page Object ?? ???? ?????.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-modal-dialog-object',
+    title: 'POM ??: ?? ????? Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-table-filter-object'],
+    tools: ['Playwright', 'POM'],
+    summary: '?? ??, ??, ??, ?? ??? ??? ModalPage? ???? ?? ??? ????? ??????.',
+    requirement: [
+      'ModalPage ???? ??? ??????????? locator? ??? ????.',
+      'open, cancel, confirm ?? ???? ????.',
+      'expectClosed, expectConfirmed ?? ?? ???? ?? ??? ??? ????.',
+    ],
+    sandboxSlug: 'modal',
+    selectors: [
+      { name: '?? ??', testid: 'modal-open', desc: '??? ?? ??' },
+      { name: '??', testid: 'modal', desc: '????? ????' },
+      { name: '?? ??', testid: 'modal-cancel', desc: '?? ??' },
+      { name: '?? ??', testid: 'modal-confirm', desc: '?? ??' },
+      { name: '?? ???', testid: 'modal-result', desc: '?? ? ??' },
+    ],
+    staticChecks: [
+      {
+        label: 'ModalPage ???',
+        pattern: 'class\s+ModalPage\b',
+        message: '?? ?? ??? ModalPage ???? ?????.',
+      },
+      {
+        label: '?? ???',
+        pattern: 'async\s+open\s*\(',
+        message: '?? ?? ??? open ???? ??????.',
+      },
+      {
+        label: '??/?? ???',
+        pattern: '(confirm|cancel)\s*\(',
+        message: '?? ?? ?? ??? Page Object ???? ?????.',
+      },
+      {
+        label: '?? ?? ???',
+        pattern: 'expect(Closed|Confirmed|Result)\s*\(',
+        message: '?? ??? ?? ??? expect ?? ???? ?????.',
+      },
     ],
   },
   {
