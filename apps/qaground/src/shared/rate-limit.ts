@@ -17,6 +17,23 @@ interface Bucket {
 
 const buckets = new Map<string, Bucket>();
 
+/**
+ * 버킷 수가 이 값을 넘으면 만료된 버킷을 한 번에 정리한다. 공개 라우트에 IP 가 계속
+ * 새로 들어와도 Map 이 무한히 자라지 않게 한다.
+ */
+const SWEEP_THRESHOLD = 10_000;
+
+/** 테스트용: 현재 보관 중인 버킷 수. */
+export function rateLimitBucketCount(): number {
+  return buckets.size;
+}
+
+function sweepExpired(now: number): void {
+  for (const [key, bucket] of buckets) {
+    if (now >= bucket.resetAt) buckets.delete(key);
+  }
+}
+
 export interface RateLimitResult {
   allowed: boolean;
   /** 거부 시 다음 시도까지 권장 대기(ms). 허용 시 0. */
@@ -27,7 +44,14 @@ export interface RateLimitResult {
  * 고정 윈도우 카운터. key 가 windowMs 안에서 limit 회를 넘기면 거부한다.
  */
 export function rateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
+  // 잘못된 설정은 fail-closed. limit < 1 이나 windowMs <= 0 이면 레이트리밋이
+  // 무력화되므로 호출을 거부하고 호출부 설정 오류를 드러낸다.
+  if (!Number.isFinite(limit) || limit < 1 || !Number.isFinite(windowMs) || windowMs <= 0) {
+    return { allowed: false, retryAfterMs: 0 };
+  }
+
   const now = Date.now();
+  if (buckets.size >= SWEEP_THRESHOLD) sweepExpired(now);
   const bucket = buckets.get(key);
 
   if (!bucket || now >= bucket.resetAt) {

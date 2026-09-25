@@ -95,19 +95,33 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
 
 ### 코드/이미지에서 강제되는 것 (구현됨)
 
-- spec 은 컨테이너 내 **비root 사용자(`pwuser`)** 로 실행된다 (Dockerfile `USER`).
-- 자식 프로세스 env 는 **allowlist** 만 통과한다. `RUNNER_SHARED_SECRET` 등 시크릿은 차단된다.
-- 요청별 작업 디렉터리는 **0700**, `storageState` 파일은 **0600** 으로 기록되고 실행 후 삭제된다.
-- spec 의 `HOME`/`TMPDIR` 는 요청별 디렉터리로 고정된다(공유 임시 경로 사용 표면 축소).
+- **uid 분리**: 서버는 root 로 뜨고, spec 자식만 비특권 사용자 **`pwuser`(uid 1000)** 로
+  강등해 실행한다(`src/sandbox.ts`). uid 가 다르므로 spec 은 서버의
+  `/proc/<pid>/environ` 에서 `RUNNER_SHARED_SECRET` 을 읽을 수 없다. 자식 env 도
+  allowlist 만 통과시켜 시크릿을 넘기지 않는다.
+- **앱 파일 읽기 전용**: `/app/dist`·`node_modules` 는 root 소유로 남는다. spec uid 는
+  요청마다 넘겨받는 run 디렉터리에만 쓸 수 있어, 서버 코드나 의존성을 변조할 수 없다.
+- **단일 실행**: 서버는 한 번에 하나의 `/run` 만 처리하고 겹치는 요청은 503(Retry-After)
+  으로 거부한다. 같은 spec uid 끼리는 파일 권한으로 서로를 막을 수 없으므로, 동시 실행을
+  없애는 것이 run 간 격리의 본 수단이다.
+- **잔여 프로세스 회수**: run 이 끝나면 spec uid 로 도는 프로세스를 전부 종료한다.
+  `setsid` 로 프로세스 그룹을 빠져나간 백그라운드 프로세스가 다음 run 을 엿보지 못한다.
+- **fail-closed**: uid 분리를 쓸 수 없는 환경(root 가 아니거나 Linux 가 아님)에서는
+  `/run` 을 503 으로 거부한다.
+- 보조 방어: `.runs` 는 0711(목록 조회 불가), 요청별 run 디렉터리는 0700,
+  `storageState` 는 0600 으로 기록되고 실행 후 삭제된다. spec 의 `HOME`/`TMPDIR` 는
+  요청별 디렉터리로 고정된다.
 
 ### 배포에서 반드시 충족해야 하는 것 (ops 책임, **P0**)
 
 - **아웃바운드 egress 차단**: spec 은 SSRF 가드(`url-guard.ts`)를 우회해 자체적으로
   내부망/메타데이터/외부로 통신할 수 있다. 입력 가드는 보조 수단일 뿐, **본 방어는
   컨테이너 egress 제한**(대상 사이트 대역만 허용)이다.
-- **요청별 일회용 격리**: 동시 run 은 같은 파일시스템(`/app/.runs`)을 공유하므로,
-  민감한 `storageState` 가 오가는 경로에서는 **run 당 새 머신/컨테이너**로 띄워
-  교차 노출을 차단한다. 영구 재사용 머신에서 비신뢰 코드를 받지 않는다.
+- **인스턴스당 동시 요청 1**: Cloud Run `--concurrency 1`, Fly `hard_limit = 1` 을 유지한다.
+  코드도 단일 실행을 강제하지만, 플랫폼이 한 인스턴스에 요청을 몰아 503 이 나지 않게 한다.
+- **요청별 일회용 격리(권장)**: 인스턴스가 재사용되면 커널·네트워크 네임스페이스는 run 간에
+  공유된다. 민감한 `storageState` 가 오가는 Testea 러너는 가능하면 run 당 새
+  인스턴스로 띄운다.
 - **qaground ↔ Testea 러너 분리**: qaground 채점은 **인증 없는 공개 입력**으로
   임의 코드를 보낸다. 고객 `storageState` 가 흐르는 Testea 러너와 **절대 같은
   배포를 공유하지 않는다**(별도 app, 별도 시크릿).
@@ -118,8 +132,12 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
 
 ## 로컬 실행
 
+로컬(Windows/macOS 또는 비root)에서는 uid 분리 격리를 쓸 수 없어 `/run` 이 기본 503 이다.
+신뢰하는 spec 으로만 개발할 때 `RUNNER_ALLOW_UNISOLATED=1` 로 명시적으로 허용한다.
+운영 배포에는 절대 설정하지 않는다.
+
 ```bash
-pnpm --filter @testea/runner dev      # tsx watch
+RUNNER_ALLOW_UNISOLATED=1 pnpm --filter @testea/runner dev      # tsx watch
 # 또는
 pnpm --filter @testea/runner build && pnpm --filter @testea/runner start
 ```

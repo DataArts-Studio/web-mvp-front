@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 
 import { capture } from './capture.js';
 import { runSpec } from './run-spec.js';
+import { isolationAvailable, unisolatedRunAllowed } from './sandbox.js';
 import { checkTargetUrl } from './url-guard.js';
 
 const app = new Hono();
@@ -46,6 +47,13 @@ app.use('*', async (c, next) => {
 
   return next();
 });
+
+/**
+ * 한 번에 하나의 spec 만 실행한다. 같은 sandbox uid 로 도는 run 끼리는 파일 권한으로
+ * 서로를 막을 수 없으므로, 동시 실행 자체를 없애는 것이 run 간 격리의 본 수단이다.
+ * (Cloud Run concurrency=1 / Fly hard_limit=1 과 같은 전제를 코드에서도 강제한다.)
+ */
+let runInFlight = false;
 
 interface RunRequestBody {
   spec?: unknown;
@@ -91,14 +99,28 @@ app.post('/run', async (c) => {
     return c.json({ ok: false, error: 'Field "timeoutMs" must be a positive number.' }, 400);
   }
 
-  const result = await runSpec({
-    spec: body.spec,
-    baseUrl: body.baseUrl,
-    storageState: body.storageState,
-    timeoutMs: body.timeoutMs,
-  });
+  // fail-closed: uid 분리 격리를 못 쓰면 비신뢰 코드를 실행하지 않는다.
+  if (!isolationAvailable() && !unisolatedRunAllowed()) {
+    return c.json({ ok: false, error: 'Runner sandbox isolation is unavailable.' }, 503);
+  }
 
-  return c.json(result);
+  if (runInFlight) {
+    c.header('Retry-After', '5');
+    return c.json({ ok: false, error: 'Runner is busy.' }, 503);
+  }
+
+  runInFlight = true;
+  try {
+    const result = await runSpec({
+      spec: body.spec,
+      baseUrl: body.baseUrl,
+      storageState: body.storageState,
+      timeoutMs: body.timeoutMs,
+    });
+    return c.json(result);
+  } finally {
+    runInFlight = false;
+  }
 });
 
 interface CaptureRequestBody {
@@ -153,6 +175,13 @@ serve({ fetch: app.fetch, port: PORT }, (info) => {
   if (!SHARED_SECRET) {
     console.warn(
       '[runner] RUNNER_SHARED_SECRET is not set. /run will reject all requests with 503.'
+    );
+  }
+  if (!isolationAvailable()) {
+    console.warn(
+      unisolatedRunAllowed()
+        ? '[runner] Sandbox isolation unavailable. RUNNER_ALLOW_UNISOLATED=1, running specs without uid isolation (local dev only).'
+        : '[runner] Sandbox isolation unavailable (not root on Linux). /run will reject all requests with 503.'
     );
   }
   console.log(`[runner] listening on :${info.port}`);

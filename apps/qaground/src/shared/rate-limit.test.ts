@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getClientIp, rateLimit } from './rate-limit';
+import { getClientIp, rateLimit, rateLimitBucketCount } from './rate-limit';
 
 describe('rateLimit', () => {
   beforeEach(() => {
@@ -34,6 +34,22 @@ describe('rateLimit', () => {
     expect(rateLimit(a, 1, 1000).allowed).toBe(true);
     expect(rateLimit(a, 1, 1000).allowed).toBe(false);
     expect(rateLimit(b, 1, 1000).allowed).toBe(true);
+  });
+
+  it('limit 이나 windowMs 가 잘못되면 거부한다 (fail-closed)', () => {
+    const key = `t-${Math.random()}`;
+    expect(rateLimit(key, 0, 1000).allowed).toBe(false);
+    expect(rateLimit(key, 1, 0).allowed).toBe(false);
+    expect(rateLimit(key, Number.NaN, 1000).allowed).toBe(false);
+  });
+
+  it('버킷이 임계치에 닿으면 만료된 버킷을 정리한다', () => {
+    for (let i = 0; i < 10_000; i += 1) rateLimit(`fill-${i}-${Math.random()}`, 1, 1000);
+    expect(rateLimitBucketCount()).toBeGreaterThanOrEqual(10_000);
+    vi.advanceTimersByTime(1000);
+    rateLimit(`trigger-${Math.random()}`, 1, 1000);
+    // 채운 1만 개는 모두 만료돼 지워진다. 앞선 테스트의 미만료 버킷 몇 개만 남을 수 있다.
+    expect(rateLimitBucketCount()).toBeLessThan(10);
   });
 });
 

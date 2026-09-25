@@ -32,11 +32,11 @@ ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 
-# 비신뢰 spec 은 root 로 실행하지 않는다(권한 상승·컨테이너 탈출 표면 축소).
-# Playwright 베이스 이미지가 제공하는 비특권 사용자 pwuser(uid 1000)로 떨어뜨린다.
-# 런타임 실행 디렉터리(.runs)를 미리 만들어 소유권을 넘겨, 비root 프로세스가
-# 요청별 임시 디렉터리를 생성·정리할 수 있게 한다.
-RUN mkdir -p /app/.runs && chown -R pwuser:pwuser /app
-USER pwuser
+# 서버는 root 로 뜨고, 비신뢰 spec 자식만 비특권 사용자 pwuser(uid 1000)로 강등해 실행한다
+# (src/sandbox.ts). uid 를 나눠야 spec 이 서버의 /proc environ(시크릿)을 읽지 못하고,
+# 앱 파일(/app/dist, node_modules)은 root 소유로 남아 spec 이 변조할 수 없다.
+# 그래서 여기서는 USER 를 바꾸지 않고 /app 소유권도 넘기지 않는다. spec uid 는
+# 요청마다 서버가 넘겨주는 run 디렉터리에만 쓸 수 있다.
+RUN mkdir -p /app/.runs && chmod 711 /app/.runs
 
 CMD ["node", "dist/server.js"]
