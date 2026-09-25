@@ -71,7 +71,8 @@ export function buildCandidateDecision(
   score: number
 ): CandidateDecision {
   const priority = score >= 150 ? 'high' : score >= 105 ? 'medium' : 'low';
-  const confidence = reasons.stable && input.evaluatedResults >= 10 ? 'high' : reasons.stable ? 'medium' : 'low';
+  const confidence =
+    reasons.stable && input.evaluatedResults >= 10 ? 'high' : reasons.stable ? 'medium' : 'low';
   const estimatedManualRunsSaved = Math.max(0, input.distinctRuns - 1);
 
   const signalLabels = [

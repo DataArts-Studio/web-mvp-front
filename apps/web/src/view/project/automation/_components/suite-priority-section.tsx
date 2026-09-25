@@ -8,7 +8,11 @@ interface SuitePrioritySectionProps {
   flaky: CandidateRow[];
 }
 
-export const SuitePrioritySection = ({ coverage, candidates, flaky }: SuitePrioritySectionProps) => {
+export const SuitePrioritySection = ({
+  coverage,
+  candidates,
+  flaky,
+}: SuitePrioritySectionProps) => {
   const candidateCountBySuite = countBySuite(candidates);
   const flakyCountBySuite = countBySuite(flaky);
 
@@ -57,7 +61,9 @@ export const SuitePrioritySection = ({ coverage, candidates, flaky }: SuitePrior
                 className="border-line-3/40 grid grid-cols-[minmax(0,1fr)_88px_80px_104px_128px] gap-3 border-b px-3 py-2.5 text-sm last:border-b-0"
               >
                 <div className="min-w-0">
-                  <div className="text-text-1 truncate font-medium">{suite.suiteName ?? '미분류'}</div>
+                  <div className="text-text-1 truncate font-medium">
+                    {suite.suiteName ?? '미분류'}
+                  </div>
                   <div className="text-text-4 mt-0.5 text-xs">
                     완료 {suite.automatedCases} / 전체 {suite.totalCases}
                   </div>

@@ -153,7 +153,6 @@ export const TestCasesView = () => {
     }
   }, [testCasesData?.success, projectId]);
 
-
   const handlePageChange = useCallback(
     (page: number) => {
       const totalPages = pagination?.totalPages ?? 1;
