@@ -3,6 +3,7 @@ import { Inbox } from 'lucide-react';
 
 const ACTION_LABEL: Record<string, { label: string; cls: string }> = {
   login: { label: '접속', cls: 'bg-blue-100 text-blue-700' },
+  'login.failed': { label: '로그인 실패', cls: 'bg-red-100 text-red-700' },
   'notice.create': { label: '공지 생성', cls: 'bg-green-100 text-green-700' },
   'notice.update': { label: '공지 수정', cls: 'bg-gray-100 text-gray-600' },
   'notice.activate': { label: '공지 활성화', cls: 'bg-green-100 text-green-700' },
