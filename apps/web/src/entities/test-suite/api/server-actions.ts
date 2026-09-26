@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
@@ -93,6 +94,8 @@ export const getTestSuites = async ({
   limits = { offset: 0, limit: Infinity },
 }: GetTestSuitesParams): Promise<ActionResult<TestSuite[]>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
     let query = db
       .select()
@@ -141,6 +144,8 @@ export const getTestSuites = async ({
 
 export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSuite>> => {
   try {
+    if (!(await canAccess('testSuite', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const [row] = await db.select().from(testSuites).where(eq(testSuites.id, id));
 
@@ -184,6 +189,8 @@ export const getTestSuiteByIdWithStats = async (
   id: string
 ): Promise<ActionResult<TestSuiteCard>> => {
   try {
+    if (!(await canAccess('testSuite', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const [row] = await db.select().from(testSuites).where(eq(testSuites.id, id));
@@ -317,6 +324,8 @@ export const getTestSuitesWithStats = async ({
   limits = { offset: 0, limit: Infinity },
 }: GetTestSuitesParams): Promise<ActionResult<TestSuiteCard[]>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // 1) 기본 스위트 목록

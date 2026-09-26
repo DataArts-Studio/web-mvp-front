@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -70,6 +71,12 @@ export async function getDashboardMilestones(
   testRunId?: string
 ): Promise<ActionResult<DashboardMilestone[]>> {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+    // 실행 ID 가 주어지면 같은 프로젝트 소속이어야 한다 (남의 실행에 연결된 마일스톤 조회 차단).
+    if (testRunId && !(await belongsToProject('testRun', testRunId, projectId))) {
+      return ACCESS_DENIED;
+    }
+
     const db = getDatabase();
 
     // 1. 마일스톤 목록 결정

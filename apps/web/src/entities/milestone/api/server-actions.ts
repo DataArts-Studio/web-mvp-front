@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import {
   CreateMilestone,
@@ -36,6 +37,8 @@ export const getMilestones = async ({
   projectId,
 }: GetMilestonesParams): Promise<ActionResult<MilestoneWithStats[]>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const rows = await db
@@ -222,6 +225,8 @@ export const getMilestones = async ({
 
 export const getMilestoneById = async (id: string): Promise<ActionResult<Milestone>> => {
   try {
+    if (!(await canAccess('milestone', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const [row] = await db.select().from(milestones).where(eq(milestones.id, id));
 

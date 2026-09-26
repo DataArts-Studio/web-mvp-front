@@ -119,39 +119,6 @@ export async function createProject(
   }
 }
 
-const isActive = eq(projects.lifecycle_status, 'ACTIVE');
-
-/**
- * 프로젝트 목록 조회
- * - 삭제되지 않은 프로젝트만 조회
- */
-export async function getProjects(): Promise<ActionResult<SerializableProjectDomain[]>> {
-  try {
-    const db = getDatabase();
-
-    const rows = await db.select().from(projects).where(isActive).orderBy(projects.created_at);
-
-    const result: SerializableProjectDomain[] = rows.map((row) => ({
-      id: row.id,
-      projectName: row.name,
-      description: row.description ?? undefined,
-      ownerName: row.owner_name ?? undefined,
-      createdAt: row.created_at.toISOString(),
-      updatedAt: row.updated_at.toISOString(),
-      archivedAt: row.archived_at?.toISOString() ?? null,
-      lifecycleStatus: row.lifecycle_status,
-    }));
-
-    return { success: true, data: result };
-  } catch (error) {
-    Sentry.captureException(error, { extra: { action: 'getProjects' } });
-    return {
-      success: false,
-      errors: { _form: ['프로젝트 목록 조회에 실패했습니다.'] },
-    };
-  }
-}
-
 /**
  * 프로젝트명 중복 체크
  */

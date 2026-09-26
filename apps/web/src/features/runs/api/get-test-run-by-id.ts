@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { SourceInfo, TestCaseRunDetail, TestRunDetail } from '@/entities/test-run';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -143,6 +144,8 @@ async function repairTestRun(
 
 export async function getTestRunById(testRunId: string): Promise<ActionResult<TestRunDetail>> {
   try {
+    if (!(await canAccess('testRun', testRunId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // 1. 테스트 실행 기본 정보

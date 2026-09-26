@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -8,6 +9,8 @@ import { sql } from 'drizzle-orm';
 
 export const getProjectTags = async (projectId: string): Promise<ActionResult<string[]>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // DB 레벨에서 중복 제거 + 빈도 정렬 (JS 후처리 제거)

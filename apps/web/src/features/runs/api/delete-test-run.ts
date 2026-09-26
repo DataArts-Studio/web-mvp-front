@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns } from '@testea/db';
@@ -7,6 +8,8 @@ import { eq } from 'drizzle-orm';
 
 export async function deleteTestRun(testRunId: string): Promise<ActionResult<{ id: string }>> {
   try {
+    if (!(await canAccess('testRun', testRunId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const [archived] = await db

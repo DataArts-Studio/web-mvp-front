@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { FetchedTestRun } from '@/entities/test-run';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -17,6 +18,8 @@ export async function getTestRunsByProjectId(
   projectId: string
 ): Promise<ActionResult<FetchedTestRun[]>> {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // 1. 테스트 실행 목록 (ACTIVE만)

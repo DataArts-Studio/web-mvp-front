@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { checkProjectNameDuplicate, createProject, getProjects } from './server-action';
+import { checkProjectNameDuplicate, createProject } from './server-action';
 
 vi.mock('server-only', () => ({}));
 
@@ -46,7 +46,7 @@ const mockLimit = vi.fn();
 const mockWhere = vi.fn(() => ({ limit: mockLimit }));
 const mockOrderBy = vi.fn();
 const mockWhereSelect = vi.fn(() => ({ orderBy: mockOrderBy }));
-// getProjects 는 from→where(orderBy), checkProjectNameDuplicate 는 from→where(limit) 로
+// checkProjectNameDuplicate 는 from→where(limit) 로
 // from 이후 where 체인이 다르므로 두 체인의 유니온으로 타입을 명시한다(캐스팅 없이 재설정 가능).
 const mockFrom = vi.fn<() => { where: typeof mockWhereSelect } | { where: typeof mockWhere }>(
   () => ({
@@ -157,74 +157,6 @@ describe('createProject', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.errors._form).toContain('프로젝트 생성 중 오류가 발생했습니다.');
-    }
-  });
-});
-
-describe('getProjects', () => {
-  const mockProjectRows = [
-    {
-      id: 'proj-1',
-      name: 'Project 1',
-      identifier: 'hashed-1',
-      description: '설명 1',
-      owner_name: '홍길동',
-      created_at: new Date('2024-01-01T00:00:00Z'),
-      updated_at: new Date('2024-01-02T00:00:00Z'),
-      archived_at: null,
-      lifecycle_status: 'ACTIVE',
-    },
-    {
-      id: 'proj-2',
-      name: 'Project 2',
-      identifier: 'hashed-2',
-      description: null,
-      owner_name: null,
-      created_at: new Date('2024-01-03T00:00:00Z'),
-      updated_at: new Date('2024-01-04T00:00:00Z'),
-      archived_at: null,
-      lifecycle_status: 'ACTIVE',
-    },
-  ];
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('프로젝트 목록 조회 성공 시 success: true와 데이터를 반환한다', async () => {
-    mockOrderBy.mockResolvedValue(mockProjectRows);
-
-    const result = await getProjects();
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toHaveLength(2);
-      expect(result.data[0].id).toBe('proj-1');
-      expect(result.data[0].projectName).toBe('Project 1');
-      expect(result.data[1].description).toBeUndefined();
-      expect(result.data[1].ownerName).toBeUndefined();
-    }
-  });
-
-  it('프로젝트가 없을 경우 빈 배열을 반환한다', async () => {
-    mockOrderBy.mockResolvedValue([]);
-
-    const result = await getProjects();
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toEqual([]);
-    }
-  });
-
-  it('DB 에러 발생 시 success: false와 에러 메시지를 반환한다', async () => {
-    mockOrderBy.mockRejectedValue(new Error('DB Error'));
-
-    const result = await getProjects();
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.errors._form).toContain('프로젝트 목록 조회에 실패했습니다.');
     }
   });
 });

@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -37,6 +38,8 @@ function toSection(row: typeof testSuiteSections.$inferSelect): TestSuiteSection
 
 export const getSections = async (suiteId: string): Promise<ActionResult<TestSuiteSection[]>> => {
   try {
+    if (!(await canAccess('testSuite', suiteId))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const rows = await db
       .select()

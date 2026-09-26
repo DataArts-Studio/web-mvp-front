@@ -2,6 +2,7 @@
 
 import { deleteAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword, verifyPassword } from '@/access/lib/password-hash';
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { ProjectDomain } from '@/entities/project';
 import type { ActionResult } from '@/shared/types';
@@ -16,6 +17,8 @@ export type ProjectBasicInfo = Pick<
 
 export const getProjectIdBySlug = async (slug: string): Promise<ActionResult<{ id: string }>> => {
   try {
+    if (!(await canAccess('slug', slug))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const decodedSlug = decodeURIComponent(slug);
     const [row] = await db
@@ -39,6 +42,8 @@ export const getProjectIdBySlug = async (slug: string): Promise<ActionResult<{ i
 
 export const getProjectByName = async (name: string): Promise<ActionResult<ProjectBasicInfo>> => {
   try {
+    if (!(await canAccess('slug', name))) return ACCESS_DENIED;
+
     const db = getDatabase();
     // URL 인코딩된 name을 디코딩
     const decodedName = decodeURIComponent(name);
@@ -73,6 +78,8 @@ export const getProjectByName = async (name: string): Promise<ActionResult<Proje
 
 export const getProjectById = async (id: string): Promise<ActionResult<ProjectBasicInfo>> => {
   try {
+    if (!(await canAccess('project', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const [row] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
 
