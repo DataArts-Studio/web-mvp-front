@@ -69,6 +69,22 @@ export async function countRecentFailedLogins(
   return Number(row?.count ?? 0);
 }
 
+/**
+ * 전체 IP 합산 최근 N 분 내 로그인 실패 횟수. IP 를 바꿔 가며 시도하는 분산 대입을 막는
+ * 전역 락아웃 판단에 쓴다.
+ */
+export async function countRecentFailedLoginsGlobal(withinMinutes: number): Promise<number> {
+  const db = getDatabase();
+  const since = sql`now() - (${withinMinutes} * interval '1 minute')`;
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(adminActivityLogs)
+    .where(
+      and(eq(adminActivityLogs.action, 'login.failed'), gt(adminActivityLogs.created_at, since))
+    );
+  return Number(row?.count ?? 0);
+}
+
 /** 최신순 활동 로그를 반환한다. */
 export async function listAdminActivity(limit = 100): Promise<AdminActivityLog[]> {
   const db = getDatabase();

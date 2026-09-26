@@ -3,6 +3,7 @@ import { Inbox } from 'lucide-react';
 
 const ACTION_LABEL: Record<string, { label: string; cls: string }> = {
   login: { label: '접속', cls: 'bg-blue-100 text-blue-700' },
+  'login.failed': { label: '로그인 실패', cls: 'bg-red-100 text-red-700' },
   'notice.create': { label: '공지 생성', cls: 'bg-green-100 text-green-700' },
   'notice.update': { label: '공지 수정', cls: 'bg-gray-100 text-gray-600' },
   'notice.activate': { label: '공지 활성화', cls: 'bg-green-100 text-green-700' },
@@ -34,6 +35,7 @@ export function AdminLogView({ logs }: { logs: AdminActivityLog[] }) {
               <tr>
                 <th className="px-4 py-3 font-semibold">시각</th>
                 <th className="px-4 py-3 font-semibold">액션</th>
+                <th className="px-4 py-3 font-semibold">관리자</th>
                 <th className="px-4 py-3 font-semibold">대상</th>
                 <th className="px-4 py-3 font-semibold">IP</th>
               </tr>
@@ -55,6 +57,9 @@ export function AdminLogView({ logs }: { logs: AdminActivityLog[] }) {
                       </span>
                     </td>
                     <td className="text-text-primary px-4 py-3 text-sm">
+                      {log.actor ?? <span className="text-text-secondary">공유키</span>}
+                    </td>
+                    <td className="text-text-primary px-4 py-3 text-sm">
                       {log.targetLabel ?? <span className="text-text-secondary">—</span>}
                     </td>
                     <td className="text-text-secondary px-4 py-3 font-mono text-xs">
@@ -65,7 +70,7 @@ export function AdminLogView({ logs }: { logs: AdminActivityLog[] }) {
               })}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={4}>
+                  <td colSpan={5}>
                     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                       <div
                         className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400"
