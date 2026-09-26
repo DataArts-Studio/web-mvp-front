@@ -136,6 +136,9 @@ async function writeRunFiles(
 export default defineConfig({
   testDir: ${JSON.stringify(dir)},
   testMatch: ${JSON.stringify('run.spec.ts')},
+  // 산출물(trace·스크린샷)도 run 디렉터리 안에 둔다. 기본값은 package.json 이 있는
+  // /app 기준이라, root 소유인 앱 디렉터리에 spec uid 가 쓰려다 실패한다.
+  outputDir: ${JSON.stringify(join(dir, 'test-results'))},
   fullyParallel: false,
   workers: 1,
   retries: 0,
