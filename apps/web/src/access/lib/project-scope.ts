@@ -20,6 +20,7 @@ import {
   testSuites,
 } from '@testea/db';
 import { eq } from 'drizzle-orm';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { requireProjectAccess } from './require-access';
 
@@ -129,13 +130,43 @@ export async function resolveProjectId(
   }
 }
 
+/**
+ * 캐시 바깥에서 이미 쿠키로 권한을 확인한 프로젝트 목록 (요청 단위).
+ *
+ * unstable_cache 콜백 안에서는 cookies() 를 읽을 수 없다. 그래서 서버 컴포넌트 프리패치는
+ * 캐시 바깥에서 먼저 권한을 확인하고, 그 호출 범위에만 "확인 완료" 표시를 실어 캐시 안의
+ * 액션이 쿠키 없이 통과하게 한다. 클라이언트가 직접 호출한 서버 액션은 이 범위 밖에서
+ * 실행되므로 표시를 위조할 수 없다.
+ */
+const verifiedProjects = new AsyncLocalStorage<ReadonlySet<string>>();
+
 /** 식별자가 속한 프로젝트에 현재 요청이 접근 권한을 갖는지. 해석 실패도 false. */
 export async function canAccess(
   kind: ProjectScopedKind,
   id: string | null | undefined
 ): Promise<boolean> {
   const projectId = await resolveProjectId(kind, id);
-  return projectId !== null && (await requireProjectAccess(projectId));
+  if (projectId === null) return false;
+  if (verifiedProjects.getStore()?.has(projectId)) return true;
+  return requireProjectAccess(projectId);
+}
+
+/**
+ * 쿠키로 권한을 확인한 뒤, 확인된 프로젝트 범위 안에서 fn 을 실행한다.
+ * 캐시(unstable_cache) 로 감싼 조회를 서버 컴포넌트에서 부를 때 쓴다. 권한이 없으면 fn 을
+ * 부르지 않고 ACCESS_DENIED 를 돌려준다(캐시 조회도 하지 않는다).
+ */
+export async function withVerifiedAccess<T>(
+  kind: ProjectScopedKind,
+  id: string | null | undefined,
+  fn: () => Promise<T>
+): Promise<T | typeof ACCESS_DENIED> {
+  const projectId = await resolveProjectId(kind, id);
+  if (projectId === null || !(await requireProjectAccess(projectId))) return ACCESS_DENIED;
+  const current = verifiedProjects.getStore();
+  const next = new Set(current ?? []);
+  next.add(projectId);
+  return verifiedProjects.run(next, fn);
 }
 
 /** 식별자가 주어진 프로젝트 소속인지. 교차 프로젝트 참조(예: 남의 스위트에 케이스 매달기) 차단용. */
