@@ -24,7 +24,6 @@
     "@testea/ui": "workspace:*",
     "@testea/util": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "jose": "^6.2.12",
     "lucide-react": "^0.561.0",
     "next": "16.2.9",
     "postgres": "^3.4.7",

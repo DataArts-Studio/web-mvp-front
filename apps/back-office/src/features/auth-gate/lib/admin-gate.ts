@@ -4,17 +4,15 @@ import { redirect } from 'next/navigation';
 import { initCloudflareDb } from '@/shared/db/cloudflare-db';
 import { timingSafeEqual } from 'node:crypto';
 
-import { getCfAccessEmail } from './cf-access';
-
 /**
- * 백오피스 인증. 정식 Supabase Auth + RBAC 는 [BO12] 로 분리.
+ * 백오피스 v1 임시 인증 게이트 (환경변수 공유키).
  *
- * 1. Cloudflare Access (운영 권장): 엣지에서 인증된 요청의 JWT 를 검증해 통과시킨다.
- *    검증 설정(`CF_ACCESS_TEAM_DOMAIN`·`CF_ACCESS_AUD`)이 없으면 이 경로는 꺼진다(cf-access.ts).
- * 2. 공유키 게이트 (폴백): 운영자가 `/notices/gate` 에서 공유키를 입력하면 httpOnly 쿠키로
- *    보관하고 `BACKOFFICE_ADMIN_SECRET` 과 상수시간 비교한다. 로그인 시도는 IP 락아웃을 받는다.
+ * 정식 Supabase Auth + RBAC 는 [BO12] 로 분리. 그전까지 사이트 전역 공지 발행 같은
+ * 위험 액션을 무인증으로 두지 않기 위한 최소 안전장치다.
  *
- * 둘 다 설정되지 않았으면 누구도 통과하지 못한다(fail-closed).
+ * - 운영자가 `/notices/gate` 에서 공유키를 입력하면 httpOnly 쿠키로 보관한다.
+ * - 모든 페이지/서버 액션은 이 쿠키를 `BACKOFFICE_ADMIN_SECRET` 과 상수시간 비교한다.
+ * - 시크릿 미설정(fail-closed) 이면 누구도 통과하지 못한다.
  */
 export const ADMIN_COOKIE = 'bo_admin_session';
 const GATE_PATH = '/notices/gate';
@@ -34,9 +32,8 @@ export function isValidSecret(candidate: string | undefined | null): boolean {
   return safeEqual(candidate, secret);
 }
 
-/** 현재 요청이 인증된 운영자인지 (검증된 Cloudflare Access 또는 공유키 세션). */
+/** 현재 요청이 인증된 운영자 세션인지. */
 export async function isAdminAuthed(): Promise<boolean> {
-  if (await getCfAccessEmail()) return true;
   const store = await cookies();
   return isValidSecret(store.get(ADMIN_COOKIE)?.value);
 }

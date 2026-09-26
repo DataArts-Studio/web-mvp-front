@@ -35,7 +35,6 @@ export function AdminLogView({ logs }: { logs: AdminActivityLog[] }) {
               <tr>
                 <th className="px-4 py-3 font-semibold">시각</th>
                 <th className="px-4 py-3 font-semibold">액션</th>
-                <th className="px-4 py-3 font-semibold">관리자</th>
                 <th className="px-4 py-3 font-semibold">대상</th>
                 <th className="px-4 py-3 font-semibold">IP</th>
               </tr>
@@ -57,9 +56,6 @@ export function AdminLogView({ logs }: { logs: AdminActivityLog[] }) {
                       </span>
                     </td>
                     <td className="text-text-primary px-4 py-3 text-sm">
-                      {log.actor ?? <span className="text-text-secondary">공유키</span>}
-                    </td>
-                    <td className="text-text-primary px-4 py-3 text-sm">
                       {log.targetLabel ?? <span className="text-text-secondary">—</span>}
                     </td>
                     <td className="text-text-secondary px-4 py-3 font-mono text-xs">
@@ -70,7 +66,7 @@ export function AdminLogView({ logs }: { logs: AdminActivityLog[] }) {
               })}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={4}>
                     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                       <div
                         className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400"

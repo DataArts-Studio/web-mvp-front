@@ -32,14 +32,9 @@ web 앱(Vercel)과 달리 백오피스는 Cloudflare 로 따로 배포한다.
 3. **커스텀 도메인** 연결: Workers 설정에서 `dev.back.gettestea.com`(dev) 등 라우트 추가.
    DNS 가 Cloudflare 라 바로 붙는다.
 
-4. **Cloudflare Access (선택, 권장)**: Zero Trust → Access → Applications 에서 백오피스 도메인을
-   Self-hosted 앱으로 추가하고 허용 정책(이메일·그룹)을 건다. 앱에서 이 신원을 쓰려면 워커 변수
-   `CF_ACCESS_TEAM_DOMAIN`(예: `your-team.cloudflareaccess.com`)과 `CF_ACCESS_AUD`(Access 앱의
-   Application Audience 태그)를 **둘 다** 넣는다.
-   - 앱은 `Cf-Access-Jwt-Assertion` JWT 를 팀 JWKS 로 검증해 이메일을 얻고, 그 이메일로 인증·행위자를
-     기록한다. 이메일 헤더만으로는 인증하지 않는다.
-   - 두 변수 중 하나라도 없으면 CF Access 경로는 꺼지고 공유키 게이트만 동작한다(fail-closed).
-   - 공유키 게이트는 IP(`cf-connecting-ip`)당 15분 5회, 전체 15분 50회 실패 시 잠긴다.
+4. **로그인 락아웃**: 공유키 게이트는 접속 IP(`cf-connecting-ip`)당 15분 5회, 전체 15분 50회
+   실패 시 잠긴다. 실패 기록은 `admin_activity_logs`(`login.failed`)에 남아 Workers 다중 isolate
+   에서도 공유된다.
 
 ## 빌드 / 배포
 
