@@ -23,14 +23,36 @@ const buckets = new Map<string, Bucket>();
  */
 const SWEEP_THRESHOLD = 10_000;
 
+/**
+ * 전체 순회 정리는 이 간격에 한 번만 한다. 만료 전 키가 임계치를 넘게 쌓인 상태에서
+ * 요청마다 전체를 다시 훑으면 요청당 비용이 버킷 수에 비례해 커지기 때문이다.
+ */
+const SWEEP_INTERVAL_MS = 1_000;
+
+/**
+ * 버킷 수 절대 상한. 정리해도 이를 넘으면 가장 오래 전에 생긴 버킷부터 버린다
+ * (Map 은 삽입 순서를 유지한다). 키 홍수 속에서도 메모리와 요청당 비용을 묶어 둔다.
+ */
+const MAX_BUCKETS = 50_000;
+
+let lastSweepAt = Number.NEGATIVE_INFINITY;
+
 /** 테스트용: 현재 보관 중인 버킷 수. */
 export function rateLimitBucketCount(): number {
   return buckets.size;
 }
 
 function sweepExpired(now: number): void {
+  lastSweepAt = now;
   for (const [key, bucket] of buckets) {
     if (now >= bucket.resetAt) buckets.delete(key);
+  }
+}
+
+function evictOldest(): void {
+  for (const key of buckets.keys()) {
+    if (buckets.size < MAX_BUCKETS) return;
+    buckets.delete(key);
   }
 }
 
@@ -51,10 +73,13 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateLim
   }
 
   const now = Date.now();
-  if (buckets.size >= SWEEP_THRESHOLD) sweepExpired(now);
+  if (buckets.size >= SWEEP_THRESHOLD && now - lastSweepAt >= SWEEP_INTERVAL_MS) {
+    sweepExpired(now);
+  }
   const bucket = buckets.get(key);
 
   if (!bucket || now >= bucket.resetAt) {
+    if (!bucket && buckets.size >= MAX_BUCKETS) evictOldest();
     buckets.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true, retryAfterMs: 0 };
   }

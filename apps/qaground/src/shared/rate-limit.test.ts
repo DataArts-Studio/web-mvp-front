@@ -51,6 +51,11 @@ describe('rateLimit', () => {
     // 채운 1만 개는 모두 만료돼 지워진다. 앞선 테스트의 미만료 버킷 몇 개만 남을 수 있다.
     expect(rateLimitBucketCount()).toBeLessThan(10);
   });
+
+  it('버킷 수가 절대 상한을 넘지 않는다', () => {
+    for (let i = 0; i < 50_100; i += 1) rateLimit(`cap-${i}-${Math.random()}`, 1, 60_000);
+    expect(rateLimitBucketCount()).toBeLessThanOrEqual(50_000);
+  });
 });
 
 describe('getClientIp', () => {

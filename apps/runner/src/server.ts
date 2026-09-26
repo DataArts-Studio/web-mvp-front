@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 
 import { capture } from './capture.js';
 import { runSpec } from './run-spec.js';
-import { isolationAvailable, unisolatedRunAllowed } from './sandbox.js';
+import { isolationAvailable, sandboxCompromised, unisolatedRunAllowed } from './sandbox.js';
 import { checkTargetUrl } from './url-guard.js';
 
 const app = new Hono();
@@ -24,7 +24,13 @@ function secretsMatch(provided: string | undefined, expected: string): boolean {
 /**
  * 헬스체크. 인증 예외.
  */
-app.get('/health', (c) => c.json({ ok: true }));
+app.get('/health', (c) => {
+  // 잔여 spec 프로세스를 정리하지 못한 인스턴스는 unhealthy 로 알려 플랫폼이 교체하게 한다.
+  if (sandboxCompromised()) {
+    return c.json({ ok: false, error: 'Sandbox compromised.' }, 503);
+  }
+  return c.json({ ok: true });
+});
 
 /**
  * 공유 시크릿 인증 미들웨어. /health 를 제외한 전 경로에 적용.
@@ -102,6 +108,10 @@ app.post('/run', async (c) => {
   // fail-closed: uid 분리 격리를 못 쓰면 비신뢰 코드를 실행하지 않는다.
   if (!isolationAvailable() && !unisolatedRunAllowed()) {
     return c.json({ ok: false, error: 'Runner sandbox isolation is unavailable.' }, 503);
+  }
+
+  if (sandboxCompromised()) {
+    return c.json({ ok: false, error: 'Runner sandbox is compromised.' }, 503);
   }
 
   if (runInFlight) {
