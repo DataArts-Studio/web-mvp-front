@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
 import { encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -17,6 +18,8 @@ export const saveAiConfig = async (input: {
   model?: string;
 }): Promise<ActionResult<{ config: AiConfig }>> => {
   try {
+    if (!(await canAccess('project', input.projectId))) return ACCESS_DENIED;
+
     const parsed = SaveAiConfigSchema.safeParse(input);
     if (!parsed.success) {
       return { success: false, errors: { _ai: [parsed.error.errors[0].message] } };
@@ -70,6 +73,8 @@ export const saveAiConfig = async (input: {
 // --- AI 설정 조회 ---
 export const getAiConfig = async (projectId: string): Promise<ActionResult<AiConfig | null>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const [config] = await db
@@ -117,6 +122,8 @@ export const getAiConfig = async (projectId: string): Promise<ActionResult<AiCon
 // --- AI 설정 삭제 (소프트 딜리트) ---
 export const deleteAiConfig = async (projectId: string): Promise<ActionResult<null>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
     await db
       .update(projectAiConfigs)
@@ -153,6 +160,11 @@ export const saveGeneratedCases = async (input: {
     }
 
     const { projectId, suiteId, cases } = parsed.data;
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+    // 다른 프로젝트의 스위트에 케이스를 매달지 못하게 소속을 확인한다.
+    if (suiteId && !(await belongsToProject('testSuite', suiteId, projectId))) {
+      return ACCESS_DENIED;
+    }
     const db = getDatabase();
     const now = new Date();
 

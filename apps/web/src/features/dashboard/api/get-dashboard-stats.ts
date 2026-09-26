@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type {
   DashboardStats,
   ProjectInfo,
@@ -20,6 +21,8 @@ export const getDashboardStats = async ({
   slug,
 }: GetDashboardStatsParams): Promise<ActionResult<DashboardStats>> => {
   try {
+    if (!(await canAccess('slug', slug))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // URL 인코딩된 slug를 디코딩

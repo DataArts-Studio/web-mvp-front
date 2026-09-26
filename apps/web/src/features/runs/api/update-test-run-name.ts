@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns } from '@testea/db';
@@ -10,6 +11,8 @@ export async function updateTestRunName(
   name: string
 ): Promise<ActionResult<{ id: string; name: string }>> {
   try {
+    if (!(await canAccess('testRun', testRunId))) return ACCESS_DENIED;
+
     const trimmed = name.trim();
     if (!trimmed) {
       return {

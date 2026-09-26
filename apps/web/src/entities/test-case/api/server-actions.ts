@@ -1,8 +1,9 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
-import { createVersionSnapshot } from '@/entities/test-case-version/api/actions';
+import { createVersionSnapshot } from '@/entities/test-case-version/api/create-version-snapshot';
 import {
   detectChangedFields,
   generateChangeSummary,
@@ -32,6 +33,8 @@ export const getTestCases = async ({
   project_id,
 }: getTestCasesParams): Promise<ActionResult<TestCase[]>> => {
   try {
+    if (!(await canAccess('project', project_id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const rows = await db
       .select()
@@ -104,6 +107,8 @@ export const getTestCasesList = async ({
   suiteId,
 }: GetTestCasesListParams): Promise<ActionResult<PaginatedTestCases>> => {
   try {
+    if (!(await canAccess('project', project_id))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // WHERE 조건 구성
@@ -214,6 +219,8 @@ export const getTestCasesList = async ({
 
 export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> => {
   try {
+    if (!(await canAccess('testCase', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const [row] = await db
       .select()

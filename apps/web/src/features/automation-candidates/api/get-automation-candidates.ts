@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testCases } from '@testea/db';
@@ -30,6 +31,8 @@ export async function getAutomationCandidates(
   projectId: string
 ): Promise<ActionResult<AutomationCandidatesResult>> {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // 1. 프로젝트 ACTIVE 케이스 (automated 포함 — stats 계산에 필요).

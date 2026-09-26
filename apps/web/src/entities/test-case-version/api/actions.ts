@@ -8,55 +8,12 @@ import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseVersions, testCases } from '@testea/db';
 import { and, desc, eq, sql } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 
 import { computeFieldDiffs, detectChangedFields, generateChangeSummary } from '../model/diff-utils';
 import { toTestCaseVersion, toTestCaseVersionSummary } from '../model/mapper';
 import type { TestCaseVersionDTO } from '../model/schema';
-import type { ChangeType, TestCaseVersion, VersionCompareResult } from '../model/types';
-
-type SnapshotData = {
-  name: string;
-  test_type?: string | null;
-  tags?: string[] | null;
-  pre_condition?: string | null;
-  steps?: string | null;
-  expected_result?: string | null;
-};
-
-export async function createVersionSnapshot(
-  testCaseId: string,
-  snapshotData: SnapshotData,
-  changeType: ChangeType,
-  changedFields: string[],
-  changeSummary: string
-): Promise<void> {
-  const db = getDatabase();
-  const id = uuidv7();
-
-  const [maxResult] = await db
-    .select({ max: sql<number>`COALESCE(MAX(${testCaseVersions.version_number}), 0)` })
-    .from(testCaseVersions)
-    .where(eq(testCaseVersions.test_case_id, testCaseId));
-
-  const nextVersion = (maxResult?.max ?? 0) + 1;
-
-  await db.insert(testCaseVersions).values({
-    id,
-    test_case_id: testCaseId,
-    version_number: nextVersion,
-    name: snapshotData.name,
-    test_type: snapshotData.test_type ?? null,
-    tags: snapshotData.tags ?? [],
-    pre_condition: snapshotData.pre_condition ?? null,
-    steps: snapshotData.steps ?? null,
-    expected_result: snapshotData.expected_result ?? null,
-    change_summary: changeSummary,
-    change_type: changeType,
-    changed_fields: changedFields,
-    created_at: new Date(),
-  });
-}
+import type { TestCaseVersion, VersionCompareResult } from '../model/types';
+import { createVersionSnapshot } from './create-version-snapshot';
 
 export async function getVersionsByTestCaseId(
   testCaseId: string,

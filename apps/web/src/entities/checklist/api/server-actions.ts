@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { checklistItems, checklists, getDatabase } from '@testea/db';
@@ -15,6 +16,8 @@ export const createChecklist = async (input: {
   items: { content: string }[];
 }): Promise<ActionResult<{ id: string }>> => {
   try {
+    if (!(await canAccess('project', input.projectId))) return ACCESS_DENIED;
+
     const parsed = CreateChecklistSchema.safeParse(input);
     if (!parsed.success) {
       return { success: false, errors: { _checklist: [parsed.error.errors[0].message] } };
@@ -50,6 +53,8 @@ export const getChecklistsByProjectId = async (
   projectId: string
 ): Promise<ActionResult<ChecklistWithProgress[]>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const rows = await db
@@ -99,6 +104,8 @@ export const getChecklistById = async (
   checklistId: string
 ): Promise<ActionResult<ChecklistWithItems>> => {
   try {
+    if (!(await canAccess('checklist', checklistId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const [row] = await db.select().from(checklists).where(eq(checklists.id, checklistId)).limit(1);
@@ -146,6 +153,8 @@ export const toggleChecklistItem = async (
   isChecked: boolean
 ): Promise<ActionResult<{ checklistStatus: string }>> => {
   try {
+    if (!(await canAccess('checklistItem', itemId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // 항목 업데이트
@@ -214,6 +223,8 @@ export const addChecklistItem = async (input: {
   content: string;
 }): Promise<ActionResult<{ id: string }>> => {
   try {
+    if (!(await canAccess('checklist', input.checklistId))) return ACCESS_DENIED;
+
     const parsed = AddChecklistItemSchema.safeParse(input);
     if (!parsed.success) {
       return { success: false, errors: { _checklist: [parsed.error.errors[0].message] } };
@@ -252,6 +263,8 @@ export const addChecklistItem = async (input: {
 // --- 항목 삭제 ---
 export const deleteChecklistItem = async (itemId: string): Promise<ActionResult<null>> => {
   try {
+    if (!(await canAccess('checklistItem', itemId))) return ACCESS_DENIED;
+
     const db = getDatabase();
     await db.delete(checklistItems).where(eq(checklistItems.id, itemId));
     return { success: true, data: null };
@@ -264,6 +277,8 @@ export const deleteChecklistItem = async (itemId: string): Promise<ActionResult<
 // --- 체크리스트 삭제 (소프트) ---
 export const archiveChecklist = async (checklistId: string): Promise<ActionResult<null>> => {
   try {
+    if (!(await canAccess('checklist', checklistId))) return ACCESS_DENIED;
+
     const db = getDatabase();
     await db
       .update(checklists)
@@ -287,6 +302,8 @@ export const reorderChecklistItems = async (
   orderedIds: string[]
 ): Promise<ActionResult<null>> => {
   try {
+    if (!(await canAccess('checklist', checklistId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     await Promise.all(
@@ -313,6 +330,15 @@ export const convertChecklistToTestCases = async (
   suiteId?: string
 ): Promise<ActionResult<{ count: number }>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+    // 체크리스트와 대상 스위트가 모두 같은 프로젝트 소속이어야 한다.
+    if (
+      !(await belongsToProject('checklist', checklistId, projectId)) ||
+      (suiteId && !(await belongsToProject('testSuite', suiteId, projectId)))
+    ) {
+      return ACCESS_DENIED;
+    }
+
     const db = getDatabase();
 
     const items = await db

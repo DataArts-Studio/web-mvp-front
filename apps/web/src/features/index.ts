@@ -20,7 +20,6 @@ export type {
 // projects-create
 export {
   createProject,
-  getProjects,
   checkProjectNameDuplicate,
   hashIdentifier,
   ProjectCreateForm,
