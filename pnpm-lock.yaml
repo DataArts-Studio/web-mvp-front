@@ -285,7 +285,7 @@ importers:
         specifier: ^1.13.7
         version: 1.19.14(hono@4.12.27)
       '@playwright/test':
-        specifier: ^1.60.0
+        specifier: 1.60.0
         version: 1.60.0
       hono:
         specifier: '>=4.12.25'
