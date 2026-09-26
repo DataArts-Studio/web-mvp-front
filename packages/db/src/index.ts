@@ -37,7 +37,8 @@ export {
   recordAdminActivity,
   listAdminActivity,
   countRecentFailedLogins,
-  countRecentFailedLoginsGlobal,
+  reserveFailedLogin,
+  releaseFailedLogin,
   type AdminActivityInput,
   type AdminActivityLog,
 } from './queries/admin-activity';

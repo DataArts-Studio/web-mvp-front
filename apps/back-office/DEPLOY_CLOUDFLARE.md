@@ -32,7 +32,7 @@ web 앱(Vercel)과 달리 백오피스는 Cloudflare 로 따로 배포한다.
 3. **커스텀 도메인** 연결: Workers 설정에서 `dev.back.gettestea.com`(dev) 등 라우트 추가.
    DNS 가 Cloudflare 라 바로 붙는다.
 
-4. **로그인 락아웃**: 공유키 게이트는 접속 IP(`cf-connecting-ip`)당 15분 5회, 전체 15분 50회
+4. **로그인 락아웃**: 공유키 게이트는 접속 IP(`cf-connecting-ip`)당 15분 5회
    실패 시 잠긴다. 실패 기록은 `admin_activity_logs`(`login.failed`)에 남아 Workers 다중 isolate
    에서도 공유된다.
 
