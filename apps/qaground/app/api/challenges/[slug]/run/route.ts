@@ -6,6 +6,7 @@ import { createChallengeResultToken } from '@/shared/challenges/result-access.se
 import {
   gradeSubmissionStatically,
   validateAutomationSubmissionShape,
+  validateChallengeStaticChecks,
 } from '@/shared/challenges/static-grader';
 import { getClientIp, rateLimit } from '@/shared/rate-limit';
 import { getRunnerAuthHeader } from '@/shared/runner/runner-identity';
@@ -88,6 +89,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const shapeError = validateAutomationSubmissionShape(parsed.data.code);
   if (shapeError) {
     return NextResponse.json({ ...shapeError, mode: 'static' });
+  }
+
+  const staticCheckError = validateChallengeStaticChecks(challenge, parsed.data.code);
+  if (staticCheckError) {
+    return NextResponse.json({ ...staticCheckError, mode: 'static' });
   }
 
   const runnerUrl = process.env.QAGROUND_RUNNER_URL;

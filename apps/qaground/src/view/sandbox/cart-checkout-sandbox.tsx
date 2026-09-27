@@ -68,19 +68,19 @@ export const CartCheckoutSandbox = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  data-testid={`dec-${p.id}`}
+                  data-testid={`dec-${p.id}`} id={`dec-${p.id}`}
                   onClick={() => change(p.id, -1)}
-                  className="border-line-3 hover:bg-bg-3 h-7 w-7 rounded-md border text-sm"
+                  className={`qa-dec-${p.id} border-line-3 hover:bg-bg-3 h-7 w-7 rounded-md border text-sm`}
                 >
                   −
                 </button>
-                <span data-testid={`qty-${p.id}`} className="w-6 text-center text-sm">
+                <span data-testid={`qty-${p.id}`} id={`qty-${p.id}`} className={`qa-qty-${p.id} w-6 text-center text-sm`}>
                   {qty[p.id] ?? 0}
                 </span>
                 <button
-                  data-testid={`inc-${p.id}`}
+                  data-testid={`inc-${p.id}`} id={`inc-${p.id}`}
                   onClick={() => change(p.id, 1)}
-                  className="border-line-3 hover:bg-bg-3 h-7 w-7 rounded-md border text-sm"
+                  className={`qa-inc-${p.id} border-line-3 hover:bg-bg-3 h-7 w-7 rounded-md border text-sm`}
                 >
                   +
                 </button>
@@ -91,22 +91,22 @@ export const CartCheckoutSandbox = () => {
 
         <div className="flex gap-2">
           <input
-            data-testid="coupon-input"
+            data-testid="coupon-input" id="coupon-input"
             value={coupon}
             placeholder="쿠폰 코드"
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCoupon(e.target.value)}
-            className="border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary h-button-md flex-1 border px-3 text-sm outline-none"
+            className="qa-coupon-input border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary h-button-md flex-1 border px-3 text-sm outline-none"
           />
           <button
-            data-testid="apply-coupon"
+            data-testid="apply-coupon" id="apply-coupon"
             onClick={applyCoupon}
-            className="border-line-3 text-text-2 hover:bg-bg-3 rounded-button h-button-md border px-4 text-sm"
+            className="qa-apply-coupon border-line-3 text-text-2 hover:bg-bg-3 rounded-button h-button-md border px-4 text-sm"
           >
             적용
           </button>
         </div>
         {couponError && (
-          <span data-testid="coupon-error" role="alert" className="text-system-red -mt-3 text-xs">
+          <span data-testid="coupon-error" id="coupon-error" role="alert" className="qa-coupon-error text-system-red -mt-3 text-xs">
             {couponError}
           </span>
         )}
@@ -114,30 +114,30 @@ export const CartCheckoutSandbox = () => {
         <div className="border-line-2 flex flex-col gap-2 border-t pt-4">
           <div className={row}>
             <span className="text-text-2">소계</span>
-            <span data-testid="subtotal">{won(subtotal)}</span>
+            <span data-testid="subtotal" id="subtotal" className="qa-subtotal">{won(subtotal)}</span>
           </div>
           <div className={row}>
             <span className="text-text-2">배송비</span>
-            <span data-testid="shipping">{shipping === 0 ? '무료' : won(shipping)}</span>
+            <span data-testid="shipping" id="shipping" className="qa-shipping">{shipping === 0 ? '무료' : won(shipping)}</span>
           </div>
           {applied && (
             <div className={row}>
               <span className="text-text-2">쿠폰 할인</span>
-              <span data-testid="discount" className="text-primary">
+              <span data-testid="discount" id="discount" className="qa-discount text-primary">
                 -{won(discount)}
               </span>
             </div>
           )}
           <div className={`${row} font-semibold`}>
             <span>합계</span>
-            <span data-testid="total">{won(total)}</span>
+            <span data-testid="total" id="total" className="qa-total">{won(total)}</span>
           </div>
         </div>
 
         <button
-          data-testid="checkout-btn"
+          data-testid="checkout-btn" id="checkout-btn"
           disabled={subtotal === 0}
-          className="bg-primary rounded-button h-button-md inline-flex items-center justify-center px-4 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          className="qa-checkout-btn bg-primary rounded-button h-button-md inline-flex items-center justify-center px-4 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           결제하기
         </button>

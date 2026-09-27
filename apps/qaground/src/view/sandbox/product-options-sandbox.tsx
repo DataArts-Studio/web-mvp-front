@@ -49,10 +49,10 @@ export const ProductOptionsSandbox = () => {
           {SIZES.map((s) => (
             <button
               key={s}
-              data-testid={`size-${s.toLowerCase()}`}
+              data-testid={`size-${s.toLowerCase()}`} id={`size-${s.toLowerCase()}`}
               type="button"
               onClick={() => setSize(s)}
-              className={optionBtn(size === s)}
+              className={`${optionBtn(size === s)} qa-size-${s.toLowerCase()}`}
             >
               {s}
             </button>
@@ -64,40 +64,40 @@ export const ProductOptionsSandbox = () => {
           {COLORS.map((c) => (
             <button
               key={c.id}
-              data-testid={`color-${c.id}`}
+              data-testid={`color-${c.id}`} id={`color-${c.id}`}
               type="button"
               onClick={() => setColor(c.id)}
-              className={optionBtn(color === c.id)}
+              className={`${optionBtn(color === c.id)} qa-color-${c.id}`}
             >
               {c.label}
             </button>
           ))}
         </div>
 
-        <p data-testid="selected-summary" className="text-text-3 mb-4 text-xs">
+        <p data-testid="selected-summary" id="selected-summary" className="qa-selected-summary text-text-3 mb-4 text-xs">
           선택: {size || '미선택'} / {colorLabel}
         </p>
 
         {error && (
-          <p data-testid="option-error" role="alert" className="text-system-red mb-3 text-sm">
+          <p data-testid="option-error" id="option-error" role="alert" className="qa-option-error text-system-red mb-3 text-sm">
             {error}
           </p>
         )}
 
         {added && (
           <p
-            data-testid="added-confirm"
-            className="border-primary/30 bg-primary/10 text-primary mb-3 rounded-xl border px-4 py-3 text-sm font-medium"
+            data-testid="added-confirm" id="added-confirm"
+            className="qa-added-confirm border-primary/30 bg-primary/10 text-primary mb-3 rounded-xl border px-4 py-3 text-sm font-medium"
           >
             장바구니에 담았습니다.
           </p>
         )}
 
         <button
-          data-testid="add-to-cart"
+          data-testid="add-to-cart" id="add-to-cart"
           type="button"
           onClick={addToCart}
-          className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 inline-flex w-full items-center justify-center px-4 text-sm font-medium text-white transition-colors"
+          className="qa-add-to-cart bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 inline-flex w-full items-center justify-center px-4 text-sm font-medium text-white transition-colors"
         >
           담기
         </button>

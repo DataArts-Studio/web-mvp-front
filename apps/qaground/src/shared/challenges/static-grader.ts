@@ -1,4 +1,4 @@
-import type { Challenge } from './registry';
+import type { Challenge, ChallengeCoverageSignal } from './registry';
 
 /**
  * 임시 정적 채점기 (러너 미연결 구간 한정).
@@ -25,6 +25,10 @@ export interface GradeResult {
   covered?: number;
   /** 미작성 추정 요구사항 텍스트 (부분 통과 시 빨간 fail 로 표시). */
   uncovered?: string[];
+  /** Required coverage detail for every static-graded challenge. */
+  requiredCoverage?: { total: number; covered: number; missing: string[] };
+  /** Optional recommended coverage detected from the submitted code. */
+  bonusCoverage?: { total: number; covered: number; detected: string[]; suggestions: string[] };
 }
 
 interface TestBlock {
@@ -82,6 +86,8 @@ const INTERACTION_RE =
 const SEMANTIC_LOCATOR_RE = /getBy(Role|Label|Text|Placeholder|Title|AltText)\s*\(/;
 const ASSERTION_RE = /\bexpect\s*\(/g;
 const AWAITED_ASSERTION_RE = /\bawait\s+expect\s*\(/;
+const POM_METHOD_CALL_RE = /\bawait\s+[A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*\s*\(/;
+const POM_ASSERTION_METHOD_CALL_RE = /a^/g;
 const ASYNC_ACTION_RE =
   /\bpage\.goto\s*\(|\.(?:click|fill|check|uncheck|selectOption|press|type|setInputFiles)\s*\(/;
 const TEST_CALL_RE = /\b(?:test|it)\s*\(/g;
@@ -187,6 +193,7 @@ function collectFunctionRanges(src: string): ParsedFunctionRange[] {
     /\b(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g,
     /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?function\b[^{}]*\{/g,
     /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*\{/g,
+    /\b(?:public\s+|private\s+|protected\s+)?(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/g,
   ];
 
   const addRange = (name: string, start: number, bodyStart: number) => {
@@ -272,12 +279,13 @@ function extractTestBlocks(src: string): TestBlock[] {
 }
 
 function callsHelper(body: string, helperName: string): boolean {
-  return new RegExp(`\\b${escapeRegExp(helperName)}\\s*\\(`).test(body);
+  const name = escapeRegExp(helperName);
+  return new RegExp(String.raw`(?:\b|\.)${name}\s*\(`).test(body);
 }
 
 function callsHelperSafely(body: string, helperName: string): boolean {
   const name = escapeRegExp(helperName);
-  return new RegExp(String.raw`\b(?:await|return)\s+${name}\s*\(`).test(body);
+  return new RegExp(String.raw`\b(?:await|return(?:\s+await)?)\s+(?:[A-Za-z_$][\w$]*\.)?${name}\s*\(`).test(body);
 }
 
 function helperRequiresAwait(helper: ParsedFunction): boolean {
@@ -312,6 +320,10 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
     return { failures, blocks };
   }
 
+  if (/\bpage\.locators\s*\(/.test(stripped)) {
+    failures.push('page.locators(...) is not a Playwright API. Use page.locator(...) instead.');
+  }
+
   blocks.forEach((block) => {
     const title = block.title.trim() || '이름 없는 테스트';
     const body = block.body.trim();
@@ -323,11 +335,14 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
     const calledHelpers = helpers.filter((helper) =>
       callsHelperSafely(executableBody, helper.name)
     );
+    const pomAssertionCalls = countMatches(executableBody, POM_ASSERTION_METHOD_CALL_RE);
     const assertions =
       countMatches(executableBody, ASSERTION_RE) +
-      calledHelpers.reduce((sum, helper) => sum + countMatches(helper.body, ASSERTION_RE), 0);
+      calledHelpers.reduce((sum, helper) => sum + countMatches(helper.body, ASSERTION_RE), 0) +
+      pomAssertionCalls;
     const hasInteraction =
       INTERACTION_RE.test(executableBody) ||
+      POM_METHOD_CALL_RE.test(executableBody) ||
       hooks.some((hook) => INTERACTION_RE.test(hook)) ||
       calledHelpers.some((helper) => INTERACTION_RE.test(helper.body));
 
@@ -355,6 +370,7 @@ function validateTestBlocks(stripped: string): { failures: string[]; blocks: Tes
       failures.push(`"${title}" 테스트에 expect(...) 단언이 없습니다.`);
     } else if (
       !AWAITED_ASSERTION_RE.test(executableBody) &&
+      pomAssertionCalls < 1 &&
       !calledHelpers.some((helper) => AWAITED_ASSERTION_RE.test(helper.body))
     ) {
       failures.push(`"${title}" 테스트의 Playwright 단언은 await expect(...) 형태로 작성하세요.`);
@@ -388,6 +404,112 @@ export function validateAutomationSubmissionShape(code: string): GradeResult | n
   return null;
 }
 
+function getSelectorReferenceGroups(challenge: Challenge): string[][] {
+  return (challenge.selectors ?? []).map((selector) =>
+    Array.from(new Set([selector.testid, ...(selector.options ?? []).map((option) => option.value)]))
+  );
+}
+
+function countCoveredSelectorGroups(code: string, groups: string[][]): number {
+  return groups.filter((values) =>
+    values.some((value) => {
+      const escaped = escapeRegExp(value);
+      return new RegExp(String.raw`['"\`][^'"\`]*${escaped}[^'"\`]*['"\`]`).test(code);
+    })
+  ).length;
+}
+
+function flattenSelectorReferenceGroups(groups: string[][]): string[] {
+  return Array.from(new Set(groups.flat()));
+}
+
+function buildRequiredCoverageSignals(challenge: Challenge): ChallengeCoverageSignal[] {
+  return challenge.coverage?.required?.length
+    ? challenge.coverage.required
+    : (challenge.requirement ?? []).map((label, index) => ({ id: `req-${index + 1}`, label }));
+}
+
+function buildBonusCoverageSignals(challenge: Challenge): ChallengeCoverageSignal[] {
+  if (challenge.coverage?.bonus?.length) return challenge.coverage.bonus;
+
+  const common: ChallengeCoverageSignal[] = [
+    {
+      id: 'negative-path',
+      label: 'Negative or exception path coverage',
+      patterns: ['not\\.toBeVisible|toBeHidden|toHaveCount\\(0\\)|error|fail|invalid|wrong|404|401|400'],
+    },
+    {
+      id: 'state-reset',
+      label: 'State reset after transition',
+      patterns: ['not\\.toBeVisible|toBeHidden|toHaveCount\\(0\\)|clear|reset|again|retry'],
+    },
+    {
+      id: 'data-driven-boundary',
+      label: 'Boundary or data-driven coverage',
+      patterns: ['for\\s*\\(|forEach\\s*\\(|it\\.each|test\\.describe|describe\\s*\\(|empty|blank|boundary|trim|long'],
+    },
+  ];
+
+  if (challenge.category === 'pom') {
+    return [
+      ...common,
+      { id: 'fixture-reuse', label: 'Fixture or beforeEach reuse', patterns: ['test\\.beforeEach|test\\.extend|base\\.extend'] },
+      { id: 'multiple-page-objects', label: 'Multiple Page Objects by responsibility', patterns: ['class\\s+\\w+Page\\b[\\s\\S]*class\\s+\\w+Page\\b'] },
+    ];
+  }
+
+  if (challenge.track === 'api') {
+    return [
+      ...common,
+      { id: 'schema-assertion', label: 'Response schema or field type assertions', patterns: ['typeof|Array\\.isArray|toHaveProperty|schema|type'] },
+      { id: 'auth-boundary', label: 'Authentication boundary coverage', patterns: ['Authorization|Bearer|token|401|unauthorized'] },
+    ];
+  }
+
+  if (challenge.track === 'manual') {
+    return [
+      ...common,
+      { id: 'priority-risk', label: 'Priority and risk rationale', patterns: ['P0|P1|P2|priority|risk|impact|severity'] },
+    ];
+  }
+
+  return common;
+}
+
+function signalCovered(code: string, signal: ChallengeCoverageSignal): boolean {
+  const parts = [...(signal.patterns ?? []), ...(signal.selectors ?? []), ...(signal.literals ?? [])];
+  if (parts.length === 0) return false;
+  return parts.some((pattern) => new RegExp(pattern, 'i').test(code));
+}
+
+function evaluateBonusCoverage(challenge: Challenge, code: string) {
+  const signals = buildBonusCoverageSignals(challenge);
+  const detected = signals.filter((signal) => signalCovered(code, signal)).map((signal) => signal.label);
+  const suggestions = signals
+    .filter((signal) => !detected.includes(signal.label))
+    .slice(0, 3)
+    .map((signal) => signal.label);
+
+  return { total: signals.length, covered: detected.length, detected, suggestions };
+}
+
+export function validateChallengeStaticChecks(
+  challenge: Challenge,
+  code: string
+): GradeResult | null {
+  const checks = challenge.staticChecks ?? [];
+  if (checks.length === 0) return null;
+
+  const startedAt = Date.now();
+  const stripped = stripComments(code);
+  const failures = checks
+    .filter((check) => !new RegExp(check.pattern, check.flags).test(stripped))
+    .map((check) => `${check.label}: ${check.message}`);
+
+  if (failures.length > 0) return buildFailedResult(startedAt, failures);
+  return null;
+}
+
 /**
  * 제출 코드를 정적으로 채점한다. 챌린지의 셀렉터·요구사항을 기준 삼는다.
  */
@@ -403,15 +525,23 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
 
   // 대상 요소를 안정적으로 선택했는지 (셀렉터 있는 챌린지 한정).
   // testid 직접 참조 OR 접근성 기반 로케이터(getByRole/getByLabel 등) 둘 다 인정한다.
-  const selectorIds = (challenge.selectors ?? []).map((s) => s.testid);
-  const usedTestids = selectorIds.filter((id) =>
-    new RegExp(`['"\`]${escapeRegExp(id)}['"\`]`).test(stripped)
-  ).length;
+  const selectorGroups = getSelectorReferenceGroups(challenge);
+  const selectorValues = flattenSelectorReferenceGroups(selectorGroups);
+  const coveredSelectorGroups = countCoveredSelectorGroups(stripped, selectorGroups);
   const usesSemanticLocator = SEMANTIC_LOCATOR_RE.test(stripped);
-  if (selectorIds.length > 0 && usedTestids < 1 && !usesSemanticLocator) {
+  if (
+    selectorGroups.length > 0 &&
+    coveredSelectorGroups < selectorGroups.length &&
+    !usesSemanticLocator
+  ) {
     failures.push(
-      `대상 요소를 안정적으로 선택하지 않았습니다. getByTestId('${selectorIds[0]}') 같은 testid 나 getByRole/getByLabel 등 접근성 기반 셀렉터를 사용하세요. 참고 testid: ${selectorIds.join(', ')}`
+      `Use stable selectors for every required element. Covered selectors: ${coveredSelectorGroups}/${selectorGroups.length}. Reference values: ${selectorValues.join(', ')}`
     );
+  }
+
+  const staticCheckError = validateChallengeStaticChecks(challenge, code);
+  if (staticCheckError?.errorMessage) {
+    failures.push(staticCheckError.errorMessage.replace(/^- /, ''));
   }
 
   const durationMs = Date.now() - startedAt;
@@ -420,20 +550,24 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
 
   // 요구사항 대비 커버리지로 통과/부분을 가른다. 정적 채점은 의미 매핑을 못 하므로
   // "작성한 테스트 수"와 "단언 수" 중 큰 값을 커버리지 추정치로 쓴다.
-  const reqCount = challenge.requirement?.length ?? 0;
+  const requiredSignals = buildRequiredCoverageSignals(challenge);
+  const reqCount = requiredSignals.length;
   const testCount = blocks.length;
-  const assertions = countMatches(stripped, ASSERTION_RE);
-  const coverage = Math.max(testCount, assertions);
+  const assertions =
+    countMatches(stripped, ASSERTION_RE) + countMatches(stripped, POM_ASSERTION_METHOD_CALL_RE);
+  const structuralCoverage = (challenge.staticChecks?.length ?? 0) > 0 ? reqCount : 0;
+  const coverage = Math.min(reqCount, Math.max(testCount, assertions, structuralCoverage));
+  const missingRequired = requiredSignals.slice(coverage).map((signal) => signal.label);
+  const bonusCoverage = evaluateBonusCoverage(challenge, stripped);
 
   const selectorSummary =
-    selectorIds.length === 0
+    selectorGroups.length === 0
       ? ''
-      : usedTestids > 0
-        ? `, 셀렉터 ${usedTestids}/${selectorIds.length}개`
+      : coveredSelectorGroups > 0
+        ? `, selectors ${coveredSelectorGroups}/${selectorGroups.length}`
         : usesSemanticLocator
-          ? ', 접근성 기반 셀렉터'
+          ? ', semantic locator'
           : '';
-
   // 요구사항을 다 다루지 않은 부분 작성: 통과로 인정하지 않는다.
   if (reqCount > 0 && coverage < reqCount) {
     return {
@@ -443,7 +577,9 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
       requirementCount: reqCount,
       covered: coverage,
       // 작성 수를 넘어서는 요구사항을 미작성(추정)으로 본다.
-      uncovered: (challenge.requirement ?? []).slice(coverage),
+      uncovered: missingRequired,
+      requiredCoverage: { total: reqCount, covered: coverage, missing: missingRequired },
+      bonusCoverage,
       errorMessage: [
         `부분 작성입니다 (작성한 테스트 ${testCount}개 · 단언 ${assertions}개).`,
         `요구사항 ${reqCount}개를 각각 검증하는 테스트를 모두 작성해야 통과입니다.`,
@@ -462,6 +598,8 @@ export function gradeSubmissionStatically(challenge: Challenge, code: string): G
     requirementCount: reqCount,
     covered: coverage,
     uncovered: [],
+    requiredCoverage: { total: reqCount, covered: coverage, missing: [] },
+    bonusCoverage,
     errorMessage: note,
   };
 }

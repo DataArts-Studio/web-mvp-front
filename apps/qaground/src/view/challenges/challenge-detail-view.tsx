@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { type CSSProperties, type KeyboardEvent, type PointerEvent, useRef, useState } from 'react';
 
@@ -9,6 +9,8 @@ import {
   CHALLENGES,
   type Challenge,
   type ChallengeDifficulty,
+  type ChallengeSelector,
+  type ChallengeSelectorOption,
   DIFFICULTY_LABEL,
   type HttpMethod,
   TRACK_LABEL,
@@ -33,6 +35,14 @@ const DIFFICULTY_BADGE: Record<ChallengeDifficulty, string> = {
   medium: 'bg-[#d29922]/12 text-[#d29922]',
   hard: 'bg-[#f85149]/12 text-[#f85149]',
 };
+
+function getSelectorOptions(selector: ChallengeSelector): ChallengeSelectorOption[] {
+  return selector.options ?? [{ type: selector.selectorType ?? 'data-testid', value: selector.testid }];
+}
+
+function selectorOptionKey(option: ChallengeSelectorOption) {
+  return `${option.type}:${option.value}`;
+}
 
 function ChallengeMeta({ challenge }: { challenge: Challenge }) {
   return (
@@ -114,6 +124,85 @@ function ChallengeLearningMeta({ challenge }: { challenge: Challenge }) {
     </div>
   );
 }
+function TestDataList({ challenge }: { challenge: Challenge }) {
+  if (!challenge.testData?.length) return null;
+
+  return (
+    <div className="border-line-2 bg-bg-2 mt-6 border p-3">
+      <h3 className="text-text-3 text-xs font-semibold tracking-wide uppercase">Test data</h3>
+      <div className="mt-3 flex flex-col gap-2">
+        {challenge.testData.map((item) => (
+          <div key={`${item.label}-${item.value}`} className="flex min-w-0 items-center gap-2">
+            <span className="text-text-2 w-24 shrink-0 text-xs">{item.label}</span>
+            <code className="bg-bg-3 text-primary min-w-0 truncate px-1.5 py-0.5 font-mono text-[11px]">
+              {item.value}
+            </code>
+            {item.desc && <span className="text-text-3 min-w-0 truncate text-xs">{item.desc}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SelectorReference({ selectors }: { selectors: ChallengeSelector[] }) {
+  const [selectedByName, setSelectedByName] = useState<Record<string, string>>({});
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-text-3 text-xs font-semibold tracking-wide uppercase">Selector reference</h3>
+      <p className="text-text-3 mt-1.5 text-xs leading-relaxed">
+        셀렉터 타입을 선택하면 같은 요소의 data-testid, id, class 값을 확인할 수 있습니다.
+        선택한 값은 <code className="text-primary font-mono">page.locator(...)</code>, 접근성 locator,
+        또는 Page Object 필드에서 사용하세요.
+      </p>
+      <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden border">
+        {selectors.map((selector) => {
+          const options = getSelectorOptions(selector);
+          const selectedKey = selectedByName[selector.name] ?? selectorOptionKey(options[0]);
+          const selected = options.find((option) => selectorOptionKey(option) === selectedKey) ?? options[0];
+
+          return (
+            <div
+              key={`${selector.name}-${selector.testid}`}
+              className="border-line-2 min-w-0 border-b px-3 py-2.5 last:border-b-0"
+            >
+              <div className="grid min-w-0 grid-cols-[6rem_7.5rem_1fr] items-center gap-2">
+                <span className="text-text-1 min-w-0 truncate text-xs font-medium">
+                  {selector.name}
+                </span>
+                <select
+                  value={selectedKey}
+                  onChange={(event) =>
+                    setSelectedByName((current) => ({
+                      ...current,
+                      [selector.name]: event.target.value,
+                    }))
+                  }
+                  className="border-line-3 bg-bg-1 text-text-2 h-7 min-w-0 border px-2 font-mono text-[11px] outline-none focus:border-primary"
+                  aria-label={`${selector.name} selector type`}
+                >
+                  {options.map((option) => (
+                    <option key={selectorOptionKey(option)} value={selectorOptionKey(option)}>
+                      {option.type}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex min-w-0 items-center gap-2">
+                  <code className="bg-bg-3 text-primary min-w-0 truncate px-1.5 py-0.5 font-mono text-[11px]">
+                    {selected.value}
+                  </code>
+                  <span className="text-text-3 min-w-0 truncate text-xs">{selector.desc}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function RequirementList({ challenge }: { challenge: Challenge }) {
   return (
     <>
@@ -296,40 +385,14 @@ export const ChallengeDetailView = ({ challenge }: { challenge: Challenge }) => 
               {challenge.summary}
             </p>
             <ChallengeLearningMeta challenge={challenge} />
+            <TestDataList challenge={challenge} />
             <h2 className="mt-6 text-base font-semibold">요구사항</h2>
             <ol className="text-text-2 mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed">
               {challenge.requirement.map((r) => (
                 <li key={r}>{r}</li>
               ))}
             </ol>
-            {!!challenge.selectors?.length && (
-              <div className="mt-6">
-                <h3 className="text-text-3 text-xs font-semibold tracking-wide uppercase">
-                  참고 셀렉터
-                </h3>
-                <p className="text-text-3 mt-1.5 text-xs leading-relaxed">
-                  테스트 코드에서 화면 요소를 안정적으로 찾기 위한 식별자입니다. 문구가 바뀌어도
-                  같은 요소를 선택할 수 있으며, 화면에 직접 보이는 문구보다 안정적인 테스트 기준으로
-                  사용합니다.
-                </p>
-                <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden border">
-                  {challenge.selectors.map((s) => (
-                    <div
-                      key={s.testid}
-                      className="border-line-2 min-w-0 border-b px-3 py-2.5 last:border-b-0"
-                    >
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="text-text-1 shrink-0 text-xs font-medium">{s.name}</span>
-                        <code className="bg-bg-3 text-primary shrink-0 px-1.5 py-0.5 font-mono text-[11px]">
-                          {s.testid}
-                        </code>
-                        <span className="text-text-3 min-w-0 truncate text-xs">{s.desc}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {!!challenge.selectors?.length && <SelectorReference selectors={challenge.selectors} />}
           </div>
           {resizeHandle}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

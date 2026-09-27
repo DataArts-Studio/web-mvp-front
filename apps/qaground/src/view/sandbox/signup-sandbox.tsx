@@ -40,13 +40,14 @@ export const SignupSandbox = () => {
       <span className="text-text-2 text-sm">{label}</span>
       <input
         data-testid={testid}
+        id={testid}
         type={type}
         value={value}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-        className="border-line-3 bg-bg-3 rounded-button text-text-1 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none"
+        className={`qa-${testid} border-line-3 bg-bg-3 rounded-button text-text-1 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none`}
       />
       {error && (
-        <span data-testid={errorTestid} role="alert" className="text-system-red text-xs">
+        <span data-testid={errorTestid} id={errorTestid} role="alert" className={`qa-${errorTestid} text-system-red text-xs`}>
           {error}
         </span>
       )}
@@ -60,8 +61,9 @@ export const SignupSandbox = () => {
         {success ? (
           <p
             data-testid="signup-success"
+            id="signup-success"
             role="status"
-            className="border-primary/30 bg-primary/10 text-primary rounded-xl border px-4 py-3 text-sm font-medium"
+            className="qa-signup-success border-primary/30 bg-primary/10 text-primary rounded-xl border px-4 py-3 text-sm font-medium"
           >
             가입이 완료되었습니다.
           </p>
@@ -88,8 +90,9 @@ export const SignupSandbox = () => {
             )}
             <button
               data-testid="signup-submit"
+              id="signup-submit"
               type="submit"
-              className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-1 inline-flex items-center justify-center px-4 text-sm font-medium text-white transition-colors"
+              className="qa-signup-submit bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-1 inline-flex items-center justify-center px-4 text-sm font-medium text-white transition-colors"
             >
               가입하기
             </button>

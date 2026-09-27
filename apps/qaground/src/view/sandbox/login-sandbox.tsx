@@ -43,8 +43,9 @@ export const LoginSandbox = () => {
         {result?.type === 'success' ? (
           <p
             data-testid="login-success"
+            id="login-success"
             role="status"
-            className="border-primary/30 bg-primary/10 text-primary rounded-xl border px-4 py-3 text-sm font-medium"
+            className="qa-login-success border-primary/30 bg-primary/10 text-primary rounded-xl border px-4 py-3 text-sm font-medium"
           >
             환영합니다, {VALID_USERNAME}님. 로그인에 성공했습니다.
           </p>
@@ -54,35 +55,38 @@ export const LoginSandbox = () => {
               <span className="text-text-2 text-sm">아이디</span>
               <input
                 data-testid="username"
+                id="username"
                 name="username"
                 type="text"
                 value={username}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                className="border-line-3 bg-bg-3 rounded-button text-text-1 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none"
+                className="qa-username border-line-3 bg-bg-3 rounded-button text-text-1 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none"
               />
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="text-text-2 text-sm">비밀번호</span>
               <input
                 data-testid="password"
+                id="password"
                 name="password"
                 type="password"
                 value={password}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                className="border-line-3 bg-bg-3 rounded-button text-text-1 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none"
+                className="qa-password border-line-3 bg-bg-3 rounded-button text-text-1 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none"
               />
             </label>
 
             {result?.type === 'error' && (
-              <p data-testid="login-error" role="alert" className="text-system-red text-sm">
+              <p data-testid="login-error" id="login-error" role="alert" className="qa-login-error text-system-red text-sm">
                 {result.message}
               </p>
             )}
 
             <button
               data-testid="login-submit"
+              id="login-submit"
               type="submit"
-              className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-1 inline-flex items-center justify-center px-4 text-sm font-medium text-white transition-colors"
+              className="qa-login-submit bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-1 inline-flex items-center justify-center px-4 text-sm font-medium text-white transition-colors"
             >
               로그인
             </button>

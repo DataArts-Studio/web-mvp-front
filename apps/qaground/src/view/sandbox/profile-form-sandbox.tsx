@@ -47,14 +47,15 @@ export const ProfileFormSandbox = () => {
       <span className="text-text-2 text-sm">{label}</span>
       <input
         data-testid={testid}
+        id={testid}
         type="text"
         value={value}
         placeholder={placeholder}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-        className="border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none"
+        className={`qa-${testid} border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none`}
       />
       {error && (
-        <span data-testid={errorTestid} role="alert" className="text-system-red text-xs">
+        <span data-testid={errorTestid} id={errorTestid} role="alert" className={`qa-${errorTestid} text-system-red text-xs`}>
           {error}
         </span>
       )}
@@ -68,8 +69,9 @@ export const ProfileFormSandbox = () => {
         {success ? (
           <p
             data-testid="profile-success"
+            id="profile-success"
             role="status"
-            className="border-primary/30 bg-primary/10 text-primary rounded-xl border px-4 py-3 text-sm font-medium"
+            className="qa-profile-success border-primary/30 bg-primary/10 text-primary rounded-xl border px-4 py-3 text-sm font-medium"
           >
             프로필이 등록되었습니다.
           </p>
@@ -89,22 +91,24 @@ export const ProfileFormSandbox = () => {
             <label className="flex items-center gap-2">
               <input
                 data-testid="terms"
+                id="terms"
                 type="checkbox"
                 checked={terms}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTerms(e.target.checked)}
-                className="accent-primary h-4 w-4"
+                className="qa-terms accent-primary h-4 w-4"
               />
               <span className="text-text-2 text-sm">이용약관에 동의합니다.</span>
             </label>
             {errors.terms && (
-              <span data-testid="terms-error" role="alert" className="text-system-red text-xs">
+              <span data-testid="terms-error" id="terms-error" role="alert" className="qa-terms-error text-system-red text-xs">
                 {errors.terms}
               </span>
             )}
             <button
               data-testid="profile-submit"
+              id="profile-submit"
               type="submit"
-              className="bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-1 inline-flex items-center justify-center px-4 text-sm font-medium text-white transition-colors"
+              className="qa-profile-submit bg-primary rounded-button h-button-md hover:bg-primary/90 active:bg-primary/80 mt-1 inline-flex items-center justify-center px-4 text-sm font-medium text-white transition-colors"
             >
               등록하기
             </button>
