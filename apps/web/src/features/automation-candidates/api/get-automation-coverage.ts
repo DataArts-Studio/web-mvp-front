@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases, testSuites } from '@testea/db';
@@ -17,6 +18,8 @@ export async function getAutomationCoverage(
   projectId: string
 ): Promise<ActionResult<AutomationCoverageResult>> {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // 스위트별 + 미배정(null) 분포를 한 번에 집계.

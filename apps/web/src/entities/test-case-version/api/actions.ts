@@ -4,59 +4,17 @@ import { requireProjectAccess } from '@/access/lib/require-access';
 import { toTestCase } from '@/entities/test-case/model/mapper';
 import type { TestCase } from '@/entities/test-case/model/types';
 import type { TestCaseDTO } from '@/entities/test-case/model/types';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseVersions, testCases } from '@testea/db';
 import { and, desc, eq, sql } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 
 import { computeFieldDiffs, detectChangedFields, generateChangeSummary } from '../model/diff-utils';
 import { toTestCaseVersion, toTestCaseVersionSummary } from '../model/mapper';
 import type { TestCaseVersionDTO } from '../model/schema';
-import type { ChangeType, TestCaseVersion, VersionCompareResult } from '../model/types';
-
-type SnapshotData = {
-  name: string;
-  test_type?: string | null;
-  tags?: string[] | null;
-  pre_condition?: string | null;
-  steps?: string | null;
-  expected_result?: string | null;
-};
-
-export async function createVersionSnapshot(
-  testCaseId: string,
-  snapshotData: SnapshotData,
-  changeType: ChangeType,
-  changedFields: string[],
-  changeSummary: string
-): Promise<void> {
-  const db = getDatabase();
-  const id = uuidv7();
-
-  const [maxResult] = await db
-    .select({ max: sql<number>`COALESCE(MAX(${testCaseVersions.version_number}), 0)` })
-    .from(testCaseVersions)
-    .where(eq(testCaseVersions.test_case_id, testCaseId));
-
-  const nextVersion = (maxResult?.max ?? 0) + 1;
-
-  await db.insert(testCaseVersions).values({
-    id,
-    test_case_id: testCaseId,
-    version_number: nextVersion,
-    name: snapshotData.name,
-    test_type: snapshotData.test_type ?? null,
-    tags: snapshotData.tags ?? [],
-    pre_condition: snapshotData.pre_condition ?? null,
-    steps: snapshotData.steps ?? null,
-    expected_result: snapshotData.expected_result ?? null,
-    change_summary: changeSummary,
-    change_type: changeType,
-    changed_fields: changedFields,
-    created_at: new Date(),
-  });
-}
+import type { TestCaseVersion, VersionCompareResult } from '../model/types';
+import { createVersionSnapshot } from './create-version-snapshot';
 
 export async function getVersionsByTestCaseId(
   testCaseId: string,
@@ -281,6 +239,8 @@ export async function rollbackToVersion(
       if (!updated) {
         return { success: false, errors: { _version: ['복원 도중 오류가 발생했습니다.'] } };
       }
+      // 케이스는 이미 바뀌었으므로, 이어지는 스냅샷 기록이 실패해도 캐시는 비운다.
+      invalidateCache(INVALIDATE.cases);
 
       // 롤백 버전 스냅샷 생성
       await createVersionSnapshot(

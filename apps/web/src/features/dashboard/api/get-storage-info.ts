@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { LIMITS } from '@/shared/constants/core/limits';
 import type { ActionResult } from '@/shared/types';
 import { getProjectStorageBytes } from '@testea/db';
@@ -12,6 +13,8 @@ export type StorageInfo = {
 
 export async function getStorageInfo(projectId: string): Promise<ActionResult<StorageInfo>> {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const usedBytes = await getProjectStorageBytes(projectId);
     const maxBytes = LIMITS.MAX_STORAGE_BYTES;
     const usedPercent = Math.round((usedBytes / maxBytes) * 1000) / 10;

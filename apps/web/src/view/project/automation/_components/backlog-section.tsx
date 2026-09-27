@@ -38,7 +38,9 @@ export const BacklogSection = ({ backlog, pendingCaseId, onSetStatus }: BacklogS
               <li key={row.caseId} className="border-line-3/40 border-b py-3 last:border-b-0">
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
-                    {row.caseKey && <span className="text-text-4 shrink-0 text-xs">{row.caseKey}</span>}
+                    {row.caseKey && (
+                      <span className="text-text-4 shrink-0 text-xs">{row.caseKey}</span>
+                    )}
                     <span className="text-text-1 truncate text-sm font-medium">{row.name}</span>
                   </div>
                   <div className="text-text-4 mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">

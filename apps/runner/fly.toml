@@ -19,12 +19,12 @@ primary_region = "nrt"
   auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
-  # Playwright runs are heavy and single-worker; keep concurrency conservative
-  # so one machine does not accept more runs than it can isolate cleanly.
+  # 러너는 run 간 격리를 위해 한 번에 하나의 spec 만 실행한다 (server.ts 가 동시 요청을
+  # 503 으로 거부). 프록시도 머신당 1건만 보내도록 맞춘다.
   [http_service.concurrency]
     type = "requests"
     soft_limit = 1
-    hard_limit = 2
+    hard_limit = 1
 
 [http_service.checks]
   [[http_service.checks]]

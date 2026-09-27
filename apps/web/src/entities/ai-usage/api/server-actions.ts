@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { aiUsageLogs, getDatabase } from '@testea/db';
@@ -21,6 +22,8 @@ export const getMonthlyUsage = async (
   projectId: string
 ): Promise<ActionResult<{ used: number; limit: number }>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const startOfMonth = startOfCurrentMonth();
@@ -80,6 +83,8 @@ export const recordUsageAtomic = async (
 ): Promise<ActionResult<UsageGrant>> => {
   const requested = Math.max(0, Math.trunc(requestedCount));
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const startOfMonth = startOfCurrentMonth();
 

@@ -1,6 +1,8 @@
 'use server';
 
+import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -21,6 +23,10 @@ export async function importTestCases(input: {
 
     const hasAccess = await requireProjectAccess(validated.projectId);
     if (!hasAccess) {
+      return { success: false, errors: { _import: ['접근 권한이 없습니다.'] } };
+    }
+    // 대상 스위트가 같은 프로젝트 소속인지 확인한다 (남의 스위트에 케이스 매달기 차단).
+    if (!(await belongsToProject('testSuite', validated.suiteId, validated.projectId))) {
       return { success: false, errors: { _import: ['접근 권한이 없습니다.'] } };
     }
 
@@ -72,6 +78,7 @@ export async function importTestCases(input: {
     // Batch insert
     const result = await db.insert(testCases).values(insertData).returning();
 
+    invalidateCache(INVALIDATE.cases);
     return {
       success: true,
       data: {

@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
@@ -21,6 +22,9 @@ import type {
 export const getTemplatesByProjectId = async (
   projectId: string
 ): Promise<ActionResult<TestCaseTemplate[]>> => {
+  // 빌트인 템플릿은 공용이지만 프로젝트 커스텀 템플릿은 접근 권한이 있어야 볼 수 있다.
+  if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
   let customTemplates: TestCaseTemplate[] = [];
 
   try {
@@ -58,6 +62,8 @@ export const getTemplateById = async (
       }
       return { success: true, data: builtin };
     }
+
+    if (!(await canAccess('template', templateId))) return ACCESS_DENIED;
 
     const db = getDatabase();
     const [row] = await db
@@ -310,6 +316,8 @@ export const incrementTemplateUsage = async (
     if (isBuiltinTemplate(templateId)) {
       return { success: true, data: { id: templateId } };
     }
+
+    if (!(await canAccess('template', templateId))) return ACCESS_DENIED;
 
     const db = getDatabase();
 

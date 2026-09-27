@@ -1,6 +1,1 @@
-export {
-  createProject,
-  getProjects,
-  checkProjectNameDuplicate,
-  hashIdentifier,
-} from './server-action';
+export { createProject, checkProjectNameDuplicate, hashIdentifier } from './server-action';

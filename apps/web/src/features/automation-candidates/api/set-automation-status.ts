@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { automationStatusEnum, getDatabase, testCases } from '@testea/db';
@@ -62,6 +63,7 @@ export async function setAutomationStatus(
       return { success: false, errors: { _general: ['상태 변경에 실패했습니다.'] } };
     }
 
+    invalidateCache(INVALIDATE.cases);
     return {
       success: true,
       data: { caseId: updated.caseId, automationStatus: updated.automationStatus },

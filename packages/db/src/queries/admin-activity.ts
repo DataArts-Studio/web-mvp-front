@@ -69,6 +69,30 @@ export async function countRecentFailedLogins(
   return Number(row?.count ?? 0);
 }
 
+/**
+ * 로그인 시도를 실패로 먼저 기록(예약)하고 id 를 돌려준다. 게이트 락아웃용.
+ *
+ * 개수를 센 뒤에 기록하면 동시에 들어온 요청들이 같은 개수를 보고 모두 통과한다. 먼저 기록한
+ * 다음 세면, 각 요청은 자기 기록까지 포함한 개수를 보므로 임계치 이하로 통과하는 요청 수가
+ * 임계치로 묶인다. 키 검증에 성공하면 releaseFailedLogin 으로 이 기록을 지운다.
+ * 예외를 삼키지 않는다: 기록에 실패하면 호출부가 로그인을 거부해야 한다(fail-closed).
+ */
+export async function reserveFailedLogin(ip: string | null): Promise<string> {
+  const db = getDatabase();
+  const [row] = await db
+    .insert(adminActivityLogs)
+    .values({ action: 'login.failed', ip })
+    .returning({ id: adminActivityLogs.id });
+  if (!row) throw new Error('로그인 시도 기록 실패');
+  return row.id;
+}
+
+/** 키 검증에 성공한 시도의 예약 기록을 지운다. */
+export async function releaseFailedLogin(id: string): Promise<void> {
+  const db = getDatabase();
+  await db.delete(adminActivityLogs).where(eq(adminActivityLogs.id, id));
+}
+
 /** 최신순 활동 로그를 반환한다. */
 export async function listAdminActivity(limit = 100): Promise<AdminActivityLog[]> {
   const db = getDatabase();

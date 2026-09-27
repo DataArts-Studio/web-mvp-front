@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, milestoneTestCases, testCaseRuns, testRuns } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -87,6 +88,7 @@ export async function addMilestonesToRunAction(
       return newCaseIds.length;
     });
 
+    invalidateCache(INVALIDATE.runs);
     return { success: true, addedCount: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'addMilestonesToRunAction' } });

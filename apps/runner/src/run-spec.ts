@@ -1,8 +1,16 @@
 import { spawn } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import {
+  SANDBOX_GID,
+  SANDBOX_UID,
+  handOverToSandbox,
+  isolationAvailable,
+  killSandboxProcesses,
+} from './sandbox.js';
 
 /**
  * 순수 Playwright 실행기. DB 에 접근하지 않는다.
@@ -59,13 +67,20 @@ const ALLOWED_CHILD_ENV_KEYS = [
   'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD',
 ];
 
-function buildChildEnv(): NodeJS.ProcessEnv {
+function buildChildEnv(runDir: string): NodeJS.ProcessEnv {
   // 컨테이너 내장 브라우저 경로 재사용 (베이스 이미지 ms-playwright).
   const env: NodeJS.ProcessEnv = { CI: '1' };
   for (const key of ALLOWED_CHILD_ENV_KEYS) {
     const value = process.env[key];
     if (value !== undefined) env[key] = value;
   }
+  // spec 의 HOME/TMPDIR 를 요청별 디렉터리로 고정한다. 임의 코드가 공유 임시 경로
+  // (예: /tmp)에 쓰거나 거기서 다른 run 의 산출물을 줍는 표면을 줄인다. 이 디렉터리는
+  // 실행 종료 후 rm 으로 회수된다.
+  env.HOME = runDir;
+  env.TMPDIR = runDir;
+  env.TEMP = runDir;
+  env.TMP = runDir;
   return env;
 }
 
@@ -89,20 +104,28 @@ function resolvePlaywrightCli(): string {
 async function writeRunFiles(
   dir: string,
   input: RunSpecInput
-): Promise<{ specPath: string; configPath: string; reportPath: string }> {
+): Promise<{ configPath: string; reportPath: string; inputPaths: string[] }> {
   const specPath = join(dir, 'run.spec.ts');
   const configPath = join(dir, 'playwright.config.ts');
   const reportPath = join(dir, 'report.json');
   const storageStatePath = join(dir, 'storage-state.json');
 
   await writeFile(specPath, input.spec, 'utf8');
+  const inputPaths = [specPath];
 
   const useEntries: string[] = [];
   if (input.baseUrl) {
     useEntries.push(`baseURL: ${JSON.stringify(input.baseUrl)}`);
   }
   if (input.storageState !== undefined && input.storageState !== null) {
-    await writeFile(storageStatePath, JSON.stringify(input.storageState), 'utf8');
+    // storageState 는 대상 사이트의 복호화된 인증쿠키를 담을 수 있다. 소유자만 읽도록
+    // 0600 으로 기록한다. run 간 격리의 본 수단은 단일 실행 + 잔여 프로세스 종료이고,
+    // 이 권한은 컨테이너 안 다른 사용자에 대한 보조 방어다.
+    await writeFile(storageStatePath, JSON.stringify(input.storageState), {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
+    inputPaths.push(storageStatePath);
     useEntries.push(`storageState: ${JSON.stringify(storageStatePath)}`);
   }
   // chromium 만 사용 (베이스 이미지 내장 브라우저 재사용, 추가 다운로드 최소화).
@@ -113,6 +136,9 @@ async function writeRunFiles(
 export default defineConfig({
   testDir: ${JSON.stringify(dir)},
   testMatch: ${JSON.stringify('run.spec.ts')},
+  // 산출물(trace·스크린샷)도 run 디렉터리 안에 둔다. 기본값은 package.json 이 있는
+  // /app 기준이라, root 소유인 앱 디렉터리에 spec uid 가 쓰려다 실패한다.
+  outputDir: ${JSON.stringify(join(dir, 'test-results'))},
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -123,8 +149,9 @@ export default defineConfig({
 });
 `;
   await writeFile(configPath, config, 'utf8');
+  inputPaths.push(configPath);
 
-  return { specPath, configPath, reportPath };
+  return { configPath, reportPath, inputPaths };
 }
 
 /** Playwright 에러 메시지의 ANSI 색상 코드를 제거한다 (Testea 기록용 평문). */
@@ -180,10 +207,18 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
   const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const startedAt = Date.now();
   await mkdir(RUNS_ROOT, { recursive: true });
+  // 상위 디렉터리는 통과(x)만 허용하고 목록 조회(r)는 막는다. spec 은 자기 run
+  // 디렉터리로 들어갈 수는 있지만 다른 run 디렉터리 이름을 열거할 수 없다.
+  await chmod(RUNS_ROOT, 0o711);
   const dir = await mkdtemp(join(RUNS_ROOT, 'run-'));
+  // 요청별 디렉터리를 소유자 전용(0700)으로 고정한다. mkdtemp 가 기본 0700 이지만
+  // umask 영향 없이 명시적으로 보장한다 (storage-state.json 등 민감 산출물 보호).
+  await chmod(dir, 0o700);
 
   try {
-    const { configPath, reportPath } = await writeRunFiles(dir, input);
+    const { configPath, reportPath, inputPaths } = await writeRunFiles(dir, input);
+    // run 디렉터리와 입력 파일만 spec uid 에 넘긴다. 앱 파일은 root 소유로 남는다.
+    await handOverToSandbox([dir, ...inputPaths]);
     const cli = resolvePlaywrightCli();
 
     await new Promise<void>((resolve) => {
@@ -193,11 +228,14 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
         stdio: 'ignore',
         // 임의 코드(spec)에 전체 env 를 상속하지 않는다. RUNNER_SHARED_SECRET 등
         // 시크릿 유출 방지를 위해 Playwright 실행에 필요한 키만 allowlist 로 전달한다.
-        env: buildChildEnv(),
+        env: buildChildEnv(dir),
         // 자체 프로세스 그룹으로 띄운다. 타임아웃 강제 종료 시 @playwright/test 가
         // 띄운 Chromium 손자 프로세스까지 그룹 단위로 회수하기 위함이다. detached 는
         // unref 가 아니므로 부모는 아래 close 까지 그대로 대기한다. (러너는 Linux 컨테이너 전제)
         detached: true,
+        // 서버가 root 면 spec 을 비특권 uid 로 강등해 실행한다. 서버와 uid 가 달라야
+        // spec 이 서버의 /proc environ(시크릿)을 읽거나 앱 파일을 변조하지 못한다.
+        ...(isolationAvailable() ? { uid: SANDBOX_UID, gid: SANDBOX_GID } : {}),
       });
 
       // 직접 자식(node CLI)만 죽이면 Chromium 손자 프로세스가 고아로 남아
@@ -242,6 +280,8 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
 
     return parseReport(raw);
   } finally {
+    // 프로세스 그룹을 빠져나간(setsid) 백그라운드 프로세스까지 회수한 뒤 디렉터리를 지운다.
+    await killSandboxProcesses().catch(() => {});
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
 }
