@@ -1,66 +1,72 @@
-/**
- * 대상 URL SSRF 가드 (방어심화).
- *
- * 러너는 격리 컨테이너 전제지만, baseUrl/url 로 내부망·메타데이터 주소를 찌르는
- * 시도를 입력 단계에서 차단한다. (완전한 SSRF 방어는 컨테이너 egress 제한이 본 수단이며,
- * 공개 DNS 가 사설 IP 로 해석되는 rebinding 까지는 막지 못한다.)
- */
+import { BlockList, isIP } from 'node:net';
 
-const BLOCKED_HOSTNAMES = new Set([
-  'localhost',
-  '0.0.0.0',
-  '127.0.0.1',
-  '::1',
-  '[::1]',
-  'metadata',
-  'metadata.google.internal',
-]);
-
-/** 사설/루프백/링크로컬 IPv4 대역인지. */
-function isPrivateIpv4(host: string): boolean {
-  const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!m) return false;
-  const a = Number(m[1]);
-  const b = Number(m[2]);
-  if (a === 0 || a === 10 || a === 127) return true;
-  if (a === 169 && b === 254) return true; // 링크로컬 / 클라우드 메타데이터
-  if (a === 192 && b === 168) return true;
-  if (a === 172 && b >= 16 && b <= 31) return true;
-  return false;
+/** 입력 보조 방어. DNS·리다이렉트·spec 자체 통신에는 별도 egress 경계가 필요하다. */
+const blocked = new BlockList();
+// 외부 웹사이트 대상 러너에서는 특수 용도 대역 전체를 보수적으로 거부한다.
+// https://www.iana.org/assignments/iana-ipv4-special-registry/
+for (const [address, prefix] of [
+  ['0.0.0.0', 8],
+  ['10.0.0.0', 8],
+  ['100.64.0.0', 10],
+  ['127.0.0.0', 8],
+  ['169.254.0.0', 16],
+  ['172.16.0.0', 12],
+  ['192.0.0.0', 24],
+  ['192.0.2.0', 24],
+  ['192.88.99.0', 24],
+  ['192.168.0.0', 16],
+  ['198.18.0.0', 15],
+  ['198.51.100.0', 24],
+  ['203.0.113.0', 24],
+  ['224.0.0.0', 3],
+] as const) {
+  blocked.addSubnet(address, prefix, 'ipv4');
 }
 
-/**
- * 허용되지 않은 대상이면 사유 문자열, 안전하면 null 을 반환한다.
- */
+const globalIpv6 = new BlockList();
+globalIpv6.addSubnet('2000::', 3, 'ipv6');
+// 전환/특수 용도 주소를 통한 IPv4 우회도 허용하지 않는다.
+// https://www.iana.org/assignments/iana-ipv6-special-registry/
+for (const [address, prefix] of [
+  ['2001::', 23],
+  ['2001:db8::', 32],
+  ['2002::', 16],
+  ['3fff::', 20],
+] as const) {
+  blocked.addSubnet(address, prefix, 'ipv6');
+}
+
+/** 거부 사유 또는 null을 반환한다. null은 네트워크 격리 보장이 아니다. */
 export function checkTargetUrl(raw: string): string | null {
-  let u: URL;
+  let url: URL;
   try {
-    u = new URL(raw);
+    url = new URL(raw);
   } catch {
     return 'Invalid URL.';
   }
-
-  if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return 'Only http(s) URLs are allowed.';
   }
 
-  const host = u.hostname.toLowerCase();
-
-  if (BLOCKED_HOSTNAMES.has(host)) return 'Target host is not allowed.';
-  if (host.endsWith('.internal') || host.endsWith('.local')) return 'Target host is not allowed.';
-  if (isPrivateIpv4(host)) return 'Target host is not allowed.';
-  // IPv6 루프백/사설(fc00::/7)/링크로컬(fe80::/10) 대략 차단
+  // WHATWG URL로 정수/16진수 IPv4·IPv6를 정규화하고 DNS 절대 이름의 끝점을 제거한다.
+  const host = url.hostname
+    .toLowerCase()
+    .replace(/\.+$/, '')
+    .replace(/^\[|\]$/g, '');
+  const family = isIP(host);
+  if (family === 4) {
+    return blocked.check(host, 'ipv4') ? 'Target host is not allowed.' : null;
+  }
+  if (family === 6) {
+    return !globalIpv6.check(host, 'ipv6') || blocked.check(host, 'ipv6')
+      ? 'Target host is not allowed.'
+      : null;
+  }
   if (
-    host.startsWith('[::') ||
-    host.startsWith('[fc') ||
-    host.startsWith('[fd') ||
-    host.startsWith('[fe8') ||
-    host.startsWith('[fe9') ||
-    host.startsWith('[fea') ||
-    host.startsWith('[feb')
+    !host.includes('.') ||
+    ['localhost', 'internal', 'local'].some((suffix) => host.endsWith(`.${suffix}`))
   ) {
     return 'Target host is not allowed.';
   }
-
   return null;
 }
