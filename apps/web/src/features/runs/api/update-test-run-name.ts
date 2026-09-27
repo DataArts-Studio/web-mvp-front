@@ -1,5 +1,7 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns } from '@testea/db';
@@ -10,6 +12,8 @@ export async function updateTestRunName(
   name: string
 ): Promise<ActionResult<{ id: string; name: string }>> {
   try {
+    if (!(await canAccess('testRun', testRunId))) return ACCESS_DENIED;
+
     const trimmed = name.trim();
     if (!trimmed) {
       return {
@@ -33,6 +37,7 @@ export async function updateTestRunName(
       };
     }
 
+    invalidateCache(INVALIDATE.runs);
     return { success: true, data: updated };
   } catch (error) {
     console.error('[updateTestRunName] Error:', error);

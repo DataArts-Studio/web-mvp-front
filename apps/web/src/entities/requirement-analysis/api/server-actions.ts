@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -157,6 +158,7 @@ export const saveRequirementAnalysis = async (input: {
       };
     });
 
+    invalidateCache(INVALIDATE.suites);
     return { success: true, data: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'saveRequirementAnalysis' } });

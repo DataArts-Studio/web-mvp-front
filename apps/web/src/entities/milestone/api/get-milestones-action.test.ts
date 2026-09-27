@@ -13,6 +13,13 @@ vi.mock('@testea/db', () => ({
   milestones: { id: 'id', project_id: 'project_id', lifecycle_status: 'lifecycle_status' },
 }));
 
+const mockCanAccess = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+vi.mock('@/access/lib/project-scope', () => ({
+  ACCESS_DENIED: { success: false, errors: { _general: ['접근 권한이 없습니다.'] } },
+  canAccess: mockCanAccess,
+  belongsToProject: vi.fn(() => Promise.resolve(true)),
+}));
+
 describe('getMilestones', () => {
   beforeEach(() => {
     resetMockDb();
@@ -72,6 +79,12 @@ describe('getMilestones', () => {
 });
 
 describe('getMilestoneById', () => {
+  it('접근 권한이 없으면 조회하지 않고 거부한다', async () => {
+    mockCanAccess.mockResolvedValueOnce(false);
+    const result = await getMilestoneById('milestone-1');
+    expect(result).toEqual({ success: false, errors: { _general: ['접근 권한이 없습니다.'] } });
+  });
+
   beforeEach(() => {
     resetMockDb();
   });

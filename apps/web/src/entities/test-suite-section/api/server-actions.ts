@@ -1,6 +1,8 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases, testSuiteSections, testSuites } from '@testea/db';
@@ -37,6 +39,8 @@ function toSection(row: typeof testSuiteSections.$inferSelect): TestSuiteSection
 
 export const getSections = async (suiteId: string): Promise<ActionResult<TestSuiteSection[]>> => {
   try {
+    if (!(await canAccess('testSuite', suiteId))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const rows = await db
       .select()
@@ -227,6 +231,7 @@ export const deleteSection = async (sectionId: string): Promise<ActionResult<{ i
       .set({ archived_at: now, updated_at: now })
       .where(eq(testSuiteSections.id, sectionId));
 
+    invalidateCache(INVALIDATE.cases);
     return {
       success: true,
       data: { id: sectionId },
@@ -288,6 +293,7 @@ export const moveTestCaseToSection = async (
       .set({ section_id: sectionId, updated_at: new Date() })
       .where(eq(testCases.id, caseId));
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: null };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'moveTestCaseToSection' } });

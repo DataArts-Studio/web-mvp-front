@@ -10,7 +10,7 @@ vi.mock('@/access/lib/require-access', () => ({
 vi.mock('@/shared/lib/storage/check-storage-limit', () => ({
   checkStorageLimit: vi.fn(() => Promise.resolve(null)),
 }));
-vi.mock('@/entities/test-case-version/api/actions', () => ({
+vi.mock('@/entities/test-case-version/api/create-version-snapshot', () => ({
   createVersionSnapshot: vi.fn(() => Promise.resolve()),
 }));
 vi.mock('@/entities/test-case-version/model/diff-utils', () => ({

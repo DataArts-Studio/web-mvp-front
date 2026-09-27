@@ -1,9 +1,11 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
 import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -74,6 +76,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
       lastExecutedAt: null,
     };
 
+    invalidateCache(INVALIDATE.suites);
     return {
       success: true,
       data: result,
@@ -93,6 +96,8 @@ export const getTestSuites = async ({
   limits = { offset: 0, limit: Infinity },
 }: GetTestSuitesParams): Promise<ActionResult<TestSuite[]>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
     let query = db
       .select()
@@ -141,6 +146,8 @@ export const getTestSuites = async ({
 
 export const getTestSuiteById = async (id: string): Promise<ActionResult<TestSuite>> => {
   try {
+    if (!(await canAccess('testSuite', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const [row] = await db.select().from(testSuites).where(eq(testSuites.id, id));
 
@@ -184,6 +191,8 @@ export const getTestSuiteByIdWithStats = async (
   id: string
 ): Promise<ActionResult<TestSuiteCard>> => {
   try {
+    if (!(await canAccess('testSuite', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const [row] = await db.select().from(testSuites).where(eq(testSuites.id, id));
@@ -295,6 +304,7 @@ export const updateTestSuite = async (
       lastExecutedAt: null,
     };
 
+    invalidateCache(INVALIDATE.suites);
     return {
       success: true,
       data: result,
@@ -317,6 +327,8 @@ export const getTestSuitesWithStats = async ({
   limits = { offset: 0, limit: Infinity },
 }: GetTestSuitesParams): Promise<ActionResult<TestSuiteCard[]>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // 1) 기본 스위트 목록
@@ -639,6 +651,7 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       })
       .where(and(eq(testCases.test_suite_id, id), eq(testCases.lifecycle_status, 'ACTIVE')));
 
+    invalidateCache(INVALIDATE.suites);
     return {
       success: true,
       data: { id: archived.id },

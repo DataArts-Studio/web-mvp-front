@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { MilestoneStats, MilestoneWithStats } from '@/entities/milestone';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -19,6 +20,8 @@ export async function getMilestoneById(
   milestoneId: string
 ): Promise<ActionResult<MilestoneWithStats>> {
   try {
+    if (!(await canAccess('milestone', milestoneId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // 1. 마일스톤 기본 정보 (존재 확인 필요하므로 먼저 실행)

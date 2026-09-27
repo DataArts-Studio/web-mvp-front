@@ -19,7 +19,10 @@ const statusText: Record<AutomationStatus, { label: string; className: string }>
   automated: { label: '자동화 완료', className: 'text-green-500' },
 };
 
-const priorityText: Record<CandidateRow['decision']['priority'], { label: string; className: string }> = {
+const priorityText: Record<
+  CandidateRow['decision']['priority'],
+  { label: string; className: string }
+> = {
   high: { label: 'High', className: 'text-red-500' },
   medium: { label: 'Medium', className: 'text-amber-500' },
   low: { label: 'Low', className: 'text-text-3' },
@@ -83,7 +86,9 @@ export const CandidateCard = ({ row, pendingCaseId, onSetStatus }: CandidateCard
         <div className="text-text-4 text-xs">
           pass {row.passCount} / fail {row.failCount}
         </div>
-        <div className="text-text-4 text-xs">절감 예상 {row.decision.estimatedManualRunsSaved}회</div>
+        <div className="text-text-4 text-xs">
+          절감 예상 {row.decision.estimatedManualRunsSaved}회
+        </div>
       </div>
 
       <div className="flex flex-col items-end gap-2">

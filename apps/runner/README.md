@@ -91,14 +91,55 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
 - 호출자는 **전용 invoker SA**(`testea-runner-invoker`)를 쓴다. 이 서비스의
   `run.invoker` 권한만 있고 그 외 권한은 0개다.
 
+아래 운영 요건을 배포에서 **반드시** 충족해야 한다. 코드만으로는 강제되지 않는다.
+
+### 코드/이미지에서 강제되는 것 (구현됨)
+
+- **uid 분리**: 서버는 root 로 뜨고, spec 자식만 비특권 사용자 **`pwuser`(uid 1000)** 로
+  강등해 실행한다(`src/sandbox.ts`). uid 가 다르므로 spec 은 서버의
+  `/proc/<pid>/environ` 에서 `RUNNER_SHARED_SECRET` 을 읽을 수 없다. 자식 env 도
+  allowlist 만 통과시켜 시크릿을 넘기지 않는다.
+- **앱 파일 읽기 전용**: `/app/dist`·`node_modules` 는 root 소유로 남는다. spec uid 는
+  요청마다 넘겨받는 run 디렉터리에만 쓸 수 있어, 서버 코드나 의존성을 변조할 수 없다.
+- **단일 실행**: 서버는 한 번에 하나의 `/run` 만 처리하고 겹치는 요청은 503(Retry-After)
+  으로 거부한다. 같은 spec uid 끼리는 파일 권한으로 서로를 막을 수 없으므로, 동시 실행을
+  없애는 것이 run 간 격리의 본 수단이다.
+- **잔여 프로세스 회수**: run 이 끝나면 spec uid 로 강등한 헬퍼가 `kill(-1, SIGKILL)` 을
+  호출해 그 uid 의 프로세스를 커널이 한 번에 종료한다. `/proc` 을 한 번 훑는 방식과 달리
+  훑은 직후 fork 된 프로세스도 놓치지 않는다. 그래도 남으면 인스턴스를 오염 상태로 표시해
+  `/run` 을 거부하고 `/health` 를 503 으로 돌려 플랫폼이 인스턴스를 교체하게 한다.
+- **fail-closed**: uid 분리를 쓸 수 없는 환경(root 가 아니거나 Linux 가 아님, 또는
+  `RUNNER_SANDBOX_UID`/`GID` 가 0·음수·숫자 아님)에서는 `/run` 을 503 으로 거부한다.
+- 보조 방어: `.runs` 는 0711(목록 조회 불가), 요청별 run 디렉터리는 0700,
+  `storageState` 는 0600 으로 기록되고 실행 후 삭제된다. spec 의 `HOME`/`TMPDIR` 는
+  요청별 디렉터리로 고정된다.
+
+### 배포에서 반드시 충족해야 하는 것 (ops 책임, **P0**)
+
+- **아웃바운드 egress 차단**: spec 은 SSRF 가드(`url-guard.ts`)를 우회해 자체적으로
+  내부망/메타데이터/외부로 통신할 수 있다. 입력 가드는 보조 수단일 뿐, **본 방어는
+  컨테이너 egress 제한**(대상 사이트 대역만 허용)이다.
+- **인스턴스당 동시 요청 1**: Cloud Run `--concurrency 1`, Fly `hard_limit = 1` 을 유지한다.
+  코드도 단일 실행을 강제하지만, 플랫폼이 한 인스턴스에 요청을 몰아 503 이 나지 않게 한다.
+- **요청별 일회용 격리(권장)**: 인스턴스가 재사용되면 커널·네트워크 네임스페이스는 run 간에
+  공유된다. 민감한 `storageState` 가 오가는 Testea 러너는 가능하면 run 당 새
+  인스턴스로 띄운다.
+- **qaground ↔ Testea 러너 분리**: qaground 채점은 **인증 없는 공개 입력**으로
+  임의 코드를 보낸다. 고객 `storageState` 가 흐르는 Testea 러너와 **절대 같은
+  배포를 공유하지 않는다**(별도 app, 별도 시크릿).
+
 대상 사이트 인증은 러너가 다루지 않는다. Testea 가 target_sites 시크릿을 복호화해
 `storageState`(쿠키/오리진 인증 상태)로 구성한 뒤 요청에 실어 보낸다.
 외부 입력 URL 은 `url-guard.ts` 가 사설/내부 주소를 막아 SSRF 를 차단한다.
 
 ## 로컬 실행
 
+로컬(Windows/macOS 또는 비root)에서는 uid 분리 격리를 쓸 수 없어 `/run` 이 기본 503 이다.
+신뢰하는 spec 으로만 개발할 때 `RUNNER_ALLOW_UNISOLATED=1` 로 명시적으로 허용한다.
+운영 배포에는 절대 설정하지 않는다.
+
 ```bash
-pnpm --filter @testea/runner dev      # tsx watch
+RUNNER_ALLOW_UNISOLATED=1 pnpm --filter @testea/runner dev      # tsx watch
 # 또는
 pnpm --filter @testea/runner build && pnpm --filter @testea/runner start
 ```

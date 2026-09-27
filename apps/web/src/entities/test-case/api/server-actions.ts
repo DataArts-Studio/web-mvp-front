@@ -1,14 +1,16 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
-import { createVersionSnapshot } from '@/entities/test-case-version/api/actions';
+import { createVersionSnapshot } from '@/entities/test-case-version/api/create-version-snapshot';
 import {
   detectChangedFields,
   generateChangeSummary,
 } from '@/entities/test-case-version/model/diff-utils';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -32,6 +34,8 @@ export const getTestCases = async ({
   project_id,
 }: getTestCasesParams): Promise<ActionResult<TestCase[]>> => {
   try {
+    if (!(await canAccess('project', project_id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const rows = await db
       .select()
@@ -104,6 +108,8 @@ export const getTestCasesList = async ({
   suiteId,
 }: GetTestCasesListParams): Promise<ActionResult<PaginatedTestCases>> => {
   try {
+    if (!(await canAccess('project', project_id))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     // WHERE 조건 구성
@@ -214,6 +220,8 @@ export const getTestCasesList = async ({
 
 export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> => {
   try {
+    if (!(await canAccess('testCase', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const [row] = await db
       .select()
@@ -342,6 +350,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
 
     const result: TestCase = toTestCase(inserted as TestCaseDTO);
 
+    invalidateCache(INVALIDATE.cases);
     return {
       success: true,
       data: result,
@@ -549,6 +558,7 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
       }
     }
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: toTestCase(inserted as TestCaseDTO) };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'duplicateTestCase', testCaseId } });
@@ -673,6 +683,7 @@ export const updateTestCase = async (
 
     const result: TestCase = toTestCase(updated as TestCaseDTO);
 
+    invalidateCache(INVALIDATE.cases);
     return {
       success: true,
       data: result,
@@ -718,6 +729,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
       };
     }
 
+    invalidateCache(INVALIDATE.cases);
     return {
       success: true,
       data: { id: archived.id },

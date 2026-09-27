@@ -46,7 +46,15 @@ export const CoverageSection = ({ coverage }: CoverageSectionProps) => {
   );
 };
 
-function LegendDot({ className, label, value }: { className: string; label: string; value: number }) {
+function LegendDot({
+  className,
+  label,
+  value,
+}: {
+  className: string;
+  label: string;
+  value: number;
+}) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={`h-2 w-2 ${className}`} />

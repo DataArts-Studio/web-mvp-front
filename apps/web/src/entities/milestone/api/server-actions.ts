@@ -1,5 +1,6 @@
 'use server';
 
+import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import {
   CreateMilestone,
@@ -9,6 +10,7 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -36,6 +38,8 @@ export const getMilestones = async ({
   projectId,
 }: GetMilestonesParams): Promise<ActionResult<MilestoneWithStats[]>> => {
   try {
+    if (!(await canAccess('project', projectId))) return ACCESS_DENIED;
+
     const db = getDatabase();
 
     const rows = await db
@@ -222,6 +226,8 @@ export const getMilestones = async ({
 
 export const getMilestoneById = async (id: string): Promise<ActionResult<Milestone>> => {
   try {
+    if (!(await canAccess('milestone', id))) return ACCESS_DENIED;
+
     const db = getDatabase();
     const [row] = await db.select().from(milestones).where(eq(milestones.id, id));
 
@@ -281,6 +287,7 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
       };
     }
 
+    invalidateCache(INVALIDATE.milestones);
     return {
       success: true,
       data: toMilestone(inserted as MilestoneDTO),
@@ -354,6 +361,7 @@ export const updateMilestone = async (
       };
     }
 
+    invalidateCache(INVALIDATE.milestones);
     return {
       success: true,
       data: toMilestone(updated as MilestoneDTO),
@@ -402,6 +410,7 @@ export const archiveMilestone = async (id: string): Promise<ActionResult<{ id: s
       };
     }
 
+    invalidateCache(INVALIDATE.milestones);
     return {
       success: true,
       data: { id: archived.id },
@@ -480,6 +489,7 @@ export const addTestCasesToMilestone = async (
       }
     }
 
+    invalidateCache(INVALIDATE.milestones);
     return {
       success: true,
       data: { count: testCaseIds.length },
@@ -523,6 +533,7 @@ export const removeTestCaseFromMilestone = async (
         )
       );
 
+    invalidateCache(INVALIDATE.milestones);
     return {
       success: true,
       data: { id: testCaseId },
@@ -633,6 +644,7 @@ export const addTestSuitesToMilestone = async (
       }
     }
 
+    invalidateCache(INVALIDATE.milestones);
     return {
       success: true,
       data: { count: testSuiteIds.length },
@@ -676,6 +688,7 @@ export const removeTestSuiteFromMilestone = async (
         )
       );
 
+    invalidateCache(INVALIDATE.milestones);
     return {
       success: true,
       data: { id: testSuiteId },
