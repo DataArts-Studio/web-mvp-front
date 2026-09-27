@@ -14,6 +14,12 @@ vi.mock('@/access/lib/require-access', () => ({
   requireProjectAccess: vi.fn(() => Promise.resolve(true)),
 }));
 
+// 연결 리소스 소유 관계 mock (기본: 같은 프로젝트)
+const mockAllBelongToProject = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+vi.mock('@/access/lib/project-scope', () => ({
+  allBelongToProject: mockAllBelongToProject,
+}));
+
 vi.mock('@/shared/lib/storage/check-storage-limit', () => ({
   checkStorageLimit: vi.fn(() => Promise.resolve(null)),
 }));
@@ -35,7 +41,10 @@ const mockTxInsert = vi.fn(() => ({
 }));
 
 const mockTxSelectWhere = vi.fn(() => []);
-const mockTxSelectFrom = vi.fn(() => ({ where: mockTxSelectWhere }));
+const mockTxSelectFrom = vi.fn(() => ({
+  where: mockTxSelectWhere,
+  innerJoin: vi.fn(() => ({ where: mockTxSelectWhere })),
+}));
 const mockTxSelect = vi.fn(() => ({ from: mockTxSelectFrom }));
 
 // 트랜잭션 객체
@@ -70,6 +79,10 @@ vi.mock('@testea/db', () => ({
   testRunSuites: {
     test_run_id: 'test_run_id',
     test_suite_id: 'test_suite_id',
+  },
+  testSuites: {
+    id: 'id',
+    project_id: 'project_id',
   },
   testCaseRuns: {
     test_run_id: 'test_run_id',
@@ -133,6 +146,7 @@ describe('createTestRunAction', () => {
     vi.clearAllMocks();
     mockTxReturning.mockResolvedValue([mockCreatedRun]);
     mockTxSelectWhere.mockResolvedValue([]);
+    mockAllBelongToProject.mockResolvedValue(true);
   });
 
   describe('유효성 검사', () => {
@@ -215,6 +229,25 @@ describe('createTestRunAction', () => {
       const result = await createTestRunAction(inputWithoutDescription);
 
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('연결 리소스 소유 관계', () => {
+    it('다른 프로젝트 마일스톤이면 DB 에 쓰지 않고 거부한다', async () => {
+      mockAllBelongToProject.mockResolvedValueOnce(false);
+
+      const result = await createTestRunAction(validInput);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors!.formErrors[0]).toBe('접근 권한이 없습니다.');
+      }
+      expect(mockAllBelongToProject).toHaveBeenCalledWith(
+        'milestone',
+        [validInput.milestone_id],
+        validInput.project_id
+      );
+      expect(mockTransaction).not.toHaveBeenCalled();
     });
   });
 

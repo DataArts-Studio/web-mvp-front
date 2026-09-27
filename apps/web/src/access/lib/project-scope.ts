@@ -19,8 +19,9 @@ import {
   testSuiteSections,
   testSuites,
 } from '@testea/db';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { z } from 'zod';
 
 import { requireProjectAccess } from './require-access';
 
@@ -176,4 +177,37 @@ export async function belongsToProject(
   projectId: string
 ): Promise<boolean> {
   return (await resolveProjectId(kind, id)) === projectId;
+}
+
+const idListSchema = z.array(z.string().uuid()).min(1).max(1000);
+
+/**
+ * 클라이언트가 보낸 ID 배열을 검증하고 중복을 없앤다. UUID 가 아니거나 비었거나 너무 길면 null.
+ * 권한 검사 전에 호출해, 잘못된 입력이 DB 조회·쓰기로 이어지지 않게 한다.
+ */
+export function parseIdList(ids: unknown): string[] | null {
+  const parsed = idListSchema.safeParse(ids);
+  return parsed.success ? [...new Set(parsed.data)] : null;
+}
+
+type OwnedKind = 'testCase' | 'testSuite' | 'milestone';
+
+/**
+ * ids 가 전부 존재하고 전부 projectId 소속인지 한 번의 조회로 확인한다.
+ * 하나라도 없거나 다른 프로젝트 소속이면 false. (섞인 배열은 통째로 거부하는 용도)
+ */
+export async function allBelongToProject(
+  kind: OwnedKind,
+  ids: readonly string[],
+  projectId: string
+): Promise<boolean> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return true;
+  const db = getDatabase();
+  const table = kind === 'testCase' ? testCases : kind === 'testSuite' ? testSuites : milestones;
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(table)
+    .where(and(inArray(table.id, unique), eq(table.project_id, projectId)));
+  return Number(row?.count ?? 0) === unique.length;
 }

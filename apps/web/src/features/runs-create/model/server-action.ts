@@ -1,4 +1,5 @@
 'use server';
+import { allBelongToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestRunSchema } from '@/entities/test-run';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
@@ -14,6 +15,7 @@ import {
   testRunMilestones,
   testRunSuites,
   testRuns,
+  testSuites,
 } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -33,6 +35,15 @@ export const createTestRunAction = async (input: CreateRunInput) => {
   // 접근 권한 확인
   const hasAccess = await requireProjectAccess(project_id);
   if (!hasAccess) {
+    return {
+      success: false,
+      errors: { formErrors: ['접근 권한이 없습니다.'], fieldErrors: {} } as FlatErrors,
+    };
+  }
+
+  // 연결할 마일스톤이 같은 프로젝트 소속인지 쓰기 전에 확인한다. 다른 프로젝트 마일스톤을
+  // 넣으면 그 프로젝트의 케이스가 이 실행으로 복사돼 내용이 노출된다.
+  if (!(await allBelongToProject('milestone', [milestone_id], project_id))) {
     return {
       success: false,
       errors: { formErrors: ['접근 권한이 없습니다.'], fieldErrors: {} } as FlatErrors,
@@ -69,13 +80,20 @@ export const createTestRunAction = async (input: CreateRunInput) => {
 
       // 2. Resolve test cases from milestone
 
+      // 마일스톤에 걸린 케이스 중 이 프로젝트 소속만 가져온다(과거 오염된 연결 방어).
       const milestoneCaseRows = await tx
         .select({
           test_case_id: milestoneTestCases.test_case_id,
           milestone_id: milestoneTestCases.milestone_id,
         })
         .from(milestoneTestCases)
-        .where(eq(milestoneTestCases.milestone_id, milestone_id));
+        .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+        .where(
+          and(
+            eq(milestoneTestCases.milestone_id, milestone_id),
+            eq(testCases.project_id, project_id)
+          )
+        );
 
       const newMilestoneCaseRuns = milestoneCaseRows
         .filter(
@@ -105,7 +123,13 @@ export const createTestRunAction = async (input: CreateRunInput) => {
           test_suite_id: milestoneTestSuites.test_suite_id,
         })
         .from(milestoneTestSuites)
-        .where(eq(milestoneTestSuites.milestone_id, milestone_id));
+        .innerJoin(testSuites, eq(testSuites.id, milestoneTestSuites.test_suite_id))
+        .where(
+          and(
+            eq(milestoneTestSuites.milestone_id, milestone_id),
+            eq(testSuites.project_id, project_id)
+          )
+        );
 
       const suiteIds = [
         ...new Set(milestoneSuiteRows.map((r) => r.test_suite_id).filter(Boolean)),
@@ -129,6 +153,7 @@ export const createTestRunAction = async (input: CreateRunInput) => {
           .where(
             and(
               inArray(testCases.test_suite_id, suiteIds),
+              eq(testCases.project_id, project_id),
               eq(testCases.lifecycle_status, 'ACTIVE')
             )
           );

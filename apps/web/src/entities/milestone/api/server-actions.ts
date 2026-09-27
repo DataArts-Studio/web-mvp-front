@@ -1,6 +1,11 @@
 'use server';
 
-import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
+import {
+  ACCESS_DENIED,
+  allBelongToProject,
+  canAccess,
+  parseIdList,
+} from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import {
   CreateMilestone,
@@ -435,9 +440,14 @@ export const deleteMilestone = archiveMilestone;
  */
 export const addTestCasesToMilestone = async (
   milestoneId: string,
-  testCaseIds: string[]
+  rawTestCaseIds: string[]
 ): Promise<ActionResult<{ count: number }>> => {
   try {
+    const testCaseIds = parseIdList(rawTestCaseIds);
+    if (!testCaseIds) {
+      return { success: false, errors: { _milestone: ['잘못된 요청입니다.'] } };
+    }
+
     const db = getDatabase();
 
     // 접근 권한 확인
@@ -447,6 +457,11 @@ export const addTestCasesToMilestone = async (
       .where(eq(milestones.id, milestoneId))
       .limit(1);
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
+    // 케이스가 모두 마일스톤과 같은 프로젝트 소속이어야 한다. 마일스톤에 연결된 실행으로
+    // 곧바로 동기화되므로, 섞인 배열은 쓰기 전에 통째로 거부한다.
+    if (!(await allBelongToProject('testCase', testCaseIds, ms.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
 
@@ -553,9 +568,14 @@ export const removeTestCaseFromMilestone = async (
  */
 export const addTestSuitesToMilestone = async (
   milestoneId: string,
-  testSuiteIds: string[]
+  rawTestSuiteIds: string[]
 ): Promise<ActionResult<{ count: number }>> => {
   try {
+    const testSuiteIds = parseIdList(rawTestSuiteIds);
+    if (!testSuiteIds) {
+      return { success: false, errors: { _milestone: ['잘못된 요청입니다.'] } };
+    }
+
     const db = getDatabase();
 
     // 접근 권한 확인
@@ -565,6 +585,9 @@ export const addTestSuitesToMilestone = async (
       .where(eq(milestones.id, milestoneId))
       .limit(1);
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
+    if (!(await allBelongToProject('testSuite', testSuiteIds, ms.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
 

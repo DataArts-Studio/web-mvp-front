@@ -1,9 +1,10 @@
 'use server';
 
+import { allBelongToProject, parseIdList } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, milestoneTestCases, testCaseRuns, testRuns } from '@testea/db';
+import { getDatabase, milestoneTestCases, testCaseRuns, testCases, testRuns } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -15,10 +16,15 @@ export async function addMilestonesToRunAction(
   runId: string,
   milestoneIds: string[]
 ): Promise<SetMilestoneForRunResult> {
-  const milestoneId = milestoneIds[0];
-  if (!milestoneId) {
+  if (!Array.isArray(milestoneIds) || milestoneIds.length === 0) {
     return { success: false, error: '추가할 마일스톤을 선택해주세요.' };
   }
+  const parsed = parseIdList(milestoneIds);
+  if (!parsed) {
+    return { success: false, error: '잘못된 요청입니다.' };
+  }
+  // 실행에는 마일스톤 하나만 연결된다(교체). 선택 UI 가 다중 선택이라 첫 번째를 쓴다.
+  const milestoneId = parsed[0];
 
   const db = getDatabase();
 
@@ -31,6 +37,11 @@ export async function addMilestonesToRunAction(
   if (!run?.projectId || !(await requireProjectAccess(run.projectId))) {
     return { success: false, error: '접근 권한이 없습니다.' };
   }
+  // 보낸 ID 전부가 같은 프로젝트 소속이어야 한다(쓰지 않는 ID 도 섞여 있으면 거부).
+  if (!(await allBelongToProject('milestone', parsed, run.projectId))) {
+    return { success: false, error: '접근 권한이 없습니다.' };
+  }
+  const projectId = run.projectId;
 
   try {
     const result = await db.transaction(async (tx) => {
@@ -47,7 +58,10 @@ export async function addMilestonesToRunAction(
           milestone_id: milestoneTestCases.milestone_id,
         })
         .from(milestoneTestCases)
-        .where(eq(milestoneTestCases.milestone_id, milestoneId));
+        .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+        .where(
+          and(eq(milestoneTestCases.milestone_id, milestoneId), eq(testCases.project_id, projectId))
+        );
 
       const caseIdToMilestone = new Map<string, string>();
       for (const row of milestoneCaseRows) {

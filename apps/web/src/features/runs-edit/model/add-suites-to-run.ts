@@ -1,5 +1,6 @@
 'use server';
 
+import { allBelongToProject, parseIdList } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
@@ -13,10 +14,14 @@ type AddSuitesToRunResult =
 
 export async function addSuitesToRunAction(
   runId: string,
-  suiteIds: string[]
+  rawSuiteIds: string[]
 ): Promise<AddSuitesToRunResult> {
-  if (suiteIds.length === 0) {
+  if (!Array.isArray(rawSuiteIds) || rawSuiteIds.length === 0) {
     return { success: false, error: '추가할 스위트를 선택해주세요.' };
+  }
+  const suiteIds = parseIdList(rawSuiteIds);
+  if (!suiteIds) {
+    return { success: false, error: '잘못된 요청입니다.' };
   }
 
   const db = getDatabase();
@@ -28,6 +33,10 @@ export async function addSuitesToRunAction(
     .where(eq(testRuns.id, runId))
     .limit(1);
   if (!run?.projectId || !(await requireProjectAccess(run.projectId))) {
+    return { success: false, error: '접근 권한이 없습니다.' };
+  }
+  // 모든 스위트가 실행과 같은 프로젝트 소속이어야 한다. 하나라도 아니면 통째로 거부한다.
+  if (!(await allBelongToProject('testSuite', suiteIds, run.projectId))) {
     return { success: false, error: '접근 권한이 없습니다.' };
   }
 
@@ -48,7 +57,11 @@ export async function addSuitesToRunAction(
         })
         .from(testCases)
         .where(
-          and(inArray(testCases.test_suite_id, suiteIds), eq(testCases.lifecycle_status, 'ACTIVE'))
+          and(
+            inArray(testCases.test_suite_id, suiteIds),
+            eq(testCases.project_id, run.projectId),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
         );
 
       const caseIdToSuite = new Map<string, string>();

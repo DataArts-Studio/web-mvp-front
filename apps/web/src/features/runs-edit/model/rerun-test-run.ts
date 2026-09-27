@@ -1,5 +1,6 @@
 'use server';
 
+import { allBelongToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
@@ -82,6 +83,7 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
             .where(
               and(
                 inArray(testCases.id, candidateCaseIds),
+                eq(testCases.project_id, projectId),
                 eq(testCases.lifecycle_status, 'ACTIVE'),
                 isNull(testCases.archived_at)
               )
@@ -134,6 +136,20 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
     const milestoneIds = [
       ...new Set(sourceMilestoneLinks.map((r) => r.milestone_id).filter(Boolean)),
     ] as string[];
+
+    // 원본 연결을 그대로 복제하기 전에 소유 관계를 다시 확인한다. 이전 버전에서 다른 프로젝트
+    // 스위트·마일스톤이 연결된 실행이라면 오염을 퍼뜨리지 않도록 재실행을 거부한다.
+    const linksOwned =
+      (await allBelongToProject('testSuite', suiteIds, projectId)) &&
+      (await allBelongToProject('milestone', milestoneIds, projectId)) &&
+      (!sourceRun.milestone_id ||
+        (await allBelongToProject('milestone', [sourceRun.milestone_id], projectId)));
+    if (!linksOwned) {
+      return {
+        success: false,
+        error: '원본 실행에 다른 프로젝트 리소스가 연결돼 있어 다시 실행할 수 없습니다.',
+      };
+    }
 
     // 5. 자동 제안 이름: 회귀 재실행 - {원본명} ({YYYY-MM-DD})
     const now = new Date();
