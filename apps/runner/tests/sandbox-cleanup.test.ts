@@ -6,9 +6,17 @@ import { after, test } from 'node:test';
 // Linux root 조건만 모의한다. 종료 헬퍼와 /proc 접근은 매 테스트에서 모두 대체한다.
 const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
 const getuid = Object.getOwnPropertyDescriptor(process, 'getuid');
+const sandboxUid = process.env.RUNNER_SANDBOX_UID;
+const sandboxGid = process.env.RUNNER_SANDBOX_GID;
+process.env.RUNNER_SANDBOX_UID = '1000';
+process.env.RUNNER_SANDBOX_GID = '1000';
 Object.defineProperty(process, 'platform', { configurable: true, value: 'linux' });
 Object.defineProperty(process, 'getuid', { configurable: true, value: () => 0 });
 after(() => {
+  if (sandboxUid === undefined) delete process.env.RUNNER_SANDBOX_UID;
+  else process.env.RUNNER_SANDBOX_UID = sandboxUid;
+  if (sandboxGid === undefined) delete process.env.RUNNER_SANDBOX_GID;
+  else process.env.RUNNER_SANDBOX_GID = sandboxGid;
   Object.defineProperty(process, 'platform', platform);
   if (getuid) Object.defineProperty(process, 'getuid', getuid);
   else Reflect.deleteProperty(process, 'getuid');
