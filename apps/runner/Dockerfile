@@ -1,7 +1,6 @@
 # Base image bundles the Playwright browsers matching @playwright/test@1.60.0.
 # Keep this tag in lockstep with the resolved @playwright/test version in the lockfile.
-# package.json 은 정확한 버전(1.60.0)으로 고정한다. 이미지 안 설치는 lockfile 없이
-# 돌기 때문에 범위 지정(^)이면 더 새 버전이 깔려 이미지 내장 브라우저와 어긋난다.
+# package.json과 러너 전용 lockfile의 버전을 이미지 내장 브라우저와 맞춘다.
 FROM mcr.microsoft.com/playwright:v1.60.0-jammy
 
 WORKDIR /app
@@ -22,12 +21,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf 
 
 # --- Dependency layer -------------------------------------------------------
 # Copy only the manifest first so this layer caches across spec/code changes.
-COPY package.json ./package.json
+COPY package.json pnpm-lock.yaml ./
 
 # Browsers are already in the base image, so skip the post-install download.
-# --ignore-workspace keeps this install scoped to the runner (no root lockfile).
+# 루트 overrides/lockfile은 이 독립 빌드에 적용되지 않는다.
+# 러너 전용 lockfile과 manifest가 어긋나면 재해석하지 않고 빌드를 실패시킨다.
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-RUN pnpm install --prod=false --ignore-workspace
+RUN pnpm install --prod=false --ignore-workspace --frozen-lockfile
 
 # --- Build ------------------------------------------------------------------
 COPY tsconfig.json ./tsconfig.json

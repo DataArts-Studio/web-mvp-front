@@ -205,6 +205,21 @@ bash verify-cloudrun.sh
 
 ### 이미지 버전
 
+Docker는 이 디렉터리의 `pnpm-lock.yaml`을 `--frozen-lockfile`로 설치한다.
+루트 workspace lockfile과 overrides는 러너 독립 빌드에 적용되지 않는다.
+의존성을 변경하면 루트 lockfile과 별도로 다음 명령으로 러너 lockfile도 갱신하고 검증한다.
+
+```bash
+cd apps/runner
+pnpm install --ignore-workspace --lockfile-only --prod=false
+pnpm install --ignore-workspace --frozen-lockfile --prod=false
+pnpm run build
+pnpm audit --ignore-workspace --audit-level=low
+```
+
+CI의 `runner standalone dependencies`는 독립 설치·빌드·전체 npm 의존성 감사를 수행한다.
+감사 통과는 알려진 npm 권고 기준이며, 이미지 OS 패키지나 네트워크 격리를 검증하지 않는다.
+
 베이스 이미지 `mcr.microsoft.com/playwright:v1.60.0-jammy` 는 `@playwright/test` 버전과
 같이 올려야 한다 (lockfile 의 resolved 버전과 Dockerfile 태그를 일치시킬 것).
 
