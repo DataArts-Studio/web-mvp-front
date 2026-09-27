@@ -5,6 +5,7 @@ import { hashPassword, verifyPassword } from '@/access/lib/password-hash';
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { ProjectDomain } from '@/entities/project';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
@@ -135,6 +136,7 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
       };
     }
 
+    invalidateCache(INVALIDATE.project);
     return {
       success: true,
       data: { id: archived.id },
@@ -179,6 +181,7 @@ export const updateProject = async (
       };
     }
 
+    invalidateCache(INVALIDATE.project);
     return {
       success: true,
       data: { id: updated.id },
@@ -291,6 +294,7 @@ export const deleteProject = async (
 
     await deleteAccessTokenCookie(project.name);
 
+    invalidateCache(INVALIDATE.project);
     return {
       success: true,
       data: { id: project.id },

@@ -4,6 +4,7 @@ import { requireProjectAccess } from '@/access/lib/require-access';
 import { toTestCase } from '@/entities/test-case/model/mapper';
 import type { TestCase } from '@/entities/test-case/model/types';
 import type { TestCaseDTO } from '@/entities/test-case/model/types';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseVersions, testCases } from '@testea/db';
@@ -238,6 +239,8 @@ export async function rollbackToVersion(
       if (!updated) {
         return { success: false, errors: { _version: ['복원 도중 오류가 발생했습니다.'] } };
       }
+      // 케이스는 이미 바뀌었으므로, 이어지는 스냅샷 기록이 실패해도 캐시는 비운다.
+      invalidateCache(INVALIDATE.cases);
 
       // 롤백 버전 스냅샷 생성
       await createVersionSnapshot(

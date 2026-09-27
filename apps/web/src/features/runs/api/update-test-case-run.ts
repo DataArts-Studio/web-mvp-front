@@ -2,6 +2,7 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { TestRunStatus, getDatabase, testCaseRuns, testRuns } from '@testea/db';
@@ -57,6 +58,7 @@ export async function updateTestCaseRunStatus(
       await updateTestRunStatus(db, updated.test_run_id);
     }
 
+    invalidateCache(INVALIDATE.runs);
     return {
       success: true,
       data: {

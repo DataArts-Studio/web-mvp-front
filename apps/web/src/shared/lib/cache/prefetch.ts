@@ -2,10 +2,12 @@ import { unstable_cache } from 'next/cache';
 
 import { withVerifiedAccess } from '@/access/lib/project-scope';
 
+import { CACHE_TAGS } from './tags';
+
 /**
  * 서버 컴포넌트 prefetch용 캐시 래퍼.
  * 라우트 이동 시 동일 데이터를 매번 DB에서 조회하지 않도록 캐싱합니다.
- * 뮤테이션 시 revalidateTag('tag')로 무효화할 수 있습니다.
+ * 뮤테이션 성공 시 tags.ts 의 invalidateCache 로 무효화한다.
  *
  * 권한: 캐시 콜백 안에서는 cookies() 를 읽을 수 없으므로, 각 래퍼는 캐시 바깥에서
  * withVerifiedAccess 로 먼저 권한을 확인한다. 캐시 키는 인자뿐이라 권한 확인 없이 캐시를
@@ -19,7 +21,7 @@ const rawGetProjectId = unstable_cache(
     return getProjectIdBySlug(slug);
   },
   ['project-id-by-slug'],
-  { revalidate: 300, tags: ['project'] }
+  { revalidate: 300, tags: [CACHE_TAGS.project] }
 );
 
 // --- Test Cases ---
@@ -36,7 +38,7 @@ const rawGetTestCasesList = unstable_cache(
     return getTestCasesList(params);
   },
   ['test-cases-list'],
-  { revalidate: 60, tags: ['test-cases'] }
+  { revalidate: 60, tags: [CACHE_TAGS.testCases] }
 );
 
 // --- Test Suites ---
@@ -46,7 +48,7 @@ const rawGetTestSuites = unstable_cache(
     return getTestSuites({ projectId });
   },
   ['test-suites'],
-  { revalidate: 60, tags: ['test-suites'] }
+  { revalidate: 60, tags: [CACHE_TAGS.testSuites] }
 );
 
 // --- Milestones ---
@@ -56,7 +58,7 @@ const rawGetMilestones = unstable_cache(
     return getMilestones({ projectId });
   },
   ['milestones'],
-  { revalidate: 60, tags: ['milestones'] }
+  { revalidate: 60, tags: [CACHE_TAGS.milestones] }
 );
 
 // --- Dashboard Stats ---
@@ -66,7 +68,7 @@ const rawGetDashboardStats = unstable_cache(
     return getDashboardStats({ slug });
   },
   ['dashboard-stats'],
-  { revalidate: 60, tags: ['dashboard'] }
+  { revalidate: 60, tags: [CACHE_TAGS.dashboard] }
 );
 
 // --- Test Runs ---
@@ -76,7 +78,7 @@ const rawGetTestRuns = unstable_cache(
     return getTestRunsByProjectId(projectId);
   },
   ['test-runs'],
-  { revalidate: 60, tags: ['test-runs'] }
+  { revalidate: 60, tags: [CACHE_TAGS.testRuns] }
 );
 
 // --- 권한 확인 후 캐시 조회 (서버 컴포넌트에서 쓰는 공개 API) ---

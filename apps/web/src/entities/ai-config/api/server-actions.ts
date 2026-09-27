@@ -1,6 +1,7 @@
 'use server';
 
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -204,6 +205,7 @@ export const saveGeneratedCases = async (input: {
       return cases.length;
     });
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: { count } };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'saveGeneratedCases' } });

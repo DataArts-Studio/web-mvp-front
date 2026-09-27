@@ -2,6 +2,7 @@
 
 import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -77,6 +78,7 @@ export async function importTestCases(input: {
     // Batch insert
     const result = await db.insert(testCases).values(insertData).returning();
 
+    invalidateCache(INVALIDATE.cases);
     return {
       success: true,
       data: {

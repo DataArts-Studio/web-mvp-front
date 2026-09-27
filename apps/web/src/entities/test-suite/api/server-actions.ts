@@ -5,6 +5,7 @@ import { requireProjectAccess } from '@/access/lib/require-access';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
 import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -75,6 +76,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
       lastExecutedAt: null,
     };
 
+    invalidateCache(INVALIDATE.suites);
     return {
       success: true,
       data: result,
@@ -302,6 +304,7 @@ export const updateTestSuite = async (
       lastExecutedAt: null,
     };
 
+    invalidateCache(INVALIDATE.suites);
     return {
       success: true,
       data: result,
@@ -648,6 +651,7 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       })
       .where(and(eq(testCases.test_suite_id, id), eq(testCases.lifecycle_status, 'ACTIVE')));
 
+    invalidateCache(INVALIDATE.suites);
     return {
       success: true,
       data: { id: archived.id },

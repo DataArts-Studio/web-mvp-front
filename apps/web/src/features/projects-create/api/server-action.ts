@@ -7,6 +7,7 @@ import { setAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword } from '@/access/lib/password-hash';
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
 import { toProjectDto } from '@/entities';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -109,6 +110,7 @@ export async function createProject(
     revalidatePath('/projects');
     revalidatePath('/');
 
+    invalidateCache(INVALIDATE.project);
     return { success: true, data: result };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'createProject' } });

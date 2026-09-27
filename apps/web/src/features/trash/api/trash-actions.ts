@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -334,6 +335,7 @@ export const restoreItem = async (
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
         }
+        invalidateCache(INVALIDATE.all);
         return {
           success: true,
           data: { id: restored.id },
@@ -402,6 +404,7 @@ export const restoreItem = async (
           .where(
             and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED'))
           );
+        invalidateCache(INVALIDATE.all);
         return {
           success: true,
           data: { id: restored.id },
@@ -423,6 +426,7 @@ export const restoreItem = async (
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
         }
+        invalidateCache(INVALIDATE.all);
         return { success: true, data: { id: restored.id }, message: '마일스톤이 복원되었습니다.' };
       }
       case 'scenario': {
@@ -442,6 +446,7 @@ export const restoreItem = async (
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
         }
+        invalidateCache(INVALIDATE.all);
         return { success: true, data: { id: restored.id }, message: '시나리오가 복원되었습니다.' };
       }
       default:
@@ -634,6 +639,7 @@ export const permanentDeleteItem = async (
         return { success: false, errors: { _trash: ['지원하지 않는 항목 유형입니다.'] } };
     }
 
+    invalidateCache(INVALIDATE.all);
     return {
       success: true,
       data: { id: targetId },
@@ -772,6 +778,7 @@ export const emptyTrash = async (projectId: string): Promise<ActionResult<{ coun
     const totalCount =
       allCases.length + allSuites.length + allMilestones.length + allScenarios.length;
 
+    invalidateCache(INVALIDATE.all);
     return {
       success: true,
       data: { count: totalCount },
