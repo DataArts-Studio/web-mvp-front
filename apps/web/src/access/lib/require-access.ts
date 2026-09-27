@@ -4,8 +4,8 @@
  * 쿠키에 저장된 접근 토큰을 검증하여 해당 프로젝트에 대한 접근 권한이 있는지 확인.
  * 모든 프로젝트 데이터 변경(mutation) 서버 액션에서 호출해야 함.
  */
-import { verifyProjectAccessToken } from './access-token';
 import { getAllAccessTokenCookies } from './cookies';
+import { verifyProjectSessionToken } from './project-session';
 
 /**
  * 프로젝트 ID 기반 접근 권한 확인
@@ -21,7 +21,7 @@ export async function requireProjectAccess(projectId: string): Promise<boolean> 
     const tokenMap = await getAllAccessTokenCookies();
 
     for (const [, token] of tokenMap) {
-      const result = await verifyProjectAccessToken(token);
+      const result = await verifyProjectSessionToken(token);
       if (result.valid && result.payload.projectId === projectId) {
         return true;
       }

@@ -13,7 +13,7 @@ const { mockCookies, mockVerify } = vi.hoisted(() => ({
 // 실제 구현을 검증하기 위해 unmock 한 뒤 그 의존(cookies·access-token)만 모킹한다.
 vi.unmock('@/access/lib/require-access');
 vi.mock('./cookies', () => ({ getAllAccessTokenCookies: mockCookies }));
-vi.mock('./access-token', () => ({ verifyProjectAccessToken: mockVerify }));
+vi.mock('./project-session', () => ({ verifyProjectSessionToken: mockVerify }));
 
 const payloadFor = (projectId: string): ProjectAccessTokenPayload => ({
   type: 'project_access',

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { createProjectAccessToken } from '@/access/lib/access-token';
 import { setAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword } from '@/access/lib/password-hash';
+import { createProjectSessionToken } from '@/access/lib/project-session';
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
 import { toProjectDto } from '@/entities';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
@@ -104,7 +104,7 @@ export async function createProject(
     };
 
     // 프로젝트 생성 후 자동으로 접근 토큰 발급 (생성자는 바로 접근 가능)
-    const token = await createProjectAccessToken(inserted.id, inserted.name);
+    const token = await createProjectSessionToken(inserted.id, inserted.name, hashedIdentifier);
     await setAccessTokenCookie(inserted.name, token);
 
     revalidatePath('/projects');

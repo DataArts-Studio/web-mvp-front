@@ -15,9 +15,9 @@ import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { eq } from 'drizzle-orm';
 
-import { createProjectAccessToken } from '../../lib/access-token';
 import { deleteAccessTokenCookie, setAccessTokenCookie } from '../../lib/cookies';
 import { verifyPassword } from '../../lib/password-hash';
+import { createProjectSessionToken } from '../../lib/project-session';
 import { VerifyProjectAccessRequestSchema } from '../model/schema';
 import type { ProjectAccessInfo, VerifyProjectAccessResponse } from '../model/types';
 
@@ -209,7 +209,7 @@ export async function verifyProjectAccess(
     // 5. 성공 - 토큰 발급 및 쿠키 설정
     clearFailedAttempts(rateLimitKey);
 
-    const token = await createProjectAccessToken(project.id, project.name);
+    const token = await createProjectSessionToken(project.id, project.name, project.identifierHash);
     await setAccessTokenCookie(project.name, token);
 
     // 캐시 갱신

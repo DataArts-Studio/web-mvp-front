@@ -8,6 +8,11 @@ import { initCloudflareDb } from '@/shared/db/cloudflare-db';
 import { countRecentFailedLogins, releaseFailedLogin, reserveFailedLogin } from '@testea/db';
 
 import { ADMIN_COOKIE, isValidSecret } from '../lib/admin-gate';
+import {
+  ADMIN_SESSION_TTL_SECONDS,
+  createAdminSession,
+  revokeAdminSession,
+} from '../lib/admin-session';
 
 export type GateState = { error?: string };
 
@@ -65,12 +70,20 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
   });
 
   const store = await cookies();
-  store.set(ADMIN_COOKIE, candidate, {
+  let sessionToken: string;
+  try {
+    // 재로그인 시에도 현재 브라우저의 이전 세션을 재사용하지 않는다.
+    await revokeAdminSession(store.get(ADMIN_COOKIE)?.value);
+    sessionToken = await createAdminSession();
+  } catch {
+    return { error: UNAVAILABLE_MESSAGE };
+  }
+  store.set(ADMIN_COOKIE, sessionToken, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: 60 * 60 * 8, // 8시간
+    maxAge: ADMIN_SESSION_TTL_SECONDS,
   });
 
   await logAdminActivity({ action: 'login' });
@@ -80,7 +93,9 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
 
 /** 세션 종료. */
 export async function signOutAdminAction(): Promise<void> {
+  initCloudflareDb();
   const store = await cookies();
+  await revokeAdminSession(store.get(ADMIN_COOKIE)?.value);
   store.delete(ADMIN_COOKIE);
   redirect('/notices/gate');
 }

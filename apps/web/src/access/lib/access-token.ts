@@ -80,7 +80,7 @@ function getTokenSecret(): string {
 export async function createProjectAccessToken(
   projectId: string,
   projectName: string,
-  config: Partial<AccessTokenConfig> = {}
+  config: Partial<AccessTokenConfig> & { credentialVersion?: string } = {}
 ): Promise<string> {
   const mergedConfig = { ...DEFAULT_ACCESS_TOKEN_CONFIG, ...config };
   const now = Math.floor(Date.now() / 1000);
@@ -91,6 +91,7 @@ export async function createProjectAccessToken(
     projectName,
     issuedAt: now,
     expiresAt: now + mergedConfig.expiresIn,
+    ...(config.credentialVersion ? { credentialVersion: config.credentialVersion } : {}),
   };
 
   const header = { alg: 'HS256', typ: 'JWT' };
@@ -137,14 +138,25 @@ export async function verifyProjectAccessToken(token: string): Promise<TokenVeri
     const payload = JSON.parse(base64UrlDecode(payloadEncoded)) as ProjectAccessTokenPayload;
 
     // 타입 검증
-    if (payload.type !== 'project_access') {
+    if (
+      payload.type !== 'project_access' ||
+      typeof payload.projectId !== 'string' ||
+      !payload.projectId ||
+      typeof payload.projectName !== 'string' ||
+      !payload.projectName ||
+      !Number.isSafeInteger(payload.issuedAt) ||
+      !Number.isSafeInteger(payload.expiresAt)
+    ) {
       return { valid: false, error: 'TOKEN_INVALID' };
     }
 
     // 만료 검증
     const now = Math.floor(Date.now() / 1000);
-    if (payload.expiresAt < now) {
+    if (payload.expiresAt <= now) {
       return { valid: false, error: 'TOKEN_EXPIRED' };
+    }
+    if (payload.issuedAt > now || payload.expiresAt <= payload.issuedAt) {
+      return { valid: false, error: 'TOKEN_INVALID' };
     }
 
     return { valid: true, payload };
