@@ -20,7 +20,7 @@ export async function addMilestonesToRunAction(
   const parsed = z
     .object({
       runId: z.string().uuid(),
-      ids: z.array(z.string().uuid()).min(1).max(1),
+      ids: z.array(z.string().uuid()).min(1),
     })
     .safeParse({ runId, ids: milestoneIds });
   if (!parsed.success) {

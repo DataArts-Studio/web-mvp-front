@@ -119,6 +119,21 @@ describe.each(actions)('$name 프로젝트 경계', ({ kind, call }) => {
 });
 
 describe('연결 배열 및 기존 관계 검증', () => {
+  it('마일스톤 배열에 타 프로젝트 ID가 섞이면 아무것도 기록하지 않는다.', async () => {
+    read.mockResolvedValueOnce([owned(SOURCE), owned(OTHER, B)]);
+    expect((await addMilestonesToRunAction(RUN, [SOURCE, OTHER])).success).toBe(false);
+    expectNoWrites();
+  });
+
+  it('여러 소유 마일스톤을 선택하면 기존 첫 번째 마일스톤 적용 동작을 유지한다.', async () => {
+    read.mockResolvedValueOnce([owned(SOURCE), owned(OTHER)]);
+    expect(await addMilestonesToRunAction(RUN, [SOURCE, OTHER])).toEqual({
+      success: true,
+      addedCount: 0,
+    });
+    expect(tx.update).toHaveBeenCalledWith(testRuns);
+    expect(tx.insert).not.toHaveBeenCalled();
+  });
   it('소유 스위트와 타 프로젝트 스위트가 섞이면 아무것도 기록하지 않는다.', async () => {
     read.mockResolvedValueOnce([owned(SOURCE), owned(OTHER, B)]);
     expect((await addSuitesToRunAction(RUN, [SOURCE, OTHER])).success).toBe(false);
@@ -172,7 +187,6 @@ describe('연결 배열 및 기존 관계 검증', () => {
     () => addSuitesToRunAction('invalid', [SOURCE]),
     () => addSuitesToRunAction(RUN, ['invalid']),
     () => addSuitesToRunAction(RUN, []),
-    () => addMilestonesToRunAction(RUN, [SOURCE, OTHER]),
     () => addMilestonesToRunAction(RUN, []),
     () => addMilestonesToRunAction(RUN, ['invalid']),
   ])('잘못된 입력은 DB 접근 전에 거부한다.', async (call) => {
