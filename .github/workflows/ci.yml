@@ -24,7 +24,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: apps/runner/pnpm-lock.yaml
-      # Dockerと同じ独立依存グラフを検証する。ルートのインストールで代用しない。
+      # Docker와 같은 독립 의존성 그래프를 검증한다. 루트 설치로 대체하지 않는다.
       - name: Install runner locked dependencies
         working-directory: apps/runner
         env:
