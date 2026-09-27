@@ -47,6 +47,8 @@ interface RunResult {
   covered?: number;
   /** 부분 통과 시 미작성(추정) 요구사항 — 빨간 fail 로 표시. */
   uncovered?: string[];
+  requiredCoverage?: { total: number; covered: number; missing: string[] };
+  bonusCoverage?: { total: number; covered: number; detected: string[]; suggestions: string[] };
   resultToken?: string;
 }
 
@@ -76,13 +78,12 @@ function parseTestTitles(code: string): string[] {
 }
 
 function genStarter(selectors: ChallengeSelector[]): string {
-  const ids = selectors.map((s) => s.testid).join(', ');
+  const hasSelectors = selectors.length > 0;
   return `import { test, expect } from '@playwright/test';
 
-// 참고 셀렉터: ${ids}
-test('내 테스트', async ({ page }) => {
+${hasSelectors ? '// Check the selector reference on the left, then choose data-testid, id, class, or semantic locators.\n' : ''}test('my test', async ({ page }) => {
   await page.goto('/');
-  // 참고 셀렉터를 활용해 동작을 수행하고 expect 로 검증하세요.
+  // Example only: page.locator('[data-testid="value"]'), page.locator('#id'), page.locator('.class')
 });
 `;
 }
@@ -239,6 +240,23 @@ export const AutomationCodeExercise = ({
       push({ id: 'sum', text: '  채점 실패 — 아래를 보완하세요', kind: 'fail' });
     }
 
+    const bonus = data.bonusCoverage;
+    if ((ok || partial) && bonus && bonus.total > 0) {
+      push({
+        id: 'bonus-h',
+        text: `  확장 커버리지 — ${bonus.covered}/${bonus.total}개 감지`,
+        kind: 'dim',
+      });
+      bonus.detected
+        .slice(0, 3)
+        .forEach((item, i) => push({ id: `bonus-d-${i}`, text: `  +  ${item}`, kind: 'pass' }));
+      if (bonus.suggestions.length > 0) {
+        push({ id: 'bonus-s-h', text: '  추천 보강:', kind: 'dim' });
+        bonus.suggestions.forEach((item, i) =>
+          push({ id: `bonus-s-${i}`, text: `  ·  ${item}`, kind: 'dim' })
+        );
+      }
+    }
     // 통과/실패 상세는 errorMessage 로. 부분 통과는 위 미작성 목록으로 대체한다.
     if (!partial) {
       (data.errorMessage ?? '')

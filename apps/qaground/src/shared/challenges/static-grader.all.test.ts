@@ -9,15 +9,71 @@ const sandboxChallenges = CHALLENGES.filter((c) => c.sandboxSlug);
 function goodSubmission(c: Challenge): string {
   const ids = (c.selectors ?? []).map((s) => s.testid);
   const a = ids[0] ?? 'root';
-  const b = ids[1] ?? a;
-  // 요구사항 수만큼 단언을 넣어 전체 통과(부분 아님)가 되도록 한다.
+  const selectorAssertions = ids
+    .map((id) => `  await expect(page.getByTestId('${id}')).toBeVisible();`)
+    .join('\n');
+  // Add enough assertions to avoid partial coverage.
   const reqCount = c.requirement?.length ?? 1;
-  const asserts = Array.from(
-    { length: reqCount },
-    () => `  await expect(page.getByTestId('${b}')).toBeVisible();`
+  const extraAssertions = Array.from(
+    { length: Math.max(0, reqCount - ids.length) },
+    () => `  await expect(page.getByTestId('${a}')).toBeVisible();`
   ).join('\n');
+  const asserts = [selectorAssertions, extraAssertions].filter(Boolean).join('\n');
+
+  if (c.category === 'pom') {
+    return `import { test as base, expect, type Locator, type Page } from '@playwright/test';
+const test = base.extend<{ loginPage: LoginPage }>({
+  loginPage: async ({ page }, use) => { await use(new LoginPage(page)); },
+});
+test.use({ storageState: 'auth.json' });
+class LoginPage {
+  readonly target: Locator;
+  readonly allTargets: Locator[];
+  constructor(private readonly page: Page) {
+    this.target = page.getByTestId('${a}');
+    this.allTargets = [${ids.map((id) => `page.getByTestId('${id}')`).join(', ')}];
+  }
+  async moveToTarget() { await this.page.goto('/sandbox/${c.sandboxSlug}'); }
+  async performMainAction(value = 'tester') { await this.target.fill(value).catch(async () => this.target.click()); }
+  async checkMainState() { for (const target of this.allTargets) await expect(target).toBeVisible(); }
+}
+class SignupPage extends LoginPage {}
+class ProfilePage extends LoginPage {}
+class OrdersPage extends LoginPage {}
+class CartCheckoutPage extends LoginPage {}
+class ProductOptionsPage extends LoginPage {}
+class WishlistPage extends LoginPage {}
+class OrderCancelPage extends LoginPage {}
+class FileUploadPage extends LoginPage {}
+class NavigationPage extends LoginPage {}
+class CatalogPage extends LoginPage {}
+class CartPage extends LoginPage {}
+class CheckoutPage extends LoginPage {}
+class AuthPage extends LoginPage {}
+class DataTablePage extends LoginPage {}
+class ModalPage extends LoginPage {}
+class ProductPage extends LoginPage {}
+class RegressionPage extends LoginPage {}
+
+test.beforeEach(async ({ loginPage }) => {
+  await loginPage.moveToTarget();
+});
+
+describe('risk area @regression @critical', () => {
+  test('faithful pom submission @smoke', async ({ loginPage }) => {
+    await loginPage.performMainAction();
+    await loginPage.checkMainState();
+  });
+
+  test('second faithful pom submission @regression', async ({ loginPage }) => {
+    await loginPage.performMainAction('qaground123');
+    await loginPage.checkMainState();
+  });
+});`;
+  }
+
   return `import { test, expect } from '@playwright/test';
-test('충실한 제출', async ({ page }) => {
+test('faithful submission', async ({ page }) => {
   await page.goto('/sandbox/${c.sandboxSlug}');
   await page.getByTestId('${a}').click();
 ${asserts}
@@ -36,8 +92,16 @@ describe('정적 채점: 모든 sandbox 챌린지', () => {
 
   it.each(sandboxChallenges)('충실한 제출은 통과: $slug', (c) => {
     const r = gradeSubmissionStatically(c, goodSubmission(c));
+    const requiredCount = c.coverage?.required?.length ?? c.requirement?.length ?? 0;
+
     expect(r.ok).toBe(true);
     expect(r.status).toBe('passed');
+    expect(r.requiredCoverage).toEqual({
+      total: requiredCount,
+      covered: requiredCount,
+      missing: [],
+    });
+    expect(r.bonusCoverage?.total).toBeGreaterThan(0);
   });
 
   it.each(sandboxChallenges)('빈약한 제출은 실패: $slug', (c) => {

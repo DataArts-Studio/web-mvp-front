@@ -5,7 +5,6 @@
  *   exercises 스키마로 옮긴다(FDD-QG05/QG09).
  * - sandboxSlug 가 가리키는 `/sandbox/[slug]` 가 실제 테스트 대상 페이지다.
  */
-
 export type ChallengeTrack = 'automation' | 'manual' | 'api' | 'performance' | 'accessibility';
 export type ChallengeDifficulty = 'easy' | 'medium' | 'hard';
 /** 주제 카테고리. 트랙(테스트 방식)과 별개인 도메인 축. */
@@ -19,17 +18,46 @@ export type ChallengeCategory =
   | 'fintech'
   | 'performance'
   | 'accessibility'
-  | 'fundamentals';
-
+  | 'fundamentals'
+  | 'pom';
+export type ChallengeSelectorType = 'data-testid' | 'id' | 'class';
+export interface ChallengeSelectorOption {
+  type: ChallengeSelectorType;
+  value: string;
+}
 export interface ChallengeSelector {
   name: string;
+  /** Selector value without prefix. Existing challenges use data-testid by default. */
   testid: string;
+  selectorType?: ChallengeSelectorType;
+  options?: ChallengeSelectorOption[];
   desc: string;
 }
-
+export interface StaticCodeCheck {
+  label: string;
+  pattern: string;
+  flags?: string;
+  message: string;
+}
+export interface ChallengeCoverageSignal {
+  id: string;
+  label: string;
+  patterns?: string[];
+  selectors?: string[];
+  literals?: string[];
+  desc?: string;
+}
+export interface ChallengeCoverageProfile {
+  required?: ChallengeCoverageSignal[];
+  bonus?: ChallengeCoverageSignal[];
+}
+export interface ChallengeTestData {
+  label: string;
+  value: string;
+  desc?: string;
+}
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export type ApiSchemaType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'null';
-
 export interface ApiSchemaField {
   path: string;
   type: ApiSchemaType;
@@ -37,7 +65,6 @@ export interface ApiSchemaField {
   desc?: string;
   example?: unknown;
 }
-
 export interface ApiEndpoint {
   method: HttpMethod;
   path: string;
@@ -49,7 +76,6 @@ export interface ApiEndpoint {
   response?: ApiSchemaField[];
   responseExample?: unknown;
 }
-
 export interface Challenge {
   slug: string;
   title: string;
@@ -76,12 +102,26 @@ export interface Challenge {
   modelTestCases?: { title: string; detail: string }[];
   /** 코드 채점: 코드 에디터 초기 Playwright 스펙 템플릿. */
   starterSpec?: string;
+  /** 코드 채점: 실행 전 반드시 포함해야 하는 구조적 코드 패턴. */
+  staticChecks?: StaticCodeCheck[];
+  /** Code grading: required and bonus coverage signals. Falls back to requirements when omitted. */
+  coverage?: ChallengeCoverageProfile;
+  /** Test accounts and input values learners can use directly. */
+  testData?: ChallengeTestData[];
   /** 학습 UX: 예상 풀이 시간(분). */
   estimatedMinutes?: number;
   /** 학습 UX: 먼저 풀면 좋은 챌린지 slug 목록. */
   prerequisites?: string[];
   /** 학습 UX: 완료 후 추천할 챌린지 slug 목록. */
   recommendedNext?: string[];
+}
+
+function selectorOptions(value: string, classValue = `qa-${value}`): ChallengeSelectorOption[] {
+  return [
+    { type: 'data-testid', value },
+    { type: 'id', value },
+    { type: 'class', value: classValue },
+  ];
 }
 
 export const TRACK_LABEL: Record<ChallengeTrack, string> = {
@@ -91,13 +131,11 @@ export const TRACK_LABEL: Record<ChallengeTrack, string> = {
   performance: 'Performance',
   accessibility: 'Accessibility',
 };
-
 export const DIFFICULTY_LABEL: Record<ChallengeDifficulty, string> = {
   easy: '입문',
   medium: '중급',
   hard: '고급',
 };
-
 export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
   auth: '인증',
   forms: '폼',
@@ -109,8 +147,8 @@ export const CATEGORY_LABEL: Record<ChallengeCategory, string> = {
   performance: '성능',
   accessibility: '접근성',
   fundamentals: '테스팅 기초',
+  pom: 'POM',
 };
-
 /** 목록에 카테고리를 노출할 순서. */
 export const CATEGORY_ORDER: ChallengeCategory[] = [
   'auth',
@@ -123,8 +161,8 @@ export const CATEGORY_ORDER: ChallengeCategory[] = [
   'performance',
   'accessibility',
   'fundamentals',
+  'pom',
 ];
-
 export const CHALLENGES: Challenge[] = [
   {
     slug: 'login-basic',
@@ -144,14 +182,38 @@ export const CHALLENGES: Challenge[] = [
     ],
     sandboxSlug: 'login-basic',
     selectors: [
-      { name: '아이디 입력', testid: 'username', desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', desc: '로그인 성공 시 노출' },
-      { name: '에러 메시지', testid: 'login-error', desc: '실패·검증 에러 시 노출' },
+      {
+        name: '아이디 입력',
+        testid: 'username',
+        options: selectorOptions('username'),
+        desc: '아이디 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '로그인 버튼',
+        testid: 'login-submit',
+        options: selectorOptions('login-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'login-success',
+        options: selectorOptions('login-success'),
+        desc: '로그인 성공 시 노출',
+      },
+      {
+        name: '에러 메시지',
+        testid: 'login-error',
+        options: selectorOptions('login-error'),
+        desc: '실패·검증 에러 시 노출',
+      },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다', async ({ page }) => {
   await page.goto('/');
   // TODO: username·password 를 채우고 로그인 버튼을 클릭한 뒤,
@@ -178,14 +240,54 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     ],
     sandboxSlug: 'signup-validation',
     selectors: [
-      { name: '이메일 입력', testid: 'email', desc: '이메일 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', desc: '비밀번호 입력 필드' },
-      { name: '비밀번호 확인', testid: 'confirm-password', desc: '비밀번호 확인 필드' },
-      { name: '가입 버튼', testid: 'signup-submit', desc: '제출 버튼' },
-      { name: '이메일 에러', testid: 'email-error', desc: '이메일 검증 실패 시 노출' },
-      { name: '비밀번호 에러', testid: 'password-error', desc: '비밀번호 검증 실패 시 노출' },
-      { name: '확인 에러', testid: 'confirm-error', desc: '비밀번호 불일치 시 노출' },
-      { name: '성공 메시지', testid: 'signup-success', desc: '가입 완료 시 노출' },
+      {
+        name: '이메일 입력',
+        testid: 'email',
+        options: selectorOptions('email'),
+        desc: '이메일 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '비밀번호 확인',
+        testid: 'confirm-password',
+        options: selectorOptions('confirm-password'),
+        desc: '비밀번호 확인 필드',
+      },
+      {
+        name: '가입 버튼',
+        testid: 'signup-submit',
+        options: selectorOptions('signup-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '이메일 에러',
+        testid: 'email-error',
+        options: selectorOptions('email-error'),
+        desc: '이메일 검증 실패 시 노출',
+      },
+      {
+        name: '비밀번호 에러',
+        testid: 'password-error',
+        options: selectorOptions('password-error'),
+        desc: '비밀번호 검증 실패 시 노출',
+      },
+      {
+        name: '확인 에러',
+        testid: 'confirm-error',
+        options: selectorOptions('confirm-error'),
+        desc: '비밀번호 불일치 시 노출',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'signup-success',
+        options: selectorOptions('signup-success'),
+        desc: '가입 완료 시 노출',
+      },
     ],
   },
   {
@@ -808,6 +910,1420 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     ],
   },
   {
+    slug: 'pom-login-page-object',
+    title: 'POM 기초: 로그인 Page Object 만들기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 25,
+    recommendedNext: ['pom-signup-page-object', 'pom-login-actions-and-assertions', 'login-basic'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '로그인 화면의 locator와 동작을 LoginPage 클래스로 분리하고, 테스트 본문은 사용자 시나리오만 읽히도록 정리하세요.',
+    requirement: [
+      'LoginPage 클래스를 만들고 constructor에서 Page를 받아 보관한다.',
+      'username, password, submitButton, successMessage locator를 readonly 필드로 선언한다.',
+      '이동, 입력·제출, 성공 단언을 Page Object 메서드로 캡슐화한다.',
+    ],
+    sandboxSlug: 'login-basic',
+    testData: [
+      { label: '아이디', value: 'tester', desc: '정상 계정' },
+      { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
+    ],
+    selectors: [
+      {
+        name: '아이디 입력',
+        testid: 'username',
+        options: selectorOptions('username'),
+        desc: '아이디 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '로그인 버튼',
+        testid: 'login-submit',
+        options: selectorOptions('login-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'login-success',
+        options: selectorOptions('login-success'),
+        desc: '로그인 성공 후 노출',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'LoginPage 클래스',
+        pattern: 'class\\s+LoginPage\\b',
+        message: 'LoginPage 클래스를 만들어 화면 세부 구현을 테스트에서 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '로그인 액션 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*\\.click\\s*\\(',
+        message: '아이디·비밀번호 입력과 제출을 Page Object 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '상태 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '성공 상태 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class LoginPage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('valid user can sign in', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-signup-page-object',
+    title: 'POM 기초: 회원가입 Page Object 만들기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 30,
+    prerequisites: ['pom-login-page-object'],
+    recommendedNext: [
+      'pom-profile-form-object',
+      'pom-login-actions-and-assertions',
+      'pom-signup-validation-errors',
+    ],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '회원가입 화면의 입력 필드와 제출 흐름을 SignupPage 클래스로 분리하고, 성공 가입 시나리오를 테스트 본문에서 읽기 쉽게 정리하세요.',
+    requirement: [
+      'SignupPage 클래스를 만들고 constructor에서 Page를 받아 보관한다.',
+      'email, password, confirmPassword, submitButton, successMessage locator를 readonly 필드로 선언한다.',
+      '이동, 가입 정보 입력·제출, 가입 완료 단언을 Page Object 메서드로 캡슐화한다.',
+      '테스트 본문에는 Page Object 메서드 호출만 남겨 사용자 시나리오처럼 읽히게 한다.',
+    ],
+    sandboxSlug: 'signup-validation',
+    testData: [
+      { label: '이메일', value: 'tester@example.com', desc: '정상 이메일' },
+      { label: '비밀번호', value: 'qaground123', desc: '8자 이상 정상 비밀번호' },
+      { label: '비밀번호 확인', value: 'qaground123', desc: '비밀번호와 동일한 확인 값' },
+    ],
+    selectors: [
+      {
+        name: '이메일 입력',
+        testid: 'email',
+        options: selectorOptions('email'),
+        desc: '이메일 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '비밀번호 확인',
+        testid: 'confirm-password',
+        options: selectorOptions('confirm-password'),
+        desc: '비밀번호 확인 필드',
+      },
+      {
+        name: '가입 버튼',
+        testid: 'signup-submit',
+        options: selectorOptions('signup-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'signup-success',
+        options: selectorOptions('signup-success'),
+        desc: '가입 완료 후 노출',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'SignupPage 클래스',
+        pattern: 'class\\s+SignupPage\\b',
+        message: 'SignupPage 클래스를 만들어 회원가입 화면 세부 구현을 테스트에서 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '회원가입 액션 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*\\.click\\s*\\(',
+        message: '이메일·비밀번호 입력과 제출을 Page Object 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '가입 완료 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '가입 완료 상태 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class SignupPage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('new user can sign up', async ({ page }) => {
+  const signupPage = new SignupPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-profile-form-object',
+    title: 'POM 기초: 프로필 폼 Page Object 만들기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-signup-page-object'],
+    recommendedNext: ['pom-async-load-object', 'pom-login-actions-and-assertions'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '입력 필드가 여러 개인 프로필 등록 화면을 ProfilePage로 분리하고, 정상 등록 시나리오를 Page Object 메서드로 표현하세요.',
+    requirement: [
+      'ProfilePage 클래스를 만들고 constructor에서 Page를 받아 보관한다.',
+      'name, phone, age, terms, submitButton, successMessage locator를 readonly 필드로 선언한다.',
+      '이동, 프로필 입력·약관 체크·제출, 등록 완료 단언을 Page Object 메서드로 캡슐화한다.',
+      '테스트 본문에는 정상 프로필 등록 시나리오만 읽히도록 raw locator를 숨긴다.',
+    ],
+    sandboxSlug: 'profile-form',
+    testData: [
+      { label: '이름', value: '김테스터', desc: '2~20자 정상 이름' },
+      { label: '전화번호', value: '010-0000-0000', desc: '정상 전화번호 형식' },
+      { label: '나이', value: '30', desc: '14~120 범위의 정상 나이' },
+    ],
+    selectors: [
+      {
+        name: '이름 입력',
+        testid: 'name',
+        options: selectorOptions('name'),
+        desc: '이름 입력 필드',
+      },
+      {
+        name: '전화 입력',
+        testid: 'phone',
+        options: selectorOptions('phone'),
+        desc: '전화번호 입력 필드',
+      },
+      { name: '나이 입력', testid: 'age', options: selectorOptions('age'), desc: '나이 입력 필드' },
+      {
+        name: '약관 동의',
+        testid: 'terms',
+        options: selectorOptions('terms'),
+        desc: '약관 체크박스',
+      },
+      {
+        name: '등록 버튼',
+        testid: 'profile-submit',
+        options: selectorOptions('profile-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'profile-success',
+        options: selectorOptions('profile-success'),
+        desc: '등록 완료 후 노출',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'ProfilePage 클래스',
+        pattern: 'class\\s+ProfilePage\\b',
+        message: 'ProfilePage 클래스를 만들어 프로필 폼 세부 구현을 테스트에서 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '프로필 입력 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*(?:\\.check|\\.click)\\s*\\(',
+        message: '프로필 입력과 약관 체크/제출을 Page Object 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '등록 완료 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '등록 완료 상태 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class ProfilePage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('user can register profile', async ({ page }) => {
+  const profilePage = new ProfilePage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-async-load-object',
+    title: 'POM 기초: 비동기 로딩 Page Object 만들기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 30,
+    prerequisites: ['pom-profile-form-object'],
+    recommendedNext: ['pom-cart-checkout-object', 'pom-login-actions-and-assertions'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '불러오기 버튼, 로딩 상태, 완료 콘텐츠 검증을 OrdersPage로 묶어 테스트 본문에서 대기 세부 구현을 숨기세요.',
+    requirement: [
+      'OrdersPage 클래스를 만들고 loadButton, loadingSpinner, loadedContent locator를 readonly 필드로 선언한다.',
+      '이동과 불러오기 클릭을 Page Object 액션 메서드로 캡슐화한다.',
+      '로딩 상태와 완료 상태 검증을 Page Object 단언 메서드로 분리한다.',
+      '고정 시간 대기 대신 Playwright expect 기반 대기로 상태 전환을 검증한다.',
+    ],
+    sandboxSlug: 'async-load',
+    selectors: [
+      {
+        name: '불러오기 버튼',
+        testid: 'load-btn',
+        options: selectorOptions('load-btn'),
+        desc: '로딩 시작 버튼',
+      },
+      {
+        name: '로딩 스피너',
+        testid: 'loading-spinner',
+        options: selectorOptions('loading-spinner'),
+        desc: '로딩 중 노출',
+      },
+      {
+        name: '콘텐츠 목록',
+        testid: 'loaded-content',
+        options: selectorOptions('loaded-content'),
+        desc: '로딩 완료 후 노출',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'OrdersPage 클래스',
+        pattern: 'class\\s+OrdersPage\\b',
+        message: '비동기 주문 목록 화면을 OrdersPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '불러오기 액션 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(',
+        message: '불러오기 클릭을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '상태 전환 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '로딩/완료 상태 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class OrdersPage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('order list loads after request', async ({ page }) => {
+  const ordersPage = new OrdersPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-cart-checkout-object',
+    title: 'POM 기초: 장바구니 금액 계산 Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-async-load-object'],
+    recommendedNext: ['pom-product-options-object', 'pom-wishlist-object'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '수량 변경, 쿠폰 적용, 배송비·합계 검증을 CartCheckoutPage로 묶어 장바구니 도메인 규칙을 읽기 쉽게 테스트하세요.',
+    requirement: [
+      'CartCheckoutPage 클래스를 만들고 수량 버튼, 쿠폰 입력, 금액 영역 locator를 readonly 필드로 선언한다.',
+      '상품 수량 변경과 쿠폰 적용을 Page Object 액션 메서드로 캡슐화한다.',
+      '소계, 배송비, 할인, 합계 검증을 Page Object 단언 메서드로 분리한다.',
+      '테스트 본문에는 장바구니 금액 계산 시나리오만 읽히도록 raw locator를 숨긴다.',
+    ],
+    sandboxSlug: 'cart-checkout',
+    testData: [
+      { label: '쿠폰 코드', value: 'SAVE10', desc: '최소 20,000원 이상 주문 시 10% 할인' },
+      { label: '무료배송 기준', value: '50,000원', desc: '상품 소계가 기준 이상이면 배송비 무료' },
+      { label: '기본 상품', value: '무선 마우스 20,000원', desc: '초기 수량 1개' },
+    ],
+    selectors: [
+      {
+        name: '마우스 수량 증가',
+        testid: 'inc-mouse',
+        options: selectorOptions('inc-mouse'),
+        desc: '무선 마우스 수량 증가 버튼',
+      },
+      {
+        name: '마우스 수량',
+        testid: 'qty-mouse',
+        options: selectorOptions('qty-mouse'),
+        desc: '무선 마우스 현재 수량',
+      },
+      {
+        name: '쿠폰 입력',
+        testid: 'coupon-input',
+        options: selectorOptions('coupon-input'),
+        desc: '쿠폰 코드 입력 필드',
+      },
+      {
+        name: '쿠폰 적용',
+        testid: 'apply-coupon',
+        options: selectorOptions('apply-coupon'),
+        desc: '쿠폰 적용 버튼',
+      },
+      {
+        name: '소계',
+        testid: 'subtotal',
+        options: selectorOptions('subtotal'),
+        desc: '상품 금액 합계',
+      },
+      {
+        name: '배송비',
+        testid: 'shipping',
+        options: selectorOptions('shipping'),
+        desc: '배송비 표시',
+      },
+      {
+        name: '할인',
+        testid: 'discount',
+        options: selectorOptions('discount'),
+        desc: '쿠폰 할인 금액',
+      },
+      {
+        name: '합계',
+        testid: 'total',
+        options: selectorOptions('total'),
+        desc: '최종 결제 예정 금액',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'CartCheckoutPage 클래스',
+        pattern: 'class\\s+CartCheckoutPage\\b',
+        message: '장바구니 금액 계산 책임을 CartCheckoutPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '수량/쿠폰 액션 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click)\\s*\\([\\s\\S]*(?:\\.fill|\\.click)\\s*\\(',
+        message: '수량 변경과 쿠폰 적용을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '금액 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '소계·배송비·할인·합계 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class CartCheckoutPage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('cart total changes after quantity and coupon updates', async ({ page }) => {
+  const cartPage = new CartCheckoutPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-product-options-object',
+    title: 'POM 기초: 상품 옵션 선택 Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 30,
+    prerequisites: ['pom-cart-checkout-object'],
+    recommendedNext: ['pom-wishlist-object'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '사이즈와 색상 선택, 옵션 요약, 담기 성공 검증을 ProductOptionsPage로 묶어 상품 상세 선택 흐름을 표현하세요.',
+    requirement: [
+      'ProductOptionsPage 클래스를 만들고 옵션 버튼, 요약, 담기 버튼, 성공 메시지 locator를 readonly 필드로 선언한다.',
+      '사이즈 선택, 색상 선택, 담기 액션을 Page Object 메서드로 캡슐화한다.',
+      '선택 요약과 장바구니 담기 성공을 Page Object 단언 메서드로 분리한다.',
+      '테스트 본문에는 상품 옵션 선택 시나리오만 읽히도록 raw locator를 숨긴다.',
+    ],
+    sandboxSlug: 'product-options',
+    testData: [
+      { label: '사이즈', value: 'M', desc: '선택 가능한 상품 사이즈' },
+      { label: '색상', value: 'black', desc: '블랙 색상 옵션' },
+    ],
+    selectors: [
+      {
+        name: 'M 사이즈',
+        testid: 'size-m',
+        options: selectorOptions('size-m'),
+        desc: 'M 사이즈 선택 버튼',
+      },
+      {
+        name: '블랙 색상',
+        testid: 'color-black',
+        options: selectorOptions('color-black'),
+        desc: '블랙 색상 선택 버튼',
+      },
+      {
+        name: '선택 요약',
+        testid: 'selected-summary',
+        options: selectorOptions('selected-summary'),
+        desc: '현재 선택된 옵션 요약',
+      },
+      {
+        name: '옵션 에러',
+        testid: 'option-error',
+        options: selectorOptions('option-error'),
+        desc: '옵션 누락 시 노출',
+      },
+      {
+        name: '담기 버튼',
+        testid: 'add-to-cart',
+        options: selectorOptions('add-to-cart'),
+        desc: '장바구니 담기 버튼',
+      },
+      {
+        name: '담기 완료',
+        testid: 'added-confirm',
+        options: selectorOptions('added-confirm'),
+        desc: '담기 성공 메시지',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'ProductOptionsPage 클래스',
+        pattern: 'class\\s+ProductOptionsPage\\b',
+        message: '상품 옵션 선택 책임을 ProductOptionsPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '옵션 선택 액션 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(',
+        message: '사이즈와 색상 선택을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '옵션 상태 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '선택 요약 또는 담기 완료 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class ProductOptionsPage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('user can select options and add product to cart', async ({ page }) => {
+  const productPage = new ProductOptionsPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-wishlist-object',
+    title: 'POM 기초: 위시리스트 토글 Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 25,
+    prerequisites: ['pom-product-options-object'],
+    recommendedNext: ['pom-order-cancel-object'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '상품 찜 토글과 찜 개수 배지를 WishlistPage로 캡슐화해 토글 상태 검증을 읽기 쉽게 작성하세요.',
+    requirement: [
+      'WishlistPage 클래스를 만들고 찜 버튼과 찜 개수 locator를 readonly 필드로 선언한다.',
+      '상품을 찜하거나 해제하는 액션 메서드를 작성한다.',
+      'aria-pressed 상태와 찜 개수 검증을 Page Object 단언 메서드로 분리한다.',
+    ],
+    sandboxSlug: 'wishlist',
+    selectors: [
+      {
+        name: '첫 번째 찜 버튼',
+        testid: 'wish-1',
+        options: selectorOptions('wish-1'),
+        desc: '무선 마우스 찜 토글',
+      },
+      {
+        name: '두 번째 찜 버튼',
+        testid: 'wish-2',
+        options: selectorOptions('wish-2'),
+        desc: '기계식 키보드 찜 토글',
+      },
+      {
+        name: '찜 개수',
+        testid: 'wish-count',
+        options: selectorOptions('wish-count'),
+        desc: '찜한 상품 개수',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'WishlistPage 클래스',
+        pattern: 'class\\s+WishlistPage\\b',
+        message: '위시리스트 책임을 WishlistPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '찜 토글 액션 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(',
+        message: '찜 토글을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '찜 상태 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '찜 상태와 개수 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class WishlistPage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('user can toggle wishlist items', async ({ page }) => {
+  const wishlistPage = new WishlistPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-order-cancel-object',
+    title: 'POM 기초: 주문 취소 상태 Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-wishlist-object'],
+    recommendedNext: ['pom-file-upload-object'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '주문 상태 변경, 취소 가능 여부, 환불 결과 검증을 OrderCancelPage로 묶어 상태 기반 시나리오를 작성하세요.',
+    requirement: [
+      'OrderCancelPage 클래스를 만들고 상태 설정 버튼, 주문 상태, 취소 버튼, 환불 결과 locator를 readonly 필드로 선언한다.',
+      '상태를 변경하고 주문을 취소하는 액션 메서드를 작성한다.',
+      '취소 가능 상태와 취소 불가 상태, 환불 결과 검증을 Page Object 단언 메서드로 분리한다.',
+    ],
+    sandboxSlug: 'order-cancel',
+    selectors: [
+      {
+        name: '결제완료 설정',
+        testid: 'set-paid',
+        options: selectorOptions('set-paid'),
+        desc: '취소 가능 상태로 설정',
+      },
+      {
+        name: '배송중 설정',
+        testid: 'set-shipping',
+        options: selectorOptions('set-shipping'),
+        desc: '취소 불가 상태로 설정',
+      },
+      {
+        name: '주문 상태',
+        testid: 'order-status',
+        options: selectorOptions('order-status'),
+        desc: '현재 주문 상태',
+      },
+      {
+        name: '취소 안내',
+        testid: 'cancel-notice',
+        options: selectorOptions('cancel-notice'),
+        desc: '취소 불가 안내',
+      },
+      {
+        name: '취소 버튼',
+        testid: 'cancel-button',
+        options: selectorOptions('cancel-button'),
+        desc: '주문 취소 버튼',
+      },
+      {
+        name: '환불액',
+        testid: 'refund-amount',
+        options: selectorOptions('refund-amount'),
+        desc: '취소 후 환불액',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'OrderCancelPage 클래스',
+        pattern: 'class\\s+OrderCancelPage\\b',
+        message: '주문 취소 상태 책임을 OrderCancelPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '상태/취소 액션 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(',
+        message: '상태 변경과 취소 동작을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '상태 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '주문 상태와 환불 결과 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class OrderCancelPage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('order can be cancelled only before shipping', async ({ page }) => {
+  const orderPage = new OrderCancelPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-file-upload-object',
+    title: 'POM 기초: 파일 업로드 Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 25,
+    prerequisites: ['pom-order-cancel-object'],
+    recommendedNext: ['pom-login-actions-and-assertions', 'pom-commerce-flow-objects'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '파일 선택, 파일명 표시, 업로드 완료 검증을 FileUploadPage로 캡슐화해 파일 입력 테스트를 정리하세요.',
+    requirement: [
+      'FileUploadPage 클래스를 만들고 파일 입력, 파일명, 업로드 버튼, 완료 메시지 locator를 readonly 필드로 선언한다.',
+      '파일 선택과 업로드 클릭을 Page Object 액션 메서드로 캡슐화한다.',
+      '선택한 파일명과 업로드 완료 메시지 검증을 Page Object 단언 메서드로 분리한다.',
+    ],
+    sandboxSlug: 'file-upload',
+    testData: [
+      {
+        label: '업로드 파일명',
+        value: 'receipt.pdf',
+        desc: '테스트에서 생성하거나 setInputFiles로 지정할 파일명',
+      },
+    ],
+    selectors: [
+      {
+        name: '파일 입력',
+        testid: 'file-input',
+        options: selectorOptions('file-input'),
+        desc: '파일 선택 input',
+      },
+      {
+        name: '파일명',
+        testid: 'file-name',
+        options: selectorOptions('file-name'),
+        desc: '선택한 파일명 표시',
+      },
+      {
+        name: '업로드 버튼',
+        testid: 'upload-submit',
+        options: selectorOptions('upload-submit'),
+        desc: '업로드 실행 버튼',
+      },
+      {
+        name: '업로드 완료',
+        testid: 'upload-result',
+        options: selectorOptions('upload-result'),
+        desc: '업로드 완료 메시지',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'FileUploadPage 클래스',
+        pattern: 'class\\s+FileUploadPage\\b',
+        message: '파일 업로드 책임을 FileUploadPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '파일 업로드 액션 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:setInputFiles|\\.click)\\s*\\(',
+        message: '파일 선택과 업로드 동작을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '업로드 결과 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '파일명과 업로드 완료 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+    starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
+class FileUploadPage {
+  constructor(private readonly page: Page) {}
+  // TODO: declare readonly locators and POM methods.
+}
+test('user can upload evidence file', async ({ page }) => {
+  const uploadPage = new FileUploadPage(page);
+  await page.goto('/');
+  // TODO
+});
+`,
+  },
+  {
+    slug: 'pom-login-actions-and-assertions',
+    title: 'POM 기초: 액션과 단언 메서드 나누기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 30,
+    prerequisites: ['pom-file-upload-object'],
+    recommendedNext: ['pom-signup-validation-errors'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '성공 로그인과 실패 로그인을 같은 LoginPage로 검증하되, 테스트마다 raw locator를 반복하지 않도록 정리하세요.',
+    requirement: [
+      'LoginPage에 로그인 액션 메서드를 만들고 두 테스트가 재사용한다.',
+      '성공·실패 검증을 각각 Page Object 단언 메서드로 분리한다.',
+      '테스트 본문에는 시나리오 순서만 남기고 raw locator 반복을 Page Object 내부로 숨긴다.',
+    ],
+    sandboxSlug: 'login-basic',
+    testData: [
+      { label: '아이디', value: 'tester', desc: '정상 계정' },
+      { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
+      { label: '틀린 비밀번호', value: 'wrong-password', desc: '로그인 실패 검증용' },
+    ],
+    selectors: [
+      {
+        name: '아이디 입력',
+        testid: 'username',
+        options: selectorOptions('username'),
+        desc: '아이디 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '로그인 버튼',
+        testid: 'login-submit',
+        options: selectorOptions('login-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'login-success',
+        options: selectorOptions('login-success'),
+        desc: '로그인 성공 후 노출',
+      },
+      {
+        name: '에러 메시지',
+        testid: 'login-error',
+        options: selectorOptions('login-error'),
+        desc: '인증 실패 시 노출',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'LoginPage 클래스',
+        pattern: 'class\\s+LoginPage\\b',
+        message: '성공/실패 로그인 흐름을 LoginPage 하나로 표현하세요.',
+      },
+      {
+        label: '성공 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '성공 메시지 검증을 Page Object 단언 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '실패 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '에러 메시지 검증을 Page Object 단언 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '복수 테스트',
+        pattern: 'test\\s*\\([\\s\\S]*test\\s*\\(',
+        message: '성공 케이스와 실패 케이스를 별도 test 블록으로 작성하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-signup-validation-errors',
+    title: 'POM 기초: 폼 검증 메시지 캡슐화',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'easy',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-login-actions-and-assertions'],
+    recommendedNext: ['pom-navigation-before-each'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '회원가입 폼의 입력, 제출, 필드별 에러 검증을 SignupPage 메서드로 분리해 검증 메시지 테스트를 작성하세요.',
+    requirement: [
+      'SignupPage 클래스를 만들고 이메일·비밀번호·비밀번호 확인·제출 locator를 필드로 선언한다.',
+      'submitEmptyForm 또는 submitSignup 메서드로 폼 제출 동작을 캡슐화한다.',
+      'expectEmailError, expectPasswordError 같은 필드별 단언 메서드를 작성한다.',
+    ],
+    sandboxSlug: 'signup-validation',
+    selectors: [
+      {
+        name: '이메일 입력',
+        testid: 'email',
+        options: selectorOptions('email'),
+        desc: '이메일 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '비밀번호 확인',
+        testid: 'confirm-password',
+        options: selectorOptions('confirm-password'),
+        desc: '비밀번호 확인 필드',
+      },
+      {
+        name: '이메일 에러',
+        testid: 'email-error',
+        options: selectorOptions('email-error'),
+        desc: '이메일 검증 메시지',
+      },
+      {
+        name: '비밀번호 에러',
+        testid: 'password-error',
+        options: selectorOptions('password-error'),
+        desc: '비밀번호 검증 메시지',
+      },
+      {
+        name: '확인 에러',
+        testid: 'confirm-error',
+        options: selectorOptions('confirm-error'),
+        desc: '비밀번호 확인 검증 메시지',
+      },
+      {
+        name: '가입 버튼',
+        testid: 'signup-submit',
+        options: selectorOptions('signup-submit'),
+        desc: '제출 버튼',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'SignupPage 클래스',
+        pattern: 'class\\s+SignupPage\\b',
+        message: '회원가입 화면을 SignupPage 클래스로 분리하세요.',
+      },
+      {
+        label: '제출 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        message: '폼 제출 동작을 Page Object 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '이메일 에러 단언',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '이메일 검증 메시지를 의도 기반 단언 메서드로 작성하세요.',
+      },
+      {
+        label: '비밀번호 에러 단언',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '비밀번호 검증 메시지를 의도 기반 단언 메서드로 작성하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-navigation-before-each',
+    title: 'POM 기초: beforeEach와 페이지 상태 초기화',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-signup-validation-errors'],
+    recommendedNext: ['pom-commerce-flow-objects'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '내비게이션 화면을 NavigationPage로 감싸고, beforeEach에서 매 테스트의 시작 상태를 일관되게 준비하세요.',
+    requirement: [
+      'NavigationPage 클래스로 메뉴 클릭과 현재 제목 검증을 캡슐화한다.',
+      'test.beforeEach에서 페이지 진입과 Page Object 생성을 준비한다.',
+      '주문·설정 이동과 뒤로가기 동작을 별도 테스트로 검증한다.',
+    ],
+    sandboxSlug: 'page-navigation',
+    selectors: [
+      { name: '대시보드 메뉴', testid: 'nav-dashboard', desc: '대시보드로 이동' },
+      { name: '주문 메뉴', testid: 'nav-orders', desc: '주문으로 이동' },
+      { name: '설정 메뉴', testid: 'nav-settings', desc: '설정으로 이동' },
+      { name: '현재 페이지 제목', testid: 'page-title', desc: '현재 페이지 제목' },
+      { name: '뒤로가기', testid: 'back-button', desc: '직전 페이지로 이동' },
+    ],
+    staticChecks: [
+      {
+        label: 'NavigationPage 클래스',
+        pattern: 'class\\s+NavigationPage\\b',
+        message: '내비게이션 화면 조작을 NavigationPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'beforeEach 준비',
+        pattern: 'test\\.beforeEach\\s*\\(',
+        message: '반복되는 페이지 진입과 준비 코드는 test.beforeEach로 모으세요.',
+      },
+      {
+        label: '제목 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '현재 페이지 제목 검증을 expectTitle 메서드로 캡슐화하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-commerce-flow-objects',
+    title: 'POM 기초: 플로우를 여러 Page Object로 나누기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 45,
+    prerequisites: ['pom-navigation-before-each'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '장바구니 플로우를 CatalogPage와 CartPage로 나누고, 테스트 본문에서는 사용자의 구매 여정만 보이게 작성하세요.',
+    requirement: [
+      'CatalogPage와 CartPage를 분리해 상품 추가와 장바구니 검증 책임을 나눈다.',
+      'addProduct, openCart, expectCartCount 같은 의도 기반 메서드를 작성한다.',
+      '테스트는 Page Object 메서드를 조합해 상품 추가부터 장바구니 확인까지 검증한다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '상품 카드', testid: 'product-card', desc: '상품 목록 아이템' },
+      { name: '담기 버튼', testid: 'add-to-cart', desc: '상품 목록에서 장바구니 담기' },
+      { name: '장바구니 버튼', testid: 'cart-button', desc: '장바구니 화면으로 이동' },
+      { name: '장바구니 수량', testid: 'cart-count', desc: '담긴 상품 수' },
+      { name: '장바구니 아이템', testid: 'cart-item', desc: '장바구니 상품 행' },
+    ],
+    staticChecks: [
+      {
+        label: 'CatalogPage 클래스',
+        pattern: 'class\\s+CatalogPage\\b',
+        message: '상품 목록 책임을 CatalogPage로 분리하세요.',
+      },
+      {
+        label: 'CartPage 클래스',
+        pattern: 'class\\s+CartPage\\b',
+        message: '장바구니 검증 책임을 CartPage로 분리하세요.',
+      },
+      {
+        label: '상품 추가 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        message: '상품 담기 동작을 addProduct 같은 의도 기반 메서드로 작성하세요.',
+      },
+      {
+        label: '장바구니 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '장바구니 수량 검증을 expectCartCount 메서드로 캡슐화하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-fixture-injection',
+    title: 'POM 기초: fixture로 Page Object 주입하기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 40,
+    prerequisites: ['pom-login-actions-and-assertions'],
+    recommendedNext: ['pom-table-filter-object'],
+    tools: ['Playwright', 'POM', 'Fixture'],
+    summary:
+      '스펙에서 Page Object를 직접 new 하지 않고 test.extend fixture로 주입해 테스트 본문을 더 얇게 만드세요.',
+    requirement: [
+      'LoginPage 클래스를 만들고 로그인 액션과 성공 단언을 캡슐화한다.',
+      'test.extend 또는 base.extend로 loginPage fixture를 정의한다.',
+      '테스트 본문은 fixture로 받은 loginPage를 사용해 성공 로그인을 검증한다.',
+    ],
+    sandboxSlug: 'login-basic',
+    testData: [
+      { label: '아이디', value: 'tester', desc: '정상 계정' },
+      { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
+    ],
+    selectors: [
+      {
+        name: '아이디 입력',
+        testid: 'username',
+        options: selectorOptions('username'),
+        desc: '아이디 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '로그인 버튼',
+        testid: 'login-submit',
+        options: selectorOptions('login-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'login-success',
+        options: selectorOptions('login-success'),
+        desc: '로그인 성공 후 노출',
+      },
+    ],
+    staticChecks: [
+      {
+        label: 'LoginPage 클래스',
+        pattern: 'class\\s+LoginPage\\b',
+        message: '로그인 화면 동작은 LoginPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'fixture 확장',
+        pattern: '(test|base)\\.extend\\s*<|(?:test|base)\\.extend\\s*\\(',
+        message: 'Page Object를 test.extend fixture로 주입하세요.',
+      },
+      {
+        label: 'loginPage fixture',
+        pattern: 'loginPage\\s*:',
+        message: 'fixture 이름은 loginPage처럼 테스트 의도가 드러나게 정의하세요.',
+      },
+      {
+        label: '성공 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '로그인 성공 검증은 Page Object의 단언 메서드로 캡슐화하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-table-filter-object',
+    title: 'POM 기초: 테이블 검색·정렬 Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 40,
+    prerequisites: ['pom-fixture-injection'],
+    recommendedNext: ['pom-modal-dialog-object'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '데이터 테이블의 검색, 정렬, 페이지 이동, 결과 검증을 DataTablePage로 묶어 목록 테스트를 읽기 쉽게 만드세요.',
+    requirement: [
+      'DataTablePage 클래스를 만들고 검색창·정렬·페이지 버튼·행 locator를 필드로 선언한다.',
+      'search, sortByName, nextPage 같은 액션 메서드를 작성한다.',
+      'expectRowsContain 또는 expectPage 같은 단언 메서드로 결과 검증을 캡슐화한다.',
+    ],
+    sandboxSlug: 'data-table',
+    selectors: [
+      { name: '검색 입력', testid: 'table-search', desc: '테이블 검색어 입력' },
+      { name: '이름 정렬', testid: 'sort-name', desc: '이름 기준 정렬' },
+      { name: '테이블 행', testid: 'table-row', desc: '검색·정렬 결과 행' },
+      { name: '이전 페이지', testid: 'page-prev', desc: '이전 페이지 이동' },
+      { name: '현재 페이지', testid: 'page-indicator', desc: '페이지 번호 표시' },
+      { name: '다음 페이지', testid: 'page-next', desc: '다음 페이지 이동' },
+    ],
+    staticChecks: [
+      {
+        label: 'DataTablePage 클래스',
+        pattern: 'class\\s+DataTablePage\\b',
+        message: '테이블 조작 책임을 DataTablePage 클래스로 분리하세요.',
+      },
+      {
+        label: '검색 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        message: '검색 입력은 search 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '정렬 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        message: '정렬 동작은 의도 기반 메서드로 표현하세요.',
+      },
+      {
+        label: '결과 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '검색·정렬 결과 검증은 Page Object 단언 메서드로 분리하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-modal-dialog-object',
+    title: 'POM 기초: 모달 다이얼로그 Page Object',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 35,
+    prerequisites: ['pom-table-filter-object'],
+    recommendedNext: ['pom-e2e-checkout-journey'],
+    tools: ['Playwright', 'POM'],
+    summary:
+      '모달 열기, 취소, 확인, 결과 메시지 검증을 ModalPage로 캡슐화해 분기 흐름을 안정적으로 테스트하세요.',
+    requirement: [
+      'ModalPage 클래스를 만들고 열기·취소·확인·결과 locator를 필드로 선언한다.',
+      'open, cancel, confirm 액션 메서드를 작성한다.',
+      'expectClosed, expectConfirmed 같은 단언 메서드로 모달 상태와 결과를 검증한다.',
+    ],
+    sandboxSlug: 'modal',
+    selectors: [
+      { name: '모달 열기', testid: 'modal-open', desc: '모달을 여는 버튼' },
+      { name: '모달', testid: 'modal', desc: '다이얼로그 컨테이너' },
+      { name: '취소 버튼', testid: 'modal-cancel', desc: '모달 닫기' },
+      { name: '확인 버튼', testid: 'modal-confirm', desc: '확인 액션' },
+      { name: '결과 메시지', testid: 'modal-result', desc: '확인 후 결과' },
+    ],
+    staticChecks: [
+      {
+        label: 'ModalPage 클래스',
+        pattern: 'class\\s+ModalPage\\b',
+        message: '모달 화면 책임을 ModalPage 클래스로 분리하세요.',
+      },
+      {
+        label: '열기 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        message: '모달 열기 동작은 open 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '확인/취소 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        message: '확인 또는 취소 액션을 Page Object 메서드로 표현하세요.',
+      },
+      {
+        label: '상태 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '모달 상태와 결과 검증은 expect 계열 메서드로 분리하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-e2e-checkout-journey',
+    title: 'POM 실전: 장바구니 E2E 여정 구성하기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 50,
+    prerequisites: ['pom-modal-dialog-object'],
+    recommendedNext: ['pom-authenticated-e2e-session'],
+    tools: ['Playwright', 'POM', 'E2E'],
+    summary:
+      '상품 탐색부터 장바구니, 배송 정보, 결제 선택, 주문 완료까지 하나의 E2E 여정을 여러 Page Object로 조합하세요.',
+    requirement: [
+      'CatalogPage, CartPage, CheckoutPage를 분리해 각 화면의 액션과 단언 책임을 나눈다.',
+      '테스트 본문은 상품 선택 → 장바구니 확인 → 배송 입력 → 결제 선택 → 주문 완료 순서만 읽히게 작성한다.',
+      '주문 완료 번호나 결제 금액 같은 최종 결과를 Page Object 단언 메서드로 검증한다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '상품 카드', testid: 'product-card', desc: '상품 목록 아이템' },
+      { name: '상품 상세 보기', testid: 'view-detail', desc: '상품 상세 화면 진입' },
+      { name: '상세 담기', testid: 'add-detail', desc: '상세 화면에서 장바구니 담기' },
+      { name: '장바구니 버튼', testid: 'cart-button', desc: '장바구니 화면 이동' },
+      { name: '주문하기 버튼', testid: 'checkout-button', desc: '배송/결제 단계 이동' },
+      { name: '주문 완료', testid: 'order-complete', desc: '주문 완료 화면' },
+      { name: '주문 번호', testid: 'order-number', desc: '생성된 주문 번호' },
+    ],
+    staticChecks: [
+      {
+        label: 'CatalogPage 클래스',
+        pattern: 'class\\s+CatalogPage\\b',
+        message: '상품 탐색 책임을 CatalogPage로 분리하세요.',
+      },
+      {
+        label: 'CartPage 클래스',
+        pattern: 'class\\s+CartPage\\b',
+        message: '장바구니 책임을 CartPage로 분리하세요.',
+      },
+      {
+        label: 'CheckoutPage 클래스',
+        pattern: 'class\\s+CheckoutPage\\b',
+        message: '배송·결제·주문 완료 책임을 CheckoutPage로 분리하세요.',
+      },
+      {
+        label: '주문 완료 단언',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '최종 주문 결과는 Page Object의 expect 계열 메서드로 검증하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-authenticated-e2e-session',
+    title: 'POM 실전: 인증 세션을 재사용하는 E2E',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'medium',
+    estimatedMinutes: 45,
+    prerequisites: ['pom-fixture-injection'],
+    recommendedNext: ['pom-regression-suite-smoke'],
+    tools: ['Playwright', 'POM', 'Auth Fixture'],
+    summary:
+      '매 테스트마다 로그인하지 않고 인증 상태를 fixture로 준비한 뒤, 보호 화면 E2E를 빠르고 안정적으로 검증하세요.',
+    requirement: [
+      'LoginPage 또는 AuthPage로 로그인 흐름을 캡슐화한다.',
+      'test.use, storageState, authPage fixture 중 하나로 인증 상태를 재사용한다.',
+      '보호 페이지 진입과 로그아웃 후 접근 차단을 별도 테스트로 검증한다.',
+    ],
+    sandboxSlug: 'route-guard',
+    testData: [
+      { label: '아이디', value: 'tester', desc: '정상 계정' },
+      { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
+    ],
+    selectors: [
+      { name: '보호 페이지 링크', testid: 'guard-protected-link', desc: '보호 페이지 접근 시도' },
+      { name: '아이디 입력', testid: 'guard-username', desc: '아이디 입력 필드' },
+      { name: '비밀번호 입력', testid: 'guard-password', desc: '비밀번호 입력 필드' },
+      { name: '로그인 버튼', testid: 'guard-login-submit', desc: '로그인 제출' },
+      { name: '보호 페이지', testid: 'guard-protected-view', desc: '인증 후 보이는 화면' },
+      { name: '로그아웃 버튼', testid: 'guard-logout', desc: '인증 해제' },
+    ],
+    staticChecks: [
+      {
+        label: '인증 Page Object',
+        pattern: 'class\\s+(LoginPage|AuthPage)\\b',
+        message: '인증 흐름은 LoginPage 또는 AuthPage로 분리하세요.',
+      },
+      {
+        label: '인증 상태 재사용',
+        pattern: '(storageState|test\\.use|authPage\\s*:)',
+        message: '반복 로그인을 줄이기 위해 storageState, test.use, fixture 중 하나를 사용하세요.',
+      },
+      {
+        label: '보호 화면 단언',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '보호 화면 접근 결과를 의도 기반 단언 메서드로 검증하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-regression-suite-smoke',
+    title: 'POM 실전: 스모크 회귀 스위트 구성하기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'hard',
+    estimatedMinutes: 55,
+    prerequisites: ['pom-e2e-checkout-journey', 'pom-authenticated-e2e-session'],
+    recommendedNext: ['pom-regression-suite-risk-based'],
+    tools: ['Playwright', 'POM', 'Regression'],
+    summary:
+      '핵심 사용자 여정을 Page Object로 재사용하면서 빠르게 도는 스모크 회귀 스위트를 구성하세요.',
+    requirement: [
+      '로그인, 주요 목록 진입, 생성 또는 주문 완료 같은 핵심 경로를 2개 이상 테스트로 구성한다.',
+      '공통 준비는 test.beforeEach 또는 fixture로 모으고, 화면 세부 동작은 Page Object에 숨긴다.',
+      '@smoke 또는 @regression 태그를 사용해 스모크 회귀 스위트로 실행 범위를 분리한다.',
+      '각 테스트는 최종 사용자 결과를 expect 계열 Page Object 메서드로 검증한다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '검색 입력', testid: 'search', desc: '상품 검색' },
+      { name: '상품 카드', testid: 'product-card', desc: '상품 목록 아이템' },
+      { name: '장바구니 수량', testid: 'cart-count', desc: '담긴 상품 수' },
+      { name: '주문 완료', testid: 'order-complete', desc: '최종 완료 화면' },
+    ],
+    staticChecks: [
+      {
+        label: '회귀 태그',
+        pattern: '@(smoke|regression)',
+        message: '스모크 또는 회귀 실행 범위를 분리할 수 있도록 테스트 제목에 태그를 넣으세요.',
+      },
+      {
+        label: 'Page Object 클래스',
+        pattern: 'class\\s+\\w+Page\\b[\\s\\S]*class\\s+\\w+Page\\b',
+        message: '최소 2개 이상의 Page Object로 핵심 경로 책임을 나누세요.',
+      },
+      {
+        label: '공통 준비',
+        pattern: '(test\\.beforeEach|test\\.extend|base\\.extend)',
+        message: '반복 준비 코드는 beforeEach 또는 fixture로 모으세요.',
+      },
+      {
+        label: '최종 결과 단언',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '각 회귀 테스트는 최종 사용자 결과를 Page Object 단언 메서드로 검증하세요.',
+      },
+    ],
+  },
+  {
+    slug: 'pom-regression-suite-risk-based',
+    title: 'POM 실전: 위험 기반 회귀 시나리오 나누기',
+    track: 'automation',
+    category: 'pom',
+    difficulty: 'hard',
+    estimatedMinutes: 60,
+    prerequisites: ['pom-regression-suite-smoke'],
+    tools: ['Playwright', 'POM', 'Regression'],
+    summary:
+      '모든 것을 한 테스트에 넣지 않고 결제, 데이터 변경, 접근 제어처럼 위험도가 높은 영역을 회귀 시나리오로 나누세요.',
+    requirement: [
+      'describe 블록을 결제/데이터/접근 제어 같은 위험 영역 단위로 나눈다.',
+      '각 영역은 해당 Page Object를 재사용하되 테스트 간 상태가 새지 않도록 beforeEach나 fixture로 초기화한다.',
+      '@critical 또는 @regression 태그로 고위험 회귀 테스트를 구분한다.',
+      '실패 시 원인을 좁힐 수 있도록 테스트마다 하나의 사용자 결과를 명확히 단언한다.',
+    ],
+    sandboxSlug: 'shop',
+    selectors: [
+      { name: '상품 검색', testid: 'search', desc: '목록 상태 변경' },
+      { name: '장바구니 버튼', testid: 'cart-button', desc: '장바구니 화면 이동' },
+      { name: '결제 방식', testid: 'pay-method', desc: '결제 수단 선택' },
+      { name: '주문 완료', testid: 'order-complete', desc: '최종 완료 화면' },
+    ],
+    staticChecks: [
+      {
+        label: '위험 영역 describe',
+        pattern: 'describe\\s*\\(',
+        message: '위험 영역별로 describe 블록을 나눠 회귀 범위를 구조화하세요.',
+      },
+      {
+        label: '고위험 태그',
+        pattern: '@(critical|regression)',
+        message: '고위험 회귀 테스트를 태그로 구분하세요.',
+      },
+      {
+        label: '상태 초기화',
+        pattern: '(test\\.beforeEach|test\\.extend|base\\.extend)',
+        message: '테스트 간 상태가 새지 않도록 공통 초기화를 정의하세요.',
+      },
+      {
+        label: 'Page Object 재사용',
+        pattern: 'class\\s+\\w+Page\\b',
+        message: '위험 영역별 화면 동작은 Page Object로 재사용하세요.',
+      },
+    ],
+  },
+  {
     slug: 'page-navigation',
     title: '페이지 전환 내비게이션',
     track: 'automation',
@@ -831,7 +2347,6 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       { name: '뒤로가기', testid: 'back-button', desc: '직전 페이지로 이동' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내비게이션으로 페이지를 전환한다', async ({ page }) => {
   await page.goto('/');
   // TODO: nav-orders 를 클릭해 page-title 이 '주문' 인지 검증한 뒤,
@@ -865,7 +2380,6 @@ test('내비게이션으로 페이지를 전환한다', async ({ page }) => {
       { name: '에러 메시지', testid: 'token-error', desc: '인증 실패 시 노출' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('로그인하면 토큰이 저장된다', async ({ page }) => {
   await page.goto('/');
   // TODO: token-username·token-password 를 채우고 token-login 을 클릭한 뒤,
@@ -900,7 +2414,6 @@ test('로그인하면 토큰이 저장된다', async ({ page }) => {
       { name: '로그아웃 버튼', testid: 'guard-logout', desc: '인증 해제' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('미인증 접근은 차단되고 로그인 후 진입된다', async ({ page }) => {
   await page.goto('/');
   // TODO: guard-protected-link 클릭 시 guard-redirect-notice 가 보이는지 확인하고,
@@ -932,7 +2445,6 @@ test('미인증 접근은 차단되고 로그인 후 진입된다', async ({ pag
       { name: '제출 버튼', testid: 'draft-submit', desc: '제출 후 draft 제거' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('입력이 임시저장되고 새로고침 후 복원된다', async ({ page }) => {
   await page.goto('/');
   // TODO: draft-title·draft-body 를 입력하고 page.reload() 후에도
@@ -974,7 +2486,6 @@ test('입력이 임시저장되고 새로고침 후 복원된다', async ({ page
       { name: '주문번호', testid: 'order-number', desc: '발급된 주문번호' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('상품 선택부터 주문 완료까지 진행한다', async ({ page }) => {
   await page.goto('/');
   // TODO: add-mouse 로 담고 go-cart→go-shipping 으로 진행한 뒤,
@@ -1013,7 +2524,6 @@ test('상품 선택부터 주문 완료까지 진행한다', async ({ page }) =>
       { name: '빈 상태', testid: 'empty-state', desc: '결과 없음 안내' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('필터와 검색으로 목록을 좁힌다', async ({ page }) => {
   await page.goto('/');
   // TODO: filter-electronics 를 선택하고 result-count·product-item 수를 검증한 뒤,
@@ -1048,7 +2558,6 @@ test('필터와 검색으로 목록을 좁힌다', async ({ page }) => {
       { name: '선택 요약', testid: 'selected-summary', desc: '선택한 옵션 표시' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('옵션을 모두 선택해야 담긴다', async ({ page }) => {
   await page.goto('/');
   // TODO: 옵션 없이 add-to-cart 시 option-error 를 확인하고,
@@ -1078,7 +2587,6 @@ test('옵션을 모두 선택해야 담긴다', async ({ page }) => {
       { name: '찜 개수', testid: 'wish-count', desc: '찜한 상품 수 배지' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('찜을 토글하면 개수가 갱신된다', async ({ page }) => {
   await page.goto('/');
   // TODO: wish-1 을 눌러 aria-pressed 와 wish-count 증가를 확인하고,
@@ -1114,7 +2622,6 @@ test('찜을 토글하면 개수가 갱신된다', async ({ page }) => {
       { name: '예매번호', testid: 'booking-number', desc: '발급된 예매번호' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/seat-booking');
   // 명세를 분석해 필요한 케이스를 직접 설계하세요.
@@ -1149,7 +2656,6 @@ test('내 테스트', async ({ page }) => {
       { name: '포인트 에러', testid: 'point-error', desc: '포인트 검증 실패 시' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/points-settlement');
   // 규칙을 분석해 필요한 케이스를 직접 설계하세요.
@@ -1184,7 +2690,6 @@ test('내 테스트', async ({ page }) => {
       { name: '환불액', testid: 'refund-amount', desc: '환불 금액' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/order-cancel');
   // 정책을 분석해 상태별 취소 동작을 직접 검증하세요.
@@ -1355,7 +2860,6 @@ test('내 테스트', async ({ page }) => {
       { name: '남은 개수', testid: 'remaining-count', desc: '남은(미완료) 개수' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/todo-list');
   // 명세를 분석해 추가·완료·수정·삭제·필터를 직접 검증하세요.
@@ -1392,7 +2896,6 @@ test('내 테스트', async ({ page }) => {
       { name: '작성', testid: 'post-submit', desc: '글 작성' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/post-board');
   // 검색·필터·페이지네이션·작성을 직접 검증하세요.
@@ -1423,7 +2926,6 @@ test('내 테스트', async ({ page }) => {
       { name: '봇 메시지', testid: 'bot-message', desc: '상대(봇) 응답' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/chat-room');
   // 메시지 전송·입력창 초기화·봇 자동 응답(비동기)을 직접 검증하세요.
@@ -1473,7 +2975,6 @@ test('내 테스트', async ({ page }) => {
       { name: '주문번호', testid: 'order-number', desc: '주문번호' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/shop');
   // 검색→담기→장바구니→결제→주문완료까지 직접 검증하세요.
@@ -1513,7 +3014,6 @@ test('내 테스트', async ({ page }) => {
       { name: '결제예정액', testid: 'cart-total', desc: '합계' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/shop');
   // 수량·쿠폰·무료배송 경계로 금액 계산을 직접 검증하세요.
@@ -1557,7 +3057,6 @@ test('내 테스트', async ({ page }) => {
       { name: '출금 후 잔액', testid: 'balance-after', desc: '이체 후 잔액' },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
-
 test('내 테스트', async ({ page }) => {
   await page.goto('/sandbox/bank');
   // 이체 폼 검증(필수·잔액부족·한도)·정상 이체·거래내역 필터를 직접 검증하세요.
@@ -2753,11 +4252,9 @@ test('내 테스트', async ({ page }) => {
     ],
   },
 ];
-
 export function getChallenge(slug: string): Challenge | undefined {
   return CHALLENGES.find((c) => c.slug === slug);
 }
-
 /** 카테고리 순서대로 묶은 챌린지 그룹 (빈 카테고리는 제외). */
 export function challengesByCategory(): { category: ChallengeCategory; items: Challenge[] }[] {
   return CATEGORY_ORDER.map((category) => ({

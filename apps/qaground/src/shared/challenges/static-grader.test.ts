@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 
 import type { Challenge } from './registry';
-import { gradeSubmissionStatically, validateAutomationSubmissionShape } from './static-grader';
+import {
+  gradeSubmissionStatically,
+  validateAutomationSubmissionShape,
+  validateChallengeStaticChecks,
+} from './static-grader';
 
 const challenge: Challenge = {
   slug: 'login-basic',
@@ -217,6 +221,23 @@ test('function expression helper login', async ({ page }) => {
     expect(r.errorMessage).toContain('스타터');
   });
 
+  it('fails clearly when page.locators typo is used', () => {
+    const code = `import { test, expect, type Page } from '@playwright/test';
+class LoginPage {
+  constructor(private readonly page: Page) {}
+  readonly username = this.page.locators('#username');
+  async open() { await this.page.goto('/'); }
+  async check() { await expect(this.username).toBeVisible(); }
+}
+test('typo locator api', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.open();
+  await loginPage.check();
+});`;
+    const r = validateAutomationSubmissionShape(code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('page.locator(...)');
+  });
   it('단언이 없으면 실패한다', () => {
     const noAssert = `import { test } from '@playwright/test';
 test('t', async ({ page }) => {
@@ -246,9 +267,21 @@ test('t', async ({ page }) => {
 });`;
     const r = gradeSubmissionStatically(challenge, cssOnly);
     expect(r.ok).toBe(false);
-    expect(r.errorMessage).toContain('셀렉터');
+    expect(r.errorMessage).toContain('Covered selectors: 0/4');
   });
 
+  it('일부 참고 셀렉터만 사용하면 누락으로 실패한다', () => {
+    const partialSelectors = `import { test, expect } from '@playwright/test';
+test('partial selectors', async ({ page }) => {
+  await page.goto('/sandbox/login-basic');
+  await page.getByTestId('username').fill('tester');
+  await page.getByTestId('password').fill('qaground123');
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+    const r = gradeSubmissionStatically(challenge, partialSelectors);
+    expect(r.ok).toBe(false);
+    expect(r.errorMessage).toContain('Covered selectors: 3/4');
+  });
   it('role·label 기반 접근성 셀렉터도 통과로 인정한다', () => {
     const roleBased = `import { test, expect } from '@playwright/test';
 test('로그인 성공', async ({ page }) => {
@@ -260,7 +293,7 @@ test('로그인 성공', async ({ page }) => {
 });`;
     const r = gradeSubmissionStatically(challenge, roleBased);
     expect(r.ok).toBe(true);
-    expect(r.errorMessage).toContain('접근성 기반 셀렉터');
+    expect(r.errorMessage).toContain('semantic locator');
   });
 
   it('상호작용이 없으면 실패한다', () => {
@@ -365,5 +398,66 @@ test('dead code only', async ({ page }) => {
     expect(r).not.toBeNull();
     expect(r?.errorMessage).toContain('expect');
     expect(r?.errorMessage).toContain('상호작용');
+  });
+
+  it('POM method calls count as interaction and assertion intent', () => {
+    const pomChallenge: Challenge = {
+      ...challenge,
+      category: 'pom',
+      requirement: ['page object', 'assertion method'],
+      staticChecks: [
+        { label: 'LoginPage', pattern: 'class\\s+LoginPage\\b', message: 'missing LoginPage' },
+        {
+          label: 'assertion method',
+          pattern: 'async\\s+[A-Za-z_$\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+          message: 'missing assertion method',
+        },
+      ],
+    };
+    const code = `import { test, expect, type Page } from '@playwright/test';
+class LoginPage {
+  constructor(private readonly page: Page) {}
+  readonly username = this.page.getByTestId('username');
+  readonly password = this.page.getByTestId('password');
+  readonly submitButton = this.page.getByTestId('login-submit');
+  readonly successMessage = this.page.getByTestId('login-success');
+  async openScreen() { await this.page.goto('/'); }
+  async submitCredentials(username: string, password: string) {
+    await this.username.fill(username);
+    await this.password.fill(password);
+    await this.submitButton.click();
+  }
+  async checkWelcome() { await expect(this.successMessage).toBeVisible(); }
+}
+test('valid login', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.openScreen();
+  await loginPage.submitCredentials('tester', 'qaground123');
+  await loginPage.checkWelcome();
+});`;
+
+    const r = gradeSubmissionStatically(pomChallenge, code);
+    expect(r.ok).toBe(true);
+    expect(r.status).toBe('passed');
+  });
+
+  it('challenge-specific static checks reject missing POM structure', () => {
+    const pomChallenge: Challenge = {
+      ...challenge,
+      category: 'pom',
+      staticChecks: [
+        { label: 'LoginPage', pattern: 'class\\s+LoginPage\\b', message: 'missing LoginPage' },
+      ],
+    };
+    const code = `import { test, expect } from '@playwright/test';
+test('raw login', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('username').fill('tester');
+  await expect(page.getByTestId('login-success')).toBeVisible();
+});`;
+
+    const r = validateChallengeStaticChecks(pomChallenge, code);
+    expect(r).not.toBeNull();
+    expect(r?.errorMessage).toContain('LoginPage');
   });
 });
