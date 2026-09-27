@@ -2,11 +2,12 @@ import { getDatabase, milestones, testCases, testSuites } from '@testea/db';
 import { inArray } from 'drizzle-orm';
 import 'server-only';
 
-type Transaction = Parameters<Parameters<ReturnType<typeof getDatabase>['transaction']>[0]>[0];
+type Database = ReturnType<typeof getDatabase>;
+type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 /** 연결 대상 전체를 확인한 뒤에만 실행 데이터를 기록한다. */
 export async function assertRunResources(
-  tx: Transaction,
+  tx: Transaction | Database,
   projectId: string,
   resources: { milestoneIds?: string[]; suiteIds?: string[]; caseIds?: string[] }
 ) {
