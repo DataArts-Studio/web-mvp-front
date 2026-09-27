@@ -2,6 +2,7 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases } from '@testea/db';
@@ -148,6 +149,7 @@ export async function runAutomatedTest(
       errorMessage: runResult.errorMessage,
     });
 
+    invalidateCache(INVALIDATE.runs);
     return {
       success: true,
       data: {

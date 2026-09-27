@@ -231,6 +231,7 @@ export const deleteSection = async (sectionId: string): Promise<ActionResult<{ i
       .set({ archived_at: now, updated_at: now })
       .where(eq(testSuiteSections.id, sectionId));
 
+    invalidateCache(INVALIDATE.cases);
     return {
       success: true,
       data: { id: sectionId },

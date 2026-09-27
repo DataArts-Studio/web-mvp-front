@@ -210,7 +210,7 @@ export async function rebalanceSortOrder(
       }
     }
 
-    invalidateCache(INVALIDATE.cases);
+    invalidateCache(entityType === 'testSuite' ? INVALIDATE.suites : INVALIDATE.cases);
     return { success: true, data: undefined };
   } catch (error) {
     Sentry.captureException(error, {

@@ -20,11 +20,15 @@ export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];
 const T = CACHE_TAGS;
 
 export const INVALIDATE = {
-  /** 케이스 생성·수정·삭제·정렬. 마일스톤 통계에 케이스 수가 들어간다. */
-  cases: [T.testCases, T.dashboard, T.milestones],
-  /** 스위트 변경. 케이스 목록이 스위트 이름을 함께 보여준다. */
-  suites: [T.testSuites, T.testCases, T.dashboard, T.milestones],
-  milestones: [T.milestones, T.dashboard],
+  /**
+   * 케이스 생성·수정·삭제·정렬. 마일스톤 통계와 실행 목록(케이스 수·진행률, 연결 실행 동기화)에
+   * 케이스가 반영된다.
+   */
+  cases: [T.testCases, T.dashboard, T.milestones, T.testRuns],
+  /** 스위트 변경. 케이스 목록과 실행 목록이 스위트 이름을 함께 보여준다. */
+  suites: [T.testSuites, T.testCases, T.dashboard, T.milestones, T.testRuns],
+  /** 마일스톤 변경. 실행 목록이 마일스톤 이름을 보여주고, 구성 추가는 연결 실행을 동기화한다. */
+  milestones: [T.milestones, T.dashboard, T.testRuns],
   /** 실행·케이스 실행 결과. 마일스톤 진행률에 실행 결과가 들어간다. */
   runs: [T.testRuns, T.dashboard, T.milestones],
   project: [T.project, T.dashboard],
