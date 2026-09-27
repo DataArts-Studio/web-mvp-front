@@ -68,7 +68,8 @@ export const OrderCancelSandbox = () => {
           {SETTABLE.map((s) => (
             <button
               key={s.key}
-              data-testid={s.testid} id={s.testid}
+              data-testid={s.testid}
+              id={s.testid}
               type="button"
               disabled={status === 'cancelled'}
               onClick={() => {
@@ -84,19 +85,29 @@ export const OrderCancelSandbox = () => {
 
         <div className="border-line-2 bg-bg-3 mb-4 flex justify-between rounded-xl border px-4 py-3 text-sm">
           <span className="text-text-3">현재 상태</span>
-          <span data-testid="order-status" id="order-status" className="qa-order-status font-medium">
+          <span
+            data-testid="order-status"
+            id="order-status"
+            className="qa-order-status font-medium"
+          >
             {STATUS_LABEL[status]}
           </span>
         </div>
 
         {notice && (
-          <p data-testid="cancel-notice" id="cancel-notice" role="alert" className="qa-cancel-notice text-system-red mb-3 text-sm">
+          <p
+            data-testid="cancel-notice"
+            id="cancel-notice"
+            role="alert"
+            className="qa-cancel-notice text-system-red mb-3 text-sm"
+          >
             {notice}
           </p>
         )}
 
         <button
-          data-testid="cancel-button" id="cancel-button"
+          data-testid="cancel-button"
+          id="cancel-button"
           type="button"
           onClick={cancel}
           disabled={!canCancel}
@@ -107,11 +118,16 @@ export const OrderCancelSandbox = () => {
 
         {status === 'cancelled' && (
           <div
-            data-testid="cancel-result" id="cancel-result"
+            data-testid="cancel-result"
+            id="cancel-result"
             className="qa-cancel-result border-primary/30 bg-primary/10 text-primary mt-4 flex flex-col gap-1 rounded-xl border px-4 py-4 text-center"
           >
             <p className="text-sm font-semibold">취소·환불이 완료되었습니다.</p>
-            <p data-testid="refund-amount" id="refund-amount" className="qa-refund-amount font-mono text-xs">
+            <p
+              data-testid="refund-amount"
+              id="refund-amount"
+              className="qa-refund-amount font-mono text-xs"
+            >
               환불액 {refund?.toLocaleString()}원
             </p>
           </div>

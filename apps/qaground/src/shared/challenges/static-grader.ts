@@ -285,7 +285,9 @@ function callsHelper(body: string, helperName: string): boolean {
 
 function callsHelperSafely(body: string, helperName: string): boolean {
   const name = escapeRegExp(helperName);
-  return new RegExp(String.raw`\b(?:await|return(?:\s+await)?)\s+(?:[A-Za-z_$][\w$]*\.)?${name}\s*\(`).test(body);
+  return new RegExp(
+    String.raw`\b(?:await|return(?:\s+await)?)\s+(?:[A-Za-z_$][\w$]*\.)?${name}\s*\(`
+  ).test(body);
 }
 
 function helperRequiresAwait(helper: ParsedFunction): boolean {
@@ -406,7 +408,9 @@ export function validateAutomationSubmissionShape(code: string): GradeResult | n
 
 function getSelectorReferenceGroups(challenge: Challenge): string[][] {
   return (challenge.selectors ?? []).map((selector) =>
-    Array.from(new Set([selector.testid, ...(selector.options ?? []).map((option) => option.value)]))
+    Array.from(
+      new Set([selector.testid, ...(selector.options ?? []).map((option) => option.value)])
+    )
   );
 }
 
@@ -436,7 +440,9 @@ function buildBonusCoverageSignals(challenge: Challenge): ChallengeCoverageSigna
     {
       id: 'negative-path',
       label: 'Negative or exception path coverage',
-      patterns: ['not\\.toBeVisible|toBeHidden|toHaveCount\\(0\\)|error|fail|invalid|wrong|404|401|400'],
+      patterns: [
+        'not\\.toBeVisible|toBeHidden|toHaveCount\\(0\\)|error|fail|invalid|wrong|404|401|400',
+      ],
     },
     {
       id: 'state-reset',
@@ -446,30 +452,52 @@ function buildBonusCoverageSignals(challenge: Challenge): ChallengeCoverageSigna
     {
       id: 'data-driven-boundary',
       label: 'Boundary or data-driven coverage',
-      patterns: ['for\\s*\\(|forEach\\s*\\(|it\\.each|test\\.describe|describe\\s*\\(|empty|blank|boundary|trim|long'],
+      patterns: [
+        'for\\s*\\(|forEach\\s*\\(|it\\.each|test\\.describe|describe\\s*\\(|empty|blank|boundary|trim|long',
+      ],
     },
   ];
 
   if (challenge.category === 'pom') {
     return [
       ...common,
-      { id: 'fixture-reuse', label: 'Fixture or beforeEach reuse', patterns: ['test\\.beforeEach|test\\.extend|base\\.extend'] },
-      { id: 'multiple-page-objects', label: 'Multiple Page Objects by responsibility', patterns: ['class\\s+\\w+Page\\b[\\s\\S]*class\\s+\\w+Page\\b'] },
+      {
+        id: 'fixture-reuse',
+        label: 'Fixture or beforeEach reuse',
+        patterns: ['test\\.beforeEach|test\\.extend|base\\.extend'],
+      },
+      {
+        id: 'multiple-page-objects',
+        label: 'Multiple Page Objects by responsibility',
+        patterns: ['class\\s+\\w+Page\\b[\\s\\S]*class\\s+\\w+Page\\b'],
+      },
     ];
   }
 
   if (challenge.track === 'api') {
     return [
       ...common,
-      { id: 'schema-assertion', label: 'Response schema or field type assertions', patterns: ['typeof|Array\\.isArray|toHaveProperty|schema|type'] },
-      { id: 'auth-boundary', label: 'Authentication boundary coverage', patterns: ['Authorization|Bearer|token|401|unauthorized'] },
+      {
+        id: 'schema-assertion',
+        label: 'Response schema or field type assertions',
+        patterns: ['typeof|Array\\.isArray|toHaveProperty|schema|type'],
+      },
+      {
+        id: 'auth-boundary',
+        label: 'Authentication boundary coverage',
+        patterns: ['Authorization|Bearer|token|401|unauthorized'],
+      },
     ];
   }
 
   if (challenge.track === 'manual') {
     return [
       ...common,
-      { id: 'priority-risk', label: 'Priority and risk rationale', patterns: ['P0|P1|P2|priority|risk|impact|severity'] },
+      {
+        id: 'priority-risk',
+        label: 'Priority and risk rationale',
+        patterns: ['P0|P1|P2|priority|risk|impact|severity'],
+      },
     ];
   }
 
@@ -477,14 +505,20 @@ function buildBonusCoverageSignals(challenge: Challenge): ChallengeCoverageSigna
 }
 
 function signalCovered(code: string, signal: ChallengeCoverageSignal): boolean {
-  const parts = [...(signal.patterns ?? []), ...(signal.selectors ?? []), ...(signal.literals ?? [])];
+  const parts = [
+    ...(signal.patterns ?? []),
+    ...(signal.selectors ?? []),
+    ...(signal.literals ?? []),
+  ];
   if (parts.length === 0) return false;
   return parts.some((pattern) => new RegExp(pattern, 'i').test(code));
 }
 
 function evaluateBonusCoverage(challenge: Challenge, code: string) {
   const signals = buildBonusCoverageSignals(challenge);
-  const detected = signals.filter((signal) => signalCovered(code, signal)).map((signal) => signal.label);
+  const detected = signals
+    .filter((signal) => signalCovered(code, signal))
+    .map((signal) => signal.label);
   const suggestions = signals
     .filter((signal) => !detected.includes(signal.label))
     .slice(0, 3)

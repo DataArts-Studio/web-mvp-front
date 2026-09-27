@@ -242,10 +242,14 @@ export const AutomationCodeExercise = ({
 
     const bonus = data.bonusCoverage;
     if ((ok || partial) && bonus && bonus.total > 0) {
-      push({ id: 'bonus-h', text: `  확장 커버리지 — ${bonus.covered}/${bonus.total}개 감지`, kind: 'dim' });
-      bonus.detected.slice(0, 3).forEach((item, i) =>
-        push({ id: `bonus-d-${i}`, text: `  +  ${item}`, kind: 'pass' })
-      );
+      push({
+        id: 'bonus-h',
+        text: `  확장 커버리지 — ${bonus.covered}/${bonus.total}개 감지`,
+        kind: 'dim',
+      });
+      bonus.detected
+        .slice(0, 3)
+        .forEach((item, i) => push({ id: `bonus-d-${i}`, text: `  +  ${item}`, kind: 'pass' }));
       if (bonus.suggestions.length > 0) {
         push({ id: 'bonus-s-h', text: '  추천 보강:', kind: 'dim' });
         bonus.suggestions.forEach((item, i) =>

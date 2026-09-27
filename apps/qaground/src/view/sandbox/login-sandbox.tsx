@@ -77,7 +77,12 @@ export const LoginSandbox = () => {
             </label>
 
             {result?.type === 'error' && (
-              <p data-testid="login-error" id="login-error" role="alert" className="qa-login-error text-system-red text-sm">
+              <p
+                data-testid="login-error"
+                id="login-error"
+                role="alert"
+                className="qa-login-error text-system-red text-sm"
+              >
                 {result.message}
               </p>
             )}
