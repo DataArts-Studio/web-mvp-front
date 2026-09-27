@@ -25,9 +25,9 @@ const mocks = vi.hoisted(() => {
         );
     }),
     record: vi.fn(async () => {}),
-    redirect: vi.fn(() => {
-      throw new Error('NEXT_REDIRECT');
-    }),
+    // 실제 redirect 는 예외로 흐름을 끊지만, 테스트에서는 호출만 기록한다. 예외 메시지에 기대면
+    // 병렬 CI 에서 다른 거부값이 잡혀 간헐적으로 실패했다.
+    redirect: vi.fn(),
   };
 });
 
@@ -104,7 +104,13 @@ describe('signInAdminAction 브루트포스 방어', () => {
   });
 
   it('맞는 키면 예약한 실패 기록을 지우고 세션 쿠키를 발급한다', async () => {
-    await expect(signInAdminAction({}, form('correct-key'))).rejects.toThrow('NEXT_REDIRECT');
+    let thrown: unknown;
+    await signInAdminAction({}, form('correct-key')).catch((error: unknown) => {
+      thrown = error;
+    });
+    // 실패 시 실제 거부값을 드러낸다(간헐 실패 추적용).
+    expect(thrown).toBeUndefined();
+    expect(mocks.redirect).toHaveBeenCalledWith('/notices');
     expect(mocks.rows.get(IP)).toHaveLength(0);
     expect(mocks.cookieSet).toHaveBeenCalledWith(
       'bo_admin_session',
