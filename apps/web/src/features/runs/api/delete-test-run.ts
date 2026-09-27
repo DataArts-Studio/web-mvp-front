@@ -1,6 +1,7 @@
 'use server';
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testRuns } from '@testea/db';
@@ -25,6 +26,7 @@ export async function deleteTestRun(testRunId: string): Promise<ActionResult<{ i
       };
     }
 
+    invalidateCache(INVALIDATE.runs);
     return { success: true, data: { id: archived.id } };
   } catch (error) {
     console.error('[deleteTestRun] Error:', error);

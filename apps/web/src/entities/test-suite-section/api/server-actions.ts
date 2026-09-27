@@ -2,6 +2,7 @@
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases, testSuiteSections, testSuites } from '@testea/db';
@@ -291,6 +292,7 @@ export const moveTestCaseToSection = async (
       .set({ section_id: sectionId, updated_at: new Date() })
       .where(eq(testCases.id, caseId));
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: null };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'moveTestCaseToSection' } });

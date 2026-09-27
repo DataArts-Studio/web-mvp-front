@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases, testSuites } from '@testea/db';
@@ -41,6 +42,7 @@ export async function reorderTestCase(
       .set({ sort_order: newSortOrder, updated_at: new Date() })
       .where(and(eq(testCases.id, id), eq(testCases.project_id, row.projectId)));
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: undefined };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'reorderTestCase' } });
@@ -70,6 +72,7 @@ export async function reorderTestSuite(
       .set({ sort_order: newSortOrder, updated_at: new Date() })
       .where(and(eq(testSuites.id, id), eq(testSuites.project_id, row.projectId)));
 
+    invalidateCache(INVALIDATE.suites);
     return { success: true, data: undefined };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'reorderTestSuite' } });
@@ -137,6 +140,7 @@ export async function moveTestCaseToSuite(
       })
       .where(and(eq(testCases.id, caseId), eq(testCases.project_id, projectId)));
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: undefined };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'moveTestCaseToSuite' } });
@@ -206,6 +210,7 @@ export async function rebalanceSortOrder(
       }
     }
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: undefined };
   } catch (error) {
     Sentry.captureException(error, {
@@ -249,6 +254,7 @@ export async function initializeSortOrders(
         .where(and(eq(testCases.id, rows[i].id), eq(testCases.project_id, projectId)));
     }
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: undefined };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'initializeSortOrders' } });

@@ -1,6 +1,7 @@
 'use server';
 
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { checklistItems, checklists, getDatabase } from '@testea/db';
@@ -378,6 +379,7 @@ export const convertChecklistToTestCases = async (
       }))
     );
 
+    invalidateCache(INVALIDATE.cases);
     return { success: true, data: { count: items.length } };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'convertChecklistToTestCases' } });

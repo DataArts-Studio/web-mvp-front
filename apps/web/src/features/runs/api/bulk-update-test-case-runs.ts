@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -83,6 +84,7 @@ export async function bulkUpdateTestCaseRunStatus(
     // 테스트 실행 상태 갱신
     await updateTestRunStatus(db, firstCaseRun.testRunId);
 
+    invalidateCache(INVALIDATE.runs);
     return {
       success: true,
       data: { updatedCount: updated.length },

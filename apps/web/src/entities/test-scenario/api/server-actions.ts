@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -499,6 +500,7 @@ export const generateSuiteFromScenario = async (
     // 멱등: 이미 파생된 ACTIVE 스위트가 있으면 중복 생성하지 않고 기존 것을 반환.
     const existingId = await findExistingActiveSuiteId();
     if (existingId) {
+      invalidateCache(INVALIDATE.suites);
       return {
         success: true,
         data: { suiteId: existingId },
@@ -540,6 +542,7 @@ export const generateSuiteFromScenario = async (
       if (code === '23505') {
         const racedId = await findExistingActiveSuiteId();
         if (racedId) {
+          invalidateCache(INVALIDATE.suites);
           return {
             success: true,
             data: { suiteId: racedId },
@@ -550,6 +553,7 @@ export const generateSuiteFromScenario = async (
       throw error;
     }
 
+    invalidateCache(INVALIDATE.suites);
     return {
       success: true,
       data: { suiteId },

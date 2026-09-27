@@ -1,6 +1,7 @@
 'use server';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestRunSchema } from '@/entities/test-run';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -156,6 +157,7 @@ export const createTestRunAction = async (input: CreateRunInput) => {
       return [run];
     });
 
+    invalidateCache(INVALIDATE.runs);
     return { success: true, testRun: newTestRun };
   } catch (error) {
     console.error('[createTestRunAction] Error:', error);

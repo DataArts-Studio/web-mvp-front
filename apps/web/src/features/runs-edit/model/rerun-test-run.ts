@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import {
   type TestCaseRunSourceType,
@@ -205,6 +206,7 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
       return run;
     });
 
+    invalidateCache(INVALIDATE.runs);
     return { success: true, testRun: newTestRun };
   } catch (error) {
     console.error('[rerunTestRunAction] Error:', error);

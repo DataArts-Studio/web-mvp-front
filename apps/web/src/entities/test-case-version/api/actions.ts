@@ -4,6 +4,7 @@ import { requireProjectAccess } from '@/access/lib/require-access';
 import { toTestCase } from '@/entities/test-case/model/mapper';
 import type { TestCase } from '@/entities/test-case/model/types';
 import type { TestCaseDTO } from '@/entities/test-case/model/types';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseVersions, testCases } from '@testea/db';
@@ -249,6 +250,7 @@ export async function rollbackToVersion(
       );
 
       const result = toTestCase(updated as TestCaseDTO);
+      invalidateCache(INVALIDATE.cases);
       return {
         success: true,
         data: result,

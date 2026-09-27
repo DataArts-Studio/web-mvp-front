@@ -1,4 +1,5 @@
 'use server';
+import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -50,6 +51,7 @@ export const createMilestoneAction = async (input: CreateMilestoneInput) => {
         updated_at: now,
       })
       .returning();
+    invalidateCache(INVALIDATE.milestones);
     return { success: true, milestone: newMilestone };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'createMilestoneAction' } });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { verifyAutomationTokenFromRequest } from '@/features/automation-token/lib/verify';
+import { INVALIDATE, invalidateCacheFromRoute } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import { type TestRunStatus, getDatabase, testCaseRuns, testCases, testRuns } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -166,6 +167,9 @@ export async function POST(request: Request, { params }: Params) {
       // untested 개수 기반 NOT_STARTED / IN_PROGRESS / COMPLETED 재계산
       await recalcRunStatus(tx, runId);
     });
+
+    // 자동화 결과로 실행 진행률이 바뀌었으니 실행 목록·대시보드 캐시를 비운다.
+    invalidateCacheFromRoute(INVALIDATE.runs);
 
     return NextResponse.json(
       { runId, matched: matched.length, unmapped },
