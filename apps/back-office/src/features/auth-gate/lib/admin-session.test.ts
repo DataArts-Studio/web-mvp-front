@@ -158,7 +158,7 @@ describe('관리자 세션 만료와 폐기', () => {
   it('로그아웃 DB 삭제 실패를 성공으로 표시하거나 쿠키만 지우지 않는다.', async () => {
     cookiesMock.token = await createAdminSession();
     remove.mockRejectedValueOnce(new Error('database unavailable'));
-    await expect(signOutAdminAction()).rejects.toThrow('database unavailable');
+    await expect(signOutAdminAction()).rejects.toThrow(new Error('database unavailable'));
     expect(cookiesMock.delete).not.toHaveBeenCalled();
     expect(cookiesMock.redirect).not.toHaveBeenCalled();
   });
@@ -192,11 +192,21 @@ describe('관리자 세션 만료와 폐기', () => {
     expect(await isAdminAuthed()).toBe(false);
     await requireAdmin();
     expect(cookiesMock.redirect).toHaveBeenCalledWith('/notices/gate?redirect=%2Fnotices');
-    await expect(assertAdminAction()).rejects.toThrow('UNAUTHORIZED');
-    await expect(createNoticeAction({}, new FormData())).rejects.toThrow('UNAUTHORIZED');
-    await expect(updateNoticeAction('notice', {}, new FormData())).rejects.toThrow('UNAUTHORIZED');
-    await expect(deleteNoticeAction('notice')).rejects.toThrow('UNAUTHORIZED');
-    await expect(toggleNoticeAction('notice', false)).rejects.toThrow('UNAUTHORIZED');
+    await expect(assertAdminAction()).rejects.toMatchObject({
+      message: expect.stringContaining('UNAUTHORIZED'),
+    });
+    await expect(createNoticeAction({}, new FormData())).rejects.toMatchObject({
+      message: expect.stringContaining('UNAUTHORIZED'),
+    });
+    await expect(updateNoticeAction('notice', {}, new FormData())).rejects.toThrow(
+      new Error('UNAUTHORIZED: 운영자 인증이 필요합니다.')
+    );
+    await expect(deleteNoticeAction('notice')).rejects.toMatchObject({
+      message: expect.stringContaining('UNAUTHORIZED'),
+    });
+    await expect(toggleNoticeAction('notice', false)).rejects.toMatchObject({
+      message: expect.stringContaining('UNAUTHORIZED'),
+    });
     for (const mutation of [
       createAnnouncement,
       updateAnnouncement,
