@@ -115,6 +115,9 @@ export type TokenVerifyResult =
  * @param token - JWT 토큰 문자열
  * @returns 검증 결과와 페이로드
  */
+/** 인스턴스 간 시계 오차 허용 범위(초). */
+const CLOCK_SKEW_SECONDS = 60;
+
 export async function verifyProjectAccessToken(token: string): Promise<TokenVerifyResult> {
   try {
     const parts = token.split('.');
@@ -155,7 +158,9 @@ export async function verifyProjectAccessToken(token: string): Promise<TokenVeri
     if (payload.expiresAt <= now) {
       return { valid: false, error: 'TOKEN_EXPIRED' };
     }
-    if (payload.issuedAt > now || payload.expiresAt <= payload.issuedAt) {
+    // 발급 인스턴스와 검증 인스턴스의 시계가 초 경계를 사이에 두고 어긋나도 막 발급한 토큰이
+    // 거부되지 않도록 약간의 여유를 둔다.
+    if (payload.issuedAt > now + CLOCK_SKEW_SECONDS || payload.expiresAt <= payload.issuedAt) {
       return { valid: false, error: 'TOKEN_INVALID' };
     }
 

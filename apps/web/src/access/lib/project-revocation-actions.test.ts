@@ -23,6 +23,10 @@ const state = vi.hoisted(() => ({ token: '', deleteCookie: vi.fn() }));
 vi.mock('./cookies', () => ({
   getAllAccessTokenCookies: async () => new Map([['project', state.token]]),
   deleteAccessTokenCookie: state.deleteCookie,
+  // 비밀번호를 바꾼 브라우저의 쿠키가 새 세션으로 교체되는 것을 흉내 낸다.
+  setAccessTokenCookie: async (_name: string, token: string) => {
+    state.token = token;
+  },
 }));
 const ID = '00000000-0000-4000-8000-000000000001';
 let row = {
@@ -59,16 +63,22 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-it('실제 비밀번호 변경 액션 후 기존 토큰의 재사용과 추가 변경을 거부한다.', async () => {
+it('비밀번호 변경 후 이전 토큰은 거부하고, 변경한 브라우저는 새 세션으로 유지한다.', async () => {
+  const oldToken = state.token;
   expect((await changeProjectIdentifier(ID, 'old-password', 'new-password')).success).toBe(true);
   expect(row.identifier).toBe('synthetic-new-hash');
+
+  // 변경한 본인 브라우저: 새 해시로 재발급된 쿠키라 계속 접근된다.
+  expect(state.token).not.toBe(oldToken);
+  expect(await requireProjectAccess(ID)).toBe(true);
+
+  // 다른 브라우저·복사해 둔 이전 쿠키: 폐기돼 조회·추가 변경 모두 거부된다.
+  state.token = oldToken;
   expect(await requireProjectAccess(ID)).toBe(false);
   expect((await changeProjectIdentifier(ID, 'new-password', 'another-password')).success).toBe(
     false
   );
   expect(write).toHaveBeenCalledTimes(1);
-  state.token = await createProjectSessionToken(ID, row.name, row.identifier);
-  expect(await requireProjectAccess(ID)).toBe(true);
 });
 
 it('실제 삭제 액션 후 복사해 둔 쿠키도 서버에서 거부한다.', async () => {

@@ -1,5 +1,5 @@
 import { adminSessions, getDatabase } from '@testea/db';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, lte } from 'drizzle-orm';
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import 'server-only';
 
@@ -21,13 +21,18 @@ const isSessionToken = (token: string | undefined): token is string =>
 /** 공유키 검증 후에만 호출한다. 저장 실패 시 쿠키를 발급하지 않는다. */
 export async function createAdminSession(): Promise<string> {
   const token = randomBytes(32).toString('hex');
-  await getDatabase()
-    .insert(adminSessions)
-    .values({
-      token_hash: tokenHash(token),
-      secret_version: secretVersion(),
-      expires_at: new Date(Date.now() + ADMIN_SESSION_TTL_SECONDS * 1000),
-    });
+  const db = getDatabase();
+  // 만료된 세션은 검증에서 이미 거부되지만 행은 남는다. 로그인 때 함께 정리해 테이블이 계속
+  // 자라지 않게 한다. 정리 실패가 로그인을 막지 않도록 삼킨다.
+  await db
+    .delete(adminSessions)
+    .where(lte(adminSessions.expires_at, new Date()))
+    .catch(() => undefined);
+  await db.insert(adminSessions).values({
+    token_hash: tokenHash(token),
+    secret_version: secretVersion(),
+    expires_at: new Date(Date.now() + ADMIN_SESSION_TTL_SECONDS * 1000),
+  });
   return token;
 }
 
