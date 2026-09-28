@@ -39,11 +39,8 @@ interface AccessPageProps {
 }
 
 export default async function ProjectAccessPage({ params, searchParams }: AccessPageProps) {
-  const { slug: rawSlug } = await params;
+  const { slug } = await params;
   const { redirect: redirectUrl, expired } = await searchParams;
-
-  // URL 인코딩된 slug 디코딩
-  const slug = decodeURIComponent(rawSlug);
 
   // open-redirect 방지: 내부 경로로 검증된 값만 사용
   const safeRedirect = safeInternalPath(redirectUrl);
@@ -57,7 +54,7 @@ export default async function ProjectAccessPage({ params, searchParams }: Access
   // 이미 접근 권한이 있으면 대시보드로 리다이렉트
   const hasAccess = await canAccessProject(slug);
   if (hasAccess) {
-    redirect(safeRedirect ?? `/projects/${slug}`);
+    redirect(safeRedirect ?? `/projects/${encodeURIComponent(slug)}`);
   }
 
   return (

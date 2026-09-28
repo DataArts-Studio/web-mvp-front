@@ -29,9 +29,10 @@ export default async function ProjectLayout({
   const requestHeaders = await headers();
   if (requestHeaders.get(SESSION_CHECK_HEADER) === '1') {
     const { slug } = await params;
-    const projectName = decodeURIComponent(slug);
+    const projectName = slug;
     if (!(await getValidAccessToken(projectName))) {
-      const from = requestHeaders.get(SESSION_PATH_HEADER) ?? `/projects/${slug}`;
+      const from =
+        requestHeaders.get(SESSION_PATH_HEADER) ?? `/projects/${encodeURIComponent(slug)}`;
       redirect(
         `/projects/${encodeURIComponent(projectName)}/access?redirect=${encodeURIComponent(from)}&expired=true`
       );
