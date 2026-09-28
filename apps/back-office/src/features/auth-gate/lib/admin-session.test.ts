@@ -1,3 +1,4 @@
+import { logAdminActivity } from '@/features/admin-log/log';
 import {
   createAnnouncement,
   deleteAnnouncement,
@@ -125,6 +126,17 @@ describe('관리자 세션 만료와 폐기', () => {
     expect(await verifyAdminSession(first)).toBe(false);
     expect(await verifyAdminSession(second)).toBe(true);
     expect(cookiesMock.delete).toHaveBeenCalledWith('bo_admin_session');
+    expect(cookiesMock.redirect).toHaveBeenCalledWith('/notices/gate');
+  });
+  it('유효한 세션의 로그아웃은 활동 로그에 남긴다.', async () => {
+    cookiesMock.token = await createAdminSession();
+    await signOutAdminAction();
+    expect(vi.mocked(logAdminActivity)).toHaveBeenCalledWith({ action: 'logout' });
+  });
+  it('세션 없는 로그아웃 호출은 로그에 남기지 않고 게이트로만 보낸다.', async () => {
+    cookiesMock.token = undefined;
+    await signOutAdminAction();
+    expect(vi.mocked(logAdminActivity)).not.toHaveBeenCalledWith({ action: 'logout' });
     expect(cookiesMock.redirect).toHaveBeenCalledWith('/notices/gate');
   });
   it('공유키 변경·미설정·위조 쿠키와 이전 원문 키 쿠키를 거부한다.', async () => {

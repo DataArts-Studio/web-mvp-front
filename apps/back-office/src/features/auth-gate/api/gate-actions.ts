@@ -7,7 +7,7 @@ import { getClientIp, logAdminActivity } from '@/features/admin-log/log';
 import { initCloudflareDb } from '@/shared/db/cloudflare-db';
 import { countRecentFailedLogins, releaseFailedLogin, reserveFailedLogin } from '@testea/db';
 
-import { ADMIN_COOKIE, isValidSecret } from '../lib/admin-gate';
+import { ADMIN_COOKIE, isAdminAuthed, isValidSecret } from '../lib/admin-gate';
 import {
   ADMIN_SESSION_TTL_SECONDS,
   createAdminSession,
@@ -91,10 +91,14 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
   redirect(safeRedirect(formData.get('redirect')));
 }
 
-/** 세션 종료. */
+/** 세션 종료. 서버 세션을 먼저 지워, 이전에 복사해 둔 쿠키도 더는 통하지 않게 한다. */
 export async function signOutAdminAction(): Promise<void> {
   initCloudflareDb();
   const store = await cookies();
+  // 유효한 세션의 로그아웃만 기록한다(세션 없는 호출이 로그를 어지럽히지 않게).
+  if (await isAdminAuthed()) {
+    await logAdminActivity({ action: 'logout' });
+  }
   await revokeAdminSession(store.get(ADMIN_COOKIE)?.value);
   store.delete(ADMIN_COOKIE);
   redirect('/notices/gate');
