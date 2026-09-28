@@ -20,8 +20,8 @@ vi.mock('@/access/lib/password-hash', () => ({
 }));
 
 // access token / cookie mocks
-vi.mock('@/access/lib/access-token', () => ({
-  createProjectAccessToken: vi.fn(() => Promise.resolve('mock-token')),
+vi.mock('@/access/lib/project-session', () => ({
+  createProjectSessionToken: vi.fn(() => Promise.resolve('mock-token')),
 }));
 
 vi.mock('@/access/lib/cookies', () => ({

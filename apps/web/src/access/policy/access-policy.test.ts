@@ -9,8 +9,8 @@ vi.mock('../lib/cookies', () => ({
 }));
 
 // access-token 모듈 모킹
-vi.mock('../lib/access-token', () => ({
-  verifyProjectAccessToken: vi.fn(),
+vi.mock('../lib/project-session', () => ({
+  verifyProjectSessionToken: vi.fn(),
 }));
 
 describe('접근 정책 (access-policy)', () => {

@@ -36,6 +36,12 @@ vi.mock('next/headers', () => ({
   cookies: async () => ({ set: mocks.cookieSet, get: () => undefined, delete: vi.fn() }),
 }));
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
+vi.mock('../lib/admin-session', () => ({
+  ADMIN_SESSION_TTL_SECONDS: 28800,
+  createAdminSession: vi.fn(async () => 'synthetic-session-token'),
+  revokeAdminSession: vi.fn(async () => undefined),
+  verifyAdminSession: vi.fn(async () => false),
+}));
 vi.mock('@/shared/db/cloudflare-db', () => ({ initCloudflareDb: vi.fn() }));
 vi.mock('@testea/db', () => ({
   reserveFailedLogin: mocks.reserve,
@@ -114,7 +120,7 @@ describe('signInAdminAction 브루트포스 방어', () => {
     expect(mocks.rows.get(IP)).toHaveLength(0);
     expect(mocks.cookieSet).toHaveBeenCalledWith(
       'bo_admin_session',
-      'correct-key',
+      'synthetic-session-token',
       expect.objectContaining({ httpOnly: true })
     );
   });
