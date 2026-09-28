@@ -108,20 +108,19 @@ function getClientIp(headerStore: { get(name: string): string | null }): string 
  */
 async function getProjectAccessInfo(projectName: string): Promise<ProjectAccessInfo | null> {
   const db = getDatabase();
-  // URL 인코딩된 projectName을 디코딩
-  const decodedName = decodeURIComponent(projectName);
 
   const [project] = await db
     .select({
       id: projects.id,
       name: projects.name,
       identifier: projects.identifier,
+      lifecycleStatus: projects.lifecycle_status,
     })
     .from(projects)
-    .where(eq(projects.name, decodedName))
+    .where(eq(projects.name, projectName))
     .limit(1);
 
-  if (!project) {
+  if (!project || project.lifecycleStatus !== 'ACTIVE') {
     return null;
   }
 
@@ -213,11 +212,11 @@ export async function verifyProjectAccess(
     await setAccessTokenCookie(project.name, token);
 
     // 캐시 갱신
-    revalidatePath(`/projects/${project.name}`);
+    revalidatePath(`/projects/${encodeURIComponent(project.name)}`);
 
     return {
       success: true,
-      redirectUrl: `/projects/${project.name}`,
+      redirectUrl: `/projects/${encodeURIComponent(project.name)}`,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'verifyProjectAccess' } });
