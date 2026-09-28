@@ -1,4 +1,4 @@
-import { getDatabase } from '@testea/db';
+import { getDatabase, projects } from '@testea/db';
 import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -26,10 +26,11 @@ vi.mock('../../lib/project-session', () => ({
 }));
 const limit = vi.fn();
 const where = vi.fn((_condition: SQL) => ({ limit }));
+const select = vi.fn(() => ({ from: () => ({ where }) }));
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv('VERCEL_ENV', 'preview');
-  vi.mocked(getDatabase).mockReturnValue({ select: () => ({ from: () => ({ where }) }) } as never);
+  vi.mocked(getDatabase).mockReturnValue({ select } as never);
 });
 afterEach(() => vi.unstubAllEnvs());
 it.each(['ARCHIVED', 'DELETED'])(
@@ -55,6 +56,9 @@ it.each(['%', '%41', '한글 프로젝트'])(
       redirectUrl: `/projects/${encodeURIComponent(name)}`,
     });
     expect(new PgDialect().sqlToQuery(where.mock.calls[0][0]).params).toContain(name);
+    expect(select).toHaveBeenCalledWith(
+      expect.objectContaining({ lifecycleStatus: projects.lifecycle_status })
+    );
     expect(createProjectSessionToken).toHaveBeenCalledWith('id', name, 'synthetic-hash');
     expect(setAccessTokenCookie).toHaveBeenCalledWith(name, 'synthetic-token');
   }

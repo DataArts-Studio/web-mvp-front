@@ -65,11 +65,12 @@ it.each(['%', '%41', '한글 프로젝트'])(
   '프로젝트 %s의 권한·기본 정보·대시보드 조회가 원래 이름을 유지한다.',
   async (value) => {
     name = value;
-    expect(await getProjectIdBySlug(name)).toEqual({ success: true, data: { id: 'project-id' } });
-    const project = await getProjectByName(name);
+    const slug = encodeURIComponent(name);
+    expect(await getProjectIdBySlug(slug)).toEqual({ success: true, data: { id: 'project-id' } });
+    const project = await getProjectByName(slug);
     expect(project.success).toBe(true);
     if (project.success) expect(project.data.projectName).toBe(name);
-    const dashboard = await getDashboardStats({ slug: name });
+    const dashboard = await getDashboardStats({ slug });
     expect(dashboard.success).toBe(true);
     if (dashboard.success) expect(dashboard.data.project.name).toBe(name);
     expect(names).toEqual(Array(6).fill(name));
@@ -80,6 +81,6 @@ it.each(['%', '%41', '한글 프로젝트'])(
 it('특수문자 이름도 권한을 거부하면 후속 데이터 조회를 하지 않는다.', async () => {
   name = '%41';
   vi.mocked(requireProjectAccess).mockResolvedValue(false);
-  expect((await getDashboardStats({ slug: name })).success).toBe(false);
+  expect((await getDashboardStats({ slug: encodeURIComponent(name) })).success).toBe(false);
   expect(queries).toBe(1);
 });

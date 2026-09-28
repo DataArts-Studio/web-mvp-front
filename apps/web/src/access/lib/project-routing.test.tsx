@@ -31,10 +31,13 @@ afterEach(() => vi.unstubAllGlobals());
 it.each(['%', '%41', '한글 프로젝트'])(
   '프로젝트 %s의 params를 이중 디코딩하지 않는다.',
   async (slug) => {
-    await ProjectLayout({ children: null, params: Promise.resolve({ slug }) });
+    await ProjectLayout({
+      children: null,
+      params: Promise.resolve({ slug: encodeURIComponent(slug) }),
+    });
     expect(getValidAccessToken).toHaveBeenCalledWith(slug);
     await ProjectAccessPage({
-      params: Promise.resolve({ slug }),
+      params: Promise.resolve({ slug: encodeURIComponent(slug) }),
       searchParams: Promise.resolve({}),
     });
     expect(checkProjectExists).toHaveBeenCalledWith(slug);

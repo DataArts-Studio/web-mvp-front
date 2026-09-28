@@ -39,8 +39,9 @@ interface AccessPageProps {
 }
 
 export default async function ProjectAccessPage({ params, searchParams }: AccessPageProps) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
   const { redirect: redirectUrl, expired } = await searchParams;
+  const slug = decodeURIComponent(rawSlug);
 
   // open-redirect 방지: 내부 경로로 검증된 값만 사용
   const safeRedirect = safeInternalPath(redirectUrl);
