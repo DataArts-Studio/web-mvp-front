@@ -57,7 +57,7 @@ export async function resolveProjectId(
       const [row] = await db
         .select({ projectId: projects.id })
         .from(projects)
-        .where(eq(projects.name, decodeURIComponent(id)))
+        .where(eq(projects.name, id))
         .limit(1);
       return row?.projectId ?? null;
     }

@@ -22,11 +22,10 @@ export const getProjectIdBySlug = async (slug: string): Promise<ActionResult<{ i
     if (!(await canAccess('slug', slug))) return ACCESS_DENIED;
 
     const db = getDatabase();
-    const decodedSlug = decodeURIComponent(slug);
     const [row] = await db
       .select({ id: projects.id })
       .from(projects)
-      .where(eq(projects.name, decodedSlug))
+      .where(eq(projects.name, slug))
       .limit(1);
 
     if (!row) {
@@ -47,9 +46,7 @@ export const getProjectByName = async (name: string): Promise<ActionResult<Proje
     if (!(await canAccess('slug', name))) return ACCESS_DENIED;
 
     const db = getDatabase();
-    // URL 인코딩된 name을 디코딩
-    const decodedName = decodeURIComponent(name);
-    const [row] = await db.select().from(projects).where(eq(projects.name, decodedName)).limit(1);
+    const [row] = await db.select().from(projects).where(eq(projects.name, name)).limit(1);
 
     if (!row) {
       return {

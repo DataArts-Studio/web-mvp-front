@@ -25,15 +25,8 @@ export const getDashboardStats = async ({
 
     const db = getDatabase();
 
-    // URL 인코딩된 slug를 디코딩
-    const decodedSlug = decodeURIComponent(slug);
-
-    // 프로젝트 정보 조회 (디코딩된 slug로 검색)
-    const [projectRow] = await db
-      .select()
-      .from(projects)
-      .where(eq(projects.name, decodedSlug))
-      .limit(1);
+    // Next.js params가 전달한 원래 프로젝트 이름으로 조회한다.
+    const [projectRow] = await db.select().from(projects).where(eq(projects.name, slug)).limit(1);
 
     if (!projectRow) {
       return {
