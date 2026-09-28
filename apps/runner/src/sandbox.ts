@@ -1,5 +1,5 @@
-import { spawnSync } from 'node:child_process';
-import { chown, readFile, readdir } from 'node:fs/promises';
+import childProcess from 'node:child_process';
+import fs from 'node:fs/promises';
 
 /**
  * 비신뢰 spec 실행 격리 경계.
@@ -57,32 +57,35 @@ export function unisolatedRunAllowed(): boolean {
 export async function handOverToSandbox(paths: string[]): Promise<void> {
   if (!isolationAvailable()) return;
   for (const path of paths) {
-    await chown(path, SANDBOX_UID, SANDBOX_GID);
+    await fs.chown(path, SANDBOX_UID, SANDBOX_GID);
   }
 }
 
 /** /proc 에서 spec uid 로 살아 있는(좀비 제외) 프로세스 pid 를 모은다. */
 async function listLiveSandboxPids(): Promise<number[]> {
-  let entries: string[];
-  try {
-    entries = await readdir('/proc');
-  } catch {
-    return [];
-  }
+  const entries = await fs.readdir('/proc');
   const pids: number[] = [];
   for (const entry of entries) {
     if (!/^\d+$/.test(entry)) continue;
     try {
-      const status = await readFile(`/proc/${entry}/status`, 'utf8');
+      const status = await fs.readFile(`/proc/${entry}/status`, 'utf8');
       const lines = status.split('\n');
       // State: Z (zombie) 는 이미 죽어 거둬지기만 기다리는 상태라 제외한다.
-      if (lines.find((line) => line.startsWith('State:'))?.includes('Z')) continue;
+      const state = lines.find((line) => line.startsWith('State:'))?.match(/^State:\s+(\S)/)?.[1];
+      if (!state) throw new Error('Process state is unavailable.');
+      if (state === 'Z') continue;
       // Uid: real effective saved fs. 어느 하나라도 sandbox uid 면 대상이다.
       const uidLine = lines.find((line) => line.startsWith('Uid:'));
-      const uids = uidLine?.split(/\s+/).slice(1).map(Number) ?? [];
+      const fields = uidLine?.trim().split(/\s+/).slice(1);
+      if (fields?.length !== 4 || fields.some((value) => !/^\d+$/.test(value))) {
+        throw new Error('Process ownership is unavailable.');
+      }
+      const uids = fields.map(Number);
       if (uids.includes(SANDBOX_UID)) pids.push(Number(entry));
-    } catch {
-      // 조회 사이에 종료된 프로세스(ENOENT)는 무시한다.
+    } catch (error) {
+      // 조회 사이에 사라진 PID만 무시한다. 권한·I/O·파싱 실패는 정리 성공이 아니다.
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'ENOENT' && code !== 'ESRCH') throw error;
     }
   }
   return pids;
@@ -103,20 +106,33 @@ const KILL_RETRY_DELAY_MS = 100;
  * @returns 잔여 프로세스가 없으면 true.
  */
 export async function killSandboxProcesses(): Promise<boolean> {
+  if (compromised) return false;
   if (!isolationAvailable()) return true;
-  for (let attempt = 0; attempt < KILL_ATTEMPTS; attempt += 1) {
-    // 헬퍼 자신은 kill(-1) 대상에서 제외된다(Linux). 헬퍼가 끝나면 spec uid 프로세스는 없어야 한다.
-    spawnSync(process.execPath, ['-e', "try { process.kill(-1, 'SIGKILL'); } catch {}"], {
-      uid: SANDBOX_UID,
-      gid: SANDBOX_GID,
-      env: {},
-      stdio: 'ignore',
-      timeout: 5_000,
-    });
-    if ((await listLiveSandboxPids()).length === 0) return true;
-    await new Promise((resolve) => setTimeout(resolve, KILL_RETRY_DELAY_MS));
+  try {
+    for (let attempt = 0; attempt < KILL_ATTEMPTS; attempt += 1) {
+      // 헬퍼 자신은 kill(-1) 대상에서 제외된다(Linux). 헬퍼가 끝나면 spec uid 프로세스는 없어야 한다.
+      const result = childProcess.spawnSync(
+        process.execPath,
+        [
+          '-e',
+          "try { process.kill(-1, 'SIGKILL'); } catch (error) { if (error.code !== 'ESRCH') process.exit(1); }",
+        ],
+        {
+          uid: SANDBOX_UID,
+          gid: SANDBOX_GID,
+          env: {},
+          stdio: 'ignore',
+          timeout: 5_000,
+        }
+      );
+      if (result.error || result.status !== 0) throw new Error('Sandbox cleanup helper failed.');
+      if ((await listLiveSandboxPids()).length === 0) return true;
+      await new Promise((resolve) => setTimeout(resolve, KILL_RETRY_DELAY_MS));
+    }
+  } catch {
+    // 정리 여부를 확인할 수 없어도 인스턴스를 오염 상태로 유지한다.
   }
   compromised = true;
-  console.error('[runner] sandbox processes survived cleanup. Refusing further runs.');
+  console.error('[runner] sandbox cleanup could not be verified. Refusing further runs.');
   return false;
 }
