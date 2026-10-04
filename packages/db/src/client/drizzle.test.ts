@@ -46,13 +46,13 @@ describe('데이터베이스 연결 관리 (Database Connection)', () => {
     expect(db1).toBe(db2);
   });
 
-  it('서버리스 단일 커넥션 풀 설정(max/idle/ssl/prepare)으로 클라이언트가 초기화되어야 한다', async () => {
+  it('트랜잭션 풀러용 커넥션 풀 설정(max/idle/ssl/prepare)으로 클라이언트가 초기화되어야 한다', async () => {
     const postgres = (await import('postgres')).default;
     getDatabase();
     expect(postgres).toHaveBeenCalledWith(
       'postgres://user:pass@localhost:5432/db',
       expect.objectContaining({
-        max: 1,
+        max: 5,
         idle_timeout: 20,
         connect_timeout: 30,
         ssl: 'require',
