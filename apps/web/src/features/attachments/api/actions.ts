@@ -1,5 +1,6 @@
 'use server';
 
+import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
@@ -95,6 +96,14 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
     // Access check
     const hasAccess = await requireProjectAccess(projectId);
     if (!hasAccess) {
+      return {
+        success: false,
+        errors: { _attachment: ['접근 권한이 없습니다.'] },
+      };
+    }
+
+    // 요청 projectId 권한만으로는 부족하다. 케이스가 그 프로젝트 소속이어야 파일을 연결한다.
+    if (!(await belongsToProject('testCase', testCaseId, projectId))) {
       return {
         success: false,
         errors: { _attachment: ['접근 권한이 없습니다.'] },
