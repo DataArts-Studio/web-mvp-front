@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTestRunAction } from './server-action';
 
 vi.mock('server-only', () => ({}));
+vi.mock('@/shared/lib/cache/tags', () => ({ INVALIDATE: { runs: [] }, invalidateCache: vi.fn() }));
 
 // Sentry mock
 vi.mock('@sentry/nextjs', () => ({
@@ -34,7 +35,7 @@ const mockTxInsert = vi.fn(() => ({
   })),
 }));
 
-const mockTxSelectWhere = vi.fn(() => []);
+const mockTxSelectWhere = vi.fn();
 const mockTxSelectFrom = vi.fn(() => ({ where: mockTxSelectWhere }));
 const mockTxSelect = vi.fn(() => ({ from: mockTxSelectFrom }));
 
@@ -55,6 +56,8 @@ const mockDb = {
 
 vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
+  milestones: { id: 'id', project_id: 'project_id' },
+  testSuites: { id: 'id', project_id: 'project_id' },
   testRuns: {
     id: 'id',
     project_id: 'project_id',
@@ -132,7 +135,10 @@ describe('createTestRunAction', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTxReturning.mockResolvedValue([mockCreatedRun]);
-    mockTxSelectWhere.mockResolvedValue([]);
+    mockTxSelectWhere.mockReset().mockResolvedValue([]);
+    mockTxSelectWhere.mockResolvedValueOnce([
+      { id: validMilestoneId, projectId: validInput.project_id },
+    ]);
   });
 
   describe('유효성 검사', () => {

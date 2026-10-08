@@ -46,6 +46,15 @@ describe('BackOfficeLayout', () => {
     expect(screen.getByText('hong@testea.com')).toBeInTheDocument();
   });
 
+  it('사이드바에 로그아웃 버튼이 폼 제출 버튼으로 렌더된다 (JS 없이도 서버 세션 폐기)', () => {
+    render(<BackOfficeLayout navItems={navItems}>본문</BackOfficeLayout>);
+
+    const sidebar = screen.getByRole('complementary', { name: 'Back office 사이드바' });
+    const button = within(sidebar).getByRole('button', { name: '로그아웃' });
+    expect(button).toHaveAttribute('type', 'submit');
+    expect(button.closest('form')).not.toBeNull();
+  });
+
   it('navigation 랜드마크가 main 안에 중첩되지 않는다', () => {
     render(<BackOfficeLayout navItems={navItems}>본문</BackOfficeLayout>);
 

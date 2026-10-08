@@ -1,11 +1,13 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testCases, testRunSuites, testRuns } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+import { z } from 'zod';
 
 type AddSuitesToRunResult =
   | { success: true; addedCount: number }
@@ -15,9 +17,16 @@ export async function addSuitesToRunAction(
   runId: string,
   suiteIds: string[]
 ): Promise<AddSuitesToRunResult> {
-  if (suiteIds.length === 0) {
-    return { success: false, error: '추가할 스위트를 선택해주세요.' };
+  const parsed = z
+    .object({
+      runId: z.string().uuid(),
+      ids: z.array(z.string().uuid()).min(1),
+    })
+    .safeParse({ runId, ids: suiteIds });
+  if (!parsed.success) {
+    return { success: false, error: '유효한 실행 및 연결 대상을 선택해주세요.' };
   }
+  suiteIds = [...new Set(parsed.data.ids)];
 
   const db = getDatabase();
 
@@ -33,12 +42,7 @@ export async function addSuitesToRunAction(
 
   try {
     const result = await db.transaction(async (tx) => {
-      // 1. Link suites to the run (ignore duplicates)
-      const suiteLinks = suiteIds.map((suiteId) => ({
-        test_run_id: runId,
-        test_suite_id: suiteId,
-      }));
-      await tx.insert(testRunSuites).values(suiteLinks).onConflictDoNothing();
+      await assertRunResources(tx, run.projectId!, { suiteIds });
 
       // 2. Get test cases belonging to the selected suites via testCases.test_suite_id
       const suiteCaseRows = await tx
@@ -50,6 +54,17 @@ export async function addSuitesToRunAction(
         .where(
           and(inArray(testCases.test_suite_id, suiteIds), eq(testCases.lifecycle_status, 'ACTIVE'))
         );
+
+      await assertRunResources(tx, run.projectId!, {
+        caseIds: suiteCaseRows.map((row) => row.id!),
+      });
+
+      // 1. Link suites to the run (ignore duplicates)
+      const suiteLinks = suiteIds.map((suiteId) => ({
+        test_run_id: runId,
+        test_suite_id: suiteId,
+      }));
+      await tx.insert(testRunSuites).values(suiteLinks).onConflictDoNothing();
 
       const caseIdToSuite = new Map<string, string>();
       for (const row of suiteCaseRows) {

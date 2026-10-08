@@ -90,24 +90,26 @@ export class ProjectTestsuitePage extends BasePage {
   }
 
   /**
-   * 제목으로 검색 필터한 뒤 목록에 노출됨을 단언한다.
-   * 카드에는 헤딩(h2) + 보조 sr-only 텍스트가 함께 들어 있어 단순 getByText 가
-   * strict-mode 위반을 일으킨다. 헤딩 role 로 좁혀 정확히 한 요소만 매칭한다.
+   * 목록의 스위트 카드. 카드는 `article` 이고 제목 링크를 aria-labelledby 로 참조해
+   * 접근성 이름이 곧 스위트 제목이다(suite-card.tsx). 제목 텍스트는 링크·sr-only 설명에
+   * 중복으로 들어 있어 getByText 는 strict-mode 위반이 나므로 카드 role 로 좁힌다.
+   * (2026-07 리디자인 전에는 제목이 heading 이었다)
    */
-  async expectSuiteInList(title: string): Promise<void> {
-    await this.search(title);
-    await expect(
-      this.suiteList.getByRole('heading', { name: title })
-    ).toBeVisible();
+  suiteCard(title: string): Locator {
+    return this.suiteList.getByRole('article', { name: title, exact: true });
   }
 
-  /** 제목으로 검색 필터한 뒤 목록에 없음을 단언한다. (헤딩 단언과 대칭) */
+  /** 제목으로 검색 필터한 뒤 목록에 노출됨을 단언한다. */
+  async expectSuiteInList(title: string): Promise<void> {
+    await this.search(title);
+    await expect(this.suiteCard(title)).toBeVisible();
+  }
+
+  /** 제목으로 검색 필터한 뒤 목록에 없음을 단언한다. (노출 단언과 같은 로케이터) */
   async expectSuiteNotInList(title: string): Promise<void> {
     await this.search(title);
     // 숨김/부재를 구분 못 하는 not.toBeVisible 대신 "0개"로 명확히 단언한다.
-    await expect(
-      this.suiteList.getByRole('heading', { name: title })
-    ).toHaveCount(0);
+    await expect(this.suiteCard(title)).toHaveCount(0);
   }
 
   /** 폼 재오픈 시 이전 입력값이 남아 있지 않음을 단언한다. (이탈 후 상태 누수 회귀 방지) */

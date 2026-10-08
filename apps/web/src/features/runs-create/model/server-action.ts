@@ -1,6 +1,7 @@
 'use server';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestRunSchema } from '@/entities/test-run';
+import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
@@ -46,6 +47,52 @@ export const createTestRunAction = async (input: CreateRunInput) => {
 
   try {
     const [newTestRun] = await db.transaction(async (tx) => {
+      await assertRunResources(tx, project_id, { milestoneIds: [milestone_id] });
+
+      const milestoneCaseRows = await tx
+        .select({
+          test_case_id: milestoneTestCases.test_case_id,
+          milestone_id: milestoneTestCases.milestone_id,
+        })
+        .from(milestoneTestCases)
+        .where(eq(milestoneTestCases.milestone_id, milestone_id));
+
+      const milestoneSuiteRows = await tx
+        .select({
+          test_suite_id: milestoneTestSuites.test_suite_id,
+        })
+        .from(milestoneTestSuites)
+        .where(eq(milestoneTestSuites.milestone_id, milestone_id));
+
+      const suiteIds = [
+        ...new Set(milestoneSuiteRows.map((r) => r.test_suite_id).filter(Boolean)),
+      ] as string[];
+
+      await assertRunResources(tx, project_id, {
+        suiteIds,
+        caseIds: milestoneCaseRows.map((row) => row.test_case_id!),
+      });
+
+      const suiteCaseRows =
+        suiteIds.length === 0
+          ? []
+          : await tx
+              .select({
+                id: testCases.id,
+                test_suite_id: testCases.test_suite_id,
+              })
+              .from(testCases)
+              .where(
+                and(
+                  inArray(testCases.test_suite_id, suiteIds),
+                  eq(testCases.lifecycle_status, 'ACTIVE')
+                )
+              );
+
+      await assertRunResources(tx, project_id, {
+        caseIds: suiteCaseRows.map((row) => row.id),
+      });
+
       // 1. Create the main test run entry and link the selected milestone
       const [run] = await tx
         .insert(testRuns)
@@ -68,14 +115,6 @@ export const createTestRunAction = async (input: CreateRunInput) => {
       const addedCaseIds = new Set<string>();
 
       // 2. Resolve test cases from milestone
-
-      const milestoneCaseRows = await tx
-        .select({
-          test_case_id: milestoneTestCases.test_case_id,
-          milestone_id: milestoneTestCases.milestone_id,
-        })
-        .from(milestoneTestCases)
-        .where(eq(milestoneTestCases.milestone_id, milestone_id));
 
       const newMilestoneCaseRuns = milestoneCaseRows
         .filter(
@@ -100,17 +139,6 @@ export const createTestRunAction = async (input: CreateRunInput) => {
       }
 
       // 3. Resolve suites linked to milestones and add their individual test cases
-      const milestoneSuiteRows = await tx
-        .select({
-          test_suite_id: milestoneTestSuites.test_suite_id,
-        })
-        .from(milestoneTestSuites)
-        .where(eq(milestoneTestSuites.milestone_id, milestone_id));
-
-      const suiteIds = [
-        ...new Set(milestoneSuiteRows.map((r) => r.test_suite_id).filter(Boolean)),
-      ] as string[];
-
       if (suiteIds.length > 0) {
         // Link suites to the run
         const suiteLinks = suiteIds.map((suiteId) => ({
@@ -120,19 +148,6 @@ export const createTestRunAction = async (input: CreateRunInput) => {
         await tx.insert(testRunSuites).values(suiteLinks).onConflictDoNothing();
 
         // Get individual test cases belonging to these suites
-        const suiteCaseRows = await tx
-          .select({
-            id: testCases.id,
-            test_suite_id: testCases.test_suite_id,
-          })
-          .from(testCases)
-          .where(
-            and(
-              inArray(testCases.test_suite_id, suiteIds),
-              eq(testCases.lifecycle_status, 'ACTIVE')
-            )
-          );
-
         const newSuiteCaseRuns = suiteCaseRows
           .filter((row) => row.id && row.test_suite_id && !addedCaseIds.has(row.id))
           .map((row) => {

@@ -1,8 +1,9 @@
 'use server';
 
-import { deleteAccessTokenCookie } from '@/access/lib/cookies';
+import { deleteAccessTokenCookie, setAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword, verifyPassword } from '@/access/lib/password-hash';
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
+import { createProjectSessionToken } from '@/access/lib/project-session';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { ProjectDomain } from '@/entities/project';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
@@ -210,7 +211,7 @@ export const changeProjectIdentifier = async (
     const db = getDatabase();
 
     const [project] = await db
-      .select({ id: projects.id, identifier: projects.identifier })
+      .select({ id: projects.id, name: projects.name, identifier: projects.identifier })
       .from(projects)
       .where(eq(projects.id, projectId))
       .limit(1);
@@ -236,6 +237,11 @@ export const changeProjectIdentifier = async (
       .update(projects)
       .set({ identifier: newHash, updated_at: new Date() })
       .where(eq(projects.id, projectId));
+
+    // 해시가 바뀌어 기존 세션은 모두 폐기된다. 변경한 본인은 새 해시로 세션을 다시 발급해
+    // 설정 화면에서 바로 튕겨 나가지 않게 한다. 다른 브라우저·기기의 세션은 폐기된 채로 둔다.
+    const token = await createProjectSessionToken(project.id, project.name, newHash);
+    await setAccessTokenCookie(project.name, token);
 
     return {
       success: true,

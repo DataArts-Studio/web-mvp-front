@@ -37,7 +37,9 @@ const DIFFICULTY_BADGE: Record<ChallengeDifficulty, string> = {
 };
 
 function getSelectorOptions(selector: ChallengeSelector): ChallengeSelectorOption[] {
-  return selector.options ?? [{ type: selector.selectorType ?? 'data-testid', value: selector.testid }];
+  return (
+    selector.options ?? [{ type: selector.selectorType ?? 'data-testid', value: selector.testid }]
+  );
 }
 
 function selectorOptionKey(option: ChallengeSelectorOption) {
@@ -150,17 +152,20 @@ function SelectorReference({ selectors }: { selectors: ChallengeSelector[] }) {
 
   return (
     <div className="mt-6">
-      <h3 className="text-text-3 text-xs font-semibold tracking-wide uppercase">Selector reference</h3>
+      <h3 className="text-text-3 text-xs font-semibold tracking-wide uppercase">
+        Selector reference
+      </h3>
       <p className="text-text-3 mt-1.5 text-xs leading-relaxed">
-        셀렉터 타입을 선택하면 같은 요소의 data-testid, id, class 값을 확인할 수 있습니다.
-        선택한 값은 <code className="text-primary font-mono">page.locator(...)</code>, 접근성 locator,
-        또는 Page Object 필드에서 사용하세요.
+        셀렉터 타입을 선택하면 같은 요소의 data-testid, id, class 값을 확인할 수 있습니다. 선택한
+        값은 <code className="text-primary font-mono">page.locator(...)</code>, 접근성 locator, 또는
+        Page Object 필드에서 사용하세요.
       </p>
       <div className="border-line-2 bg-bg-2 mt-3 overflow-hidden border">
         {selectors.map((selector) => {
           const options = getSelectorOptions(selector);
           const selectedKey = selectedByName[selector.name] ?? selectorOptionKey(options[0]);
-          const selected = options.find((option) => selectorOptionKey(option) === selectedKey) ?? options[0];
+          const selected =
+            options.find((option) => selectorOptionKey(option) === selectedKey) ?? options[0];
 
           return (
             <div
@@ -179,7 +184,7 @@ function SelectorReference({ selectors }: { selectors: ChallengeSelector[] }) {
                       [selector.name]: event.target.value,
                     }))
                   }
-                  className="border-line-3 bg-bg-1 text-text-2 h-7 min-w-0 border px-2 font-mono text-[11px] outline-none focus:border-primary"
+                  className="border-line-3 bg-bg-1 text-text-2 focus:border-primary h-7 min-w-0 border px-2 font-mono text-[11px] outline-none"
                   aria-label={`${selector.name} selector type`}
                 >
                   {options.map((option) => (

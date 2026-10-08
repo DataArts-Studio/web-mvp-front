@@ -182,11 +182,36 @@ export const CHALLENGES: Challenge[] = [
     ],
     sandboxSlug: 'login-basic',
     selectors: [
-      { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', options: selectorOptions('login-submit'), desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', options: selectorOptions('login-success'), desc: '로그인 성공 시 노출' },
-      { name: '에러 메시지', testid: 'login-error', options: selectorOptions('login-error'), desc: '실패·검증 에러 시 노출' },
+      {
+        name: '아이디 입력',
+        testid: 'username',
+        options: selectorOptions('username'),
+        desc: '아이디 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '로그인 버튼',
+        testid: 'login-submit',
+        options: selectorOptions('login-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'login-success',
+        options: selectorOptions('login-success'),
+        desc: '로그인 성공 시 노출',
+      },
+      {
+        name: '에러 메시지',
+        testid: 'login-error',
+        options: selectorOptions('login-error'),
+        desc: '실패·검증 에러 시 노출',
+      },
     ],
     starterSpec: `import { test, expect } from '@playwright/test';
 test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다', async ({ page }) => {
@@ -215,14 +240,54 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
     ],
     sandboxSlug: 'signup-validation',
     selectors: [
-      { name: '이메일 입력', testid: 'email', options: selectorOptions('email'), desc: '이메일 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
-      { name: '비밀번호 확인', testid: 'confirm-password', options: selectorOptions('confirm-password'), desc: '비밀번호 확인 필드' },
-      { name: '가입 버튼', testid: 'signup-submit', options: selectorOptions('signup-submit'), desc: '제출 버튼' },
-      { name: '이메일 에러', testid: 'email-error', options: selectorOptions('email-error'), desc: '이메일 검증 실패 시 노출' },
-      { name: '비밀번호 에러', testid: 'password-error', options: selectorOptions('password-error'), desc: '비밀번호 검증 실패 시 노출' },
-      { name: '확인 에러', testid: 'confirm-error', options: selectorOptions('confirm-error'), desc: '비밀번호 불일치 시 노출' },
-      { name: '성공 메시지', testid: 'signup-success', options: selectorOptions('signup-success'), desc: '가입 완료 시 노출' },
+      {
+        name: '이메일 입력',
+        testid: 'email',
+        options: selectorOptions('email'),
+        desc: '이메일 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '비밀번호 확인',
+        testid: 'confirm-password',
+        options: selectorOptions('confirm-password'),
+        desc: '비밀번호 확인 필드',
+      },
+      {
+        name: '가입 버튼',
+        testid: 'signup-submit',
+        options: selectorOptions('signup-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '이메일 에러',
+        testid: 'email-error',
+        options: selectorOptions('email-error'),
+        desc: '이메일 검증 실패 시 노출',
+      },
+      {
+        name: '비밀번호 에러',
+        testid: 'password-error',
+        options: selectorOptions('password-error'),
+        desc: '비밀번호 검증 실패 시 노출',
+      },
+      {
+        name: '확인 에러',
+        testid: 'confirm-error',
+        options: selectorOptions('confirm-error'),
+        desc: '비밀번호 불일치 시 노출',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'signup-success',
+        options: selectorOptions('signup-success'),
+        desc: '가입 완료 시 노출',
+      },
     ],
   },
   {
@@ -866,10 +931,30 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
     ],
     selectors: [
-      { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', options: selectorOptions('login-submit'), desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', options: selectorOptions('login-success'), desc: '로그인 성공 후 노출' },
+      {
+        name: '아이디 입력',
+        testid: 'username',
+        options: selectorOptions('username'),
+        desc: '아이디 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '로그인 버튼',
+        testid: 'login-submit',
+        options: selectorOptions('login-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'login-success',
+        options: selectorOptions('login-success'),
+        desc: '로그인 성공 후 노출',
+      },
     ],
     staticChecks: [
       {
@@ -884,7 +969,8 @@ test('유효한 자격증명으로 로그인하면 환영 메시지가 보인다
       },
       {
         label: '로그인 액션 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*\\.click\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*\\.click\\s*\\(',
         message: '아이디·비밀번호 입력과 제출을 Page Object 메서드로 캡슐화하세요.',
       },
       {
@@ -913,7 +999,11 @@ test('valid user can sign in', async ({ page }) => {
     difficulty: 'easy',
     estimatedMinutes: 30,
     prerequisites: ['pom-login-page-object'],
-    recommendedNext: ['pom-profile-form-object', 'pom-login-actions-and-assertions', 'pom-signup-validation-errors'],
+    recommendedNext: [
+      'pom-profile-form-object',
+      'pom-login-actions-and-assertions',
+      'pom-signup-validation-errors',
+    ],
     tools: ['Playwright', 'POM'],
     summary:
       '회원가입 화면의 입력 필드와 제출 흐름을 SignupPage 클래스로 분리하고, 성공 가입 시나리오를 테스트 본문에서 읽기 쉽게 정리하세요.',
@@ -930,11 +1020,36 @@ test('valid user can sign in', async ({ page }) => {
       { label: '비밀번호 확인', value: 'qaground123', desc: '비밀번호와 동일한 확인 값' },
     ],
     selectors: [
-      { name: '이메일 입력', testid: 'email', options: selectorOptions('email'), desc: '이메일 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
-      { name: '비밀번호 확인', testid: 'confirm-password', options: selectorOptions('confirm-password'), desc: '비밀번호 확인 필드' },
-      { name: '가입 버튼', testid: 'signup-submit', options: selectorOptions('signup-submit'), desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'signup-success', options: selectorOptions('signup-success'), desc: '가입 완료 후 노출' },
+      {
+        name: '이메일 입력',
+        testid: 'email',
+        options: selectorOptions('email'),
+        desc: '이메일 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '비밀번호 확인',
+        testid: 'confirm-password',
+        options: selectorOptions('confirm-password'),
+        desc: '비밀번호 확인 필드',
+      },
+      {
+        name: '가입 버튼',
+        testid: 'signup-submit',
+        options: selectorOptions('signup-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'signup-success',
+        options: selectorOptions('signup-success'),
+        desc: '가입 완료 후 노출',
+      },
     ],
     staticChecks: [
       {
@@ -949,7 +1064,8 @@ test('valid user can sign in', async ({ page }) => {
       },
       {
         label: '회원가입 액션 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*\\.click\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*\\.click\\s*\\(',
         message: '이메일·비밀번호 입력과 제출을 Page Object 메서드로 캡슐화하세요.',
       },
       {
@@ -995,12 +1111,37 @@ test('new user can sign up', async ({ page }) => {
       { label: '나이', value: '30', desc: '14~120 범위의 정상 나이' },
     ],
     selectors: [
-      { name: '이름 입력', testid: 'name', options: selectorOptions('name'), desc: '이름 입력 필드' },
-      { name: '전화 입력', testid: 'phone', options: selectorOptions('phone'), desc: '전화번호 입력 필드' },
+      {
+        name: '이름 입력',
+        testid: 'name',
+        options: selectorOptions('name'),
+        desc: '이름 입력 필드',
+      },
+      {
+        name: '전화 입력',
+        testid: 'phone',
+        options: selectorOptions('phone'),
+        desc: '전화번호 입력 필드',
+      },
       { name: '나이 입력', testid: 'age', options: selectorOptions('age'), desc: '나이 입력 필드' },
-      { name: '약관 동의', testid: 'terms', options: selectorOptions('terms'), desc: '약관 체크박스' },
-      { name: '등록 버튼', testid: 'profile-submit', options: selectorOptions('profile-submit'), desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'profile-success', options: selectorOptions('profile-success'), desc: '등록 완료 후 노출' },
+      {
+        name: '약관 동의',
+        testid: 'terms',
+        options: selectorOptions('terms'),
+        desc: '약관 체크박스',
+      },
+      {
+        name: '등록 버튼',
+        testid: 'profile-submit',
+        options: selectorOptions('profile-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'profile-success',
+        options: selectorOptions('profile-success'),
+        desc: '등록 완료 후 노출',
+      },
     ],
     staticChecks: [
       {
@@ -1015,7 +1156,8 @@ test('new user can sign up', async ({ page }) => {
       },
       {
         label: '프로필 입력 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*(?:\\.check|\\.click)\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.fill\\s*\\([\\s\\S]*(?:\\.check|\\.click)\\s*\\(',
         message: '프로필 입력과 약관 체크/제출을 Page Object 메서드로 캡슐화하세요.',
       },
       {
@@ -1056,9 +1198,24 @@ test('user can register profile', async ({ page }) => {
     ],
     sandboxSlug: 'async-load',
     selectors: [
-      { name: '불러오기 버튼', testid: 'load-btn', options: selectorOptions('load-btn'), desc: '로딩 시작 버튼' },
-      { name: '로딩 스피너', testid: 'loading-spinner', options: selectorOptions('loading-spinner'), desc: '로딩 중 노출' },
-      { name: '콘텐츠 목록', testid: 'loaded-content', options: selectorOptions('loaded-content'), desc: '로딩 완료 후 노출' },
+      {
+        name: '불러오기 버튼',
+        testid: 'load-btn',
+        options: selectorOptions('load-btn'),
+        desc: '로딩 시작 버튼',
+      },
+      {
+        name: '로딩 스피너',
+        testid: 'loading-spinner',
+        options: selectorOptions('loading-spinner'),
+        desc: '로딩 중 노출',
+      },
+      {
+        name: '콘텐츠 목록',
+        testid: 'loaded-content',
+        options: selectorOptions('loaded-content'),
+        desc: '로딩 완료 후 노출',
+      },
     ],
     staticChecks: [
       {
@@ -1119,14 +1276,54 @@ test('order list loads after request', async ({ page }) => {
       { label: '기본 상품', value: '무선 마우스 20,000원', desc: '초기 수량 1개' },
     ],
     selectors: [
-      { name: '마우스 수량 증가', testid: 'inc-mouse', options: selectorOptions('inc-mouse'), desc: '무선 마우스 수량 증가 버튼' },
-      { name: '마우스 수량', testid: 'qty-mouse', options: selectorOptions('qty-mouse'), desc: '무선 마우스 현재 수량' },
-      { name: '쿠폰 입력', testid: 'coupon-input', options: selectorOptions('coupon-input'), desc: '쿠폰 코드 입력 필드' },
-      { name: '쿠폰 적용', testid: 'apply-coupon', options: selectorOptions('apply-coupon'), desc: '쿠폰 적용 버튼' },
-      { name: '소계', testid: 'subtotal', options: selectorOptions('subtotal'), desc: '상품 금액 합계' },
-      { name: '배송비', testid: 'shipping', options: selectorOptions('shipping'), desc: '배송비 표시' },
-      { name: '할인', testid: 'discount', options: selectorOptions('discount'), desc: '쿠폰 할인 금액' },
-      { name: '합계', testid: 'total', options: selectorOptions('total'), desc: '최종 결제 예정 금액' },
+      {
+        name: '마우스 수량 증가',
+        testid: 'inc-mouse',
+        options: selectorOptions('inc-mouse'),
+        desc: '무선 마우스 수량 증가 버튼',
+      },
+      {
+        name: '마우스 수량',
+        testid: 'qty-mouse',
+        options: selectorOptions('qty-mouse'),
+        desc: '무선 마우스 현재 수량',
+      },
+      {
+        name: '쿠폰 입력',
+        testid: 'coupon-input',
+        options: selectorOptions('coupon-input'),
+        desc: '쿠폰 코드 입력 필드',
+      },
+      {
+        name: '쿠폰 적용',
+        testid: 'apply-coupon',
+        options: selectorOptions('apply-coupon'),
+        desc: '쿠폰 적용 버튼',
+      },
+      {
+        name: '소계',
+        testid: 'subtotal',
+        options: selectorOptions('subtotal'),
+        desc: '상품 금액 합계',
+      },
+      {
+        name: '배송비',
+        testid: 'shipping',
+        options: selectorOptions('shipping'),
+        desc: '배송비 표시',
+      },
+      {
+        name: '할인',
+        testid: 'discount',
+        options: selectorOptions('discount'),
+        desc: '쿠폰 할인 금액',
+      },
+      {
+        name: '합계',
+        testid: 'total',
+        options: selectorOptions('total'),
+        desc: '최종 결제 예정 금액',
+      },
     ],
     staticChecks: [
       {
@@ -1141,7 +1338,8 @@ test('order list loads after request', async ({ page }) => {
       },
       {
         label: '수량/쿠폰 액션 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click)\\s*\\([\\s\\S]*(?:\\.fill|\\.click)\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click)\\s*\\([\\s\\S]*(?:\\.fill|\\.click)\\s*\\(',
         message: '수량 변경과 쿠폰 적용을 Page Object 액션 메서드로 캡슐화하세요.',
       },
       {
@@ -1186,18 +1384,64 @@ test('cart total changes after quantity and coupon updates', async ({ page }) =>
       { label: '색상', value: 'black', desc: '블랙 색상 옵션' },
     ],
     selectors: [
-      { name: 'M 사이즈', testid: 'size-m', options: selectorOptions('size-m'), desc: 'M 사이즈 선택 버튼' },
-      { name: '블랙 색상', testid: 'color-black', options: selectorOptions('color-black'), desc: '블랙 색상 선택 버튼' },
-      { name: '선택 요약', testid: 'selected-summary', options: selectorOptions('selected-summary'), desc: '현재 선택된 옵션 요약' },
-      { name: '옵션 에러', testid: 'option-error', options: selectorOptions('option-error'), desc: '옵션 누락 시 노출' },
-      { name: '담기 버튼', testid: 'add-to-cart', options: selectorOptions('add-to-cart'), desc: '장바구니 담기 버튼' },
-      { name: '담기 완료', testid: 'added-confirm', options: selectorOptions('added-confirm'), desc: '담기 성공 메시지' },
+      {
+        name: 'M 사이즈',
+        testid: 'size-m',
+        options: selectorOptions('size-m'),
+        desc: 'M 사이즈 선택 버튼',
+      },
+      {
+        name: '블랙 색상',
+        testid: 'color-black',
+        options: selectorOptions('color-black'),
+        desc: '블랙 색상 선택 버튼',
+      },
+      {
+        name: '선택 요약',
+        testid: 'selected-summary',
+        options: selectorOptions('selected-summary'),
+        desc: '현재 선택된 옵션 요약',
+      },
+      {
+        name: '옵션 에러',
+        testid: 'option-error',
+        options: selectorOptions('option-error'),
+        desc: '옵션 누락 시 노출',
+      },
+      {
+        name: '담기 버튼',
+        testid: 'add-to-cart',
+        options: selectorOptions('add-to-cart'),
+        desc: '장바구니 담기 버튼',
+      },
+      {
+        name: '담기 완료',
+        testid: 'added-confirm',
+        options: selectorOptions('added-confirm'),
+        desc: '담기 성공 메시지',
+      },
     ],
     staticChecks: [
-      { label: 'ProductOptionsPage 클래스', pattern: 'class\\s+ProductOptionsPage\\b', message: '상품 옵션 선택 책임을 ProductOptionsPage 클래스로 분리하세요.' },
-      { label: 'readonly locator 필드', pattern: 'readonly\\s+\\w+\\s*[:=]', message: 'locator는 Page Object의 readonly 필드로 선언하세요.' },
-      { label: '옵션 선택 액션 메서드', pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(', message: '사이즈와 색상 선택을 Page Object 액션 메서드로 캡슐화하세요.' },
-      { label: '옵션 상태 단언 메서드', pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(', message: '선택 요약 또는 담기 완료 검증을 Page Object 단언 메서드로 분리하세요.' },
+      {
+        label: 'ProductOptionsPage 클래스',
+        pattern: 'class\\s+ProductOptionsPage\\b',
+        message: '상품 옵션 선택 책임을 ProductOptionsPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '옵션 선택 액션 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(',
+        message: '사이즈와 색상 선택을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '옵션 상태 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '선택 요약 또는 담기 완료 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
     ],
     starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
 class ProductOptionsPage {
@@ -1230,15 +1474,46 @@ test('user can select options and add product to cart', async ({ page }) => {
     ],
     sandboxSlug: 'wishlist',
     selectors: [
-      { name: '첫 번째 찜 버튼', testid: 'wish-1', options: selectorOptions('wish-1'), desc: '무선 마우스 찜 토글' },
-      { name: '두 번째 찜 버튼', testid: 'wish-2', options: selectorOptions('wish-2'), desc: '기계식 키보드 찜 토글' },
-      { name: '찜 개수', testid: 'wish-count', options: selectorOptions('wish-count'), desc: '찜한 상품 개수' },
+      {
+        name: '첫 번째 찜 버튼',
+        testid: 'wish-1',
+        options: selectorOptions('wish-1'),
+        desc: '무선 마우스 찜 토글',
+      },
+      {
+        name: '두 번째 찜 버튼',
+        testid: 'wish-2',
+        options: selectorOptions('wish-2'),
+        desc: '기계식 키보드 찜 토글',
+      },
+      {
+        name: '찜 개수',
+        testid: 'wish-count',
+        options: selectorOptions('wish-count'),
+        desc: '찜한 상품 개수',
+      },
     ],
     staticChecks: [
-      { label: 'WishlistPage 클래스', pattern: 'class\\s+WishlistPage\\b', message: '위시리스트 책임을 WishlistPage 클래스로 분리하세요.' },
-      { label: 'readonly locator 필드', pattern: 'readonly\\s+\\w+\\s*[:=]', message: 'locator는 Page Object의 readonly 필드로 선언하세요.' },
-      { label: '찜 토글 액션 메서드', pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(', message: '찜 토글을 Page Object 액션 메서드로 캡슐화하세요.' },
-      { label: '찜 상태 단언 메서드', pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(', message: '찜 상태와 개수 검증을 Page Object 단언 메서드로 분리하세요.' },
+      {
+        label: 'WishlistPage 클래스',
+        pattern: 'class\\s+WishlistPage\\b',
+        message: '위시리스트 책임을 WishlistPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '찜 토글 액션 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(',
+        message: '찜 토글을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '찜 상태 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '찜 상태와 개수 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
     ],
     starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
 class WishlistPage {
@@ -1271,18 +1546,64 @@ test('user can toggle wishlist items', async ({ page }) => {
     ],
     sandboxSlug: 'order-cancel',
     selectors: [
-      { name: '결제완료 설정', testid: 'set-paid', options: selectorOptions('set-paid'), desc: '취소 가능 상태로 설정' },
-      { name: '배송중 설정', testid: 'set-shipping', options: selectorOptions('set-shipping'), desc: '취소 불가 상태로 설정' },
-      { name: '주문 상태', testid: 'order-status', options: selectorOptions('order-status'), desc: '현재 주문 상태' },
-      { name: '취소 안내', testid: 'cancel-notice', options: selectorOptions('cancel-notice'), desc: '취소 불가 안내' },
-      { name: '취소 버튼', testid: 'cancel-button', options: selectorOptions('cancel-button'), desc: '주문 취소 버튼' },
-      { name: '환불액', testid: 'refund-amount', options: selectorOptions('refund-amount'), desc: '취소 후 환불액' },
+      {
+        name: '결제완료 설정',
+        testid: 'set-paid',
+        options: selectorOptions('set-paid'),
+        desc: '취소 가능 상태로 설정',
+      },
+      {
+        name: '배송중 설정',
+        testid: 'set-shipping',
+        options: selectorOptions('set-shipping'),
+        desc: '취소 불가 상태로 설정',
+      },
+      {
+        name: '주문 상태',
+        testid: 'order-status',
+        options: selectorOptions('order-status'),
+        desc: '현재 주문 상태',
+      },
+      {
+        name: '취소 안내',
+        testid: 'cancel-notice',
+        options: selectorOptions('cancel-notice'),
+        desc: '취소 불가 안내',
+      },
+      {
+        name: '취소 버튼',
+        testid: 'cancel-button',
+        options: selectorOptions('cancel-button'),
+        desc: '주문 취소 버튼',
+      },
+      {
+        name: '환불액',
+        testid: 'refund-amount',
+        options: selectorOptions('refund-amount'),
+        desc: '취소 후 환불액',
+      },
     ],
     staticChecks: [
-      { label: 'OrderCancelPage 클래스', pattern: 'class\\s+OrderCancelPage\\b', message: '주문 취소 상태 책임을 OrderCancelPage 클래스로 분리하세요.' },
-      { label: 'readonly locator 필드', pattern: 'readonly\\s+\\w+\\s*[:=]', message: 'locator는 Page Object의 readonly 필드로 선언하세요.' },
-      { label: '상태/취소 액션 메서드', pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(', message: '상태 변경과 취소 동작을 Page Object 액션 메서드로 캡슐화하세요.' },
-      { label: '상태 단언 메서드', pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(', message: '주문 상태와 환불 결과 검증을 Page Object 단언 메서드로 분리하세요.' },
+      {
+        label: 'OrderCancelPage 클래스',
+        pattern: 'class\\s+OrderCancelPage\\b',
+        message: '주문 취소 상태 책임을 OrderCancelPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '상태/취소 액션 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*\\.click\\s*\\(',
+        message: '상태 변경과 취소 동작을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '상태 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '주문 상태와 환불 결과 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
     ],
     starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
 class OrderCancelPage {
@@ -1314,18 +1635,61 @@ test('order can be cancelled only before shipping', async ({ page }) => {
       '선택한 파일명과 업로드 완료 메시지 검증을 Page Object 단언 메서드로 분리한다.',
     ],
     sandboxSlug: 'file-upload',
-    testData: [{ label: '업로드 파일명', value: 'receipt.pdf', desc: '테스트에서 생성하거나 setInputFiles로 지정할 파일명' }],
+    testData: [
+      {
+        label: '업로드 파일명',
+        value: 'receipt.pdf',
+        desc: '테스트에서 생성하거나 setInputFiles로 지정할 파일명',
+      },
+    ],
     selectors: [
-      { name: '파일 입력', testid: 'file-input', options: selectorOptions('file-input'), desc: '파일 선택 input' },
-      { name: '파일명', testid: 'file-name', options: selectorOptions('file-name'), desc: '선택한 파일명 표시' },
-      { name: '업로드 버튼', testid: 'upload-submit', options: selectorOptions('upload-submit'), desc: '업로드 실행 버튼' },
-      { name: '업로드 완료', testid: 'upload-result', options: selectorOptions('upload-result'), desc: '업로드 완료 메시지' },
+      {
+        name: '파일 입력',
+        testid: 'file-input',
+        options: selectorOptions('file-input'),
+        desc: '파일 선택 input',
+      },
+      {
+        name: '파일명',
+        testid: 'file-name',
+        options: selectorOptions('file-name'),
+        desc: '선택한 파일명 표시',
+      },
+      {
+        name: '업로드 버튼',
+        testid: 'upload-submit',
+        options: selectorOptions('upload-submit'),
+        desc: '업로드 실행 버튼',
+      },
+      {
+        name: '업로드 완료',
+        testid: 'upload-result',
+        options: selectorOptions('upload-result'),
+        desc: '업로드 완료 메시지',
+      },
     ],
     staticChecks: [
-      { label: 'FileUploadPage 클래스', pattern: 'class\\s+FileUploadPage\\b', message: '파일 업로드 책임을 FileUploadPage 클래스로 분리하세요.' },
-      { label: 'readonly locator 필드', pattern: 'readonly\\s+\\w+\\s*[:=]', message: 'locator는 Page Object의 readonly 필드로 선언하세요.' },
-      { label: '파일 업로드 액션 메서드', pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:setInputFiles|\\.click)\\s*\\(', message: '파일 선택과 업로드 동작을 Page Object 액션 메서드로 캡슐화하세요.' },
-      { label: '업로드 결과 단언 메서드', pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(', message: '파일명과 업로드 완료 검증을 Page Object 단언 메서드로 분리하세요.' },
+      {
+        label: 'FileUploadPage 클래스',
+        pattern: 'class\\s+FileUploadPage\\b',
+        message: '파일 업로드 책임을 FileUploadPage 클래스로 분리하세요.',
+      },
+      {
+        label: 'readonly locator 필드',
+        pattern: 'readonly\\s+\\w+\\s*[:=]',
+        message: 'locator는 Page Object의 readonly 필드로 선언하세요.',
+      },
+      {
+        label: '파일 업로드 액션 메서드',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:setInputFiles|\\.click)\\s*\\(',
+        message: '파일 선택과 업로드 동작을 Page Object 액션 메서드로 캡슐화하세요.',
+      },
+      {
+        label: '업로드 결과 단언 메서드',
+        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*expect\\s*\\(',
+        message: '파일명과 업로드 완료 검증을 Page Object 단언 메서드로 분리하세요.',
+      },
     ],
     starterSpec: `import { test, expect, type Locator, type Page } from '@playwright/test';
 class FileUploadPage {
@@ -1363,11 +1727,36 @@ test('user can upload evidence file', async ({ page }) => {
       { label: '틀린 비밀번호', value: 'wrong-password', desc: '로그인 실패 검증용' },
     ],
     selectors: [
-      { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', options: selectorOptions('login-submit'), desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', options: selectorOptions('login-success'), desc: '로그인 성공 후 노출' },
-      { name: '에러 메시지', testid: 'login-error', options: selectorOptions('login-error'), desc: '인증 실패 시 노출' },
+      {
+        name: '아이디 입력',
+        testid: 'username',
+        options: selectorOptions('username'),
+        desc: '아이디 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '로그인 버튼',
+        testid: 'login-submit',
+        options: selectorOptions('login-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'login-success',
+        options: selectorOptions('login-success'),
+        desc: '로그인 성공 후 노출',
+      },
+      {
+        name: '에러 메시지',
+        testid: 'login-error',
+        options: selectorOptions('login-error'),
+        desc: '인증 실패 시 노출',
+      },
     ],
     staticChecks: [
       {
@@ -1411,13 +1800,48 @@ test('user can upload evidence file', async ({ page }) => {
     ],
     sandboxSlug: 'signup-validation',
     selectors: [
-      { name: '이메일 입력', testid: 'email', options: selectorOptions('email'), desc: '이메일 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
-      { name: '비밀번호 확인', testid: 'confirm-password', options: selectorOptions('confirm-password'), desc: '비밀번호 확인 필드' },
-      { name: '이메일 에러', testid: 'email-error', options: selectorOptions('email-error'), desc: '이메일 검증 메시지' },
-      { name: '비밀번호 에러', testid: 'password-error', options: selectorOptions('password-error'), desc: '비밀번호 검증 메시지' },
-      { name: '확인 에러', testid: 'confirm-error', options: selectorOptions('confirm-error'), desc: '비밀번호 확인 검증 메시지' },
-      { name: '가입 버튼', testid: 'signup-submit', options: selectorOptions('signup-submit'), desc: '제출 버튼' },
+      {
+        name: '이메일 입력',
+        testid: 'email',
+        options: selectorOptions('email'),
+        desc: '이메일 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '비밀번호 확인',
+        testid: 'confirm-password',
+        options: selectorOptions('confirm-password'),
+        desc: '비밀번호 확인 필드',
+      },
+      {
+        name: '이메일 에러',
+        testid: 'email-error',
+        options: selectorOptions('email-error'),
+        desc: '이메일 검증 메시지',
+      },
+      {
+        name: '비밀번호 에러',
+        testid: 'password-error',
+        options: selectorOptions('password-error'),
+        desc: '비밀번호 검증 메시지',
+      },
+      {
+        name: '확인 에러',
+        testid: 'confirm-error',
+        options: selectorOptions('confirm-error'),
+        desc: '비밀번호 확인 검증 메시지',
+      },
+      {
+        name: '가입 버튼',
+        testid: 'signup-submit',
+        options: selectorOptions('signup-submit'),
+        desc: '제출 버튼',
+      },
     ],
     staticChecks: [
       {
@@ -1427,7 +1851,8 @@ test('user can upload evidence file', async ({ page }) => {
       },
       {
         label: '제출 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '폼 제출 동작을 Page Object 메서드로 캡슐화하세요.',
       },
       {
@@ -1522,7 +1947,8 @@ test('user can upload evidence file', async ({ page }) => {
       },
       {
         label: '상품 추가 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '상품 담기 동작을 addProduct 같은 의도 기반 메서드로 작성하세요.',
       },
       {
@@ -1555,10 +1981,30 @@ test('user can upload evidence file', async ({ page }) => {
       { label: '비밀번호', value: 'qaground123', desc: '정상 비밀번호' },
     ],
     selectors: [
-      { name: '아이디 입력', testid: 'username', options: selectorOptions('username'), desc: '아이디 입력 필드' },
-      { name: '비밀번호 입력', testid: 'password', options: selectorOptions('password'), desc: '비밀번호 입력 필드' },
-      { name: '로그인 버튼', testid: 'login-submit', options: selectorOptions('login-submit'), desc: '제출 버튼' },
-      { name: '성공 메시지', testid: 'login-success', options: selectorOptions('login-success'), desc: '로그인 성공 후 노출' },
+      {
+        name: '아이디 입력',
+        testid: 'username',
+        options: selectorOptions('username'),
+        desc: '아이디 입력 필드',
+      },
+      {
+        name: '비밀번호 입력',
+        testid: 'password',
+        options: selectorOptions('password'),
+        desc: '비밀번호 입력 필드',
+      },
+      {
+        name: '로그인 버튼',
+        testid: 'login-submit',
+        options: selectorOptions('login-submit'),
+        desc: '제출 버튼',
+      },
+      {
+        name: '성공 메시지',
+        testid: 'login-success',
+        options: selectorOptions('login-success'),
+        desc: '로그인 성공 후 노출',
+      },
     ],
     staticChecks: [
       {
@@ -1617,12 +2063,14 @@ test('user can upload evidence file', async ({ page }) => {
       },
       {
         label: '검색 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '검색 입력은 search 메서드로 캡슐화하세요.',
       },
       {
         label: '정렬 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '정렬 동작은 의도 기반 메서드로 표현하세요.',
       },
       {
@@ -1665,12 +2113,14 @@ test('user can upload evidence file', async ({ page }) => {
       },
       {
         label: '열기 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '모달 열기 동작은 open 메서드로 캡슐화하세요.',
       },
       {
         label: '확인/취소 메서드',
-        pattern: 'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
+        pattern:
+          'async\\s+[A-Za-z_$\\\\w]*\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*(?:\\.fill|\\.click|\\.check|\\.selectOption|\\.goto)\\s*\\(',
         message: '확인 또는 취소 액션을 Page Object 메서드로 표현하세요.',
       },
       {

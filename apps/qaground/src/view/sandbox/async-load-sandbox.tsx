@@ -43,14 +43,23 @@ export const AsyncLoadSandbox = () => {
 
         <div className="mt-6">
           {state === 'loading' && (
-            <div data-testid="loading-spinner" id="loading-spinner" role="status" className="qa-loading-spinner flex items-center gap-3">
+            <div
+              data-testid="loading-spinner"
+              id="loading-spinner"
+              role="status"
+              className="qa-loading-spinner flex items-center gap-3"
+            >
               <span className="border-line-3 border-t-primary h-5 w-5 animate-spin rounded-full border-2" />
               <span className="text-text-2 text-sm">불러오는 중...</span>
             </div>
           )}
 
           {state === 'loaded' && (
-            <ul data-testid="loaded-content" id="loaded-content" className="qa-loaded-content flex flex-col gap-2">
+            <ul
+              data-testid="loaded-content"
+              id="loaded-content"
+              className="qa-loaded-content flex flex-col gap-2"
+            >
               {ITEMS.map((item) => (
                 <li
                   key={item}

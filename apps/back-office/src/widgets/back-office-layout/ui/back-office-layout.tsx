@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 
 import type { NavItem } from '@/entities/admin-dashboard';
+import { signOutAdminAction } from '@/features/auth-gate/api/gate-actions';
+import { LogOut } from 'lucide-react';
 
 type AdminInfo = { name: string; email: string };
 
@@ -78,6 +80,16 @@ export function BackOfficeLayout({ navItems, children, admin, activeHref }: Back
               <div className="h-3 w-32 rounded bg-gray-100" />
             </div>
           )}
+          {/* 서버 세션까지 폐기한다(복사해 둔 쿠키도 무효). 폼 제출이라 JS 없이도 동작한다. */}
+          <form action={signOutAdminAction} className="mt-3">
+            <button
+              type="submit"
+              className="text-text-secondary hover:text-text-primary flex items-center gap-2 rounded-md py-1 text-sm font-medium transition-colors"
+            >
+              <LogOut aria-hidden="true" className="h-4 w-4" />
+              로그아웃
+            </button>
+          </form>
         </div>
       </aside>
 
