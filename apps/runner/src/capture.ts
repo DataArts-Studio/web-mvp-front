@@ -1,5 +1,7 @@
 import { chromium } from '@playwright/test';
 
+import { BROWSER_EGRESS_ARGS, BROWSER_PROXY } from './egress-proxy.js';
+
 /**
  * 대상 페이지 접근성 트리 캡처기. DB 에 접근하지 않는다.
  *
@@ -37,7 +39,8 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 export async function capture(input: CaptureInput): Promise<CaptureResult> {
   const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  const browser = await chromium.launch();
+  // 모든 요청(리다이렉트·하위 요청 포함)을 egress 프록시로 보내 hop 마다 주소를 검사한다.
+  const browser = await chromium.launch({ proxy: BROWSER_PROXY, args: BROWSER_EGRESS_ARGS });
   try {
     const context = await browser.newContext(
       // storageState 는 Playwright 가 받는 형태({cookies, origins})를 그대로 전달.

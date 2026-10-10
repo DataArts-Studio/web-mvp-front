@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { BROWSER_EGRESS_ARGS, BROWSER_PROXY } from './egress-proxy.js';
 import {
   SANDBOX_GID,
   SANDBOX_UID,
@@ -130,6 +131,10 @@ async function writeRunFiles(
   }
   // chromium 만 사용 (베이스 이미지 내장 브라우저 재사용, 추가 다운로드 최소화).
   useEntries.push(`browserName: 'chromium'`);
+  // page·request 픽스처가 egress 프록시로만 나가게 한다. spec 이 이 설정을 바꾸거나 직접
+  // 소켓을 열어도 spec uid 방화벽(egress-firewall.ts)이 프록시 외 연결을 거부한다.
+  useEntries.push(`proxy: ${JSON.stringify(BROWSER_PROXY)}`);
+  useEntries.push(`launchOptions: { args: ${JSON.stringify(BROWSER_EGRESS_ARGS)} }`);
 
   const config = `import { defineConfig } from '@playwright/test';
 
