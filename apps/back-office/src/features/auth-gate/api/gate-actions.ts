@@ -72,10 +72,19 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
   const store = await cookies();
   let sessionToken: string;
   try {
-    // 재로그인 시에도 현재 브라우저의 이전 세션을 재사용하지 않는다.
-    await revokeAdminSession(store.get(ADMIN_COOKIE)?.value);
+    // 새 세션을 먼저 만든다. 생성이 실패해도 지금 쓰던 세션은 살아 있어야 한다.
     sessionToken = await createAdminSession();
   } catch {
+    return { error: UNAVAILABLE_MESSAGE };
+  }
+  try {
+    // 재로그인 시에도 현재 브라우저의 이전 세션을 재사용하지 않는다.
+    await revokeAdminSession(store.get(ADMIN_COOKIE)?.value);
+  } catch {
+    // 이전 세션을 못 지웠으면 새 세션도 남기지 않는다(쿠키로 내보내지 않은 행이 쌓이지 않게).
+    await revokeAdminSession(sessionToken).catch((error) => {
+      console.error('[auth-gate] 미발급 세션 정리 실패', error);
+    });
     return { error: UNAVAILABLE_MESSAGE };
   }
   store.set(ADMIN_COOKIE, sessionToken, {
