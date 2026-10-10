@@ -9,6 +9,7 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+import { SESSION_CHECK_HEADER, SESSION_PATH_HEADER } from '@/access/lib/session-headers';
 import { routing } from '@/i18n/routing';
 
 // next-intl 라우팅 미들웨어 (마케팅 + /en 접두 경로에만 적용)
@@ -126,6 +127,15 @@ function parseTokenPayload(token: string): { projectName: string; expiresAt: num
       return null;
     }
 
+    // 세션 폐기(#314) 이전 형식 토큰은 서버에서 모두 거부되므로, 여기서 바로 재인증으로 보낸다.
+    // 그러지 않으면 화면 틀만 뜨고 데이터 영역이 "일시적 오류"로 남는다.
+    if (
+      typeof payload.credentialVersion !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(payload.credentialVersion)
+    ) {
+      return null;
+    }
+
     return {
       projectName: payload.projectName,
       expiresAt: payload.expiresAt,
@@ -220,6 +230,21 @@ function isNonLocalizedRoot(pathname: string): boolean {
 }
 
 /**
+ * 다음 단계로 넘긴다. 클라이언트가 보낸 내부 헤더는 항상 지우고, 보호 경로를 통과한 요청에만
+ * 세션 확인 헤더를 붙인다(레이아웃이 접근 페이지에서 자기 자신으로 리다이렉트하지 않도록).
+ */
+function pass(request: NextRequest, sessionCheck = false): NextResponse {
+  const headers = new Headers(request.headers);
+  headers.delete(SESSION_CHECK_HEADER);
+  headers.delete(SESSION_PATH_HEADER);
+  if (sessionCheck) {
+    headers.set(SESSION_CHECK_HEADER, '1');
+    headers.set(SESSION_PATH_HEADER, request.nextUrl.pathname);
+  }
+  return NextResponse.next({ request: { headers } });
+}
+
+/**
  * 프로젝트 접근 토큰 가드 (기존 로직).
  */
 async function runAccessGuard(request: NextRequest): Promise<NextResponse> {
@@ -227,12 +252,12 @@ async function runAccessGuard(request: NextRequest): Promise<NextResponse> {
 
   // 공개 경로는 통과
   if (isPublicPath(pathname)) {
-    return NextResponse.next();
+    return pass(request);
   }
 
   // 보호된 경로가 아니면 통과
   if (!isProtectedPath(pathname)) {
-    return NextResponse.next();
+    return pass(request);
   }
 
   // console.log('[Middleware] Protected path detected');
@@ -241,7 +266,7 @@ async function runAccessGuard(request: NextRequest): Promise<NextResponse> {
   const projectSlug = extractProjectSlug(pathname);
   if (!projectSlug) {
     // console.log('[Middleware] No slug found, passing through');
-    return NextResponse.next();
+    return pass(request);
   }
 
   // console.log('[Middleware] Project slug:', projectSlug);
@@ -313,7 +338,7 @@ async function runAccessGuard(request: NextRequest): Promise<NextResponse> {
   }
 
   // console.log('[Middleware] Token valid, allowing access');
-  return NextResponse.next();
+  return pass(request, true);
 }
 
 /**

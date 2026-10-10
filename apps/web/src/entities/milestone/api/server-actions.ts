@@ -10,6 +10,7 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
+import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { ActionResult } from '@/shared/types';
@@ -26,6 +27,7 @@ import {
 } from '@testea/db';
 import { and, eq, inArray, isNull, max } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+import { z } from 'zod';
 
 type GetMilestonesParams = {
   projectId: string;
@@ -435,7 +437,7 @@ export const deleteMilestone = archiveMilestone;
  */
 export const addTestCasesToMilestone = async (
   milestoneId: string,
-  testCaseIds: string[]
+  rawIds: string[]
 ): Promise<ActionResult<{ count: number }>> => {
   try {
     const db = getDatabase();
@@ -447,6 +449,18 @@ export const addTestCasesToMilestone = async (
       .where(eq(milestones.id, milestoneId))
       .limit(1);
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
+    // 붙일 케이스가 모두 마일스톤과 같은 프로젝트 소속이어야 한다. 마일스톤에 연결된 실행으로
+    // 곧바로 동기화되므로, 섞인 배열은 첫 쓰기 전에 통째로 거부한다.
+    const parsedIds = z.array(z.string().uuid()).min(1).safeParse(rawIds);
+    if (!parsedIds.success) {
+      return { success: false, errors: { _milestone: ['유효한 연결 대상을 선택해주세요.'] } };
+    }
+    const testCaseIds = [...new Set(parsedIds.data)];
+    try {
+      await assertRunResources(db, ms.projectId, { caseIds: testCaseIds });
+    } catch {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
 
@@ -553,7 +567,7 @@ export const removeTestCaseFromMilestone = async (
  */
 export const addTestSuitesToMilestone = async (
   milestoneId: string,
-  testSuiteIds: string[]
+  rawIds: string[]
 ): Promise<ActionResult<{ count: number }>> => {
   try {
     const db = getDatabase();
@@ -565,6 +579,18 @@ export const addTestSuitesToMilestone = async (
       .where(eq(milestones.id, milestoneId))
       .limit(1);
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
+      return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
+    }
+    // 붙일 케이스가 모두 마일스톤과 같은 프로젝트 소속이어야 한다. 마일스톤에 연결된 실행으로
+    // 곧바로 동기화되므로, 섞인 배열은 첫 쓰기 전에 통째로 거부한다.
+    const parsedIds = z.array(z.string().uuid()).min(1).safeParse(rawIds);
+    if (!parsedIds.success) {
+      return { success: false, errors: { _milestone: ['유효한 연결 대상을 선택해주세요.'] } };
+    }
+    const testSuiteIds = [...new Set(parsedIds.data)];
+    try {
+      await assertRunResources(db, ms.projectId, { suiteIds: testSuiteIds });
+    } catch {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
 

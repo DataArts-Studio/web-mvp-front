@@ -80,7 +80,7 @@ function getTokenSecret(): string {
 export async function createProjectAccessToken(
   projectId: string,
   projectName: string,
-  config: Partial<AccessTokenConfig> = {}
+  config: Partial<AccessTokenConfig> & { credentialVersion?: string } = {}
 ): Promise<string> {
   const mergedConfig = { ...DEFAULT_ACCESS_TOKEN_CONFIG, ...config };
   const now = Math.floor(Date.now() / 1000);
@@ -91,6 +91,7 @@ export async function createProjectAccessToken(
     projectName,
     issuedAt: now,
     expiresAt: now + mergedConfig.expiresIn,
+    ...(config.credentialVersion ? { credentialVersion: config.credentialVersion } : {}),
   };
 
   const header = { alg: 'HS256', typ: 'JWT' };
@@ -114,6 +115,9 @@ export type TokenVerifyResult =
  * @param token - JWT 토큰 문자열
  * @returns 검증 결과와 페이로드
  */
+/** 인스턴스 간 시계 오차 허용 범위(초). */
+const CLOCK_SKEW_SECONDS = 60;
+
 export async function verifyProjectAccessToken(token: string): Promise<TokenVerifyResult> {
   try {
     const parts = token.split('.');
@@ -137,14 +141,27 @@ export async function verifyProjectAccessToken(token: string): Promise<TokenVeri
     const payload = JSON.parse(base64UrlDecode(payloadEncoded)) as ProjectAccessTokenPayload;
 
     // 타입 검증
-    if (payload.type !== 'project_access') {
+    if (
+      payload.type !== 'project_access' ||
+      typeof payload.projectId !== 'string' ||
+      !payload.projectId ||
+      typeof payload.projectName !== 'string' ||
+      !payload.projectName ||
+      !Number.isSafeInteger(payload.issuedAt) ||
+      !Number.isSafeInteger(payload.expiresAt)
+    ) {
       return { valid: false, error: 'TOKEN_INVALID' };
     }
 
     // 만료 검증
     const now = Math.floor(Date.now() / 1000);
-    if (payload.expiresAt < now) {
+    if (payload.expiresAt <= now) {
       return { valid: false, error: 'TOKEN_EXPIRED' };
+    }
+    // 발급 인스턴스와 검증 인스턴스의 시계가 초 경계를 사이에 두고 어긋나도 막 발급한 토큰이
+    // 거부되지 않도록 약간의 여유를 둔다.
+    if (payload.issuedAt > now + CLOCK_SKEW_SECONDS || payload.expiresAt <= payload.issuedAt) {
+      return { valid: false, error: 'TOKEN_INVALID' };
     }
 
     return { valid: true, payload };

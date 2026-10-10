@@ -16,7 +16,8 @@ export const FileUploadSandbox = () => {
         <h1 className="mb-5 text-xl font-bold">증빙 파일 업로드</h1>
 
         <input
-          data-testid="file-input" id="file-input"
+          data-testid="file-input"
+          id="file-input"
           type="file"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setUploaded(false);
@@ -26,13 +27,18 @@ export const FileUploadSandbox = () => {
         />
 
         {fileName && (
-          <p data-testid="file-name" id="file-name" className="qa-file-name text-text-2 mt-4 text-sm">
+          <p
+            data-testid="file-name"
+            id="file-name"
+            className="qa-file-name text-text-2 mt-4 text-sm"
+          >
             선택한 파일: <span className="text-text-1">{fileName}</span>
           </p>
         )}
 
         <button
-          data-testid="upload-submit" id="upload-submit"
+          data-testid="upload-submit"
+          id="upload-submit"
           type="button"
           disabled={!fileName}
           onClick={() => setUploaded(true)}
@@ -43,7 +49,8 @@ export const FileUploadSandbox = () => {
 
         {uploaded && (
           <p
-            data-testid="upload-result" id="upload-result"
+            data-testid="upload-result"
+            id="upload-result"
             role="status"
             className="qa-upload-result text-primary mt-4 text-sm font-medium"
           >

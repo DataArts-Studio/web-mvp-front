@@ -4,14 +4,16 @@ import { redirect } from 'next/navigation';
 import { initCloudflareDb } from '@/shared/db/cloudflare-db';
 import { timingSafeEqual } from 'node:crypto';
 
+import { verifyAdminSession } from './admin-session';
+
 /**
  * 백오피스 v1 임시 인증 게이트 (환경변수 공유키).
  *
  * 정식 Supabase Auth + RBAC 는 [BO12] 로 분리. 그전까지 사이트 전역 공지 발행 같은
  * 위험 액션을 무인증으로 두지 않기 위한 최소 안전장치다.
  *
- * - 운영자가 `/notices/gate` 에서 공유키를 입력하면 httpOnly 쿠키로 보관한다.
- * - 모든 페이지/서버 액션은 이 쿠키를 `BACKOFFICE_ADMIN_SECRET` 과 상수시간 비교한다.
+ * - 공유키 검증 후 난수 세션을 httpOnly 쿠키로 발급한다.
+ * - 페이지/서버 액션은 DB의 세션 만료·폐기 및 현재 공유키 버전을 검증한다.
  * - 시크릿 미설정(fail-closed) 이면 누구도 통과하지 못한다.
  */
 export const ADMIN_COOKIE = 'bo_admin_session';
@@ -34,8 +36,9 @@ export function isValidSecret(candidate: string | undefined | null): boolean {
 
 /** 현재 요청이 인증된 운영자 세션인지. */
 export async function isAdminAuthed(): Promise<boolean> {
+  initCloudflareDb();
   const store = await cookies();
-  return isValidSecret(store.get(ADMIN_COOKIE)?.value);
+  return verifyAdminSession(store.get(ADMIN_COOKIE)?.value);
 }
 
 /**

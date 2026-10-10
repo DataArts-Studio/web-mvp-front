@@ -96,7 +96,11 @@ describe('정적 채점: 모든 sandbox 챌린지', () => {
 
     expect(r.ok).toBe(true);
     expect(r.status).toBe('passed');
-    expect(r.requiredCoverage).toEqual({ total: requiredCount, covered: requiredCount, missing: [] });
+    expect(r.requiredCoverage).toEqual({
+      total: requiredCount,
+      covered: requiredCount,
+      missing: [],
+    });
     expect(r.bonusCoverage?.total).toBeGreaterThan(0);
   });
 

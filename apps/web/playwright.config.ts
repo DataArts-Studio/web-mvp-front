@@ -68,16 +68,15 @@ export default defineConfig({
 
   // 핵심: spec 실행 전에 Next.js 서버를 자동 기동.
   // - 로컬: 이미 띄워둔 dev 가 있으면 그대로 재사용 (reuseExistingServer)
-  // - CI:   항상 새로 띄우고 종료까지 책임 짐
-  //
-  // CI 에서 production build 의 정확도가 필요하면 command 를
-  //   "pnpm --filter web build && pnpm --filter web start"
-  // 로 바꾸는 것을 권장. 다만 build 시간이 추가됨.
+  // - CI:   운영 빌드(build + start)로 띄운다. dev 서버는 라우트를 처음 열 때마다 컴파일해
+  //         (대시보드 첫 요청 40초, 서버 액션 20초대) 5초 단언·60초 테스트 제한을 넘기는
+  //         거짓 실패를 만들었다. 운영 빌드는 실제 배포와 같은 동작을 검증한다는 장점도 있다.
   webServer: {
-    command: 'pnpm --filter web dev',
+    command: isCI ? 'pnpm --filter web build && pnpm --filter web start' : 'pnpm --filter web dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !isCI,
-    timeout: 120_000, // dev 서버 첫 기동까지 여유
+    // CI 는 빌드 시간을 포함하므로 넉넉히 둔다.
+    timeout: isCI ? 600_000 : 120_000,
     stdout: 'ignore',
     stderr: 'pipe',
   },

@@ -130,7 +130,16 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
 
 대상 사이트 인증은 러너가 다루지 않는다. Testea 가 target_sites 시크릿을 복호화해
 `storageState`(쿠키/오리진 인증 상태)로 구성한 뒤 요청에 실어 보낸다.
-외부 입력 URL 은 `url-guard.ts` 가 사설/내부 주소를 막아 SSRF 를 차단한다.
+외부 입력 URL은 `url-guard.ts`가 정규화한 호스트명과 IP 리터럴을 검사한다.
+끝점이 붙은 내부 호스트명, 단일 이름, 사설·공유·링크로컬·멀티캐스트·예약 IPv4,
+전환 주소를 포함한 특수 IPv6를 거부한다. IPv6 리터럴은 `2000::/3`에서 특수 대역을
+제외한 주소만 허용한다. 특수 대역 내 공개 예외 주소도 보수적으로 거부한다.
+이는 `/run`의 `baseUrl`과 `/capture`의 최초 `url`에만 적용되는 **입력 보조 방어**다.
+DNS 해석 결과, 리다이렉트, 페이지 하위 요청, spec의 직접 Node 통신은 검사하지 않는다.
+따라서 이 검사만으로 SSRF가 차단되었다고 판단하면 안 된다. 해당 경계의 실제 egress
+정책과 합성 데이터 기반 격리 검증은 #313의 후속 작업이며 운영 배포에서 검증되지 않았다.
+
+URL 정책 회귀 테스트는 네트워크 없이 `pnpm --filter @testea/runner test`로 실행한다.
 
 ## 로컬 실행
 
@@ -204,6 +213,21 @@ bash verify-cloudrun.sh
 > 50/90/100% 도달 시 메일 알림을 건다.
 
 ### 이미지 버전
+
+Docker는 이 디렉터리의 `pnpm-lock.yaml`을 `--frozen-lockfile`로 설치한다.
+루트 workspace lockfile과 overrides는 러너 독립 빌드에 적용되지 않는다.
+의존성을 변경하면 루트 lockfile과 별도로 다음 명령으로 러너 lockfile도 갱신하고 검증한다.
+
+```bash
+cd apps/runner
+pnpm install --ignore-workspace --lockfile-only --prod=false
+pnpm install --ignore-workspace --frozen-lockfile --prod=false
+pnpm run build
+pnpm audit --ignore-workspace --audit-level=low
+```
+
+CI의 `runner standalone dependencies`는 독립 설치·빌드·전체 npm 의존성 감사를 수행한다.
+감사 통과는 알려진 npm 권고 기준이며, 이미지 OS 패키지나 네트워크 격리를 검증하지 않는다.
 
 베이스 이미지 `mcr.microsoft.com/playwright:v1.60.0-jammy` 는 `@playwright/test` 버전과
 같이 올려야 한다 (lockfile 의 resolved 버전과 Dockerfile 태그를 일치시킬 것).

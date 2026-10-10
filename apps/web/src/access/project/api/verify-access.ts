@@ -15,9 +15,9 @@ import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { eq } from 'drizzle-orm';
 
-import { createProjectAccessToken } from '../../lib/access-token';
 import { deleteAccessTokenCookie, setAccessTokenCookie } from '../../lib/cookies';
 import { verifyPassword } from '../../lib/password-hash';
+import { createProjectSessionToken } from '../../lib/project-session';
 import { VerifyProjectAccessRequestSchema } from '../model/schema';
 import type { ProjectAccessInfo, VerifyProjectAccessResponse } from '../model/types';
 
@@ -108,20 +108,19 @@ function getClientIp(headerStore: { get(name: string): string | null }): string 
  */
 async function getProjectAccessInfo(projectName: string): Promise<ProjectAccessInfo | null> {
   const db = getDatabase();
-  // URL 인코딩된 projectName을 디코딩
-  const decodedName = decodeURIComponent(projectName);
 
   const [project] = await db
     .select({
       id: projects.id,
       name: projects.name,
       identifier: projects.identifier,
+      lifecycleStatus: projects.lifecycle_status,
     })
     .from(projects)
-    .where(eq(projects.name, decodedName))
+    .where(eq(projects.name, projectName))
     .limit(1);
 
-  if (!project) {
+  if (!project || project.lifecycleStatus !== 'ACTIVE') {
     return null;
   }
 
@@ -209,15 +208,15 @@ export async function verifyProjectAccess(
     // 5. 성공 - 토큰 발급 및 쿠키 설정
     clearFailedAttempts(rateLimitKey);
 
-    const token = await createProjectAccessToken(project.id, project.name);
+    const token = await createProjectSessionToken(project.id, project.name, project.identifierHash);
     await setAccessTokenCookie(project.name, token);
 
     // 캐시 갱신
-    revalidatePath(`/projects/${project.name}`);
+    revalidatePath(`/projects/${encodeURIComponent(project.name)}`);
 
     return {
       success: true,
-      redirectUrl: `/projects/${project.name}`,
+      redirectUrl: `/projects/${encodeURIComponent(project.name)}`,
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'verifyProjectAccess' } });

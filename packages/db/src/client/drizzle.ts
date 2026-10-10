@@ -44,8 +44,12 @@ const createClient = () => {
   const databaseUrl = getDatabaseUrl();
   const isProd = process.env.NODE_ENV === 'production';
 
+  // 인스턴스당 연결 수. 1 이면 한 인스턴스가 동시에 처리하는 요청의 모든 쿼리가 연결 하나에서
+  // 줄을 선다(권한 확인·세션 대조로 액션당 쿼리가 늘어 화면에 액션 여러 개가 동시에 돌면 수 초
+  // 대기). Supabase 트랜잭션 풀러(6543)를 쓰고 prepare 를 끄므로 여러 연결을 열어도 안전하다.
+  // 전체 연결 수는 "실행 중 인스턴스 수 × max" 이므로 풀러 클라이언트 연결 한도 안에서 정한다.
   const client = postgres(databaseUrl, {
-    max: 1,
+    max: 5,
     idle_timeout: 20,
     connect_timeout: 30,
     ssl: 'require',

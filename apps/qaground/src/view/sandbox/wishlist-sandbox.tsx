@@ -26,7 +26,8 @@ export const WishlistSandbox = () => {
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-bold">상품 목록</h1>
           <span
-            data-testid="wish-count" id="wish-count"
+            data-testid="wish-count"
+            id="wish-count"
             className="qa-wish-count border-line-3 text-text-2 rounded-full border px-2.5 py-0.5 text-xs"
           >
             찜 {count}
@@ -43,7 +44,8 @@ export const WishlistSandbox = () => {
               >
                 <span className="text-sm">{p.name}</span>
                 <button
-                  data-testid={`wish-${p.id}`} id={`wish-${p.id}`}
+                  data-testid={`wish-${p.id}`}
+                  id={`wish-${p.id}`}
                   type="button"
                   aria-pressed={on}
                   aria-label={`${p.name} 찜`}

@@ -1,11 +1,13 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, milestoneTestCases, testCaseRuns, testRuns } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+import { z } from 'zod';
 
 type SetMilestoneForRunResult =
   | { success: true; addedCount: number }
@@ -15,10 +17,17 @@ export async function addMilestonesToRunAction(
   runId: string,
   milestoneIds: string[]
 ): Promise<SetMilestoneForRunResult> {
-  const milestoneId = milestoneIds[0];
-  if (!milestoneId) {
-    return { success: false, error: '추가할 마일스톤을 선택해주세요.' };
+  const parsed = z
+    .object({
+      runId: z.string().uuid(),
+      ids: z.array(z.string().uuid()).min(1),
+    })
+    .safeParse({ runId, ids: milestoneIds });
+  if (!parsed.success) {
+    return { success: false, error: '유효한 실행 및 연결 대상을 선택해주세요.' };
   }
+  milestoneIds = [...new Set(parsed.data.ids)];
+  const milestoneId = milestoneIds[0];
 
   const db = getDatabase();
 
@@ -34,11 +43,7 @@ export async function addMilestonesToRunAction(
 
   try {
     const result = await db.transaction(async (tx) => {
-      // 1. Update milestone_id directly on the test run
-      await tx
-        .update(testRuns)
-        .set({ milestone_id: milestoneId, updated_at: new Date() })
-        .where(eq(testRuns.id, runId));
+      await assertRunResources(tx, run.projectId!, { milestoneIds });
 
       // 2. Get test cases belonging to the milestone (with milestone_id for source tracking)
       const milestoneCaseRows = await tx
@@ -48,6 +53,16 @@ export async function addMilestonesToRunAction(
         })
         .from(milestoneTestCases)
         .where(eq(milestoneTestCases.milestone_id, milestoneId));
+
+      await assertRunResources(tx, run.projectId!, {
+        caseIds: milestoneCaseRows.map((row) => row.test_case_id!),
+      });
+
+      // 1. Update milestone_id directly on the test run
+      await tx
+        .update(testRuns)
+        .set({ milestone_id: milestoneId, updated_at: new Date() })
+        .where(eq(testRuns.id, runId));
 
       const caseIdToMilestone = new Map<string, string>();
       for (const row of milestoneCaseRows) {

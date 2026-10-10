@@ -55,7 +55,12 @@ export const ProfileFormSandbox = () => {
         className={`qa-${testid} border-line-3 bg-bg-3 rounded-button text-text-1 placeholder:text-text-3 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none`}
       />
       {error && (
-        <span data-testid={errorTestid} id={errorTestid} role="alert" className={`qa-${errorTestid} text-system-red text-xs`}>
+        <span
+          data-testid={errorTestid}
+          id={errorTestid}
+          role="alert"
+          className={`qa-${errorTestid} text-system-red text-xs`}
+        >
           {error}
         </span>
       )}
@@ -100,7 +105,12 @@ export const ProfileFormSandbox = () => {
               <span className="text-text-2 text-sm">이용약관에 동의합니다.</span>
             </label>
             {errors.terms && (
-              <span data-testid="terms-error" id="terms-error" role="alert" className="qa-terms-error text-system-red text-xs">
+              <span
+                data-testid="terms-error"
+                id="terms-error"
+                role="alert"
+                className="qa-terms-error text-system-red text-xs"
+              >
                 {errors.terms}
               </span>
             )}

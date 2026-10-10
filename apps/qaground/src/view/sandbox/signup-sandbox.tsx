@@ -47,7 +47,12 @@ export const SignupSandbox = () => {
         className={`qa-${testid} border-line-3 bg-bg-3 rounded-button text-text-1 focus:border-primary h-button-md border px-3 text-sm transition-colors outline-none`}
       />
       {error && (
-        <span data-testid={errorTestid} id={errorTestid} role="alert" className={`qa-${errorTestid} text-system-red text-xs`}>
+        <span
+          data-testid={errorTestid}
+          id={errorTestid}
+          role="alert"
+          className={`qa-${errorTestid} text-system-red text-xs`}
+        >
           {error}
         </span>
       )}

@@ -24,6 +24,8 @@ export interface ProjectAccessTokenPayload {
   projectName: string;
   issuedAt: number;
   expiresAt: number;
+  /** 서버에서 현재 비밀번호 해시와 대조하는 HMAC. 이전 형식 토큰은 재인증 필요. */
+  credentialVersion?: string;
 }
 
 /**

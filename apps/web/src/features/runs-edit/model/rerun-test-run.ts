@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -134,6 +135,24 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
     const milestoneIds = [
       ...new Set(sourceMilestoneLinks.map((r) => r.milestone_id).filter(Boolean)),
     ] as string[];
+
+    // 원본 연결을 복제하기 전에 소유 관계를 다시 확인한다. 이전 버전에서 다른 프로젝트
+    // 리소스가 연결된 실행이라면 새 실행으로 오염을 퍼뜨리지 않도록 재실행을 거부한다.
+    try {
+      await assertRunResources(db, projectId, {
+        suiteIds,
+        milestoneIds: [
+          ...milestoneIds,
+          ...(sourceRun.milestone_id ? [sourceRun.milestone_id] : []),
+        ],
+        caseIds: seededCases.map((c) => c.test_case_id),
+      });
+    } catch {
+      return {
+        success: false,
+        error: '원본 실행에 다른 프로젝트 리소스가 연결돼 있어 다시 실행할 수 없습니다.',
+      };
+    }
 
     // 5. 자동 제안 이름: 회귀 재실행 - {원본명} ({YYYY-MM-DD})
     const now = new Date();
