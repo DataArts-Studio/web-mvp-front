@@ -213,6 +213,10 @@ export function startEgressProxy(options: EgressProxyOptions = {}): Promise<Egre
         if (!res.headersSent) res.writeHead(502).end();
         else res.destroy();
       });
+      // 클라이언트가 응답을 다 받기 전에 끊으면(요청 취소·spec 종료) upstream 도 정리한다.
+      res.on('close', () => {
+        if (!res.writableFinished) upstream.destroy();
+      });
       req.pipe(upstream);
     })().catch(() => {
       if (!res.headersSent) res.writeHead(502).end();

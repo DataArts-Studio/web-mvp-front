@@ -17,6 +17,7 @@ let targetPort: number;
 let proxy: EgressProxy;
 let realPolicyProxy: EgressProxy;
 const resolveCalls: string[] = [];
+let streamClosed: (() => void) | undefined;
 
 // 가짜 DNS. public.test 만 허용 대상(127.0.0.1)으로, 나머지는 내부 주소로 해석된다.
 const fakeDns: Record<string, string[]> = {
@@ -39,6 +40,16 @@ function testPolicy(address: string): boolean {
 
 before(async () => {
   target = http.createServer((req, res) => {
+    if (req.url === '/stream') {
+      // 끝나지 않는 응답. 프록시가 upstream 을 정리하면 이 연결이 닫힌다.
+      const timer = setInterval(() => res.write('chunk'), 20);
+      res.on('close', () => {
+        clearInterval(timer);
+        streamClosed?.();
+      });
+      res.write('chunk');
+      return;
+    }
     res.setHeader('x-seen-host', req.headers.host ?? '');
     res.end(SECRET);
   });
@@ -173,4 +184,28 @@ test('resolveAllowedAddress 는 끝점·대괄호를 정규화하고 정책을 �
   assert.equal(await resolveAllowedAddress('[::1]', fakeResolve, isBlockedAddress), null);
   assert.equal(await resolveAllowedAddress('PUBLIC.TEST.', fakeResolve, testPolicy), '127.0.0.1');
   assert.equal(await resolveAllowedAddress('', fakeResolve, testPolicy), null);
+});
+
+test('평문 HTTP 응답 도중 클라이언트가 끊으면 upstream 연결도 닫는다', async () => {
+  const closed = new Promise<void>((resolve) => (streamClosed = resolve));
+  await new Promise<void>((resolve, reject) => {
+    const url = `http://public.test:${targetPort}/stream`;
+    const req = http.request(
+      { host: '127.0.0.1', port: proxy.port, path: url, headers: { host: new URL(url).host } },
+      (res) => {
+        res.once('data', () => {
+          req.destroy();
+          resolve();
+        });
+      }
+    );
+    req.on('error', () => {});
+    req.on('close', resolve);
+    setTimeout(() => reject(new Error('no response')), 2000);
+    req.end();
+  });
+  await Promise.race([
+    closed,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('upstream left open')), 2000)),
+  ]);
 });
