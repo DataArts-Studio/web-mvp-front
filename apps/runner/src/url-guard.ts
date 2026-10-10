@@ -1,6 +1,10 @@
 import { BlockList, isIP } from 'node:net';
 
-/** 입력 보조 방어. DNS·리다이렉트·spec 자체 통신에는 별도 egress 경계가 필요하다. */
+/**
+ * 대상 주소 정책. 입력 URL 검사(checkTargetUrl)와 egress 프록시(egress-proxy.ts)가 같은 판정을 쓴다.
+ * 입력 검사만으로는 DNS·리다이렉트·spec 자체 통신을 막지 못하므로, 실제 경계는 프록시와
+ * spec uid 방화벽(egress-firewall.ts)이다.
+ */
 const blocked = new BlockList();
 // 외부 웹사이트 대상 러너에서는 특수 용도 대역 전체를 보수적으로 거부한다.
 // https://www.iana.org/assignments/iana-ipv4-special-registry/
@@ -36,6 +40,14 @@ for (const [address, prefix] of [
   blocked.addSubnet(address, prefix, 'ipv6');
 }
 
+/** IP 주소가 외부 대상으로 허용되지 않는지. IP 가 아닌 값도 거부로 본다. */
+export function isBlockedAddress(address: string): boolean {
+  const family = isIP(address);
+  if (family === 4) return blocked.check(address, 'ipv4');
+  if (family === 6) return !globalIpv6.check(address, 'ipv6') || blocked.check(address, 'ipv6');
+  return true;
+}
+
 /** 거부 사유 또는 null을 반환한다. null은 네트워크 격리 보장이 아니다. */
 export function checkTargetUrl(raw: string): string | null {
   let url: URL;
@@ -53,14 +65,8 @@ export function checkTargetUrl(raw: string): string | null {
     .toLowerCase()
     .replace(/\.+$/, '')
     .replace(/^\[|\]$/g, '');
-  const family = isIP(host);
-  if (family === 4) {
-    return blocked.check(host, 'ipv4') ? 'Target host is not allowed.' : null;
-  }
-  if (family === 6) {
-    return !globalIpv6.check(host, 'ipv6') || blocked.check(host, 'ipv6')
-      ? 'Target host is not allowed.'
-      : null;
+  if (isIP(host)) {
+    return isBlockedAddress(host) ? 'Target host is not allowed.' : null;
   }
   if (
     !host.includes('.') ||

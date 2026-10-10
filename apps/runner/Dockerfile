@@ -17,7 +17,9 @@ RUN corepack enable && corepack prepare pnpm@10.23.0 --activate
 
 # PID 1 로 tini 를 둔다. spec 이 setsid 로 빠져나간 뒤 종료된 고아 프로세스를 node 는
 # 거두지(reap) 않아 좀비로 쌓이므로, init 역할을 tini 가 맡는다.
-RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
+# iptables 는 spec uid 의 직접 연결을 막는 egress 방화벽(src/egress-firewall.ts)에 쓴다.
+# 규칙 적용에는 CAP_NET_ADMIN 이 필요하며, 없으면 /run 은 기본 거부된다.
+RUN apt-get update && apt-get install -y --no-install-recommends tini iptables && rm -rf /var/lib/apt/lists/*
 
 # --- Dependency layer -------------------------------------------------------
 # Copy only the manifest first so this layer caches across spec/code changes.
