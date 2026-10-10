@@ -6,6 +6,7 @@
 # 검증 항목:
 #   [비용]  min/max instances, concurrency, timeout, CPU throttling, gen2
 #   [보안]  ingress, 전용 런타임 SA, 미공개(allUsers 없음), invoker SA = run.invoker
+#   [egress] Cloud Run 보완 통제: 런타임 SA 시크릿 접근 없음, VPC 미연결, 방화벽 opt-out 여부
 #   [예산]  월 $1 예산 알림 존재
 #   [라이브] 미인증 요청 403, (가능하면) invoker 토큰으로 인증 요청 200
 #
@@ -21,6 +22,7 @@ RUNTIME_SA_NAME="${RUNNER_RUNTIME_SA:-testea-runner-rt}"
 INVOKER_SA_NAME="${RUNNER_INVOKER_SA:-testea-runner-invoker}"
 RUNTIME_SA="${RUNTIME_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 INVOKER_SA="${INVOKER_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+SECRET_NAME="${RUNNER_SECRET_NAME:-runner-shared-secret}"
 EXPECT_MAX="${RUNNER_MAX_INSTANCES:-1}"
 EXPECT_CONC="${RUNNER_CONCURRENCY:-1}"
 EXPECT_TIMEOUT="${RUNNER_TIMEOUT:-300}"
@@ -94,10 +96,41 @@ RT_ROLES="$(gcloud projects get-iam-policy "${PROJECT_ID}" \
   --filter="bindings.members:serviceAccount:${RUNTIME_SA}" \
   --format='value(bindings.role)' 2>/dev/null)"
 if [[ -z "${RT_ROLES}" ]]; then
-  ok "런타임 SA 프로젝트 롤 0개 (시크릿 접근만)"
+  ok "런타임 SA 프로젝트 롤 0개"
 else
   warn "런타임 SA 에 프로젝트 롤이 있음: ${RT_ROLES} (의도한 것인지 확인)"
 fi
+
+echo
+echo "[spec egress (Cloud Run 보완 통제)]"
+# Cloud Run 은 NET_ADMIN 을 줄 수 없어 spec uid 방화벽이 걸리지 않는다. 그래서 spec 이 메타데이터
+# 서버에서 런타임 SA 토큰을 받아도 쓸모가 없어야 하고(권한 0개), 사설망으로 가는 경로가 없어야
+# 한다(VPC 미연결). 서비스 YAML 에는 평문 env 가 들어 있으므로 출력하지 않고 검사만 한다.
+RT_SECRET_ROLES="$(gcloud secrets get-iam-policy "${SECRET_NAME}" --project "${PROJECT_ID}" \
+  --flatten='bindings[].members' \
+  --filter="bindings.members:serviceAccount:${RUNTIME_SA}" \
+  --format='value(bindings.role)' 2>/dev/null)"
+if [[ -z "${RT_SECRET_ROLES}" ]]; then
+  ok "런타임 SA 에 시크릿(${SECRET_NAME}) 접근 권한 없음"
+else
+  bad "런타임 SA 가 시크릿(${SECRET_NAME})을 읽을 수 있음: ${RT_SECRET_ROLES} (spec 이 메타데이터 토큰으로 가져갈 수 있다)"
+fi
+
+VPC_CONNECTOR="$(D "spec.template.metadata.annotations['run.googleapis.com/vpc-access-connector']")"
+VPC_INTERFACES="$(D "spec.template.metadata.annotations['run.googleapis.com/network-interfaces']")"
+if [[ -z "${VPC_CONNECTOR}" && -z "${VPC_INTERFACES}" ]]; then
+  ok "VPC 미연결 (사설망 경로 없음)"
+else
+  bad "VPC 에 연결됨 (connector='${VPC_CONNECTOR}' interfaces='${VPC_INTERFACES}'). spec 이 사설망에 닿을 수 있다"
+fi
+
+SERVICE_YAML="$(gcloud run services describe "${SERVICE}" --project "${PROJECT_ID}" --region "${REGION}" --format=export 2>/dev/null)"
+if grep -A1 'name: RUNNER_ALLOW_UNRESTRICTED_EGRESS$' <<<"${SERVICE_YAML}" | grep -qE "value: ['\"]?1['\"]?$"; then
+  ok "방화벽 opt-out 설정됨 (위 두 보완 통제가 전제)"
+else
+  warn "방화벽 opt-out 미설정. Cloud Run 에서는 방화벽을 걸 수 없어 /run 이 503 으로 거부된다"
+fi
+unset SERVICE_YAML
 
 echo
 echo "[예산 알림]"
