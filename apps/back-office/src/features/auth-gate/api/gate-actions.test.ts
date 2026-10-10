@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createAdminSession, revokeAdminSession } from '../lib/admin-session';
 import { signInAdminAction } from './gate-actions';
 
 const mocks = vi.hoisted(() => {
@@ -8,6 +9,8 @@ const mocks = vi.hoisted(() => {
   let seq = 0;
   return {
     rows,
+    // 재로그인 상황을 흉내 내는 현재 브라우저의 기존 세션 쿠키 값.
+    existingSession: undefined as string | undefined,
     headers: new Map<string, string>(),
     cookieSet: vi.fn(),
     reserve: vi.fn(async (ip: string | null) => {
@@ -33,7 +36,12 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('next/headers', () => ({
   headers: async () => ({ get: (k: string) => mocks.headers.get(k.toLowerCase()) ?? null }),
-  cookies: async () => ({ set: mocks.cookieSet, get: () => undefined, delete: vi.fn() }),
+  cookies: async () => ({
+    set: mocks.cookieSet,
+    get: (name: string) =>
+      mocks.existingSession ? { name, value: mocks.existingSession } : undefined,
+    delete: vi.fn(),
+  }),
 }));
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
 vi.mock('../lib/admin-session', () => ({
@@ -62,6 +70,7 @@ describe('signInAdminAction 브루트포스 방어', () => {
   beforeEach(() => {
     vi.stubEnv('BACKOFFICE_ADMIN_SECRET', 'correct-key');
     mocks.rows.clear();
+    mocks.existingSession = undefined;
     mocks.headers.clear();
     mocks.headers.set('cf-connecting-ip', IP);
   });
@@ -123,5 +132,43 @@ describe('signInAdminAction 브루트포스 방어', () => {
       'synthetic-session-token',
       expect.objectContaining({ httpOnly: true })
     );
+  });
+});
+
+describe('signInAdminAction 재로그인 세션 교체', () => {
+  beforeEach(() => {
+    vi.stubEnv('BACKOFFICE_ADMIN_SECRET', 'correct-key');
+    mocks.rows.clear();
+    mocks.existingSession = 'previous-session-token';
+    mocks.headers.clear();
+    mocks.headers.set('cf-connecting-ip', IP);
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.clearAllMocks();
+  });
+
+  it('새 세션을 만든 뒤 기존 세션을 폐기한다', async () => {
+    await signInAdminAction({}, form('correct-key'));
+    expect(revokeAdminSession).toHaveBeenCalledWith('previous-session-token');
+    const created = vi.mocked(createAdminSession).mock.invocationCallOrder[0];
+    const revoked = vi.mocked(revokeAdminSession).mock.invocationCallOrder[0];
+    expect(created).toBeLessThan(revoked);
+  });
+
+  it('새 세션 생성이 실패하면 기존 세션을 지우지 않는다', async () => {
+    vi.mocked(createAdminSession).mockRejectedValueOnce(new Error('db down'));
+    const result = await signInAdminAction({}, form('correct-key'));
+    expect(result.error).toMatch(/로그인을 처리할 수 없습니다/);
+    expect(revokeAdminSession).not.toHaveBeenCalled();
+    expect(mocks.cookieSet).not.toHaveBeenCalled();
+  });
+
+  it('기존 세션 폐기가 실패하면 새 세션도 정리하고 쿠키를 발급하지 않는다', async () => {
+    vi.mocked(revokeAdminSession).mockRejectedValueOnce(new Error('db down'));
+    const result = await signInAdminAction({}, form('correct-key'));
+    expect(result.error).toMatch(/로그인을 처리할 수 없습니다/);
+    expect(revokeAdminSession).toHaveBeenLastCalledWith('synthetic-session-token');
+    expect(mocks.cookieSet).not.toHaveBeenCalled();
   });
 });

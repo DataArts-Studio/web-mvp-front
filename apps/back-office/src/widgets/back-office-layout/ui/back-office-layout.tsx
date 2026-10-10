@@ -15,9 +15,35 @@ type BackOfficeLayoutProps = {
   activeHref?: string;
 };
 
+/** 서버 세션까지 폐기한다(복사해 둔 쿠키도 무효). 폼 제출이라 JS 없이도 동작한다. */
+function SignOutForm({ className }: { className?: string }) {
+  return (
+    <form action={signOutAdminAction} className={className}>
+      <button
+        type="submit"
+        className="text-text-secondary hover:text-text-primary flex items-center gap-2 rounded-md py-1 text-sm font-medium transition-colors"
+      >
+        <LogOut aria-hidden="true" className="h-4 w-4" />
+        로그아웃
+      </button>
+    </form>
+  );
+}
+
 export function BackOfficeLayout({ navItems, children, admin, activeHref }: BackOfficeLayoutProps) {
   return (
     <div className="text-text-primary min-h-dvh bg-gray-50 lg:pl-[240px]">
+      {/* 사이드바가 숨겨지는 작은 화면에서도 로그아웃할 수 있게 상단 바를 둔다. */}
+      <header
+        aria-label="Back office 상단 바"
+        className="border-border flex items-center justify-between border-b bg-white px-4 py-3 lg:hidden"
+      >
+        <div className="tracking-zero font-bold">
+          Testea <span className="text-text-secondary text-sm font-normal">관리자</span>
+        </div>
+        <SignOutForm />
+      </header>
+
       <aside
         aria-label="Back office 사이드바"
         className="border-border fixed inset-y-0 left-0 hidden w-[240px] border-r bg-white lg:block"
@@ -80,16 +106,7 @@ export function BackOfficeLayout({ navItems, children, admin, activeHref }: Back
               <div className="h-3 w-32 rounded bg-gray-100" />
             </div>
           )}
-          {/* 서버 세션까지 폐기한다(복사해 둔 쿠키도 무효). 폼 제출이라 JS 없이도 동작한다. */}
-          <form action={signOutAdminAction} className="mt-3">
-            <button
-              type="submit"
-              className="text-text-secondary hover:text-text-primary flex items-center gap-2 rounded-md py-1 text-sm font-medium transition-colors"
-            >
-              <LogOut aria-hidden="true" className="h-4 w-4" />
-              로그아웃
-            </button>
-          </form>
+          <SignOutForm className="mt-3" />
         </div>
       </aside>
 

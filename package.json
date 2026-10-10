@@ -17,7 +17,7 @@
   "packageManager": "pnpm@10.23.0",
   "pnpm": {
     "overrides": {
-      "next": "^16.2.9",
+      "next": "16.3.8",
       "@babel/plugin-transform-modules-systemjs": "^7.29.4",
       "fast-uri": "^3.1.2",
       "ws": "^8.21.0",
