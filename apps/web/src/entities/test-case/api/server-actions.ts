@@ -1,6 +1,6 @@
 'use server';
 
-import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
+import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
 import { createVersionSnapshot } from '@/entities/test-case-version/api/create-version-snapshot';
@@ -24,6 +24,20 @@ import {
 } from '@testea/db';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+
+/**
+ * 케이스에 붙일 스위트·섹션이 케이스 프로젝트 소속인지 확인한다.
+ * 스위트에 연결된 실행으로 케이스가 곧바로 동기화되므로, 다른 프로젝트 ID 는 쓰기 전에 거부한다.
+ */
+async function caseLinksBelongTo(
+  projectId: string,
+  suiteId: string | null | undefined,
+  sectionId: string | null | undefined
+): Promise<boolean> {
+  if (suiteId && !(await belongsToProject('testSuite', suiteId, projectId))) return false;
+  if (sectionId && !(await belongsToProject('section', sectionId, projectId))) return false;
+  return true;
+}
 
 type getTestCasesParams = {
   project_id: string;
@@ -276,6 +290,9 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
       checkStorageLimit(input.projectId),
     ]);
     if (!hasAccess) {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
+    }
+    if (!(await caseLinksBelongTo(input.projectId, input.testSuiteId, input.sectionId))) {
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
     if (storageError) return storageError;
@@ -592,6 +609,15 @@ export const updateTestCase = async (
     // 접근 권한 확인: 전체 row 조회 (버전 스냅샷용)
     const [existing] = await db.select().from(testCases).where(eq(testCases.id, id)).limit(1);
     if (!existing?.project_id || !(await requireProjectAccess(existing.project_id))) {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
+    }
+    if (
+      !(await caseLinksBelongTo(
+        existing.project_id,
+        updateFields.testSuiteId,
+        updateFields.sectionId
+      ))
+    ) {
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
