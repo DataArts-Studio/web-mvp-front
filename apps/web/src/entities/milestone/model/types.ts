@@ -18,8 +18,9 @@ export type Milestone = {
   projectId: string;
   title: string;
   description?: string;
-  startDate: Date | null;
-  endDate: Date | null;
+  /** 'YYYY-MM-DD'. 날짜만 있는 값이라 Date 로 바꾸지 않는다 (#381). */
+  startDate: string | null;
+  endDate: string | null;
   progressStatus: MilestoneProgressStatus;
   createdAt: Date;
   updatedAt: Date;

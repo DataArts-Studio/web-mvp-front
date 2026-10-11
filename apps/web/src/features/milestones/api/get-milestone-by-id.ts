@@ -2,6 +2,7 @@
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { MilestoneStats, MilestoneWithStats } from '@/entities/milestone';
+import { normalizeDateOnly } from '@/shared/lib/date-only';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -161,8 +162,8 @@ export async function getMilestoneById(
       projectId: dbMilestone.project_id ?? '',
       title: dbMilestone.name,
       description: dbMilestone.description ?? undefined,
-      startDate: dbMilestone.start_date ? new Date(dbMilestone.start_date) : null,
-      endDate: dbMilestone.end_date ? new Date(dbMilestone.end_date) : null,
+      startDate: normalizeDateOnly(dbMilestone.start_date),
+      endDate: normalizeDateOnly(dbMilestone.end_date),
       progressStatus: dbMilestone.progress_status,
       createdAt: dbMilestone.created_at,
       updatedAt: dbMilestone.updated_at,
