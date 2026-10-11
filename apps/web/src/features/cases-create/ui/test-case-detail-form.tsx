@@ -100,7 +100,16 @@ export const TestCaseDetailForm = ({
     });
   });
 
+  // 저장 중에는 배경 클릭·닫기 버튼·Escape 로도 닫지 않는다. 닫히면 폼이 언마운트되어
+  // 실패 알림과 입력 보존이 다시 사라진다 (#371). Escape 핸들러는 마운트 시 한 번 등록되므로
+  // 최신 상태를 ref 로 읽는다.
+  const isPendingRef = useRef(isPending);
+  useEffect(() => {
+    isPendingRef.current = isPending;
+  }, [isPending]);
+
   const handleAbandon = () => {
+    if (isPendingRef.current) return;
     track(TESTCASE_EVENTS.CREATE_ABANDON, { project_id: projectId });
     onClose();
   };

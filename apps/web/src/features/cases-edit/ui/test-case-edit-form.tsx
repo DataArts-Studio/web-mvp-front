@@ -94,6 +94,8 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   };
 
   const handleAbandon = () => {
+    // 저장 중에는 배경 클릭·닫기 버튼으로도 닫지 않는다. 실패 시 수정 내용을 지키기 위함 (#371).
+    if (isPending) return;
     track(TESTCASE_EVENTS.UPDATE_ABANDON, { case_id: testCase.id });
     onClose();
   };

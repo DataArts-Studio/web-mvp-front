@@ -40,7 +40,7 @@ const toDateTimeInputValue = (date: Date | string | null | undefined): string =>
 };
 
 export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps) => {
-  const { mutate, isPending } = useUpdateMilestone();
+  const { mutateAsync, isPending } = useUpdateMilestone();
   const queryClient = useQueryClient();
 
   // 현재 연결된 케이스/스위트 ID
@@ -111,64 +111,62 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
     setSelectedSuiteIds(newSet);
   };
 
+  // 마일스톤 수정과 범위 변경을 한 흐름에서 기다린다. 호출별 mutate 콜백은 async 반환값을
+  // 기다리지 않아 범위 변경 중 예외가 묻히고 폼이 다시 제출될 수 있었다 (#371).
   const onSubmit = async (data: UpdateMilestone) => {
     setIsSubmitting(true);
     try {
-      // 마일스톤 정보 업데이트
-      mutate(data, {
-        onSuccess: async () => {
-          track(MILESTONE_EVENTS.UPDATE, { milestone_id: milestone.id });
-          // 케이스 변경 처리
-          const casesToAdd = Array.from(selectedCaseIds).filter((id) => !initialCaseIds.has(id));
-          const casesToRemove = Array.from(initialCaseIds).filter((id) => !selectedCaseIds.has(id));
+      try {
+        await mutateAsync(data);
+      } catch (error) {
+        track(MILESTONE_EVENTS.UPDATE_FAIL, { milestone_id: milestone.id });
+        toast.error((error instanceof Error && error.message) || '마일스톤을 수정하지 못했습니다.');
+        return;
+      }
+      track(MILESTONE_EVENTS.UPDATE, { milestone_id: milestone.id });
 
-          // 스위트 변경 처리
-          const suitesToAdd = Array.from(selectedSuiteIds).filter((id) => !initialSuiteIds.has(id));
-          const suitesToRemove = Array.from(initialSuiteIds).filter(
-            (id) => !selectedSuiteIds.has(id)
-          );
+      const casesToAdd = Array.from(selectedCaseIds).filter((id) => !initialCaseIds.has(id));
+      const casesToRemove = Array.from(initialCaseIds).filter((id) => !selectedCaseIds.has(id));
+      const suitesToAdd = Array.from(selectedSuiteIds).filter((id) => !initialSuiteIds.has(id));
+      const suitesToRemove = Array.from(initialSuiteIds).filter((id) => !selectedSuiteIds.has(id));
 
-          // 케이스·스위트 범위 변경. 실패한 요청이 있으면 창을 닫지 않고 알린다 (#371).
-          const scopeResults = [];
-          if (casesToAdd.length > 0) {
-            scopeResults.push(await addTestCasesToMilestone(milestone.id, casesToAdd));
-          }
-          for (const caseId of casesToRemove) {
-            scopeResults.push(await removeTestCaseFromMilestone(milestone.id, caseId));
-          }
-          if (suitesToAdd.length > 0) {
-            scopeResults.push(await addTestSuitesToMilestone(milestone.id, suitesToAdd));
-          }
-          for (const suiteId of suitesToRemove) {
-            scopeResults.push(await removeTestSuiteFromMilestone(milestone.id, suiteId));
-          }
-          const scopeFailed = scopeResults.some((result) => !result.success);
+      // 케이스·스위트 범위 변경. 하나라도 실패하면 창을 닫지 않고 알린다.
+      let scopeFailed = false;
+      try {
+        const scopeResults = [];
+        if (casesToAdd.length > 0) {
+          scopeResults.push(await addTestCasesToMilestone(milestone.id, casesToAdd));
+        }
+        for (const caseId of casesToRemove) {
+          scopeResults.push(await removeTestCaseFromMilestone(milestone.id, caseId));
+        }
+        if (suitesToAdd.length > 0) {
+          scopeResults.push(await addTestSuitesToMilestone(milestone.id, suitesToAdd));
+        }
+        for (const suiteId of suitesToRemove) {
+          scopeResults.push(await removeTestSuiteFromMilestone(milestone.id, suiteId));
+        }
+        scopeFailed = scopeResults.some((result) => !result.success);
+      } catch {
+        scopeFailed = true;
+      }
 
-          // 쿼리 무효화
-          await Promise.all([
-            queryClient.invalidateQueries({
-              queryKey: ['milestone', milestone.id],
-              refetchType: 'all',
-            }),
-            queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
-            queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
-            queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
-            queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-          ]);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['milestone', milestone.id],
+          refetchType: 'all',
+        }),
+        queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ]).catch(() => {});
 
-          if (scopeFailed) {
-            toast.error(
-              '마일스톤 정보는 저장했지만 케이스·스위트 범위 일부를 저장하지 못했습니다.'
-            );
-            return;
-          }
-          onClose?.();
-        },
-        onError: (error) => {
-          track(MILESTONE_EVENTS.UPDATE_FAIL, { milestone_id: milestone.id });
-          toast.error(error.message || '마일스톤을 수정하지 못했습니다.');
-        },
-      });
+      if (scopeFailed) {
+        toast.error('마일스톤 정보는 저장했지만 케이스·스위트 범위 일부를 저장하지 못했습니다.');
+        return;
+      }
+      onClose?.();
     } finally {
       setIsSubmitting(false);
     }
@@ -177,6 +175,7 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
   const isLoading = isPending || isSubmitting;
 
   const handleAbandon = () => {
+    if (isLoading) return;
     track(MILESTONE_EVENTS.UPDATE_ABANDON, { milestone_id: milestone.id });
     onClose?.();
   };
