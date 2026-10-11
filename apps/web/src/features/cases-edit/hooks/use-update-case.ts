@@ -12,7 +12,9 @@ export const useUpdateCase = () => {
 
   return useMutation({
     mutationFn: async (input: MutationInput) => {
-      const result = await updateTestCase(input);
+      const result = await updateTestCase(input).catch(() => {
+        throw new Error(CASE_MESSAGE_CODES.UPDATE_FAILED);
+      });
       if (!result.success) {
         const message =
           Object.values(result.errors ?? {})

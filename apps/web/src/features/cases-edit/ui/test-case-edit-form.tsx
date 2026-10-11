@@ -75,8 +75,7 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   });
 
   const onSubmit = (data: UpdateTestCase) => {
-    // 상세는 optimistic update 로 바로 반영하되, 폼은 저장이 끝난 뒤에 닫는다.
-    // 먼저 닫으면 실패했을 때 수정한 내용이 사라진다 (#371).
+    // 저장이 끝난 뒤 닫는다. 실패하면 입력을 그대로 둔 채 재시도할 수 있게 한다.
     mutate(
       { ...data, projectId: testCase.projectId },
       {

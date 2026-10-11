@@ -1,14 +1,14 @@
 import { updateMilestone } from '@/entities/milestone';
-import { joinActionErrors } from '@/shared/lib/translate-error-codes';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { UpdateMilestone } from '../model';
+
+const MILESTONE_UPDATE_FAILED = '마일스톤 수정에 실패했습니다.';
 
 export const useUpdateMilestone = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    // 서버 액션은 실패를 { success: false } 로 돌려주므로 오류로 바꿔야 onError 가 실행된다 (#371).
     mutationFn: async (input: UpdateMilestone) => {
       const result = await updateMilestone({
         id: input.id,
@@ -16,9 +16,16 @@ export const useUpdateMilestone = () => {
         description: input.description,
         startDate: input.startDate ? new Date(input.startDate) : null,
         endDate: input.endDate ? new Date(input.endDate) : null,
+      }).catch(() => {
+        throw new Error(MILESTONE_UPDATE_FAILED);
       });
+      // 서버 액션은 실패를 예외가 아니라 결과로 돌려주므로 여기서 오류로 바꾼다.
       if (!result.success) {
-        throw new Error(joinActionErrors(result.errors) || '마일스톤을 수정하지 못했습니다.');
+        const message =
+          Object.values(result.errors ?? {})
+            .flat()
+            .join(', ') || MILESTONE_UPDATE_FAILED;
+        throw new Error(message);
       }
       return result;
     },

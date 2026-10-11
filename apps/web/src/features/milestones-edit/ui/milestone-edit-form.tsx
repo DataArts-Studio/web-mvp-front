@@ -111,70 +111,79 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
     setSelectedSuiteIds(newSet);
   };
 
-  // 마일스톤 수정과 범위 변경을 한 흐름에서 기다린다. 호출별 mutate 콜백은 async 반환값을
-  // 기다리지 않아 범위 변경 중 예외가 묻히고 폼이 다시 제출될 수 있었다 (#371).
   const onSubmit = async (data: UpdateMilestone) => {
     setIsSubmitting(true);
+
+    // 마일스톤 정보 업데이트. 실패하면 모달을 열어 둔 채 입력을 유지한다.
     try {
-      try {
-        await mutateAsync(data);
-      } catch (error) {
-        track(MILESTONE_EVENTS.UPDATE_FAIL, { milestone_id: milestone.id });
-        toast.error((error instanceof Error && error.message) || '마일스톤을 수정하지 못했습니다.');
-        return;
-      }
-      track(MILESTONE_EVENTS.UPDATE, { milestone_id: milestone.id });
-
-      const casesToAdd = Array.from(selectedCaseIds).filter((id) => !initialCaseIds.has(id));
-      const casesToRemove = Array.from(initialCaseIds).filter((id) => !selectedCaseIds.has(id));
-      const suitesToAdd = Array.from(selectedSuiteIds).filter((id) => !initialSuiteIds.has(id));
-      const suitesToRemove = Array.from(initialSuiteIds).filter((id) => !selectedSuiteIds.has(id));
-
-      // 케이스·스위트 범위 변경. 하나라도 실패하면 창을 닫지 않고 알린다.
-      let scopeFailed = false;
-      try {
-        const scopeResults = [];
-        if (casesToAdd.length > 0) {
-          scopeResults.push(await addTestCasesToMilestone(milestone.id, casesToAdd));
-        }
-        for (const caseId of casesToRemove) {
-          scopeResults.push(await removeTestCaseFromMilestone(milestone.id, caseId));
-        }
-        if (suitesToAdd.length > 0) {
-          scopeResults.push(await addTestSuitesToMilestone(milestone.id, suitesToAdd));
-        }
-        for (const suiteId of suitesToRemove) {
-          scopeResults.push(await removeTestSuiteFromMilestone(milestone.id, suiteId));
-        }
-        scopeFailed = scopeResults.some((result) => !result.success);
-      } catch {
-        scopeFailed = true;
-      }
-
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ['milestone', milestone.id],
-          refetchType: 'all',
-        }),
-        queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
-        queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
-        queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      ]).catch(() => {});
-
-      if (scopeFailed) {
-        toast.error('마일스톤 정보는 저장했지만 케이스·스위트 범위 일부를 저장하지 못했습니다.');
-        return;
-      }
-      onClose?.();
-    } finally {
+      await mutateAsync(data);
+    } catch (error) {
+      track(MILESTONE_EVENTS.UPDATE_FAIL, { milestone_id: milestone.id });
+      toast.error(error instanceof Error ? error.message : '마일스톤 수정에 실패했습니다.');
       setIsSubmitting(false);
+      return;
     }
+    track(MILESTONE_EVENTS.UPDATE, { milestone_id: milestone.id });
+
+    // 케이스 변경 처리
+    const casesToAdd = Array.from(selectedCaseIds).filter((id) => !initialCaseIds.has(id));
+    const casesToRemove = Array.from(initialCaseIds).filter((id) => !selectedCaseIds.has(id));
+
+    // 스위트 변경 처리
+    const suitesToAdd = Array.from(selectedSuiteIds).filter((id) => !initialSuiteIds.has(id));
+    const suitesToRemove = Array.from(initialSuiteIds).filter((id) => !selectedSuiteIds.has(id));
+
+    // 연결 변경은 정보 저장 이후라 일부만 실패할 수 있다. 실패를 모아 알리고,
+    // 이미 반영된 변경이 화면에 보이도록 무효화한 뒤 닫는다.
+    let linkFailed = false;
+    const runLinkChange = async (action: () => Promise<{ success: boolean }>) => {
+      try {
+        const result = await action();
+        if (!result.success) linkFailed = true;
+      } catch {
+        linkFailed = true;
+      }
+    };
+
+    // 케이스 추가/삭제
+    if (casesToAdd.length > 0) {
+      await runLinkChange(() => addTestCasesToMilestone(milestone.id, casesToAdd));
+    }
+    for (const caseId of casesToRemove) {
+      await runLinkChange(() => removeTestCaseFromMilestone(milestone.id, caseId));
+    }
+
+    // 스위트 추가/삭제
+    if (suitesToAdd.length > 0) {
+      await runLinkChange(() => addTestSuitesToMilestone(milestone.id, suitesToAdd));
+    }
+    for (const suiteId of suitesToRemove) {
+      await runLinkChange(() => removeTestSuiteFromMilestone(milestone.id, suiteId));
+    }
+
+    // 쿼리 무효화
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ['milestone', milestone.id],
+        refetchType: 'all',
+      }),
+      queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
+      queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
+      queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+    ]).catch(() => {});
+
+    if (linkFailed) {
+      toast.error('마일스톤 정보는 저장했지만 케이스·스위트 연결 변경 중 일부가 실패했습니다.');
+    }
+    setIsSubmitting(false);
+    onClose?.();
   };
 
   const isLoading = isPending || isSubmitting;
 
   const handleAbandon = () => {
+    // 저장 중에는 닫지 않는다. 닫히면 실패 알림과 입력 보존이 사라진다 (#371).
     if (isLoading) return;
     track(MILESTONE_EVENTS.UPDATE_ABANDON, { milestone_id: milestone.id });
     onClose?.();
