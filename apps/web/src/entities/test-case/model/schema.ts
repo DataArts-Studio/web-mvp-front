@@ -10,6 +10,7 @@ export const TestCaseDtoSchema = z.object({
   section_id: z.string().uuid().nullable().optional(),
   name: z
     .string()
+    .trim()
     .min(1, '테스트 케이스 이름은 최소 1글자 이상이어야 합니다.')
     .max(200, '테스트 케이스 이름은 200자를 넘을 수 없습니다.'),
   display_id: z.int(),

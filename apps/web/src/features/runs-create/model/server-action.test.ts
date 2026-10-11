@@ -28,11 +28,12 @@ vi.mock('uuid', () => ({
 const mockTxReturning = vi.fn();
 const mockTxValues = vi.fn(() => ({ returning: mockTxReturning }));
 const mockTxOnConflictDoNothing = vi.fn();
+const mockTxInsertValues = vi.fn(() => ({
+  returning: mockTxReturning,
+  onConflictDoNothing: mockTxOnConflictDoNothing,
+}));
 const mockTxInsert = vi.fn(() => ({
-  values: vi.fn(() => ({
-    returning: mockTxReturning,
-    onConflictDoNothing: mockTxOnConflictDoNothing,
-  })),
+  values: mockTxInsertValues,
 }));
 
 const mockTxSelectWhere = vi.fn();
@@ -209,6 +210,10 @@ describe('createTestRunAction', () => {
 
       expect(result.success).toBe(true);
       expect(mockTxInsert).toHaveBeenCalled();
+      // 집계가 읽는 test_runs.milestone_id 도 함께 채운다 (#373)
+      expect(mockTxInsertValues).toHaveBeenCalledWith(
+        expect.objectContaining({ milestone_id: validMilestoneId, name: validInput.name })
+      );
     });
 
     it('description이 없어도 생성에 성공한다', async () => {

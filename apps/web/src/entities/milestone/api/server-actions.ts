@@ -12,6 +12,7 @@ import {
 } from '@/entities/milestone';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -36,6 +37,8 @@ type GetMilestonesParams = {
 /**
  * 프로젝트의 모든 마일스톤을 가져옵니다.
  */
+const MILESTONE_NAME_MAX_LENGTH = 50;
+
 export const getMilestones = async ({
   projectId,
 }: GetMilestonesParams): Promise<ActionResult<MilestoneWithStats[]>> => {
@@ -266,8 +269,13 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
     const storageError = await checkStorageLimit(input.projectId);
     if (storageError) return storageError;
 
+    const name = toValidName(input.title, MILESTONE_NAME_MAX_LENGTH);
+    if (!name) {
+      return { success: false, errors: { _milestone: ['마일스톤 이름을 입력해주세요.'] } };
+    }
+
     const db = getDatabase();
-    const dto = toCreateMilestoneDTO(input);
+    const dto = toCreateMilestoneDTO({ ...input, title: name });
     const id = uuidv7();
 
     const [inserted] = await db
@@ -330,7 +338,11 @@ export const updateMilestone = async (
     };
 
     if (updateFields.title !== undefined) {
-      setData.name = updateFields.title;
+      const name = toValidName(updateFields.title, MILESTONE_NAME_MAX_LENGTH);
+      if (!name) {
+        return { success: false, errors: { _milestone: ['마일스톤 이름을 입력해주세요.'] } };
+      }
+      setData.name = name;
     }
     if (updateFields.description !== undefined) {
       setData.description = updateFields.description;

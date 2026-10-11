@@ -5,7 +5,7 @@ export const ScenarioStatusSchema = z.enum(['DRAFT', 'REVIEW', 'CONFIRMED']);
 
 /** 시나리오 본문 필드(생성·수정 공통). */
 const ScenarioFields = {
-  name: z.string().min(1, '시나리오 이름을 입력해주세요').max(200),
+  name: z.string().trim().min(1, '시나리오 이름을 입력해주세요').max(200),
   description: z.string().max(2000).optional().default(''),
   type: ScenarioTypeSchema.default('positive'),
   relatedRequirementIds: z.array(z.string().max(20)).max(20).optional().default([]),
@@ -27,7 +27,7 @@ export const CreateScenarioSchema = z.object({
 export const UpdateScenarioSchema = z.object({
   projectId: z.string().uuid(),
   id: z.string().uuid(),
-  name: z.string().min(1, '시나리오 이름을 입력해주세요').max(200).optional(),
+  name: z.string().trim().min(1, '시나리오 이름을 입력해주세요').max(200).optional(),
   description: z.string().max(2000).optional(),
   type: ScenarioTypeSchema.optional(),
   relatedRequirementIds: z.array(z.string().max(20)).max(20).optional(),
