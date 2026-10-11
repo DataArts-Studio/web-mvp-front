@@ -243,7 +243,8 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       if (suiteNames.length > 0) sourceNameParts.push(`스위트: ${suiteNames.join(', ')}`);
     }
     if (hasMilestone) {
-      sourceType = hasSuites ? 'SUITE' : 'MILESTONE';
+      // 마일스톤으로 만든 실행은 마일스톤의 스위트도 함께 연결되므로 마일스톤을 출처로 본다 (#373).
+      sourceType = 'MILESTONE';
       sourceNameParts.push(`마일스톤: ${milestoneInfo!.name}`);
     }
     const sourceName =

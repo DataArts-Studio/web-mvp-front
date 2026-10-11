@@ -94,16 +94,17 @@ export async function getTestRunsByProjectId(
         let sourceType: FetchedTestRun['sourceType'] = 'ADHOC';
         let sourceName = '직접 선택한 케이스';
 
+        // 마일스톤으로 만든 실행은 마일스톤의 스위트도 함께 연결되므로 마일스톤을 먼저 본다 (#373).
         const runSuites = suitesByRunId.get(run.id) || [];
-        if (runSuites.length > 0) {
+        if (run.milestone_id) {
+          sourceType = 'MILESTONE';
+          sourceName = milestoneMap.get(run.milestone_id) || '';
+        } else if (runSuites.length > 0) {
           sourceType = 'SUITE';
           sourceName = runSuites
             .map((sid) => suiteMap.get(sid) || '')
             .filter(Boolean)
             .join(', ');
-        } else if (run.milestone_id) {
-          sourceType = 'MILESTONE';
-          sourceName = milestoneMap.get(run.milestone_id) || '';
         }
 
         const caseRuns = caseRunsByRunId.get(run.id) || [];
