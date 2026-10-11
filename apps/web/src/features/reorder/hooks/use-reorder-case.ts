@@ -1,45 +1,40 @@
 'use client';
 
 import { testCaseQueryKeys } from '@/features/cases-list';
-import type { TestCasesListParams } from '@/features/cases-list/api/query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { rebalanceSortOrder, reorderTestCase } from '../api/actions';
-import { calculateMiddleSortOrder } from '../model/sort-utils';
+import { moveTestCaseOrder } from '../api/actions';
 
 interface ReorderCaseParams {
   id: string;
-  /** sort_order of the item before the new position (null if moving to first) */
-  beforeOrder: number | null;
-  /** sort_order of the item after the new position (null if moving to last) */
-  afterOrder: number | null;
-  /** All item IDs in current order (for rebalance fallback) */
-  orderedIds: string[];
-  projectId: string;
-  scopeId: string;
+  /** 새 위치 바로 앞 케이스 (맨 앞으로 옮기면 null) */
+  beforeId: string | null;
+  /** 새 위치 바로 뒤 케이스 (맨 뒤로 옮기면 null) */
+  afterId: string | null;
 }
 
-export function useReorderCase(projectId: string, queryParams: TestCasesListParams) {
+const FAILURE_MESSAGE = '순서 변경에 실패했습니다.';
+
+export function useReorderCase(projectId: string) {
   const queryClient = useQueryClient();
+  // 순서는 프로젝트 전체에 하나라 다른 스위트·페이지 보기도 함께 다시 불러온다.
+  const refetchLists = () =>
+    queryClient.invalidateQueries({ queryKey: testCaseQueryKeys.list(projectId) });
 
   return useMutation({
-    mutationFn: async ({ id, beforeOrder, afterOrder, orderedIds, scopeId }: ReorderCaseParams) => {
-      const newSortOrder = calculateMiddleSortOrder(beforeOrder, afterOrder);
-
-      if (newSortOrder === -1) {
-        // Gap exhausted, need rebalance
-        return rebalanceSortOrder('testCase', scopeId, orderedIds);
+    mutationFn: ({ id, beforeId, afterId }: ReorderCaseParams) =>
+      moveTestCaseOrder(id, { beforeId, afterId }),
+    onSuccess: (result) => {
+      // 서버 액션은 실패를 예외가 아니라 결과로 돌려주므로 여기서 알린다 (#380).
+      if (!result.success) {
+        toast.error(Object.values(result.errors).flat()[0] ?? FAILURE_MESSAGE);
       }
-
-      return reorderTestCase(id, newSortOrder);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: testCaseQueryKeys.list(projectId, queryParams) });
+      refetchLists();
     },
     onError: () => {
-      toast.error('순서 변경에 실패했습니다.');
-      queryClient.invalidateQueries({ queryKey: testCaseQueryKeys.list(projectId, queryParams) });
+      toast.error(FAILURE_MESSAGE);
+      refetchLists();
     },
   });
 }

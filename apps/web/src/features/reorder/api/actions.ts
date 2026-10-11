@@ -5,9 +5,9 @@ import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases, testSuites } from '@testea/db';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 
-import { SORT_ORDER_GAP } from '../model/sort-utils';
+import { SORT_ORDER_GAP, placeCaseInOrder } from '../model/sort-utils';
 
 const accessDenied = (): ActionResult<void> => ({
   success: false,
@@ -46,6 +46,74 @@ export async function reorderTestCase(
     return { success: true, data: undefined };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'reorderTestCase' } });
+    return { success: false, errors: { _form: ['순서 변경에 실패했습니다.'] } };
+  }
+}
+
+/**
+ * 드래그한 케이스를 이웃 케이스 바로 뒤(또는 바로 앞)로 옮긴다 (#380).
+ *
+ * 순서는 프로젝트 하나에 한 줄로 둔다. 전체·스위트·미분류 보기와 페이지는 모두 이 순서를 걸러 보여 줄 뿐이라,
+ * 화면에서 본 이웃 기준으로 프로젝트 전체 순서를 다시 매기면 어느 보기에서 옮겨도 순서가 어긋나지 않는다.
+ * 정렬값이 모두 0 인 예전 데이터도 첫 이동 때 화면에 보이던 순서 그대로 간격을 두고 다시 매겨진다.
+ */
+export async function moveTestCaseOrder(
+  caseId: string,
+  neighbor: { beforeId?: string | null; afterId?: string | null }
+): Promise<ActionResult<void>> {
+  try {
+    const db = getDatabase();
+
+    const [row] = await db
+      .select({ projectId: testCases.project_id })
+      .from(testCases)
+      .where(eq(testCases.id, caseId))
+      .limit(1);
+    if (!row?.projectId || !(await requireProjectAccess(row.projectId))) return accessDenied();
+    const projectId = row.projectId;
+
+    const moved = await db.transaction(async (tx) => {
+      // 목록의 커스텀 순서와 같은 기준(정렬값, 생성 시각)으로 읽어 지금 화면 순서를 그대로 잡는다.
+      const rows = await tx
+        .select({ id: testCases.id, sortOrder: testCases.sort_order })
+        .from(testCases)
+        .where(and(eq(testCases.project_id, projectId), eq(testCases.lifecycle_status, 'ACTIVE')))
+        .orderBy(asc(testCases.sort_order), asc(testCases.created_at), asc(testCases.id));
+
+      const ordered = placeCaseInOrder(
+        rows.map((r) => r.id),
+        caseId,
+        neighbor
+      );
+      if (!ordered) return false;
+
+      const current = new Map(rows.map((r) => [r.id, r.sortOrder]));
+      const changes = ordered
+        .map((id, index) => ({ id, sortOrder: (index + 1) * SORT_ORDER_GAP }))
+        .filter((change) => current.get(change.id) !== change.sortOrder);
+
+      if (changes.length > 0) {
+        const values = sql.join(
+          changes.map((change) => sql`(${change.id}::uuid, ${change.sortOrder}::integer)`),
+          sql`, `
+        );
+        await tx.execute(sql`
+          update ${testCases} set sort_order = v.sort_order
+          from (values ${values}) as v(id, sort_order)
+          where ${testCases.id} = v.id and ${testCases.project_id} = ${projectId}`);
+      }
+      await tx
+        .update(testCases)
+        .set({ updated_at: new Date() })
+        .where(and(eq(testCases.id, caseId), eq(testCases.project_id, projectId)));
+      return true;
+    });
+    if (!moved) return targetNotFound();
+
+    invalidateCache(INVALIDATE.cases);
+    return { success: true, data: undefined };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'moveTestCaseOrder' } });
     return { success: false, errors: { _form: ['순서 변경에 실패했습니다.'] } };
   }
 }
