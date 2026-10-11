@@ -27,7 +27,7 @@ import {
   Skeleton,
   StatusBadge,
 } from '@testea/ui';
-import { formatDateTime } from '@testea/util';
+import { formatDate, formatDateTime } from '@testea/util';
 import {
   ArrowLeft,
   Calendar,
@@ -155,7 +155,7 @@ export const MilestoneDetailView = () => {
             <div className="text-text-3 mt-1 flex min-w-0 items-center gap-4 text-xs">
               <span className="inline-flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
-                {formatDateTime(milestone.startDate)} ~ {formatDateTime(milestone.endDate)}
+                {formatDate(milestone.startDate)} ~ {formatDate(milestone.endDate)}
               </span>
               <LastRunFreshnessLabel
                 lastExecutedAt={milestone.lastExecutedAt}

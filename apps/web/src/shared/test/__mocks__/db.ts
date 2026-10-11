@@ -342,8 +342,8 @@ export const createMockCreateMilestoneInput = (
   projectId: 'project-123',
   title: '테스트 마일스톤',
   description: '테스트용 마일스톤 설명입니다.',
-  startDate: new Date('2024-01-01'),
-  endDate: new Date('2024-12-31'),
+  startDate: '2024-01-01',
+  endDate: '2024-12-31',
   ...overrides,
 });
 

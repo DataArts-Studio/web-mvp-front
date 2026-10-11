@@ -4,14 +4,17 @@ import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import {
   CreateMilestone,
+  MILESTONE_DATE_RANGE_ERROR,
   Milestone,
   MilestoneDTO,
   MilestoneWithStats,
+  getMilestoneDateError,
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { isDateRangeOrdered } from '@/shared/lib/date-only';
 import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { ActionResult } from '@/shared/types';
@@ -274,6 +277,11 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
       return { success: false, errors: { _milestone: ['마일스톤 이름을 입력해주세요.'] } };
     }
 
+    const dateError = getMilestoneDateError(input.startDate, input.endDate);
+    if (dateError) {
+      return { success: false, errors: { _milestone: [dateError] } };
+    }
+
     const db = getDatabase();
     const dto = toCreateMilestoneDTO({ ...input, title: name });
     const id = uuidv7();
@@ -324,7 +332,11 @@ export const updateMilestone = async (
 
     // 접근 권한 확인
     const [existing] = await db
-      .select({ projectId: milestones.project_id })
+      .select({
+        projectId: milestones.project_id,
+        startDate: milestones.start_date,
+        endDate: milestones.end_date,
+      })
       .from(milestones)
       .where(eq(milestones.id, id))
       .limit(1);
@@ -347,19 +359,26 @@ export const updateMilestone = async (
     if (updateFields.description !== undefined) {
       setData.description = updateFields.description;
     }
+    // 날짜는 'YYYY-MM-DD' 그대로 저장한다. 한쪽만 바꿔도 기존 값과 합쳐 기간 순서를 확인한다 (#381).
+    const nextStartDate =
+      updateFields.startDate !== undefined ? updateFields.startDate : existing.startDate;
+    const nextEndDate =
+      updateFields.endDate !== undefined ? updateFields.endDate : existing.endDate;
+    const dateError = getMilestoneDateError(
+      updateFields.startDate !== undefined ? updateFields.startDate : null,
+      updateFields.endDate !== undefined ? updateFields.endDate : null
+    );
+    if (dateError) {
+      return { success: false, errors: { _milestone: [dateError] } };
+    }
+    if (!isDateRangeOrdered(nextStartDate, nextEndDate)) {
+      return { success: false, errors: { _milestone: [MILESTONE_DATE_RANGE_ERROR] } };
+    }
     if (updateFields.startDate !== undefined) {
-      // Date 객체를 ISO 문자열로 변환
-      setData.start_date =
-        updateFields.startDate instanceof Date
-          ? updateFields.startDate.toISOString()
-          : updateFields.startDate;
+      setData.start_date = updateFields.startDate ?? null;
     }
     if (updateFields.endDate !== undefined) {
-      // Date 객체를 ISO 문자열로 변환
-      setData.end_date =
-        updateFields.endDate instanceof Date
-          ? updateFields.endDate.toISOString()
-          : updateFields.endDate;
+      setData.end_date = updateFields.endDate ?? null;
     }
 
     const [updated] = await db

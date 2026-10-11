@@ -5,9 +5,18 @@ import { Select } from '@testea/ui';
 import { cn } from '@testea/util';
 import { ChevronDown } from 'lucide-react';
 
+const splitDateOnly = (value: string | null | undefined) => {
+  const [y, m, d] = (value ?? '').split('-');
+  if (!y || !m || !d) return { y: '', m: '', d: '' };
+  return { y: String(Number(y)), m: String(Number(m)), d: String(Number(d)) };
+};
+
+const pad = (n: string) => n.padStart(2, '0');
+
 interface DateDropdownSelectProps {
-  value: Date | null | undefined;
-  onChange: (date: Date | null) => void;
+  /** 'YYYY-MM-DD' */
+  value: string | null | undefined;
+  onChange: (date: string | null) => void;
   disabled?: boolean;
 }
 
@@ -15,21 +24,16 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
   const now = useMemo(() => new Date(), []);
   const currentYear = now.getFullYear();
 
-  const [year, setYear] = useState<string>(value ? value.getFullYear().toString() : '');
-  const [month, setMonth] = useState<string>(value ? (value.getMonth() + 1).toString() : '');
-  const [day, setDay] = useState<string>(value ? value.getDate().toString() : '');
+  const [year, setYear] = useState<string>(splitDateOnly(value).y);
+  const [month, setMonth] = useState<string>(splitDateOnly(value).m);
+  const [day, setDay] = useState<string>(splitDateOnly(value).d);
 
   useEffect(() => {
-    if (value) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing controlled prop with internal state
-      setYear(value.getFullYear().toString());
-      setMonth((value.getMonth() + 1).toString());
-      setDay(value.getDate().toString());
-    } else {
-      setYear('');
-      setMonth('');
-      setDay('');
-    }
+    const next = splitDateOnly(value);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing controlled prop with internal state
+    setYear(next.y);
+    setMonth(next.m);
+    setDay(next.d);
   }, [value]);
 
   const years = useMemo(
@@ -49,9 +53,10 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
     [daysInMonth]
   );
 
-  const buildDate = (y: string, m: string, d: string): Date | null => {
+  // 고른 연·월·일을 그대로 'YYYY-MM-DD' 로 만든다. Date 를 거치지 않아 시간대 영향이 없다 (#381).
+  const buildDate = (y: string, m: string, d: string): string | null => {
     if (!y || !m || !d) return null;
-    return new Date(Number(y), Number(m) - 1, Number(d));
+    return `${y}-${pad(m)}-${pad(d)}`;
   };
 
   const handleYearChange = (y: string) => {

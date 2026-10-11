@@ -25,10 +25,9 @@ const progressStatusLabel: Record<string, string> = {
   delayed: '지연',
 };
 
-const formatDate = (date: Date | string | null | undefined) => {
-  if (!date) return null;
-  return new Date(date).toLocaleDateString();
-};
+// 마일스톤 날짜는 'YYYY-MM-DD' 라 Date 로 바꾸지 않고 그대로 표시한다. 바꾸면 UTC 자정으로 해석돼
+// 서쪽 시간대에서 하루 앞당겨진다 (#381).
+const formatDate = (date: string | null | undefined) => date ?? null;
 
 export const RunCreateView = () => {
   const router = useRouter();
