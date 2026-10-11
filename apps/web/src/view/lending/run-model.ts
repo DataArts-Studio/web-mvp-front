@@ -4,7 +4,15 @@ import React, { useSyncExternalStore } from 'react';
 
 export type CaseStatus = 'idle' | 'running' | 'passed';
 
-export const CASE_IDS = ['TC-001', 'TC-002', 'TC-003', 'TC-004'] as const;
+export const CASE_IDS = [
+  'TC-001',
+  'TC-002',
+  'TC-003',
+  'TC-004',
+  'TC-005',
+  'TC-006',
+  'TC-007',
+] as const;
 
 /** 통과한 케이스 수(progress)로 각 케이스의 상태를 정한다. 다음 차례 케이스만 진행 중이다. */
 export const statusOf = (index: number, progress: number): CaseStatus => {

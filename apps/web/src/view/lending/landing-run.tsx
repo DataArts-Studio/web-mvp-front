@@ -12,10 +12,13 @@ import { SheetToRun } from './cases/tc-001-sheet-to-run';
 import { Collab } from './cases/tc-002-collab';
 import { AiScenario } from './cases/tc-003-ai-scenario';
 import { LiveProgress } from './cases/tc-004-live-progress';
+import { ShareReport } from './cases/tc-005-share-report';
+import { CiResults } from './cases/tc-006-ci-results';
+import { AutomationCandidates } from './cases/tc-007-automation-candidates';
 import { CASE_IDS, type CaseStatus, statusOf, usePrefersReducedMotion } from './run-model';
 import { StartButton } from './start-button';
 
-const CASE_KEYS = ['tc001', 'tc002', 'tc003', 'tc004'] as const;
+const CASE_KEYS = ['tc001', 'tc002', 'tc003', 'tc004', 'tc005', 'tc006', 'tc007'] as const;
 
 /** 케이스 본문의 가운데가 화면 이 높이(비율)를 지나면 그 케이스를 통과로 본다. */
 const PASS_LINE = 0.5;
@@ -76,7 +79,10 @@ const CaseVisual = ({
   if (index === 0) return <SheetToRun status={status} />;
   if (index === 1) return <Collab status={status} reduceMotion={reduceMotion} />;
   if (index === 2) return <AiScenario status={status} reduceMotion={reduceMotion} />;
-  return <LiveProgress status={status} reduceMotion={reduceMotion} />;
+  if (index === 3) return <LiveProgress status={status} reduceMotion={reduceMotion} />;
+  if (index === 4) return <ShareReport status={status} reduceMotion={reduceMotion} />;
+  if (index === 5) return <CiResults status={status} reduceMotion={reduceMotion} />;
+  return <AutomationCandidates status={status} reduceMotion={reduceMotion} />;
 };
 
 const RunComplete = ({ remaining }: { remaining: number }) => {
@@ -94,7 +100,7 @@ const RunComplete = ({ remaining }: { remaining: number }) => {
     >
       <div className="flex flex-col gap-1.5" aria-live="polite">
         <p className={cn('text-lg font-bold md:text-xl', isDone ? 'text-primary' : 'text-text-1')}>
-          {isDone ? t('doneTitle') : t('lockedTitle')}
+          {isDone ? t('doneTitle') : t('lockedTitle', { total: CASE_IDS.length })}
         </p>
         <p className="text-text-3 text-xs md:text-sm">
           {isDone ? t('doneDesc') : t('lockedDesc', { count: remaining })}

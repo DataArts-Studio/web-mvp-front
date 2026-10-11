@@ -103,7 +103,7 @@
       "titleLine1": "Write test cases<mbr></mbr>",
       "titleHighlight": "in just 5 minutes",
       "titleLine2": ".",
-      "subtitle": "It's hard to picture from words alone.<br></br>Pass the 4 cases below one by one, and you're all set.",
+      "subtitle": "It's hard to picture from words alone.<br></br>Pass the 7 cases below one by one, and you're all set.",
       "tryIt": "See it for yourself",
       "scrollCue": "Scroll to check each case, starting with TC-001"
     },
@@ -124,7 +124,7 @@
         "passed": "Passed"
       },
       "complete": {
-        "lockedTitle": "Pass all 4 and you are ready",
+        "lockedTitle": "Pass all {total} and you are ready",
         "lockedDesc": "{count} cases left · No need to scroll to the end, you can start right now",
         "doneTitle": "All set! Ready to start?",
         "doneDesc": "All cases passed · You are ready to use testea",
@@ -217,6 +217,83 @@
           "Seoyeon · marked TC-302 as passed"
         ],
         "times": ["just now", "1 min ago", "3 min ago"]
+      },
+      "tc005": {
+        "title": "Share run results with a single link",
+        "desc": "Create a read-only report link anyone can open without signing in, and show results to developers or planners right away.",
+        "runName": "Run · v2.4 login regression",
+        "runMeta": "22 cases · Today 14:20",
+        "share": "Create share link",
+        "link": "gettestea.com/share/runs/8f3k…",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "reportLabel": "SHARED REPORT",
+        "reportTitle": "v2.4 login regression",
+        "passRate": "Pass rate",
+        "counts": {
+          "pass": "Passed",
+          "fail": "Failed",
+          "blocked": "Blocked"
+        },
+        "expires": "Read-only · Expires in 7 days"
+      },
+      "tc006": {
+        "title": "CI automation results land in your runs",
+        "desc": "Tag your Playwright tests with case IDs, and every CI run sends its results into a testea run.",
+        "command": "$ npx playwright test",
+        "sent": "Sent 3 results to testea",
+        "runTitle": "Run · CI #482",
+        "auto": "Auto",
+        "waiting": "Waiting",
+        "pass": "Pass",
+        "fail": "Fail",
+        "cases": [
+          {
+            "id": "TC-101",
+            "title": "Login succeeds",
+            "time": "1.2s"
+          },
+          {
+            "id": "TC-102",
+            "title": "Lock after 5 wrong passwords",
+            "time": "2.4s"
+          },
+          {
+            "id": "TC-103",
+            "title": "Send password reset email",
+            "time": "3.1s"
+          }
+        ]
+      },
+      "tc007": {
+        "title": "Find which cases to automate first",
+        "desc": "Based on run history, frequently run cases with stable results are flagged as automation candidates, and cases with shaky results are flagged to stabilize first.",
+        "listLabel": "Last 6 runs",
+        "summary": "Found {count} automation candidates",
+        "scanning": "Reviewing run history…",
+        "kinds": {
+          "candidate": "Automate",
+          "flaky": "Stabilize first",
+          "sample": "Too few runs"
+        },
+        "cases": [
+          {
+            "id": "TC-101",
+            "title": "Login succeeds"
+          },
+          {
+            "id": "TC-205",
+            "title": "Card payment approved"
+          },
+          {
+            "id": "TC-301",
+            "title": "Change profile photo"
+          },
+          {
+            "id": "TC-118",
+            "title": "Send password reset email"
+          }
+        ]
       }
     },
     "faq": {
