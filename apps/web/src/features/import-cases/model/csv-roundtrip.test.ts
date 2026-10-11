@@ -33,6 +33,14 @@ const makeCase = (n: number): TestCase => ({
 
 describe('CSV 내보내기 → 가져오기 왕복 (#382)', () => {
   const cases = Array.from({ length: 30 }, (_, i) => makeCase(i + 1));
+  // 수식처럼 보이는 값, 작은따옴표로 시작하는 값, 줄바꿈이 든 한 단계도 그대로 돌아와야 한다.
+  cases[1] = { ...cases[1], title: '=HYPERLINK("http://x")', expectedResult: '-1 이 표시된다' };
+  cases[2] = {
+    ...cases[2],
+    title: "'따옴표로 시작",
+    testSteps: JSON.stringify(['첫 줄\n둘째 줄']),
+  };
+  cases[3] = { ...cases[3], preCondition: '@멘션', testSteps: JSON.stringify(['한 단계']) };
   const csv = buildTestCasesCsv(cases, new Map([['suite-1', '로그인']]));
   const parsed = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true });
   const headers = parsed.meta.fields ?? [];
@@ -44,6 +52,13 @@ describe('CSV 내보내기 → 가져오기 왕복 (#382)', () => {
     );
     expect(parsed.data[0]['단계']).toBe('1. 아이디 입력\n2. 비밀번호 입력\n3. 로그인 클릭');
     expect(parsed.data[0]['스위트']).toBe('로그인');
+    // 수식으로 해석될 값은 작은따옴표로 막는다.
+    expect(parsed.data[1]['제목']).toBe(`'=HYPERLINK("http://x")`);
+    expect(parsed.data[2]['제목']).toBe("''따옴표로 시작");
+    expect(parsed.data[3]['사전조건']).toBe("'@멘션");
+    expect(parsed.data[3]['단계']).toBe('1. 한 단계');
+    expect(parsed.data[1]['기대결과']).toBe("'-1 이 표시된다");
+    expect(parsed.data[2]['단계']).toBe('1. 첫 줄\n둘째 줄');
   });
 
   it('내보낸 파일은 Testea 형식으로 자동 매핑되고 모든 행이 원래 값으로 돌아온다', () => {
@@ -60,7 +75,7 @@ describe('CSV 내보내기 → 가져오기 왕복 (#382)', () => {
       expectedResult: '기대결과',
     });
 
-    const payload = buildImportPayload(validateRows(parsed.data, mapping));
+    const payload = buildImportPayload(validateRows(parsed.data, mapping, format));
     expect(payload).toHaveLength(30);
     payload.forEach((row, i) => {
       const original = cases[i];

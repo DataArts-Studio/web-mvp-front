@@ -52,7 +52,7 @@ export function StepPreviewImport({ projectId }: StepPreviewImportProps) {
   // Validate rows when entering preview
   useEffect(() => {
     if (parseResult && columnMapping.name) {
-      const validated = validateRows(parseResult.rows, columnMapping);
+      const validated = validateRows(parseResult.rows, columnMapping, parseResult.detectedFormat);
       setValidatedRows(validated);
     }
   }, [parseResult, columnMapping, setValidatedRows]);

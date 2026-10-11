@@ -14,7 +14,13 @@ export type {
 export { TEST_TYPE_OPTIONS, getTestTypeLabel } from './model';
 export type { TestTypeValue } from './model';
 export { parseSteps, serializeSteps, stepsToText, textToSteps } from './model';
-export { CASE_CSV_COLUMNS, stepsToCsvText, csvTextToSteps } from './model';
+export {
+  CASE_CSV_COLUMNS,
+  stepsToCsvText,
+  csvTextToSteps,
+  protectCsvFormula,
+  unprotectCsvFormula,
+} from './model';
 // ui
 export { TestCaseCard, BasicInfoFields, TagsField, ScenarioFields } from './ui';
 // api

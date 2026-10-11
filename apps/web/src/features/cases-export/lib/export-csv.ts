@@ -1,5 +1,9 @@
 import { getTestCasesForExport } from '@/entities/test-case/api/server-actions';
-import { CASE_CSV_COLUMNS, stepsToCsvText } from '@/entities/test-case/model/csv-columns';
+import {
+  CASE_CSV_COLUMNS,
+  protectCsvFormula,
+  stepsToCsvText,
+} from '@/entities/test-case/model/csv-columns';
 import type { TestCase } from '@/entities/test-case/model/types';
 import { formatDateKR } from '@testea/util';
 import { toast } from 'sonner';
@@ -33,16 +37,17 @@ export function buildTestCasesCsv(
   testCases: TestCase[],
   suiteTitles: ReadonlyMap<string, string>
 ): string {
+  // 사용자가 입력한 값은 스프레드시트에서 수식으로 실행되지 않게 막는다.
   const rows = testCases.map((tc) => [
     tc.caseKey,
-    tc.title,
-    tc.testType || '',
-    (tc.tags || []).join(', '),
-    tc.preCondition || '',
+    protectCsvFormula(tc.title),
+    protectCsvFormula(tc.testType || ''),
+    protectCsvFormula((tc.tags || []).join(', ')),
+    protectCsvFormula(tc.preCondition || ''),
     stepsToCsvText(tc.testSteps || ''),
-    tc.expectedResult || '',
+    protectCsvFormula(tc.expectedResult || ''),
     tc.resultStatus || '',
-    tc.testSuiteId ? (suiteTitles.get(tc.testSuiteId) ?? '') : '',
+    protectCsvFormula(tc.testSuiteId ? (suiteTitles.get(tc.testSuiteId) ?? '') : ''),
     formatDateKR(tc.createdAt, ''),
     formatDateKR(tc.updatedAt, ''),
   ]);
@@ -75,8 +80,13 @@ export async function exportFilteredTestCases({
     toast.error('CSV 내보내기에 실패했습니다. 다시 시도해주세요.');
     return 0;
   }
-  exportTestCasesToCSV(result.data, suiteTitles, projectName);
-  return result.data.length;
+  exportTestCasesToCSV(result.data.items, suiteTitles, projectName);
+  if (result.data.truncated) {
+    toast.warning(
+      `케이스가 많아 앞의 ${result.data.items.length.toLocaleString()}건만 내보냈습니다. 스위트나 검색으로 범위를 나눠 내보내주세요.`
+    );
+  }
+  return result.data.items.length;
 }
 
 export function exportTestCasesToCSV(

@@ -180,17 +180,22 @@ export const getTestCasesForExport = async ({
   sort = 'updatedAt-desc',
   search,
   suiteId,
-}: GetTestCasesForExportParams): Promise<ActionResult<TestCase[]>> => {
+}: GetTestCasesForExportParams): Promise<
+  ActionResult<{ items: TestCase[]; truncated: boolean }>
+> => {
   try {
     if (!(await canAccess('project', project_id))) return ACCESS_DENIED;
 
     const db = getDatabase();
-    const rows = await db
+    // 한도보다 하나 더 읽어, 잘렸는지 알려 줄 수 있게 한다.
+    const fetched = await db
       .select()
       .from(testCases)
       .where(buildCaseListWhere(project_id, { search, suiteId }))
       .orderBy(...buildCaseListOrder(sort))
-      .limit(CASE_EXPORT_LIMIT);
+      .limit(CASE_EXPORT_LIMIT + 1);
+    const truncated = fetched.length > CASE_EXPORT_LIMIT;
+    const rows = truncated ? fetched.slice(0, CASE_EXPORT_LIMIT) : fetched;
     const latestStatuses = await getLatestResultStatuses(
       db,
       rows.map((row) => row.id)
@@ -198,26 +203,29 @@ export const getTestCasesForExport = async ({
 
     return {
       success: true,
-      data: rows.map((row) => ({
-        id: row.id,
-        projectId: row.project_id ?? '',
-        testSuiteId: row.test_suite_id ?? undefined,
-        sectionId: row.section_id ?? null,
-        displayId: row.display_id ?? 0,
-        caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
-        title: row.name,
-        testType: row.test_type ?? '',
-        tags: row.tags ?? [],
-        preCondition: row.pre_condition ?? '',
-        testSteps: row.steps ?? '',
-        expectedResult: row.expected_result ?? '',
-        sortOrder: row.sort_order ?? 0,
-        resultStatus: latestStatuses.get(row.id) ?? 'untested',
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        archivedAt: row.archived_at ?? null,
-        lifecycleStatus: row.lifecycle_status,
-      })),
+      data: {
+        truncated,
+        items: rows.map((row) => ({
+          id: row.id,
+          projectId: row.project_id ?? '',
+          testSuiteId: row.test_suite_id ?? undefined,
+          sectionId: row.section_id ?? null,
+          displayId: row.display_id ?? 0,
+          caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
+          title: row.name,
+          testType: row.test_type ?? '',
+          tags: row.tags ?? [],
+          preCondition: row.pre_condition ?? '',
+          testSteps: row.steps ?? '',
+          expectedResult: row.expected_result ?? '',
+          sortOrder: row.sort_order ?? 0,
+          resultStatus: latestStatuses.get(row.id) ?? 'untested',
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          archivedAt: row.archived_at ?? null,
+          lifecycleStatus: row.lifecycle_status,
+        })),
+      },
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getTestCasesForExport' } });
