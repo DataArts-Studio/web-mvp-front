@@ -43,7 +43,8 @@ export const LandingFaq = async () => {
       <FaqPanel items={faqs} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        // 번역 문구에 </script> 가 섞여도 스크립트 블록이 일찍 닫히지 않게 < 를 이스케이프한다.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c') }}
       />
     </section>
   );
