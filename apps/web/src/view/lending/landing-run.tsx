@@ -23,8 +23,16 @@ const CASE_KEYS = ['tc001', 'tc002', 'tc003', 'tc004', 'tc005', 'tc006', 'tc007'
 /** 케이스 본문의 가운데가 화면 이 높이(비율)를 지나면 그 케이스를 통과로 본다. */
 const PASS_LINE = 0.5;
 
+/** 행이 아직 펼쳐지는 중인지. 접힘 상자의 높이가 본문 높이에 못 미치면 펼쳐지는 중이다. */
+const isExpanding = (anchor: HTMLElement | null | undefined) => {
+  const box = anchor?.parentElement;
+  return !!box && box.clientHeight < anchor.offsetHeight - 1;
+};
+
 /**
- * 스크롤 위치로 통과한 케이스 수를 센다. 다음 차례 케이스의 본문이 화면 가운데를 지나면 하나 늘어난다.
+ * 스크롤 위치로 통과한 케이스 수를 센다. 진행 중 케이스의 본문이 화면 가운데를 지나면 하나 늘어난다.
+ * 진행 중 행 위의 행이 아직 펼쳐지는 중이면 그 아래 위치가 실제보다 위에 있어, 판정을 미루고 다 펼쳐진 뒤 다시 본다.
+ * 그래서 빠르게 스크롤하거나 끝으로 건너뛰어도 여러 케이스가 한꺼번에 통과하지 않고 하나씩 차례로 통과한다.
  * 위로 다시 올려도 통과는 되돌리지 않는다(통과된 행은 펼친 상태 유지).
  */
 const useScrollProgress = (
@@ -32,23 +40,29 @@ const useScrollProgress = (
   reduceMotion: boolean
 ) => {
   const [progress, setProgress] = React.useState(0);
+  // 동작 줄이기 설정이 바뀌어 효과가 다시 실행돼도 이미 통과한 진행도부터 이어서 판정한다.
+  const passedRef = React.useRef(0);
 
   React.useEffect(() => {
     if (reduceMotion) return;
     let frame = 0;
     const check = () => {
       frame = 0;
-      setProgress((prev) => {
-        let next = prev;
-        while (next < CASE_IDS.length) {
-          const el = anchors.current[next];
-          if (!el) break;
-          const rect = el.getBoundingClientRect();
-          if (rect.top + rect.height / 2 >= window.innerHeight * PASS_LINE) break;
-          next += 1;
-        }
-        return next;
-      });
+      const current = passedRef.current;
+      if (current >= CASE_IDS.length) return;
+      // 바로 위 행이 펼쳐지는 중이면 스크롤이 멈춰 있어도 다음 프레임에 다시 본다.
+      if (isExpanding(anchors.current[current - 1])) {
+        frame = requestAnimationFrame(check);
+        return;
+      }
+      const el = anchors.current[current];
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top + rect.height / 2 >= window.innerHeight * PASS_LINE) return;
+      passedRef.current = current + 1;
+      setProgress(current + 1);
+      // 새로 진행 중이 된 행이 펼쳐지는 동안과 그 뒤를 이어서 판정한다(이미 지나쳐 내려간 경우).
+      frame = requestAnimationFrame(check);
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(check);
