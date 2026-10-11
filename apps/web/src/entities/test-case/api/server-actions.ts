@@ -10,6 +10,10 @@ import {
 } from '@/entities/test-case-version/model/diff-utils';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
+import {
+  excludeArchivedCasesFromRuns,
+  recomputeTestRunStatus,
+} from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
@@ -23,7 +27,7 @@ import {
   testRunSuites,
   testRuns,
 } from '@testea/db';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 /**
@@ -398,11 +402,14 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
 async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
   const db = getDatabase();
 
-  // 1. test_run_suites 직접 링크로 연결된 런
-  const directRuns = await db
-    .select({ test_run_id: testRunSuites.test_run_id })
+  // 1. test_run_suites 직접 링크로 연결된 런. 실행에서 제거한 스위트는 건너뛴다 (#375).
+  const suiteLinks = await db
+    .select({ test_run_id: testRunSuites.test_run_id, excluded_at: testRunSuites.excluded_at })
     .from(testRunSuites)
     .where(eq(testRunSuites.test_suite_id, suiteId));
+  const excludedRunIds = new Set(
+    suiteLinks.filter((link) => link.excluded_at).map((link) => link.test_run_id)
+  );
 
   // 2. 마일스톤 체인으로 연결된 런
   const msRows = await db
@@ -421,26 +428,33 @@ async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
   }
 
   // 합치고 중복 제거
-  const allRunIds = new Set<string>();
-  for (const r of directRuns) {
-    if (r.test_run_id) allRunIds.add(r.test_run_id);
+  const candidateRunIds = new Set<string>();
+  for (const r of suiteLinks) {
+    if (r.test_run_id && !excludedRunIds.has(r.test_run_id)) candidateRunIds.add(r.test_run_id);
   }
   for (const r of milestoneRuns) {
-    allRunIds.add(r.id);
+    if (!excludedRunIds.has(r.id)) candidateRunIds.add(r.id);
   }
 
-  if (allRunIds.size === 0) return;
+  if (candidateRunIds.size === 0) return;
 
-  const runIds = Array.from(allRunIds);
+  // 완료되었거나 삭제된 실행은 기록으로 두고 범위를 바꾸지 않는다 (#376).
+  const openRuns = await db
+    .select({ id: testRuns.id })
+    .from(testRuns)
+    .where(
+      and(
+        inArray(testRuns.id, Array.from(candidateRunIds)),
+        ne(testRuns.status, 'COMPLETED'),
+        eq(testRuns.lifecycle_status, 'ACTIVE')
+      )
+    );
+  const runIds = openRuns.map((r) => r.id);
+
+  if (runIds.length === 0) return;
 
   // 마일스톤 체인으로 찾은 런에 test_run_suites 엔트리가 없으면 생성
-  const existingRunSuites = await db
-    .select({ test_run_id: testRunSuites.test_run_id })
-    .from(testRunSuites)
-    .where(
-      and(inArray(testRunSuites.test_run_id, runIds), eq(testRunSuites.test_suite_id, suiteId))
-    );
-  const existingRunSuiteIds = new Set(existingRunSuites.map((r) => r.test_run_id));
+  const existingRunSuiteIds = new Set(suiteLinks.map((r) => r.test_run_id));
   const missingRunSuiteIds = runIds.filter((id) => !existingRunSuiteIds.has(id));
 
   if (missingRunSuiteIds.length > 0) {
@@ -478,6 +492,8 @@ async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
       updated_at: new Date(),
     }))
   );
+
+  await recomputeTestRunStatus(db, newRunIds);
 }
 
 /**
@@ -750,15 +766,21 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
 
-    const [archived] = await db
-      .update(testCases)
-      .set({
-        archived_at: new Date(),
-        lifecycle_status: 'DELETED',
-        updated_at: new Date(),
-      })
-      .where(eq(testCases.id, id))
-      .returning();
+    const now = new Date();
+    const archived = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(testCases)
+        .set({
+          archived_at: now,
+          lifecycle_status: 'DELETED',
+          updated_at: now,
+        })
+        .where(eq(testCases.id, id))
+        .returning();
+      // 진행 중인 실행의 목록과 진행률에서 뺀다. 복원하면 되돌아온다 (#377).
+      if (row) await excludeArchivedCasesFromRuns(tx, [row.id], now);
+      return row;
+    });
 
     if (!archived) {
       return {
@@ -768,6 +790,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
     }
 
     invalidateCache(INVALIDATE.cases);
+    invalidateCache(INVALIDATE.runs);
     return {
       success: true,
       data: { id: archived.id },

@@ -1,6 +1,7 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { restoreArchivedCasesToRuns } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -321,17 +322,31 @@ export const restoreItem = async (
 
     switch (targetType) {
       case 'case': {
-        const [restored] = await db
-          .update(testCases)
-          .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
-          .where(
-            and(
-              eq(testCases.id, targetId),
-              eq(testCases.project_id, projectId),
-              eq(testCases.lifecycle_status, 'DELETED')
+        const restored = await db.transaction(async (tx) => {
+          const [target] = await tx
+            .select({ id: testCases.id, archivedAt: testCases.archived_at })
+            .from(testCases)
+            .where(
+              and(
+                eq(testCases.id, targetId),
+                eq(testCases.project_id, projectId),
+                eq(testCases.lifecycle_status, 'DELETED')
+              )
             )
-          )
-          .returning();
+            .limit(1);
+          if (!target) return null;
+
+          const [row] = await tx
+            .update(testCases)
+            .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
+            .where(eq(testCases.id, target.id))
+            .returning();
+          // 삭제할 때 진행 중인 실행에서 뺐던 결과를 되돌린다 (#377).
+          if (target.archivedAt) {
+            await restoreArchivedCasesToRuns(tx, [target.id], target.archivedAt);
+          }
+          return row;
+        });
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
         }
@@ -347,7 +362,7 @@ export const restoreItem = async (
         // 삭제 후 같은 시나리오로 새 스위트를 만든 상태에서 옛 스위트를 복원하면 제약 위반이
         // 나므로, 충돌이 있으면 23505 크래시 대신 명확한 안내로 막는다.
         const [target] = await db
-          .select({ scenarioId: testSuites.test_scenario_id })
+          .select({ scenarioId: testSuites.test_scenario_id, archivedAt: testSuites.archived_at })
           .from(testSuites)
           .where(
             and(
@@ -383,27 +398,43 @@ export const restoreItem = async (
           }
         }
 
-        const [restored] = await db
-          .update(testSuites)
-          .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
-          .where(
-            and(
-              eq(testSuites.id, targetId),
-              eq(testSuites.project_id, projectId),
-              eq(testSuites.lifecycle_status, 'DELETED')
+        const restored = await db.transaction(async (tx) => {
+          const [suite] = await tx
+            .update(testSuites)
+            .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
+            .where(
+              and(
+                eq(testSuites.id, targetId),
+                eq(testSuites.project_id, projectId),
+                eq(testSuites.lifecycle_status, 'DELETED')
+              )
             )
-          )
-          .returning();
+            .returning();
+          if (!suite || !target.archivedAt) return suite ?? null;
+
+          // cascade: 스위트와 함께 삭제된 TC 만 복원한다. 그 전에 따로 삭제한 케이스는
+          // archived_at 이 달라 휴지통에 남는다 (#378).
+          const cases = await tx
+            .update(testCases)
+            .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
+            .where(
+              and(
+                eq(testCases.test_suite_id, targetId),
+                eq(testCases.lifecycle_status, 'DELETED'),
+                eq(testCases.archived_at, target.archivedAt)
+              )
+            )
+            .returning({ id: testCases.id });
+          await restoreArchivedCasesToRuns(
+            tx,
+            cases.map((row) => row.id),
+            target.archivedAt
+          );
+          return suite;
+        });
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
         }
-        // cascade: 하위 TC도 함께 복원
-        await db
-          .update(testCases)
-          .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
-          .where(
-            and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED'))
-          );
         invalidateCache(INVALIDATE.all);
         return {
           success: true,

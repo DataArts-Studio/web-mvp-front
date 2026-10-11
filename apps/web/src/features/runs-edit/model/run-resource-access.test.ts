@@ -14,6 +14,11 @@ vi.mock('@testea/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@testea/db')>()),
   getDatabase: vi.fn(),
 }));
+// 상태 재계산은 run-scope 테스트가 다룬다. 케이스 추가·복원(addCasesToRunScope)은 실제 구현을 쓴다.
+vi.mock('@/entities/test-run/api/run-scope', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/test-run/api/run-scope')>()),
+  recomputeTestRunStatus: vi.fn(),
+}));
 
 const A = '00000000-0000-4000-8000-000000000001';
 const B = '00000000-0000-4000-8000-000000000002';
@@ -26,11 +31,17 @@ const read = vi.fn();
 const values = vi.fn(() => ({
   returning: vi.fn(async () => [{ id: RUN }]),
   onConflictDoNothing: vi.fn(async () => undefined),
+  onConflictDoUpdate: vi.fn(async () => undefined),
 }));
 const tx = {
-  select: vi.fn(() => ({ from: vi.fn(() => ({ where: read })) })),
+  select: vi.fn(() => ({
+    from: vi.fn(() => ({ where: read, innerJoin: vi.fn(() => ({ where: read })) })),
+  })),
   insert: vi.fn(() => ({ values })),
-  update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+  // 제외된 케이스 실행 복원(update ... returning)은 되살릴 행이 없는 것으로 둔다.
+  update: vi.fn(() => ({
+    set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(async () => []) })) })),
+  })),
 };
 const limit = vi.fn();
 const db = {

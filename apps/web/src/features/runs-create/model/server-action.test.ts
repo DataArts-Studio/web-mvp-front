@@ -37,7 +37,11 @@ const mockTxInsert = vi.fn(() => ({
 }));
 
 const mockTxSelectWhere = vi.fn();
-const mockTxSelectFrom = vi.fn(() => ({ where: mockTxSelectWhere }));
+// 마일스톤 케이스 조회는 휴지통 케이스를 거르려고 test_cases 와 innerJoin 한다.
+const mockTxSelectFrom = vi.fn(() => ({
+  where: mockTxSelectWhere,
+  innerJoin: vi.fn(() => ({ where: mockTxSelectWhere })),
+}));
 const mockTxSelect = vi.fn(() => ({ from: mockTxSelectFrom }));
 
 // 트랜잭션 객체

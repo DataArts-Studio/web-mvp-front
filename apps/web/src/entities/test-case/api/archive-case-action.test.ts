@@ -25,7 +25,14 @@ const mockUpdate = vi.fn(() => ({ set: mockSet }));
 const mockDb = {
   select: mockSelect,
   update: mockUpdate,
+  transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(mockDb)),
 };
+// 실행 범위 정리는 run-scope 단위 테스트가 다루므로 여기서는 호출 여부만 본다.
+const mockExcludeArchivedCasesFromRuns = vi.fn();
+vi.mock('@/entities/test-run/api/run-scope', () => ({
+  excludeArchivedCasesFromRuns: (...args: unknown[]) => mockExcludeArchivedCasesFromRuns(...args),
+  recomputeTestRunStatus: vi.fn(),
+}));
 
 vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),
@@ -45,6 +52,7 @@ vi.mock('drizzle-orm', () => ({
   eq: vi.fn((a, b) => ({ field: a, value: b })),
   ilike: vi.fn(),
   inArray: vi.fn(),
+  ne: vi.fn(),
   or: vi.fn(),
   sql: Object.assign(vi.fn(), { raw: vi.fn() }),
 }));
@@ -72,6 +80,12 @@ describe('archiveTestCase', () => {
       expect(result.data.id).toBe(testCaseId);
       expect(result.message).toBe('CASE_MOVED_TO_TRASH');
     }
+    // 진행 중인 실행에서도 빠지도록 같은 삭제 시각으로 제외를 요청한다 (#377).
+    expect(mockExcludeArchivedCasesFromRuns).toHaveBeenCalledWith(
+      mockDb,
+      [testCaseId],
+      expect.any(Date)
+    );
   });
 
   it('아카이브할 테스트 케이스가 존재하지 않으면 에러 코드를 반환한다', async () => {

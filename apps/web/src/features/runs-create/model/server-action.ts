@@ -49,13 +49,20 @@ export const createTestRunAction = async (input: CreateRunInput) => {
     const [newTestRun] = await db.transaction(async (tx) => {
       await assertRunResources(tx, project_id, { milestoneIds: [milestone_id] });
 
+      // 휴지통 케이스는 새 실행에 넣지 않는다 (#377).
       const milestoneCaseRows = await tx
         .select({
           test_case_id: milestoneTestCases.test_case_id,
           milestone_id: milestoneTestCases.milestone_id,
         })
         .from(milestoneTestCases)
-        .where(eq(milestoneTestCases.milestone_id, milestone_id));
+        .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+        .where(
+          and(
+            eq(milestoneTestCases.milestone_id, milestone_id),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        );
 
       const milestoneSuiteRows = await tx
         .select({

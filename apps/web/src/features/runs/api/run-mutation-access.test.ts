@@ -12,6 +12,7 @@ vi.mock('@testea/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@testea/db')>()),
   getDatabase: vi.fn(),
 }));
+vi.mock('@/entities/test-run/api/run-scope', () => ({ recomputeTestRunStatus: vi.fn() }));
 
 const PROJECT_A = '00000000-0000-4000-8000-000000000001';
 const PROJECT_B = '00000000-0000-4000-8000-000000000002';
@@ -20,9 +21,10 @@ const SUITE_ID = '00000000-0000-4000-8000-000000000004';
 const limit = vi.fn();
 const returning = vi.fn();
 const set = vi.fn(() => ({ where: vi.fn(() => ({ returning })) }));
-const db = {
+const db: Record<string, unknown> = {
   select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn(() => ({ limit })) })) })),
   update: vi.fn(() => ({ set })),
+  transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(db)),
 };
 
 beforeEach(() => {
