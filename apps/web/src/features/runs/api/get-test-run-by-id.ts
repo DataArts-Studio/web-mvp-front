@@ -2,6 +2,7 @@
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { SourceInfo, TestCaseRunDetail, TestRunDetail } from '@/entities/test-run';
+import { recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -24,12 +25,14 @@ import { v7 as uuidv7 } from 'uuid';
 /**
  * Read-repair: 테스트 실행 조회 시 마일스톤에 연결된 스위트/케이스 중
  * 누락된 test_run_suites, test_case_runs를 자동으로 백필합니다.
+ * 새로 만든 케이스 실행 수를 돌려준다.
  */
 async function repairTestRun(
   db: ReturnType<typeof getDatabase>,
   runId: string,
   milestoneId: string
-) {
+): Promise<number> {
+  let inserted = 0;
   // 1. 마일스톤에 연결된 모든 스위트
   const msSuites = await db
     .select({ test_suite_id: milestoneTestSuites.test_suite_id })
@@ -90,6 +93,7 @@ async function repairTestRun(
       const missingCases = suiteCaseRows.filter((r) => r.id && !existingCaseIds.has(r.id));
 
       if (missingCases.length > 0) {
+        inserted += missingCases.length;
         await db.insert(testCaseRuns).values(
           missingCases.map((c) => ({
             id: uuidv7(),
@@ -107,10 +111,17 @@ async function repairTestRun(
   }
 
   // 4. 마일스톤 직접 연결 케이스 누락분 생성
+  // 휴지통 케이스는 넣지 않는다 (#377).
   const msCases = await db
     .select({ test_case_id: milestoneTestCases.test_case_id })
     .from(milestoneTestCases)
-    .where(eq(milestoneTestCases.milestone_id, milestoneId));
+    .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+    .where(
+      and(
+        eq(milestoneTestCases.milestone_id, milestoneId),
+        eq(testCases.lifecycle_status, 'ACTIVE')
+      )
+    );
 
   const msCaseIds = msCases.map((c) => c.test_case_id).filter(Boolean) as string[];
 
@@ -126,6 +137,7 @@ async function repairTestRun(
     const missingMsCaseIds = msCaseIds.filter((id) => !existingMsCaseIds.has(id));
 
     if (missingMsCaseIds.length > 0) {
+      inserted += missingMsCaseIds.length;
       await db.insert(testCaseRuns).values(
         missingMsCaseIds.map((caseId) => ({
           id: uuidv7(),
@@ -140,6 +152,8 @@ async function repairTestRun(
       );
     }
   }
+
+  return inserted;
 }
 
 export async function getTestRunById(testRunId: string): Promise<ActionResult<TestRunDetail>> {
@@ -149,16 +163,21 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
     const db = getDatabase();
 
     // 1. 테스트 실행 기본 정보
-    const [run] = await db.select().from(testRuns).where(eq(testRuns.id, testRunId));
+    let [run] = await db.select().from(testRuns).where(eq(testRuns.id, testRunId));
 
     if (!run) {
       return { success: false, errors: { _general: ['테스트 실행을 찾을 수 없습니다.'] } };
     }
 
-    // Read-repair: 마일스톤 기반 테스트 실행의 누락 케이스 자동 백필
-    if (run.milestone_id) {
+    // Read-repair: 마일스톤 기반 테스트 실행의 누락 케이스 자동 백필.
+    // 완료된 실행은 기록으로 두고 범위를 바꾸지 않는다. 채운 뒤에는 상태를 다시 계산한다 (#376).
+    if (run.milestone_id && run.status !== 'COMPLETED') {
       try {
-        await repairTestRun(db, testRunId, run.milestone_id);
+        const inserted = await repairTestRun(db, testRunId, run.milestone_id);
+        if (inserted > 0) {
+          await recomputeTestRunStatus(db, testRunId);
+          [run] = await db.select().from(testRuns).where(eq(testRuns.id, testRunId));
+        }
       } catch (repairError) {
         console.error('repairTestRun failed:', repairError);
       }

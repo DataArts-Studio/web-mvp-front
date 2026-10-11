@@ -2,11 +2,12 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
+import { recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { TestRunStatus, getDatabase, testCaseRuns, testRuns } from '@testea/db';
-import { and, eq, isNull } from 'drizzle-orm';
+import { getDatabase, testCaseRuns, testRuns } from '@testea/db';
+import { eq } from 'drizzle-orm';
 
 export async function updateTestCaseRunStatus(
   input: UpdateTestCaseRunInput
@@ -55,7 +56,7 @@ export async function updateTestCaseRunStatus(
 
     // Update test run status based on case results
     if (updated.test_run_id) {
-      await updateTestRunStatus(db, updated.test_run_id);
+      await recomputeTestRunStatus(db, updated.test_run_id);
     }
 
     invalidateCache(INVALIDATE.runs);
@@ -75,35 +76,4 @@ export async function updateTestCaseRunStatus(
       errors: { _general: ['상태 업데이트 중 오류가 발생했습니다.'] },
     };
   }
-}
-
-async function updateTestRunStatus(db: ReturnType<typeof getDatabase>, testRunId: string) {
-  // Get all test case runs for this test run (논리 삭제 제외)
-  const caseRuns = await db
-    .select()
-    .from(testCaseRuns)
-    .where(and(eq(testCaseRuns.test_run_id, testRunId), isNull(testCaseRuns.excluded_at)));
-
-  if (caseRuns.length === 0) return;
-
-  const untested = caseRuns.filter((c) => c.status === 'untested').length;
-  const total = caseRuns.length;
-
-  let newStatus: TestRunStatus;
-
-  if (untested === total) {
-    newStatus = 'NOT_STARTED';
-  } else if (untested === 0) {
-    newStatus = 'COMPLETED';
-  } else {
-    newStatus = 'IN_PROGRESS';
-  }
-
-  await db
-    .update(testRuns)
-    .set({
-      status: newStatus,
-      updated_at: new Date(),
-    })
-    .where(eq(testRuns.id, testRunId));
 }

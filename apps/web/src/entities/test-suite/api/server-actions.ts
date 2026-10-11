@@ -2,6 +2,7 @@
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { excludeArchivedCasesFromRuns } from '@/entities/test-run/api/run-scope';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
 import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
@@ -644,15 +645,38 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
 
     const now = new Date();
 
-    const [archived] = await db
-      .update(testSuites)
-      .set({
-        archived_at: now,
-        lifecycle_status: 'DELETED',
-        updated_at: now,
-      })
-      .where(eq(testSuites.id, id))
-      .returning();
+    const archived = await db.transaction(async (tx) => {
+      const [suite] = await tx
+        .update(testSuites)
+        .set({
+          archived_at: now,
+          lifecycle_status: 'DELETED',
+          updated_at: now,
+        })
+        .where(eq(testSuites.id, id))
+        .returning();
+      if (!suite) return null;
+
+      // cascade: 하위 TC도 함께 휴지통으로 이동. 스위트와 같은 archived_at 을 남겨
+      // 복원할 때 이 삭제로 함께 간 케이스만 되살린다 (#378).
+      const cases = await tx
+        .update(testCases)
+        .set({
+          archived_at: now,
+          lifecycle_status: 'DELETED',
+          updated_at: now,
+        })
+        .where(and(eq(testCases.test_suite_id, id), eq(testCases.lifecycle_status, 'ACTIVE')))
+        .returning({ id: testCases.id });
+
+      // 진행 중인 실행의 목록과 진행률에서 뺀다 (#377).
+      await excludeArchivedCasesFromRuns(
+        tx,
+        cases.map((row) => row.id),
+        now
+      );
+      return suite;
+    });
 
     if (!archived) {
       return {
@@ -661,17 +685,8 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       };
     }
 
-    // cascade: 하위 TC도 함께 휴지통으로 이동
-    await db
-      .update(testCases)
-      .set({
-        archived_at: now,
-        lifecycle_status: 'DELETED',
-        updated_at: now,
-      })
-      .where(and(eq(testCases.test_suite_id, id), eq(testCases.lifecycle_status, 'ACTIVE')));
-
     invalidateCache(INVALIDATE.suites);
+    invalidateCache(INVALIDATE.runs);
     return {
       success: true,
       data: { id: archived.id },

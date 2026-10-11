@@ -55,6 +55,8 @@ interface RunCaseListPanelProps {
   statusFilterRef: React.RefObject<HTMLDivElement | null>;
   suiteFilterRef: React.RefObject<HTMLDivElement | null>;
   onRemoveSuite?: (suiteId: string, suiteName: string) => void;
+  /** 실행에 직접 연결된 스위트. 이 그룹에만 제거 버튼을 보인다 (#375). */
+  removableSuiteIds?: ReadonlySet<string>;
   // 벌크 선택
   bulkSelection: BulkSelection;
   filteredCaseIds: string[];
@@ -85,6 +87,7 @@ export const RunCaseListPanel = ({
   statusFilterRef,
   suiteFilterRef,
   onRemoveSuite,
+  removableSuiteIds,
   bulkSelection,
   filteredCaseIds,
   onBulkStatusChange,
@@ -405,7 +408,7 @@ export const RunCaseListPanel = ({
                     {groupBlocked > 0 && <span className="text-amber-400/70">{groupBlocked}B</span>}
                     <span className="text-text-4">{group.cases.length}</span>
                   </div>
-                  {onRemoveSuite && group.suiteId && (
+                  {onRemoveSuite && group.suiteId && removableSuiteIds?.has(group.suiteId) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
