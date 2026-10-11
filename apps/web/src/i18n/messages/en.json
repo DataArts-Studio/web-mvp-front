@@ -337,7 +337,9 @@
           "answer": "Group scenarios and cases by feature (requirement) and track which requirements have been verified.",
           "tags": ["Requirements", "Coverage"]
         }
-      ]
+      ],
+      "autoPause": "Pause auto-advance",
+      "autoPlay": "Resume auto-advance"
     },
     "footer": {
       "tagline": "Write test cases in just 5 minutes.",

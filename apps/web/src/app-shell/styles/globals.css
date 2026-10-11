@@ -424,6 +424,20 @@
   animation: landing-hint 1.6s ease-in-out infinite;
 }
 
+@keyframes landing-progress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* FAQ 자동 넘김(10초)과 같은 길이 */
+@utility animate-landing-progress {
+  animation: landing-progress 10s linear both;
+}
+
 @utility animate-landing-pop {
   animation: landing-pop 0.25s ease-out;
 }
