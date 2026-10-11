@@ -183,6 +183,8 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
   const isLoading = isPending || isSubmitting;
 
   const handleAbandon = () => {
+    // 저장 중에는 닫지 않는다. 닫히면 실패 알림과 입력 보존이 사라진다 (#371).
+    if (isLoading) return;
     track(MILESTONE_EVENTS.UPDATE_ABANDON, { milestone_id: milestone.id });
     onClose?.();
   };

@@ -49,14 +49,13 @@ export async function getTestRunsByProjectId(
         .innerJoin(testSuites, eq(testSuites.id, testRunSuites.test_suite_id))
         .where(and(inArray(testRunSuites.test_run_id, runIds), isNull(testRunSuites.excluded_at))),
 
-      // 마일스톤 이름 (ACTIVE만)
+      // 마일스톤 이름. 실행은 마일스톤이 휴지통에 가도 남으므로 상태와 무관하게 조회한다
+      // (상세 조회와 같은 기준).
       milestoneIds.length > 0
         ? db
             .select({ id: milestones.id, name: milestones.name })
             .from(milestones)
-            .where(
-              and(inArray(milestones.id, milestoneIds), eq(milestones.lifecycle_status, 'ACTIVE'))
-            )
+            .where(inArray(milestones.id, milestoneIds))
         : Promise.resolve([] as { id: string; name: string }[]),
 
       // 테스트 케이스 실행 결과 (논리 삭제 제외)
@@ -94,16 +93,18 @@ export async function getTestRunsByProjectId(
         let sourceType: FetchedTestRun['sourceType'] = 'ADHOC';
         let sourceName = '직접 선택한 케이스';
 
+        // 마일스톤으로 만든 실행은 마일스톤의 스위트도 함께 연결되므로 마일스톤을 먼저 본다 (#373).
         const runSuites = suitesByRunId.get(run.id) || [];
-        if (runSuites.length > 0) {
+        const milestoneName = run.milestone_id ? milestoneMap.get(run.milestone_id) : undefined;
+        if (milestoneName) {
+          sourceType = 'MILESTONE';
+          sourceName = milestoneName;
+        } else if (runSuites.length > 0) {
           sourceType = 'SUITE';
           sourceName = runSuites
             .map((sid) => suiteMap.get(sid) || '')
             .filter(Boolean)
             .join(', ');
-        } else if (run.milestone_id) {
-          sourceType = 'MILESTONE';
-          sourceName = milestoneMap.get(run.milestone_id) || '';
         }
 
         const caseRuns = caseRunsByRunId.get(run.id) || [];

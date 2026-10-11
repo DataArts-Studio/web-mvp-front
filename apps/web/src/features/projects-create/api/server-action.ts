@@ -6,7 +6,7 @@ import { setAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword } from '@/access/lib/password-hash';
 import { createProjectSessionToken } from '@/access/lib/project-session';
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
-import { toProjectDto } from '@/entities';
+import { CreateProjectDomainSchema, toProjectDto } from '@/entities';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 import type { ActionResult } from '@/shared/types';
@@ -66,8 +66,18 @@ export async function createProject(
       }
     }
 
+    // 서버 액션은 클라이언트 폼을 거치지 않고 호출될 수 있으므로 입력을 다시 검증한다.
+    // 공백만 있는 이름은 여기서 거부된다 (#374).
+    const parsed = CreateProjectDomainSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        errors: { _form: [parsed.error.issues[0]?.message ?? '입력값을 확인해주세요.'] },
+      };
+    }
+
     const db = getDatabase();
-    const dto = toProjectDto(input);
+    const dto = toProjectDto(parsed.data);
     const hashedIdentifier = await hashPassword(dto.identifier);
     const id = uuidv7();
 

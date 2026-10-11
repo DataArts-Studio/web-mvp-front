@@ -11,6 +11,7 @@ import {
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -38,6 +39,8 @@ async function caseLinksBelongTo(
   if (sectionId && !(await belongsToProject('section', sectionId, projectId))) return false;
   return true;
 }
+
+const CASE_NAME_MAX_LENGTH = 200;
 
 type getTestCasesParams = {
   project_id: string;
@@ -297,8 +300,13 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     }
     if (storageError) return storageError;
 
+    const name = toValidName(input.title, CASE_NAME_MAX_LENGTH);
+    if (!name) {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NAME_REQUIRED] } };
+    }
+
     const db = getDatabase();
-    const dto = toCreateTestCaseDTO(input);
+    const dto = toCreateTestCaseDTO({ ...input, title: name });
     const id = uuidv7();
     const now = new Date();
 
@@ -629,7 +637,11 @@ export const updateTestCase = async (
     };
 
     if (updateFields.title !== undefined) {
-      updateData.name = updateFields.title;
+      const name = toValidName(updateFields.title, CASE_NAME_MAX_LENGTH);
+      if (!name) {
+        return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NAME_REQUIRED] } };
+      }
+      updateData.name = name;
     }
     if (updateFields.testSuiteId !== undefined) {
       updateData.test_suite_id = updateFields.testSuiteId;

@@ -27,6 +27,7 @@ export const ProjectDomainSchema = z.object({
   id: z.uuidv7({ error: 'uuidv7 test error' }),
   projectName: z
     .string({ error: 'test error' })
+    .trim()
     .min(1, '프로젝트 이름은 최소 1글자 이상이어야 합니다.')
     .max(50, '프로젝트 이름은 50자를 넘을 수 없습니다.'),
   identifier: z
@@ -65,6 +66,7 @@ export const ProjectFormSchema = CreateProjectDomainSchema.extend({
 export const ProjectSettingsFormSchema = z.object({
   name: z
     .string()
+    .trim()
     .min(1, '프로젝트 이름은 최소 1글자 이상이어야 합니다.')
     .max(50, '프로젝트 이름은 50자를 넘을 수 없습니다.'),
   description: z.string().max(255, '설명은 255자를 넘을 수 없습니다.').optional(),

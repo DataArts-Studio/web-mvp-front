@@ -93,6 +93,8 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   };
 
   const handleAbandon = () => {
+    // 저장 중에는 배경 클릭·닫기 버튼으로도 닫지 않는다. 실패 시 수정 내용을 지키기 위함 (#371).
+    if (isPending) return;
     track(TESTCASE_EVENTS.UPDATE_ABANDON, { case_id: testCase.id });
     onClose();
   };
@@ -150,11 +152,11 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
 
           {/* Actions */}
           <div className="border-line-2 flex justify-end gap-3 border-t pt-6">
-            <DSButton type="button" variant="ghost" onClick={handleAbandon}>
+            <DSButton type="button" variant="ghost" disabled={isPending} onClick={handleAbandon}>
               {t('ui.cancel')}
             </DSButton>
             <DSButton type="submit" variant="solid" disabled={isPending}>
-              {t('ui.editCase')}
+              {isPending ? t('ui.savingShort') : t('ui.editCase')}
             </DSButton>
           </div>
         </form>

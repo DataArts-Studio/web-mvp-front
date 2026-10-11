@@ -155,6 +155,20 @@
       "when": 1790522926345,
       "tag": "0021_admin_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791691048054,
+      "tag": "0022_drop_case_name_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791691060362,
+      "tag": "0023_backfill_run_milestone_id",
+      "breakpoints": true
     }
   ]
 }

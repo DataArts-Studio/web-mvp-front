@@ -82,7 +82,7 @@ export const GenerateCasesMultipartSchema = z.object({
 });
 
 export const GeneratedTestCaseSchema = z.object({
-  name: z.string().min(1).max(200),
+  name: z.string().trim().min(1).max(200),
   preCondition: z.string().max(1000).optional().default(''),
   steps: z.string().max(2000).optional().default(''),
   expectedResult: z.string().max(1000).optional().default(''),
