@@ -27,7 +27,13 @@ export const CaseStatusBadge = ({ status }: { status: CaseStatus }) => {
         STATUS_STYLE[status]
       )}
     >
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
+      <span
+        aria-hidden="true"
+        className={cn(
+          'size-1.5 rounded-full bg-current',
+          status === 'running' && 'animate-landing-blink'
+        )}
+      />
       {t(status)}
     </span>
   );

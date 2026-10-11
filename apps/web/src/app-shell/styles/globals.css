@@ -410,6 +410,20 @@
   }
 }
 
+@keyframes landing-hint {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(11 181 127 / 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgb(11 181 127 / 0.25);
+  }
+}
+
+@utility animate-landing-hint {
+  animation: landing-hint 1.6s ease-in-out infinite;
+}
+
 @utility animate-landing-pop {
   animation: landing-pop 0.25s ease-out;
 }
@@ -427,6 +441,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .animate-landing-hint,
   .animate-landing-pop,
   .animate-landing-swap-in,
   .animate-landing-feed-in,

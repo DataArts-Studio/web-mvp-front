@@ -182,7 +182,8 @@
             "label": "Share link",
             "value": "gettestea.com/…"
           }
-        ]
+        ],
+        "joined": "3 teammates joined via the link"
       },
       "tc003": {
         "title": "Add requirements and AI writes the scenarios",
@@ -207,20 +208,15 @@
         "dday": "D-3",
         "suites": ["Login", "Payment", "Profile"],
         "feedTitle": "Live activity",
-        "feed": [
-          {
-            "text": "Jisu · marked TC-102 as failed",
-            "time": "just now"
-          },
-          {
-            "text": "Doyun · started the payment suite run",
-            "time": "1 min ago"
-          },
-          {
-            "text": "Jisu · marked TC-101 as passed",
-            "time": "3 min ago"
-          }
-        ]
+        "events": [
+          "Jisu · marked TC-101 as passed",
+          "Doyun · started the payment suite run",
+          "Jisu · marked TC-102 as failed",
+          "Doyun · marked TC-205 as passed",
+          "Seoyeon · marked TC-301 as blocked",
+          "Seoyeon · marked TC-302 as passed"
+        ],
+        "times": ["just now", "1 min ago", "3 min ago"]
       }
     },
     "faq": {

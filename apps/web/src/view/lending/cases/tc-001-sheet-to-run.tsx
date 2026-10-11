@@ -188,7 +188,8 @@ const SampleRun = () => {
                 </span>
               )}
               {isCurrent && (
-                <span className="flex shrink-0 gap-1.5">
+                // 판정할 차례인 행은 버튼 묶음이 은은하게 깜빡여 눌러 보라고 알려 준다.
+                <span className="animate-landing-hint flex shrink-0 gap-1.5 rounded-sm">
                   {VERDICTS.map((v) => (
                     <button
                       key={v}
