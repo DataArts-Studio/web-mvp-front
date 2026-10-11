@@ -6,6 +6,7 @@ import { DSButton } from '@/shared';
 import { MILESTONE_EVENTS, TESTCASE_EVENTS, TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
 import { Dialog } from '@testea/ui';
 import { Loader2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const TARGET_LABEL: Record<ArchiveTargetType, string> = {
   project: '프로젝트',
@@ -35,7 +36,9 @@ export const ArchiveButton = ({
       onSuccess?.();
     },
     onError: (_error, variables) => {
-      setIsConfirmOpen(false);
+      // 다이얼로그를 열어 둔 채 알려서 바로 재시도하거나 취소할 수 있게 한다.
+      // 서버 오류 메시지는 코드일 수 있어 고정 문구를 쓴다.
+      toast.error(`${TARGET_LABEL[variables.targetType] ?? '항목'} 삭제에 실패했습니다.`);
       const failEventMap = {
         case: TESTCASE_EVENTS.DELETE_FAIL,
         suite: TESTSUITE_EVENTS.DELETE_FAIL,

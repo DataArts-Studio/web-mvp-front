@@ -5,9 +5,11 @@ import { useForm } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 
 import { TestSuite } from '@/entities/test-suite';
+import { translateSuiteErrors } from '@/entities/test-suite/lib/translate-message';
 import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
 import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 
 import { useUpdateSuite } from '../hooks';
 import { UpdateTestSuite, UpdateTestSuiteSchema } from '../model';
@@ -19,7 +21,7 @@ interface SuiteEditFormProps {
 
 export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
   const t = useTranslations('suites');
-  const { mutate, isPending } = useUpdateSuite();
+  const { mutate, isPending, isError } = useUpdateSuite();
   const {
     register,
     handleSubmit,
@@ -39,8 +41,9 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
         track(TESTSUITE_EVENTS.UPDATE, { suite_id: suite.id });
         onClose?.();
       },
-      onError: () => {
+      onError: (error) => {
         track(TESTSUITE_EVENTS.UPDATE_FAIL, { suite_id: suite.id });
+        toast.error(translateSuiteErrors(t, error.message));
       },
     });
   };
@@ -90,6 +93,11 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
     // 마운트/언마운트 시 1회만 (handleAbandon 은 안정적)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 요청 중 버튼 비활성화로 빠진 포커스를 실패 후 되돌려 ESC·Tab 트랩이 동작하게 한다.
+  useEffect(() => {
+    if (isError) dialogRef.current?.focus();
+  }, [isError]);
 
   return (
     <section
