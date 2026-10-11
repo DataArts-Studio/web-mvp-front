@@ -4,7 +4,7 @@
 /* https://tailwindcss.com/ */
 @import 'tailwindcss';
 
-@source "../../../../../packages/ui/src/**/*.{ts,tsx}";
+@source '../../../../../packages/ui/src/**/*.{ts,tsx}';
 
 /* theme variables */
 /* 커스텀 폰트, 컬러 변수 */
@@ -16,7 +16,10 @@
   /* ========================================= */
   /* 폰트 정의 */
   /* ========================================= */
-  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --font-sans:
+    'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic',
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 
   /* ========================================= */
   /* 텍스트 사이즈 (Font Size) 정의 */
@@ -34,53 +37,53 @@
   /* 행간 (Line Height) 정의 */
   /* 디자인 시스템의 %를 소수점으로 변환 */
   /* ========================================= */
-  --leading-130: 1.3;  /* Caption */
-  --leading-140: 1.4;  /* Title, Headline1 */
-  --leading-160: 1.6;  /* Headline2, Body, Label */
+  --leading-130: 1.3; /* Caption */
+  --leading-140: 1.4; /* Title, Headline1 */
+  --leading-160: 1.6; /* Headline2, Body, Label */
   /* ========================================= */
   /* 자간 (Letter Spacing) 정의 */
   /* -4% -> -0.04em */
   /* ========================================= */
   --tracking-tightest: -0.04em; /* 대부분의 텍스트 */
-  --tracking-zero: 0em;       /* Caption */
+  --tracking-zero: 0em; /* Caption */
   /* ========================================= */
   /* Text Colors */
   /* ========================================= */
-  --color-text-1: #FFFFFF;
+  --color-text-1: #ffffff;
   --color-text-2: rgb(255 255 255 / 0.7); /* 70% */
   --color-text-3: rgb(255 255 255 / 0.4); /* 40% */
   --color-text-4: rgb(255 255 255 / 0.2); /* 20% */
   /* ========================================= */
   /* Brand Colors */
   /* ========================================= */
-  --color-primary: #0BB57F;
+  --color-primary: #0bb57f;
   --color-secondary: #007351;
 
   /* ========================================= */
   /* Status Colors */
   /* ========================================= */
   --color-inactive: rgb(255 255 255 / 0.4);
-  --color-line-1: #8F96A3;
-  --color-line-2: #2B2D31;
+  --color-line-1: #8f96a3;
+  --color-line-2: #2b2d31;
 
-  --color-icon-1: #4E4E4E;
-  --color-line-3: #5C6370;
+  --color-icon-1: #4e4e4e;
+  --color-line-3: #5c6370;
 
   /* ========================================= */
   /* System Notification */
   /* ========================================= */
-  --color-system-red: #FC4141;
-  --color-system-blue: #EAF9FF;
-  --color-system-green: #ECFBF6;
+  --color-system-red: #fc4141;
+  --color-system-blue: #eaf9ff;
+  --color-system-green: #ecfbf6;
 
   /* ========================================= */
   /* Background Colors (Dark Mode Base) */
   /* ========================================= */
-  --color-bg-1: #0C0D0E;
-  --color-bg-2: #18191B;
-  --color-bg-3: #1E2024;
-  --color-bg-4: #2B2D31;
-  --color-bg-inactive: #1E2024;
+  --color-bg-1: #0c0d0e;
+  --color-bg-2: #18191b;
+  --color-bg-3: #1e2024;
+  --color-bg-4: #2b2d31;
+  --color-bg-inactive: #1e2024;
 
   /* ========================================= */
   /* Radius (Border Radius) */
@@ -112,7 +115,8 @@
 /* ========================================= */
 @layer base {
   /* 기본 레이아웃 및 렌더링 설정 */
-  html, body {
+  html,
+  body {
     width: 100%;
     /*height: 100%;*/
   }
@@ -132,7 +136,13 @@
   }
 
   /* 클릭 가능한 요소에 pointer cursor 기본 적용 */
-  button, [role="button"], a, summary, select, [type="checkbox"], [type="radio"] {
+  button,
+  [role='button'],
+  a,
+  summary,
+  select,
+  [type='checkbox'],
+  [type='radio'] {
     cursor: pointer;
   }
 
@@ -143,7 +153,12 @@
   }
 
   /* 제목 밸런스 잡기 */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     text-wrap: balance;
   }
 
@@ -153,7 +168,8 @@
   }
 
   /* 이미지, 비디오 비율 깨짐 방지 */
-  img, video {
+  img,
+  video {
     height: auto;
     /* 이미지는 기본이 inline이라 */
     /* block으로 잡는게 정신건강에 좋음 */
@@ -162,7 +178,9 @@
 
   /* 폼 요소 입력 시 줌인 방지 (아이폰 대응) */
   /* font-size가 16px 미만이면 아이폰에서 input 클릭 시 화면이 확대됨 */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     /* 모바일 기본 폰트 사이즈 강제 */
     font-size: 16px;
   }
@@ -175,65 +193,65 @@
 @layer utilities {
   /* Title (32px, 140%, -4%) */
   .typo-title-heading {
-    @apply text-title font-bold leading-140 tracking-tightest;
+    @apply text-title tracking-tightest leading-140 font-bold;
   }
 
   .typo-title-normal {
-    @apply text-title font-normal leading-140 tracking-tightest;
+    @apply text-title tracking-tightest leading-140 font-normal;
   }
 
   /* Headline 1 (24px, 140%, -4%) */
   .typo-h1-heading {
-    @apply text-h1 font-bold leading-140 tracking-tightest;
+    @apply text-h1 tracking-tightest leading-140 font-bold;
   }
 
   .typo-h1-normal {
-    @apply text-h1 font-normal leading-140 tracking-tightest;
+    @apply text-h1 tracking-tightest leading-140 font-normal;
   }
 
   /* Headline 2 (20px, 160%, -4%) */
   .typo-h2-heading {
-    @apply text-h2 font-semibold leading-160 tracking-tightest;
+    @apply text-h2 tracking-tightest leading-160 font-semibold;
   }
 
   .typo-h2-normal {
-    @apply text-h2 font-normal leading-160 tracking-tightest;
+    @apply text-h2 tracking-tightest leading-160 font-normal;
   }
 
   /* Body 1 (18px, 160%, -4%) */
   .typo-body1-heading {
-    @apply text-body1 font-semibold leading-160 tracking-tightest;
+    @apply text-body1 tracking-tightest leading-160 font-semibold;
   }
 
   .typo-body1-normal {
-    @apply text-body1 font-normal leading-160 tracking-tightest;
+    @apply text-body1 tracking-tightest leading-160 font-normal;
   }
 
   /* Body 2 (16px, 160%, -4%) */
   .typo-body2-heading {
-    @apply text-body2 font-semibold leading-160 tracking-tightest;
+    @apply text-body2 tracking-tightest leading-160 font-semibold;
   }
 
   .typo-body2-normal {
-    @apply text-body2 font-normal leading-160 tracking-tightest;
+    @apply text-body2 tracking-tightest leading-160 font-normal;
   }
 
   /* Label (14px, 160%, -4%) */
   .typo-label-heading {
-    @apply text-label font-semibold leading-160 tracking-tightest;
+    @apply text-label tracking-tightest leading-160 font-semibold;
   }
 
   .typo-label-normal {
-    @apply text-label font-normal leading-160 tracking-tightest;
+    @apply text-label tracking-tightest leading-160 font-normal;
   }
 
   /* Caption (12px, 130%, 0%) - 자간 다름 주의 */
   .typo-caption-heading {
-    @apply text-caption font-medium leading-130 tracking-zero;
+    @apply text-caption tracking-zero leading-130 font-medium;
   }
 
   .typo-caption-normal {
-    @apply text-caption font-normal leading-130 tracking-zero;
+    @apply text-caption tracking-zero leading-130 font-normal;
   }
 }
 
@@ -263,7 +281,8 @@
 /* Custom Animations for Loading Spinner */
 /* ========================================= */
 @keyframes wiggle {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(-3deg);
   }
   50% {
@@ -272,7 +291,8 @@
 }
 
 @keyframes bounce-gentle {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -281,7 +301,8 @@
 }
 
 @keyframes shadow-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(-50%) scaleX(1);
     opacity: 0.3;
   }
@@ -304,7 +325,9 @@
 }
 
 @keyframes bounce-dot {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: translateY(0);
     opacity: 0.4;
   }
@@ -338,6 +361,78 @@
 
 @utility animate-fade-in-up-delay {
   animation: fade-in-up 0.6s ease-out 0.2s both;
+}
+
+/* 랜딩 테스트 런: 상태 배지 팝, 패널 전환, 실시간 피드 */
+@keyframes landing-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes landing-swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes landing-feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landing-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@utility animate-landing-pop {
+  animation: landing-pop 0.25s ease-out;
+}
+
+@utility animate-landing-swap-in {
+  animation: landing-swap-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-landing-feed-in {
+  animation: landing-feed-in 0.4s ease-out both;
+}
+
+@utility animate-landing-blink {
+  animation: landing-blink 1s steps(2, start) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-landing-pop,
+  .animate-landing-swap-in,
+  .animate-landing-feed-in,
+  .animate-landing-blink {
+    animation: none;
+  }
 }
 
 /* ========================================= */
