@@ -20,6 +20,11 @@ vi.mock('@/entities/test-case-version/model/diff-utils', () => ({
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
 }));
+vi.mock('@/access/lib/project-scope', () => ({
+  ACCESS_DENIED: { success: false, errors: { _general: ['접근 권한이 없습니다.'] } },
+  canAccess: vi.fn(async () => true),
+  belongsToProject: vi.fn(async () => true),
+}));
 
 const mockExisting = {
   id: 'tc-123',
@@ -30,6 +35,8 @@ const mockExisting = {
   pre_condition: '사전 조건',
   steps: '스텝',
   expected_result: '기대 결과',
+  test_suite_id: 'suite-old',
+  section_id: 'section-old',
 };
 
 // 접근 권한 확인용 select 체인 (existing row 반환)
@@ -66,6 +73,7 @@ vi.mock('@testea/db', () => ({
   testRunSuites: {},
   testRuns: {},
   milestoneTestSuites: {},
+  testSuiteSections: { id: 'section.id', suite_id: 'section.suite_id' },
 }));
 
 vi.mock('drizzle-orm', () => ({
@@ -227,5 +235,36 @@ describe('updateTestCase', () => {
     if (!result.success) {
       expect(result.errors._testCase).toContain('UPDATE_FAILED');
     }
+  });
+
+  describe('스위트를 옮길 때 섹션 (#383)', () => {
+    it('이전 스위트의 섹션은 새 스위트에 없으므로 미분류로 돌린다', async () => {
+      // 첫 조회는 기존 케이스, 두 번째는 새 스위트에서 섹션 찾기(없음)
+      mockSelectLimit.mockResolvedValueOnce([mockExisting]).mockResolvedValueOnce([]);
+
+      await updateTestCase({ id: 'tc-123', testSuiteId: 'suite-new' });
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({ test_suite_id: 'suite-new', section_id: null })
+      );
+    });
+
+    it('새 스위트의 섹션을 함께 고르면 그 섹션을 유지한다', async () => {
+      mockSelectLimit
+        .mockResolvedValueOnce([mockExisting])
+        .mockResolvedValueOnce([{ id: 'section-new' }]);
+
+      await updateTestCase({ id: 'tc-123', testSuiteId: 'suite-new', sectionId: 'section-new' });
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({ test_suite_id: 'suite-new', section_id: 'section-new' })
+      );
+    });
+
+    it('스위트·섹션을 건드리지 않는 수정은 섹션을 바꾸지 않는다', async () => {
+      await updateTestCase({ id: 'tc-123', title: '이름만 수정' });
+
+      expect(mockSet).toHaveBeenCalledWith(expect.not.objectContaining({ section_id: null }));
+    });
   });
 });

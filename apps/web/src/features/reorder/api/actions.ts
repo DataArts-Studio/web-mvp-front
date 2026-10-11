@@ -203,6 +203,8 @@ export async function moveTestCaseToSuite(
       .update(testCases)
       .set({
         test_suite_id: newSuiteId,
+        // 이전 스위트의 섹션이 남으면 새 스위트 상세에 보이지 않으므로 미분류로 둔다 (#383).
+        section_id: null,
         sort_order: maxOrder,
         updated_at: new Date(),
       })

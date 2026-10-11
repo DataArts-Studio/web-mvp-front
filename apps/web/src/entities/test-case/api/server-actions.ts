@@ -27,6 +27,7 @@ import {
   testCases,
   testRunSuites,
   testRuns,
+  testSuiteSections,
 } from '@testea/db';
 import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -43,6 +44,24 @@ async function caseLinksBelongTo(
   if (suiteId && !(await belongsToProject('testSuite', suiteId, projectId))) return false;
   if (sectionId && !(await belongsToProject('section', sectionId, projectId))) return false;
   return true;
+}
+
+/**
+ * 섹션은 케이스가 속한 스위트의 것이어야 한다. 스위트 상세는 그 스위트의 섹션과 미분류만 그리므로,
+ * 다른 스위트의 섹션이 남으면 케이스가 개수에만 잡히고 화면 어디에도 보이지 않는다 (#383).
+ * 최종 스위트에 없는 섹션이면 미분류(null)로 돌린다.
+ */
+async function sectionForSuite(
+  suiteId: string | null | undefined,
+  sectionId: string | null | undefined
+): Promise<string | null> {
+  if (!sectionId || !suiteId) return null;
+  const [section] = await getDatabase()
+    .select({ id: testSuiteSections.id })
+    .from(testSuiteSections)
+    .where(and(eq(testSuiteSections.id, sectionId), eq(testSuiteSections.suite_id, suiteId)))
+    .limit(1);
+  return section ? sectionId : null;
 }
 
 const CASE_NAME_MAX_LENGTH = 200;
@@ -321,7 +340,10 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     }
 
     const db = getDatabase();
-    const dto = toCreateTestCaseDTO({ ...input, title: name });
+    const dto = {
+      ...toCreateTestCaseDTO({ ...input, title: name }),
+      section_id: await sectionForSuite(input.testSuiteId, input.sectionId),
+    };
     const id = uuidv7();
     const now = new Date();
 
@@ -680,8 +702,12 @@ export const updateTestCase = async (
     if (updateFields.testSuiteId !== undefined) {
       updateData.test_suite_id = updateFields.testSuiteId;
     }
-    if (updateFields.sectionId !== undefined) {
-      updateData.section_id = updateFields.sectionId;
+    if (updateFields.testSuiteId !== undefined || updateFields.sectionId !== undefined) {
+      // 스위트만 바꾸면 이전 스위트의 섹션이 남으므로, 바뀐 뒤 스위트 기준으로 섹션을 다시 정한다 (#383).
+      updateData.section_id = await sectionForSuite(
+        updateFields.testSuiteId !== undefined ? updateFields.testSuiteId : existing.test_suite_id,
+        updateFields.sectionId !== undefined ? updateFields.sectionId : existing.section_id
+      );
     }
     if (updateFields.testType !== undefined) {
       updateData.test_type = updateFields.testType;
