@@ -23,7 +23,15 @@ import {
 import { and, count, desc, eq, inArray, isNotNull, isNull, max } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
+// 생성 폼과 같은 기준. 수정 폼은 50자로 더 좁지만, 생성으로 만든 긴 이름의 스위트도
+// 수정할 수 있어야 하므로 서버는 생성 기준(3~200자)으로 받는다.
+const SUITE_NAME_MIN_LENGTH = 3;
 const SUITE_NAME_MAX_LENGTH = 200;
+
+const toValidSuiteName = (value: unknown): string | null => {
+  const name = toValidName(value, SUITE_NAME_MAX_LENGTH);
+  return name && name.length >= SUITE_NAME_MIN_LENGTH ? name : null;
+};
 
 type GetTestSuitesParams = {
   projectId: string;
@@ -40,7 +48,7 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     const storageError = await checkStorageLimit(input.projectId);
     if (storageError) return storageError;
 
-    const name = toValidName(input.title, SUITE_NAME_MAX_LENGTH);
+    const name = toValidSuiteName(input.title);
     if (!name) {
       return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.NAME_REQUIRED] } };
     }
@@ -277,7 +285,7 @@ export const updateTestSuite = async (
     };
 
     if (updateFields.title !== undefined) {
-      const name = toValidName(updateFields.title, SUITE_NAME_MAX_LENGTH);
+      const name = toValidSuiteName(updateFields.title);
       if (!name) {
         return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.NAME_REQUIRED] } };
       }

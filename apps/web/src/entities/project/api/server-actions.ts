@@ -173,7 +173,7 @@ export const updateProject = async (
       if (!name) {
         return { success: false, errors: { _project: ['프로젝트 이름을 입력해주세요.'] } };
       }
-      updateData.name = name.replace(/s+/g, ' ');
+      updateData.name = name.replace(/\s+/g, ' ');
     }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.ownerName !== undefined) updateData.owner_name = data.ownerName;

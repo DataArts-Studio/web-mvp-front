@@ -365,7 +365,7 @@
       "SUITE_ARCHIVED": "Test suite moved to trash.",
       "ACCESS_DENIED": "You do not have access.",
       "NOT_FOUND": "Test suite not found.",
-      "NAME_REQUIRED": "Please enter a test suite name.",
+      "NAME_REQUIRED": "Test suite name must be at least 3 characters, excluding spaces.",
       "LOAD_FAILED": "Something went wrong while loading test suites.",
       "CREATE_FAILED": "Something went wrong while creating the test suite.",
       "UPDATE_FAILED": "Something went wrong while updating the test suite.",
