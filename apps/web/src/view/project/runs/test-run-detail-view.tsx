@@ -165,6 +165,8 @@ export const TestRunDetailView = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+      // 케이스 목록의 상태는 마지막 실행 결과라 결과가 바뀌면 같이 다시 불러온다 (#379).
+      queryClient.invalidateQueries({ queryKey: ['testCases'] });
     },
   });
 
@@ -242,6 +244,8 @@ export const TestRunDetailView = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+      // 케이스 목록의 상태는 마지막 실행 결과라 결과가 바뀌면 같이 다시 불러온다 (#379).
+      queryClient.invalidateQueries({ queryKey: ['testCases'] });
       if (projectId) queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
     },
   });

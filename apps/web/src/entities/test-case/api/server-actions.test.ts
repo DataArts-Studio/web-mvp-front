@@ -4,6 +4,11 @@ import { getTestCases } from './server-actions';
 
 vi.mock('server-only', () => ({}));
 
+const mockGetLatestResultStatuses = vi.fn(async (): Promise<Map<string, string>> => new Map());
+vi.mock('./latest-result', () => ({
+  getLatestResultStatuses: () => mockGetLatestResultStatuses(),
+}));
+
 // DB 모킹
 const mockWhere = vi.fn();
 const mockFrom = vi.fn(() => ({ where: mockWhere }));
@@ -76,6 +81,37 @@ describe('getTestCases', () => {
     expect(mockSelect).toHaveBeenCalled();
     expect(mockFrom).toHaveBeenCalled();
     expect(mockWhere).toHaveBeenCalled();
+  });
+
+  it('케이스 상태는 저장된 값이 아니라 마지막 실행 결과를 따른다 (#379)', async () => {
+    mockWhere.mockResolvedValue([
+      {
+        id: 'tc-1',
+        project_id: 'proj-1',
+        name: '실행한 케이스',
+        result_status: 'untested',
+        created_at: new Date(),
+        updated_at: new Date(),
+        lifecycle_status: 'ACTIVE',
+      },
+      {
+        id: 'tc-2',
+        project_id: 'proj-1',
+        name: '실행하지 않은 케이스',
+        result_status: 'untested',
+        created_at: new Date(),
+        updated_at: new Date(),
+        lifecycle_status: 'ACTIVE',
+      },
+    ]);
+    mockGetLatestResultStatuses.mockResolvedValueOnce(new Map([['tc-1', 'fail']]));
+
+    const result = await getTestCases({ project_id: 'proj-1' });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.map((tc) => tc.resultStatus)).toEqual(['fail', 'untested']);
+    }
   });
 
   it('테스트 케이스가 없으면 빈 배열을 반환한다', async () => {
