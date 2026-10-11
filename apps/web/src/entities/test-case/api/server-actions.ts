@@ -8,6 +8,7 @@ import {
   detectChangedFields,
   generateChangeSummary,
 } from '@/entities/test-case-version/model/diff-utils';
+import { getLatestResultStatuses } from '@/entities/test-case/api/latest-result';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import {
@@ -63,6 +64,10 @@ export const getTestCases = async ({
       .from(testCases)
       .where(and(eq(testCases.project_id, project_id), eq(testCases.lifecycle_status, 'ACTIVE')));
     if (!rows) return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] } };
+    const latestStatuses = await getLatestResultStatuses(
+      db,
+      rows.map((row) => row.id)
+    );
 
     const result: TestCase[] = rows.map((row) => ({
       id: row.id,
@@ -78,7 +83,7 @@ export const getTestCases = async ({
       testSteps: row.steps ?? '',
       expectedResult: row.expected_result ?? '',
       sortOrder: row.sort_order ?? 0,
-      resultStatus: row.result_status,
+      resultStatus: latestStatuses.get(row.id) ?? 'untested',
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
@@ -189,7 +194,6 @@ export const getTestCasesList = async ({
         test_type: testCases.test_type,
         tags: testCases.tags,
         sort_order: testCases.sort_order,
-        result_status: testCases.result_status,
         created_at: testCases.created_at,
         updated_at: testCases.updated_at,
         archived_at: testCases.archived_at,
@@ -204,6 +208,10 @@ export const getTestCasesList = async ({
       )
       .limit(size)
       .offset(offset);
+    const latestStatuses = await getLatestResultStatuses(
+      db,
+      rows.map((row) => row.id)
+    );
 
     const items: TestCaseListItem[] = rows.map((row) => ({
       id: row.id,
@@ -216,7 +224,7 @@ export const getTestCasesList = async ({
       testType: row.test_type ?? '',
       tags: row.tags ?? [],
       sortOrder: row.sort_order ?? 0,
-      resultStatus: row.result_status,
+      resultStatus: latestStatuses.get(row.id) ?? 'untested',
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
@@ -256,6 +264,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
       };
     }
 
+    const latestStatuses = await getLatestResultStatuses(db, [row.id]);
     const result: TestCase = {
       id: row.id,
       projectId: row.project_id ?? '',
@@ -270,7 +279,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
       testSteps: row.steps ?? '',
       expectedResult: row.expected_result ?? '',
       sortOrder: row.sort_order ?? 0,
-      resultStatus: row.result_status,
+      resultStatus: latestStatuses.get(row.id) ?? 'untested',
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
