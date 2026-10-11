@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // ── Column Mapping ──────────────────────────────────────────────
 export const columnMappingSchema = z.object({
-  name: z.string().min(1, '이름 필드 매핑은 필수입니다'),
+  name: z.string().trim().min(1, '이름 필드 매핑은 필수입니다'),
   testType: z.string().optional(),
   tags: z.string().optional(),
   preCondition: z.string().optional(),
@@ -14,7 +14,7 @@ export type ColumnMapping = z.infer<typeof columnMappingSchema>;
 
 // ── Import Row ──────────────────────────────────────────────────
 export const importRowSchema = z.object({
-  name: z.string().min(1, '이름은 필수입니다').max(200, '이름이 200자를 초과합니다'),
+  name: z.string().trim().min(1, '이름은 필수입니다').max(200, '이름이 200자를 초과합니다'),
   testType: z.string().max(50).optional(),
   tags: z.array(z.string().max(20, '태그는 20자 이내')).optional(),
   preCondition: z.string().optional(),

@@ -17,12 +17,14 @@ interface QuickCreateRowProps {
 
 export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { mutate } = useCreateCase();
+  const { mutate, isPending } = useCreateCase();
   const t = useTranslations('cases');
 
   const handleCreate = () => {
     const title = inputRef.current?.value.trim();
-    if (!title) return;
+    // 이전 생성이 끝나기 전에는 새로 제출하지 않는다. 동시에 여러 건이 실패하면
+    // 어떤 제목을 되돌릴지 알 수 없다 (#371).
+    if (!title || isPending) return;
 
     if (inputRef.current) inputRef.current.value = '';
 
@@ -34,6 +36,8 @@ export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowPro
       { title, projectId, ...(suiteId ? { testSuiteId: suiteId } : {}) },
       {
         onError: (error) => {
+          // 연속 입력을 위해 요청 전에 비웠던 입력값을, 새로 입력 중이 아니면 되돌린다 (#371).
+          if (inputRef.current && !inputRef.current.value) inputRef.current.value = title;
           toast.error(translateCaseErrors(t, error.message) || t('ui.createFailedFallback'));
         },
       }

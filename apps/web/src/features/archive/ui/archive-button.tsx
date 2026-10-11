@@ -6,6 +6,7 @@ import { DSButton } from '@/shared';
 import { MILESTONE_EVENTS, TESTCASE_EVENTS, TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
 import { Dialog } from '@testea/ui';
 import { Loader2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const TARGET_LABEL: Record<ArchiveTargetType, string> = {
   project: '프로젝트',
@@ -34,8 +35,13 @@ export const ArchiveButton = ({
       setIsConfirmOpen(false);
       onSuccess?.();
     },
-    onError: (_error, variables) => {
-      setIsConfirmOpen(false);
+    onError: (error, variables) => {
+      // 실패하면 확인 창을 열어 둔 채 원인을 알려 다시 시도할 수 있게 한다 (#371).
+      // 서버 액션이 메시지 코드(UPPER_SNAKE)를 돌려주는 도메인은 일반 문구로 대신한다.
+      const message = /^[A-Z_]+$/.test(error.message) ? '' : error.message;
+      toast.error(
+        message || `${TARGET_LABEL[variables.targetType] ?? '항목'} 삭제에 실패했습니다.`
+      );
       const failEventMap = {
         case: TESTCASE_EVENTS.DELETE_FAIL,
         suite: TESTSUITE_EVENTS.DELETE_FAIL,

@@ -7,7 +7,9 @@ import { useTranslations } from 'next-intl';
 import { TestSuite } from '@/entities/test-suite';
 import { DSButton, FormField, LoadingSpinner, cn } from '@/shared';
 import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
+import { translateErrorCodes } from '@/shared/lib/translate-error-codes';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 
 import { useUpdateSuite } from '../hooks';
 import { UpdateTestSuite, UpdateTestSuiteSchema } from '../model';
@@ -39,8 +41,9 @@ export const SuiteEditForm = ({ suite, onClose }: SuiteEditFormProps) => {
         track(TESTSUITE_EVENTS.UPDATE, { suite_id: suite.id });
         onClose?.();
       },
-      onError: () => {
+      onError: (error) => {
         track(TESTSUITE_EVENTS.UPDATE_FAIL, { suite_id: suite.id });
+        toast.error(translateErrorCodes(t, error.message, t('messages.UPDATE_FAILED')));
       },
     });
   };
