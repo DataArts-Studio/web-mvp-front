@@ -52,6 +52,7 @@ vi.mock('@testea/db', () => {
     testCases: {},
     testRunSuites: {},
     testRuns: {},
+    testSuiteSections: {},
   };
 });
 
