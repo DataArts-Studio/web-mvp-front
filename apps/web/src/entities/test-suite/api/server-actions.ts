@@ -6,6 +6,7 @@ import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/ent
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
 import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -22,6 +23,8 @@ import {
 import { and, count, desc, eq, inArray, isNotNull, isNull, max } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
+const SUITE_NAME_MAX_LENGTH = 200;
+
 type GetTestSuitesParams = {
   projectId: string;
   limits?: { offset: number; limit: number };
@@ -37,8 +40,13 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     const storageError = await checkStorageLimit(input.projectId);
     if (storageError) return storageError;
 
+    const name = toValidName(input.title, SUITE_NAME_MAX_LENGTH);
+    if (!name) {
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.NAME_REQUIRED] } };
+    }
+
     const db = getDatabase();
-    const dto = toCreateTestSuiteDTO(input);
+    const dto = toCreateTestSuiteDTO({ ...input, title: name });
     const id = uuidv7();
 
     const [inserted] = await db
@@ -269,7 +277,11 @@ export const updateTestSuite = async (
     };
 
     if (updateFields.title !== undefined) {
-      updateData.name = updateFields.title;
+      const name = toValidName(updateFields.title, SUITE_NAME_MAX_LENGTH);
+      if (!name) {
+        return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.NAME_REQUIRED] } };
+      }
+      updateData.name = name;
     }
     if (updateFields.description !== undefined) {
       updateData.description = updateFields.description;

@@ -7,10 +7,13 @@ import { createProjectSessionToken } from '@/access/lib/project-session';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { ProjectDomain } from '@/entities/project';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { toValidName } from '@/shared/lib/normalize-name';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { eq } from 'drizzle-orm';
+
+const PROJECT_NAME_MAX_LENGTH = 50;
 
 export type ProjectBasicInfo = Pick<
   ProjectDomain,
@@ -165,7 +168,13 @@ export const updateProject = async (
     const db = getDatabase();
 
     const updateData: Record<string, unknown> = { updated_at: new Date() };
-    if (data.name !== undefined) updateData.name = data.name;
+    if (data.name !== undefined) {
+      const name = toValidName(data.name, PROJECT_NAME_MAX_LENGTH);
+      if (!name) {
+        return { success: false, errors: { _project: ['프로젝트 이름을 입력해주세요.'] } };
+      }
+      updateData.name = name.replace(/s+/g, ' ');
+    }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.ownerName !== undefined) updateData.owner_name = data.ownerName;
 
