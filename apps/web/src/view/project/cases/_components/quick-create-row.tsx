@@ -34,6 +34,8 @@ export const QuickCreateRow = ({ projectId, selectedSuiteId }: QuickCreateRowPro
       { title, projectId, ...(suiteId ? { testSuiteId: suiteId } : {}) },
       {
         onError: (error) => {
+          // 다음 입력을 이어 쓰지 않았다면 실패한 제목을 되돌려 바로 재시도할 수 있게 한다.
+          if (inputRef.current && !inputRef.current.value) inputRef.current.value = title;
           toast.error(translateCaseErrors(t, error.message) || t('ui.createFailedFallback'));
         },
       }
