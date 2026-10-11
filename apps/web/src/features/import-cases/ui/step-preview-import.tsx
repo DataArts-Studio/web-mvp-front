@@ -9,6 +9,7 @@ import { AlertCircle, Check, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { importTestCases } from '../api/actions';
+import { buildImportPayload, mergeImportResult } from '../model/import-report';
 import { useImportWizard } from '../model/use-import-wizard';
 import { validateRows } from '../model/validator';
 import { ImportResultView } from './import-result';
@@ -70,18 +71,28 @@ export function StepPreviewImport({ projectId }: StepPreviewImportProps) {
     setStatus('importing');
     setError(null);
 
-    const validRows = validatedRows.filter((r) => r.isValid && r.mapped).map((r) => r.mapped!);
-
     const res = await importTestCases({
       projectId,
       suiteId: targetSuiteId,
-      rows: validRows,
-    });
+      rows: buildImportPayload(validatedRows),
+    }).catch(() => null);
+
+    if (!res) {
+      setStatus('error');
+      setError('가져오기에 실패했습니다. 다시 시도해주세요.');
+      toast.error('가져오기에 실패했습니다. 다시 시도해주세요.');
+      return;
+    }
 
     if (res.success) {
       setStatus('success');
-      setResult(res.data);
-      toast.success(res.message ?? `${res.data.success}건의 테스트케이스가 가져와졌습니다.`);
+      // 미리보기에서 걸러진 행까지 합쳐 행별 결과를 보여 준다 (#382).
+      setResult(mergeImportResult(res.data, validatedRows));
+      if (res.data.success > 0) {
+        toast.success(res.message ?? `${res.data.success}건의 테스트케이스가 가져와졌습니다.`);
+      } else {
+        toast.error('가져온 테스트케이스가 없습니다. 행별 오류를 확인해주세요.');
+      }
       // Invalidate relevant queries
       await queryClient.invalidateQueries({ queryKey: ['testCases'] });
       await queryClient.invalidateQueries({ queryKey: ['testSuites'] });
