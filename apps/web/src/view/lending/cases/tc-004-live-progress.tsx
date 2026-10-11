@@ -42,7 +42,8 @@ const FEED_SIZE = 3;
 
 /**
  * TC-004 시각물. 보이는 동안 실시간 활동 맨 위에 새 판정이 계속 밀려 들어오고,
- * 그 판정만큼 마일스톤 막대가 차오른다. 이벤트를 한 바퀴 돌면 새 실행처럼 처음부터 다시 쌓인다.
+ * 그 판정만큼 마일스톤 막대가 차오른다. 이벤트를 한 바퀴 돌면 하루가 지나 마감일이 하루 줄고,
+ * 새 실행처럼 처음부터 다시 쌓인다.
  */
 export const LiveProgress = ({
   status,
@@ -55,12 +56,17 @@ export const LiveProgress = ({
   const suites = t.raw('suites') as string[];
   const events = t.raw('events') as string[];
   const times = t.raw('times') as string[];
+  const days = t.raw('days') as string[];
   const isStarted = status !== 'idle';
   const [ref, inView] = useInView<HTMLDivElement>();
   const tick = useTicker(isStarted && inView && !reduceMotion, TICK_MS);
 
   // 가장 최근 이벤트 위치. 처음엔 앞의 세 개가 이미 쌓인 상태로 시작한다.
-  const latest = (tick + FEED_SIZE - 1) % events.length;
+  const step = tick + FEED_SIZE - 1;
+  const latest = step % events.length;
+  // 이벤트를 한 바퀴 돌 때마다 하루가 지나 마감일이 다가오고, D-DAY 다음엔 D-3 으로 돌아간다.
+  const dayIndex = Math.floor(step / events.length) % days.length;
+  const isUrgent = dayIndex >= days.length - 2;
   const feed = Array.from({ length: FEED_SIZE }, (_, i) => {
     const index = (latest - i + events.length) % events.length;
     return { index, text: events[index], time: times[i] };
@@ -78,7 +84,16 @@ export const LiveProgress = ({
       <div className="bg-bg-2 flex flex-col gap-4 rounded-md border border-white/10 p-4">
         <div className="flex items-center justify-between gap-3 text-xs">
           <span className="text-text-1 font-bold">{t('milestone')}</span>
-          <span className="shrink-0 font-bold text-[#F59E0B]">{t('dday')}</span>
+          <span
+            key={dayIndex}
+            className={cn(
+              'shrink-0 font-bold',
+              isUrgent ? 'text-system-red' : 'text-[#F59E0B]',
+              dayIndex > 0 && 'animate-landing-pop'
+            )}
+          >
+            {days[dayIndex]}
+          </span>
         </div>
         <ul className="flex flex-col gap-3">
           {suites.map((suite, i) => {

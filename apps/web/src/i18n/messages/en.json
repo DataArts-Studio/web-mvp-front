@@ -205,7 +205,7 @@
         "title": "See progress at a glance, in real time",
         "desc": "See who judged which case and how much of the milestone is left, without refreshing.",
         "milestone": "Milestone v2.4 · Login revamp",
-        "dday": "D-3",
+        "days": ["D-3", "D-2", "D-1", "D-DAY"],
         "suites": ["Login", "Payment", "Profile"],
         "feedTitle": "Live activity",
         "events": [
