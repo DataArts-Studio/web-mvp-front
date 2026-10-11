@@ -55,6 +55,16 @@ describe('BackOfficeLayout', () => {
     expect(button.closest('form')).not.toBeNull();
   });
 
+  it('작은 화면용 상단 바에도 로그아웃 폼 버튼이 있고, 큰 화면에서는 숨겨진다', () => {
+    render(<BackOfficeLayout navItems={navItems}>본문</BackOfficeLayout>);
+
+    const topBar = screen.getByRole('banner', { name: 'Back office 상단 바' });
+    expect(topBar).toHaveClass('lg:hidden');
+    const button = within(topBar).getByRole('button', { name: '로그아웃' });
+    expect(button).toHaveAttribute('type', 'submit');
+    expect(button.closest('form')).not.toBeNull();
+  });
+
   it('navigation 랜드마크가 main 안에 중첩되지 않는다', () => {
     render(<BackOfficeLayout navItems={navItems}>본문</BackOfficeLayout>);
 

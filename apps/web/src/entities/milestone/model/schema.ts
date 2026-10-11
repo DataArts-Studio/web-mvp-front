@@ -8,6 +8,7 @@ export const MilestoneDtoSchema = z.object({
   project_id: z.uuidv7(),
   name: z
     .string({ error: 'test error' })
+    .trim()
     .min(1, '마일스톤 이름은 최소 1글자 이상이어야 합니다.')
     .max(50, '마일스톤 이름은 50자를 초과할 수 없습니다.'),
   description: z.string().max(500, '설명은 500자를 초과할 수 없습니다.').optional(),
@@ -31,6 +32,7 @@ export const CreateMilestoneDtoSchema = MilestoneDtoSchema.omit({
 export const CreateMilestoneSchema = z.object({
   title: z
     .string()
+    .trim()
     .min(1, '마일스톤 이름을 입력해주세요.')
     .max(50, '마일스톤 이름은 50자를 초과할 수 없습니다.'),
   projectId: z.uuidv7(),

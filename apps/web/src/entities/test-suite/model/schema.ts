@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const TestSuiteDtoSchema = z.object({
   id: z.uuidv7({ error: 'uuidv7 test error' }),
-  name: z.string({ error: 'test error' }).min(3, '최소 3자 이상').max(200, '최대 200 이하'),
+  name: z.string({ error: 'test error' }).trim().min(3, '최소 3자 이상').max(200, '최대 200 이하'),
   description: z.string().optional(),
   project_id: z.uuidv7(),
   sort_order: z.int(),
@@ -22,7 +22,7 @@ export const CreateTestSuiteDtoSchema = TestSuiteDtoSchema.omit({
 });
 
 export const CreateTestSuiteSchema = z.object({
-  title: z.string({ error: 'test error' }).min(3, '최소 3자 이상').max(200, '최대 200 이하'),
+  title: z.string({ error: 'test error' }).trim().min(3, '최소 3자 이상').max(200, '최대 200 이하'),
   projectId: z.uuidv7(),
   description: z.string().optional(),
   sortOrder: z.int().optional(),

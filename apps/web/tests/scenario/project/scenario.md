@@ -186,9 +186,9 @@ Step 2에서 식별번호와 식별번호 확인이 일치하지 않으면 생�
 ### 구현 메모 (두 이탈 시나리오 공통)
 
 - 모달은 `role="dialog"` + `aria-modal="true"` + `aria-labelledby="create-project-title"` 보유. 닫힘은 `getByRole('dialog')` 부재로 단언한다.
-- 이탈 경로는 4가지: ① backdrop 클릭(`step < 4`) ② Step 1 `돌아가기`(text 버튼) ③ Step 2 우상단 `닫기`(X, `aria-label="닫기"`) ④ Step 3 `취소`. 네 경로 모두 부모 `LendingCta`의 `onClick`으로 모달을 언마운트한다.
+- 이탈 경로는 4가지: ① backdrop 클릭(`step < 4`) ② Step 1 `돌아가기`(text 버튼) ③ Step 2 우상단 `닫기`(X, `aria-label="닫기"`) ④ Step 3 `취소`. 네 경로 모두 부모 `StartButton`의 `onClick`으로 모달을 언마운트한다.
 - **ESC 핸들러가 없다** → ESC 이탈 시나리오는 작성하지 않는다(작성 시 항상 실패). suite 모달과 달리 포커스 트랩/ESC가 적용돼 있지 않다.
 - 분석 이벤트: backdrop·Step 2 `닫기`·Step 3 `취소`는 `PROJECT_CREATE_EVENTS.ABANDON { step }`을 전송한다. **Step 1 `돌아가기`만 ABANDON 트래킹 없이 단순 close** — 트래킹까지 단언하려면 경로별로 분기한다.
 - Step 4(성공) 화면은 이미 프로젝트가 생성된 상태라 이탈이 아니다. 이 단계에서 backdrop을 클릭해도 ABANDON 트래킹은 일어나지 않고 모달만 닫힌다.
-- `LendingCta`가 `{isCreateModalOpen && <ProjectCreateForm/>}` 조건부 렌더이므로, 닫으면 언마운트되고 재진입 시 `step`·`useForm`이 초기화된다. "재진입 시 Step 1 빈 폼" 단언의 근거.
+- `StartButton`이 `{isCreateModalOpen && <ProjectCreateForm/>}` 조건부 렌더이므로, 닫으면 언마운트되고 재진입 시 `step`·`useForm`이 초기화된다. "재진입 시 Step 1 빈 폼" 단언의 근거.
 - 트리거 버튼 텍스트는 `무료로 시작하기`(`aria-label="무료로 프로젝트 생성 시작하기"`). backdrop은 dialog 박스와 형제인 overlay 요소이므로, 박스 바깥 영역을 클릭해야 닫힌다(박스 위 클릭은 닫히지 않음).

@@ -12,6 +12,7 @@ import {
 } from '@/entities/milestone';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -36,6 +37,8 @@ type GetMilestonesParams = {
 /**
  * 프로젝트의 모든 마일스톤을 가져옵니다.
  */
+const MILESTONE_NAME_MAX_LENGTH = 50;
+
 export const getMilestones = async ({
   projectId,
 }: GetMilestonesParams): Promise<ActionResult<MilestoneWithStats[]>> => {
@@ -266,8 +269,13 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
     const storageError = await checkStorageLimit(input.projectId);
     if (storageError) return storageError;
 
+    const name = toValidName(input.title, MILESTONE_NAME_MAX_LENGTH);
+    if (!name) {
+      return { success: false, errors: { _milestone: ['마일스톤 이름을 입력해주세요.'] } };
+    }
+
     const db = getDatabase();
-    const dto = toCreateMilestoneDTO(input);
+    const dto = toCreateMilestoneDTO({ ...input, title: name });
     const id = uuidv7();
 
     const [inserted] = await db
@@ -330,7 +338,11 @@ export const updateMilestone = async (
     };
 
     if (updateFields.title !== undefined) {
-      setData.name = updateFields.title;
+      const name = toValidName(updateFields.title, MILESTONE_NAME_MAX_LENGTH);
+      if (!name) {
+        return { success: false, errors: { _milestone: ['마일스톤 이름을 입력해주세요.'] } };
+      }
+      setData.name = name;
     }
     if (updateFields.description !== undefined) {
       setData.description = updateFields.description;
@@ -581,7 +593,7 @@ export const addTestSuitesToMilestone = async (
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
-    // 붙일 케이스가 모두 마일스톤과 같은 프로젝트 소속이어야 한다. 마일스톤에 연결된 실행으로
+    // 붙일 스위트가 모두 마일스톤과 같은 프로젝트 소속이어야 한다. 마일스톤에 연결된 실행으로
     // 곧바로 동기화되므로, 섞인 배열은 첫 쓰기 전에 통째로 거부한다.
     const parsedIds = z.array(z.string().uuid()).min(1).safeParse(rawIds);
     if (!parsedIds.success) {
@@ -622,12 +634,14 @@ export const addTestSuitesToMilestone = async (
       }
 
       // Get individual test cases from the added suites
+      // 스위트를 가리키는 다른 프로젝트 케이스가 있어도 실행에 섞이지 않게 프로젝트로 한 번 더 좁힌다.
       const suiteCaseRows = await db
         .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
         .from(testCases)
         .where(
           and(
             inArray(testCases.test_suite_id, testSuiteIds),
+            eq(testCases.project_id, ms.projectId),
             eq(testCases.lifecycle_status, 'ACTIVE')
           )
         );

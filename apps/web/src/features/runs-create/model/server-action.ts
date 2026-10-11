@@ -94,10 +94,13 @@ export const createTestRunAction = async (input: CreateRunInput) => {
       });
 
       // 1. Create the main test run entry and link the selected milestone
+      // 마일스톤 목록·상세·대시보드 집계와 실행 출처 표시는 test_runs.milestone_id 를 읽으므로
+      // 연결 테이블과 함께 반드시 채운다 (#373).
       const [run] = await tx
         .insert(testRuns)
         .values({
           project_id,
+          milestone_id,
           name,
           description,
         })

@@ -82,7 +82,7 @@ vi.mock('drizzle-orm', () => ({
 describe('createProject', () => {
   const mockInput = {
     projectName: 'Test Project',
-    identifier: 'test-identifier-123',
+    identifier: 'test-ident-123',
     description: '테스트 설명',
     ownerName: '홍길동',
   };
@@ -136,6 +136,20 @@ describe('createProject', () => {
         name: 'Test Project',
       })
     );
+  });
+
+  it('공백만 있는 프로젝트명은 저장하지 않고 거부한다', async () => {
+    const result = await createProject({ ...mockInput, projectName: '   ' });
+
+    expect(result.success).toBe(false);
+    expect(mockValues).not.toHaveBeenCalled();
+  });
+
+  it('식별번호 길이 규칙을 서버에서도 검증한다', async () => {
+    const result = await createProject({ ...mockInput, identifier: 'short' });
+
+    expect(result.success).toBe(false);
+    expect(mockValues).not.toHaveBeenCalled();
   });
 
   it('inserted가 없을 경우 success: false와 에러를 반환한다', async () => {

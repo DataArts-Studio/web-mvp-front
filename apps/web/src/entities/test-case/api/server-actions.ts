@@ -1,6 +1,6 @@
 'use server';
 
-import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
+import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
 import { createVersionSnapshot } from '@/entities/test-case-version/api/create-version-snapshot';
@@ -11,6 +11,7 @@ import {
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -24,6 +25,22 @@ import {
 } from '@testea/db';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+
+/**
+ * 케이스에 붙일 스위트·섹션이 케이스 프로젝트 소속인지 확인한다.
+ * 스위트에 연결된 실행으로 케이스가 곧바로 동기화되므로, 다른 프로젝트 ID 는 쓰기 전에 거부한다.
+ */
+async function caseLinksBelongTo(
+  projectId: string,
+  suiteId: string | null | undefined,
+  sectionId: string | null | undefined
+): Promise<boolean> {
+  if (suiteId && !(await belongsToProject('testSuite', suiteId, projectId))) return false;
+  if (sectionId && !(await belongsToProject('section', sectionId, projectId))) return false;
+  return true;
+}
+
+const CASE_NAME_MAX_LENGTH = 200;
 
 type getTestCasesParams = {
   project_id: string;
@@ -278,10 +295,18 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     if (!hasAccess) {
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
+    if (!(await caseLinksBelongTo(input.projectId, input.testSuiteId, input.sectionId))) {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
+    }
     if (storageError) return storageError;
 
+    const name = toValidName(input.title, CASE_NAME_MAX_LENGTH);
+    if (!name) {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NAME_REQUIRED] } };
+    }
+
     const db = getDatabase();
-    const dto = toCreateTestCaseDTO(input);
+    const dto = toCreateTestCaseDTO({ ...input, title: name });
     const id = uuidv7();
     const now = new Date();
 
@@ -594,6 +619,15 @@ export const updateTestCase = async (
     if (!existing?.project_id || !(await requireProjectAccess(existing.project_id))) {
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
+    if (
+      !(await caseLinksBelongTo(
+        existing.project_id,
+        updateFields.testSuiteId,
+        updateFields.sectionId
+      ))
+    ) {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
+    }
 
     const storageError = await checkStorageLimit(existing.project_id);
     if (storageError) return storageError;
@@ -603,7 +637,11 @@ export const updateTestCase = async (
     };
 
     if (updateFields.title !== undefined) {
-      updateData.name = updateFields.title;
+      const name = toValidName(updateFields.title, CASE_NAME_MAX_LENGTH);
+      if (!name) {
+        return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NAME_REQUIRED] } };
+      }
+      updateData.name = name;
     }
     if (updateFields.testSuiteId !== undefined) {
       updateData.test_suite_id = updateFields.testSuiteId;

@@ -1,5 +1,6 @@
 'use server';
 
+import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
@@ -70,6 +71,10 @@ export async function runAutomatedTest(
   try {
     // 1) 접근 가드
     if (!(await requireProjectAccess(params.projectId))) {
+      return fail('접근 권한이 없습니다.');
+    }
+    // 결과를 기록할 Run 도 같은 프로젝트 소속이어야 한다. 캡처·LLM·러너 호출 전에 막는다.
+    if (!(await belongsToProject('testRun', params.runId, params.projectId))) {
       return fail('접근 권한이 없습니다.');
     }
 

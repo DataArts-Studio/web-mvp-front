@@ -12,7 +12,7 @@ type UpdateTestCaseMessages = {
 export const createUpdateTestCaseSchema = (messages: UpdateTestCaseMessages) =>
   z.object({
     id: z.string().uuid(),
-    title: z.string().min(1, messages.titleMin).max(200, messages.titleMax),
+    title: z.string().trim().min(1, messages.titleMin).max(200, messages.titleMax),
     testSuiteId: z.string().uuid().nullable().optional(),
     testType: z.string().optional(),
     tags: z
