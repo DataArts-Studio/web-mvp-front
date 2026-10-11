@@ -5,6 +5,7 @@ import { cn } from '@testea/util';
 import type { DetectedFormat } from '../model/schema';
 
 const FORMAT_LABELS: Record<Exclude<DetectedFormat, 'generic'>, string> = {
+  testea: 'Testea',
   testrail: 'TestRail',
   qase: 'Qase',
 };

@@ -124,6 +124,118 @@ export const getTestCases = async ({
   }
 };
 
+/** 케이스 목록·내보내기가 같은 필터를 쓰도록 WHERE 조건을 한곳에서 만든다. */
+function buildCaseListWhere(
+  projectId: string,
+  { search, suiteId }: { search?: string; suiteId?: string }
+) {
+  const conditions = [
+    eq(testCases.project_id, projectId),
+    eq(testCases.lifecycle_status, 'ACTIVE'),
+  ];
+
+  if (suiteId === '__uncategorized__') {
+    conditions.push(sql`${testCases.test_suite_id} IS NULL`);
+  } else if (suiteId && suiteId !== 'all') {
+    conditions.push(eq(testCases.test_suite_id, suiteId));
+  }
+
+  if (search?.trim()) {
+    const keyword = `%${search.trim()}%`;
+    conditions.push(or(ilike(testCases.name, keyword), ilike(testCases.case_key, keyword))!);
+  }
+
+  return and(...conditions);
+}
+
+/** 목록 화면의 정렬 값을 ORDER BY 로 바꾼다. */
+function buildCaseListOrder(sort: string) {
+  if (sort === 'custom') return [asc(testCases.sort_order), asc(testCases.created_at)];
+  const [sortField, sortOrder] = sort.split('-') as [string, 'asc' | 'desc'];
+  const sortColumn =
+    sortField === 'title'
+      ? testCases.name
+      : sortField === 'createdAt'
+        ? testCases.created_at
+        : testCases.updated_at;
+  return [(sortOrder === 'asc' ? asc : desc)(sortColumn)];
+}
+
+/** 한 번에 내보낼 수 있는 최대 건수. 가져오기 한도(2,000건)보다 넉넉히 둔다. */
+const CASE_EXPORT_LIMIT = 10000;
+
+type GetTestCasesForExportParams = {
+  project_id: string;
+  sort?: string;
+  search?: string;
+  suiteId?: string;
+};
+
+/**
+ * CSV 내보내기용: 현재 필터에 맞는 케이스 전체를 모든 필드와 함께 돌려준다.
+ * 목록은 페이지 단위로만 받아 와서, 이전에는 보이는 15건만 내보내졌다 (#382).
+ */
+export const getTestCasesForExport = async ({
+  project_id,
+  sort = 'updatedAt-desc',
+  search,
+  suiteId,
+}: GetTestCasesForExportParams): Promise<
+  ActionResult<{ items: TestCase[]; truncated: boolean }>
+> => {
+  try {
+    if (!(await canAccess('project', project_id))) return ACCESS_DENIED;
+
+    const db = getDatabase();
+    // 한도보다 하나 더 읽어, 잘렸는지 알려 줄 수 있게 한다.
+    const fetched = await db
+      .select()
+      .from(testCases)
+      .where(buildCaseListWhere(project_id, { search, suiteId }))
+      .orderBy(...buildCaseListOrder(sort))
+      .limit(CASE_EXPORT_LIMIT + 1);
+    const truncated = fetched.length > CASE_EXPORT_LIMIT;
+    const rows = truncated ? fetched.slice(0, CASE_EXPORT_LIMIT) : fetched;
+    const latestStatuses = await getLatestResultStatuses(
+      db,
+      rows.map((row) => row.id)
+    );
+
+    return {
+      success: true,
+      data: {
+        truncated,
+        items: rows.map((row) => ({
+          id: row.id,
+          projectId: row.project_id ?? '',
+          testSuiteId: row.test_suite_id ?? undefined,
+          sectionId: row.section_id ?? null,
+          displayId: row.display_id ?? 0,
+          caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
+          title: row.name,
+          testType: row.test_type ?? '',
+          tags: row.tags ?? [],
+          preCondition: row.pre_condition ?? '',
+          testSteps: row.steps ?? '',
+          expectedResult: row.expected_result ?? '',
+          sortOrder: row.sort_order ?? 0,
+          resultStatus: latestStatuses.get(row.id) ?? 'untested',
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          archivedAt: row.archived_at ?? null,
+          lifecycleStatus: row.lifecycle_status,
+        })),
+      },
+    };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'getTestCasesForExport' } });
+    return {
+      success: false,
+      errors: { _testCase: [CASE_MESSAGE_CODES.LOAD_FAILED] },
+    };
+  }
+};
+
 export type PaginationInfo = {
   page: number;
   size: number;
@@ -159,24 +271,7 @@ export const getTestCasesList = async ({
 
     const db = getDatabase();
 
-    // WHERE 조건 구성
-    const conditions = [
-      eq(testCases.project_id, project_id),
-      eq(testCases.lifecycle_status, 'ACTIVE'),
-    ];
-
-    if (suiteId === '__uncategorized__') {
-      conditions.push(sql`${testCases.test_suite_id} IS NULL`);
-    } else if (suiteId && suiteId !== 'all') {
-      conditions.push(eq(testCases.test_suite_id, suiteId));
-    }
-
-    if (search?.trim()) {
-      const keyword = `%${search.trim()}%`;
-      conditions.push(or(ilike(testCases.name, keyword), ilike(testCases.case_key, keyword))!);
-    }
-
-    const whereClause = and(...conditions);
+    const whereClause = buildCaseListWhere(project_id, { search, suiteId });
 
     // COUNT 쿼리
     const [countResult] = await db
@@ -188,20 +283,6 @@ export const getTestCasesList = async ({
     const totalPages = Math.max(1, Math.ceil(totalItems / size));
     const safePage = Math.min(Math.max(1, page), totalPages);
     const offset = (safePage - 1) * size;
-
-    // ORDER BY 구성
-    const isCustomSort = sort === 'custom';
-    const [sortField, sortOrder] = isCustomSort
-      ? ['sortOrder', 'asc']
-      : (sort.split('-') as [string, 'asc' | 'desc']);
-    const sortColumn = isCustomSort
-      ? testCases.sort_order
-      : sortField === 'title'
-        ? testCases.name
-        : sortField === 'createdAt'
-          ? testCases.created_at
-          : testCases.updated_at;
-    const orderFn = sortOrder === 'asc' ? asc : desc;
 
     // 데이터 쿼리
     const rows = await db
@@ -222,11 +303,7 @@ export const getTestCasesList = async ({
       })
       .from(testCases)
       .where(whereClause)
-      .orderBy(
-        ...(isCustomSort
-          ? [asc(testCases.sort_order), asc(testCases.created_at)]
-          : [orderFn(sortColumn)])
-      )
+      .orderBy(...buildCaseListOrder(sort))
       .limit(size)
       .offset(offset);
     const latestStatuses = await getLatestResultStatuses(
