@@ -40,13 +40,15 @@ const useScrollProgress = (
   reduceMotion: boolean
 ) => {
   const [progress, setProgress] = React.useState(0);
+  // 동작 줄이기 설정이 바뀌어 효과가 다시 실행돼도 이미 통과한 진행도부터 이어서 판정한다.
+  const passedRef = React.useRef(0);
 
   React.useEffect(() => {
     if (reduceMotion) return;
     let frame = 0;
-    let current = 0;
     const check = () => {
       frame = 0;
+      const current = passedRef.current;
       if (current >= CASE_IDS.length) return;
       // 바로 위 행이 펼쳐지는 중이면 스크롤이 멈춰 있어도 다음 프레임에 다시 본다.
       if (isExpanding(anchors.current[current - 1])) {
@@ -57,8 +59,8 @@ const useScrollProgress = (
       if (!el) return;
       const rect = el.getBoundingClientRect();
       if (rect.top + rect.height / 2 >= window.innerHeight * PASS_LINE) return;
-      current += 1;
-      setProgress(current);
+      passedRef.current = current + 1;
+      setProgress(current + 1);
       // 새로 진행 중이 된 행이 펼쳐지는 동안과 그 뒤를 이어서 판정한다(이미 지나쳐 내려간 경우).
       frame = requestAnimationFrame(check);
     };
