@@ -8,10 +8,12 @@ import { CreateTestSuiteSchema } from '@/entities/test-suite';
 import type { CreateTestSuite } from '@/entities/test-suite';
 import { useCreateSuite } from '@/features/suites-create';
 import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
+import { translateErrorCodes } from '@/shared/lib/translate-error-codes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DSButton, LoadingSpinner } from '@testea/ui';
 import { FormField } from '@testea/ui';
 import { cn } from '@testea/util';
+import { toast } from 'sonner';
 
 interface SuiteCreateFormProps {
   projectId: string;
@@ -43,8 +45,9 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
         track(TESTSUITE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onClose?.();
       },
-      onError: () => {
+      onError: (error) => {
         track(TESTSUITE_EVENTS.CREATE_FAIL, { project_id: projectId });
+        toast.error(translateErrorCodes(t, error.message, t('messages.CREATE_FAILED')));
       },
     });
   };

@@ -22,7 +22,7 @@ const createTestCaseFormSchema = (titleRequiredMessage: string) =>
   z.object({
     projectId: z.string().uuid(),
     testSuiteId: z.string().uuid().nullable().optional(),
-    title: z.string().min(1, titleRequiredMessage),
+    title: z.string().trim().min(1, titleRequiredMessage),
     testType: z.string().optional(),
     tags: z.array(z.string().max(30)).max(10).optional(),
     preCondition: z.string().optional(),
@@ -46,7 +46,7 @@ export const TestCaseDetailForm = ({
   defaultSuiteId,
 }: TestCaseDetailFormProps) => {
   const t = useTranslations('cases');
-  const { mutate } = useCreateCase();
+  const { mutate, isPending } = useCreateCase();
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(projectId),
@@ -85,12 +85,14 @@ export const TestCaseDetailForm = ({
       tags: data.tags?.length ? data.tags : undefined,
     };
 
-    // optimistic update로 즉시 반영 → 폼 바로 닫기
-    track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
-    onSuccess?.();
-    onClose();
-
+    // 목록은 optimistic update 로 바로 반영하되, 폼은 저장이 끝난 뒤에 닫는다.
+    // 먼저 닫으면 폼이 언마운트되어 아래 onError 가 호출되지 않고 입력도 사라진다 (#371).
     mutate(payload, {
+      onSuccess: () => {
+        track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
+        onSuccess?.();
+        onClose();
+      },
       onError: (error) => {
         track(TESTCASE_EVENTS.CREATE_FAIL, { project_id: projectId });
         toast.error(translateCaseErrors(t, error.message) || t('ui.createFailedFallback'));
@@ -206,11 +208,11 @@ export const TestCaseDetailForm = ({
 
         {/* Actions - 스크롤 영역 밖 */}
         <div className="border-line-2 flex shrink-0 justify-end gap-3 border-t px-6 py-4">
-          <DSButton type="button" variant="ghost" onClick={handleAbandon}>
+          <DSButton type="button" variant="ghost" disabled={isPending} onClick={handleAbandon}>
             {t('ui.cancel')}
           </DSButton>
-          <DSButton type="submit" form="test-case-form" variant="solid">
-            {t('ui.createCase')}
+          <DSButton type="submit" form="test-case-form" variant="solid" disabled={isPending}>
+            {isPending ? t('ui.creatingShort') : t('ui.createCase')}
           </DSButton>
         </div>
       </section>

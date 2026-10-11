@@ -22,6 +22,7 @@ import {
 import { MILESTONE_EVENTS, track } from '@/shared/lib/analytics';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { useUpdateMilestone } from '../hooks';
 import { UpdateMilestone, UpdateMilestoneSchema } from '../model';
@@ -127,21 +128,21 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
             (id) => !selectedSuiteIds.has(id)
           );
 
-          // 케이스 추가/삭제
+          // 케이스·스위트 범위 변경. 실패한 요청이 있으면 창을 닫지 않고 알린다 (#371).
+          const scopeResults = [];
           if (casesToAdd.length > 0) {
-            await addTestCasesToMilestone(milestone.id, casesToAdd);
+            scopeResults.push(await addTestCasesToMilestone(milestone.id, casesToAdd));
           }
           for (const caseId of casesToRemove) {
-            await removeTestCaseFromMilestone(milestone.id, caseId);
+            scopeResults.push(await removeTestCaseFromMilestone(milestone.id, caseId));
           }
-
-          // 스위트 추가/삭제
           if (suitesToAdd.length > 0) {
-            await addTestSuitesToMilestone(milestone.id, suitesToAdd);
+            scopeResults.push(await addTestSuitesToMilestone(milestone.id, suitesToAdd));
           }
           for (const suiteId of suitesToRemove) {
-            await removeTestSuiteFromMilestone(milestone.id, suiteId);
+            scopeResults.push(await removeTestSuiteFromMilestone(milestone.id, suiteId));
           }
+          const scopeFailed = scopeResults.some((result) => !result.success);
 
           // 쿼리 무효화
           await Promise.all([
@@ -155,10 +156,17 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
             queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
           ]);
 
+          if (scopeFailed) {
+            toast.error(
+              '마일스톤 정보는 저장했지만 케이스·스위트 범위 일부를 저장하지 못했습니다.'
+            );
+            return;
+          }
           onClose?.();
         },
-        onError: () => {
+        onError: (error) => {
           track(MILESTONE_EVENTS.UPDATE_FAIL, { milestone_id: milestone.id });
+          toast.error(error.message || '마일스톤을 수정하지 못했습니다.');
         },
       });
     } finally {

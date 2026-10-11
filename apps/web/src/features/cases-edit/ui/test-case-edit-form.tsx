@@ -32,7 +32,7 @@ interface TestCaseEditFormProps {
 
 export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditFormProps) => {
   const t = useTranslations('cases');
-  const { mutate } = useUpdateCase();
+  const { mutate, isPending } = useUpdateCase();
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(testCase.projectId),
@@ -75,14 +75,16 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   });
 
   const onSubmit = (data: UpdateTestCase) => {
-    // optimistic update로 즉시 반영 → 폼 바로 닫기
-    track(TESTCASE_EVENTS.UPDATE, { case_id: testCase.id });
-    onSuccess?.();
-    onClose();
-
+    // 상세는 optimistic update 로 바로 반영하되, 폼은 저장이 끝난 뒤에 닫는다.
+    // 먼저 닫으면 실패했을 때 수정한 내용이 사라진다 (#371).
     mutate(
       { ...data, projectId: testCase.projectId },
       {
+        onSuccess: () => {
+          track(TESTCASE_EVENTS.UPDATE, { case_id: testCase.id });
+          onSuccess?.();
+          onClose();
+        },
         onError: (error) => {
           track(TESTCASE_EVENTS.UPDATE_FAIL, { case_id: testCase.id });
           toast.error(translateCaseErrors(t, error.message) || t('ui.updateFailedFallback'));
@@ -149,11 +151,11 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
 
           {/* Actions */}
           <div className="border-line-2 flex justify-end gap-3 border-t pt-6">
-            <DSButton type="button" variant="ghost" onClick={handleAbandon}>
+            <DSButton type="button" variant="ghost" disabled={isPending} onClick={handleAbandon}>
               {t('ui.cancel')}
             </DSButton>
-            <DSButton type="submit" variant="solid">
-              {t('ui.editCase')}
+            <DSButton type="submit" variant="solid" disabled={isPending}>
+              {isPending ? t('ui.savingShort') : t('ui.editCase')}
             </DSButton>
           </div>
         </form>
