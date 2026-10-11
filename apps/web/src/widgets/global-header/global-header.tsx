@@ -32,7 +32,7 @@ export const GlobalHeader = () => {
       <header
         role="banner"
         aria-label={t('ariaBanner')}
-        className={`fixed right-0 left-0 z-10 flex h-16 items-center justify-between px-12 transition-[top] duration-200 ${
+        className={`fixed right-0 left-0 z-10 flex h-16 items-center justify-between px-4 transition-[top] duration-200 md:px-12 ${
           isBannerVisible ? 'top-10' : 'top-0'
         }`}
       >
@@ -43,15 +43,24 @@ export const GlobalHeader = () => {
           className="flex items-center space-x-2 text-xl font-bold text-teal-400"
           onClick={() => track(NAVIGATION_EVENTS.LOGO_CLICK)}
         >
-          <Image src="/logo.svg" alt={t('logoAlt')} width={120} height={28} />
+          <Image
+            src="/logo.svg"
+            alt={t('logoAlt')}
+            width={120}
+            height={28}
+            className="h-auto w-24 md:w-[120px]"
+          />
         </Link>
 
         {/* Navigation */}
-        <nav aria-label={t('navAria')} className="flex items-center gap-6">
+        <nav
+          aria-label={t('navAria')}
+          className="flex items-center gap-4 whitespace-nowrap md:gap-6"
+        >
           <Link
             href="/docs"
             aria-label={t('docsLinkAria')}
-            className="text-body2 text-text-2 hover:text-primary transition-colors"
+            className="text-body2 text-text-2 hover:text-primary transition-colors max-md:hidden"
             onClick={() => track(NAVIGATION_EVENTS.DOCS_CLICK)}
           >
             {t('docs')}
@@ -59,7 +68,7 @@ export const GlobalHeader = () => {
           <a
             href="https://qaground.gettestea.com"
             aria-label={t('qagroundAria')}
-            className="text-body2 text-text-2 hover:text-primary transition-colors"
+            className="text-body2 text-text-2 hover:text-primary transition-colors max-md:hidden"
             onClick={() => track(NAVIGATION_EVENTS.NAV_CLICK, { menu_label: 'qaground' })}
           >
             {t('qaground')}

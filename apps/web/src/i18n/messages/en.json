@@ -95,66 +95,255 @@
   "lending": {
     "documentAria": "Testea landing page",
     "mainAria": "Main content",
+    "progressAria": "Page scroll progress",
     "hero": {
       "sectionAria": "Service description",
-      "titleLine1": "Write test cases",
-      "titleHighlight": "in just 5 minutes.",
-      "titleLine2": "",
-      "subtitle": "Still copy-pasting test cases into spreadsheets<wbr></wbr>over and over?<br></br>With testea, the free QA tool, generate and manage<wbr></wbr>your test documents automatically in just a few clicks."
+      "eyebrowRun": "RUN #001",
+      "eyebrow": "Let's verify testea together, starting now",
+      "titleLine1": "Write test cases<mbr></mbr>",
+      "titleHighlight": "in just 5 minutes",
+      "titleLine2": ".",
+      "subtitle": "It's hard to picture from words alone.<br></br>Pass the 7 cases below one by one, and you're all set.",
+      "tryIt": "See it for yourself",
+      "scrollCue": "Scroll to check each case, starting with TC-001"
     },
     "cta": {
       "sectionAria": "Get started",
-      "buttonAria": "Start creating a project for free",
+      "buttonAria": "Start creating a free project",
       "button": "Start for free"
     },
-    "features": {
-      "sectionAria": "Introducing the testea QA tool",
-      "headingPrefix": "Why ",
-      "headingBrand": "testea",
-      "headingSuffix": "?",
-      "items": [
-        {
-          "title": "Test case management",
-          "description": "As a QA tool, testea lets you write and manage test cases systematically. Organize by section and see priorities and statuses at a glance."
+    "run": {
+      "sectionAria": "testea features",
+      "headId": "ID",
+      "headCase": "CASE",
+      "headStatus": "STATUS",
+      "expected": "Expected result",
+      "status": {
+        "idle": "Not run",
+        "running": "Running",
+        "passed": "Passed"
+      },
+      "complete": {
+        "lockedTitle": "Pass all {total} and you are ready",
+        "lockedDesc": "{count} cases left · No need to scroll to the end, you can start right now",
+        "doneTitle": "All set! Ready to start?",
+        "doneDesc": "All cases passed · You are ready to use testea",
+        "buttonAria": "Finish the cases and start using testea"
+      },
+      "tc001": {
+        "title": "Test cases come together in a few clicks",
+        "desc": "Cases scattered across spreadsheets get organized in a few clicks, ready to judge right away.",
+        "sheetCaption": "Your current sheet · TC_final_v3_really_final.xlsx",
+        "sheetHint": "↓ Scroll and testea will tidy up this sheet",
+        "sheetTags": ["Duplicate rows", "Results scattered across sheets", "Pass rate by hand"],
+        "sheet": {
+          "columns": ["ID", "Item", "Result", "Note"],
+          "rows": [
+            ["1", "Login (final)", "OK", ""],
+            ["2", "Login fails 5 times", "FAIL", "?? check"],
+            ["3", "Password reset", "", "Who owns this?"],
+            ["3", "Password reset (copy)", "OK", "Duplicate?"],
+            ["5", "Payment - card", "Hold", "Redo in v2"],
+            ["6", "Payment - coupon", "OK", ""]
+          ],
+          "formula": "=COUNTIF(C2:C7,\"OK\")/6",
+          "tabs": ["Sheet1", "Round 2", "Copy (2)", "Final"]
         },
-        {
-          "title": "Test run tracking",
-          "description": "Track QA progress in real time with testea's test runs. Record and share results such as pass, fail, and blocker instantly."
-        },
-        {
-          "title": "Project structure",
-          "description": "testea is a QA tool built for organized test management. Structure your tests by project, suite, and milestone, and manage them at a glance."
+        "runCaption": "All tidy · Now judge each case from the top",
+        "runTags": ["Unique case IDs", "Results grouped by run", "Automatic pass rate"],
+        "run": {
+          "title": "Sample run · Login",
+          "counter": "{done} / {total} judged",
+          "items": ["Login succeeds", "Lock after 5 wrong passwords", "Send password reset email"],
+          "pass": "Pass",
+          "fail": "Fail",
+          "blocked": "Blocked",
+          "waiting": "Waiting",
+          "hint": "Judge each case from the top",
+          "doneLabel": "Judged",
+          "summary": "All judged! Pass {pass} · Fail {fail} · Blocked {blocked}",
+          "retry": "Try again"
         }
-      ]
+      },
+      "tc002": {
+        "title": "Work with your team, no sign-up needed",
+        "desc": "Pick a project name and password, and your team joins with a single link.",
+        "step": "STEP {n}",
+        "steps": [
+          {
+            "label": "Project name",
+            "value": "login-revamp"
+          },
+          {
+            "label": "Password",
+            "value": "••••••••"
+          },
+          {
+            "label": "Share link",
+            "value": "gettestea.com/…"
+          }
+        ],
+        "joined": "3 teammates joined via the link"
+      },
+      "tc003": {
+        "title": "Add requirements and AI writes the scenarios",
+        "desc": "Paste a feature description to get a requirements analysis and draft test scenarios, ready to turn into cases.",
+        "requirementLabel": "REQUIREMENT",
+        "requirement": "Block access for 15 minutes after 5 wrong passwords. Show the remaining time while locked.",
+        "generate": "Generate scenarios",
+        "draftLabel": "SCENARIO DRAFT",
+        "draftCount": "{count} drafts",
+        "drafts": [
+          "Access with the correct password",
+          "Lock for 15 minutes after 5 failures",
+          "Show remaining lock time"
+        ],
+        "move": "Move to cases →",
+        "writing": "Writing…"
+      },
+      "tc004": {
+        "title": "See progress at a glance, in real time",
+        "desc": "See who judged which case and how much of the milestone is left, without refreshing.",
+        "milestone": "Milestone v2.4 · Login revamp",
+        "dday": "D-3",
+        "suites": ["Login", "Payment", "Profile"],
+        "feedTitle": "Live activity",
+        "events": [
+          "Jisu · marked TC-101 as passed",
+          "Doyun · started the payment suite run",
+          "Jisu · marked TC-102 as failed",
+          "Doyun · marked TC-205 as passed",
+          "Seoyeon · marked TC-301 as blocked",
+          "Seoyeon · marked TC-302 as passed"
+        ],
+        "times": ["just now", "1 min ago", "3 min ago"]
+      },
+      "tc005": {
+        "title": "Share run results with a single link",
+        "desc": "Create a read-only report link anyone can open without signing in, and show results to developers or planners right away.",
+        "runName": "Run · v2.4 login regression",
+        "runMeta": "22 cases · Today 14:20",
+        "share": "Create share link",
+        "link": "gettestea.com/share/runs/8f3k…",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "reportLabel": "SHARED REPORT",
+        "reportTitle": "v2.4 login regression",
+        "passRate": "Pass rate",
+        "counts": {
+          "pass": "Passed",
+          "fail": "Failed",
+          "blocked": "Blocked"
+        },
+        "expires": "Read-only · Expires in 7 days"
+      },
+      "tc006": {
+        "title": "CI automation results land in your runs",
+        "desc": "Tag your Playwright tests with case IDs, and every CI run sends its results into a testea run.",
+        "command": "$ npx playwright test",
+        "sent": "Sent 3 results to testea",
+        "runTitle": "Run · CI #482",
+        "auto": "Auto",
+        "waiting": "Waiting",
+        "pass": "Pass",
+        "fail": "Fail",
+        "cases": [
+          {
+            "id": "TC-101",
+            "title": "Login succeeds",
+            "time": "1.2s"
+          },
+          {
+            "id": "TC-102",
+            "title": "Lock after 5 wrong passwords",
+            "time": "2.4s"
+          },
+          {
+            "id": "TC-103",
+            "title": "Send password reset email",
+            "time": "3.1s"
+          }
+        ]
+      },
+      "tc007": {
+        "title": "Find which cases to automate first",
+        "desc": "Based on run history, frequently run cases with stable results are flagged as automation candidates, and cases with shaky results are flagged to stabilize first.",
+        "listLabel": "Last 6 runs",
+        "summary": "Found {count} automation candidates",
+        "scanning": "Reviewing run history…",
+        "kinds": {
+          "candidate": "Automate",
+          "flaky": "Stabilize first",
+          "sample": "Too few runs"
+        },
+        "cases": [
+          {
+            "id": "TC-101",
+            "title": "Login succeeds"
+          },
+          {
+            "id": "TC-205",
+            "title": "Card payment approved"
+          },
+          {
+            "id": "TC-301",
+            "title": "Change profile photo"
+          },
+          {
+            "id": "TC-118",
+            "title": "Send password reset email"
+          }
+        ]
+      }
     },
     "faq": {
-      "heading": "Frequently asked questions",
+      "label": "FAQ",
+      "heading": "Frequently Asked Questions",
+      "subtitle": "Check your questions one by one, just like cases.",
+      "listLabel": "QUESTIONS",
+      "verified": "Verified",
+      "answerLabel": "Answer",
+      "relatedLabel": "Related",
+      "prev": "Previous",
+      "next": "Next",
       "items": [
         {
           "question": "What kind of QA tool is testea?",
-          "answer": "testea is a free QA tool that lets you write test cases, run tests, and track results in one place. Manage your test documents systematically with testea instead of Excel or spreadsheets."
+          "answer": "testea is a free QA tool where you write test cases, run them, and track results in one place. Manage your test documents in an organized way instead of spreadsheets.",
+          "tags": ["Cases", "Runs", "Result tracking"]
         },
         {
-          "question": "Is testea free?",
-          "answer": "Yes, testea is a free QA tool. You can create a project and manage test cases right away, without signing up."
+          "question": "Is it really free?",
+          "answer": "Yes, it is free. Create a project and manage test cases right away, with no sign-up.",
+          "tags": ["Create a project", "No sign-up"]
         },
         {
           "question": "How is it different from other QA tools?",
-          "answer": "testea is a simple test management tool you can use right away without complex setup. Writing test cases, running tests, and tracking results: handle your QA work efficiently with an intuitive interface."
+          "answer": "You can use it right away without complex setup. Writing cases, running them, and tracking results flow together, so QA work gets done fast.",
+          "tags": ["No setup", "One flow"]
         },
         {
-          "question": "Why is software test management necessary?",
-          "answer": "Systematic test management is core to software quality assurance (QA). Documenting test cases and tracking run results helps you find bugs early and improve product quality."
+          "question": "Why do I need test management?",
+          "answer": "Documenting cases and tracking run results helps you catch bugs early and keep the same quality every release.",
+          "tags": ["Milestones", "Run history"]
         },
         {
-          "question": "Does testea generate test scenarios with AI?",
-          "answer": "Yes. Enter your requirements and testea AI generates a requirements analysis and a draft test scenario. You can derive test suites and cases directly from the generated scenario, greatly reducing QA preparation time."
+          "question": "Can AI create test scenarios?",
+          "answer": "Add your requirements and it drafts an analysis and test scenarios. You can turn the drafts into suites and cases right away.",
+          "tags": ["Requirements", "Scenario drafts"]
         },
         {
-          "question": "Can I manage tests based on requirements?",
-          "answer": "testea groups test scenarios by feature (requirement). You can trace which requirement is verified by which scenario and test case, which is useful for coverage management."
+          "question": "Can I manage tests by requirement?",
+          "answer": "Group scenarios and cases by feature (requirement) and track which requirements have been verified.",
+          "tags": ["Requirements", "Coverage"]
         }
-      ]
+      ],
+      "autoPause": "Pause auto-advance",
+      "autoPlay": "Resume auto-advance"
+    },
+    "footer": {
+      "tagline": "Write test cases in just 5 minutes.",
+      "end": "RUN #001 · END"
     }
   },
   "docs": {
