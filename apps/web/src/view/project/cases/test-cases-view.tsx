@@ -230,7 +230,6 @@ export const TestCasesView = () => {
             hasData={!!testCasesData}
             debouncedSearch={debouncedSearch}
             pagination={pagination}
-            queryParams={queryParams}
             onPageChange={handlePageChange}
             onResetFilters={handleResetFilters}
             onSelectCase={(id) => {

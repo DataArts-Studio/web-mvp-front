@@ -46,6 +46,8 @@ async function caseLinksBelongTo(
 }
 
 const CASE_NAME_MAX_LENGTH = 200;
+/** 케이스 커스텀 순서 간격. features/reorder 의 SORT_ORDER_GAP 과 같은 값이다. */
+const CASE_SORT_ORDER_GAP = 1000;
 
 type getTestCasesParams = {
   project_id: string;
@@ -325,10 +327,16 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
 
     const inserted = await db.transaction(async (tx) => {
       const [maxResult] = await tx
-        .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+        .select({
+          max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)`,
+          minSortOrder: sql<number | null>`MIN(${testCases.sort_order})`,
+        })
         .from(testCases)
         .where(eq(testCases.project_id, input.projectId));
       const nextDisplayId = (maxResult?.max ?? 0) + 1;
+      // 빠른 생성 입력과 낙관적 표시가 목록 맨 위라 새 케이스도 커스텀 순서 맨 위에 둔다 (#380).
+      const sortOrder =
+        input.sortOrder ?? (maxResult?.minSortOrder ?? CASE_SORT_ORDER_GAP) - CASE_SORT_ORDER_GAP;
 
       const [row] = await tx
         .insert(testCases)
@@ -337,6 +345,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
           ...dto,
           display_id: nextDisplayId,
           case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
+          sort_order: sortOrder,
           result_status: 'untested',
           created_at: now,
           updated_at: now,
