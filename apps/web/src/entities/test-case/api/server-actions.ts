@@ -150,7 +150,9 @@ function buildCaseListWhere(
 
 /** 목록 화면의 정렬 값을 ORDER BY 로 바꾼다. */
 function buildCaseListOrder(sort: string) {
-  if (sort === 'custom') return [asc(testCases.sort_order), asc(testCases.created_at)];
+  // 값이 같은 행끼리 순서가 페이지마다 달라지지 않도록 마지막에 id 로 고정한다 (#407).
+  if (sort === 'custom')
+    return [asc(testCases.sort_order), asc(testCases.created_at), asc(testCases.id)];
   const [sortField, sortOrder] = sort.split('-') as [string, 'asc' | 'desc'];
   const sortColumn =
     sortField === 'title'
@@ -158,7 +160,7 @@ function buildCaseListOrder(sort: string) {
       : sortField === 'createdAt'
         ? testCases.created_at
         : testCases.updated_at;
-  return [(sortOrder === 'asc' ? asc : desc)(sortColumn)];
+  return [(sortOrder === 'asc' ? asc : desc)(sortColumn), asc(testCases.id)];
 }
 
 /** 한 번에 내보낼 수 있는 최대 건수. 가져오기 한도(2,000건)보다 넉넉히 둔다. */
