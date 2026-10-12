@@ -87,6 +87,14 @@ export const RunCreateView = () => {
       return;
     }
 
+    // 케이스가 없는 마일스톤으로는 빈 실행만 생기므로 미리 막는다. 서버도 같은 검사를 한다 (#385).
+    if (selectedMilestone && selectedMilestone.totalCases === 0) {
+      toast.warning(
+        '선택한 마일스톤에 실행할 케이스가 없습니다. 스위트나 케이스를 먼저 추가해주세요.'
+      );
+      return;
+    }
+
     const input: CreateRunInput = {
       project_id: projectId,
       name: data.runName,
@@ -241,6 +249,12 @@ export const RunCreateView = () => {
                             <span>{progressStatusLabel[milestone.progressStatus] ?? '계획'}</span>
                             <span aria-hidden="true">/</span>
                             <span>{suiteCount}개 스위트</span>
+                            <span aria-hidden="true">/</span>
+                            <span
+                              className={milestone.totalCases === 0 ? 'text-system-red' : undefined}
+                            >
+                              {milestone.totalCases}개 케이스
+                            </span>
                             {(startDate || endDate) && (
                               <>
                                 <span aria-hidden="true">/</span>

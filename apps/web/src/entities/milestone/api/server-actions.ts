@@ -69,10 +69,20 @@ export const getMilestones = async ({
         .where(
           and(inArray(testRuns.milestone_id, milestoneIds), eq(testRuns.lifecycle_status, 'ACTIVE'))
         ),
+      // 휴지통 케이스는 마일스톤 케이스 수에서 뺀다. 실행 생성도 같은 기준이다 (#377, #385).
       db
-        .select()
+        .select({
+          milestone_id: milestoneTestCases.milestone_id,
+          test_case_id: milestoneTestCases.test_case_id,
+        })
         .from(milestoneTestCases)
-        .where(inArray(milestoneTestCases.milestone_id, milestoneIds)),
+        .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+        .where(
+          and(
+            inArray(milestoneTestCases.milestone_id, milestoneIds),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        ),
       db
         .select()
         .from(milestoneTestSuites)
