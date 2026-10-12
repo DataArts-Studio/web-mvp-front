@@ -150,7 +150,9 @@ function buildCaseListWhere(
 
 /** 목록 화면의 정렬 값을 ORDER BY 로 바꾼다. */
 function buildCaseListOrder(sort: string) {
-  if (sort === 'custom') return [asc(testCases.sort_order), asc(testCases.created_at)];
+  // 값이 같은 행끼리 순서가 페이지마다 달라지지 않도록 마지막에 id 로 고정한다 (#407).
+  if (sort === 'custom')
+    return [asc(testCases.sort_order), asc(testCases.created_at), asc(testCases.id)];
   const [sortField, sortOrder] = sort.split('-') as [string, 'asc' | 'desc'];
   const sortColumn =
     sortField === 'title'
@@ -158,7 +160,7 @@ function buildCaseListOrder(sort: string) {
       : sortField === 'createdAt'
         ? testCases.created_at
         : testCases.updated_at;
-  return [(sortOrder === 'asc' ? asc : desc)(sortColumn)];
+  return [(sortOrder === 'asc' ? asc : desc)(sortColumn), asc(testCases.id)];
 }
 
 /** 한 번에 내보낼 수 있는 최대 건수. 가져오기 한도(2,000건)보다 넉넉히 둔다. */
@@ -752,6 +754,10 @@ export const updateTestCase = async (
     if (!existing?.project_id || !(await requireProjectAccess(existing.project_id))) {
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
+    // 다른 탭에서 휴지통으로 보낸 케이스는 수정하지 않는다. 실행 동기화로 되살아나는 것도 막는다 (#408).
+    if (existing.lifecycle_status !== 'ACTIVE') {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] } };
+    }
     if (
       !(await caseLinksBelongTo(
         existing.project_id,
@@ -805,16 +811,17 @@ export const updateTestCase = async (
       updateData.sort_order = updateFields.sortOrder;
     }
 
+    // 확인과 저장 사이에 휴지통으로 가는 경우도 막도록 저장 조건에도 활성 상태를 둔다.
     const [updated] = await db
       .update(testCases)
       .set(updateData)
-      .where(eq(testCases.id, id))
+      .where(and(eq(testCases.id, id), eq(testCases.lifecycle_status, 'ACTIVE')))
       .returning();
 
     if (!updated) {
       return {
         success: false,
-        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] },
       };
     }
 
@@ -879,12 +886,16 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
 
     // 접근 권한 확인
     const [existing] = await db
-      .select({ projectId: testCases.project_id })
+      .select({ projectId: testCases.project_id, lifecycleStatus: testCases.lifecycle_status })
       .from(testCases)
       .where(eq(testCases.id, id))
       .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
+    }
+    // 이미 휴지통에 있거나 영구 삭제된 케이스를 다시 보관하면 영구 삭제가 휴지통으로 되돌아간다 (#408).
+    if (existing.lifecycleStatus !== 'ACTIVE') {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] } };
     }
 
     const now = new Date();
@@ -896,7 +907,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
           lifecycle_status: 'DELETED',
           updated_at: now,
         })
-        .where(eq(testCases.id, id))
+        .where(and(eq(testCases.id, id), eq(testCases.lifecycle_status, 'ACTIVE')))
         .returning();
       // 진행 중인 실행의 목록과 진행률에서 뺀다. 복원하면 되돌아온다 (#377).
       if (row) await excludeArchivedCasesFromRuns(tx, [row.id], now);
@@ -906,7 +917,7 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
     if (!archived) {
       return {
         success: false,
-        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] },
       };
     }
 

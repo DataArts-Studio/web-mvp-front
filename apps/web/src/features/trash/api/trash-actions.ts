@@ -13,7 +13,7 @@ import {
   testScenarios,
   testSuites,
 } from '@testea/db';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, inArray, lt, ne } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 import type { TrashItem, TrashItemType } from '../model/types';
@@ -21,6 +21,29 @@ import type { TrashItem, TrashItemType } from '../model/types';
 const AUTO_DELETE_DAYS = 30;
 
 type AuditAction = 'permanent_delete' | 'auto_cleanup' | 'empty_trash';
+
+type Db = ReturnType<typeof getDatabase>;
+
+/**
+ * 영구 삭제된 스위트를 가리키는 활성 케이스를 미분류로 돌린다.
+ * 케이스만 따로 복원한 뒤 스위트를 영구 삭제하면, 케이스가 사라진 스위트를 가리켜 어떤 목록에도 나오지 않는다 (#409).
+ */
+async function detachCasesFromPurgedSuites(db: Db, projectId: string) {
+  const purgedSuites = db
+    .select({ id: testSuites.id })
+    .from(testSuites)
+    .where(and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'PURGED')));
+  await db
+    .update(testCases)
+    .set({ test_suite_id: null, section_id: null })
+    .where(
+      and(
+        eq(testCases.project_id, projectId),
+        eq(testCases.lifecycle_status, 'ACTIVE'),
+        inArray(testCases.test_suite_id, purgedSuites)
+      )
+    );
+}
 
 /**
  * 영구 삭제 전 audit_logs에 스냅샷을 기록합니다.
@@ -205,6 +228,7 @@ export const getTrashedItems = async (projectId: string): Promise<ActionResult<T
               )
             ),
       ]);
+      if (expiredSuites.length > 0) await detachCasesFromPurgedSuites(db, projectId);
     }
 
     // 남은 휴지통 항목 조회
@@ -324,7 +348,11 @@ export const restoreItem = async (
       case 'case': {
         const restored = await db.transaction(async (tx) => {
           const [target] = await tx
-            .select({ id: testCases.id, archivedAt: testCases.archived_at })
+            .select({
+              id: testCases.id,
+              archivedAt: testCases.archived_at,
+              suiteId: testCases.test_suite_id,
+            })
             .from(testCases)
             .where(
               and(
@@ -336,16 +364,35 @@ export const restoreItem = async (
             .limit(1);
           if (!target) return null;
 
+          // 소속 스위트가 휴지통에 있거나 영구 삭제됐으면 미분류로 복원한다.
+          // 그대로 두면 케이스가 비활성 스위트를 가리켜 미분류에도 어떤 스위트에도 나오지 않는다 (#409).
+          let detached = false;
+          if (target.suiteId) {
+            const [inactiveSuite] = await tx
+              .select({ id: testSuites.id })
+              .from(testSuites)
+              .where(
+                and(eq(testSuites.id, target.suiteId), ne(testSuites.lifecycle_status, 'ACTIVE'))
+              )
+              .limit(1);
+            detached = !!inactiveSuite;
+          }
+
           const [row] = await tx
             .update(testCases)
-            .set({ lifecycle_status: 'ACTIVE', archived_at: null, updated_at: now })
+            .set({
+              lifecycle_status: 'ACTIVE',
+              archived_at: null,
+              updated_at: now,
+              ...(detached ? { test_suite_id: null, section_id: null } : {}),
+            })
             .where(eq(testCases.id, target.id))
             .returning();
           // 삭제할 때 진행 중인 실행에서 뺐던 결과를 되돌린다 (#377).
           if (target.archivedAt) {
             await restoreArchivedCasesToRuns(tx, [target.id], target.archivedAt);
           }
-          return row;
+          return row ? { row, detached } : null;
         });
         if (!restored) {
           return { success: false, errors: { _trash: ['복원할 항목을 찾을 수 없습니다.'] } };
@@ -353,8 +400,10 @@ export const restoreItem = async (
         invalidateCache(INVALIDATE.all);
         return {
           success: true,
-          data: { id: restored.id },
-          message: '테스트 케이스가 복원되었습니다.',
+          data: { id: restored.row.id },
+          message: restored.detached
+            ? '스위트가 삭제된 상태라 테스트 케이스를 미분류로 복원했습니다.'
+            : '테스트 케이스가 복원되었습니다.',
         };
       }
       case 'suite': {
@@ -604,6 +653,7 @@ export const permanentDeleteItem = async (
               eq(testSuites.lifecycle_status, 'DELETED')
             )
           );
+        await detachCasesFromPurgedSuites(db, projectId);
         break;
       }
       case 'milestone': {
@@ -805,6 +855,7 @@ export const emptyTrash = async (projectId: string): Promise<ActionResult<{ coun
             )
           ),
     ]);
+    if (allSuites.length > 0) await detachCasesFromPurgedSuites(db, projectId);
 
     const totalCount =
       allCases.length + allSuites.length + allMilestones.length + allScenarios.length;

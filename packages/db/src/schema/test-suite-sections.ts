@@ -1,4 +1,5 @@
-import { integer, pgTable, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { integer, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 
 import { testSuites } from './test-suites';
 
@@ -16,6 +17,9 @@ export const testSuiteSections = pgTable(
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
   (t) => ({
-    unqName: unique().on(t.suite_id, t.name),
+    // 삭제(archived_at)된 섹션 이름은 다시 쓸 수 있게 활성 섹션끼리만 이름이 겹치지 않게 한다 (#410).
+    unqActiveName: uniqueIndex('test_suite_sections_suite_id_name_active_unq')
+      .on(t.suite_id, t.name)
+      .where(sql`${t.archived_at} IS NULL`),
   })
 );

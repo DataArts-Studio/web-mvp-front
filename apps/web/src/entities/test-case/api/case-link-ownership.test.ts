@@ -40,7 +40,13 @@ vi.mock('@testea/db', () => {
   const chain: Record<string, unknown> = {};
   chain.from = () => chain;
   chain.where = () => chain;
-  chain.limit = async () => [{ id: '0199a000-0000-7000-8000-0000000000c1', project_id: PROJECT_A }];
+  chain.limit = async () => [
+    {
+      id: '0199a000-0000-7000-8000-0000000000c1',
+      project_id: PROJECT_A,
+      lifecycle_status: 'ACTIVE',
+    },
+  ];
   return {
     getDatabase: () => ({
       select: () => chain,

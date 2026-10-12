@@ -11,7 +11,9 @@ vi.mock('@sentry/nextjs', () => ({
 }));
 
 // 접근 권한 확인용 select(.from().where().limit()) → projectId 보유 row
-const mockSelectLimit = vi.fn(() => Promise.resolve([{ projectId: 'project-123' }]));
+const mockSelectLimit = vi.fn(() =>
+  Promise.resolve([{ projectId: 'project-123', lifecycleStatus: 'ACTIVE' }])
+);
 const mockSelectWhere = vi.fn(() => ({ limit: mockSelectLimit }));
 const mockSelectFrom = vi.fn(() => ({ where: mockSelectWhere }));
 const mockSelect = vi.fn(() => ({ from: mockSelectFrom }));
@@ -60,7 +62,7 @@ vi.mock('drizzle-orm', () => ({
 describe('archiveTestCase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSelectLimit.mockResolvedValue([{ projectId: 'project-123' }]);
+    mockSelectLimit.mockResolvedValue([{ projectId: 'project-123', lifecycleStatus: 'ACTIVE' }]);
     mockReturning.mockResolvedValue([]);
   });
 
@@ -95,9 +97,24 @@ describe('archiveTestCase', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._testCase).toContain('NOT_FOUND');
+      expect(result.errors._testCase).toContain('NOT_ACTIVE');
     }
   });
+
+  it.each(['DELETED', 'PURGED'])(
+    '이미 %s 상태인 케이스는 다시 휴지통으로 보내지 않는다 (#408)',
+    async (status) => {
+      mockSelectLimit.mockResolvedValue([{ projectId: 'project-123', lifecycleStatus: status }]);
+
+      const result = await archiveTestCase('case-id');
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors._testCase).toContain('NOT_ACTIVE');
+      }
+      expect(mockUpdate).not.toHaveBeenCalled();
+    }
+  );
 
   it('데이터베이스 업데이트 중 오류가 발생하면 에러 코드를 반환한다', async () => {
     mockUpdate.mockImplementationOnce(() => {

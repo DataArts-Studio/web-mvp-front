@@ -74,12 +74,16 @@ export const createSection = async (
       return { success: false, errors: { name: ['섹션 이름은 100자를 초과할 수 없습니다.'] } };
     }
 
-    // 중복 이름 확인
+    // 중복 이름 확인. 삭제한 섹션 이름은 다시 쓸 수 있다 (#410).
     const [existing] = await db
       .select({ id: testSuiteSections.id })
       .from(testSuiteSections)
       .where(
-        and(eq(testSuiteSections.suite_id, input.suiteId), eq(testSuiteSections.name, trimmedName))
+        and(
+          eq(testSuiteSections.suite_id, input.suiteId),
+          eq(testSuiteSections.name, trimmedName),
+          isNull(testSuiteSections.archived_at)
+        )
       )
       .limit(1);
 
@@ -155,14 +159,15 @@ export const updateSection = async (
         return { success: false, errors: { name: ['섹션 이름은 100자를 초과할 수 없습니다.'] } };
       }
 
-      // 중복 이름 확인 (자기 자신 제외)
+      // 중복 이름 확인 (자기 자신·삭제한 섹션 제외, #410)
       const [dup] = await db
         .select({ id: testSuiteSections.id })
         .from(testSuiteSections)
         .where(
           and(
             eq(testSuiteSections.suite_id, existing.suite_id),
-            eq(testSuiteSections.name, trimmedName)
+            eq(testSuiteSections.name, trimmedName),
+            isNull(testSuiteSections.archived_at)
           )
         )
         .limit(1);
