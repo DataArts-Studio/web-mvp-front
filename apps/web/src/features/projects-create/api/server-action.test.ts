@@ -173,6 +173,20 @@ describe('createProject', () => {
       expect(result.errors._form).toContain('프로젝트 생성 중 오류가 발생했습니다.');
     }
   });
+
+  it('이름 유니크 위반은 이름 중복 오류로 구분해 돌려준다', async () => {
+    mockReturning.mockRejectedValue(
+      new Error('Failed query', { cause: { code: '23505', constraint: 'projects_name_unique' } })
+    );
+
+    const result = await createProject(mockInput);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.projectName?.[0]).toContain('이미 사용 중인 프로젝트 이름');
+      expect(result.errors._form).toBeUndefined();
+    }
+  });
 });
 
 describe('checkProjectNameDuplicate', () => {
