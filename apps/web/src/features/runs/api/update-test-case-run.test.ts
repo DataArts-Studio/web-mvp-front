@@ -17,7 +17,7 @@ const CASE_RUN_ID = '00000000-0000-4000-8000-000000000001';
 const RUN_ID = '00000000-0000-4000-8000-000000000002';
 const limit = vi.fn();
 const returning = vi.fn();
-const set = vi.fn((_values: Record<string, unknown>) => ({ where: vi.fn(() => ({ returning })) }));
+const set = vi.fn();
 const db = {
   select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn(() => ({ limit })) })) })),
   update: vi.fn(() => ({ set })),
@@ -27,6 +27,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getDatabase).mockReturnValue(db as unknown as ReturnType<typeof getDatabase>);
   vi.mocked(requireProjectAccess).mockResolvedValue(true);
+  set.mockImplementation(() => ({ where: vi.fn(() => ({ returning })) }));
   limit
     .mockResolvedValueOnce([{ testRunId: RUN_ID }])
     .mockResolvedValueOnce([{ projectId: 'project-1' }]);
