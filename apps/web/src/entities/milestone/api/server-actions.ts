@@ -12,6 +12,8 @@ import {
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
+import { getMilestoneLatestResults } from '@/entities/milestone/api/latest-results';
+import { summarizeMilestoneProgress } from '@/entities/milestone/model/progress';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { isDateRangeOrdered } from '@/shared/lib/date-only';
@@ -29,7 +31,7 @@ import {
   testRunSuites,
   testRuns,
 } from '@testea/db';
-import { and, eq, inArray, isNull, max } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 
@@ -61,8 +63,8 @@ export const getMilestones = async ({
 
     const milestoneIds = rows.map((r) => r.id);
 
-    // 병렬 조회: 테스트 실행, 마일스톤-케이스, 마일스톤-스위트, 마지막 실행 시점
-    const [allRuns, allMtc, allMts, lastExecRows] = await Promise.all([
+    // 병렬 조회: 테스트 실행, 마일스톤-케이스, 마일스톤-스위트, 케이스별 최근 결과·마지막 실행 시점
+    const [allRuns, allMtc, allMts, latestResults] = await Promise.all([
       db
         .select({ id: testRuns.id, milestone_id: testRuns.milestone_id })
         .from(testRuns)
@@ -77,28 +79,8 @@ export const getMilestones = async ({
         .select()
         .from(milestoneTestSuites)
         .where(inArray(milestoneTestSuites.milestone_id, milestoneIds)),
-      // FDD-TR12: 마일스톤별 마지막 실행 시점 (source_type='milestone' 기준, 논리 삭제 제외)
-      db
-        .select({
-          milestoneId: testCaseRuns.source_id,
-          lastExecutedAt: max(testCaseRuns.executed_at),
-        })
-        .from(testCaseRuns)
-        .where(
-          and(
-            eq(testCaseRuns.source_type, 'milestone'),
-            inArray(testCaseRuns.source_id, milestoneIds),
-            isNull(testCaseRuns.excluded_at)
-          )
-        )
-        .groupBy(testCaseRuns.source_id),
+      getMilestoneLatestResults(db, milestoneIds),
     ]);
-
-    const lastExecutedAtMap = new Map<string, Date | null>();
-    for (const r of lastExecRows) {
-      if (!r.milestoneId) continue;
-      lastExecutedAtMap.set(r.milestoneId, r.lastExecutedAt ? new Date(r.lastExecutedAt) : null);
-    }
 
     // 스위트에 속한 케이스 조회
     const allSuiteIds = [
@@ -114,22 +96,6 @@ export const getMilestones = async ({
                 inArray(testCases.test_suite_id, allSuiteIds),
                 eq(testCases.lifecycle_status, 'ACTIVE')
               )
-            )
-        : [];
-
-    // 테스트 실행 결과 조회
-    const allRunIds = allRuns.map((r) => r.id);
-    const allCaseRuns =
-      allRunIds.length > 0
-        ? await db
-            .select({
-              test_run_id: testCaseRuns.test_run_id,
-              test_case_id: testCaseRuns.test_case_id,
-              status: testCaseRuns.status,
-            })
-            .from(testCaseRuns)
-            .where(
-              and(inArray(testCaseRuns.test_run_id, allRunIds), isNull(testCaseRuns.excluded_at))
             )
         : [];
 
@@ -167,14 +133,6 @@ export const getMilestones = async ({
       casesBySuite.set(sc.test_suite_id, list);
     }
 
-    // 실행별 케이스 상태 매핑
-    const caseRunsByRunId = new Map<string, Map<string, string>>();
-    for (const cr of allCaseRuns) {
-      if (!cr.test_run_id || !cr.test_case_id) continue;
-      if (!caseRunsByRunId.has(cr.test_run_id)) caseRunsByRunId.set(cr.test_run_id, new Map());
-      caseRunsByRunId.get(cr.test_run_id)!.set(cr.test_case_id, cr.status);
-    }
-
     const result: MilestoneWithStats[] = rows.map((row) => {
       const base = toMilestone(row as MilestoneDTO);
 
@@ -187,31 +145,17 @@ export const getMilestones = async ({
         }
       }
 
-      const totalCases = directCaseIds.size;
-
-      // 완료된 케이스 계산 (마일스톤에 연결된 실행의 결과 기준)
-      const runIds = runsByMilestone.get(row.id) || [];
-      const caseStatusMap = new Map<string, string>();
-      for (const runId of runIds) {
-        const runCases = caseRunsByRunId.get(runId);
-        if (!runCases) continue;
-        for (const [caseId, status] of runCases) {
-          if (directCaseIds.has(caseId)) {
-            caseStatusMap.set(caseId, status);
-          }
-        }
-      }
-      const completedCases = Array.from(caseStatusMap.values()).filter(
-        (s) => s !== 'untested'
-      ).length;
+      // 완료된 케이스: 케이스마다 이 마일스톤 실행의 가장 최근 결과 기준 (#418)
+      const latest = latestResults.get(row.id);
+      const progress = summarizeMilestoneProgress(directCaseIds, latest?.statuses ?? new Map());
 
       return {
         ...base,
-        lastExecutedAt: lastExecutedAtMap.get(row.id) ?? null,
-        totalCases,
-        completedCases,
-        progressRate: totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0,
-        runCount: runIds.length,
+        lastExecutedAt: latest?.lastExecutedAt ?? null,
+        totalCases: progress.total,
+        completedCases: progress.completed,
+        progressRate: progress.progressPercent,
+        runCount: (runsByMilestone.get(row.id) || []).length,
       };
     });
 
