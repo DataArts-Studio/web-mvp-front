@@ -346,7 +346,8 @@ export const TestRunDetailView = () => {
   // ─── Handlers ──────────────────────────────────────────────────
   const handleInlineStatusChange = useCallback(
     (caseId: string, status: TestCaseRunStatus) => {
-      updateMutation.mutate({ testCaseRunId: caseId, status, comment: null });
+      // 상태만 바꾼다. 코멘트를 보내지 않아야 저장된 코멘트가 남는다 (#413).
+      updateMutation.mutate({ testCaseRunId: caseId, status });
     },
     [updateMutation]
   );

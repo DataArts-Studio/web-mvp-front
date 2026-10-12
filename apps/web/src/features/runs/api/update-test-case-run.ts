@@ -38,7 +38,8 @@ export async function updateTestCaseRunStatus(
       .update(testCaseRuns)
       .set({
         status: input.status,
-        comment: input.comment ?? null,
+        // 코멘트를 보내지 않은 변경(목록의 상태 드롭다운)은 저장된 코멘트를 그대로 둔다 (#413).
+        ...(input.comment !== undefined ? { comment: input.comment } : {}),
         executed_at: input.status !== 'untested' ? now : null,
         // 사용자가 수동으로 수정하면 자동(auto) 출처를 manual 로 되돌려 출처가 stale 해지지 않게 한다.
         result_source: 'manual',
