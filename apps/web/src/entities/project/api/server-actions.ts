@@ -1,5 +1,7 @@
 'use server';
 
+import { redirect } from 'next/navigation';
+
 import { deleteAccessTokenCookie, setAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword, verifyPassword } from '@/access/lib/password-hash';
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
@@ -7,11 +9,14 @@ import { createProjectSessionToken } from '@/access/lib/project-session';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { ProjectDomain } from '@/entities/project';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { isUniqueViolation } from '@/shared/lib/db-error';
 import { toValidName } from '@/shared/lib/normalize-name';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { eq } from 'drizzle-orm';
+
+import { PROJECT_NAME_ERRORS } from '../model/constants';
 
 const PROJECT_NAME_MAX_LENGTH = 50;
 
@@ -158,7 +163,9 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
 export const updateProject = async (
   projectId: string,
   data: { name?: string; description?: string; ownerName?: string }
-): Promise<ActionResult<{ id: string }>> => {
+): Promise<ActionResult<{ id: string; name: string }>> => {
+  let renamedTo: string | null = null;
+  let result: ActionResult<{ id: string; name: string }>;
   try {
     const hasAccess = await requireProjectAccess(projectId);
     if (!hasAccess) {
@@ -166,6 +173,15 @@ export const updateProject = async (
     }
 
     const db = getDatabase();
+
+    const [current] = await db
+      .select({ name: projects.name })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    if (!current) {
+      return { success: false, errors: { _project: ['프로젝트를 찾을 수 없습니다.'] } };
+    }
 
     const updateData: Record<string, unknown> = { updated_at: new Date() };
     if (data.name !== undefined) {
@@ -178,11 +194,19 @@ export const updateProject = async (
     if (data.description !== undefined) updateData.description = data.description;
     if (data.ownerName !== undefined) updateData.owner_name = data.ownerName;
 
-    const [updated] = await db
-      .update(projects)
-      .set(updateData)
-      .where(eq(projects.id, projectId))
-      .returning();
+    let updated;
+    try {
+      [updated] = await db
+        .update(projects)
+        .set(updateData)
+        .where(eq(projects.id, projectId))
+        .returning();
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        return { success: false, errors: { name: [PROJECT_NAME_ERRORS.TAKEN] } };
+      }
+      throw error;
+    }
 
     if (!updated) {
       return {
@@ -191,10 +215,19 @@ export const updateProject = async (
       };
     }
 
+    // 접근 쿠키 이름과 토큰은 프로젝트 이름(주소)에 묶여 있다. 이름이 바뀌면 새 이름으로
+    // 세션을 다시 발급하고 옛 쿠키를 지워, 새 주소에서 비밀번호를 다시 묻지 않게 한다 (#403).
+    if (updated.name !== current.name) {
+      const token = await createProjectSessionToken(updated.id, updated.name, updated.identifier);
+      await setAccessTokenCookie(updated.name, token);
+      await deleteAccessTokenCookie(current.name);
+      renamedTo = updated.name;
+    }
+
     invalidateCache(INVALIDATE.project);
-    return {
+    result = {
       success: true,
-      data: { id: updated.id },
+      data: { id: updated.id, name: updated.name },
       message: '프로젝트 정보가 수정되었습니다.',
     };
   } catch (error) {
@@ -204,6 +237,11 @@ export const updateProject = async (
       errors: { _project: ['프로젝트 정보를 수정하는 도중 오류가 발생했습니다.'] },
     };
   }
+  // 옛 쿠키를 지운 응답이 옛 주소를 다시 그리면 접근 페이지로 튕기므로, 액션 응답에서 바로
+  // 새 주소의 설정 화면으로 보낸다. 이름 변경은 설정 화면에서만 일어난다.
+  // redirect 는 예외로 동작하므로 try 밖에서 호출한다.
+  if (renamedTo) redirect(`/projects/${encodeURIComponent(renamedTo)}/settings?renamed=1`);
+  return result;
 };
 
 export const changeProjectIdentifier = async (
