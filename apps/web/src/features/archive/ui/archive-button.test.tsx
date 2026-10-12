@@ -20,12 +20,15 @@ vi.mock('@/shared/lib/analytics', async (importOriginal) => ({
   track: vi.fn(),
 }));
 
-const renderButton = (onSuccess = vi.fn()) =>
+const renderButton = (
+  onSuccess = vi.fn(),
+  targetType: React.ComponentProps<typeof ArchiveButton>['targetType'] = 'suite'
+) =>
   render(
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
     >
-      <ArchiveButton targetType="suite" targetId="suite-1" onSuccess={onSuccess} />
+      <ArchiveButton targetType={targetType} targetId="target-1" onSuccess={onSuccess} />
     </QueryClientProvider>
   );
 
@@ -37,6 +40,32 @@ const openAndConfirm = () => {
   );
   fireEvent.click(confirm!);
 };
+
+describe('ArchiveButton 확인 문구', () => {
+  it.each([
+    ['case', '이 테스트 케이스를 삭제하시겠습니까?'],
+    ['suite', '이 테스트 스위트를 삭제하시겠습니까?'],
+    ['milestone', '이 마일스톤을 삭제하시겠습니까?'],
+  ] as const)('%s 는 휴지통 이동과 30일 복원을 안내한다', (targetType, question) => {
+    renderButton(vi.fn(), targetType);
+    fireEvent.click(screen.getByRole('button', { name: /삭제/ }));
+
+    const text = screen.getByRole('dialog').textContent ?? '';
+    expect(text).toContain(question);
+    expect(text).toContain('30일 안에 복원할 수 있습니다.');
+    expect(text).not.toContain('복구할 수 없습니다');
+    expect(text).not.toContain('(를)');
+  });
+
+  it('프로젝트는 복구할 수 없다고 안내한다', () => {
+    renderButton(vi.fn(), 'project');
+    fireEvent.click(screen.getByRole('button', { name: /삭제/ }));
+
+    const text = screen.getByRole('dialog').textContent ?? '';
+    expect(text).toContain('이 프로젝트를 삭제하시겠습니까?');
+    expect(text).toContain('복구할 수 없습니다.');
+  });
+});
 
 describe('ArchiveButton 실패 처리', () => {
   beforeEach(() => {

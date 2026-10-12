@@ -15,6 +15,26 @@ const TARGET_LABEL: Record<ArchiveTargetType, string> = {
   case: '테스트 케이스',
 };
 
+// 케이스·스위트·마일스톤은 휴지통으로 가고 30일 안에 복원할 수 있다. 프로젝트는 휴지통이 없다.
+const CONFIRM_MESSAGE: Record<ArchiveTargetType, { question: string; detail: string }> = {
+  project: {
+    question: '이 프로젝트를 삭제하시겠습니까?',
+    detail: '삭제한 프로젝트는 복구할 수 없습니다.',
+  },
+  milestone: {
+    question: '이 마일스톤을 삭제하시겠습니까?',
+    detail: '휴지통으로 이동하며 30일 안에 복원할 수 있습니다.',
+  },
+  suite: {
+    question: '이 테스트 스위트를 삭제하시겠습니까?',
+    detail: '스위트에 속한 케이스와 함께 휴지통으로 이동하며 30일 안에 복원할 수 있습니다.',
+  },
+  case: {
+    question: '이 테스트 케이스를 삭제하시겠습니까?',
+    detail: '휴지통으로 이동하며 30일 안에 복원할 수 있습니다.',
+  },
+};
+
 interface ArchiveButtonProps {
   targetType: ArchiveTargetType;
   targetId: string;
@@ -65,6 +85,7 @@ export const ArchiveButton = ({
   };
 
   const label = TARGET_LABEL[targetType] ?? '항목';
+  const message = CONFIRM_MESSAGE[targetType];
 
   return (
     <>
@@ -89,9 +110,9 @@ export const ArchiveButton = ({
             <Dialog.Content className="bg-bg-2 border-line-2 rounded-4 w-full max-w-[400px] border p-6">
               <Dialog.Title className="typo-h2-heading text-text-1">{label} 삭제</Dialog.Title>
               <Dialog.Description className="text-text-3 typo-body2-normal mt-2">
-                정말 이 {label}을(를) 삭제하시겠습니까?
+                {message.question}
                 <br />
-                삭제된 데이터는 복구할 수 없습니다.
+                {message.detail}
               </Dialog.Description>
               <div className="mt-6 flex justify-end gap-2">
                 <DSButton
