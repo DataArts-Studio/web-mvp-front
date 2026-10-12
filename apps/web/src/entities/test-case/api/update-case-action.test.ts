@@ -37,6 +37,7 @@ const mockExisting = {
   expected_result: '기대 결과',
   test_suite_id: 'suite-old',
   section_id: 'section-old',
+  lifecycle_status: 'ACTIVE',
 };
 
 // 접근 권한 확인용 select 체인 (existing row 반환)
@@ -209,7 +210,7 @@ describe('updateTestCase', () => {
     );
   });
 
-  it('테스트 케이스가 존재하지 않으면 에러 코드를 반환한다', async () => {
+  it('확인 뒤 저장 사이에 휴지통으로 가 저장된 행이 없으면 에러 코드를 반환한다', async () => {
     mockReturning.mockResolvedValue([]);
 
     const result = await updateTestCase({
@@ -219,9 +220,24 @@ describe('updateTestCase', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._testCase).toContain('NOT_FOUND');
+      expect(result.errors._testCase).toContain('NOT_ACTIVE');
     }
   });
+
+  it.each(['DELETED', 'PURGED'])(
+    '%s 상태 케이스는 수정하지 않고 실행 동기화도 하지 않는다 (#408)',
+    async (status) => {
+      mockSelectLimit.mockResolvedValue([{ ...mockExisting, lifecycle_status: status }]);
+
+      const result = await updateTestCase({ id: 'tc-123', title: '새 제목', testSuiteId: 's-1' });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors._testCase).toContain('NOT_ACTIVE');
+      }
+      expect(mockUpdate).not.toHaveBeenCalled();
+    }
+  );
 
   it('DB 에러 발생 시 에러 코드를 반환한다', async () => {
     mockReturning.mockRejectedValue(new Error('DB Error'));
