@@ -205,6 +205,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                     control={control}
                     render={({ field }) => (
                       <DateDropdownSelect
+                        label="시작일"
                         value={field.value}
                         onChange={field.onChange}
                         disabled={isLoading}
@@ -223,6 +224,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
                     control={control}
                     render={({ field }) => (
                       <DateDropdownSelect
+                        label="종료일"
                         value={field.value}
                         onChange={field.onChange}
                         disabled={isLoading}

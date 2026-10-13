@@ -320,7 +320,7 @@ const TestSuiteDetailView = () => {
         </div>
       </header>
 
-      <main className="min-h-[520px] overflow-hidden py-5 lg:min-h-0">
+      <div className="min-h-[520px] overflow-hidden py-5 lg:min-h-0">
         <SuiteCaseListSection
           sections={sections}
           testCases={testCases}
@@ -363,7 +363,7 @@ const TestSuiteDetailView = () => {
           }}
           onAddCases={() => setIsAddingCases(true)}
         />
-      </main>
+      </div>
 
       <aside className="border-line-2 flex min-h-0 flex-col gap-6 border-t py-5 lg:overflow-y-auto lg:border-t-0 lg:border-l lg:pl-6">
         <section className="border-line-2 border-b pb-5">

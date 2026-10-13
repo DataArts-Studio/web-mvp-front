@@ -15,6 +15,11 @@ export const DsSelect = ({
   placeholder = '선택하세요',
   disabled = false,
   className,
+  id,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
 }: DsSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -94,7 +99,12 @@ export const DsSelect = ({
     <div ref={containerRef} className={cn('relative', className)}>
       <button
         type="button"
+        id={id}
         role="combobox"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         disabled={disabled}
