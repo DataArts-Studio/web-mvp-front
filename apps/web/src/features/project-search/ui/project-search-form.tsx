@@ -90,7 +90,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
         if (e.key === 'Enter') {
           e.preventDefault();
           const trimmed = inputValue.trim();
-          if (trimmed.length >= 2) {
+          if (trimmed.length > 0) {
             lastSubmittedRef.current = trimmed;
             setShowAutocomplete(false);
             onSearch(trimmed);
@@ -115,7 +115,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
             handleSelectProject(selected);
           } else {
             const trimmed = inputValue.trim();
-            if (trimmed.length >= 2) {
+            if (trimmed.length > 0) {
               lastSubmittedRef.current = trimmed;
               setShowAutocomplete(false);
               onSearch(trimmed);
@@ -135,7 +135,7 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputValue.trim();
-    if (trimmed.length >= 2) {
+    if (trimmed.length > 0) {
       track(PROJECT_SEARCH_EVENTS.SUBMIT, { keyword: trimmed });
       lastSubmittedRef.current = trimmed;
       setShowAutocomplete(false);
@@ -191,14 +191,14 @@ export const ProjectSearchForm = ({ onSearch, isSearching }: ProjectSearchFormPr
           type="submit"
           variant="solid"
           size="medium"
-          disabled={isSearching || inputValue.trim().length < 2}
+          disabled={isSearching || inputValue.trim().length === 0}
           className="shrink-0 px-6"
         >
           {isSearching ? '검색 중...' : '검색'}
         </DSButton>
       </div>
-      {inputValue.trim().length > 0 && inputValue.trim().length < 2 && (
-        <p className="text-body3 text-text-3">최소 2자 이상 입력해주세요</p>
+      {inputValue.trim().length === 1 && (
+        <p className="text-body3 text-text-3">한 글자는 이름이 정확히 같은 프로젝트만 찾아요</p>
       )}
     </form>
   );
