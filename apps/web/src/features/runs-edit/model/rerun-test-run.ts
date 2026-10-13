@@ -13,6 +13,7 @@ import {
   testRunSuites,
   testRuns,
 } from '@testea/db';
+import { toAppDateOnly } from '@testea/util';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -156,7 +157,7 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
 
     // 5. 자동 제안 이름: 회귀 재실행 - {원본명} ({YYYY-MM-DD})
     const now = new Date();
-    const dateLabel = formatDate(now);
+    const dateLabel = toAppDateOnly(now);
     const proposedName = `회귀 재실행 - ${sourceRun.name} (${dateLabel})`;
 
     const newTestRun = await db.transaction(async (tx) => {
@@ -234,12 +235,4 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
     });
     return { success: false, error: '회귀 재실행 생성에 실패했습니다. 잠시 후 다시 시도해주세요.' };
   }
-}
-
-/** 서버 now 기준 YYYY-MM-DD 포맷 (자동 제안 이름용) */
-function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }

@@ -5,7 +5,7 @@ import {
   stepsToCsvText,
 } from '@/entities/test-case/model/csv-columns';
 import type { TestCase } from '@/entities/test-case/model/types';
-import { formatDateKR } from '@testea/util';
+import { formatDateKR, toAppDateOnly } from '@testea/util';
 import { toast } from 'sonner';
 
 function escapeCsvField(value: string): string {
@@ -107,7 +107,7 @@ export function exportTestCasesToCSV(
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
 
     const url = URL.createObjectURL(blob);
-    const date = new Date().toISOString().slice(0, 10);
+    const date = toAppDateOnly();
     const fileName = `${projectName}_test-cases_${date}.csv`;
 
     const link = document.createElement('a');
