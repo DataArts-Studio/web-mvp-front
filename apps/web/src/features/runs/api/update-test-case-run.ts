@@ -3,11 +3,12 @@
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
 import { recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
+import { RUN_NOT_ACTIVE_MESSAGE } from '@/entities/test-run/model/schema';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCaseRuns, testRuns } from '@testea/db';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 export async function updateTestCaseRunStatus(
   input: UpdateTestCaseRunInput
@@ -23,12 +24,15 @@ export async function updateTestCaseRunStatus(
       .limit(1);
     if (caseRun?.testRunId) {
       const [run] = await db
-        .select({ projectId: testRuns.project_id })
+        .select({ projectId: testRuns.project_id, lifecycleStatus: testRuns.lifecycle_status })
         .from(testRuns)
         .where(eq(testRuns.id, caseRun.testRunId))
         .limit(1);
       if (!run?.projectId || !(await requireProjectAccess(run.projectId))) {
         return { success: false, errors: { _general: ['접근 권한이 없습니다.'] } };
+      }
+      if (run.lifecycleStatus !== 'ACTIVE') {
+        return { success: false, errors: { _general: [RUN_NOT_ACTIVE_MESSAGE] } };
       }
     }
 
@@ -45,7 +49,19 @@ export async function updateTestCaseRunStatus(
         result_source: 'manual',
         updated_at: now,
       })
-      .where(eq(testCaseRuns.id, input.testCaseRunId))
+      .where(
+        and(
+          eq(testCaseRuns.id, input.testCaseRunId),
+          // 확인과 저장 사이에 실행이 삭제돼도 바꾸지 않는다 (#419).
+          inArray(
+            testCaseRuns.test_run_id,
+            db
+              .select({ id: testRuns.id })
+              .from(testRuns)
+              .where(eq(testRuns.lifecycle_status, 'ACTIVE'))
+          )
+        )
+      )
       .returning();
 
     if (!updated) {

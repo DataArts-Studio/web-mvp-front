@@ -5,6 +5,9 @@ import { z } from 'zod';
 export const RUN_NAME_MAX_LENGTH = 100;
 export const RUN_NAME_TOO_LONG_MESSAGE = `실행 이름은 ${RUN_NAME_MAX_LENGTH}자를 초과할 수 없습니다.`;
 
+/** 삭제(ARCHIVED)된 실행의 결과·코멘트를 바꾸려 할 때 안내 (#419). */
+export const RUN_NOT_ACTIVE_MESSAGE = '삭제된 테스트 실행은 결과를 바꿀 수 없습니다.';
+
 export const TestRunStatusEnum = z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']);
 
 export const TestRunSchema = z.object({

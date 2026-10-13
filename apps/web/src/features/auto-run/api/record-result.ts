@@ -47,9 +47,12 @@ export async function recordAutoResult(
     .select({ caseRunId: testCaseRuns.id, caseKey: testCases.case_key })
     .from(testCaseRuns)
     .innerJoin(testCases, eq(testCaseRuns.test_case_id, testCases.id))
+    // 삭제된 실행에는 자동 결과도 기록하지 않는다 (#419).
+    .innerJoin(testRuns, eq(testCaseRuns.test_run_id, testRuns.id))
     .where(
       and(
         eq(testCaseRuns.test_run_id, input.runId),
+        eq(testRuns.lifecycle_status, 'ACTIVE'),
         eq(testCases.case_key, input.caseKey),
         isNull(testCaseRuns.excluded_at)
       )
