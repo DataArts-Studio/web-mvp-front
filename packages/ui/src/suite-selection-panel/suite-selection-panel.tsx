@@ -16,6 +16,8 @@ interface SuiteSelectionPanelProps {
   onToggleSuite: (id: string) => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  /** 스위트 목록을 불러오는 중이면 빈 상태 대신 불러오는 중으로 보여 준다. */
+  isLoading?: boolean;
 }
 
 export const SuiteSelectionPanel = ({
@@ -24,6 +26,7 @@ export const SuiteSelectionPanel = ({
   onToggleSuite,
   isExpanded,
   onToggleExpand,
+  isLoading = false,
 }: SuiteSelectionPanelProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -79,7 +82,11 @@ export const SuiteSelectionPanel = ({
 
           {/* 리스트 */}
           <div className="max-h-[200px] overflow-y-auto">
-            {filteredSuites.length === 0 ? (
+            {isLoading ? (
+              <div role="status" className="text-text-3 py-8 text-center text-sm">
+                스위트를 불러오는 중이에요...
+              </div>
+            ) : filteredSuites.length === 0 ? (
               <div className="text-text-3 py-8 text-center text-sm">
                 {allSuites.length === 0 ? '테스트 스위트가 없습니다.' : '검색 결과가 없습니다.'}
               </div>

@@ -16,6 +16,8 @@ interface CaseSelectionPanelProps {
   onToggleCase: (id: string) => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  /** 케이스 목록을 불러오는 중이면 빈 상태 대신 불러오는 중으로 보여 준다. */
+  isLoading?: boolean;
 }
 
 export const CaseSelectionPanel = ({
@@ -24,6 +26,7 @@ export const CaseSelectionPanel = ({
   onToggleCase,
   isExpanded,
   onToggleExpand,
+  isLoading = false,
 }: CaseSelectionPanelProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -76,7 +79,11 @@ export const CaseSelectionPanel = ({
 
           {/* 리스트 */}
           <div className="max-h-[200px] overflow-y-auto">
-            {filteredCases.length === 0 ? (
+            {isLoading ? (
+              <div role="status" className="text-text-3 py-8 text-center text-sm">
+                케이스를 불러오는 중이에요...
+              </div>
+            ) : filteredCases.length === 0 ? (
               <div className="text-text-3 py-8 text-center text-sm">
                 {allCases.length === 0 ? '테스트 케이스가 없습니다.' : '검색 결과가 없습니다.'}
               </div>
