@@ -14,8 +14,9 @@ export const useUpdateMilestone = () => {
         id: input.id,
         title: input.title,
         description: input.description,
-        startDate: input.startDate ? new Date(input.startDate) : null,
-        endDate: input.endDate ? new Date(input.endDate) : null,
+        // 'YYYY-MM-DD' 그대로 넘긴다. Date 로 바꾸면 UTC 변환으로 하루 앞당겨진다 (#381).
+        startDate: input.startDate || null,
+        endDate: input.endDate || null,
       }).catch(() => {
         throw new Error(MILESTONE_UPDATE_FAILED);
       });

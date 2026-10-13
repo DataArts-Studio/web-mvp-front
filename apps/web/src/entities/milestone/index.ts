@@ -4,6 +4,9 @@ export {
   MilestoneDtoSchema,
   CreateMilestoneDtoSchema,
   CreateMilestoneSchema,
+  MilestoneDateSchema,
+  MILESTONE_DATE_RANGE_ERROR,
+  getMilestoneDateError,
 } from './model';
 export { toMilestone, toCreateMilestoneDTO } from './model';
 export type {

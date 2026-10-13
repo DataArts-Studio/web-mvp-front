@@ -8,8 +8,13 @@ import {
   detectChangedFields,
   generateChangeSummary,
 } from '@/entities/test-case-version/model/diff-utils';
+import { getLatestResultStatuses } from '@/entities/test-case/api/latest-result';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
+import {
+  excludeArchivedCasesFromRuns,
+  recomputeTestRunStatus,
+} from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
@@ -22,8 +27,9 @@ import {
   testCases,
   testRunSuites,
   testRuns,
+  testSuiteSections,
 } from '@testea/db';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 /**
@@ -40,7 +46,27 @@ async function caseLinksBelongTo(
   return true;
 }
 
+/**
+ * 섹션은 케이스가 속한 스위트의 것이어야 한다. 스위트 상세는 그 스위트의 섹션과 미분류만 그리므로,
+ * 다른 스위트의 섹션이 남으면 케이스가 개수에만 잡히고 화면 어디에도 보이지 않는다 (#383).
+ * 최종 스위트에 없는 섹션이면 미분류(null)로 돌린다.
+ */
+async function sectionForSuite(
+  suiteId: string | null | undefined,
+  sectionId: string | null | undefined
+): Promise<string | null> {
+  if (!sectionId || !suiteId) return null;
+  const [section] = await getDatabase()
+    .select({ id: testSuiteSections.id })
+    .from(testSuiteSections)
+    .where(and(eq(testSuiteSections.id, sectionId), eq(testSuiteSections.suite_id, suiteId)))
+    .limit(1);
+  return section ? sectionId : null;
+}
+
 const CASE_NAME_MAX_LENGTH = 200;
+/** 케이스 커스텀 순서 간격. features/reorder 의 SORT_ORDER_GAP 과 같은 값이다. */
+const CASE_SORT_ORDER_GAP = 1000;
 
 type getTestCasesParams = {
   project_id: string;
@@ -59,6 +85,10 @@ export const getTestCases = async ({
       .from(testCases)
       .where(and(eq(testCases.project_id, project_id), eq(testCases.lifecycle_status, 'ACTIVE')));
     if (!rows) return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] } };
+    const latestStatuses = await getLatestResultStatuses(
+      db,
+      rows.map((row) => row.id)
+    );
 
     const result: TestCase[] = rows.map((row) => ({
       id: row.id,
@@ -74,7 +104,7 @@ export const getTestCases = async ({
       testSteps: row.steps ?? '',
       expectedResult: row.expected_result ?? '',
       sortOrder: row.sort_order ?? 0,
-      resultStatus: row.result_status,
+      resultStatus: latestStatuses.get(row.id) ?? 'untested',
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
@@ -87,6 +117,120 @@ export const getTestCases = async ({
     };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'getTestCases' } });
+    return {
+      success: false,
+      errors: { _testCase: [CASE_MESSAGE_CODES.LOAD_FAILED] },
+    };
+  }
+};
+
+/** 케이스 목록·내보내기가 같은 필터를 쓰도록 WHERE 조건을 한곳에서 만든다. */
+function buildCaseListWhere(
+  projectId: string,
+  { search, suiteId }: { search?: string; suiteId?: string }
+) {
+  const conditions = [
+    eq(testCases.project_id, projectId),
+    eq(testCases.lifecycle_status, 'ACTIVE'),
+  ];
+
+  if (suiteId === '__uncategorized__') {
+    conditions.push(sql`${testCases.test_suite_id} IS NULL`);
+  } else if (suiteId && suiteId !== 'all') {
+    conditions.push(eq(testCases.test_suite_id, suiteId));
+  }
+
+  if (search?.trim()) {
+    const keyword = `%${search.trim()}%`;
+    conditions.push(or(ilike(testCases.name, keyword), ilike(testCases.case_key, keyword))!);
+  }
+
+  return and(...conditions);
+}
+
+/** 목록 화면의 정렬 값을 ORDER BY 로 바꾼다. */
+function buildCaseListOrder(sort: string) {
+  // 값이 같은 행끼리 순서가 페이지마다 달라지지 않도록 마지막에 id 로 고정한다 (#407).
+  if (sort === 'custom')
+    return [asc(testCases.sort_order), asc(testCases.created_at), asc(testCases.id)];
+  const [sortField, sortOrder] = sort.split('-') as [string, 'asc' | 'desc'];
+  const sortColumn =
+    sortField === 'title'
+      ? testCases.name
+      : sortField === 'createdAt'
+        ? testCases.created_at
+        : testCases.updated_at;
+  return [(sortOrder === 'asc' ? asc : desc)(sortColumn), asc(testCases.id)];
+}
+
+/** 한 번에 내보낼 수 있는 최대 건수. 가져오기 한도(2,000건)보다 넉넉히 둔다. */
+const CASE_EXPORT_LIMIT = 10000;
+
+type GetTestCasesForExportParams = {
+  project_id: string;
+  sort?: string;
+  search?: string;
+  suiteId?: string;
+};
+
+/**
+ * CSV 내보내기용: 현재 필터에 맞는 케이스 전체를 모든 필드와 함께 돌려준다.
+ * 목록은 페이지 단위로만 받아 와서, 이전에는 보이는 15건만 내보내졌다 (#382).
+ */
+export const getTestCasesForExport = async ({
+  project_id,
+  sort = 'updatedAt-desc',
+  search,
+  suiteId,
+}: GetTestCasesForExportParams): Promise<
+  ActionResult<{ items: TestCase[]; truncated: boolean }>
+> => {
+  try {
+    if (!(await canAccess('project', project_id))) return ACCESS_DENIED;
+
+    const db = getDatabase();
+    // 한도보다 하나 더 읽어, 잘렸는지 알려 줄 수 있게 한다.
+    const fetched = await db
+      .select()
+      .from(testCases)
+      .where(buildCaseListWhere(project_id, { search, suiteId }))
+      .orderBy(...buildCaseListOrder(sort))
+      .limit(CASE_EXPORT_LIMIT + 1);
+    const truncated = fetched.length > CASE_EXPORT_LIMIT;
+    const rows = truncated ? fetched.slice(0, CASE_EXPORT_LIMIT) : fetched;
+    const latestStatuses = await getLatestResultStatuses(
+      db,
+      rows.map((row) => row.id)
+    );
+
+    return {
+      success: true,
+      data: {
+        truncated,
+        items: rows.map((row) => ({
+          id: row.id,
+          projectId: row.project_id ?? '',
+          testSuiteId: row.test_suite_id ?? undefined,
+          sectionId: row.section_id ?? null,
+          displayId: row.display_id ?? 0,
+          caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
+          title: row.name,
+          testType: row.test_type ?? '',
+          tags: row.tags ?? [],
+          preCondition: row.pre_condition ?? '',
+          testSteps: row.steps ?? '',
+          expectedResult: row.expected_result ?? '',
+          sortOrder: row.sort_order ?? 0,
+          resultStatus: latestStatuses.get(row.id) ?? 'untested',
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          archivedAt: row.archived_at ?? null,
+          lifecycleStatus: row.lifecycle_status,
+        })),
+      },
+    };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'getTestCasesForExport' } });
     return {
       success: false,
       errors: { _testCase: [CASE_MESSAGE_CODES.LOAD_FAILED] },
@@ -129,24 +273,7 @@ export const getTestCasesList = async ({
 
     const db = getDatabase();
 
-    // WHERE 조건 구성
-    const conditions = [
-      eq(testCases.project_id, project_id),
-      eq(testCases.lifecycle_status, 'ACTIVE'),
-    ];
-
-    if (suiteId === '__uncategorized__') {
-      conditions.push(sql`${testCases.test_suite_id} IS NULL`);
-    } else if (suiteId && suiteId !== 'all') {
-      conditions.push(eq(testCases.test_suite_id, suiteId));
-    }
-
-    if (search?.trim()) {
-      const keyword = `%${search.trim()}%`;
-      conditions.push(or(ilike(testCases.name, keyword), ilike(testCases.case_key, keyword))!);
-    }
-
-    const whereClause = and(...conditions);
+    const whereClause = buildCaseListWhere(project_id, { search, suiteId });
 
     // COUNT 쿼리
     const [countResult] = await db
@@ -158,20 +285,6 @@ export const getTestCasesList = async ({
     const totalPages = Math.max(1, Math.ceil(totalItems / size));
     const safePage = Math.min(Math.max(1, page), totalPages);
     const offset = (safePage - 1) * size;
-
-    // ORDER BY 구성
-    const isCustomSort = sort === 'custom';
-    const [sortField, sortOrder] = isCustomSort
-      ? ['sortOrder', 'asc']
-      : (sort.split('-') as [string, 'asc' | 'desc']);
-    const sortColumn = isCustomSort
-      ? testCases.sort_order
-      : sortField === 'title'
-        ? testCases.name
-        : sortField === 'createdAt'
-          ? testCases.created_at
-          : testCases.updated_at;
-    const orderFn = sortOrder === 'asc' ? asc : desc;
 
     // 데이터 쿼리
     const rows = await db
@@ -185,7 +298,6 @@ export const getTestCasesList = async ({
         test_type: testCases.test_type,
         tags: testCases.tags,
         sort_order: testCases.sort_order,
-        result_status: testCases.result_status,
         created_at: testCases.created_at,
         updated_at: testCases.updated_at,
         archived_at: testCases.archived_at,
@@ -193,13 +305,13 @@ export const getTestCasesList = async ({
       })
       .from(testCases)
       .where(whereClause)
-      .orderBy(
-        ...(isCustomSort
-          ? [asc(testCases.sort_order), asc(testCases.created_at)]
-          : [orderFn(sortColumn)])
-      )
+      .orderBy(...buildCaseListOrder(sort))
       .limit(size)
       .offset(offset);
+    const latestStatuses = await getLatestResultStatuses(
+      db,
+      rows.map((row) => row.id)
+    );
 
     const items: TestCaseListItem[] = rows.map((row) => ({
       id: row.id,
@@ -212,7 +324,7 @@ export const getTestCasesList = async ({
       testType: row.test_type ?? '',
       tags: row.tags ?? [],
       sortOrder: row.sort_order ?? 0,
-      resultStatus: row.result_status,
+      resultStatus: latestStatuses.get(row.id) ?? 'untested',
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
@@ -252,6 +364,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
       };
     }
 
+    const latestStatuses = await getLatestResultStatuses(db, [row.id]);
     const result: TestCase = {
       id: row.id,
       projectId: row.project_id ?? '',
@@ -266,7 +379,7 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
       testSteps: row.steps ?? '',
       expectedResult: row.expected_result ?? '',
       sortOrder: row.sort_order ?? 0,
-      resultStatus: row.result_status,
+      resultStatus: latestStatuses.get(row.id) ?? 'untested',
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
@@ -306,16 +419,25 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     }
 
     const db = getDatabase();
-    const dto = toCreateTestCaseDTO({ ...input, title: name });
+    const dto = {
+      ...toCreateTestCaseDTO({ ...input, title: name }),
+      section_id: await sectionForSuite(input.testSuiteId, input.sectionId),
+    };
     const id = uuidv7();
     const now = new Date();
 
     const inserted = await db.transaction(async (tx) => {
       const [maxResult] = await tx
-        .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+        .select({
+          max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)`,
+          minSortOrder: sql<number | null>`MIN(${testCases.sort_order})`,
+        })
         .from(testCases)
         .where(eq(testCases.project_id, input.projectId));
       const nextDisplayId = (maxResult?.max ?? 0) + 1;
+      // 빠른 생성 입력과 낙관적 표시가 목록 맨 위라 새 케이스도 커스텀 순서 맨 위에 둔다 (#380).
+      const sortOrder =
+        input.sortOrder ?? (maxResult?.minSortOrder ?? CASE_SORT_ORDER_GAP) - CASE_SORT_ORDER_GAP;
 
       const [row] = await tx
         .insert(testCases)
@@ -324,6 +446,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
           ...dto,
           display_id: nextDisplayId,
           case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
+          sort_order: sortOrder,
           result_status: 'untested',
           created_at: now,
           updated_at: now,
@@ -398,11 +521,14 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
 async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
   const db = getDatabase();
 
-  // 1. test_run_suites 직접 링크로 연결된 런
-  const directRuns = await db
-    .select({ test_run_id: testRunSuites.test_run_id })
+  // 1. test_run_suites 직접 링크로 연결된 런. 실행에서 제거한 스위트는 건너뛴다 (#375).
+  const suiteLinks = await db
+    .select({ test_run_id: testRunSuites.test_run_id, excluded_at: testRunSuites.excluded_at })
     .from(testRunSuites)
     .where(eq(testRunSuites.test_suite_id, suiteId));
+  const excludedRunIds = new Set(
+    suiteLinks.filter((link) => link.excluded_at).map((link) => link.test_run_id)
+  );
 
   // 2. 마일스톤 체인으로 연결된 런
   const msRows = await db
@@ -421,26 +547,33 @@ async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
   }
 
   // 합치고 중복 제거
-  const allRunIds = new Set<string>();
-  for (const r of directRuns) {
-    if (r.test_run_id) allRunIds.add(r.test_run_id);
+  const candidateRunIds = new Set<string>();
+  for (const r of suiteLinks) {
+    if (r.test_run_id && !excludedRunIds.has(r.test_run_id)) candidateRunIds.add(r.test_run_id);
   }
   for (const r of milestoneRuns) {
-    allRunIds.add(r.id);
+    if (!excludedRunIds.has(r.id)) candidateRunIds.add(r.id);
   }
 
-  if (allRunIds.size === 0) return;
+  if (candidateRunIds.size === 0) return;
 
-  const runIds = Array.from(allRunIds);
+  // 완료되었거나 삭제된 실행은 기록으로 두고 범위를 바꾸지 않는다 (#376).
+  const openRuns = await db
+    .select({ id: testRuns.id })
+    .from(testRuns)
+    .where(
+      and(
+        inArray(testRuns.id, Array.from(candidateRunIds)),
+        ne(testRuns.status, 'COMPLETED'),
+        eq(testRuns.lifecycle_status, 'ACTIVE')
+      )
+    );
+  const runIds = openRuns.map((r) => r.id);
+
+  if (runIds.length === 0) return;
 
   // 마일스톤 체인으로 찾은 런에 test_run_suites 엔트리가 없으면 생성
-  const existingRunSuites = await db
-    .select({ test_run_id: testRunSuites.test_run_id })
-    .from(testRunSuites)
-    .where(
-      and(inArray(testRunSuites.test_run_id, runIds), eq(testRunSuites.test_suite_id, suiteId))
-    );
-  const existingRunSuiteIds = new Set(existingRunSuites.map((r) => r.test_run_id));
+  const existingRunSuiteIds = new Set(suiteLinks.map((r) => r.test_run_id));
   const missingRunSuiteIds = runIds.filter((id) => !existingRunSuiteIds.has(id));
 
   if (missingRunSuiteIds.length > 0) {
@@ -478,6 +611,8 @@ async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
       updated_at: new Date(),
     }))
   );
+
+  await recomputeTestRunStatus(db, newRunIds);
 }
 
 /**
@@ -619,6 +754,10 @@ export const updateTestCase = async (
     if (!existing?.project_id || !(await requireProjectAccess(existing.project_id))) {
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
+    // 다른 탭에서 휴지통으로 보낸 케이스는 수정하지 않는다. 실행 동기화로 되살아나는 것도 막는다 (#408).
+    if (existing.lifecycle_status !== 'ACTIVE') {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] } };
+    }
     if (
       !(await caseLinksBelongTo(
         existing.project_id,
@@ -646,8 +785,12 @@ export const updateTestCase = async (
     if (updateFields.testSuiteId !== undefined) {
       updateData.test_suite_id = updateFields.testSuiteId;
     }
-    if (updateFields.sectionId !== undefined) {
-      updateData.section_id = updateFields.sectionId;
+    if (updateFields.testSuiteId !== undefined || updateFields.sectionId !== undefined) {
+      // 스위트만 바꾸면 이전 스위트의 섹션이 남으므로, 바뀐 뒤 스위트 기준으로 섹션을 다시 정한다 (#383).
+      updateData.section_id = await sectionForSuite(
+        updateFields.testSuiteId !== undefined ? updateFields.testSuiteId : existing.test_suite_id,
+        updateFields.sectionId !== undefined ? updateFields.sectionId : existing.section_id
+      );
     }
     if (updateFields.testType !== undefined) {
       updateData.test_type = updateFields.testType;
@@ -668,16 +811,17 @@ export const updateTestCase = async (
       updateData.sort_order = updateFields.sortOrder;
     }
 
+    // 확인과 저장 사이에 휴지통으로 가는 경우도 막도록 저장 조건에도 활성 상태를 둔다.
     const [updated] = await db
       .update(testCases)
       .set(updateData)
-      .where(eq(testCases.id, id))
+      .where(and(eq(testCases.id, id), eq(testCases.lifecycle_status, 'ACTIVE')))
       .returning();
 
     if (!updated) {
       return {
         success: false,
-        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] },
       };
     }
 
@@ -742,32 +886,43 @@ export const archiveTestCase = async (id: string): Promise<ActionResult<{ id: st
 
     // 접근 권한 확인
     const [existing] = await db
-      .select({ projectId: testCases.project_id })
+      .select({ projectId: testCases.project_id, lifecycleStatus: testCases.lifecycle_status })
       .from(testCases)
       .where(eq(testCases.id, id))
       .limit(1);
     if (!existing?.projectId || !(await requireProjectAccess(existing.projectId))) {
       return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.ACCESS_DENIED] } };
     }
+    // 이미 휴지통에 있거나 영구 삭제된 케이스를 다시 보관하면 영구 삭제가 휴지통으로 되돌아간다 (#408).
+    if (existing.lifecycleStatus !== 'ACTIVE') {
+      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] } };
+    }
 
-    const [archived] = await db
-      .update(testCases)
-      .set({
-        archived_at: new Date(),
-        lifecycle_status: 'DELETED',
-        updated_at: new Date(),
-      })
-      .where(eq(testCases.id, id))
-      .returning();
+    const now = new Date();
+    const archived = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(testCases)
+        .set({
+          archived_at: now,
+          lifecycle_status: 'DELETED',
+          updated_at: now,
+        })
+        .where(and(eq(testCases.id, id), eq(testCases.lifecycle_status, 'ACTIVE')))
+        .returning();
+      // 진행 중인 실행의 목록과 진행률에서 뺀다. 복원하면 되돌아온다 (#377).
+      if (row) await excludeArchivedCasesFromRuns(tx, [row.id], now);
+      return row;
+    });
 
     if (!archived) {
       return {
         success: false,
-        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_FOUND] },
+        errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] },
       };
     }
 
     invalidateCache(INVALIDATE.cases);
+    invalidateCache(INVALIDATE.runs);
     return {
       success: true,
       data: { id: archived.id },

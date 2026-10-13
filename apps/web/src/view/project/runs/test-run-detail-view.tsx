@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
+import { getTestCases } from '@/entities/test-case/api';
+import { getTestSuites } from '@/entities/test-suite/api';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import {
   bulkUpdateTestCaseRunStatus,
@@ -13,7 +15,7 @@ import {
   updateTestCaseRunStatus,
   updateTestRunName,
 } from '@/features/runs';
-import { useRerunRun } from '@/features/runs-edit';
+import { AddToRunModal, useRerunRun } from '@/features/runs-edit';
 import { TESTRUN_EVENTS, track } from '@/shared/lib/analytics';
 import { type TestStatusData } from '@/widgets/project';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -100,6 +102,7 @@ export const TestRunDetailView = () => {
   );
   const [showRerunDialog, setShowRerunDialog] = useState(false);
   const [showAutoRunDialog, setShowAutoRunDialog] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
   const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
   const statusFilterRef = React.useRef<HTMLDivElement>(null);
@@ -133,6 +136,18 @@ export const TestRunDetailView = () => {
   });
   const dashboardMilestones = milestonesData?.success ? milestonesData.data : [];
 
+  // 테스트 추가 모달 후보. 모달을 열 때만 불러온다 (#375).
+  const { data: projectCasesData } = useQuery({
+    queryKey: ['testCases', 'forRunAdd', projectId],
+    queryFn: () => getTestCases({ project_id: projectId! }),
+    enabled: showAddModal && !!projectId,
+  });
+  const { data: projectSuitesData } = useQuery({
+    queryKey: ['testSuites', 'forRunAdd', projectId],
+    queryFn: () => getTestSuites({ projectId: projectId! }),
+    enabled: showAddModal && !!projectId,
+  });
+
   // ─── Mutations ─────────────────────────────────────────────────
   const updateMutation = useMutation({
     mutationFn: updateTestCaseRunStatus,
@@ -150,6 +165,8 @@ export const TestRunDetailView = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+      // 케이스 목록의 상태는 마지막 실행 결과라 결과가 바뀌면 같이 다시 불러온다 (#379).
+      queryClient.invalidateQueries({ queryKey: ['testCases'] });
     },
   });
 
@@ -227,6 +244,8 @@ export const TestRunDetailView = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+      // 케이스 목록의 상태는 마지막 실행 결과라 결과가 바뀌면 같이 다시 불러온다 (#379).
+      queryClient.invalidateQueries({ queryKey: ['testCases'] });
       if (projectId) queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
     },
   });
@@ -252,6 +271,23 @@ export const TestRunDetailView = () => {
     }
     return Array.from(suiteMap.entries()).map(([id, name]) => ({ id, name }));
   }, [testRun]);
+
+  // 실행에 직접 연결된 스위트. 이 스위트 그룹에만 제거 버튼을 보인다 (#375).
+  const removableSuiteIds = useMemo(
+    () => new Set(testRun?.sources.filter((s) => s.type === 'suite').map((s) => s.id) ?? []),
+    [testRun]
+  );
+
+  const addableCases = useMemo(() => {
+    if (!testRun || !projectCasesData?.success) return [];
+    const inRun = new Set(testRun.testCaseRuns.map((tc) => tc.testCaseId));
+    return (projectCasesData.data ?? []).filter((tc) => !inRun.has(tc.id));
+  }, [testRun, projectCasesData]);
+
+  const addableSuites = useMemo(() => {
+    if (!projectSuitesData?.success) return [];
+    return (projectSuitesData.data ?? []).filter((suite) => !removableSuiteIds.has(suite.id));
+  }, [projectSuitesData, removableSuiteIds]);
 
   const filteredCases = useMemo(() => {
     if (!testRun) return [];
@@ -310,7 +346,8 @@ export const TestRunDetailView = () => {
   // ─── Handlers ──────────────────────────────────────────────────
   const handleInlineStatusChange = useCallback(
     (caseId: string, status: TestCaseRunStatus) => {
-      updateMutation.mutate({ testCaseRunId: caseId, status, comment: null });
+      // 상태만 바꾼다. 코멘트를 보내지 않아야 저장된 코멘트가 남는다 (#413).
+      updateMutation.mutate({ testCaseRunId: caseId, status });
     },
     [updateMutation]
   );
@@ -370,6 +407,7 @@ export const TestRunDetailView = () => {
         onRerun={() => setShowRerunDialog(true)}
         isRerunning={rerunMutation.isPending}
         onAutoRun={() => setShowAutoRunDialog(true)}
+        onAddTests={() => setShowAddModal(true)}
       />
 
       <RunSummaryBar stats={testRun.stats} />
@@ -409,6 +447,7 @@ export const TestRunDetailView = () => {
           onRemoveSuite={(suiteId, suiteName) =>
             setRemoveSuiteTarget({ id: suiteId, name: suiteName })
           }
+          removableSuiteIds={removableSuiteIds}
           bulkSelection={bulkSelection}
           filteredCaseIds={filteredCases.map((c) => c.id)}
           onBulkStatusChange={handleBulkStatusChange}
@@ -436,6 +475,15 @@ export const TestRunDetailView = () => {
           isPending={removeSuiteMutation.isPending}
           onConfirm={(suiteId) => removeSuiteMutation.mutate({ suiteId })}
           onClose={() => setRemoveSuiteTarget(null)}
+        />
+      )}
+
+      {showAddModal && (
+        <AddToRunModal
+          runId={testRunId}
+          availableCases={addableCases}
+          availableSuites={addableSuites}
+          onClose={() => setShowAddModal(false)}
         />
       )}
 

@@ -14,9 +14,17 @@ interface StepProjectInfoProps {
   control: Control<ProjectForm>;
   errors: FieldErrors<ProjectForm>;
   onNext: () => void;
+  /** 이름 중복을 확인하는 중인지. */
+  isChecking?: boolean;
 }
 
-export const StepProjectInfo = ({ register, control, errors, onNext }: StepProjectInfoProps) => {
+export const StepProjectInfo = ({
+  register,
+  control,
+  errors,
+  onNext,
+  isChecking = false,
+}: StepProjectInfoProps) => {
   return (
     <div className="flex flex-col items-center justify-center gap-4">
       {/* Step1: 프로젝트 이름 입력 */}
@@ -90,7 +98,13 @@ export const StepProjectInfo = ({ register, control, errors, onNext }: StepProje
           )}
         </div>
       )}
-      <DSButton type="button" variant="solid" className="mt-2 w-full" onClick={onNext}>
+      <DSButton
+        type="button"
+        variant="solid"
+        className="mt-2 w-full"
+        onClick={onNext}
+        disabled={isChecking}
+      >
         프로젝트 생성 시작
       </DSButton>
     </div>

@@ -43,8 +43,9 @@ export const createMilestoneAction = async (input: CreateMilestoneInput) => {
         project_id: validation.data.projectId,
         name: validation.data.title,
         description: validation.data.description,
-        start_date: validation.data.startDate?.toISOString(),
-        end_date: validation.data.endDate?.toISOString(),
+        // 'YYYY-MM-DD' 그대로 저장한다. UTC 로 바꾸면 KST 에서 하루 앞당겨진다 (#381).
+        start_date: validation.data.startDate ?? null,
+        end_date: validation.data.endDate ?? null,
         // DB 컬럼에 DEFAULT now() 가 없어 drizzle 의 DEFAULT 키워드만으로는
         // NOT NULL 제약에서 막힌다. 값을 명시한다.
         created_at: now,

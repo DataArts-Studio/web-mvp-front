@@ -2,11 +2,11 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { addCasesToRunScope, recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCaseRuns, testCases, testRunSuites, testRuns } from '@testea/db';
+import { getDatabase, testCases, testRunSuites, testRuns } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 
 type AddSuitesToRunResult =
@@ -44,7 +44,6 @@ export async function addSuitesToRunAction(
     const result = await db.transaction(async (tx) => {
       await assertRunResources(tx, run.projectId!, { suiteIds });
 
-      // 2. Get test cases belonging to the selected suites via testCases.test_suite_id
       const suiteCaseRows = await tx
         .select({
           id: testCases.id,
@@ -59,50 +58,29 @@ export async function addSuitesToRunAction(
         caseIds: suiteCaseRows.map((row) => row.id!),
       });
 
-      // 1. Link suites to the run (ignore duplicates)
-      const suiteLinks = suiteIds.map((suiteId) => ({
-        test_run_id: runId,
-        test_suite_id: suiteId,
-      }));
-      await tx.insert(testRunSuites).values(suiteLinks).onConflictDoNothing();
+      // 스위트 연결. 예전에 제거한 스위트면 제외 표시를 지워 다시 연결한다 (#375).
+      await tx
+        .insert(testRunSuites)
+        .values(suiteIds.map((suiteId) => ({ test_run_id: runId, test_suite_id: suiteId })))
+        .onConflictDoUpdate({
+          target: [testRunSuites.test_run_id, testRunSuites.test_suite_id],
+          set: { excluded_at: null },
+        });
 
-      const caseIdToSuite = new Map<string, string>();
-      for (const row of suiteCaseRows) {
-        if (row.id && row.test_suite_id) {
-          caseIdToSuite.set(row.id, row.test_suite_id);
-        }
-      }
+      const addedCount = await addCasesToRunScope(
+        tx,
+        runId,
+        suiteCaseRows
+          .filter((row) => row.id && row.test_suite_id)
+          .map((row) => ({
+            caseId: row.id,
+            sourceType: 'suite' as const,
+            sourceId: row.test_suite_id,
+          }))
+      );
 
-      const caseIds = Array.from(caseIdToSuite.keys());
-      if (caseIds.length === 0) return 0;
-
-      // 3. Find existing test case runs to avoid duplicates
-      const existingRows = await tx
-        .select({ test_case_id: testCaseRuns.test_case_id })
-        .from(testCaseRuns)
-        .where(
-          and(eq(testCaseRuns.test_run_id, runId), inArray(testCaseRuns.test_case_id, caseIds))
-        );
-
-      const existingCaseIds = new Set(existingRows.map((r) => r.test_case_id));
-      const newCaseIds = caseIds.filter((id) => !existingCaseIds.has(id));
-
-      if (newCaseIds.length === 0) return 0;
-
-      // 4. Create test case run records for new cases with source tracking
-      const newTestCaseRuns = newCaseIds.map((caseId) => ({
-        id: uuidv7(),
-        test_run_id: runId,
-        test_case_id: caseId,
-        status: 'untested' as const,
-        source_type: 'suite' as const,
-        source_id: caseIdToSuite.get(caseId),
-        created_at: new Date(),
-        updated_at: new Date(),
-      }));
-
-      await tx.insert(testCaseRuns).values(newTestCaseRuns);
-      return newCaseIds.length;
+      await recomputeTestRunStatus(tx, runId);
+      return addedCount;
     });
 
     invalidateCache(INVALIDATE.runs);

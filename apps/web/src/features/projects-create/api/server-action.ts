@@ -6,8 +6,9 @@ import { setAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword } from '@/access/lib/password-hash';
 import { createProjectSessionToken } from '@/access/lib/project-session';
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
-import { CreateProjectDomainSchema, toProjectDto } from '@/entities';
+import { CreateProjectDomainSchema, PROJECT_NAME_ERRORS, toProjectDto } from '@/entities';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { isUniqueViolation } from '@/shared/lib/db-error';
 import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -84,16 +85,25 @@ export async function createProject(
     // 프로젝트 이름 정규화: trim + 연속 공백을 단일 공백으로 변환
     const normalizedName = dto.name.trim().replace(/\s+/g, ' ');
 
-    const [inserted] = await db
-      .insert(projects)
-      .values({
-        id,
-        name: normalizedName,
-        identifier: hashedIdentifier,
-        description: dto.description ?? null,
-        owner_name: dto.owner_name ?? null,
-      })
-      .returning();
+    let inserted;
+    try {
+      [inserted] = await db
+        .insert(projects)
+        .values({
+          id,
+          name: normalizedName,
+          identifier: hashedIdentifier,
+          description: dto.description ?? null,
+          owner_name: dto.owner_name ?? null,
+        })
+        .returning();
+    } catch (error) {
+      // 이름 유니크 위반은 일반 오류가 아니라 이름 중복으로 알려 준다 (#404).
+      if (isUniqueViolation(error)) {
+        return { success: false, errors: { projectName: [PROJECT_NAME_ERRORS.TAKEN] } };
+      }
+      throw error;
+    }
 
     if (!inserted) {
       return {

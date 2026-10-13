@@ -20,6 +20,11 @@ vi.mock('@/entities/test-case-version/model/diff-utils', () => ({
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
 }));
+vi.mock('@/access/lib/project-scope', () => ({
+  ACCESS_DENIED: { success: false, errors: { _general: ['접근 권한이 없습니다.'] } },
+  canAccess: vi.fn(async () => true),
+  belongsToProject: vi.fn(async () => true),
+}));
 
 const mockExisting = {
   id: 'tc-123',
@@ -30,6 +35,9 @@ const mockExisting = {
   pre_condition: '사전 조건',
   steps: '스텝',
   expected_result: '기대 결과',
+  test_suite_id: 'suite-old',
+  section_id: 'section-old',
+  lifecycle_status: 'ACTIVE',
 };
 
 // 접근 권한 확인용 select 체인 (existing row 반환)
@@ -66,6 +74,7 @@ vi.mock('@testea/db', () => ({
   testRunSuites: {},
   testRuns: {},
   milestoneTestSuites: {},
+  testSuiteSections: { id: 'section.id', suite_id: 'section.suite_id' },
 }));
 
 vi.mock('drizzle-orm', () => ({
@@ -201,7 +210,7 @@ describe('updateTestCase', () => {
     );
   });
 
-  it('테스트 케이스가 존재하지 않으면 에러 코드를 반환한다', async () => {
+  it('확인 뒤 저장 사이에 휴지통으로 가 저장된 행이 없으면 에러 코드를 반환한다', async () => {
     mockReturning.mockResolvedValue([]);
 
     const result = await updateTestCase({
@@ -211,9 +220,24 @@ describe('updateTestCase', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errors._testCase).toContain('NOT_FOUND');
+      expect(result.errors._testCase).toContain('NOT_ACTIVE');
     }
   });
+
+  it.each(['DELETED', 'PURGED'])(
+    '%s 상태 케이스는 수정하지 않고 실행 동기화도 하지 않는다 (#408)',
+    async (status) => {
+      mockSelectLimit.mockResolvedValue([{ ...mockExisting, lifecycle_status: status }]);
+
+      const result = await updateTestCase({ id: 'tc-123', title: '새 제목', testSuiteId: 's-1' });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors._testCase).toContain('NOT_ACTIVE');
+      }
+      expect(mockUpdate).not.toHaveBeenCalled();
+    }
+  );
 
   it('DB 에러 발생 시 에러 코드를 반환한다', async () => {
     mockReturning.mockRejectedValue(new Error('DB Error'));
@@ -227,5 +251,36 @@ describe('updateTestCase', () => {
     if (!result.success) {
       expect(result.errors._testCase).toContain('UPDATE_FAILED');
     }
+  });
+
+  describe('스위트를 옮길 때 섹션 (#383)', () => {
+    it('이전 스위트의 섹션은 새 스위트에 없으므로 미분류로 돌린다', async () => {
+      // 첫 조회는 기존 케이스, 두 번째는 새 스위트에서 섹션 찾기(없음)
+      mockSelectLimit.mockResolvedValueOnce([mockExisting]).mockResolvedValueOnce([]);
+
+      await updateTestCase({ id: 'tc-123', testSuiteId: 'suite-new' });
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({ test_suite_id: 'suite-new', section_id: null })
+      );
+    });
+
+    it('새 스위트의 섹션을 함께 고르면 그 섹션을 유지한다', async () => {
+      mockSelectLimit
+        .mockResolvedValueOnce([mockExisting])
+        .mockResolvedValueOnce([{ id: 'section-new' }]);
+
+      await updateTestCase({ id: 'tc-123', testSuiteId: 'suite-new', sectionId: 'section-new' });
+
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({ test_suite_id: 'suite-new', section_id: 'section-new' })
+      );
+    });
+
+    it('스위트·섹션을 건드리지 않는 수정은 섹션을 바꾸지 않는다', async () => {
+      await updateTestCase({ id: 'tc-123', title: '이름만 수정' });
+
+      expect(mockSet).toHaveBeenCalledWith(expect.not.objectContaining({ section_id: null }));
+    });
   });
 });
