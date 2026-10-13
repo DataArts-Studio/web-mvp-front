@@ -16,6 +16,7 @@ import {
   recomputeTestRunStatus,
 } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { toContainsPattern } from '@/shared/lib/like-pattern';
 import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
@@ -141,7 +142,8 @@ function buildCaseListWhere(
   }
 
   if (search?.trim()) {
-    const keyword = `%${search.trim()}%`;
+    // 검색어의 %·_ 가 와일드카드로 동작하지 않게 이스케이프한다 (#411).
+    const keyword = toContainsPattern(search.trim());
     conditions.push(or(ilike(testCases.name, keyword), ilike(testCases.case_key, keyword))!);
   }
 
