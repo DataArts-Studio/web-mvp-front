@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
@@ -53,6 +53,7 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
   const router = useRouter();
   const params = useParams();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const titleId = useId();
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(testCase?.projectId || ''),
@@ -127,6 +128,12 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
         transition={{ duration: 0.16, ease: 'easeOut' }}
       />
       <motion.section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') onClose();
+        }}
         className="bg-bg-1 border-line-2 fixed top-0 right-0 z-50 flex h-full w-[min(920px,calc(100vw-48px))] flex-col border-l shadow-[-16px_0_40px_rgba(15,23,42,0.12)]"
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
@@ -142,7 +149,7 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
               <span className="text-text-4">/</span>
               <span className="text-text-3 truncate">{currentSuite?.title || t('ui.noSuite')}</span>
             </div>
-            <h2 className="text-text-1 line-clamp-2 text-xl leading-7 font-semibold">
+            <h2 id={titleId} className="text-text-1 line-clamp-2 text-xl leading-7 font-semibold">
               {testCase?.title || t('ui.defaultCaseTitle')}
             </h2>
             <div className="text-text-3 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -171,18 +178,25 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
               }}
               disabled={!testCase}
               title={t('ui.openDetailPage')}
+              aria-label={t('ui.openDetailPage')}
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
             </DSButton>
 
-            <DSButton size="small" variant="ghost" className="px-2" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <DSButton
+              size="small"
+              variant="ghost"
+              className="px-2"
+              onClick={onClose}
+              aria-label={t('ui.close')}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
             </DSButton>
           </div>
         </header>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_280px]">
-          <main className="min-w-0 overflow-y-auto px-5 py-4">
+          <div className="min-w-0 overflow-y-auto px-5 py-4">
             <div className="flex flex-col gap-5">
               <ContentSection title={t('ui.preconditions')}>
                 <SideStepsList
@@ -209,7 +223,7 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
                 />
               </ContentSection>
             </div>
-          </main>
+          </div>
 
           <aside className="bg-bg-2/60 border-line-2 min-w-0 overflow-y-auto border-t px-4 py-4 lg:border-t-0 lg:border-l">
             <div className="flex flex-col gap-5">
@@ -250,10 +264,7 @@ export const TestCaseSideView = ({ testCase: listItem, onClose }: TestCaseSideVi
           </aside>
         </div>
 
-        <footer className="border-line-2 bg-bg-1 flex shrink-0 items-center justify-between gap-2 border-t px-5 py-3">
-          <div className="text-text-4 min-w-0 truncate text-xs">
-            {testCase?.id || t('ui.emptyValue')}
-          </div>
+        <footer className="border-line-2 bg-bg-1 flex shrink-0 items-center justify-end gap-2 border-t px-5 py-3">
           <div className="flex shrink-0 items-center gap-2">
             <DSButton
               size="small"

@@ -41,10 +41,11 @@ export const SuiteSelectionPanel = ({
       <button
         type="button"
         onClick={onToggleExpand}
+        aria-expanded={isExpanded}
         className="hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <FolderOpen className="text-primary h-5 w-5" />
+          <FolderOpen className="text-primary h-5 w-5" aria-hidden="true" />
           <span className="text-text-1 font-medium">테스트 스위트</span>
           {selectedSuiteIds.size > 0 && (
             <span className="bg-primary rounded-full px-2 py-0.5 text-xs text-white">
@@ -64,9 +65,10 @@ export const SuiteSelectionPanel = ({
           {/* 검색 */}
           <div className="border-line-2 border-b px-4 py-2">
             <div className="bg-bg-3 flex items-center gap-2 rounded-lg px-3 py-2">
-              <Search className="text-text-3 h-4 w-4" />
+              <Search className="text-text-3 h-4 w-4" aria-hidden="true" />
               <input
-                type="text"
+                type="search"
+                aria-label="스위트 검색"
                 placeholder="스위트 검색..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -83,12 +85,16 @@ export const SuiteSelectionPanel = ({
               </div>
             ) : (
               filteredSuites.map((suite) => (
-                <div
+                <button
                   key={suite.id}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selectedSuiteIds.has(suite.id)}
                   onClick={() => onToggleSuite(suite.id)}
-                  className="hover:bg-bg-3 flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors"
+                  className="hover:bg-bg-3 flex w-full cursor-pointer items-center gap-3 px-4 py-2 text-left transition-colors"
                 >
-                  <div
+                  <span
+                    aria-hidden="true"
                     className={cn(
                       'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
                       selectedSuiteIds.has(suite.id)
@@ -97,14 +103,16 @@ export const SuiteSelectionPanel = ({
                     )}
                   >
                     {selectedSuiteIds.has(suite.id) && <Check className="h-3 w-3" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-text-1 truncate text-sm">{suite.title}</span>
+                  </span>
+                  <span className="block min-w-0 flex-1">
+                    <span className="text-text-1 block truncate text-sm">{suite.title}</span>
                     {suite.description && (
-                      <p className="text-text-3 truncate text-xs">{suite.description}</p>
+                      <span className="text-text-3 block truncate text-xs">
+                        {suite.description}
+                      </span>
                     )}
-                  </div>
-                </div>
+                  </span>
+                </button>
               ))
             )}
           </div>
