@@ -12,6 +12,7 @@ import { getTestCases } from '@/entities/test-case/api';
 import { getTestSuites } from '@/entities/test-suite/api';
 import { useCreateMilestone } from '@/features/milestones-create';
 import { MILESTONE_EVENTS, track } from '@/shared/lib/analytics';
+import { todayDateOnly } from '@/shared/lib/date-only';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CaseSelectionPanel, DSButton, LoadingSpinner, SuiteSelectionPanel } from '@testea/ui';
@@ -58,7 +59,8 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
       projectId,
       title: '',
       description: '',
-      startDate: new Date(),
+      // 오늘 날짜를 로컬 기준으로 만든다. UTC 기준이면 KST 0~9시에 전날이 된다 (#381).
+      startDate: todayDateOnly(),
       endDate: null,
     },
   });

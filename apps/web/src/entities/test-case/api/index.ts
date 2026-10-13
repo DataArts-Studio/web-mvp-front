@@ -2,6 +2,7 @@ export {
   getTestCase,
   getTestCases,
   getTestCasesList,
+  getTestCasesForExport,
   createTestCase,
   updateTestCase,
   duplicateTestCase,

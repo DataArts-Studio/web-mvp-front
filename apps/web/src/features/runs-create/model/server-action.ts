@@ -22,6 +22,9 @@ import { z } from 'zod';
 
 type CreateRunInput = z.infer<typeof CreateTestRunSchema>;
 
+const EMPTY_SCOPE_MESSAGE =
+  '선택한 마일스톤에 실행할 케이스가 없습니다. 마일스톤에 스위트나 케이스를 추가한 뒤 다시 시도해주세요.';
+
 export const createTestRunAction = async (input: CreateRunInput) => {
   const validation = CreateTestRunSchema.safeParse(input);
 
@@ -46,16 +49,23 @@ export const createTestRunAction = async (input: CreateRunInput) => {
   const db = getDatabase();
 
   try {
-    const [newTestRun] = await db.transaction(async (tx) => {
+    const created = await db.transaction(async (tx) => {
       await assertRunResources(tx, project_id, { milestoneIds: [milestone_id] });
 
+      // 휴지통 케이스는 새 실행에 넣지 않는다 (#377).
       const milestoneCaseRows = await tx
         .select({
           test_case_id: milestoneTestCases.test_case_id,
           milestone_id: milestoneTestCases.milestone_id,
         })
         .from(milestoneTestCases)
-        .where(eq(milestoneTestCases.milestone_id, milestone_id));
+        .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+        .where(
+          and(
+            eq(milestoneTestCases.milestone_id, milestone_id),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        );
 
       const milestoneSuiteRows = await tx
         .select({
@@ -92,6 +102,13 @@ export const createTestRunAction = async (input: CreateRunInput) => {
       await assertRunResources(tx, project_id, {
         caseIds: suiteCaseRows.map((row) => row.id),
       });
+
+      // 실행할 케이스가 하나도 없으면 0/0 으로 남는 빈 실행을 만들지 않는다 (#385).
+      const scopeCaseIds = new Set([
+        ...milestoneCaseRows.map((row) => row.test_case_id),
+        ...suiteCaseRows.map((row) => row.id),
+      ]);
+      if (scopeCaseIds.size === 0) return null;
 
       // 1. Create the main test run entry and link the selected milestone
       // 마일스톤 목록·상세·대시보드 집계와 실행 출처 표시는 test_runs.milestone_id 를 읽으므로
@@ -172,11 +189,18 @@ export const createTestRunAction = async (input: CreateRunInput) => {
         }
       }
 
-      return [run];
+      return run;
     });
 
+    if (!created) {
+      return {
+        success: false,
+        errors: { formErrors: [EMPTY_SCOPE_MESSAGE], fieldErrors: {} } as FlatErrors,
+      };
+    }
+
     invalidateCache(INVALIDATE.runs);
-    return { success: true, testRun: newTestRun };
+    return { success: true, testRun: created };
   } catch (error) {
     console.error('[createTestRunAction] Error:', error);
     Sentry.captureException(error, {

@@ -4,11 +4,59 @@ import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { checklistItems, checklists, getDatabase } from '@testea/db';
+import { type ChecklistStatus, checklistItems, checklists, getDatabase } from '@testea/db';
 import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
 
 import { AddChecklistItemSchema, CreateChecklistSchema } from '../model/schema';
 import type { ChecklistWithItems, ChecklistWithProgress } from '../model/types';
+
+type Database = ReturnType<typeof getDatabase>;
+
+/**
+ * 항목 체크 현황으로 체크리스트 상태를 다시 계산해 저장한다 (#389).
+ *
+ * - 항목이 없거나 체크된 항목이 없으면 open, 일부면 in_progress, 전부면 completed.
+ * - completed_at 은 완료로 바뀔 때만 찍고 완료가 아니면 비운다. started_at 은 첫 체크 때 한 번만 찍는다.
+ *
+ * 세기와 쓰기를 한 문장으로 처리해, 초기화처럼 여러 항목을 동시에 바꿀 때
+ * 먼저 센 낡은 값으로 상태를 덮어쓰지 않게 한다.
+ */
+const recomputeChecklistStatus = async (
+  db: Database,
+  checklistId: string
+): Promise<ChecklistStatus> => {
+  const stats = db.$with('stats').as(
+    db
+      .select({
+        total: sql<number>`count(*)::int`.as('total'),
+        checked: sql<number>`count(*) filter (where ${checklistItems.is_checked})::int`.as(
+          'checked'
+        ),
+      })
+      .from(checklistItems)
+      .where(eq(checklistItems.checklist_id, checklistId))
+  );
+  const nextStatus = sql`case
+    when ${stats.total} = 0 or ${stats.checked} = 0 then 'open'
+    when ${stats.checked} = ${stats.total} then 'completed'
+    else 'in_progress'
+  end`;
+
+  const [row] = await db
+    .with(stats)
+    .update(checklists)
+    .set({
+      status: sql`${nextStatus}`,
+      completed_at: sql`case when ${nextStatus} = 'completed' then coalesce(${checklists.completed_at}, now()) end`,
+      started_at: sql`case when ${stats.checked} > 0 then coalesce(${checklists.started_at}, now()) else ${checklists.started_at} end`,
+      updated_at: new Date(),
+    })
+    .from(stats)
+    .where(eq(checklists.id, checklistId))
+    .returning({ status: checklists.status });
+
+  return row?.status ?? 'open';
+};
 
 // --- 생성 ---
 export const createChecklist = async (input: {
@@ -172,46 +220,9 @@ export const toggleChecklistItem = async (
       return { success: false, errors: { _checklist: ['항목을 찾을 수 없습니다.'] } };
     }
 
-    // 체크리스트 상태 자동 전환
-    const [stats] = await db
-      .select({
-        total: count(),
-        checked: count(sql`CASE WHEN ${checklistItems.is_checked} = true THEN 1 END`),
-      })
-      .from(checklistItems)
-      .where(eq(checklistItems.checklist_id, updated.checklist_id));
+    const checklistStatus = await recomputeChecklistStatus(db, updated.checklist_id);
 
-    let newStatus: string;
-    const updateData: Record<string, unknown> = { updated_at: new Date() };
-
-    if (stats.checked === stats.total) {
-      newStatus = 'completed';
-      updateData.status = 'completed';
-      updateData.completed_at = new Date();
-    } else if (stats.checked > 0) {
-      newStatus = 'in_progress';
-      updateData.status = 'in_progress';
-      updateData.completed_at = null;
-    } else {
-      newStatus = 'open';
-      updateData.status = 'open';
-      updateData.completed_at = null;
-    }
-
-    // 첫 체크 시 started_at 기록
-    const [checklist] = await db
-      .select({ started_at: checklists.started_at })
-      .from(checklists)
-      .where(eq(checklists.id, updated.checklist_id))
-      .limit(1);
-
-    if (!checklist.started_at && stats.checked > 0) {
-      updateData.started_at = new Date();
-    }
-
-    await db.update(checklists).set(updateData).where(eq(checklists.id, updated.checklist_id));
-
-    return { success: true, data: { checklistStatus: newStatus } };
+    return { success: true, data: { checklistStatus } };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'toggleChecklistItem' } });
     return { success: false, errors: { _checklist: ['항목 상태 변경에 실패했습니다.'] } };
@@ -248,11 +259,8 @@ export const addChecklistItem = async (input: {
       })
       .returning({ id: checklistItems.id });
 
-    // 완료 상태였으면 in_progress로 변경
-    await db
-      .update(checklists)
-      .set({ status: 'open', completed_at: null, updated_at: new Date() })
-      .where(and(eq(checklists.id, parsed.data.checklistId), eq(checklists.status, 'completed')));
+    // 완료 상태였다면 미체크 항목이 생겼으니 진행 중으로 돌아간다 (#389).
+    await recomputeChecklistStatus(db, parsed.data.checklistId);
 
     return { success: true, data: { id: item.id } };
   } catch (error) {
@@ -267,7 +275,14 @@ export const deleteChecklistItem = async (itemId: string): Promise<ActionResult<
     if (!(await canAccess('checklistItem', itemId))) return ACCESS_DENIED;
 
     const db = getDatabase();
-    await db.delete(checklistItems).where(eq(checklistItems.id, itemId));
+    const [deleted] = await db
+      .delete(checklistItems)
+      .where(eq(checklistItems.id, itemId))
+      .returning({ checklist_id: checklistItems.checklist_id });
+
+    // 남은 미체크 항목을 지우면 완료가 되어야 한다 (#389).
+    if (deleted) await recomputeChecklistStatus(db, deleted.checklist_id);
+
     return { success: true, data: null };
   } catch (error) {
     Sentry.captureException(error, { extra: { action: 'deleteChecklistItem' } });

@@ -9,22 +9,12 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+import { getAccessTokenCookieName } from '@/access/lib/cookie-name';
 import { SESSION_CHECK_HEADER, SESSION_PATH_HEADER } from '@/access/lib/session-headers';
 import { routing } from '@/i18n/routing';
 
 // next-intl 라우팅 미들웨어 (마케팅 + /en 접두 경로에만 적용)
 const intlMiddleware = createMiddleware(routing);
-
-// 상수 직접 정의 (import 문제 방지)
-const COOKIE_PREFIX = 'project_access';
-
-/**
- * 프로젝트 접근 토큰 쿠키 이름 생성
- */
-function getAccessTokenCookieName(projectName: string): string {
-  const sanitized = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  return `${COOKIE_PREFIX}_${sanitized}`;
-}
 
 /**
  * Base64URL 디코딩 (UTF-8 지원)

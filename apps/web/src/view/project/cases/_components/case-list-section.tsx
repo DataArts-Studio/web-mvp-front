@@ -44,7 +44,6 @@ interface CaseListSectionProps {
     totalPages: number;
     totalItems: number;
   } | null;
-  queryParams: Record<string, unknown>;
   onPageChange: (page: number) => void;
   onResetFilters: () => void;
   onSelectCase: (id: string) => void;
@@ -60,7 +59,6 @@ export const CaseListSection = ({
   hasData,
   debouncedSearch,
   pagination,
-  queryParams,
   onPageChange,
   onResetFilters,
   onSelectCase,
@@ -77,7 +75,7 @@ export const CaseListSection = ({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
   );
-  const reorderMutation = useReorderCase(projectId, queryParams);
+  const reorderMutation = useReorderCase(projectId);
   const [localItems, setLocalItems] = useState<TestCaseCardType[] | null>(null);
 
   // 서버 데이터(items)가 갱신되면 드래그 정렬용 로컬 오버라이드를 비워 서버 순서로 되돌린다
@@ -104,16 +102,14 @@ export const CaseListSection = ({
       const beforeItem = newIndex > 0 ? reordered[newIndex - 1] : null;
       const afterItem = newIndex < reordered.length - 1 ? reordered[newIndex + 1] : null;
 
+      // 서버가 프로젝트 전체 순서에서 이웃 기준으로 자리를 잡으므로, 보기·페이지와 상관없이 이웃만 넘긴다.
       reorderMutation.mutate({
         id: active.id as string,
-        beforeOrder: beforeItem?.sortOrder ?? null,
-        afterOrder: afterItem?.sortOrder ?? null,
-        orderedIds: reordered.map((item) => item.id),
-        projectId,
-        scopeId: selectedSuiteId !== 'all' ? selectedSuiteId : projectId,
+        beforeId: beforeItem?.id ?? null,
+        afterId: afterItem?.id ?? null,
       });
     },
-    [localItems, items, reorderMutation, projectId, selectedSuiteId]
+    [localItems, items, reorderMutation]
   );
 
   // 복제

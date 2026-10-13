@@ -1,1 +1,1 @@
-export { exportTestCasesToCSV } from './lib/export-csv';
+export { buildTestCasesCsv, exportFilteredTestCases, exportTestCasesToCSV } from './lib/export-csv';

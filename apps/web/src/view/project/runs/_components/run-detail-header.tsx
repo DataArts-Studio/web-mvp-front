@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Keyboard,
   Pencil,
+  Plus,
   RotateCcw,
   X,
   Zap,
@@ -37,6 +38,7 @@ interface RunDetailHeaderProps {
   onRerun: () => void;
   isRerunning: boolean;
   onAutoRun: () => void;
+  onAddTests: () => void;
 }
 
 export const RunDetailHeader = ({
@@ -51,6 +53,7 @@ export const RunDetailHeader = ({
   onRerun,
   isRerunning,
   onAutoRun,
+  onAddTests,
 }: RunDetailHeaderProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -164,6 +167,14 @@ export const RunDetailHeader = ({
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={onAddTests}
+            className="rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors"
+            aria-label="테스트 추가"
+            title="테스트 추가"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
           <button
             onClick={onAutoRun}
             className="rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors"

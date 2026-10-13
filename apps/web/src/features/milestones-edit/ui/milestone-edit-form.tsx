@@ -32,13 +32,6 @@ interface MilestoneEditFormProps {
   onClose?: () => void;
 }
 
-const toDateTimeInputValue = (date: Date | string | null | undefined): string => {
-  if (!date) return '';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '';
-  return d.toISOString().slice(0, 16);
-};
-
 export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps) => {
   const { mutateAsync, isPending } = useUpdateMilestone();
   const queryClient = useQueryClient();
@@ -86,8 +79,8 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
       id: milestone.id,
       title: milestone.title,
       description: milestone.description ?? '',
-      startDate: toDateTimeInputValue(milestone.startDate),
-      endDate: toDateTimeInputValue(milestone.endDate),
+      startDate: milestone.startDate ?? '',
+      endDate: milestone.endDate ?? '',
     },
   });
 
@@ -258,9 +251,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField.Root className="flex flex-col gap-2">
-                  <FormField.Label className="text-text-1 font-medium">시작일시</FormField.Label>
+                  <FormField.Label className="text-text-1 font-medium">시작일</FormField.Label>
                   <FormField.Control
-                    type="datetime-local"
+                    type="date"
                     disabled={isLoading}
                     {...register('startDate')}
                     className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
@@ -271,9 +264,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
                 </FormField.Root>
 
                 <FormField.Root className="flex flex-col gap-2">
-                  <FormField.Label className="text-text-1 font-medium">종료일시</FormField.Label>
+                  <FormField.Label className="text-text-1 font-medium">종료일</FormField.Label>
                   <FormField.Control
-                    type="datetime-local"
+                    type="date"
                     disabled={isLoading}
                     {...register('endDate')}
                     className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"

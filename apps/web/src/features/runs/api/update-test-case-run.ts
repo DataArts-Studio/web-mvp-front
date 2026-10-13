@@ -2,11 +2,12 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { UpdateTestCaseRunInput, UpdateTestCaseRunResult } from '@/entities/test-run';
+import { recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { TestRunStatus, getDatabase, testCaseRuns, testRuns } from '@testea/db';
-import { and, eq, isNull } from 'drizzle-orm';
+import { getDatabase, testCaseRuns, testRuns } from '@testea/db';
+import { eq } from 'drizzle-orm';
 
 export async function updateTestCaseRunStatus(
   input: UpdateTestCaseRunInput
@@ -37,7 +38,8 @@ export async function updateTestCaseRunStatus(
       .update(testCaseRuns)
       .set({
         status: input.status,
-        comment: input.comment ?? null,
+        // 코멘트를 보내지 않은 변경(목록의 상태 드롭다운)은 저장된 코멘트를 그대로 둔다 (#413).
+        ...(input.comment !== undefined ? { comment: input.comment } : {}),
         executed_at: input.status !== 'untested' ? now : null,
         // 사용자가 수동으로 수정하면 자동(auto) 출처를 manual 로 되돌려 출처가 stale 해지지 않게 한다.
         result_source: 'manual',
@@ -55,7 +57,7 @@ export async function updateTestCaseRunStatus(
 
     // Update test run status based on case results
     if (updated.test_run_id) {
-      await updateTestRunStatus(db, updated.test_run_id);
+      await recomputeTestRunStatus(db, updated.test_run_id);
     }
 
     invalidateCache(INVALIDATE.runs);
@@ -75,35 +77,4 @@ export async function updateTestCaseRunStatus(
       errors: { _general: ['상태 업데이트 중 오류가 발생했습니다.'] },
     };
   }
-}
-
-async function updateTestRunStatus(db: ReturnType<typeof getDatabase>, testRunId: string) {
-  // Get all test case runs for this test run (논리 삭제 제외)
-  const caseRuns = await db
-    .select()
-    .from(testCaseRuns)
-    .where(and(eq(testCaseRuns.test_run_id, testRunId), isNull(testCaseRuns.excluded_at)));
-
-  if (caseRuns.length === 0) return;
-
-  const untested = caseRuns.filter((c) => c.status === 'untested').length;
-  const total = caseRuns.length;
-
-  let newStatus: TestRunStatus;
-
-  if (untested === total) {
-    newStatus = 'NOT_STARTED';
-  } else if (untested === 0) {
-    newStatus = 'COMPLETED';
-  } else {
-    newStatus = 'IN_PROGRESS';
-  }
-
-  await db
-    .update(testRuns)
-    .set({
-      status: newStatus,
-      updated_at: new Date(),
-    })
-    .where(eq(testRuns.id, testRunId));
 }
