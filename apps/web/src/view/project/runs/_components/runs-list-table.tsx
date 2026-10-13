@@ -3,6 +3,7 @@
 import React from 'react';
 
 import { EmptyState, Pagination } from '@testea/ui';
+import { formatDateTime } from '@testea/util';
 import { AlertCircle, ListTodo, Search } from 'lucide-react';
 
 import {
@@ -258,11 +259,7 @@ export const RunsListTable = ({
                     <RunProgressBar run={run} />
                   </div>
                   <p className="typo-caption-normal text-text-4 mt-2">
-                    {new Date(run.updatedAt).toLocaleDateString()}{' '}
-                    {new Date(run.updatedAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {formatDateTime(run.updatedAt)}
                   </p>
                 </div>
               </article>
