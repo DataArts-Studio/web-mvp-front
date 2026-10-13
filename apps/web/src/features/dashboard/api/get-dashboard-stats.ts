@@ -80,7 +80,9 @@ export const getDashboardStats = async ({
               eq(testCases.lifecycle_status, 'ACTIVE')
             )
           )
-          .where(eq(testSuites.project_id, projectRow.id))
+          .where(
+            and(eq(testSuites.project_id, projectRow.id), eq(testSuites.lifecycle_status, 'ACTIVE'))
+          )
           .groupBy(testSuites.id, testSuites.name, testSuites.description),
 
         // 3) 최근 테스트 케이스
@@ -105,7 +107,9 @@ export const getDashboardStats = async ({
             created_at: testSuites.created_at,
           })
           .from(testSuites)
-          .where(eq(testSuites.project_id, projectRow.id))
+          .where(
+            and(eq(testSuites.project_id, projectRow.id), eq(testSuites.lifecycle_status, 'ACTIVE'))
+          )
           .orderBy(desc(testSuites.created_at))
           .limit(5),
       ]);
