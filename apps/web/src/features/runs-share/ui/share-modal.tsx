@@ -5,10 +5,10 @@ import React, { useState } from 'react';
 import { DSButton } from '@/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog } from '@testea/ui';
-import { Copy, ExternalLink, Link2, Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { Copy, ExternalLink, Link2, Loader2, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { generateShareLink, revokeShareLink } from '../api/share-actions';
+import { generateShareLink, refreshShareSummary, revokeShareLink } from '../api/share-actions';
 
 interface ShareModalProps {
   testRunId: string;
@@ -83,7 +83,26 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
     },
   });
 
-  const isPending = generateMutation.isPending || revokeMutation.isPending;
+  // 링크는 그대로 두고 AI 요약만 지금 결과 기준으로 다시 만든다 (#387)
+  const refreshSummaryMutation = useMutation({
+    mutationFn: () => refreshShareSummary(testRunId),
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.errors._general?.[0] || 'AI 요약 갱신에 실패했습니다.');
+      } else if (result.data.hasSummary) {
+        toast.success('AI 요약을 최신 결과 기준으로 갱신했습니다.');
+      } else {
+        toast.warning('지금은 AI 요약을 만들 수 없어 공유 화면에 요약 없이 보입니다.');
+      }
+    },
+    onError: (error) => {
+      console.error('[ShareModal] refreshShareSummary error:', error);
+      toast.error('AI 요약 갱신 중 오류가 발생했습니다.');
+    },
+  });
+
+  const isPending =
+    generateMutation.isPending || revokeMutation.isPending || refreshSummaryMutation.isPending;
 
   const handleCopy = async () => {
     if (!currentToken) return;
@@ -162,6 +181,20 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
               )}
 
               <div className="flex justify-end gap-2">
+                <DSButton
+                  variant="text"
+                  size="small"
+                  onClick={() => refreshSummaryMutation.mutate()}
+                  disabled={isPending}
+                  className="flex items-center gap-1.5"
+                >
+                  {refreshSummaryMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  AI 요약 갱신
+                </DSButton>
                 <DSButton
                   variant="text"
                   size="small"
