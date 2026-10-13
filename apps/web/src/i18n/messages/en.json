@@ -435,6 +435,7 @@
       "NOT_FOUND": "Test case not found.",
       "NOT_ACTIVE": "This test case was moved to the trash or deleted. Refresh the list and try again.",
       "NAME_REQUIRED": "Please enter a test case name.",
+      "NAME_TOO_LONG": "Test case name can be up to 200 characters.",
       "ORIGINAL_NOT_FOUND": "Original test case not found.",
       "CREATE_FAILED": "Something went wrong while creating the test case.",
       "UPDATE_FAILED": "Something went wrong while updating the test case.",
