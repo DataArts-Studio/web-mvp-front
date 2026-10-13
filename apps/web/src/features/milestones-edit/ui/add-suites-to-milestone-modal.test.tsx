@@ -33,7 +33,9 @@ describe('선택 모달 접근성', () => {
 
     expect(screen.getByRole('dialog', { name: '테스트 스위트 추가' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '닫기' })).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: '스위트 이름, 설명으로 검색...' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('searchbox', { name: '스위트 이름, 설명으로 검색...' })
+    ).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: '전체 선택' })).toBeInTheDocument();
   });
 
