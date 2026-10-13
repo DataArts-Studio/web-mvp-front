@@ -282,6 +282,33 @@ const startOfTodayUtc = () => {
 };
 
 /**
+ * 실제 생성 호출 수로 하루 한도를 세고, 남아 있으면 한 번을 기록한다. 동시에 여러 요청이 와도
+ * 한도를 넘지 않도록 프로젝트 단위로 잠근 트랜잭션 안에서 세고 기록한다.
+ */
+async function claimDailySummarySlot(db: Database, projectId: string): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${'share_summary:' + projectId}))`);
+    const [{ count: todayCount }] = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(aiUsageLogs)
+      .where(
+        and(
+          eq(aiUsageLogs.project_id, projectId),
+          eq(aiUsageLogs.action_type, SHARE_SUMMARY_ACTION),
+          gte(aiUsageLogs.created_at, startOfTodayUtc())
+        )
+      );
+    if (todayCount >= AI_DAILY_LIMIT_PER_PROJECT) return false;
+
+    // 케이스 생성 월 한도(generated_count 합)에는 잡히지 않게 0 으로 기록한다
+    await tx
+      .insert(aiUsageLogs)
+      .values({ project_id: projectId, action_type: SHARE_SUMMARY_ACTION, generated_count: 0 });
+    return true;
+  });
+}
+
+/**
  * 지금 결과 기준의 요약을 저장 형식으로 돌려준다. 기준이 같으면 저장된 요약을 그대로 쓰고,
  * 다르면 새로 만든다. 만들 수 없으면(키 없음, 일일 한도, 생성 실패) null 이라 옛 요약을 남기지 않는다.
  */
@@ -295,28 +322,10 @@ async function resolveSummary(
   if (parseStoredSummary(existingRaw)?.basis === basis) return existingRaw;
   if (!process.env.GEMINI_API_KEY) return null;
 
-  // 실제 생성 호출 수로 하루 한도를 센다
-  const [{ count: todayCount }] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(aiUsageLogs)
-    .where(
-      and(
-        eq(aiUsageLogs.project_id, projectId),
-        eq(aiUsageLogs.action_type, SHARE_SUMMARY_ACTION),
-        gte(aiUsageLogs.created_at, startOfTodayUtc())
-      )
-    );
-  if (todayCount >= AI_DAILY_LIMIT_PER_PROJECT) {
-    console.log(
-      `[resolveSummary] AI daily limit reached for project ${projectId} (${todayCount}/${AI_DAILY_LIMIT_PER_PROJECT})`
-    );
+  if (!(await claimDailySummarySlot(db, projectId))) {
+    console.log(`[resolveSummary] AI daily limit reached for project ${projectId}`);
     return null;
   }
-
-  // 케이스 생성 월 한도(generated_count 합)에는 잡히지 않게 0 으로 기록한다
-  await db
-    .insert(aiUsageLogs)
-    .values({ project_id: projectId, action_type: SHARE_SUMMARY_ACTION, generated_count: 0 });
 
   const text = await generateAiSummary(context);
   return text ? JSON.stringify({ basis, text } satisfies StoredSummary) : null;
@@ -406,10 +415,21 @@ export async function refreshShareSummary(
     const { context } = await loadReportSnapshot(db, run);
     const aiSummary = await resolveSummary(db, run.projectId, run.shareAiSummary, context);
 
-    await db
+    // 생성하는 동안 링크가 바뀌거나 실행이 삭제됐으면 저장하지 않는다
+    const updated = await db
       .update(testRuns)
       .set({ share_ai_summary: aiSummary })
-      .where(eq(testRuns.id, testRunId));
+      .where(
+        and(
+          eq(testRuns.id, testRunId),
+          eq(testRuns.share_token, run.shareToken),
+          eq(testRuns.lifecycle_status, 'ACTIVE')
+        )
+      )
+      .returning({ id: testRuns.id });
+    if (updated.length === 0) {
+      return { success: false, errors: { _general: ['공유 중인 링크가 없습니다.'] } };
+    }
 
     return { success: true, data: { hasSummary: aiSummary !== null } };
   } catch (error) {
