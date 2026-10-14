@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { type TestRunDetail } from '@/entities/test-run';
-import { type SourceInfo } from '@/entities/test-run';
+import { RUN_NAME_MAX_LENGTH, type SourceInfo } from '@/entities/test-run';
 import { ShareButton } from '@/features/runs-share/ui/share-button';
 import { useOutsideClick } from '@testea/lib';
 import { RUN_STATUS_CONFIG } from '@testea/ui';
@@ -104,6 +104,8 @@ export const RunDetailHeader = ({
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
+                  maxLength={RUN_NAME_MAX_LENGTH}
+                  aria-label="실행 이름"
                   className="bg-bg-2 border-line-2 rounded-1 text-text-1 focus:border-primary focus:ring-primary border px-2 py-0.5 text-base font-semibold focus:ring-1 focus:outline-none"
                   autoFocus
                   onKeyDown={(e) => {

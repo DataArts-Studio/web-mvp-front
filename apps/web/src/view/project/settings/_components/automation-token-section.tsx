@@ -8,6 +8,7 @@ import {
   useRevokeAutomationToken,
 } from '@/features/automation-token';
 import { DSButton, Dialog, SettingsCard } from '@testea/ui';
+import { APP_TIME_ZONE } from '@testea/util';
 import { Bot, Copy, KeyRound, Loader2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -102,7 +103,7 @@ export const AutomationTokenSection = ({ projectId }: AutomationTokenSectionProp
                 </span>
                 <span className="typo-caption text-text-3">
                   {status.lastUsedAt
-                    ? `마지막 사용: ${new Date(status.lastUsedAt).toLocaleString('ko-KR')}`
+                    ? `마지막 사용: ${new Date(status.lastUsedAt).toLocaleString('ko-KR', { timeZone: APP_TIME_ZONE })}`
                     : '발급 후 아직 사용된 적 없음'}
                 </span>
               </>

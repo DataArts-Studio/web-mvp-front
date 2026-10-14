@@ -13,7 +13,7 @@ import type {
 import type { TestStatusData } from '@/widgets/project';
 import { useQuery } from '@tanstack/react-query';
 import { LoadingSpinner, RUN_STATUS_CONFIG } from '@testea/ui';
-import { cn } from '@testea/util';
+import { APP_TIME_ZONE, cn } from '@testea/util';
 import {
   AlertTriangle,
   Ban,
@@ -43,6 +43,7 @@ const TestStatusChart = dynamic(
 
 function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('ko-KR', {
+    timeZone: APP_TIME_ZONE,
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -53,6 +54,7 @@ function formatDate(date: string | Date): string {
 
 function formatShortDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('ko-KR', {
+    timeZone: APP_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -607,6 +609,7 @@ const CaseTable = ({
                   <span className="flex items-center gap-1">
                     <Clock className="h-2.5 w-2.5" />
                     {new Date(c.executedAt).toLocaleString('ko-KR', {
+                      timeZone: APP_TIME_ZONE,
                       month: 'short',
                       day: 'numeric',
                       hour: '2-digit',
@@ -683,6 +686,7 @@ const AllCasesTable = ({ cases }: { cases: SharedReportCaseItem[] }) => {
           <span className="text-text-4 text-right text-[11px] tabular-nums">
             {c.executedAt
               ? new Date(c.executedAt).toLocaleString('ko-KR', {
+                  timeZone: APP_TIME_ZONE,
                   month: 'short',
                   day: 'numeric',
                   hour: '2-digit',

@@ -2,6 +2,7 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { RUN_NAME_MAX_LENGTH } from '@/entities/test-run/model/schema';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -158,7 +159,13 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
     // 5. 자동 제안 이름: 회귀 재실행 - {원본명} ({YYYY-MM-DD})
     const now = new Date();
     const dateLabel = toAppDateOnly(now);
-    const proposedName = `회귀 재실행 - ${sourceRun.name} (${dateLabel})`;
+    // 접두·날짜를 붙여도 이름 길이 제한을 넘지 않게 원본 이름을 줄인다 (#417).
+    const prefix = '회귀 재실행 - ';
+    const suffix = ` (${dateLabel})`;
+    const room = RUN_NAME_MAX_LENGTH - prefix.length - suffix.length;
+    const sourceName =
+      sourceRun.name.length > room ? `${sourceRun.name.slice(0, room - 1)}…` : sourceRun.name;
+    const proposedName = `${prefix}${sourceName}${suffix}`;
 
     const newTestRun = await db.transaction(async (tx) => {
       // 5-1. 새 Run 생성 (status=NOT_STARTED, milestone_id 는 원본 따라감)

@@ -35,14 +35,14 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 테스트 케이스 조회
-  const { data: casesResult } = useQuery({
+  const { data: casesResult, isPending: isCasesLoading } = useQuery({
     queryKey: ['testCases', 'forMilestoneCreate', projectId],
     queryFn: () => getTestCases({ project_id: projectId }),
   });
   const allCases = casesResult?.success ? (casesResult.data ?? []) : [];
 
   // 테스트 스위트 조회
-  const { data: suitesResult } = useQuery({
+  const { data: suitesResult, isPending: isSuitesLoading } = useQuery({
     queryKey: ['testSuites', 'forMilestoneCreate', projectId],
     queryFn: () => getTestSuites({ projectId }),
   });
@@ -240,6 +240,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
               {/* 테스트 케이스 선택 */}
               <CaseSelectionPanel
                 allCases={allCases}
+                isLoading={isCasesLoading}
                 selectedCaseIds={selectedCaseIds}
                 onToggleCase={toggleCase}
                 isExpanded={expandedSection === 'cases'}
@@ -251,6 +252,7 @@ export const MilestoneCreateForm = ({ projectId, onClose }: MilestoneCreateFormP
               {/* 테스트 스위트 선택 */}
               <SuiteSelectionPanel
                 allSuites={allSuites}
+                isLoading={isSuitesLoading}
                 selectedSuiteIds={selectedSuiteIds}
                 onToggleSuite={toggleSuite}
                 isExpanded={expandedSection === 'suites'}

@@ -1,4 +1,10 @@
-export { TestRunStatusEnum, TestRunSchema, CreateTestRunSchema } from './schema';
+export {
+  TestRunStatusEnum,
+  TestRunSchema,
+  CreateTestRunSchema,
+  RUN_NAME_MAX_LENGTH,
+  RUN_NAME_TOO_LONG_MESSAGE,
+} from './schema';
 export type {
   TestRunDTO,
   CreateTestRunDTO,

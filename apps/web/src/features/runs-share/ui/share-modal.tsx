@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { DSButton } from '@/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog } from '@testea/ui';
+import { APP_TIME_ZONE } from '@testea/util';
 import { Copy, ExternalLink, Link2, Loader2, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,6 +35,7 @@ function getShareUrl(token: string): string {
 
 function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('ko-KR', {
+    timeZone: APP_TIME_ZONE,
     year: 'numeric',
     month: 'long',
     day: 'numeric',
