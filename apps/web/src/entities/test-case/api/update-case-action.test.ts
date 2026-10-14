@@ -52,10 +52,11 @@ const mockWhere = vi.fn(() => ({ returning: mockReturning }));
 const mockSet = vi.fn(() => ({ where: mockWhere }));
 const mockUpdate = vi.fn(() => ({ set: mockSet }));
 
-const mockDb = {
+const mockDb: Record<string, unknown> = {
   select: mockSelect,
   update: mockUpdate,
 };
+mockDb.transaction = vi.fn((cb: (tx: typeof mockDb) => unknown) => cb(mockDb));
 
 vi.mock('@testea/db', () => ({
   getDatabase: vi.fn(() => mockDb),

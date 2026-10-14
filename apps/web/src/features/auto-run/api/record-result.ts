@@ -71,25 +71,31 @@ export async function recordAutoResult(
   if (input.errorMessage) automationMeta.errorMessage = input.errorMessage;
 
   const now = new Date();
-  await db
-    .update(testCaseRuns)
-    .set({
-      status: input.status satisfies TestCaseRunStatus,
-      comment: input.comment ?? input.errorMessage ?? null,
-      executed_at: input.status !== 'untested' ? now : null,
-      result_source: 'auto' satisfies TestCaseRunResultSource,
-      automation_meta: Object.keys(automationMeta).length ? automationMeta : null,
-      updated_at: now,
-    })
-    .where(eq(testCaseRuns.id, target.caseRunId));
+  // 결과 저장과 실행 상태 재계산을 함께 반영한다 (#390).
+  await db.transaction(async (tx) => {
+    await tx
+      .update(testCaseRuns)
+      .set({
+        status: input.status satisfies TestCaseRunStatus,
+        comment: input.comment ?? input.errorMessage ?? null,
+        executed_at: input.status !== 'untested' ? now : null,
+        result_source: 'auto' satisfies TestCaseRunResultSource,
+        automation_meta: Object.keys(automationMeta).length ? automationMeta : null,
+        updated_at: now,
+      })
+      .where(eq(testCaseRuns.id, target.caseRunId));
 
-  await recalcRunStatus(db, input.runId);
+    await recalcRunStatus(tx, input.runId);
+  });
 
   return { matched: true };
 }
 
+type Database = ReturnType<typeof getDatabase>;
+type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+
 /** Run 상태 재계산 (auto-results route 와 동일 로직). */
-async function recalcRunStatus(db: ReturnType<typeof getDatabase>, testRunId: string) {
+async function recalcRunStatus(db: Transaction, testRunId: string) {
   const rows = await db
     .select({ status: testCaseRuns.status })
     .from(testCaseRuns)

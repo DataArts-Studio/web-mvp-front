@@ -32,7 +32,11 @@ vi.mock('@testea/db', () => {
   chain.where = () => Object.assign(Promise.resolve([]), chain);
   chain.limit = () => Promise.resolve([{ projectId: '0199a000-0000-7000-8000-0000000000aa' }]);
   return {
-    getDatabase: () => ({ select: () => chain, insert: mocks.insert }),
+    getDatabase: () => {
+      const db: Record<string, unknown> = { select: () => chain, insert: mocks.insert };
+      db.transaction = (cb: (tx: typeof db) => unknown) => cb(db);
+      return db;
+    },
     milestones: { id: 'id', project_id: 'project_id' },
     milestoneTestCases: {},
     milestoneTestSuites: {},

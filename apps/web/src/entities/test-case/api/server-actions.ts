@@ -3,11 +3,15 @@
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
-import { createVersionSnapshot } from '@/entities/test-case-version/api/create-version-snapshot';
+import {
+  type SnapshotData,
+  createVersionSnapshot,
+} from '@/entities/test-case-version/api/create-version-snapshot';
 import {
   detectChangedFields,
   generateChangeSummary,
 } from '@/entities/test-case-version/model/diff-utils';
+import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
 import { getLatestResultStatuses } from '@/entities/test-case/api/latest-result';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
@@ -405,6 +409,18 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
   }
 };
 
+type Transaction = Parameters<Parameters<ReturnType<typeof getDatabase>['transaction']>[0]>[0];
+
+/** 버전에 남기는 케이스 내용. */
+const toSnapshot = (row: typeof testCases.$inferSelect): SnapshotData => ({
+  name: row.name,
+  test_type: row.test_type,
+  tags: row.tags,
+  pre_condition: row.pre_condition,
+  steps: row.steps,
+  expected_result: row.expected_result,
+});
+
 export const createTestCase = async (input: CreateTestCase): Promise<ActionResult<TestCase>> => {
   try {
     const [hasAccess, storageError] = await Promise.all([
@@ -434,6 +450,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     const now = new Date();
 
     const inserted = await db.transaction(async (tx) => {
+      await lockCaseNumbers(tx, input.projectId);
       const [maxResult] = await tx
         .select({
           max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)`,
@@ -452,7 +469,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
           id,
           ...dto,
           display_id: nextDisplayId,
-          case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
+          case_key: toCaseKey(nextDisplayId),
           sort_order: sortOrder,
           result_status: 'untested',
           created_at: now,
@@ -461,6 +478,11 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
           lifecycle_status: 'ACTIVE',
         })
         .returning();
+      if (!row) return row;
+
+      // 버전 v1 과 연결된 실행 동기화까지 함께 반영한다. 하나라도 실패하면 케이스도 만들지 않는다 (#390).
+      await createVersionSnapshot(id, toSnapshot(row), 'create', [], '테스트 케이스 생성', tx);
+      if (row.test_suite_id) await syncCaseToLinkedRuns(tx, id, row.test_suite_id);
 
       return row;
     });
@@ -470,37 +492,6 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
         success: false,
         errors: { _testCase: [CASE_MESSAGE_CODES.CREATE_FAILED] },
       };
-    }
-
-    // 버전 v1 스냅샷 자동 생성
-    try {
-      await createVersionSnapshot(
-        id,
-        {
-          name: inserted.name,
-          test_type: inserted.test_type,
-          tags: inserted.tags,
-          pre_condition: inserted.pre_condition,
-          steps: inserted.steps,
-          expected_result: inserted.expected_result,
-        },
-        'create',
-        [],
-        '테스트 케이스 생성'
-      );
-    } catch (snapshotError) {
-      Sentry.captureException(snapshotError, {
-        extra: { action: 'createTestCase:versionSnapshot' },
-      });
-    }
-
-    // 스위트에 바로 생성한 경우 연결된 테스트 실행에 동기화
-    if (inserted.test_suite_id) {
-      try {
-        await syncCaseToLinkedRuns(id, inserted.test_suite_id);
-      } catch (syncError) {
-        Sentry.captureException(syncError, { extra: { action: 'createTestCase:syncToRuns' } });
-      }
     }
 
     const result: TestCase = toTestCase(inserted as TestCaseDTO);
@@ -525,9 +516,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
  * 1) test_run_suites 직접 링크
  * 2) 마일스톤 체인: suite → milestone_test_suites → milestone → test_runs
  */
-async function syncCaseToLinkedRuns(caseId: string, suiteId: string) {
-  const db = getDatabase();
-
+async function syncCaseToLinkedRuns(db: Transaction, caseId: string, suiteId: string) {
   // 1. test_run_suites 직접 링크로 연결된 런. 실행에서 제거한 스위트는 건너뛴다 (#375).
   const suiteLinks = await db
     .select({ test_run_id: testRunSuites.test_run_id, excluded_at: testRunSuites.excluded_at })
@@ -654,6 +643,7 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
     const now = new Date();
 
     const inserted = await db.transaction(async (tx) => {
+      await lockCaseNumbers(tx, projectId);
       const [maxResult] = await tx
         .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
         .from(testCases)
@@ -676,7 +666,7 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
           expected_result: original.expected_result,
           sort_order: (original.sort_order ?? 0) + 1,
           display_id: nextDisplayId,
-          case_key: `TC-${String(nextDisplayId).padStart(3, '0')}`,
+          case_key: toCaseKey(nextDisplayId),
           result_status: 'untested',
           created_at: now,
           updated_at: now,
@@ -684,6 +674,10 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
           lifecycle_status: 'ACTIVE',
         })
         .returning();
+      if (!row) return row;
+
+      await createVersionSnapshot(id, toSnapshot(row), 'create', [], '테스트 케이스 복사', tx);
+      if (row.test_suite_id) await syncCaseToLinkedRuns(tx, id, row.test_suite_id);
 
       return row;
     });
@@ -693,37 +687,6 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
         success: false,
         errors: { _testCase: [CASE_MESSAGE_CODES.DUPLICATE_FAILED] },
       };
-    }
-
-    // 버전 v1 스냅샷
-    try {
-      await createVersionSnapshot(
-        id,
-        {
-          name: inserted.name,
-          test_type: inserted.test_type,
-          tags: inserted.tags,
-          pre_condition: inserted.pre_condition,
-          steps: inserted.steps,
-          expected_result: inserted.expected_result,
-        },
-        'create',
-        [],
-        '테스트 케이스 복사'
-      );
-    } catch (snapshotError) {
-      Sentry.captureException(snapshotError, {
-        extra: { action: 'duplicateTestCase:versionSnapshot' },
-      });
-    }
-
-    // 스위트에 속한 경우 연결된 테스트 실행에 동기화
-    if (inserted.test_suite_id) {
-      try {
-        await syncCaseToLinkedRuns(id, inserted.test_suite_id);
-      } catch (syncError) {
-        Sentry.captureException(syncError, { extra: { action: 'duplicateTestCase:syncToRuns' } });
-      }
     }
 
     invalidateCache(INVALIDATE.cases);
@@ -819,56 +782,32 @@ export const updateTestCase = async (
       updateData.sort_order = updateFields.sortOrder;
     }
 
-    // 확인과 저장 사이에 휴지통으로 가는 경우도 막도록 저장 조건에도 활성 상태를 둔다.
-    const [updated] = await db
-      .update(testCases)
-      .set(updateData)
-      .where(and(eq(testCases.id, id), eq(testCases.lifecycle_status, 'ACTIVE')))
-      .returning();
+    // 케이스 저장, 버전 기록, 스위트 변경에 따른 실행 동기화를 함께 반영한다 (#390).
+    const updated = await db.transaction(async (tx) => {
+      // 확인과 저장 사이에 휴지통으로 가는 경우도 막도록 저장 조건에도 활성 상태를 둔다.
+      const [row] = await tx
+        .update(testCases)
+        .set(updateData)
+        .where(and(eq(testCases.id, id), eq(testCases.lifecycle_status, 'ACTIVE')))
+        .returning();
+      if (!row) return row;
+
+      const newSnapshot = toSnapshot(row);
+      const changedFields = detectChangedFields(toSnapshot(existing), newSnapshot);
+      if (changedFields.length > 0) {
+        const changeSummary = generateChangeSummary(changedFields, 'edit');
+        await createVersionSnapshot(id, newSnapshot, 'edit', changedFields, changeSummary, tx);
+      }
+
+      if (updateFields.testSuiteId) await syncCaseToLinkedRuns(tx, id, updateFields.testSuiteId);
+      return row;
+    });
 
     if (!updated) {
       return {
         success: false,
         errors: { _testCase: [CASE_MESSAGE_CODES.NOT_ACTIVE] },
       };
-    }
-
-    // 버전 스냅샷 자동 생성
-    try {
-      const oldSnapshot = {
-        name: existing.name,
-        test_type: existing.test_type,
-        tags: existing.tags,
-        pre_condition: existing.pre_condition,
-        steps: existing.steps,
-        expected_result: existing.expected_result,
-      };
-      const newSnapshot = {
-        name: updated.name,
-        test_type: updated.test_type,
-        tags: updated.tags,
-        pre_condition: updated.pre_condition,
-        steps: updated.steps,
-        expected_result: updated.expected_result,
-      };
-      const changedFields = detectChangedFields(oldSnapshot, newSnapshot);
-      if (changedFields.length > 0) {
-        const changeSummary = generateChangeSummary(changedFields, 'edit');
-        await createVersionSnapshot(id, newSnapshot, 'edit', changedFields, changeSummary);
-      }
-    } catch (snapshotError) {
-      Sentry.captureException(snapshotError, {
-        extra: { action: 'updateTestCase:versionSnapshot' },
-      });
-    }
-
-    // 스위트 변경 시 연결된 테스트 실행에 케이스 동기화
-    if (updateFields.testSuiteId) {
-      try {
-        await syncCaseToLinkedRuns(id, updateFields.testSuiteId);
-      } catch (syncError) {
-        Sentry.captureException(syncError, { extra: { action: 'updateTestCase:syncToRuns' } });
-      }
     }
 
     const result: TestCase = toTestCase(updated as TestCaseDTO);

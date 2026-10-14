@@ -20,6 +20,7 @@ const returning = vi.fn();
 const db = {
   select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn(() => ({ limit })) })) })),
   update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning })) })) })),
+  transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(db)),
 };
 
 beforeEach(() => {
