@@ -15,6 +15,7 @@ export type {
   SourceInfo,
   TestRunDetail,
   FetchedTestRun,
+  RunComparison,
   UpdateTestCaseRunInput,
   UpdateTestCaseRunResult,
 } from './model';

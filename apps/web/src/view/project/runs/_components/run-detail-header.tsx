@@ -24,6 +24,8 @@ interface RunDetailHeaderProps {
   isRerunning: boolean;
   onAutoRun: () => void;
   onAddTests: () => void;
+  /** 끝난 실행을 고치는 중이면 결과 요약 화면으로 돌아가는 메뉴를 보인다. */
+  onShowSummary?: () => void;
 }
 
 const STATUS_TEXT: Record<TestRunDetail['status'], { label: string; className: string }> = {
@@ -60,6 +62,7 @@ export const RunDetailHeader = ({
   isRerunning,
   onAutoRun,
   onAddTests,
+  onShowSummary,
 }: RunDetailHeaderProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -81,6 +84,7 @@ export const RunDetailHeader = ({
   const suites = testRun.sources.filter((s) => s.type === 'suite');
 
   const menuItems: { label: string; onClick: () => void; disabled?: boolean }[] = [
+    ...(onShowSummary ? [{ label: '결과 요약 보기', onClick: onShowSummary }] : []),
     { label: '테스트 추가', onClick: onAddTests },
     { label: '자동 실행', onClick: onAutoRun },
     {

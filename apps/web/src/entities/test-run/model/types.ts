@@ -82,6 +82,25 @@ export interface FetchedTestRun {
   activity: { date: string; pass: number; fail: number; blocked: number }[];
 }
 
+/** 끝난 실행 화면의 직전 실행 비교 데이터 (리뉴얼 v2 06f2) */
+export interface RunComparison {
+  previous: { id: string; name: string; createdAt: Date; passRate: number | null } | null;
+  /** test_case_id 별 직전 실행 결과 */
+  previousByCase: Record<
+    string,
+    {
+      status: import('@testea/db').TestCaseRunStatus;
+      comment: string | null;
+      executedAt: Date | null;
+    }
+  >;
+  /** test_case_id 별 최근 결과(오래된 것부터, 최대 5개). 미실행은 빠진다. */
+  historyByCase: Record<
+    string,
+    { status: import('@testea/db').TestCaseRunStatus; executedAt: Date; runId: string }[]
+  >;
+}
+
 export interface UpdateTestCaseRunInput {
   testCaseRunId: string;
   status: import('@testea/db').TestCaseRunStatus;
