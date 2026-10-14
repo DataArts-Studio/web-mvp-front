@@ -358,6 +358,9 @@ export const updateTestSuite = async (
   }
 };
 
+/** 스위트 목록 이력 막대에 쓰는 스위트별 최근 실행 수 (리뉴얼 v2 01e) */
+const RECENT_RUNS_PER_SUITE = 30;
+
 /**
  * 스위트 목록 + 통계를 안전하게 조회 (각 관계 데이터를 별도 쿼리로 조회)
  */
@@ -520,34 +523,45 @@ export const getTestSuitesWithStats = async ({
       if (!r.suiteId) continue;
       if (!runsPerSuite.has(r.suiteId)) runsPerSuite.set(r.suiteId, []);
       const arr = runsPerSuite.get(r.suiteId)!;
-      if (arr.length < 5) {
+      if (arr.length < RECENT_RUNS_PER_SUITE) {
         arr.push({ runId: r.runId, status: r.runStatus, createdAt: r.runCreatedAt });
       }
     }
 
-    // 7) 최근 run들의 케이스 결과 집계
-    const allRunIds = [...new Set(recentRunRows.map((r) => r.runId))];
+    // 7) 최근 run들의 케이스 결과 집계. 한 실행에 여러 스위트가 섞여 있어도
+    // 스위트 목록의 이력 막대는 그 스위트 케이스의 결과만 센다.
+    const allRunIds = [...new Set([...runsPerSuite.values()].flat().map((r) => r.runId))];
     const runCaseCountMap = new Map<
       string,
       { passed: number; failed: number; blocked: number; skipped: number; total: number }
     >();
+    const runSuiteKey = (runId: string, suiteId: string) => `${runId}:${suiteId}`;
     if (allRunIds.length > 0) {
       const caseRunRows = await db
         .select({
           runId: testCaseRuns.test_run_id,
+          suiteId: testCases.test_suite_id,
           status: testCaseRuns.status,
           cnt: count(),
         })
         .from(testCaseRuns)
-        .where(and(inArray(testCaseRuns.test_run_id, allRunIds), isNull(testCaseRuns.excluded_at)))
-        .groupBy(testCaseRuns.test_run_id, testCaseRuns.status);
+        .innerJoin(testCases, eq(testCaseRuns.test_case_id, testCases.id))
+        .where(
+          and(
+            inArray(testCaseRuns.test_run_id, allRunIds),
+            inArray(testCases.test_suite_id, suiteIds),
+            isNull(testCaseRuns.excluded_at)
+          )
+        )
+        .groupBy(testCaseRuns.test_run_id, testCases.test_suite_id, testCaseRuns.status);
 
       for (const r of caseRunRows) {
-        if (!r.runId) continue;
-        if (!runCaseCountMap.has(r.runId)) {
-          runCaseCountMap.set(r.runId, { passed: 0, failed: 0, blocked: 0, skipped: 0, total: 0 });
+        if (!r.runId || !r.suiteId) continue;
+        const key = runSuiteKey(r.runId, r.suiteId);
+        if (!runCaseCountMap.has(key)) {
+          runCaseCountMap.set(key, { passed: 0, failed: 0, blocked: 0, skipped: 0, total: 0 });
         }
-        const c = runCaseCountMap.get(r.runId)!;
+        const c = runCaseCountMap.get(key)!;
         const n = Number(r.cnt);
         c.total += n;
         if (r.status === 'pass') c.passed += n;
@@ -574,7 +588,7 @@ export const getTestSuitesWithStats = async ({
 
       const suiteRuns = runsPerSuite.get(row.id) ?? [];
       const recentRuns = suiteRuns.map((r) => {
-        const counts = runCaseCountMap.get(r.runId) ?? {
+        const counts = runCaseCountMap.get(runSuiteKey(r.runId, row.id)) ?? {
           passed: 0,
           failed: 0,
           blocked: 0,
@@ -594,7 +608,7 @@ export const getTestSuitesWithStats = async ({
 
       const lastRun = suiteRuns[0]
         ? (() => {
-            const counts = runCaseCountMap.get(suiteRuns[0].runId) ?? {
+            const counts = runCaseCountMap.get(runSuiteKey(suiteRuns[0].runId, row.id)) ?? {
               passed: 0,
               failed: 0,
               blocked: 0,
