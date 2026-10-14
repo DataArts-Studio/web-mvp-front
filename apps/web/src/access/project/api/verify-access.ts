@@ -57,6 +57,20 @@ function checkRateLimit(key: string): { allowed: boolean; remainingAttempts: num
   return { allowed: true, remainingAttempts: MAX_ATTEMPTS - record.count };
 }
 
+/** 잠긴 키가 풀리기까지 남은 시간(분, 올림). 잠기지 않았으면 0. */
+function lockedMinutesLeft(key: string): number {
+  const record = failedAttempts.get(key);
+  if (!record || record.count < MAX_ATTEMPTS) return 0;
+  const left = LOCKOUT_DURATION - (Date.now() - record.lastAttempt);
+  return left > 0 ? Math.ceil(left / 60_000) : 0;
+}
+
+/** 잠금 안내 문구. 몇 분 뒤에 다시 시도할 수 있는지 함께 알려 준다 (#406). */
+function lockoutMessage(key: string): string {
+  const minutes = Math.max(1, lockedMinutesLeft(key));
+  return `비밀번호를 ${MAX_ATTEMPTS}회 잘못 입력해 접근이 잠겼습니다. ${minutes}분 후에 다시 시도해주세요.`;
+}
+
 /**
  * 실패 횟수 기록
  */
@@ -177,7 +191,7 @@ export async function verifyProjectAccess(
     if (!rateLimit.allowed) {
       return {
         success: false,
-        error: '너무 많은 시도입니다. 15분 후에 다시 시도해주세요.',
+        error: lockoutMessage(rateLimitKey),
         remainingAttempts: 0,
       };
     }
@@ -189,7 +203,11 @@ export async function verifyProjectAccess(
       const remaining = recordFailedAttempt(rateLimitKey);
       return {
         success: false,
-        error: '프로젝트를 찾을 수 없거나 비밀번호가 일치하지 않습니다.',
+        // 이번 실패로 잠겼으면 다음 시도가 아니라 지금 바로 잠금을 알린다 (#406).
+        error:
+          remaining === 0
+            ? lockoutMessage(rateLimitKey)
+            : '프로젝트를 찾을 수 없거나 비밀번호가 일치하지 않습니다.',
         remainingAttempts: remaining,
       };
     }
@@ -200,7 +218,7 @@ export async function verifyProjectAccess(
       const remaining = recordFailedAttempt(rateLimitKey);
       return {
         success: false,
-        error: '비밀번호가 일치하지 않습니다.',
+        error: remaining === 0 ? lockoutMessage(rateLimitKey) : '비밀번호가 일치하지 않습니다.',
         remainingAttempts: remaining,
       };
     }
