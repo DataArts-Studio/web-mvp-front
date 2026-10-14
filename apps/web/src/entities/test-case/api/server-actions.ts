@@ -3,38 +3,29 @@
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestCase, TestCase, TestCaseDTO, toCreateTestCaseDTO, toTestCase } from '@/entities';
-import {
-  type SnapshotData,
-  createVersionSnapshot,
-} from '@/entities/test-case-version/api/create-version-snapshot';
+import { createVersionSnapshot } from '@/entities/test-case-version/api/create-version-snapshot';
 import {
   detectChangedFields,
   generateChangeSummary,
 } from '@/entities/test-case-version/model/diff-utils';
 import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
 import { getLatestResultStatuses } from '@/entities/test-case/api/latest-result';
+import {
+  recordCreatedCases,
+  syncCasesToLinkedRuns,
+  toSnapshot,
+} from '@/entities/test-case/api/record-created-cases';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
-import {
-  excludeArchivedCasesFromRuns,
-  recomputeTestRunStatus,
-} from '@/entities/test-run/api/run-scope';
+import { excludeArchivedCasesFromRuns } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { toContainsPattern } from '@/shared/lib/like-pattern';
 import { validateName, withSuffix } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import {
-  getDatabase,
-  milestoneTestSuites,
-  testCaseRuns,
-  testCases,
-  testRunSuites,
-  testRuns,
-  testSuiteSections,
-} from '@testea/db';
-import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
+import { getDatabase, testCases, testSuiteSections } from '@testea/db';
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 /**
@@ -409,18 +400,6 @@ export const getTestCase = async (id: string): Promise<ActionResult<TestCase>> =
   }
 };
 
-type Transaction = Parameters<Parameters<ReturnType<typeof getDatabase>['transaction']>[0]>[0];
-
-/** 버전에 남기는 케이스 내용. */
-const toSnapshot = (row: typeof testCases.$inferSelect): SnapshotData => ({
-  name: row.name,
-  test_type: row.test_type,
-  tags: row.tags,
-  pre_condition: row.pre_condition,
-  steps: row.steps,
-  expected_result: row.expected_result,
-});
-
 export const createTestCase = async (input: CreateTestCase): Promise<ActionResult<TestCase>> => {
   try {
     const [hasAccess, storageError] = await Promise.all([
@@ -481,8 +460,7 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
       if (!row) return row;
 
       // 버전 v1 과 연결된 실행 동기화까지 함께 반영한다. 하나라도 실패하면 케이스도 만들지 않는다 (#390).
-      await createVersionSnapshot(id, toSnapshot(row), 'create', [], '테스트 케이스 생성', tx);
-      if (row.test_suite_id) await syncCaseToLinkedRuns(tx, id, row.test_suite_id);
+      await recordCreatedCases(tx, [row], '테스트 케이스 생성');
 
       return row;
     });
@@ -510,106 +488,6 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     };
   }
 };
-
-/**
- * 케이스가 스위트에 추가될 때, 해당 스위트가 연결된 테스트 실행들에 케이스를 동기화합니다.
- * 1) test_run_suites 직접 링크
- * 2) 마일스톤 체인: suite → milestone_test_suites → milestone → test_runs
- */
-async function syncCaseToLinkedRuns(db: Transaction, caseId: string, suiteId: string) {
-  // 1. test_run_suites 직접 링크로 연결된 런. 실행에서 제거한 스위트는 건너뛴다 (#375).
-  const suiteLinks = await db
-    .select({ test_run_id: testRunSuites.test_run_id, excluded_at: testRunSuites.excluded_at })
-    .from(testRunSuites)
-    .where(eq(testRunSuites.test_suite_id, suiteId));
-  const excludedRunIds = new Set(
-    suiteLinks.filter((link) => link.excluded_at).map((link) => link.test_run_id)
-  );
-
-  // 2. 마일스톤 체인으로 연결된 런
-  const msRows = await db
-    .select({ milestone_id: milestoneTestSuites.milestone_id })
-    .from(milestoneTestSuites)
-    .where(eq(milestoneTestSuites.test_suite_id, suiteId));
-
-  const milestoneIds = msRows.map((r) => r.milestone_id).filter(Boolean) as string[];
-
-  let milestoneRuns: { id: string }[] = [];
-  if (milestoneIds.length > 0) {
-    milestoneRuns = await db
-      .select({ id: testRuns.id })
-      .from(testRuns)
-      .where(inArray(testRuns.milestone_id, milestoneIds));
-  }
-
-  // 합치고 중복 제거
-  const candidateRunIds = new Set<string>();
-  for (const r of suiteLinks) {
-    if (r.test_run_id && !excludedRunIds.has(r.test_run_id)) candidateRunIds.add(r.test_run_id);
-  }
-  for (const r of milestoneRuns) {
-    if (!excludedRunIds.has(r.id)) candidateRunIds.add(r.id);
-  }
-
-  if (candidateRunIds.size === 0) return;
-
-  // 완료되었거나 삭제된 실행은 기록으로 두고 범위를 바꾸지 않는다 (#376).
-  const openRuns = await db
-    .select({ id: testRuns.id })
-    .from(testRuns)
-    .where(
-      and(
-        inArray(testRuns.id, Array.from(candidateRunIds)),
-        ne(testRuns.status, 'COMPLETED'),
-        eq(testRuns.lifecycle_status, 'ACTIVE')
-      )
-    );
-  const runIds = openRuns.map((r) => r.id);
-
-  if (runIds.length === 0) return;
-
-  // 마일스톤 체인으로 찾은 런에 test_run_suites 엔트리가 없으면 생성
-  const existingRunSuiteIds = new Set(suiteLinks.map((r) => r.test_run_id));
-  const missingRunSuiteIds = runIds.filter((id) => !existingRunSuiteIds.has(id));
-
-  if (missingRunSuiteIds.length > 0) {
-    await db
-      .insert(testRunSuites)
-      .values(
-        missingRunSuiteIds.map((runId) => ({
-          test_run_id: runId,
-          test_suite_id: suiteId,
-        }))
-      )
-      .onConflictDoNothing();
-  }
-
-  // 이미 등록된 케이스런 확인 (중복 방지)
-  const existingRows = await db
-    .select({ test_run_id: testCaseRuns.test_run_id })
-    .from(testCaseRuns)
-    .where(and(inArray(testCaseRuns.test_run_id, runIds), eq(testCaseRuns.test_case_id, caseId)));
-
-  const existingRunIds = new Set(existingRows.map((r) => r.test_run_id));
-  const newRunIds = runIds.filter((id) => !existingRunIds.has(id));
-
-  if (newRunIds.length === 0) return;
-
-  await db.insert(testCaseRuns).values(
-    newRunIds.map((runId) => ({
-      id: uuidv7(),
-      test_run_id: runId,
-      test_case_id: caseId,
-      status: 'untested' as const,
-      source_type: 'suite' as const,
-      source_id: suiteId,
-      created_at: new Date(),
-      updated_at: new Date(),
-    }))
-  );
-
-  await recomputeTestRunStatus(db, newRunIds);
-}
 
 /**
  * 테스트 케이스를 복사합니다. (제목에 "(복사)" 접미사 추가)
@@ -676,8 +554,7 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
         .returning();
       if (!row) return row;
 
-      await createVersionSnapshot(id, toSnapshot(row), 'create', [], '테스트 케이스 복사', tx);
-      if (row.test_suite_id) await syncCaseToLinkedRuns(tx, id, row.test_suite_id);
+      await recordCreatedCases(tx, [row], '테스트 케이스 복사');
 
       return row;
     });
@@ -799,7 +676,7 @@ export const updateTestCase = async (
         await createVersionSnapshot(id, newSnapshot, 'edit', changedFields, changeSummary, tx);
       }
 
-      if (updateFields.testSuiteId) await syncCaseToLinkedRuns(tx, id, updateFields.testSuiteId);
+      if (updateFields.testSuiteId) await syncCasesToLinkedRuns(tx, [id], updateFields.testSuiteId);
       return row;
     });
 

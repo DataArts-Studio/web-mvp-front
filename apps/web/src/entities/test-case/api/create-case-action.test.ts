@@ -10,8 +10,16 @@ vi.mock('@/access/lib/require-access', () => ({
 vi.mock('@/shared/lib/storage/check-storage-limit', () => ({
   checkStorageLimit: vi.fn(() => Promise.resolve(null)),
 }));
+const { mockRecordCreatedCases } = vi.hoisted(() => ({
+  mockRecordCreatedCases: vi.fn(() => Promise.resolve()),
+}));
 vi.mock('@/entities/test-case-version/api/create-version-snapshot', () => ({
   createVersionSnapshot: vi.fn(() => Promise.resolve()),
+}));
+vi.mock('@/entities/test-case/api/record-created-cases', () => ({
+  recordCreatedCases: mockRecordCreatedCases,
+  syncCasesToLinkedRuns: vi.fn(() => Promise.resolve()),
+  toSnapshot: vi.fn(),
 }));
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
@@ -131,6 +139,12 @@ describe('createTestCase', () => {
         lifecycleStatus: 'ACTIVE',
       });
     }
+    // 다른 생성 경로와 같은 공용 함수로 v1 버전·실행 동기화를 남긴다 (#391).
+    expect(mockRecordCreatedCases).toHaveBeenCalledWith(
+      mockTx,
+      [mockInsertedRow],
+      '테스트 케이스 생성'
+    );
   });
 
   it('테스트 케이스 생성 실패 시 (inserted가 없을 때) success: false와 에러 코드를 반환한다.', async () => {

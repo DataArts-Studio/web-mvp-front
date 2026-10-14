@@ -2,6 +2,7 @@
 
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
 import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
+import { recordCreatedCases } from '@/entities/test-case/api/record-created-cases';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -386,24 +387,30 @@ export const convertChecklistToTestCases = async (
 
       let nextDisplayId = (maxDisplayId?.max ?? 0) + 1;
 
-      await tx.insert(testCases).values(
-        items.map((item) => {
-          const displayId = nextDisplayId++;
-          return {
-            id: crypto.randomUUID(),
-            project_id: projectId,
-            name: item.content,
-            test_suite_id: suiteId ?? null,
-            display_id: displayId,
-            case_key: toCaseKey(displayId),
-            sort_order: 0,
-            // DB 컬럼에 DEFAULT now() 가 없어 drizzle 의 DEFAULT 키워드만으로는
-            // NOT NULL 제약에서 막힌다. 값을 명시한다.
-            created_at: now,
-            updated_at: now,
-          };
-        })
-      );
+      const created = await tx
+        .insert(testCases)
+        .values(
+          items.map((item) => {
+            const displayId = nextDisplayId++;
+            return {
+              id: crypto.randomUUID(),
+              project_id: projectId,
+              name: item.content,
+              test_suite_id: suiteId ?? null,
+              display_id: displayId,
+              case_key: toCaseKey(displayId),
+              sort_order: 0,
+              // DB 컬럼에 DEFAULT now() 가 없어 drizzle 의 DEFAULT 키워드만으로는
+              // NOT NULL 제약에서 막힌다. 값을 명시한다.
+              created_at: now,
+              updated_at: now,
+            };
+          })
+        )
+        .returning();
+
+      // 직접 만든 케이스처럼 v1 버전을 남기고 스위트에 연결된 실행에도 넣는다 (#391).
+      await recordCreatedCases(tx, created, '체크리스트 변환으로 생성');
     });
 
     invalidateCache(INVALIDATE.cases);
