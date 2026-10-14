@@ -124,6 +124,16 @@
   html {
     scroll-behavior: smooth;
     min-height: 100vh;
+    /* 랜딩 베타 배너 높이(h-10). 닫은 세션은 첫 페인트 전 스크립트가 속성을 붙여 0이 된다 (#438). */
+    --beta-banner-h: 40px;
+  }
+
+  html[data-beta-banner-dismissed] {
+    --beta-banner-h: 0px;
+  }
+
+  html[data-beta-banner-dismissed] [data-beta-banner] {
+    display: none;
   }
 
   body {
