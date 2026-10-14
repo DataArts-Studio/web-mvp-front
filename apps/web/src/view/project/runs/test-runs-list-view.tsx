@@ -10,40 +10,30 @@ import { useRerunRun } from '@/features/runs-edit';
 import { TESTRUN_EVENTS, track } from '@/shared/lib/analytics';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MainContainer } from '@testea/ui';
-import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { DeleteRunDialog } from './_components/delete-run-dialog';
 import { RerunRunDialog } from './_components/rerun-run-dialog';
-import {
-  type ITestRun,
-  PAGE_SIZE,
-  type RunSortOption,
-  type RunStatusFilter,
-} from './_components/runs-list-constants';
+import type { ITestRun, RunListTab } from './_components/runs-list-constants';
 import { RunsListLoadingSkeleton } from './_components/runs-list-loading-skeleton';
+import { isRunOpen } from './_components/runs-list-model';
+import { RunsListSummary } from './_components/runs-list-summary';
 import { RunsListTable } from './_components/runs-list-table';
 import { RunsListToolbar } from './_components/runs-list-toolbar';
+
+const matchesTab = (run: ITestRun, tab: RunListTab) =>
+  tab === 'ALL' || (tab === 'OPEN' ? isRunOpen(run) : !isRunOpen(run));
 
 export const TestRunsListView = () => {
   const params = useParams();
   const router = useRouter();
   const projectSlug = params.slug as string;
 
-  // 검색어 상태
+  const [tab, setTab] = useState<RunListTab>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  // 상태 필터
-  const [statusFilter, setStatusFilter] = useState<RunStatusFilter>('ALL');
-  // 정렬 옵션
-  const [sortOption, setSortOption] = useState<RunSortOption>('UPDATED');
-  // 페이지네이션
-  const [currentPage, setCurrentPage] = useState(1);
-  // 드롭다운 열림 상태
-  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  // 삭제 확인 다이얼로그 상태
-  const [deleteTarget, setDeleteTarget] = useState<ITestRun | null>(null);
-  // 다시 실행 확인 다이얼로그 상태
+  const [milestoneFilter, setMilestoneFilter] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [deleteTargets, setDeleteTargets] = useState<ITestRun[]>([]);
   const [rerunTarget, setRerunTarget] = useState<ITestRun | null>(null);
   const queryClient = useQueryClient();
 
@@ -51,9 +41,11 @@ export const TestRunsListView = () => {
   const { data: projectIdData } = useQuery(projectIdQueryOptions(projectSlug));
   const projectId = projectIdData?.success ? projectIdData.data.id : undefined;
 
-  const { isLoading: isLoadingProject, refetch: refetchDashboard } = useQuery(
-    dashboardQueryOptions.stats(projectSlug)
-  );
+  const {
+    data: dashboardData,
+    isLoading: isLoadingProject,
+    refetch: refetchDashboard,
+  } = useQuery(dashboardQueryOptions.stats(projectSlug));
 
   const {
     data: fetchedRunsData,
@@ -64,25 +56,29 @@ export const TestRunsListView = () => {
     enabled: !!projectId,
   });
 
-  const testRuns: ITestRun[] = (fetchedRunsData?.success ? fetchedRunsData.data : []) as ITestRun[];
-  const { data: dashboardData } = useQuery(dashboardQueryOptions.stats(projectSlug));
+  const testRuns = useMemo<ITestRun[]>(
+    () => (fetchedRunsData?.success ? fetchedRunsData.data : []),
+    [fetchedRunsData]
+  );
   const hasError =
     (dashboardData && !dashboardData.success) || (fetchedRunsData && !fetchedRunsData.success);
 
   const deleteMutation = useMutation({
-    mutationFn: (testRunId: string) => deleteTestRun(testRunId),
-    onSuccess: (result) => {
-      if (result.success) {
-        toast.success('테스트 실행이 삭제되었습니다.');
-        queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
-      } else {
-        toast.error(Object.values(result.errors).flat().join(', '));
-      }
-      setDeleteTarget(null);
+    mutationFn: async (runs: ITestRun[]) => {
+      const results = await Promise.all(runs.map((run) => deleteTestRun(run.id)));
+      return results.filter((result) => !result.success).length;
+    },
+    onSuccess: (failedCount, runs) => {
+      const movedCount = runs.length - failedCount;
+      if (movedCount > 0) toast.success(`테스트 실행 ${movedCount}개를 휴지통으로 옮겼습니다.`);
+      if (failedCount > 0) toast.error(`${failedCount}개는 옮기지 못했습니다. 다시 시도해 주세요.`);
+      queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
+      setSelectedIds(new Set());
+      setDeleteTargets([]);
     },
     onError: () => {
-      toast.error('삭제 중 오류가 발생했습니다.');
-      setDeleteTarget(null);
+      toast.error('휴지통으로 옮기는 중 오류가 발생했습니다.');
+      setDeleteTargets([]);
     },
   });
 
@@ -110,118 +106,125 @@ export const TestRunsListView = () => {
     }
   }, [fetchedRunsData?.success, projectId]);
 
-  // 검색어 및 상태 필터링 적용
-  const filteredRuns = testRuns.filter((run) => {
-    const matchesSearch =
-      searchTerm === '' ||
-      run.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      run.sourceName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || run.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const milestones = useMemo(
+    () =>
+      [
+        ...new Set(testRuns.filter((r) => r.sourceType === 'MILESTONE').map((r) => r.sourceName)),
+      ].sort((a, b) => a.localeCompare(b)),
+    [testRuns]
+  );
 
-  // 정렬 적용
-  const sortedRuns = [...filteredRuns].sort((a, b) => {
-    if (sortOption === 'NAME') return a.name.localeCompare(b.name);
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  });
+  // 탭을 뺀 조건(검색·마일스톤)으로 먼저 거르고, 탭 건수는 그 결과 기준으로 센다.
+  const searchedRuns = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return testRuns.filter(
+      (run) =>
+        (term === '' ||
+          run.name.toLowerCase().includes(term) ||
+          run.sourceName.toLowerCase().includes(term)) &&
+        (!milestoneFilter || (run.sourceType === 'MILESTONE' && run.sourceName === milestoneFilter))
+    );
+  }, [testRuns, searchTerm, milestoneFilter]);
 
-  // 페이지네이션 계산
-  const totalPages = Math.ceil(sortedRuns.length / PAGE_SIZE);
-  const paginatedRuns = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return sortedRuns.slice(start, start + PAGE_SIZE);
-  }, [sortedRuns, currentPage]);
+  const tabCounts = useMemo(
+    () => ({
+      ALL: searchedRuns.length,
+      OPEN: searchedRuns.filter(isRunOpen).length,
+      COMPLETED: searchedRuns.filter((run) => !isRunOpen(run)).length,
+    }),
+    [searchedRuns]
+  );
 
-  // Handlers
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
-  const handleStatusFilterChange = (value: RunStatusFilter) => {
-    setStatusFilter(value);
-    setIsStatusDropdownOpen(false);
-    setCurrentPage(1);
-  };
-  const handleSortOptionChange = (value: RunSortOption) => {
-    setSortOption(value);
-    setIsSortDropdownOpen(false);
-  };
-  const handleStatusDropdownToggle = () => {
-    setIsStatusDropdownOpen((prev) => !prev);
-    setIsSortDropdownOpen(false);
-  };
-  const handleSortDropdownToggle = () => {
-    setIsSortDropdownOpen((prev) => !prev);
-    setIsStatusDropdownOpen(false);
-  };
+  const visibleRuns = useMemo(
+    () => searchedRuns.filter((run) => matchesTab(run, tab)),
+    [searchedRuns, tab]
+  );
+
+  // 탭·검색으로 보이지 않게 된 실행은 선택에서 뺀 것으로 본다.
+  const visibleSelectedIds = useMemo(
+    () => new Set(visibleRuns.filter((run) => selectedIds.has(run.id)).map((run) => run.id)),
+    [visibleRuns, selectedIds]
+  );
+
+  const toggleSelect = (runId: string) =>
+    setSelectedIds(() => {
+      const next = new Set(visibleSelectedIds);
+      if (next.has(runId)) next.delete(runId);
+      else next.add(runId);
+      return next;
+    });
+
+  const toggleSelectAll = () =>
+    setSelectedIds(
+      visibleSelectedIds.size === visibleRuns.length
+        ? new Set()
+        : new Set(visibleRuns.map((run) => run.id))
+    );
+
   const handleResetFilters = () => {
     setSearchTerm('');
-    setStatusFilter('ALL');
-    setCurrentPage(1);
+    setMilestoneFilter(null);
+    setTab('ALL');
   };
+
   const handleCreateRun = () => {
     track(TESTRUN_EVENTS.CREATE_START, { project_id: projectId });
     router.push(`/projects/${projectSlug}/runs/create`);
   };
-  const handleRunClick = (runId: string) => router.push(`/projects/${projectSlug}/runs/${runId}`);
 
-  // 로딩 상태
   if (isLoadingProject || (projectId && isLoadingRuns)) {
     return <RunsListLoadingSkeleton />;
   }
 
   return (
     <>
-      <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-4 overflow-hidden px-10 py-8">
-        <header className="border-line-2 col-span-6 border-b pb-4">
-          <div className="min-w-0">
-            <h2 className="typo-title-heading text-text-1">테스트 실행 목록</h2>
-            <p className="typo-body2-normal text-text-2">
-              프로젝트의 테스트 실행 진행 상황과 결과를 확인합니다.
-            </p>
-          </div>
+      <MainContainer className="mx-auto flex h-screen w-full max-w-[1280px] flex-1 flex-col overflow-y-auto px-4 pt-6 pb-5 md:px-12">
+        <header className="flex items-center gap-3">
+          <h2 className="text-[22px] font-bold whitespace-nowrap text-white/95">테스트 실행</h2>
+          <span className="text-[15px] font-medium text-white/40">{testRuns.length}</span>
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={handleCreateRun}
+            className="bg-primary hover:bg-primary/90 rounded-[6px] px-4 py-[9px] text-[13px] font-bold whitespace-nowrap text-white transition-colors"
+          >
+            새 실행
+          </button>
         </header>
 
-        <section className="bg-bg-1 col-span-6 py-3">
-          <div className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
-            <button
-              type="button"
-              onClick={handleCreateRun}
-              className="typo-body2-heading bg-primary hover:bg-primary/90 inline-flex h-9 shrink-0 items-center justify-center gap-2 px-3 text-white transition-colors"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              테스트 실행 생성
-            </button>
-            <RunsListToolbar
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
-              statusFilter={statusFilter}
-              onStatusFilterChange={handleStatusFilterChange}
-              sortOption={sortOption}
-              onSortOptionChange={handleSortOptionChange}
-              isSortDropdownOpen={isSortDropdownOpen}
-              onSortDropdownToggle={handleSortDropdownToggle}
-              onSortDropdownClose={() => setIsSortDropdownOpen(false)}
-              isStatusDropdownOpen={isStatusDropdownOpen}
-              onStatusDropdownToggle={handleStatusDropdownToggle}
-              onStatusDropdownClose={() => setIsStatusDropdownOpen(false)}
-            />
+        {testRuns.length > 0 && (
+          <div className="mt-3.5">
+            <RunsListSummary runs={testRuns} />
           </div>
-        </section>
+        )}
+
+        <div className="mt-3.5">
+          <RunsListToolbar
+            tab={tab}
+            onTabChange={setTab}
+            counts={tabCounts}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            milestones={milestones}
+            milestoneFilter={milestoneFilter}
+            onMilestoneFilterChange={setMilestoneFilter}
+          />
+        </div>
 
         <RunsListTable
-          paginatedRuns={paginatedRuns}
-          sortedRunsCount={sortedRuns.length}
+          runs={visibleRuns}
+          allRuns={testRuns}
           totalRunsCount={testRuns.length}
           hasError={!!hasError}
-          searchTerm={searchTerm}
-          statusFilter={statusFilter}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          onRunClick={handleRunClick}
-          onDeleteClick={setDeleteTarget}
+          isFiltered={searchTerm !== '' || milestoneFilter !== null || tab !== 'ALL'}
+          selectedIds={visibleSelectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          onClearSelection={() => setSelectedIds(new Set())}
+          onDeleteSelected={() =>
+            setDeleteTargets(visibleRuns.filter((run) => visibleSelectedIds.has(run.id)))
+          }
+          onRunClick={(runId) => router.push(`/projects/${projectSlug}/runs/${runId}`)}
           onRerunClick={setRerunTarget}
           rerunPendingId={rerunMutation.isPending ? (rerunTarget?.id ?? null) : null}
           onRefetch={() => {
@@ -229,16 +232,16 @@ export const TestRunsListView = () => {
             refetchDashboard();
           }}
           onResetFilters={handleResetFilters}
-          onCreateRun={() => router.push(`/projects/${projectSlug}/runs/create`)}
+          onCreateRun={handleCreateRun}
         />
       </MainContainer>
 
-      {deleteTarget && (
+      {deleteTargets.length > 0 && (
         <DeleteRunDialog
-          deleteTarget={deleteTarget}
+          targets={deleteTargets}
           isPending={deleteMutation.isPending}
-          onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
-          onCancel={() => setDeleteTarget(null)}
+          onConfirm={() => deleteMutation.mutate(deleteTargets)}
+          onCancel={() => setDeleteTargets([])}
         />
       )}
 

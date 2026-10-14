@@ -1,178 +1,155 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 
 import { useOutsideClick } from '@testea/lib';
-import { ArrowUpDown, CheckCircle2, ChevronDown, Filter, Search, X } from 'lucide-react';
+import { cn } from '@testea/util';
+import { Check, ChevronDown, X } from 'lucide-react';
 
-import {
-  type RunSortOption,
-  type RunStatusFilter,
-  getStatusFilterLabel,
-} from './runs-list-constants';
+import type { RunListTab } from './runs-list-constants';
 
 interface RunsListToolbarProps {
+  tab: RunListTab;
+  onTabChange: (tab: RunListTab) => void;
+  counts: Record<RunListTab, number>;
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  statusFilter: RunStatusFilter;
-  onStatusFilterChange: (value: RunStatusFilter) => void;
-  sortOption: RunSortOption;
-  onSortOptionChange: (value: RunSortOption) => void;
-  isSortDropdownOpen: boolean;
-  onSortDropdownToggle: () => void;
-  onSortDropdownClose: () => void;
-  isStatusDropdownOpen: boolean;
-  onStatusDropdownToggle: () => void;
-  onStatusDropdownClose: () => void;
+  milestones: string[];
+  milestoneFilter: string | null;
+  onMilestoneFilterChange: (value: string | null) => void;
 }
 
+const TABS: { value: RunListTab; label: string }[] = [
+  { value: 'ALL', label: '전체' },
+  { value: 'OPEN', label: '진행 중' },
+  { value: 'COMPLETED', label: '완료' },
+];
+
 export const RunsListToolbar = ({
+  tab,
+  onTabChange,
+  counts,
   searchTerm,
   onSearchChange,
-  statusFilter,
-  onStatusFilterChange,
-  sortOption,
-  onSortOptionChange,
-  isSortDropdownOpen,
-  onSortDropdownToggle,
-  onSortDropdownClose,
-  isStatusDropdownOpen,
-  onStatusDropdownToggle,
-  onStatusDropdownClose,
+  milestones,
+  milestoneFilter,
+  onMilestoneFilterChange,
 }: RunsListToolbarProps) => {
-  const sortDropdownRef = useRef<HTMLDivElement>(null);
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const statusMenuId = React.useId();
-  const sortMenuId = React.useId();
+  const [isMilestoneOpen, setIsMilestoneOpen] = useState(false);
+  const milestoneRef = useRef<HTMLDivElement>(null);
+  const milestoneMenuId = React.useId();
+  useOutsideClick(milestoneRef, () => setIsMilestoneOpen(false), isMilestoneOpen);
 
-  useOutsideClick(sortDropdownRef, onSortDropdownClose);
-  useOutsideClick(statusDropdownRef, onStatusDropdownClose);
+  const selectMilestone = (value: string | null) => {
+    onMilestoneFilterChange(value);
+    setIsMilestoneOpen(false);
+  };
 
   return (
-    <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-end">
-      <label className="relative min-w-0 flex-1 lg:max-w-[520px]">
-        <span className="sr-only">실행 이름 검색</span>
-        <Search
-          aria-hidden="true"
-          className="text-text-4 pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-          strokeWidth={1.8}
-        />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="실행 이름 검색..."
-          className="typo-body2-normal border-line-2 bg-bg-2 text-text-1 placeholder:text-text-4 focus:border-primary focus:ring-primary h-9 w-full border pr-9 pl-9 transition-colors outline-none focus:ring-1"
-        />
-        {searchTerm && (
-          <button
-            type="button"
-            onClick={() => onSearchChange('')}
-            className="text-text-4 hover:text-text-1 absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
-            aria-label="검색어 지우기"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </label>
-
-      <div className="flex shrink-0 items-center gap-2">
-        <div className="relative" ref={statusDropdownRef}>
-          <button
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded={isStatusDropdownOpen}
-            aria-controls={isStatusDropdownOpen ? statusMenuId : undefined}
-            onClick={onStatusDropdownToggle}
-            className={`typo-body2-heading inline-flex h-9 items-center gap-2 border px-3 transition-colors ${
-              statusFilter !== 'ALL'
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3'
-            }`}
-          >
-            <Filter className="h-4 w-4" aria-hidden="true" />
-            <span>{getStatusFilterLabel(statusFilter)}</span>
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}
-              aria-hidden="true"
-            />
-          </button>
-
-          {isStatusDropdownOpen && (
-            <div
-              id={statusMenuId}
-              role="menu"
-              className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-10 mt-1 min-w-[160px] overflow-hidden border"
-            >
-              {(['ALL', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'] as RunStatusFilter[]).map(
-                (status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={statusFilter === status}
-                    onClick={() => onStatusFilterChange(status)}
-                    className={`typo-body2-normal hover:bg-bg-3 flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors ${
-                      statusFilter === status ? 'bg-bg-3 text-primary' : 'text-text-2'
-                    }`}
-                  >
-                    {statusFilter === status && <CheckCircle2 className="h-4 w-4" />}
-                    <span className={statusFilter === status ? '' : 'pl-6'}>
-                      {getStatusFilterLabel(status)}
-                    </span>
-                  </button>
-                )
+    <div className="border-line-2 flex flex-col gap-2 border-b lg:flex-row lg:items-end lg:gap-4">
+      <div role="tablist" aria-label="실행 상태" className="flex items-end gap-1">
+        {TABS.map((item) => {
+          const active = tab === item.value;
+          return (
+            <button
+              key={item.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onTabChange(item.value)}
+              className={cn(
+                '-mb-px flex items-center gap-2 border-b-2 px-3.5 pt-2 pb-2.5 whitespace-nowrap transition-colors',
+                active
+                  ? 'border-white/90 text-[14px] font-bold text-white/95'
+                  : 'border-transparent text-[14px] font-medium text-white/60 hover:text-white/80'
               )}
-            </div>
-          )}
-        </div>
-
-        <div className="relative" ref={sortDropdownRef}>
-          <button
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded={isSortDropdownOpen}
-            aria-controls={isSortDropdownOpen ? sortMenuId : undefined}
-            onClick={onSortDropdownToggle}
-            className="typo-body2-heading border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 inline-flex h-9 items-center gap-2 border px-3 transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
-            <span>{sortOption === 'UPDATED' ? '최근 수정 순' : '이름 순'}</span>
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`}
-              aria-hidden="true"
-            />
-          </button>
-
-          {isSortDropdownOpen && (
-            <div
-              id={sortMenuId}
-              role="menu"
-              className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-10 mt-1 min-w-[160px] overflow-hidden border"
             >
-              {(
-                [
-                  ['UPDATED', '최근 수정 순'],
-                  ['NAME', '이름 순'],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={sortOption === value}
-                  onClick={() => onSortOptionChange(value)}
-                  className={`typo-body2-normal hover:bg-bg-3 flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors ${
-                    sortOption === value ? 'bg-bg-3 text-primary' : 'text-text-2'
-                  }`}
-                >
-                  {sortOption === value && <CheckCircle2 className="h-4 w-4" />}
-                  <span className={sortOption === value ? '' : 'pl-6'}>{label}</span>
-                </button>
-              ))}
-            </div>
+              {item.label}
+              <span
+                className={cn(
+                  'text-[13px] font-medium',
+                  active ? 'text-white/60' : 'text-white/35'
+                )}
+              >
+                {counts[item.value]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="hidden flex-1 lg:block" />
+
+      <div className="flex flex-wrap items-center gap-4 pb-2">
+        <label className="border-line-2 focus-within:border-primary/60 flex w-full items-center gap-2 rounded-[6px] border px-3 py-2 sm:w-[220px]">
+          <span className="sr-only">실행 이름 검색</span>
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="실행 이름 검색"
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-white/90 outline-none placeholder:text-white/35 [&::-webkit-search-cancel-button]:hidden"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              aria-label="검색어 지우기"
+              className="text-white/35 hover:text-white/70"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
           )}
-        </div>
+        </label>
+
+        {milestones.length > 0 && (
+          <div className="relative" ref={milestoneRef}>
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={isMilestoneOpen}
+              aria-controls={isMilestoneOpen ? milestoneMenuId : undefined}
+              onClick={() => setIsMilestoneOpen((prev) => !prev)}
+              className={cn(
+                'flex items-center gap-1 text-[13px] font-medium whitespace-nowrap',
+                milestoneFilter ? 'text-primary' : 'text-white/55 hover:text-white/80'
+              )}
+            >
+              마일스톤: <span className="max-w-[160px] truncate">{milestoneFilter ?? '전체'}</span>
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+            {isMilestoneOpen && (
+              <div
+                id={milestoneMenuId}
+                role="menu"
+                className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-20 mt-1 max-h-72 min-w-[200px] overflow-y-auto rounded-[6px] border py-1"
+              >
+                {[null, ...milestones].map((name) => {
+                  const checked = milestoneFilter === name;
+                  return (
+                    <button
+                      key={name ?? '__all'}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={checked}
+                      onClick={() => selectMilestone(name)}
+                      className={cn(
+                        'hover:bg-bg-3 flex w-full items-center gap-2 px-3 py-2 text-left text-[13px]',
+                        checked ? 'text-primary' : 'text-white/75'
+                      )}
+                    >
+                      <Check
+                        className={cn('h-3.5 w-3.5 shrink-0', !checked && 'invisible')}
+                        aria-hidden="true"
+                      />
+                      <span className="truncate">{name ?? '전체'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
