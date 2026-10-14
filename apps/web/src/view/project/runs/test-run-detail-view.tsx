@@ -159,6 +159,12 @@ export const TestRunDetailView = () => {
       );
       return { previous };
     },
+    onSuccess: (result, _input, context) => {
+      // 서버가 거부한 변경(예: 삭제된 실행, #419)은 낙관적 표시를 되돌리고 이유를 알린다.
+      if (result.success) return;
+      if (context?.previous) queryClient.setQueryData(['testRun', testRunId], context.previous);
+      toast.error(Object.values(result.errors).flat().join(', '));
+    },
     onError: (_err, _input, context) => {
       if (context?.previous) queryClient.setQueryData(['testRun', testRunId], context.previous);
       toast.error('상태 변경 중 오류가 발생했습니다.');
@@ -230,11 +236,12 @@ export const TestRunDetailView = () => {
       );
       return { previous };
     },
-    onSuccess: (result) => {
+    onSuccess: (result, _input, context) => {
       if (result.success) {
         toast.success(`${result.data.updatedCount}개 케이스 상태가 변경되었습니다.`);
         bulkSelection.clear();
       } else {
+        if (context?.previous) queryClient.setQueryData(['testRun', testRunId], context.previous);
         toast.error(Object.values(result.errors).flat().join(', '));
       }
     },

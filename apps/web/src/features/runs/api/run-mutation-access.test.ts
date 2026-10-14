@@ -79,3 +79,21 @@ it('정상 이름 변경은 공백을 제거한 기존 응답을 유지한다.',
   });
   expect(set).toHaveBeenCalledWith(expect.objectContaining({ name: '새 이름' }));
 });
+
+describe('실행 이름 길이 (#417)', () => {
+  beforeEach(() => vi.mocked(requireProjectAccess).mockResolvedValue(true));
+
+  it('100자를 넘는 이름은 저장하지 않는다.', async () => {
+    const result = await updateTestRunName(RUN_ID, 'a'.repeat(101));
+    expect(result).toEqual({
+      success: false,
+      errors: { name: ['실행 이름은 100자를 초과할 수 없습니다.'] },
+    });
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it('앞뒤 공백을 뺀 길이가 100자면 저장한다.', async () => {
+    expect((await updateTestRunName(RUN_ID, ` ${'a'.repeat(100)} `)).success).toBe(true);
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ name: 'a'.repeat(100) }));
+  });
+});

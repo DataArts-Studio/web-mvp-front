@@ -16,6 +16,8 @@ interface CaseSelectionPanelProps {
   onToggleCase: (id: string) => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  /** 케이스 목록을 불러오는 중이면 빈 상태 대신 불러오는 중으로 보여 준다. */
+  isLoading?: boolean;
 }
 
 export const CaseSelectionPanel = ({
@@ -24,6 +26,7 @@ export const CaseSelectionPanel = ({
   onToggleCase,
   isExpanded,
   onToggleExpand,
+  isLoading = false,
 }: CaseSelectionPanelProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -38,10 +41,11 @@ export const CaseSelectionPanel = ({
       <button
         type="button"
         onClick={onToggleExpand}
+        aria-expanded={isExpanded}
         className="hover:bg-bg-3 flex w-full items-center justify-between px-4 py-3 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <ListChecks className="text-primary h-5 w-5" />
+          <ListChecks className="text-primary h-5 w-5" aria-hidden="true" />
           <span className="text-text-1 font-medium">테스트 케이스</span>
           {selectedCaseIds.size > 0 && (
             <span className="bg-primary rounded-full px-2 py-0.5 text-xs text-white">
@@ -61,9 +65,10 @@ export const CaseSelectionPanel = ({
           {/* 검색 */}
           <div className="border-line-2 border-b px-4 py-2">
             <div className="bg-bg-3 flex items-center gap-2 rounded-lg px-3 py-2">
-              <Search className="text-text-3 h-4 w-4" />
+              <Search className="text-text-3 h-4 w-4" aria-hidden="true" />
               <input
-                type="text"
+                type="search"
+                aria-label="케이스 검색"
                 placeholder="케이스 검색..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -74,18 +79,26 @@ export const CaseSelectionPanel = ({
 
           {/* 리스트 */}
           <div className="max-h-[200px] overflow-y-auto">
-            {filteredCases.length === 0 ? (
+            {isLoading ? (
+              <div role="status" className="text-text-3 py-8 text-center text-sm">
+                케이스를 불러오는 중이에요...
+              </div>
+            ) : filteredCases.length === 0 ? (
               <div className="text-text-3 py-8 text-center text-sm">
                 {allCases.length === 0 ? '테스트 케이스가 없습니다.' : '검색 결과가 없습니다.'}
               </div>
             ) : (
               filteredCases.map((tc) => (
-                <div
+                <button
                   key={tc.id}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selectedCaseIds.has(tc.id)}
                   onClick={() => onToggleCase(tc.id)}
-                  className="hover:bg-bg-3 flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors"
+                  className="hover:bg-bg-3 flex w-full cursor-pointer items-center gap-3 px-4 py-2 text-left transition-colors"
                 >
-                  <div
+                  <span
+                    aria-hidden="true"
                     className={cn(
                       'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
                       selectedCaseIds.has(tc.id)
@@ -94,10 +107,10 @@ export const CaseSelectionPanel = ({
                     )}
                   >
                     {selectedCaseIds.has(tc.id) && <Check className="h-3 w-3" />}
-                  </div>
+                  </span>
                   <span className="text-primary shrink-0 font-mono text-xs">{tc.caseKey}</span>
                   <span className="text-text-1 truncate text-sm">{tc.title}</span>
-                </div>
+                </button>
               ))
             )}
           </div>

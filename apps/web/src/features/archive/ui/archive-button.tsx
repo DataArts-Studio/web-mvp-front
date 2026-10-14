@@ -94,11 +94,12 @@ export const ArchiveButton = ({
         className="flex items-center gap-2 text-red-400"
         onClick={() => setIsConfirmOpen(true)}
         disabled={archive.isPending}
+        aria-label={btnType === 'icon' ? `${label} 삭제` : undefined}
       >
         {archive.isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
         ) : (
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
         )}
         {btnType === 'text' && (archive.isPending ? '삭제 중...' : '삭제')}
       </DSButton>

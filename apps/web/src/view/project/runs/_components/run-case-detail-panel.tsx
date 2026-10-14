@@ -5,7 +5,7 @@ import React from 'react';
 import { type TestCaseRunDetail } from '@/features/runs';
 import { type UseMutationResult } from '@tanstack/react-query';
 import { DSButton, EmptyState } from '@testea/ui';
-import { cn } from '@testea/util';
+import { APP_TIME_ZONE, cn } from '@testea/util';
 import { ChevronLeft, ChevronRight, ListTodo, Loader2 } from 'lucide-react';
 
 import { STATUS_CONFIG, type TestCaseRunStatus } from './run-detail-constants';
@@ -60,6 +60,7 @@ export const RunCaseDetailPanel = ({
               {selectedCase.executedAt && (
                 <span className="text-text-4 ml-auto text-[11px]">
                   {new Date(selectedCase.executedAt).toLocaleString('ko-KR', {
+                    timeZone: APP_TIME_ZONE,
                     month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
