@@ -19,7 +19,7 @@ import { AddToRunModal, useRerunRun } from '@/features/runs-edit';
 import { TESTRUN_EVENTS, track } from '@/shared/lib/analytics';
 import { type TestStatusData } from '@/widgets/project';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useOutsideClick, useSelectionSet, useToggleSet } from '@testea/lib';
+import { useSelectionSet, useToggleSet } from '@testea/lib';
 import { MainContainer } from '@testea/ui';
 import { toast } from 'sonner';
 
@@ -103,17 +103,6 @@ export const TestRunDetailView = () => {
   const [showRerunDialog, setShowRerunDialog] = useState(false);
   const [showAutoRunDialog, setShowAutoRunDialog] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showStatusFilterDropdown, setShowStatusFilterDropdown] = useState(false);
-  const [showSuiteFilterDropdown, setShowSuiteFilterDropdown] = useState(false);
-  const statusFilterRef = React.useRef<HTMLDivElement>(null);
-  const suiteFilterRef = React.useRef<HTMLDivElement>(null);
-
-  useOutsideClick(
-    statusFilterRef,
-    () => setShowStatusFilterDropdown(false),
-    showStatusFilterDropdown
-  );
-  useOutsideClick(suiteFilterRef, () => setShowSuiteFilterDropdown(false), showSuiteFilterDropdown);
 
   // ─── Data Fetching ─────────────────────────────────────────────
   const { data, isLoading, isError } = useQuery(testRunByIdQueryOptions(testRunId));
@@ -325,6 +314,9 @@ export const TestRunDetailView = () => {
     });
   }, [testRun, filteredCases]);
 
+  // 화면에 보이는 순서(스위트 묶음 순). 첫 선택, 다음 케이스, J/K 이동이 모두 이 순서를 따른다.
+  const orderedCases = useMemo(() => groupedCases.flatMap((g) => g.cases), [groupedCases]);
+
   const selectedCase = useMemo(() => {
     if (!selectedCaseId || !testRun) return null;
     return testRun.testCaseRuns.find((tc) => tc.id === selectedCaseId) || null;
@@ -339,11 +331,11 @@ export const TestRunDetailView = () => {
 
   // ─── Side Effects ──────────────────────────────────────────────
   useEffect(() => {
-    if (!selectedCaseId && filteredCases.length > 0) {
+    if (!selectedCaseId && orderedCases.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate initial sync
-      setSelectedCaseId(filteredCases[0].id);
+      setSelectedCaseId(orderedCases[0].id);
     }
-  }, [filteredCases, selectedCaseId]);
+  }, [orderedCases, selectedCaseId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing editable state from selected case
@@ -373,24 +365,24 @@ export const TestRunDetailView = () => {
       track(TESTRUN_EVENTS.RESULT_UPDATE, { status, case_id: selectedCase.id });
       updateMutation.mutate({ testCaseRunId: selectedCase.id, status, comment: comment || null });
 
-      const currentIndex = filteredCases.findIndex((tc) => tc.id === selectedCase.id);
-      const nextUntested = filteredCases.find(
+      const currentIndex = orderedCases.findIndex((tc) => tc.id === selectedCase.id);
+      const nextUntested = orderedCases.find(
         (tc, i) => i > currentIndex && tc.status === 'untested'
       );
       if (nextUntested) {
         setSelectedCaseId(nextUntested.id);
       } else {
-        const nextCase = filteredCases[currentIndex + 1];
+        const nextCase = orderedCases[currentIndex + 1];
         if (nextCase) setSelectedCaseId(nextCase.id);
       }
     },
-    [selectedCase, comment, filteredCases, updateMutation]
+    [selectedCase, comment, orderedCases, updateMutation]
   );
 
   // ─── Keyboard Shortcuts ────────────────────────────────────────
   useRunKeyboardShortcuts({
     selectedCaseId,
-    filteredCases,
+    filteredCases: orderedCases,
     onStatusChange: handleStatusChange,
     onSelectCase: setSelectedCaseId,
     onToggleShortcuts: useCallback(() => setShowShortcuts((prev) => !prev), []),
@@ -401,23 +393,25 @@ export const TestRunDetailView = () => {
   if (isError || !testRun) return <RunDetailError projectSlug={projectSlug} />;
 
   return (
-    <MainContainer className="flex min-h-screen flex-1 flex-col overflow-x-hidden">
-      <RunDetailHeader
-        testRun={testRun}
-        projectSlug={projectSlug}
-        testRunId={testRunId}
-        onRename={(name) => renameMutation.mutate({ name })}
-        isRenaming={renameMutation.isPending}
-        onShowShortcuts={() => setShowShortcuts(true)}
-        showCharts={showCharts}
-        onToggleCharts={() => setShowCharts((prev) => !prev)}
-        onRerun={() => setShowRerunDialog(true)}
-        isRerunning={rerunMutation.isPending}
-        onAutoRun={() => setShowAutoRunDialog(true)}
-        onAddTests={() => setShowAddModal(true)}
-      />
+    <MainContainer className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="border-line-2 flex shrink-0 flex-col gap-3 border-b px-4 pt-[18px] pb-4 md:px-8">
+        <RunDetailHeader
+          testRun={testRun}
+          projectSlug={projectSlug}
+          testRunId={testRunId}
+          onRename={(name) => renameMutation.mutate({ name })}
+          isRenaming={renameMutation.isPending}
+          onShowShortcuts={() => setShowShortcuts(true)}
+          showCharts={showCharts}
+          onToggleCharts={() => setShowCharts((prev) => !prev)}
+          onRerun={() => setShowRerunDialog(true)}
+          isRerunning={rerunMutation.isPending}
+          onAutoRun={() => setShowAutoRunDialog(true)}
+          onAddTests={() => setShowAddModal(true)}
+        />
 
-      <RunSummaryBar stats={testRun.stats} />
+        <RunSummaryBar stats={testRun.stats} />
+      </div>
 
       {/* Collapsible charts panel */}
       {showCharts && (
@@ -430,7 +424,7 @@ export const TestRunDetailView = () => {
       )}
 
       {/* Main Content - full height work area */}
-      <div className="sticky top-0 flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <RunCaseListPanel
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -445,18 +439,12 @@ export const TestRunDetailView = () => {
           selectedCaseId={selectedCaseId}
           setSelectedCaseId={setSelectedCaseId}
           testRunStats={testRun.stats}
-          showStatusFilterDropdown={showStatusFilterDropdown}
-          setShowStatusFilterDropdown={setShowStatusFilterDropdown}
-          showSuiteFilterDropdown={showSuiteFilterDropdown}
-          setShowSuiteFilterDropdown={setShowSuiteFilterDropdown}
-          statusFilterRef={statusFilterRef}
-          suiteFilterRef={suiteFilterRef}
           onRemoveSuite={(suiteId, suiteName) =>
             setRemoveSuiteTarget({ id: suiteId, name: suiteName })
           }
           removableSuiteIds={removableSuiteIds}
           bulkSelection={bulkSelection}
-          filteredCaseIds={filteredCases.map((c) => c.id)}
+          filteredCaseIds={orderedCases.map((c) => c.id)}
           onBulkStatusChange={handleBulkStatusChange}
           isBulkUpdating={bulkUpdateMutation.isPending}
           onInlineStatusChange={handleInlineStatusChange}
@@ -464,7 +452,7 @@ export const TestRunDetailView = () => {
 
         <RunCaseDetailPanel
           selectedCase={selectedCase}
-          filteredCases={filteredCases}
+          filteredCases={orderedCases}
           selectedCaseId={selectedCaseId}
           setSelectedCaseId={setSelectedCaseId}
           comment={comment}
