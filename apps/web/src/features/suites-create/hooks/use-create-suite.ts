@@ -22,8 +22,10 @@ export const useCreateSuite = () => {
       }
       return result;
     },
-    onSuccess: async () => {
-      await Promise.all([
+    onSuccess: () => {
+      // 목록·대시보드 재조회는 기다리지 않는다. 기다리면 그동안 생성이 "진행 중"으로 남아
+      // 이미 만들어진 뒤에도 모달이 로딩 상태로 몇 초 더 열려 있다 (#444).
+      void Promise.all([
         queryClient.invalidateQueries({
           queryKey: ['testSuites'],
           refetchType: 'all',
