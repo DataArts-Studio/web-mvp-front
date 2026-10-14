@@ -10,6 +10,7 @@ import { dashboardQueryOptions } from '@/features/dashboard';
 import {
   bulkUpdateTestCaseRunStatus,
   removeSuiteFromRun,
+  runComparisonQueryOptions,
   testRunByIdQueryOptions,
   testRunsQueryOptions,
   updateTestCaseRunStatus,
@@ -31,6 +32,7 @@ import {
   RerunRunDialog,
   RunCaseDetailPanel,
   RunCaseListPanel,
+  RunCompleteView,
   RunDetailCharts,
   RunDetailError,
   RunDetailHeader,
@@ -103,9 +105,17 @@ export const TestRunDetailView = () => {
   const [showRerunDialog, setShowRerunDialog] = useState(false);
   const [showAutoRunDialog, setShowAutoRunDialog] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  // 끝난 실행은 결과 요약(06f2)으로 연다. '결과 수정'을 누르면 기록 화면으로 바꾼다.
+  const [editingCompleted, setEditingCompleted] = useState(false);
 
   // ─── Data Fetching ─────────────────────────────────────────────
   const { data, isLoading, isError } = useQuery(testRunByIdQueryOptions(testRunId));
+  const isCompleted = data?.success === true && data.data.status === 'COMPLETED';
+  const { data: comparisonData } = useQuery({
+    ...runComparisonQueryOptions(testRunId),
+    enabled: isCompleted,
+  });
+  const comparison = comparisonData?.success ? comparisonData.data : undefined;
 
   const { data: dashboardData } = useQuery({
     ...dashboardQueryOptions.stats(projectSlug),
@@ -386,81 +396,114 @@ export const TestRunDetailView = () => {
     onStatusChange: handleStatusChange,
     onSelectCase: setSelectedCaseId,
     onToggleShortcuts: useCallback(() => setShowShortcuts((prev) => !prev), []),
+    // 결과 요약 화면에서는 P/F/B/U 로 결과가 바뀌지 않게 끈다.
+    enabled: !(testRun?.status === 'COMPLETED' && !editingCompleted),
   });
 
   // ─── Render ────────────────────────────────────────────────────
   if (isLoading) return <RunDetailSkeleton />;
   if (isError || !testRun) return <RunDetailError projectSlug={projectSlug} />;
 
+  const showSummary = testRun.status === 'COMPLETED' && !editingCompleted;
+
+  const charts = showCharts && (
+    <RunDetailCharts
+      testStatusData={testStatusData}
+      milestones={dashboardMilestones}
+      testRuns={allTestRuns}
+      selectedRunId={testRunId}
+    />
+  );
+
   return (
     <MainContainer className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="border-line-2 flex shrink-0 flex-col gap-3 border-b px-4 pt-[18px] pb-4 md:px-8">
-        <RunDetailHeader
-          testRun={testRun}
-          projectSlug={projectSlug}
-          testRunId={testRunId}
-          onRename={(name) => renameMutation.mutate({ name })}
-          isRenaming={renameMutation.isPending}
-          onShowShortcuts={() => setShowShortcuts(true)}
-          showCharts={showCharts}
-          onToggleCharts={() => setShowCharts((prev) => !prev)}
-          onRerun={() => setShowRerunDialog(true)}
-          isRerunning={rerunMutation.isPending}
-          onAutoRun={() => setShowAutoRunDialog(true)}
-          onAddTests={() => setShowAddModal(true)}
-        />
+      {showSummary ? (
+        <>
+          {charts}
+          <RunCompleteView
+            testRun={testRun}
+            comparison={comparison}
+            projectSlug={projectSlug}
+            testRunId={testRunId}
+            onEditResults={(caseRunId) => {
+              if (caseRunId) setSelectedCaseId(caseRunId);
+              setEditingCompleted(true);
+            }}
+            onRerun={() => setShowRerunDialog(true)}
+            isRerunning={rerunMutation.isPending}
+            onAddTests={() => setShowAddModal(true)}
+            onAutoRun={() => setShowAutoRunDialog(true)}
+            showCharts={showCharts}
+            onToggleCharts={() => setShowCharts((prev) => !prev)}
+            onShowShortcuts={() => setShowShortcuts(true)}
+          />
+        </>
+      ) : (
+        <>
+          <div className="border-line-2 flex shrink-0 flex-col gap-3 border-b px-4 pt-[18px] pb-4 md:px-8">
+            <RunDetailHeader
+              testRun={testRun}
+              projectSlug={projectSlug}
+              testRunId={testRunId}
+              onRename={(name) => renameMutation.mutate({ name })}
+              isRenaming={renameMutation.isPending}
+              onShowShortcuts={() => setShowShortcuts(true)}
+              showCharts={showCharts}
+              onToggleCharts={() => setShowCharts((prev) => !prev)}
+              onRerun={() => setShowRerunDialog(true)}
+              isRerunning={rerunMutation.isPending}
+              onAutoRun={() => setShowAutoRunDialog(true)}
+              onAddTests={() => setShowAddModal(true)}
+              onShowSummary={
+                testRun.status === 'COMPLETED' ? () => setEditingCompleted(false) : undefined
+              }
+            />
 
-        <RunSummaryBar stats={testRun.stats} />
-      </div>
+            <RunSummaryBar stats={testRun.stats} />
+          </div>
 
-      {/* Collapsible charts panel */}
-      {showCharts && (
-        <RunDetailCharts
-          testStatusData={testStatusData}
-          milestones={dashboardMilestones}
-          testRuns={allTestRuns}
-          selectedRunId={testRunId}
-        />
+          {charts}
+
+          {/* Main Content - full height work area */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+            <RunCaseListPanel
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              suiteFilter={suiteFilter}
+              setSuiteFilter={setSuiteFilter}
+              availableSuites={availableSuites}
+              filteredCases={filteredCases}
+              groupedCases={groupedCases}
+              collapsedGroups={collapsedGroups}
+              selectedCaseId={selectedCaseId}
+              setSelectedCaseId={setSelectedCaseId}
+              testRunStats={testRun.stats}
+              onRemoveSuite={(suiteId, suiteName) =>
+                setRemoveSuiteTarget({ id: suiteId, name: suiteName })
+              }
+              removableSuiteIds={removableSuiteIds}
+              bulkSelection={bulkSelection}
+              filteredCaseIds={orderedCases.map((c) => c.id)}
+              onBulkStatusChange={handleBulkStatusChange}
+              isBulkUpdating={bulkUpdateMutation.isPending}
+              onInlineStatusChange={handleInlineStatusChange}
+            />
+
+            <RunCaseDetailPanel
+              selectedCase={selectedCase}
+              filteredCases={orderedCases}
+              selectedCaseId={selectedCaseId}
+              setSelectedCaseId={setSelectedCaseId}
+              comment={comment}
+              setComment={setComment}
+              handleStatusChange={handleStatusChange}
+              updateMutation={updateMutation}
+            />
+          </div>
+        </>
       )}
-
-      {/* Main Content - full height work area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        <RunCaseListPanel
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          suiteFilter={suiteFilter}
-          setSuiteFilter={setSuiteFilter}
-          availableSuites={availableSuites}
-          filteredCases={filteredCases}
-          groupedCases={groupedCases}
-          collapsedGroups={collapsedGroups}
-          selectedCaseId={selectedCaseId}
-          setSelectedCaseId={setSelectedCaseId}
-          testRunStats={testRun.stats}
-          onRemoveSuite={(suiteId, suiteName) =>
-            setRemoveSuiteTarget({ id: suiteId, name: suiteName })
-          }
-          removableSuiteIds={removableSuiteIds}
-          bulkSelection={bulkSelection}
-          filteredCaseIds={orderedCases.map((c) => c.id)}
-          onBulkStatusChange={handleBulkStatusChange}
-          isBulkUpdating={bulkUpdateMutation.isPending}
-          onInlineStatusChange={handleInlineStatusChange}
-        />
-
-        <RunCaseDetailPanel
-          selectedCase={selectedCase}
-          filteredCases={orderedCases}
-          selectedCaseId={selectedCaseId}
-          setSelectedCaseId={setSelectedCaseId}
-          comment={comment}
-          setComment={setComment}
-          handleStatusChange={handleStatusChange}
-          updateMutation={updateMutation}
-        />
-      </div>
 
       <KeyboardShortcutsModal open={showShortcuts} onClose={() => setShowShortcuts(false)} />
 
