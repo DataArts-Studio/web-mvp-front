@@ -224,17 +224,18 @@ export const deleteSection = async (sectionId: string): Promise<ActionResult<{ i
 
     const now = new Date();
 
-    // 하위 케이스의 section_id를 NULL로 설정
-    await db
-      .update(testCases)
-      .set({ section_id: null, updated_at: now })
-      .where(eq(testCases.section_id, sectionId));
+    // 케이스를 미분류로 옮기는 일과 섹션 삭제를 함께 반영한다 (#390).
+    await db.transaction(async (tx) => {
+      await tx
+        .update(testCases)
+        .set({ section_id: null, updated_at: now })
+        .where(eq(testCases.section_id, sectionId));
 
-    // 섹션 소프트 딜리트
-    await db
-      .update(testSuiteSections)
-      .set({ archived_at: now, updated_at: now })
-      .where(eq(testSuiteSections.id, sectionId));
+      await tx
+        .update(testSuiteSections)
+        .set({ archived_at: now, updated_at: now })
+        .where(eq(testSuiteSections.id, sectionId));
+    });
 
     invalidateCache(INVALIDATE.cases);
     return {

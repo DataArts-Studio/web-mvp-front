@@ -1,6 +1,7 @@
 'use server';
 
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
+import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -75,20 +76,24 @@ export const createChecklist = async (input: {
     const db = getDatabase();
     const { projectId, title, items } = parsed.data;
 
-    const [checklist] = await db
-      .insert(checklists)
-      .values({ project_id: projectId, title })
-      .returning({ id: checklists.id });
+    // 항목 저장이 실패하면 빈 체크리스트도 남기지 않는다 (#390).
+    const checklist = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(checklists)
+        .values({ project_id: projectId, title })
+        .returning({ id: checklists.id });
 
-    if (items.length > 0) {
-      await db.insert(checklistItems).values(
-        items.map((item, idx) => ({
-          checklist_id: checklist.id,
-          content: item.content,
-          sort_order: idx * 1000,
-        }))
-      );
-    }
+      if (items.length > 0) {
+        await tx.insert(checklistItems).values(
+          items.map((item, idx) => ({
+            checklist_id: row.id,
+            content: item.content,
+            sort_order: idx * 1000,
+          }))
+        );
+      }
+      return row;
+    });
 
     return { success: true, data: { id: checklist.id } };
   } catch (error) {
@@ -370,29 +375,36 @@ export const convertChecklistToTestCases = async (
     // 동적 import로 createTestCase 가져오기
     const { testCases } = await import('@testea/db');
 
-    // display_id 최대값 조회
-    const [maxDisplayId] = await db
-      .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
-      .from(testCases)
-      .where(eq(testCases.project_id, projectId));
-
-    let nextDisplayId = (maxDisplayId?.max ?? 0) + 1;
     const now = new Date();
 
-    await db.insert(testCases).values(
-      items.map((item) => ({
-        id: crypto.randomUUID(),
-        project_id: projectId,
-        name: item.content,
-        test_suite_id: suiteId ?? null,
-        display_id: nextDisplayId++,
-        sort_order: 0,
-        // DB 컬럼에 DEFAULT now() 가 없어 drizzle 의 DEFAULT 키워드만으로는
-        // NOT NULL 제약에서 막힌다. 값을 명시한다.
-        created_at: now,
-        updated_at: now,
-      }))
-    );
+    await db.transaction(async (tx) => {
+      await lockCaseNumbers(tx, projectId);
+      const [maxDisplayId] = await tx
+        .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+        .from(testCases)
+        .where(eq(testCases.project_id, projectId));
+
+      let nextDisplayId = (maxDisplayId?.max ?? 0) + 1;
+
+      await tx.insert(testCases).values(
+        items.map((item) => {
+          const displayId = nextDisplayId++;
+          return {
+            id: crypto.randomUUID(),
+            project_id: projectId,
+            name: item.content,
+            test_suite_id: suiteId ?? null,
+            display_id: displayId,
+            case_key: toCaseKey(displayId),
+            sort_order: 0,
+            // DB 컬럼에 DEFAULT now() 가 없어 drizzle 의 DEFAULT 키워드만으로는
+            // NOT NULL 제약에서 막힌다. 값을 명시한다.
+            created_at: now,
+            updated_at: now,
+          };
+        })
+      );
+    });
 
     invalidateCache(INVALIDATE.cases);
     return { success: true, data: { count: items.length } };

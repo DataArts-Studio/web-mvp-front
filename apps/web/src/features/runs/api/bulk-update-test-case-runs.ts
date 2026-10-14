@@ -56,34 +56,42 @@ export async function bulkUpdateTestCaseRunStatus(
     const now = new Date();
 
     // 일괄 업데이트 (IDOR 방지: 인가된 프로젝트에 속한 run 의 케이스 실행만 갱신)
-    const updated = await db
-      .update(testCaseRuns)
-      .set({
-        status: input.status,
-        ...(input.comment !== undefined ? { comment: input.comment ?? null } : {}),
-        executed_at: input.status !== 'untested' ? now : null,
-        // 사용자가 수동으로 수정하면 자동(auto) 출처를 manual 로 되돌려 출처가 stale 해지지 않게 한다.
-        result_source: 'manual',
-        updated_at: now,
-      })
-      .where(
-        and(
-          inArray(testCaseRuns.id, input.testCaseRunIds),
-          inArray(
-            testCaseRuns.test_run_id,
-            db
-              .select({ id: testRuns.id })
-              .from(testRuns)
-              .where(
-                and(eq(testRuns.project_id, run.projectId), eq(testRuns.lifecycle_status, 'ACTIVE'))
-              )
+    // 결과 저장과 실행 상태 재계산을 함께 반영한다 (#390).
+    const updated = await db.transaction(async (tx) => {
+      const rows = await tx
+        .update(testCaseRuns)
+        .set({
+          status: input.status,
+          ...(input.comment !== undefined ? { comment: input.comment ?? null } : {}),
+          executed_at: input.status !== 'untested' ? now : null,
+          // 사용자가 수동으로 수정하면 자동(auto) 출처를 manual 로 되돌려 출처가 stale 해지지 않게 한다.
+          result_source: 'manual',
+          updated_at: now,
+        })
+        .where(
+          and(
+            inArray(testCaseRuns.id, input.testCaseRunIds),
+            inArray(
+              testCaseRuns.test_run_id,
+              tx
+                .select({ id: testRuns.id })
+                .from(testRuns)
+                .where(
+                  and(
+                    eq(testRuns.project_id, run.projectId),
+                    eq(testRuns.lifecycle_status, 'ACTIVE')
+                  )
+                )
+            )
           )
         )
-      )
-      .returning({ id: testCaseRuns.id });
+        .returning({ id: testCaseRuns.id, testRunId: testCaseRuns.test_run_id });
 
-    // 테스트 실행 상태 갱신
-    await recomputeTestRunStatus(db, firstCaseRun.testRunId);
+      // 선택한 결과가 여러 실행에 걸쳐 있어도 바뀐 실행마다 상태를 다시 계산한다.
+      const runIds = [...new Set(rows.map((row) => row.testRunId).filter((id) => id !== null))];
+      if (runIds.length > 0) await recomputeTestRunStatus(tx, runIds);
+      return rows;
+    });
 
     invalidateCache(INVALIDATE.runs);
     return {

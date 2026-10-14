@@ -128,24 +128,24 @@ describe('updateTestCase 스위트·섹션 프로젝트 경계', () => {
     mocks.owners.set(SUITE_ID, PROJECT_B);
     const result = await updateTestCase({ id: CASE_ID, testSuiteId: SUITE_ID });
     expect(result.success).toBe(false);
-    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
   });
 
   it('다른 프로젝트 섹션으로 옮기려 하면 쓰기 없이 거부한다', async () => {
     mocks.owners.set(SECTION_ID, PROJECT_B);
     const result = await updateTestCase({ id: CASE_ID, sectionId: SECTION_ID });
     expect(result.success).toBe(false);
-    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
   });
 
   it('같은 프로젝트 스위트면 수정 단계로 진행한다', async () => {
     mocks.owners.set(SUITE_ID, PROJECT_A);
     await updateTestCase({ id: CASE_ID, testSuiteId: SUITE_ID });
-    expect(mocks.update).toHaveBeenCalled();
+    expect(mocks.transaction).toHaveBeenCalledTimes(1);
   });
 
   it('스위트 해제(null)는 소속 확인 없이 수정 단계로 진행한다', async () => {
     await updateTestCase({ id: CASE_ID, testSuiteId: null });
-    expect(mocks.update).toHaveBeenCalled();
+    expect(mocks.transaction).toHaveBeenCalledTimes(1);
   });
 });

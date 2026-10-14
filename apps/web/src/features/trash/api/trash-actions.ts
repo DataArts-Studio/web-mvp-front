@@ -22,7 +22,8 @@ const AUTO_DELETE_DAYS = 30;
 
 type AuditAction = 'permanent_delete' | 'auto_cleanup' | 'empty_trash';
 
-type Db = ReturnType<typeof getDatabase>;
+type Database = ReturnType<typeof getDatabase>;
+type Db = Database | Parameters<Parameters<Database['transaction']>[0]>[0];
 
 /**
  * 영구 삭제된 스위트를 가리키는 활성 케이스를 미분류로 돌린다.
@@ -49,7 +50,7 @@ async function detachCasesFromPurgedSuites(db: Db, projectId: string) {
  * 영구 삭제 전 audit_logs에 스냅샷을 기록합니다.
  */
 async function writeAuditLogs(
-  db: ReturnType<typeof getDatabase>,
+  db: Db,
   entries: {
     projectId: string | null;
     entityType: string;
@@ -178,57 +179,60 @@ export const getTrashedItems = async (projectId: string): Promise<ActionResult<T
     ];
 
     if (auditEntries.length > 0) {
-      await writeAuditLogs(db, auditEntries);
+      // 기록, 영구 삭제 표시, 케이스 분리를 함께 반영한다 (#390).
+      await db.transaction(async (tx) => {
+        await writeAuditLogs(tx, auditEntries);
 
-      // PURGED 마킹 (소프트 딜리트)
-      const purgedAt = new Date();
-      await Promise.all([
-        expiredCases.length > 0 &&
-          db
-            .update(testCases)
-            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-            .where(
-              and(
-                eq(testCases.project_id, projectId),
-                eq(testCases.lifecycle_status, 'DELETED'),
-                lt(testCases.archived_at, cutoff)
-              )
-            ),
-        expiredSuites.length > 0 &&
-          db
-            .update(testSuites)
-            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-            .where(
-              and(
-                eq(testSuites.project_id, projectId),
-                eq(testSuites.lifecycle_status, 'DELETED'),
-                lt(testSuites.archived_at, cutoff)
-              )
-            ),
-        expiredMilestones.length > 0 &&
-          db
-            .update(milestones)
-            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-            .where(
-              and(
-                eq(milestones.project_id, projectId),
-                eq(milestones.lifecycle_status, 'DELETED'),
-                lt(milestones.archived_at, cutoff)
-              )
-            ),
-        expiredScenarios.length > 0 &&
-          db
-            .update(testScenarios)
-            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-            .where(
-              and(
-                eq(testScenarios.project_id, projectId),
-                eq(testScenarios.lifecycle_status, 'DELETED'),
-                lt(testScenarios.archived_at, cutoff)
-              )
-            ),
-      ]);
-      if (expiredSuites.length > 0) await detachCasesFromPurgedSuites(db, projectId);
+        // PURGED 마킹 (소프트 딜리트)
+        const purgedAt = new Date();
+        await Promise.all([
+          expiredCases.length > 0 &&
+            tx
+              .update(testCases)
+              .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+              .where(
+                and(
+                  eq(testCases.project_id, projectId),
+                  eq(testCases.lifecycle_status, 'DELETED'),
+                  lt(testCases.archived_at, cutoff)
+                )
+              ),
+          expiredSuites.length > 0 &&
+            tx
+              .update(testSuites)
+              .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+              .where(
+                and(
+                  eq(testSuites.project_id, projectId),
+                  eq(testSuites.lifecycle_status, 'DELETED'),
+                  lt(testSuites.archived_at, cutoff)
+                )
+              ),
+          expiredMilestones.length > 0 &&
+            tx
+              .update(milestones)
+              .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+              .where(
+                and(
+                  eq(milestones.project_id, projectId),
+                  eq(milestones.lifecycle_status, 'DELETED'),
+                  lt(milestones.archived_at, cutoff)
+                )
+              ),
+          expiredScenarios.length > 0 &&
+            tx
+              .update(testScenarios)
+              .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+              .where(
+                and(
+                  eq(testScenarios.project_id, projectId),
+                  eq(testScenarios.lifecycle_status, 'DELETED'),
+                  lt(testScenarios.archived_at, cutoff)
+                )
+              ),
+        ]);
+        if (expiredSuites.length > 0) await detachCasesFromPurgedSuites(tx, projectId);
+      });
     }
 
     // 남은 휴지통 항목 조회
@@ -633,27 +637,30 @@ export const permanentDeleteItem = async (
           });
         }
 
-        await writeAuditLogs(db, entries);
+        // 기록, 하위 케이스와 스위트의 영구 삭제 표시, 케이스 분리를 함께 반영한다 (#390).
+        await db.transaction(async (tx) => {
+          await writeAuditLogs(tx, entries);
 
-        // 하위 TC + 스위트 PURGED 마킹 (스위트는 위에서 프로젝트 소속 확인됨)
-        const purgedAt = new Date();
-        await db
-          .update(testCases)
-          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-          .where(
-            and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED'))
-          );
-        await db
-          .update(testSuites)
-          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-          .where(
-            and(
-              eq(testSuites.id, targetId),
-              eq(testSuites.project_id, projectId),
-              eq(testSuites.lifecycle_status, 'DELETED')
-            )
-          );
-        await detachCasesFromPurgedSuites(db, projectId);
+          // 하위 TC + 스위트 PURGED 마킹 (스위트는 위에서 프로젝트 소속 확인됨)
+          const purgedAt = new Date();
+          await tx
+            .update(testCases)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(eq(testCases.test_suite_id, targetId), eq(testCases.lifecycle_status, 'DELETED'))
+            );
+          await tx
+            .update(testSuites)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(
+                eq(testSuites.id, targetId),
+                eq(testSuites.project_id, projectId),
+                eq(testSuites.lifecycle_status, 'DELETED')
+              )
+            );
+          await detachCasesFromPurgedSuites(tx, projectId);
+        });
         break;
       }
       case 'milestone': {
@@ -816,46 +823,49 @@ export const emptyTrash = async (projectId: string): Promise<ActionResult<{ coun
       })),
     ];
 
-    if (entries.length > 0) {
-      await writeAuditLogs(db, entries);
-    }
+    // 기록, 영구 삭제 표시, 케이스 분리를 함께 반영한다 (#390).
+    await db.transaction(async (tx) => {
+      if (entries.length > 0) {
+        await writeAuditLogs(tx, entries);
+      }
 
-    // PURGED 마킹 (소프트 딜리트)
-    const purgedAt = new Date();
-    await Promise.all([
-      allCases.length > 0 &&
-        db
-          .update(testCases)
-          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-          .where(
-            and(eq(testCases.project_id, projectId), eq(testCases.lifecycle_status, 'DELETED'))
-          ),
-      allSuites.length > 0 &&
-        db
-          .update(testSuites)
-          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-          .where(
-            and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'DELETED'))
-          ),
-      allMilestones.length > 0 &&
-        db
-          .update(milestones)
-          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-          .where(
-            and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))
-          ),
-      allScenarios.length > 0 &&
-        db
-          .update(testScenarios)
-          .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
-          .where(
-            and(
-              eq(testScenarios.project_id, projectId),
-              eq(testScenarios.lifecycle_status, 'DELETED')
-            )
-          ),
-    ]);
-    if (allSuites.length > 0) await detachCasesFromPurgedSuites(db, projectId);
+      // PURGED 마킹 (소프트 딜리트)
+      const purgedAt = new Date();
+      await Promise.all([
+        allCases.length > 0 &&
+          tx
+            .update(testCases)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(eq(testCases.project_id, projectId), eq(testCases.lifecycle_status, 'DELETED'))
+            ),
+        allSuites.length > 0 &&
+          tx
+            .update(testSuites)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(eq(testSuites.project_id, projectId), eq(testSuites.lifecycle_status, 'DELETED'))
+            ),
+        allMilestones.length > 0 &&
+          tx
+            .update(milestones)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(eq(milestones.project_id, projectId), eq(milestones.lifecycle_status, 'DELETED'))
+            ),
+        allScenarios.length > 0 &&
+          tx
+            .update(testScenarios)
+            .set({ lifecycle_status: 'PURGED', updated_at: purgedAt })
+            .where(
+              and(
+                eq(testScenarios.project_id, projectId),
+                eq(testScenarios.lifecycle_status, 'DELETED')
+              )
+            ),
+      ]);
+      if (allSuites.length > 0) await detachCasesFromPurgedSuites(tx, projectId);
+    });
 
     const totalCount =
       allCases.length + allSuites.length + allMilestones.length + allScenarios.length;

@@ -16,6 +16,10 @@ vi.mock('@/entities/test-case-version/api/create-version-snapshot', () => ({
 vi.mock('@sentry/nextjs', () => ({
   captureException: vi.fn(),
 }));
+vi.mock('@/entities/test-case/api/case-number-lock', () => ({
+  lockCaseNumbers: vi.fn(async () => undefined),
+  toCaseKey: (displayId: number) => `TC-${String(displayId).padStart(3, '0')}`,
+}));
 
 const mockReturning = vi.fn();
 const mockTx = {
