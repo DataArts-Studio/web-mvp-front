@@ -8,14 +8,14 @@ import { DSButton } from '@testea/ui';
 import { type ITestRun } from './runs-list-constants';
 
 interface DeleteRunDialogProps {
-  deleteTarget: ITestRun;
+  targets: ITestRun[];
   isPending: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 export const DeleteRunDialog = ({
-  deleteTarget,
+  targets,
   isPending,
   onConfirm,
   onCancel,
@@ -30,11 +30,19 @@ export const DeleteRunDialog = ({
       <Dialog.Overlay />
       <Dialog.Content className="bg-bg-1 rounded-8 w-full max-w-md p-6 shadow-xl">
         <Dialog.Title className="text-text-1 text-lg font-semibold">
-          테스트 실행을 삭제하시겠습니까?
+          {targets.length === 1
+            ? '테스트 실행을 휴지통으로 옮길까요?'
+            : `테스트 실행 ${targets.length}개를 휴지통으로 옮길까요?`}
         </Dialog.Title>
         <Dialog.Description className="text-text-3 mt-3 text-sm">
-          <strong className="text-text-1">&quot;{deleteTarget.name}&quot;</strong> 실행과 관련된
-          모든 테스트 케이스 실행 결과가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+          {targets.length === 1 ? (
+            <>
+              <strong className="text-text-1">&quot;{targets[0].name}&quot;</strong> 실행
+            </>
+          ) : (
+            '선택한 실행'
+          )}
+          과 기록된 결과가 휴지통으로 이동하며 30일 안에 복원할 수 있습니다.
         </Dialog.Description>
         <div className="mt-6 flex justify-end gap-3">
           <DSButton variant="ghost" onClick={onCancel} disabled={isPending}>
@@ -46,7 +54,7 @@ export const DeleteRunDialog = ({
             onClick={onConfirm}
             disabled={isPending}
           >
-            {isPending ? '삭제 중...' : '삭제'}
+            {isPending ? '옮기는 중...' : '휴지통으로'}
           </DSButton>
         </div>
       </Dialog.Content>

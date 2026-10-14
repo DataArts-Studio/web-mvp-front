@@ -64,6 +64,10 @@ export interface FetchedTestRun {
   status: TestRunStatus;
   sourceType: 'SUITE' | 'MILESTONE' | 'ADHOC';
   sourceName: string;
+  /** 같은 출처(마일스톤 또는 같은 스위트 묶음)로 만든 실행끼리 같은 값. 직접 고른 케이스는 null. */
+  sourceKey: string | null;
+  milestoneEndDate: string | null;
+  createdAt: Date;
   updatedAt: Date;
   stats: {
     totalCases: number;
@@ -74,6 +78,8 @@ export interface FetchedTestRun {
     blocked: number;
     untested: number;
   };
+  /** 결과를 기록한 날(서비스 시간대 'YYYY-MM-DD')별 건수. */
+  activity: { date: string; pass: number; fail: number; blocked: number }[];
 }
 
 export interface UpdateTestCaseRunInput {
