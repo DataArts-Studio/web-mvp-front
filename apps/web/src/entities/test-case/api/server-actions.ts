@@ -17,6 +17,7 @@ import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
 import type { TestCaseListItem } from '@/entities/test-case/model/types';
 import {
   excludeArchivedCasesFromRuns,
+  lockSuiteRunSync,
   recomputeTestRunStatus,
 } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
@@ -517,6 +518,9 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
  * 2) 마일스톤 체인: suite → milestone_test_suites → milestone → test_runs
  */
 async function syncCaseToLinkedRuns(db: Transaction, caseId: string, suiteId: string) {
+  // 마일스톤에 이 스위트를 붙이는 요청과 엇갈려 실행에서 케이스가 빠지지 않게 한다 (#390).
+  await lockSuiteRunSync(db, [suiteId]);
+
   // 1. test_run_suites 직접 링크로 연결된 런. 실행에서 제거한 스위트는 건너뛴다 (#375).
   const suiteLinks = await db
     .select({ test_run_id: testRunSuites.test_run_id, excluded_at: testRunSuites.excluded_at })
