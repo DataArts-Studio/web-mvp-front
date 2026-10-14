@@ -2,6 +2,7 @@
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestRunSchema } from '@/entities/test-run';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { lockSuiteRunSync } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
@@ -82,6 +83,8 @@ export const createTestRunAction = async (input: CreateRunInput) => {
         suiteIds,
         caseIds: milestoneCaseRows.map((row) => row.test_case_id!),
       });
+      // 같은 스위트에 케이스를 만드는 요청과 엇갈려 실행에서 케이스가 빠지지 않게 한다 (#390).
+      await lockSuiteRunSync(tx, suiteIds);
 
       const suiteCaseRows =
         suiteIds.length === 0
