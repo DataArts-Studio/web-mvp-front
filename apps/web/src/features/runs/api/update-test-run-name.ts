@@ -1,6 +1,7 @@
 'use server';
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
+import { RUN_NAME_MAX_LENGTH, RUN_NAME_TOO_LONG_MESSAGE } from '@/entities/test-run/model/schema';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -20,6 +21,9 @@ export async function updateTestRunName(
         success: false,
         errors: { name: ['테스트 실행 이름을 입력해주세요.'] },
       };
+    }
+    if (trimmed.length > RUN_NAME_MAX_LENGTH) {
+      return { success: false, errors: { name: [RUN_NAME_TOO_LONG_MESSAGE] } };
     }
 
     const db = getDatabase();

@@ -1,5 +1,6 @@
-import { isBlank } from '@/shared';
 import { describe, expect, it } from 'vitest';
+
+import { isBlank } from './validation';
 
 describe('유효성 검사 단위 테스트', () => {
   it('[isBlank] 빈 문자열이면 true', () => {

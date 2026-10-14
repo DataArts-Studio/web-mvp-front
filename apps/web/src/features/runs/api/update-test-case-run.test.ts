@@ -30,7 +30,7 @@ beforeEach(() => {
   set.mockImplementation(() => ({ where: vi.fn(() => ({ returning })) }));
   limit
     .mockResolvedValueOnce([{ testRunId: RUN_ID }])
-    .mockResolvedValueOnce([{ projectId: 'project-1' }]);
+    .mockResolvedValueOnce([{ projectId: 'project-1', lifecycleStatus: 'ACTIVE' }]);
   returning.mockResolvedValue([
     { id: CASE_RUN_ID, test_run_id: RUN_ID, status: 'fail', comment: '기존', executed_at: null },
   ]);
@@ -48,8 +48,29 @@ describe('케이스 실행 상태 변경의 코멘트 처리 (#413)', () => {
 
     limit
       .mockResolvedValueOnce([{ testRunId: RUN_ID }])
-      .mockResolvedValueOnce([{ projectId: 'project-1' }]);
+      .mockResolvedValueOnce([{ projectId: 'project-1', lifecycleStatus: 'ACTIVE' }]);
     await updateTestCaseRunStatus({ testCaseRunId: CASE_RUN_ID, status: 'pass', comment: null });
     expect(set.mock.calls[1][0]).toHaveProperty('comment', null);
+  });
+});
+
+describe('삭제된 실행의 결과 변경 (#419)', () => {
+  it('실행이 삭제(ARCHIVED)됐으면 결과와 코멘트를 바꾸지 않는다.', async () => {
+    limit.mockReset();
+    limit
+      .mockResolvedValueOnce([{ testRunId: RUN_ID }])
+      .mockResolvedValueOnce([{ projectId: 'project-1', lifecycleStatus: 'ARCHIVED' }]);
+
+    const result = await updateTestCaseRunStatus({
+      testCaseRunId: CASE_RUN_ID,
+      status: 'pass',
+      comment: '메모',
+    });
+
+    expect(result).toEqual({
+      success: false,
+      errors: { _general: ['삭제된 테스트 실행은 결과를 바꿀 수 없습니다.'] },
+    });
+    expect(db.update).not.toHaveBeenCalled();
   });
 });

@@ -159,7 +159,7 @@ export const TestCaseDetailView = () => {
         </nav>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <main className="min-w-0">
+          <div className="min-w-0">
             {activeTab === 'details' ? (
               <div className="flex flex-col gap-3">
                 <ContentPanel title={t('ui.preconditions')}>
@@ -196,7 +196,7 @@ export const TestCaseDetailView = () => {
                 <VersionHistoryTab testCaseId={testCase.id} />
               </div>
             )}
-          </main>
+          </div>
 
           <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
             <div className="border-line-2 bg-bg-1 border">

@@ -2,6 +2,7 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { RUN_NAME_MAX_LENGTH } from '@/entities/test-run/model/schema';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -13,6 +14,7 @@ import {
   testRunSuites,
   testRuns,
 } from '@testea/db';
+import { toAppDateOnly } from '@testea/util';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -156,8 +158,14 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
 
     // 5. 자동 제안 이름: 회귀 재실행 - {원본명} ({YYYY-MM-DD})
     const now = new Date();
-    const dateLabel = formatDate(now);
-    const proposedName = `회귀 재실행 - ${sourceRun.name} (${dateLabel})`;
+    const dateLabel = toAppDateOnly(now);
+    // 접두·날짜를 붙여도 이름 길이 제한을 넘지 않게 원본 이름을 줄인다 (#417).
+    const prefix = '회귀 재실행 - ';
+    const suffix = ` (${dateLabel})`;
+    const room = RUN_NAME_MAX_LENGTH - prefix.length - suffix.length;
+    const sourceName =
+      sourceRun.name.length > room ? `${sourceRun.name.slice(0, room - 1)}…` : sourceRun.name;
+    const proposedName = `${prefix}${sourceName}${suffix}`;
 
     const newTestRun = await db.transaction(async (tx) => {
       // 5-1. 새 Run 생성 (status=NOT_STARTED, milestone_id 는 원본 따라감)
@@ -234,12 +242,4 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
     });
     return { success: false, error: '회귀 재실행 생성에 실패했습니다. 잠시 후 다시 시도해주세요.' };
   }
-}
-
-/** 서버 now 기준 YYYY-MM-DD 포맷 (자동 제안 이름용) */
-function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }

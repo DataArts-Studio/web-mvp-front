@@ -2,6 +2,7 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
+import { RUN_NOT_ACTIVE_MESSAGE } from '@/entities/test-run/model/schema';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -40,13 +41,16 @@ export async function bulkUpdateTestCaseRunStatus(
     }
 
     const [run] = await db
-      .select({ projectId: testRuns.project_id })
+      .select({ projectId: testRuns.project_id, lifecycleStatus: testRuns.lifecycle_status })
       .from(testRuns)
       .where(eq(testRuns.id, firstCaseRun.testRunId))
       .limit(1);
 
     if (!run?.projectId || !(await requireProjectAccess(run.projectId))) {
       return { success: false, errors: { _general: ['접근 권한이 없습니다.'] } };
+    }
+    if (run.lifecycleStatus !== 'ACTIVE') {
+      return { success: false, errors: { _general: [RUN_NOT_ACTIVE_MESSAGE] } };
     }
 
     const now = new Date();
@@ -70,7 +74,9 @@ export async function bulkUpdateTestCaseRunStatus(
             db
               .select({ id: testRuns.id })
               .from(testRuns)
-              .where(eq(testRuns.project_id, run.projectId))
+              .where(
+                and(eq(testRuns.project_id, run.projectId), eq(testRuns.lifecycle_status, 'ACTIVE'))
+              )
           )
         )
       )

@@ -18,9 +18,16 @@ interface DateDropdownSelectProps {
   value: string | null | undefined;
   onChange: (date: string | null) => void;
   disabled?: boolean;
+  /** 연·월·일 콤보박스 이름 앞에 붙는 필드 이름 (예: 시작일) */
+  label: string;
 }
 
-export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSelectProps) => {
+export const DateDropdownSelect = ({
+  value,
+  onChange,
+  disabled,
+  label,
+}: DateDropdownSelectProps) => {
   const now = useMemo(() => new Date(), []);
   const currentYear = now.getFullYear();
 
@@ -111,9 +118,9 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
         disabled={disabled}
         className="relative"
       >
-        <Select.Trigger className={triggerClass}>
+        <Select.Trigger className={triggerClass} aria-label={`${label} 연도`}>
           <span className={cn(!year && 'text-text-3')}>{year ? `${year}년` : '년도'}</span>
-          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" />
+          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         </Select.Trigger>
         <Select.Content className={contentClass}>
           {years.map((y) => (
@@ -130,9 +137,9 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
         disabled={disabled}
         className="relative"
       >
-        <Select.Trigger className={triggerClass}>
+        <Select.Trigger className={triggerClass} aria-label={`${label} 월`}>
           <span className={cn(!month && 'text-text-3')}>{month ? `${month}월` : '월'}</span>
-          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" />
+          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         </Select.Trigger>
         <Select.Content className={contentClass}>
           {months.map((m) => (
@@ -149,9 +156,9 @@ export const DateDropdownSelect = ({ value, onChange, disabled }: DateDropdownSe
         disabled={disabled}
         className="relative"
       >
-        <Select.Trigger className={triggerClass}>
+        <Select.Trigger className={triggerClass} aria-label={`${label} 일`}>
           <span className={cn(!day && 'text-text-3')}>{day ? `${day}일` : '일'}</span>
-          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" />
+          <ChevronDown className="text-text-3 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         </Select.Trigger>
         <Select.Content className={contentClass}>
           {days.map((d) => (

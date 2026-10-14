@@ -12,6 +12,7 @@ import {
   testRuns,
   testSuites,
 } from '@testea/db';
+import { startOfAppDay } from '@testea/util';
 import { and, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 
@@ -275,12 +276,6 @@ function currentSummaryText(raw: string | null, context: string): string | null 
 const AI_DAILY_LIMIT_PER_PROJECT = 10;
 const SHARE_SUMMARY_ACTION = 'share_summary';
 
-/** 오늘 0시(UTC). AI 사용량 집계와 같은 기준을 쓴다. */
-const startOfTodayUtc = () => {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-};
-
 /**
  * 실제 생성 호출 수로 하루 한도를 세고, 남아 있으면 한 번을 기록한다. 동시에 여러 요청이 와도
  * 한도를 넘지 않도록 프로젝트 단위로 잠근 트랜잭션 안에서 세고 기록한다.
@@ -295,7 +290,7 @@ async function claimDailySummarySlot(db: Database, projectId: string): Promise<b
         and(
           eq(aiUsageLogs.project_id, projectId),
           eq(aiUsageLogs.action_type, SHARE_SUMMARY_ACTION),
-          gte(aiUsageLogs.created_at, startOfTodayUtc())
+          gte(aiUsageLogs.created_at, startOfAppDay())
         )
       );
     if (todayCount >= AI_DAILY_LIMIT_PER_PROJECT) return false;

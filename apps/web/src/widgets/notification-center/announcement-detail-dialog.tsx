@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 
 import type { AnnouncementWithReadState } from '@testea/db';
 import { DSButton, Dialog } from '@testea/ui';
+import { APP_TIME_ZONE } from '@testea/util';
 
 import { useMarkRead } from './hooks';
 import { useAnnouncementLabels } from './labels';
@@ -114,6 +115,7 @@ function severityClass(severity: AnnouncementWithReadState['severity']): string 
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('ko-KR', {
+    timeZone: APP_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

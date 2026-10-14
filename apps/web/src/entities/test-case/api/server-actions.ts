@@ -16,7 +16,8 @@ import {
   recomputeTestRunStatus,
 } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
-import { toValidName } from '@/shared/lib/normalize-name';
+import { toContainsPattern } from '@/shared/lib/like-pattern';
+import { validateName, withSuffix } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -65,6 +66,10 @@ async function sectionForSuite(
 }
 
 const CASE_NAME_MAX_LENGTH = 200;
+
+/** 이름 검증 실패 이유를 사용자에게 보여 줄 메시지 코드로 바꾼다. 길이 초과는 길이 안내로 보인다 (#412). */
+const nameErrorCode = (reason: 'empty' | 'too_long') =>
+  reason === 'too_long' ? CASE_MESSAGE_CODES.NAME_TOO_LONG : CASE_MESSAGE_CODES.NAME_REQUIRED;
 /** 케이스 커스텀 순서 간격. features/reorder 의 SORT_ORDER_GAP 과 같은 값이다. */
 const CASE_SORT_ORDER_GAP = 1000;
 
@@ -141,7 +146,8 @@ function buildCaseListWhere(
   }
 
   if (search?.trim()) {
-    const keyword = `%${search.trim()}%`;
+    // 검색어의 %·_ 가 와일드카드로 동작하지 않게 이스케이프한다 (#411).
+    const keyword = toContainsPattern(search.trim());
     conditions.push(or(ilike(testCases.name, keyword), ilike(testCases.case_key, keyword))!);
   }
 
@@ -413,10 +419,11 @@ export const createTestCase = async (input: CreateTestCase): Promise<ActionResul
     }
     if (storageError) return storageError;
 
-    const name = toValidName(input.title, CASE_NAME_MAX_LENGTH);
-    if (!name) {
-      return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NAME_REQUIRED] } };
+    const validated = validateName(input.title, CASE_NAME_MAX_LENGTH);
+    if (!validated.ok) {
+      return { success: false, errors: { _testCase: [nameErrorCode(validated.reason)] } };
     }
+    const name = validated.name;
 
     const db = getDatabase();
     const dto = {
@@ -660,7 +667,8 @@ export const duplicateTestCase = async (testCaseId: string): Promise<ActionResul
           project_id: projectId,
           test_suite_id: original.test_suite_id,
           section_id: original.section_id,
-          name: `${original.name} (복사)`,
+          // 복사본 이름도 이름 제한(200자) 안에 들도록 원래 이름을 자른다 (#412).
+          name: withSuffix(original.name, ' (복사)', CASE_NAME_MAX_LENGTH),
           test_type: original.test_type,
           tags: original.tags,
           pre_condition: original.pre_condition,
@@ -776,11 +784,11 @@ export const updateTestCase = async (
     };
 
     if (updateFields.title !== undefined) {
-      const name = toValidName(updateFields.title, CASE_NAME_MAX_LENGTH);
-      if (!name) {
-        return { success: false, errors: { _testCase: [CASE_MESSAGE_CODES.NAME_REQUIRED] } };
+      const validated = validateName(updateFields.title, CASE_NAME_MAX_LENGTH);
+      if (!validated.ok) {
+        return { success: false, errors: { _testCase: [nameErrorCode(validated.reason)] } };
       }
-      updateData.name = name;
+      updateData.name = validated.name;
     }
     if (updateFields.testSuiteId !== undefined) {
       updateData.test_suite_id = updateFields.testSuiteId;
