@@ -12,9 +12,9 @@ import { CheckCircle2, Circle, Flag, XCircle } from 'lucide-react';
 
 import { historySlotsOf, lastPassRateOf, suiteHealthOf } from './suite-list-model';
 
-/** 칸 너비. 머리글과 행이 같은 값을 쓴다. */
+/** 칸 너비. 머리글과 행이 같은 값을 쓴다. display 는 쓰는 쪽에서 정한다 (머리글은 lg 에서만 보임). */
 export const SUITE_ROW_GRID =
-  'grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 lg:grid-cols-[16px_minmax(0,1fr)_280px_110px_140px]';
+  'grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 lg:grid-cols-[16px_minmax(0,1fr)_280px_110px_140px]';
 
 const BAR_TONE: Record<TestSuiteCard['recentRuns'][number]['status'], string> = {
   passed: 'bg-result-pass/80',
@@ -60,7 +60,7 @@ export const SuiteListRow = ({ suite, href, projectSlug, onEdit }: SuiteListRowP
 
   return (
     <li className="group border-line-2 relative border-b px-2.5 py-3.5 transition-colors hover:bg-white/[0.02]">
-      <div className={SUITE_ROW_GRID}>
+      <div className={cn('grid', SUITE_ROW_GRID)}>
         <span
           className="flex"
           title={t(
