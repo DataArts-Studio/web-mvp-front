@@ -37,7 +37,8 @@ const rawGetTestCasesList = unstable_cache(
     const { getTestCasesList } = await import('@/entities/test-case/api/server-actions');
     return getTestCasesList(params);
   },
-  ['test-cases-list'],
+  // 응답에 최근 결과·섹션 묶음이 추가돼 키를 바꿔 이전 모양 캐시를 쓰지 않는다
+  ['test-cases-list-v2'],
   { revalidate: 60, tags: [CACHE_TAGS.testCases] }
 );
 
@@ -47,7 +48,8 @@ const rawGetTestSuites = unstable_cache(
     const { getTestSuites } = await import('@/entities/test-suite/api/server-actions');
     return getTestSuites({ projectId });
   },
-  ['test-suites'],
+  // 응답에 스위트별 케이스 수가 추가돼 키를 바꿔 이전 모양 캐시를 쓰지 않는다
+  ['test-suites-v2'],
   { revalidate: 60, tags: [CACHE_TAGS.testSuites] }
 );
 

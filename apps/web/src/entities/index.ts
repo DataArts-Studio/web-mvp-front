@@ -57,7 +57,6 @@ export type {
 export { TEST_TYPE_OPTIONS, getTestTypeLabel } from './test-case';
 export type { TestTypeValue } from './test-case';
 export { parseSteps, serializeSteps, stepsToText, textToSteps } from './test-case';
-export { TestCaseCard } from './test-case';
 export {
   getTestCase,
   getTestCases,

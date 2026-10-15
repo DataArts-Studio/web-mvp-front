@@ -44,7 +44,17 @@ export type CreateTestCase = {
 };
 
 /** 목록 조회용 경량 타입 (steps, pre_condition, expected_result 제외) */
-export type TestCaseListItem = Omit<TestCase, 'preCondition' | 'testSteps' | 'expectedResult'>;
+export type TestCaseListItem = Omit<TestCase, 'preCondition' | 'testSteps' | 'expectedResult'> & {
+  /** 최근 실행 결과, 오래된 것부터 최대 5개. 목록 조회만 채운다. */
+  recentResults?: TestCaseResultStatus[];
+};
+
+/** 스위트를 골랐을 때 목록을 묶는 섹션. id 가 null 이면 섹션 없는 케이스. */
+export type CaseListSectionGroup = {
+  id: string | null;
+  name: string;
+  caseCount: number;
+};
 
 export type TestCaseCardType = TestCaseListItem & {
   status: TestCaseResultStatus;

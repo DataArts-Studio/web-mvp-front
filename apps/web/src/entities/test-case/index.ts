@@ -10,6 +10,7 @@ export type {
   CreateTestCase,
   TestCaseListItem,
   TestCaseCardType,
+  CaseListSectionGroup,
 } from './model';
 export { TEST_TYPE_OPTIONS, getTestTypeLabel } from './model';
 export type { TestTypeValue } from './model';
@@ -22,7 +23,7 @@ export {
   unprotectCsvFormula,
 } from './model';
 // ui
-export { TestCaseCard, BasicInfoFields, TagsField, ScenarioFields } from './ui';
+export { BasicInfoFields, TagsField, ScenarioFields } from './ui';
 // api
 export {
   getTestCase,
