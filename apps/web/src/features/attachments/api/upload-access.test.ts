@@ -20,6 +20,7 @@ const PROJECT_B = '00000000-0000-4000-8000-000000000002';
 const CASE_ID = '00000000-0000-4000-8000-000000000003';
 const limit = vi.fn();
 const upload = vi.fn();
+const createSignedUrls = vi.fn();
 const returning = vi.fn();
 const values = vi.fn(() => ({ returning }));
 const db = {
@@ -46,8 +47,12 @@ beforeEach(() => {
   vi.mocked(checkStorageLimit).mockResolvedValue(null);
   limit.mockResolvedValue([{ projectId: PROJECT_A }]);
   upload.mockResolvedValue({ error: null });
+  createSignedUrls.mockImplementation(async (paths: string[]) => ({
+    data: paths.map((path) => ({ path, signedUrl: `https://signed.example/${path}`, error: null })),
+    error: null,
+  }));
   vi.mocked(createSupabaseServerClient).mockResolvedValue({
-    storage: { from: vi.fn(() => ({ upload })) },
+    storage: { from: vi.fn(() => ({ upload, createSignedUrls })) },
   } as unknown as Awaited<ReturnType<typeof createSupabaseServerClient>>);
   returning.mockResolvedValue([
     {
@@ -92,6 +97,8 @@ describe('첨부 업로드의 프로젝트 경계', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toMatchObject({ projectId: PROJECT_A, testCaseId: CASE_ID });
+      expect(result.data.url).toBe(`https://signed.example/${PROJECT_A}/${CASE_ID}/evidence.txt`);
+      expect(result.data.url).not.toContain('/object/public/');
     }
     expect(upload).toHaveBeenCalledOnce();
     expect(values).toHaveBeenCalledWith(
