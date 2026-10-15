@@ -14,16 +14,19 @@ let throwOnGetDatabase = false;
 
 // $dynamic() 이후 limit/offset 가 붙어도, 안 붙어도 await 시 mockRows 로 resolve 되도록
 // then 을 가진 thenable 을 단계마다 반환한다.
+// 스위트별 케이스 수 쿼리(...where().groupBy())는 빈 결과로 끝낸다.
 type MockThenable = {
   limit: Mock<() => MockThenable>;
   offset: Mock<() => MockThenable>;
   $dynamic: Mock<() => MockThenable>;
+  groupBy: Mock<() => PromiseLike<unknown>>;
   then: (resolve: (value: unknown) => void) => Promise<void>;
 };
 const makeThenable = (): MockThenable => ({
   limit: vi.fn(() => makeThenable()),
   offset: vi.fn(() => makeThenable()),
   $dynamic: vi.fn(() => makeThenable()),
+  groupBy: vi.fn(() => Promise.resolve([])),
   then: (resolve: (value: unknown) => void) => Promise.resolve(mockRows).then(resolve),
 });
 
@@ -48,6 +51,10 @@ vi.mock('@testea/db', () => ({
     id: 'id',
     project_id: 'project_id',
     name: 'name',
+    lifecycle_status: 'lifecycle_status',
+  },
+  testCases: {
+    test_suite_id: 'test_suite_id',
     lifecycle_status: 'lifecycle_status',
   },
 }));

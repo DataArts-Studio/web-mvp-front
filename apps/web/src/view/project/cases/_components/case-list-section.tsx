@@ -1,10 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useId, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 import { useTranslations } from 'next-intl';
 
-import { TestCaseCard, TestCaseCardType, duplicateTestCase } from '@/entities/test-case';
+import {
+  type CaseListSectionGroup,
+  TestCaseCardType,
+  duplicateTestCase,
+} from '@/entities/test-case';
 import {
   translateCaseErrors,
   translateCaseMessage,
@@ -25,8 +29,11 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@testea/util';
+import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { groupCasesBySection, groupKey } from './case-list-model';
+import { CaseListRow } from './case-list-row';
 import { QuickCreateRow } from './quick-create-row';
 import { SortableTestCaseRow } from './sortable-test-case-row';
 
@@ -34,6 +41,8 @@ interface CaseListSectionProps {
   projectId: string;
   slug: string;
   items: TestCaseCardType[];
+  /** 있으면 섹션별로 묶는다. 서버가 섹션 순서대로 붙여 보낸다. */
+  sections?: CaseListSectionGroup[];
   sortOption: string;
   selectedSuiteId: string;
   isFetching: boolean;
@@ -53,6 +62,7 @@ export const CaseListSection = ({
   projectId,
   slug,
   items,
+  sections,
   sortOption,
   selectedSuiteId,
   isFetching,
@@ -86,6 +96,24 @@ export const CaseListSection = ({
 
   const displayItems = localItems ?? items;
 
+  // 접은 섹션. 키는 섹션 id, 섹션 없는 묶음은 ''.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const groups = useMemo(
+    () => groupCasesBySection(displayItems, sections),
+    [sections, displayItems]
+  );
+
+  const visibleIds = useMemo(
+    () =>
+      groups.flatMap((group) =>
+        group.section && collapsed.has(groupKey(group.section.id))
+          ? []
+          : group.items.map((item) => item.id)
+      ),
+    [groups, collapsed]
+  );
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
@@ -95,6 +123,12 @@ export const CaseListSection = ({
       const oldIndex = currentItems.findIndex((item) => item.id === active.id);
       const newIndex = currentItems.findIndex((item) => item.id === over.id);
       if (oldIndex === -1 || newIndex === -1) return;
+      // 섹션은 순서로 바뀌지 않으므로, 묶어 볼 때는 같은 섹션 안에서만 옮긴다.
+      if (
+        sections &&
+        groupKey(currentItems[oldIndex].sectionId) !== groupKey(currentItems[newIndex].sectionId)
+      )
+        return;
 
       const reordered = arrayMove(currentItems, oldIndex, newIndex);
       setLocalItems(reordered);
@@ -109,7 +143,7 @@ export const CaseListSection = ({
         afterId: afterItem?.id ?? null,
       });
     },
-    [localItems, items, reorderMutation]
+    [localItems, items, sections, reorderMutation]
   );
 
   // 복제
@@ -139,14 +173,11 @@ export const CaseListSection = ({
   const isEmpty = items.length === 0 && pagination && pagination.totalItems === 0;
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] flex-1 px-6 py-6 lg:px-10">
+    <div className="w-full flex-1 px-4 pb-8 md:px-6">
       <section
         aria-label={t('ui.listAriaLabel')}
         aria-busy={isFetching && hasData ? true : undefined}
-        className={cn(
-          'rounded-3 border-line-2 bg-bg-2 shadow-1 border transition-opacity',
-          isFetching && hasData ? 'opacity-60' : 'opacity-100'
-        )}
+        className={cn('transition-opacity', isFetching && hasData ? 'opacity-60' : 'opacity-100')}
       >
         <QuickCreateRow projectId={projectId} selectedSuiteId={selectedSuiteId} />
 
@@ -171,56 +202,100 @@ export const CaseListSection = ({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext
-              items={displayItems.map((i) => i.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="divide-line-2 divide-y">
-                {displayItems.map((item) => (
-                  <SortableTestCaseRow
-                    key={item.isOptimistic ? item.id : item.caseKey}
-                    id={item.id}
-                    disabled={!isCustomSort || item.isOptimistic}
-                  >
-                    <div
-                      role="button"
-                      tabIndex={item.isOptimistic ? -1 : 0}
-                      aria-label={t('ui.rowAriaLabel', {
-                        caseKey: item.caseKey,
-                        title: item.title,
-                      })}
-                      className={cn(
-                        'group hover:bg-bg-3 flex cursor-pointer items-center overflow-hidden px-4 py-3 transition-colors',
-                        'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
-                        item.isOptimistic && 'pointer-events-none animate-pulse opacity-50'
-                      )}
-                      onClick={(e) => {
-                        // 내부 인터랙티브 자식(액션 버튼 등) 클릭은 부모로 위임하지 않는다.
-                        // currentTarget 비교는 자식 텍스트(div / span) 클릭까지 전부 차단해서
-                        // 행 본문 클릭으로 케이스 진입이 안 되는 회귀가 생긴다.
-                        // 인터랙티브 요소(button / a / input / select / textarea)만 가드한다.
-                        if ((e.target as HTMLElement).closest('button, a, input, select, textarea'))
-                          return;
-                        track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
-                        onSelectCase(item.id);
-                      }}
-                      onKeyDown={(e) => {
-                        // 내부 인터랙티브 자식에 포커스된 상태의 Enter/Space 가
-                        // 부모로 버블링돼 행 선택이 동시에 일어나지 않도록 가드한다.
-                        if ((e.target as HTMLElement).closest('button, a, input, select, textarea'))
-                          return;
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
-                          onSelectCase(item.id);
+            <SortableContext items={visibleIds} strategy={verticalListSortingStrategy}>
+              {groups.map(({ section, items: groupItems }) => {
+                const key = section ? groupKey(section.id) : 'all';
+                const isCollapsed = !!section && collapsed.has(key);
+                const name = section ? section.name || t('ui.noSection') : '';
+                return (
+                  <div key={key}>
+                    {section && (
+                      <button
+                        type="button"
+                        aria-expanded={!isCollapsed}
+                        aria-label={t('ui.groupToggle', { name })}
+                        onClick={() =>
+                          setCollapsed((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(key)) next.delete(key);
+                            else next.add(key);
+                            return next;
+                          })
                         }
-                      }}
-                    >
-                      <TestCaseCard testCase={item} onDuplicate={handleDuplicate} />
-                    </div>
-                  </SortableTestCaseRow>
-                ))}
-              </div>
+                        className="mt-1 flex w-full items-center gap-2 rounded-[4px] bg-white/[0.04] px-2.5 py-[7px] text-left text-[12px] font-medium hover:bg-white/[0.06]"
+                      >
+                        <ChevronDown
+                          className={cn(
+                            'h-3 w-3 text-white/60 transition-transform',
+                            isCollapsed && '-rotate-90'
+                          )}
+                          aria-hidden="true"
+                        />
+                        <span className="text-white/80">{name}</span>
+                        <span className="text-white/35">{section.caseCount}</span>
+                        {isCollapsed && (
+                          <span className="ml-auto text-[11px] font-normal text-white/30">
+                            {t('ui.collapsed')}
+                          </span>
+                        )}
+                      </button>
+                    )}
+                    {!isCollapsed &&
+                      groupItems.map((item) => (
+                        <SortableTestCaseRow
+                          key={item.isOptimistic ? item.id : item.caseKey}
+                          id={item.id}
+                          disabled={!isCustomSort || item.isOptimistic}
+                        >
+                          <div
+                            role="button"
+                            tabIndex={item.isOptimistic ? -1 : 0}
+                            aria-label={t('ui.rowAriaLabel', {
+                              caseKey: item.caseKey,
+                              title: item.title,
+                            })}
+                            className={cn(
+                              'group flex cursor-pointer items-center py-2.5 pr-2.5 transition-colors hover:bg-white/[0.03]',
+                              'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
+                              item.isOptimistic && 'pointer-events-none animate-pulse opacity-50'
+                            )}
+                            onClick={(e) => {
+                              // 내부 인터랙티브 자식(액션 버튼 등) 클릭은 부모로 위임하지 않는다.
+                              // currentTarget 비교는 자식 텍스트(div / span) 클릭까지 전부 차단해서
+                              // 행 본문 클릭으로 케이스 진입이 안 되는 회귀가 생긴다.
+                              // 인터랙티브 요소(button / a / input / select / textarea)만 가드한다.
+                              if (
+                                (e.target as HTMLElement).closest(
+                                  'button, a, input, select, textarea'
+                                )
+                              )
+                                return;
+                              track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
+                              onSelectCase(item.id);
+                            }}
+                            onKeyDown={(e) => {
+                              // 내부 인터랙티브 자식에 포커스된 상태의 Enter/Space 가
+                              // 부모로 버블링돼 행 선택이 동시에 일어나지 않도록 가드한다.
+                              if (
+                                (e.target as HTMLElement).closest(
+                                  'button, a, input, select, textarea'
+                                )
+                              )
+                                return;
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: item.id });
+                                onSelectCase(item.id);
+                              }
+                            }}
+                          >
+                            <CaseListRow testCase={item} onDuplicate={handleDuplicate} />
+                          </div>
+                        </SortableTestCaseRow>
+                      ))}
+                  </div>
+                );
+              })}
             </SortableContext>
           </DndContext>
         )}

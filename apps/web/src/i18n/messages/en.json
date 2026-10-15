@@ -542,7 +542,21 @@
       "addCondition": "Add condition",
       "addResult": "Add result",
       "preconditionPlaceholder": "Enter a condition that must be met",
-      "resultPlaceholder": "Enter the expected result"
+      "resultPlaceholder": "Enter the expected result",
+      "subtitle": "Organize cases by suite and section, and spot flaky ones from recent results",
+      "searchPlaceholder": "Search by case key or title",
+      "noSection": "No section",
+      "groupToggle": "Expand or collapse {name}",
+      "collapsed": "Collapsed",
+      "recentResults": "Last {count} results: {summary}",
+      "recentResultsNone": "No runs yet",
+      "resultLabels": {
+        "pass": "Pass",
+        "fail": "Fail",
+        "blocked": "Blocked",
+        "untested": "Untested"
+      },
+      "moreTags": "+{count}"
     },
     "count": {
       "cases": "{count, plural, other {# cases}}",
