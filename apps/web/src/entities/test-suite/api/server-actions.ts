@@ -2,6 +2,7 @@
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { getRecentResultStatuses } from '@/entities/test-case/api/latest-result';
 import { excludeArchivedCasesFromRuns } from '@/entities/test-run/api/run-scope';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
@@ -9,7 +10,7 @@ import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
-import type { ActionResult } from '@/shared/types';
+import type { ActionResult, TestCaseResultStatus } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
   getDatabase,
@@ -454,6 +455,7 @@ export const getTestSuitesWithStats = async ({
           .select({
             suiteId: testRunSuites.test_suite_id,
             runId: testRuns.id,
+            runName: testRuns.name,
             runStatus: testRuns.status,
             runCreatedAt: testRuns.created_at,
           })
@@ -517,14 +519,19 @@ export const getTestSuitesWithStats = async ({
     // 스위트별 run 그룹핑
     const runsPerSuite = new Map<
       string,
-      Array<{ runId: string; status: string; createdAt: Date }>
+      Array<{ runId: string; name: string; status: string; createdAt: Date }>
     >();
     for (const r of recentRunRows) {
       if (!r.suiteId) continue;
       if (!runsPerSuite.has(r.suiteId)) runsPerSuite.set(r.suiteId, []);
       const arr = runsPerSuite.get(r.suiteId)!;
       if (arr.length < RECENT_RUNS_PER_SUITE) {
-        arr.push({ runId: r.runId, status: r.runStatus, createdAt: r.runCreatedAt });
+        arr.push({
+          runId: r.runId,
+          name: r.runName,
+          status: r.runStatus,
+          createdAt: r.runCreatedAt,
+        });
       }
     }
 
@@ -597,6 +604,7 @@ export const getTestSuitesWithStats = async ({
         };
         return {
           runId: r.runId,
+          name: r.name,
           runAt: r.createdAt,
           status: deriveRunStatus(r.status, counts.failed, counts.blocked),
           passed: counts.passed,
@@ -737,3 +745,29 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
  * @deprecated Use archiveTestSuite instead
  */
 export const deleteTestSuite = archiveTestSuite;
+
+/**
+ * 스위트 상세의 케이스 행에 그릴 최근 실행 결과. 케이스 id 마다 오래된 것부터 최대 5개.
+ * 케이스 목록 조회와 같은 기준(getRecentResultStatuses)을 쓴다.
+ */
+export const getSuiteCaseRecentResults = async (
+  suiteId: string
+): Promise<ActionResult<Record<string, TestCaseResultStatus[]>>> => {
+  try {
+    if (!(await canAccess('testSuite', suiteId))) return ACCESS_DENIED;
+
+    const db = getDatabase();
+    const rows = await db
+      .select({ id: testCases.id })
+      .from(testCases)
+      .where(and(eq(testCases.test_suite_id, suiteId), eq(testCases.lifecycle_status, 'ACTIVE')));
+    const recent = await getRecentResultStatuses(
+      db,
+      rows.map((row) => row.id)
+    );
+    return { success: true, data: Object.fromEntries(recent) };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'getSuiteCaseRecentResults' } });
+    return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] } };
+  }
+};

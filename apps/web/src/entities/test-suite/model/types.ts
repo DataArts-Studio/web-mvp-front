@@ -60,6 +60,7 @@ export type TestSuiteCard = TestSuite & {
 
   recentRuns: Array<{
     runId: string;
+    name: string;
     runAt: Date;
     status: RunStatus;
     failed: number;
