@@ -14,6 +14,9 @@
 # === 최소 권한 ==============================================================
 #   - 런타임 SA(testea-runner-rt): 컨테이너가 이 신원으로 실행. 프로젝트 롤 0개.
 #     딱 하나, 마운트하는 시크릿에 secretAccessor 만 부여 (기본 compute SA 미사용).
+#     이 SA 의 토큰은 메타데이터 서버에서 나온다. spec(임의 코드)이 메타데이터 서버에 닿으면
+#     토큰으로 시크릿을 읽을 수 있으므로, 러너가 spec uid 의 메타데이터 접근을 커널에서 막는다
+#     (src/egress-filter.ts, RUNNER_EGRESS_FILTER=required).
 #   - invoker SA(testea-runner-invoker): 이 서비스에 run.invoker 만. 그 외 권한 0개.
 #
 # === 비용 ($1 안전망) =======================================================
@@ -108,6 +111,9 @@ echo "  ${RUNTIME_SA} 에 secretAccessor 부여 완료."
 # --service-account          : 기본 compute SA 대신 무권한 런타임 SA 로 실행.
 # --ingress all              : 호출자가 GCP 밖(Vercel)이라 외부 ingress 필요.
 #                              (internal-only 는 Vercel 에서 못 닿음. IAM 으로 보호.)
+# RUNNER_EGRESS_FILTER=required : spec·캡처의 나가는 연결 차단(메타데이터 서버 포함)을 못 걸면
+#                              실행을 거부한다. 런타임 SA 가 시크릿을 읽을 수 있으므로 이 차단이
+#                              spec 의 시크릿 탈취를 막는 경계다. 끄지 말 것.
 # PORT 는 Cloud Run 이 자동 주입(8080).
 echo "[4/6] 빌드 + 배포..."
 gcloud run deploy "${SERVICE}" \
@@ -126,7 +132,7 @@ gcloud run deploy "${SERVICE}" \
   --timeout "${RUNNER_TIMEOUT}" \
   --port 8080 \
   --set-secrets "RUNNER_SHARED_SECRET=${SECRET_NAME}:latest" \
-  --set-env-vars "NODE_ENV=production"
+  --set-env-vars "NODE_ENV=production,RUNNER_EGRESS_FILTER=required"
 
 # --- 5. invoker SA 에 이 서비스 호출 권한만 부여 ----------------------------
 # 서비스 단위 바인딩이라 다른 Cloud Run 서비스에는 권한이 없다 (최소 권한).
