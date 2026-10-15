@@ -12,9 +12,12 @@ import {
   generateChangeSummary,
 } from '@/entities/test-case-version/model/diff-utils';
 import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
-import { getLatestResultStatuses } from '@/entities/test-case/api/latest-result';
+import {
+  getLatestResultStatuses,
+  getRecentResultStatuses,
+} from '@/entities/test-case/api/latest-result';
 import { CASE_MESSAGE_CODES } from '@/entities/test-case/model/message-codes';
-import type { TestCaseListItem } from '@/entities/test-case/model/types';
+import type { CaseListSectionGroup, TestCaseListItem } from '@/entities/test-case/model/types';
 import {
   excludeArchivedCasesFromRuns,
   lockSuiteRunSync,
@@ -35,7 +38,7 @@ import {
   testRuns,
   testSuiteSections,
 } from '@testea/db';
-import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 /**
@@ -259,7 +262,50 @@ export type PaginationInfo = {
 export type PaginatedTestCases = {
   items: TestCaseListItem[];
   pagination: PaginationInfo;
+  /** 스위트를 골라 직접 순서로 볼 때만 채운다. 목록은 이 순서대로 섹션끼리 붙어 온다. */
+  sections?: CaseListSectionGroup[];
 };
+
+/**
+ * 스위트의 활성 섹션을 순서대로, 현재 필터에 맞는 케이스 수와 함께 돌려준다.
+ * 케이스가 없는 섹션은 빼고, 섹션 없는 케이스(삭제된 섹션 포함)는 맨 뒤 한 묶음으로 둔다.
+ */
+async function getCaseListSections(
+  suiteId: string,
+  whereClause: ReturnType<typeof buildCaseListWhere>
+): Promise<CaseListSectionGroup[]> {
+  const db = getDatabase();
+  const [sectionRows, countRows] = await Promise.all([
+    db
+      .select({ id: testSuiteSections.id, name: testSuiteSections.name })
+      .from(testSuiteSections)
+      .where(and(eq(testSuiteSections.suite_id, suiteId), isNull(testSuiteSections.archived_at)))
+      .orderBy(
+        asc(testSuiteSections.sort_order),
+        asc(testSuiteSections.created_at),
+        asc(testSuiteSections.id)
+      ),
+    db
+      .select({ sectionId: testCases.section_id, count: sql<number>`count(*)::int` })
+      .from(testCases)
+      .where(whereClause)
+      .groupBy(testCases.section_id),
+  ]);
+
+  const counts = new Map(countRows.map((row) => [row.sectionId, row.count]));
+  const groups: CaseListSectionGroup[] = [];
+  let unsectioned = 0;
+  const activeIds = new Set(sectionRows.map((row) => row.id));
+  for (const [sectionId, count] of counts) {
+    if (!sectionId || !activeIds.has(sectionId)) unsectioned += count;
+  }
+  for (const row of sectionRows) {
+    const caseCount = counts.get(row.id) ?? 0;
+    if (caseCount > 0) groups.push({ id: row.id, name: row.name, caseCount });
+  }
+  if (unsectioned > 0) groups.push({ id: null, name: '', caseCount: unsectioned });
+  return groups;
+}
 
 type GetTestCasesListParams = {
   project_id: string;
@@ -285,6 +331,13 @@ export const getTestCasesList = async ({
     const db = getDatabase();
 
     const whereClause = buildCaseListWhere(project_id, { search, suiteId });
+    // 스위트 하나를 직접 순서로 볼 때는 섹션별로 묶어 보여 준다. 검색 중에는 묶지 않는다.
+    const groupBySection =
+      !!suiteId &&
+      suiteId !== 'all' &&
+      suiteId !== '__uncategorized__' &&
+      sort === 'custom' &&
+      !search?.trim();
 
     // COUNT 쿼리
     const [countResult] = await db
@@ -315,20 +368,43 @@ export const getTestCasesList = async ({
         lifecycle_status: testCases.lifecycle_status,
       })
       .from(testCases)
+      // 삭제된 섹션에 남은 케이스는 섹션 없는 케이스로 본다.
+      .leftJoin(
+        testSuiteSections,
+        and(eq(testSuiteSections.id, testCases.section_id), isNull(testSuiteSections.archived_at))
+      )
       .where(whereClause)
-      .orderBy(...buildCaseListOrder(sort))
+      .orderBy(
+        ...(groupBySection
+          ? [
+              sql`${testSuiteSections.id} is null`,
+              asc(testSuiteSections.sort_order),
+              asc(testSuiteSections.created_at),
+              asc(testSuiteSections.id),
+            ]
+          : []),
+        ...buildCaseListOrder(sort)
+      )
       .limit(size)
       .offset(offset);
-    const latestStatuses = await getLatestResultStatuses(
-      db,
-      rows.map((row) => row.id)
-    );
+    const caseIds = rows.map((row) => row.id);
+    const [latestStatuses, recentResults, sectionGroups] = await Promise.all([
+      getLatestResultStatuses(db, caseIds),
+      getRecentResultStatuses(db, caseIds),
+      groupBySection ? getCaseListSections(suiteId, whereClause) : Promise.resolve(undefined),
+    ]);
+    // 섹션에 든 케이스가 하나도 없으면 '섹션 없음' 한 묶음뿐이라 묶지 않는다.
+    const sections = sectionGroups?.some((group) => group.id !== null) ? sectionGroups : undefined;
+    const activeSectionIds = new Set(sections?.map((section) => section.id));
 
     const items: TestCaseListItem[] = rows.map((row) => ({
       id: row.id,
       projectId: row.project_id ?? '',
       testSuiteId: row.test_suite_id ?? undefined,
-      sectionId: row.section_id ?? null,
+      sectionId:
+        row.section_id && (!sections || activeSectionIds.has(row.section_id))
+          ? row.section_id
+          : null,
       displayId: row.display_id ?? 0,
       caseKey: `TC-${String(row.display_id ?? 0).padStart(3, '0')}`,
       title: row.name,
@@ -336,6 +412,7 @@ export const getTestCasesList = async ({
       tags: row.tags ?? [],
       sortOrder: row.sort_order ?? 0,
       resultStatus: latestStatuses.get(row.id) ?? 'untested',
+      recentResults: recentResults.get(row.id) ?? [],
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       archivedAt: row.archived_at ?? null,
@@ -347,6 +424,7 @@ export const getTestCasesList = async ({
       data: {
         items,
         pagination: { page: safePage, size, totalItems, totalPages },
+        ...(sections ? { sections } : {}),
       },
     };
   } catch (error) {

@@ -4,9 +4,8 @@ import React from 'react';
 
 import { useTranslations } from 'next-intl';
 
-import { ActionToolbar } from '@/widgets';
 import { Select } from '@testea/ui';
-import { ArrowUpDown, ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 import { MoreActionsMenu } from './more-actions-menu';
 
@@ -25,25 +24,27 @@ export type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 interface CasesToolbarProps {
   title: string;
   totalItems?: number;
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
+  /** 좁은 화면에서 스위트 패널 대신 쓰는 선택지 */
+  suites: { id: string; title: string }[];
+  selectedSuiteId: string;
+  onSuiteChange: (id: string) => void;
   sortOption: SortValue;
   onSortChange: (value: string) => void;
-  onCreateClick: () => void;
   onAiGenerate: () => void;
   onAiAnalyze: () => void;
   onImport: () => void;
   onExport: () => void;
 }
 
+/** 목록 위 한 줄: 고른 스위트 이름·건수, 정렬, 더 보기 */
 export const CasesToolbar = ({
   title,
   totalItems,
-  searchQuery,
-  onSearchChange,
+  suites,
+  selectedSuiteId,
+  onSuiteChange,
   sortOption,
   onSortChange,
-  onCreateClick,
   onAiGenerate,
   onAiAnalyze,
   onImport,
@@ -55,74 +56,62 @@ export const CasesToolbar = ({
   const currentSortLabel = t(`ui.sortOptions.${currentSortKey}`);
 
   return (
-    <div className="bg-bg-1 sticky top-0 z-10 px-6 lg:px-10">
-      {/* 1행: 타이틀 + 카운트 + 생성 버튼 */}
-      <div className="border-line-2 flex items-center gap-4 border-b pt-5 pb-3">
-        <div className="flex min-w-0 flex-1 items-baseline gap-3">
-          <h2 className="typo-h2-heading text-text-1 truncate">{title}</h2>
-          {totalItems != null && (
-            <span className="typo-caption text-text-3 shrink-0">
-              {t('count.items', { count: totalItems })}
-            </span>
-          )}
-        </div>
-        <ActionToolbar.Action
-          size="small"
-          type="button"
-          variant="solid"
-          onClick={onCreateClick}
-          className="flex shrink-0 items-center gap-2"
-          title={t('ui.createCase')}
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          <span className="hidden leading-none lg:inline">{t('ui.newCase')}</span>
-        </ActionToolbar.Action>
+    <div className="bg-bg-1 sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 pt-5 pb-3 md:px-6">
+      <div className="flex min-w-0 flex-1 items-baseline gap-2">
+        <h2 className="truncate text-[15px] font-bold text-white">{title}</h2>
+        {totalItems != null && (
+          <span className="shrink-0 font-mono text-[12px] text-white/40">{totalItems}</span>
+        )}
       </div>
 
-      {/* 2행: 검색 + 정렬 + 더보기 메뉴 */}
-      <div className="flex items-center gap-3 py-3">
-        <ActionToolbar.Search
-          placeholder={t('ui.search')}
-          aria-label={t('ui.searchAriaLabel')}
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-        <Select.Root
-          value={sortOption}
-          onValueChange={onSortChange}
-          className="relative w-fit shrink-0"
+      <label className="md:hidden">
+        <span className="sr-only">{t('ui.suiteFilterAriaLabel')}</span>
+        <select
+          value={selectedSuiteId}
+          onChange={(e) => onSuiteChange(e.target.value)}
+          className="border-line-2 bg-bg-1 h-8 max-w-[160px] rounded-[6px] border px-2 text-[12px] text-white/80"
         >
-          <Select.Trigger
-            aria-label={t('ui.sortAriaLabel', { label: currentSortLabel })}
-            className="typo-body2-heading rounded-2 border-line-2 bg-bg-2 text-text-2 hover:bg-bg-3 flex cursor-pointer items-center gap-2 border px-3 py-2 whitespace-nowrap transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="hidden sm:inline">
-              {t('ui.sortLabel', { label: currentSortLabel })}
-            </span>
-            <span className="sm:hidden">{t('ui.sortShort')}</span>
-            <ChevronDown className="text-text-3 h-4 w-4 shrink-0" aria-hidden="true" />
-          </Select.Trigger>
-          <Select.Content className="rounded-2 border-line-2 bg-bg-2 absolute top-full left-0 z-50 mt-1 min-w-full border py-1 shadow-lg">
-            {SORT_OPTIONS.map((option) => (
-              <Select.Item
-                key={option.value}
-                value={option.value}
-                className="typo-body2-normal text-text-2 hover:bg-bg-3 hover:text-text-1 data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary cursor-pointer px-3 py-2 whitespace-nowrap"
-              >
-                {t(`ui.sortOptions.${option.labelKey}`)}
-              </Select.Item>
-            ))}
-          </Select.Content>
-        </Select.Root>
+          <option value="all">{t('ui.allCases')}</option>
+          {suites.map((suite) => (
+            <option key={suite.id} value={suite.id}>
+              {suite.title}
+            </option>
+          ))}
+          <option value="__uncategorized__">{t('ui.uncategorized')}</option>
+        </select>
+      </label>
 
-        <MoreActionsMenu
-          onAiGenerate={onAiGenerate}
-          onAiAnalyze={onAiAnalyze}
-          onImport={onImport}
-          onExport={onExport}
-        />
-      </div>
+      <Select.Root
+        value={sortOption}
+        onValueChange={onSortChange}
+        className="relative w-fit shrink-0"
+      >
+        <Select.Trigger
+          aria-label={t('ui.sortAriaLabel', { label: currentSortLabel })}
+          className="border-line-2 flex h-8 cursor-pointer items-center gap-1.5 rounded-[6px] border px-2.5 text-[12px] whitespace-nowrap text-white/80 transition-colors hover:bg-white/[0.04]"
+        >
+          {currentSortLabel}
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-white/50" aria-hidden="true" />
+        </Select.Trigger>
+        <Select.Content className="rounded-2 border-line-2 bg-bg-2 absolute top-full right-0 z-50 mt-1 min-w-full border py-1 shadow-lg">
+          {SORT_OPTIONS.map((option) => (
+            <Select.Item
+              key={option.value}
+              value={option.value}
+              className="typo-body2-normal text-text-2 hover:bg-bg-3 hover:text-text-1 data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary cursor-pointer px-3 py-2 whitespace-nowrap"
+            >
+              {t(`ui.sortOptions.${option.labelKey}`)}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select.Root>
+
+      <MoreActionsMenu
+        onAiGenerate={onAiGenerate}
+        onAiAnalyze={onAiAnalyze}
+        onImport={onImport}
+        onExport={onExport}
+      />
     </div>
   );
 };

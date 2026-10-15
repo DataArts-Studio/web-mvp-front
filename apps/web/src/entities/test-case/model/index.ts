@@ -9,6 +9,7 @@ export type {
   CreateTestCase,
   TestCaseListItem,
   TestCaseCardType,
+  CaseListSectionGroup,
 } from './types';
 export { TEST_TYPE_OPTIONS, getTestTypeLabel } from './constants';
 export type { TestTypeValue } from './constants';

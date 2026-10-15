@@ -4,6 +4,8 @@ export type TestSuite = {
   id: string;
   projectId: string;
   title: string;
+  /** 활성 케이스 수. 목록 조회(getTestSuites)만 채운다. */
+  caseCount?: number;
   description?: string;
   sortOrder: number;
   createdAt: Date;
@@ -58,6 +60,7 @@ export type TestSuiteCard = TestSuite & {
 
   recentRuns: Array<{
     runId: string;
+    name: string;
     runAt: Date;
     status: RunStatus;
     failed: number;
