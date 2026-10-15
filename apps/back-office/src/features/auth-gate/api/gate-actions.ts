@@ -13,6 +13,7 @@ import {
   createAdminSession,
   revokeAdminSession,
 } from '../lib/admin-session';
+import { safeRedirect } from '../lib/safe-redirect';
 
 export type GateState = { error?: string };
 
@@ -24,12 +25,6 @@ const LOCK_THRESHOLD = 5;
 const LOCK_WINDOW_MIN = 15;
 const LOCKED_MESSAGE = `시도가 너무 많습니다. 약 ${LOCK_WINDOW_MIN}분 후 다시 시도해주세요.`;
 const UNAVAILABLE_MESSAGE = '지금은 로그인을 처리할 수 없습니다. 잠시 후 다시 시도해주세요.';
-
-/** 게이트 폼 제출 후 안전한 내부 경로만 허용 (open redirect 차단). */
-function safeRedirect(raw: FormDataEntryValue | null): string {
-  const value = typeof raw === 'string' ? raw : '';
-  return value.startsWith('/') && !value.startsWith('//') ? value : '/notices';
-}
 
 /**
  * 운영자 공유키 검증 후 세션 쿠키 발급.
