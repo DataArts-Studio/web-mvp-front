@@ -44,7 +44,11 @@ async function toAttachments(
       .map((item) => [item.path, item.signedUrl])
   );
 
-  return rows.map((row) => ({
+  return rows.map((row) => toAttachment(row, urlByPath.get(row.storage_path) ?? ''));
+}
+
+function toAttachment(row: AttachmentRow, url: string): Attachment {
+  return {
     id: row.id,
     testCaseId: row.test_case_id,
     projectId: row.project_id,
@@ -52,9 +56,9 @@ async function toAttachments(
     fileSize: row.file_size,
     fileType: row.file_type,
     storagePath: row.storage_path,
-    url: urlByPath.get(row.storage_path) ?? '',
+    url,
     createdAt: row.created_at,
-  }));
+  };
 }
 
 export async function getAttachments(testCaseId: string): Promise<ActionResult<Attachment[]>> {
@@ -222,11 +226,19 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
       };
     }
 
-    const [attachment] = await toAttachments(supabase, [record]);
+    // 파일과 레코드는 이미 저장됐다. 서명 URL 만 못 받았으면 실패로 돌려주지 않는다(재시도하면 중복 저장).
+    // 성공 응답 뒤 목록을 다시 조회하면서 URL 을 받는다.
+    let attachment: Attachment;
+    try {
+      [attachment] = (await toAttachments(supabase, [record])) as [Attachment];
+    } catch (signError) {
+      Sentry.captureException(signError, { extra: { action: 'uploadAttachment:sign' } });
+      attachment = toAttachment(record, '');
+    }
 
     return {
       success: true,
-      data: attachment!,
+      data: attachment,
       message: '파일이 업로드되었습니다.',
     };
   } catch (error) {
