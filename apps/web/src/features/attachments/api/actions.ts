@@ -10,7 +10,11 @@ import { createSupabaseServerClient } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
-import { ATTACHMENT_LIMITS, BUCKET_NAME } from '../model/constants';
+import {
+  ATTACHMENT_LIMITS,
+  ATTACHMENT_SIGNED_URL_TTL_SECONDS,
+  BUCKET_NAME,
+} from '../model/constants';
 import type { Attachment } from '../model/types';
 
 function getFileExtension(fileName: string): string {
@@ -18,15 +22,29 @@ function getFileExtension(fileName: string): string {
   return parts.length > 1 ? parts.pop()!.toLowerCase() : '';
 }
 
-function buildPublicUrl(supabaseUrl: string, storagePath: string): string {
-  return `${supabaseUrl}/storage/v1/object/public/${BUCKET_NAME}/${storagePath}`;
-}
+type AttachmentRow = typeof testCaseAttachments.$inferSelect;
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
-function toAttachment(
-  row: typeof testCaseAttachments.$inferSelect,
-  supabaseUrl: string
-): Attachment {
-  return {
+// 버킷은 비공개다. 권한 확인을 통과한 응답에만 만료되는 서명 URL 을 실어 보낸다.
+async function toAttachments(
+  supabase: SupabaseServerClient,
+  rows: AttachmentRow[]
+): Promise<Attachment[]> {
+  if (rows.length === 0) return [];
+
+  const { data, error } = await supabase.storage.from(BUCKET_NAME).createSignedUrls(
+    rows.map((row) => row.storage_path),
+    ATTACHMENT_SIGNED_URL_TTL_SECONDS
+  );
+  if (error) throw error;
+
+  const urlByPath = new Map(
+    (data ?? [])
+      .filter((item) => item.path && item.signedUrl)
+      .map((item) => [item.path, item.signedUrl])
+  );
+
+  return rows.map((row) => ({
     id: row.id,
     testCaseId: row.test_case_id,
     projectId: row.project_id,
@@ -34,13 +52,9 @@ function toAttachment(
     fileSize: row.file_size,
     fileType: row.file_type,
     storagePath: row.storage_path,
-    url: buildPublicUrl(supabaseUrl, row.storage_path),
+    url: urlByPath.get(row.storage_path) ?? '',
     createdAt: row.created_at,
-  };
-}
-
-function getSupabaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+  }));
 }
 
 export async function getAttachments(testCaseId: string): Promise<ActionResult<Attachment[]>> {
@@ -67,8 +81,8 @@ export async function getAttachments(testCaseId: string): Promise<ActionResult<A
         )
       );
 
-    const supabaseUrl = getSupabaseUrl();
-    const attachments = rows.map((row) => toAttachment(row, supabaseUrl));
+    const supabase = await createSupabaseServerClient();
+    const attachments = await toAttachments(supabase, rows);
 
     return { success: true, data: attachments };
   } catch (error) {
@@ -208,9 +222,11 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
       };
     }
 
+    const [attachment] = await toAttachments(supabase, [record]);
+
     return {
       success: true,
-      data: toAttachment(record, getSupabaseUrl()),
+      data: attachment!,
       message: '파일이 업로드되었습니다.',
     };
   } catch (error) {
