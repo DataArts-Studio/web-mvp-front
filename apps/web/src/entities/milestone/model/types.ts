@@ -49,7 +49,27 @@ export type MilestoneStats = {
 
 export type MilestoneWithStats = Milestone &
   MilestoneStats & {
-    testCases?: Array<{ id: string; caseKey: string; title: string; lastStatus: string | null }>;
+    testCases?: Array<{
+      id: string;
+      caseKey: string;
+      title: string;
+      lastStatus: string | null;
+      /** 범위에 든 스위트를 거쳐 들어온 케이스면 그 스위트, 직접 추가면 null. 상세 조회만 채운다. */
+      suiteId?: string | null;
+      /** 이 마일스톤 실행에서 처음 결과를 기록한 시각 */
+      firstExecutedAt?: Date | null;
+      /** 가장 최근 결과의 시각과 메모 */
+      lastExecutedAt?: Date | null;
+      lastComment?: string | null;
+    }>;
     testSuites?: Array<{ id: string; title: string; description: string | null }>;
-    testRuns?: Array<{ id: string; name: string; status: string; updatedAt: Date }>;
+    testRuns?: Array<{
+      id: string;
+      name: string;
+      status: string;
+      createdAt?: Date;
+      updatedAt: Date;
+      /** 실행별 결과 수. 상세 조회만 채운다. */
+      counts?: { pass: number; fail: number; blocked: number; total: number };
+    }>;
   };

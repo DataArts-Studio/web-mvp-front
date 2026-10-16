@@ -21,7 +21,10 @@ import {
 export const MILESTONE_ROW_GRID =
   'grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-2 md:grid-cols-[minmax(0,1fr)_96px_auto] lg:grid-cols-[minmax(0,346px)_96px_250px_minmax(0,1fr)_150px_96px]';
 
-const HEALTH: Record<MilestoneHealth, { label: string; tone: string; border: string }> = {
+export const MILESTONE_HEALTH: Record<
+  MilestoneHealth,
+  { label: string; tone: string; border: string }
+> = {
   onTrack: { label: '순조로움', tone: 'text-result-pass', border: 'border-result-pass/45' },
   delayed: { label: '지연', tone: 'text-result-fail', border: 'border-result-fail/45' },
   planned: { label: '예정', tone: 'text-[#999ea8]', border: 'border-[#999ea8]/45' },
@@ -29,7 +32,7 @@ const HEALTH: Record<MilestoneHealth, { label: string; tone: string; border: str
 };
 
 /** 진행률 링. 예정은 빈 점선 원, 완료는 꽉 찬 원. */
-const ProgressRing = ({ percent, health }: { percent: number; health: MilestoneHealth }) => {
+export const ProgressRing = ({ percent, health }: { percent: number; health: MilestoneHealth }) => {
   const r = 6.5;
   const length = 2 * Math.PI * r;
   const value = health === 'done' ? 100 : percent;
@@ -93,7 +96,7 @@ export const MilestoneListRow = ({
   const elapsed = elapsedPercentOf(milestone, today);
   const due = dueHintOf(milestone, today);
   const passRate = passRateOf(milestone);
-  const healthInfo = HEALTH[health];
+  const healthInfo = MILESTONE_HEALTH[health];
 
   const subText =
     phase === 'inProgress'
