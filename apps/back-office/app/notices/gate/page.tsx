@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { isAdminAuthed } from '@/features/auth-gate/lib/admin-gate';
+import { safeRedirect } from '@/features/auth-gate/lib/safe-redirect';
 import { GateForm } from '@/view/notices/gate-form';
 
 /** 운영자 공유키 입력 게이트. 이미 인증됐으면 목록으로 보낸다. */
@@ -10,10 +11,7 @@ export default async function NoticeGatePage({
   searchParams: Promise<{ redirect?: string }>;
 }) {
   const { redirect: redirectParam } = await searchParams;
-  const redirectTo =
-    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
-      ? redirectParam
-      : '/notices';
+  const redirectTo = safeRedirect(redirectParam);
 
   if (await isAdminAuthed()) {
     redirect(redirectTo);
