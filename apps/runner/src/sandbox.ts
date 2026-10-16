@@ -136,3 +136,50 @@ export async function killSandboxProcesses(): Promise<boolean> {
   console.error('[runner] sandbox cleanup could not be verified. Refusing further runs.');
   return false;
 }
+
+/**
+ * spec uid 가 쓸 수 있는 공유 경로. 이미지 빌드에서 나머지 경로의 쓰기 권한은 걷어낸다
+ * (Dockerfile). 요청별 run 디렉터리는 호출부가 따로 지운다.
+ */
+const SHARED_WRITABLE_ROOTS = ['/tmp', '/var/tmp', '/dev/shm'];
+
+/** root 아래에서 spec uid 소유 항목을 찾아 지운다. 심볼릭 링크는 따라가지 않는다. */
+async function purgeOwnedEntries(root: string): Promise<void> {
+  let entries: string[];
+  try {
+    entries = await fs.readdir(root);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+    throw error;
+  }
+  for (const entry of entries) {
+    const path = `${root}/${entry}`;
+    const stat = await fs.lstat(path);
+    if (stat.uid === SANDBOX_UID) {
+      await fs.rm(path, { recursive: true, force: true });
+    } else if (stat.isDirectory()) {
+      // root 소유 디렉터리(예: sticky /tmp/.X11-unix) 안에 남긴 파일도 찾는다.
+      await purgeOwnedEntries(path);
+    }
+  }
+}
+
+/**
+ * run 이 끝난 뒤 spec uid 의 흔적을 지운다. 프로세스를 먼저 종료하고, 공유 경로에 남긴
+ * 파일(다음 run 이나 root 프로세스가 집어 쓸 수 있는 것)을 삭제한다. 어느 단계든 확인이
+ * 안 되면 인스턴스를 오염 상태로 두고 이후 실행을 거부한다.
+ *
+ * @returns 정리가 끝났으면 true.
+ */
+export async function cleanupSandbox(): Promise<boolean> {
+  if (!(await killSandboxProcesses())) return false;
+  if (!isolationAvailable()) return true;
+  try {
+    for (const root of SHARED_WRITABLE_ROOTS) await purgeOwnedEntries(root);
+    return true;
+  } catch {
+    compromised = true;
+    console.error('[runner] sandbox file cleanup failed. Refusing further runs.');
+    return false;
+  }
+}

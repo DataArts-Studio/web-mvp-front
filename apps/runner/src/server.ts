@@ -2,15 +2,29 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import crypto from 'node:crypto';
 
-import { capture } from './capture.js';
+import { captureInSandbox } from './capture-sandbox.js';
+import {
+  egressBlocksExecution,
+  egressFilterActive,
+  egressMode,
+  installEgressFilter,
+} from './egress-filter.js';
 import { runSpec } from './run-spec.js';
-import { isolationAvailable, sandboxCompromised, unisolatedRunAllowed } from './sandbox.js';
+import {
+  SANDBOX_UID,
+  isolationAvailable,
+  sandboxCompromised,
+  unisolatedRunAllowed,
+} from './sandbox.js';
 import { checkTargetUrl } from './url-guard.js';
 
 const app = new Hono();
 
 const PORT = Number(process.env.PORT ?? 8080);
 const SHARED_SECRET = process.env.RUNNER_SHARED_SECRET;
+
+// spec·캡처를 받기 전에 sandbox uid 의 나가는 연결 차단을 건다 (egress-filter.ts).
+if (isolationAvailable()) installEgressFilter(SANDBOX_UID, PORT);
 
 /** 상수 시간 시크릿 비교 (타이밍 사이드채널 완화). */
 function secretsMatch(provided: string | undefined, expected: string): boolean {
@@ -29,7 +43,10 @@ app.get('/health', (c) => {
   if (sandboxCompromised()) {
     return c.json({ ok: false, error: 'Sandbox compromised.' }, 503);
   }
-  return c.json({ ok: true });
+  return c.json({
+    ok: true,
+    egressFilter: egressFilterActive() ? 'active' : egressMode() === 'off' ? 'off' : 'inactive',
+  });
 });
 
 /**
@@ -55,11 +72,21 @@ app.use('*', async (c, next) => {
 });
 
 /**
- * 한 번에 하나의 spec 만 실행한다. 같은 sandbox uid 로 도는 run 끼리는 파일 권한으로
+ * 한 번에 하나의 spec·캡처만 실행한다. 같은 sandbox uid 로 도는 run 끼리는 파일 권한으로
  * 서로를 막을 수 없으므로, 동시 실행 자체를 없애는 것이 run 간 격리의 본 수단이다.
  * (Cloud Run concurrency=1 / Fly hard_limit=1 과 같은 전제를 코드에서도 강제한다.)
+ * 캡처도 같은 uid 로 돌고 끝나면 그 uid 의 프로세스를 전부 정리하므로 같은 잠금을 쓴다.
  */
 let runInFlight = false;
+
+/** 실행 전 공통 거부 사유. 없으면 null. */
+function sandboxRefusal(): string | null {
+  if (sandboxCompromised()) return 'Runner sandbox is compromised.';
+  if (isolationAvailable() && egressBlocksExecution()) {
+    return 'Runner sandbox egress filter is unavailable.';
+  }
+  return null;
+}
 
 interface RunRequestBody {
   spec?: unknown;
@@ -110,8 +137,9 @@ app.post('/run', async (c) => {
     return c.json({ ok: false, error: 'Runner sandbox isolation is unavailable.' }, 503);
   }
 
-  if (sandboxCompromised()) {
-    return c.json({ ok: false, error: 'Runner sandbox is compromised.' }, 503);
+  const refusal = sandboxRefusal();
+  if (refusal) {
+    return c.json({ ok: false, error: refusal }, 503);
   }
 
   if (runInFlight) {
@@ -171,13 +199,27 @@ app.post('/capture', async (c) => {
     return c.json({ ok: false, error: 'Field "timeoutMs" must be a positive number.' }, 400);
   }
 
-  const result = await capture({
-    url: body.url,
-    storageState: body.storageState,
-    timeoutMs: body.timeoutMs,
-  });
+  const refusal = sandboxRefusal();
+  if (refusal) {
+    return c.json({ ok: false, error: refusal }, 503);
+  }
 
-  return c.json(result);
+  if (runInFlight) {
+    c.header('Retry-After', '5');
+    return c.json({ ok: false, error: 'Runner is busy.' }, 503);
+  }
+
+  runInFlight = true;
+  try {
+    const result = await captureInSandbox({
+      url: body.url,
+      storageState: body.storageState,
+      timeoutMs: body.timeoutMs,
+    });
+    return c.json(result);
+  } finally {
+    runInFlight = false;
+  }
 });
 
 serve({ fetch: app.fetch, port: PORT }, (info) => {
@@ -192,6 +234,13 @@ serve({ fetch: app.fetch, port: PORT }, (info) => {
       unisolatedRunAllowed()
         ? '[runner] Sandbox isolation unavailable. RUNNER_ALLOW_UNISOLATED=1, running specs without uid isolation (local dev only).'
         : '[runner] Sandbox isolation unavailable (not root on Linux). /run will reject all requests with 503.'
+    );
+  }
+  if (isolationAvailable() && !egressFilterActive()) {
+    console.warn(
+      egressMode() === 'required'
+        ? '[runner] Sandbox egress filter could not be installed. /run and /capture will reject all requests with 503.'
+        : `[runner] Sandbox egress filter is not active (RUNNER_EGRESS_FILTER=${egressMode()}).`
     );
   }
   console.log(`[runner] listening on :${info.port}`);
