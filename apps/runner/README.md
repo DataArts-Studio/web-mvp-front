@@ -63,10 +63,12 @@ invoker SA 자격증명으로 audience 고정 ID 토큰을 발급한다 (`runner
 
 ### 러너 (Cloud Run)
 
-| 이름                   | 용도                                                              |
-| ---------------------- | ----------------------------------------------------------------- |
-| `PORT`                 | 리슨 포트. Cloud Run 이 자동 주입(8080)                           |
-| `RUNNER_SHARED_SECRET` | Testea ↔ 러너 공유 시크릿. **Secret Manager 로 주입** (Cloud Run) |
+| 이름                               | 용도                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| `PORT`                             | 리슨 포트. Cloud Run 이 자동 주입(8080)                                                    |
+| `RUNNER_SHARED_SECRET`             | Testea ↔ 러너 공유 시크릿. 원본은 Secret Manager, 배포 시 운영자 권한으로 읽어 env 로 주입 |
+| `RUNNER_ALLOW_UNRESTRICTED_EGRESS` | `1` 이면 spec uid 방화벽 없이 `/run` 허용. Cloud Run 에서만, 아래 보완 통제와 함께 쓴다    |
+| `RUNNER_EGRESS_PROXY_PORT`         | egress 프록시 포트(기본 3128)                                                              |
 
 ### 호출자 (Vercel: apps/web, apps/qaground)
 
@@ -76,8 +78,9 @@ invoker SA 자격증명으로 audience 고정 ID 토큰을 발급한다 (`runner
 | `RUNNER_SHARED_SECRET` / `QAGROUND_RUNNER_SECRET`          | 공유 시크릿(2차 방어)                                                                                          |
 | `RUNNER_INVOKER_SA_KEY` / `QAGROUND_RUNNER_INVOKER_SA_KEY` | invoker SA 자격증명(JSON/base64/WIF). IAM 토큰 발급용. **미설정이면 Authorization 생략**(로컬 비IAM 러너 호환) |
 
-평문으로 코드/레포에 두지 않는다. 러너 시크릿은 Secret Manager(`deploy-cloudrun.sh`
-자동 처리), 호출자 자격증명은 Vercel 암호화 env 에만 둔다.
+평문으로 코드/레포에 두지 않는다. 러너 시크릿 원본은 Secret Manager 에 두고
+`deploy-cloudrun.sh` 가 배포할 때 운영자 권한으로 읽어 넣는다. 런타임 SA 는 시크릿을 읽지
+못한다(아래 "Cloud Run 보완 통제"). 호출자 자격증명은 Vercel 암호화 env 에만 둔다.
 
 ## 보안 전제
 
@@ -86,8 +89,8 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
 
 최소 권한으로 운영한다:
 
-- 컨테이너는 **전용 런타임 SA**(`testea-runner-rt`)로 실행된다. 프로젝트 롤이 0개고,
-  마운트하는 시크릿에 대한 접근만 갖는다 (광범위 권한의 기본 compute SA 미사용).
+- 컨테이너는 **전용 런타임 SA**(`testea-runner-rt`)로 실행된다. 프로젝트 롤도, 시크릿
+  접근도 없는 권한 0개 계정이다 (광범위 권한의 기본 compute SA 미사용).
 - 호출자는 **전용 invoker SA**(`testea-runner-invoker`)를 쓴다. 이 서비스의
   `run.invoker` 권한만 있고 그 외 권한은 0개다.
 
@@ -116,9 +119,14 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
 
 ### 배포에서 반드시 충족해야 하는 것 (ops 책임, **P0**)
 
-- **아웃바운드 egress 차단**: spec 은 SSRF 가드(`url-guard.ts`)를 우회해 자체적으로
-  내부망/메타데이터/외부로 통신할 수 있다. 입력 가드는 보조 수단일 뿐, **본 방어는
-  컨테이너 egress 제한**(대상 사이트 대역만 허용)이다.
+- **spec egress 통제**: spec uid 방화벽(아래 "네트워크 경계")은 iptables 규칙을 걸어야
+  하므로 컨테이너에 `NET_ADMIN` 이 필요하다. 없으면 `/run` 은 503 으로 거부된다.
+  - `NET_ADMIN` 을 줄 수 있는 플랫폼(Fly, 자체 Docker 호스트)은 반드시 부여한다.
+  - Cloud Run 은 컨테이너에 커널 권한을 추가할 수 없어 방화벽을 쓸 수 없다. 이때만
+    `RUNNER_ALLOW_UNRESTRICTED_EGRESS=1` 로 끄고, 아래 "Cloud Run 보완 통제"를 **모두**
+    충족한다. 보완 통제 없이 opt-out 하면 spec 이 메타데이터 서버의 SA 토큰으로 시크릿을
+    가져가거나 사설망에 닿을 수 있다.
+  - 적용 상태는 배포 후 부팅 로그, `/run` 응답, `verify-cloudrun.sh` 로 확인한다.
 - **인스턴스당 동시 요청 1**: Cloud Run `--concurrency 1`, Fly `hard_limit = 1` 을 유지한다.
   코드도 단일 실행을 강제하지만, 플랫폼이 한 인스턴스에 요청을 몰아 503 이 나지 않게 한다.
 - **요청별 일회용 격리(권장)**: 인스턴스가 재사용되면 커널·네트워크 네임스페이스는 run 간에
@@ -130,14 +138,62 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
 
 대상 사이트 인증은 러너가 다루지 않는다. Testea 가 target_sites 시크릿을 복호화해
 `storageState`(쿠키/오리진 인증 상태)로 구성한 뒤 요청에 실어 보낸다.
-외부 입력 URL은 `url-guard.ts`가 정규화한 호스트명과 IP 리터럴을 검사한다.
-끝점이 붙은 내부 호스트명, 단일 이름, 사설·공유·링크로컬·멀티캐스트·예약 IPv4,
-전환 주소를 포함한 특수 IPv6를 거부한다. IPv6 리터럴은 `2000::/3`에서 특수 대역을
-제외한 주소만 허용한다. 특수 대역 내 공개 예외 주소도 보수적으로 거부한다.
-이는 `/run`의 `baseUrl`과 `/capture`의 최초 `url`에만 적용되는 **입력 보조 방어**다.
-DNS 해석 결과, 리다이렉트, 페이지 하위 요청, spec의 직접 Node 통신은 검사하지 않는다.
-따라서 이 검사만으로 SSRF가 차단되었다고 판단하면 안 된다. 해당 경계의 실제 egress
-정책과 합성 데이터 기반 격리 검증은 #313의 후속 작업이며 운영 배포에서 검증되지 않았다.
+
+### 네트워크 경계
+
+러너의 외부 통신은 두 겹으로 막는다.
+
+- **egress 프록시** (`egress-proxy.ts`): 서버(root)가 `127.0.0.1:3128`
+  (`RUNNER_EGRESS_PROXY_PORT`)에 띄우는 HTTP forward proxy. 대상 호스트를 한 번만 해석해
+  모든 주소가 허용될 때 그 IP 로 직접 접속한다. 재해석하지 않으므로 DNS rebinding 이 통하지
+  않고, 리다이렉트는 브라우저가 새 요청으로 다시 프록시를 거치므로 hop 마다 검사된다.
+  `/capture` 의 Chromium 과 `/run` 의 page·request 픽스처가 이 프록시로만 나간다.
+  loopback 예외를 없애고(`<-loopback>`) 프록시를 우회하는 WebRTC UDP 도 막는다.
+- **spec uid 방화벽** (`egress-firewall.ts`): spec 은 임의 코드라 프록시 설정을 무시하고
+  소켓을 직접 열 수 있다. 서버가 시작할 때 iptables 로 spec uid 의 아웃바운드를 전부 거부하고
+  프록시 포트만 허용한다. 직접 fetch·TCP·DNS 질의, 프록시 없이 띄운 브라우저, 메타데이터
+  서버, 러너 서버 포트가 모두 막힌다. 적용하지 못하면 `/run` 은 기본 거부된다.
+
+주소 정책(`url-guard.ts`)은 사설·공유·loopback·링크로컬·멀티캐스트·예약 IPv4 와, `2000::/3`
+에서 특수 대역을 뺀 나머지 IPv6 를 거부한다. 같은 정책을 `/run` 의 `baseUrl` 과 `/capture`
+의 최초 `url` 입력 검사에도 쓴다(입력 단계에서 빨리 거부하는 보조 방어).
+
+검증은 합성 데이터로 로컬 Docker 에서 한다(인터넷 연결 필요).
+
+```bash
+bash scripts/verify-egress.sh
+```
+
+NET_ADMIN 을 준 컨테이너에서 탐침 spec 이 직접 통신·내부 주소·리다이렉트·메타데이터·파일
+경계를 시도하고, 프록시를 거친 공개 대상만 도달하는지 확인한다. NET_ADMIN 없이 `/run` 이
+거부되는지, opt-out 시 탐침이 직접 통신을 잡아내는지(대조군)도 함께 본다. 운영 플랫폼의 실제
+적용 여부는 이 스크립트로 확인할 수 없으므로 배포 후 별도로 기록한다.
+
+### Cloud Run 보완 통제
+
+Cloud Run 에서는 spec uid 방화벽 대신 아래 통제로 spec 의 직접 통신이 닿을 수 있는 곳을
+줄인다. egress 프록시는 그대로 동작하므로 `/capture` 와 spec 의 page·request 픽스처는 계속
+주소 검사를 받는다. `verify-cloudrun.sh` 의 "spec egress" 항목이 아래 세 가지를 검사한다.
+
+- **런타임 SA 권한 0개**: 프로젝트 롤과 시크릿 접근을 모두 뺀다. spec 이 메타데이터 서버에서
+  토큰을 받아도 읽을 수 있는 GCP 리소스가 없다. 공유 시크릿은 배포 시 운영자 권한으로 읽어
+  env 로 넣고, 서버 env 는 uid 분리로 spec 이 읽지 못한다.
+- **VPC 미연결**: Serverless VPC connector 와 Direct VPC egress 를 붙이지 않는다. 사설
+  주소로 가는 경로 자체가 없다.
+- **opt-out 명시**: `RUNNER_ALLOW_UNRESTRICTED_EGRESS=1` 은 위 두 조건을 갖춘 Cloud Run
+  배포에만 넣는다.
+
+남는 위험과 대응:
+
+- spec 이 프록시를 거치지 않고 공개 인터넷에 직접 통신할 수 있다. 실행 중 spec 이 볼 수 있는
+  데이터(요청에 실린 `storageState` 포함)를 외부로 보낼 수 있다는 뜻이다. qaground 채점처럼
+  민감 데이터가 없는 러너는 감수할 수 있지만, 고객 `storageState` 가 흐르는 Testea 러너는
+  `NET_ADMIN` 을 줄 수 있는 플랫폼으로 옮기는 것을 우선한다.
+- 메타데이터 서버 자체는 닿는다. 권한 0개 SA 의 토큰과 ID 토큰, 프로젝트 ID 정도가 노출된다.
+  이 SA 를 신뢰하는 다른 서비스를 만들지 않는다.
+- 공유 시크릿 값이 서비스 리비전 설정(env)에 평문으로 남는다. 프로젝트에서 Cloud Run 설정을
+  볼 수 있는 계정은 값을 볼 수 있으므로 그 권한을 운영자로 제한하고, 유출이 의심되면
+  시크릿을 새로 만들어 재배포한다.
 
 URL 정책 회귀 테스트는 네트워크 없이 `pnpm --filter @testea/runner test`로 실행한다.
 
@@ -187,7 +243,8 @@ bash verify-cloudrun.sh
 `deploy-cloudrun.sh` 가 거는 보안 잠금:
 
 - `--no-allow-unauthenticated` : IAM 비공개. ID 토큰 + `run.invoker` 권한 필수.
-- `--service-account testea-runner-rt` : 무권한 전용 런타임 SA(시크릿 접근만).
+- `--service-account testea-runner-rt` : 권한 0개 전용 런타임 SA(시크릿 접근도 회수).
+- VPC 연결 해제 + 방화벽 opt-out : 위 "Cloud Run 보완 통제" 참조.
 - invoker SA 에 이 서비스의 `run.invoker` 만 부여 (서비스 단위 바인딩, 최소 권한).
 - `--ingress all` : 호출자가 GCP 밖(Vercel)이라 외부 ingress 필요. IAM 으로 보호.
 

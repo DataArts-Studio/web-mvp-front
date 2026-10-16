@@ -3,6 +3,12 @@ import { Hono } from 'hono';
 import crypto from 'node:crypto';
 
 import { capture } from './capture.js';
+import {
+  applyEgressFirewall,
+  egressEnforced,
+  unrestrictedEgressAllowed,
+} from './egress-firewall.js';
+import { EGRESS_PROXY_PORT, startEgressProxy } from './egress-proxy.js';
 import { runSpec } from './run-spec.js';
 import { isolationAvailable, sandboxCompromised, unisolatedRunAllowed } from './sandbox.js';
 import { checkTargetUrl } from './url-guard.js';
@@ -11,6 +17,29 @@ const app = new Hono();
 
 const PORT = Number(process.env.PORT ?? 8080);
 const SHARED_SECRET = process.env.RUNNER_SHARED_SECRET;
+
+/**
+ * 브라우저 트래픽의 유일한 출구. 띄우지 못하면 /capture·/run 모두 거부한다(fail-closed).
+ * spec uid 방화벽은 프록시가 떠 있을 때만 적용한다(프록시 없이 막으면 정상 실행도 불가).
+ */
+let egressProxyReady = false;
+try {
+  await startEgressProxy();
+  egressProxyReady = true;
+  applyEgressFirewall(EGRESS_PROXY_PORT);
+} catch (error) {
+  console.error(
+    '[runner] egress proxy failed to start:',
+    error instanceof Error ? error.message : String(error)
+  );
+}
+
+/** /run 을 실행할 수 있는 egress 상태인지. uid 격리 없는 로컬 개발 모드는 방화벽 대상이 아니다. */
+function runEgressReady(): boolean {
+  if (!egressProxyReady) return false;
+  if (!isolationAvailable()) return true;
+  return egressEnforced() || unrestrictedEgressAllowed();
+}
 
 /** 상수 시간 시크릿 비교 (타이밍 사이드채널 완화). */
 function secretsMatch(provided: string | undefined, expected: string): boolean {
@@ -114,6 +143,11 @@ app.post('/run', async (c) => {
     return c.json({ ok: false, error: 'Runner sandbox is compromised.' }, 503);
   }
 
+  // fail-closed: spec 의 직접 통신을 막지 못하면 비신뢰 코드를 실행하지 않는다.
+  if (!runEgressReady()) {
+    return c.json({ ok: false, error: 'Runner egress enforcement is unavailable.' }, 503);
+  }
+
   if (runInFlight) {
     c.header('Retry-After', '5');
     return c.json({ ok: false, error: 'Runner is busy.' }, 503);
@@ -171,6 +205,10 @@ app.post('/capture', async (c) => {
     return c.json({ ok: false, error: 'Field "timeoutMs" must be a positive number.' }, 400);
   }
 
+  if (!egressProxyReady) {
+    return c.json({ ok: false, error: 'Runner egress proxy is unavailable.' }, 503);
+  }
+
   const result = await capture({
     url: body.url,
     storageState: body.storageState,
@@ -192,6 +230,13 @@ serve({ fetch: app.fetch, port: PORT }, (info) => {
       unisolatedRunAllowed()
         ? '[runner] Sandbox isolation unavailable. RUNNER_ALLOW_UNISOLATED=1, running specs without uid isolation (local dev only).'
         : '[runner] Sandbox isolation unavailable (not root on Linux). /run will reject all requests with 503.'
+    );
+  }
+  if (isolationAvailable() && !egressEnforced()) {
+    console.warn(
+      unrestrictedEgressAllowed()
+        ? '[runner] Spec egress firewall unavailable. RUNNER_ALLOW_UNRESTRICTED_EGRESS=1, specs can reach the network directly.'
+        : '[runner] Spec egress firewall unavailable (needs iptables + CAP_NET_ADMIN). /run will reject all requests with 503.'
     );
   }
   console.log(`[runner] listening on :${info.port}`);
