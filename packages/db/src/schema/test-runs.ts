@@ -16,6 +16,8 @@ export const testRuns = pgTable('test_runs', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   archived_at: timestamp('archived_at', { withTimezone: true }),
+  /** 미실행이 남은 채 사람이 직접 완료한 시각. 있으면 결과와 무관하게 완료로 본다. */
+  closed_at: timestamp('closed_at', { withTimezone: true }),
   lifecycle_status: varchar('lifecycle_status', { length: 20 })
     .$type<LifecycleStatus>()
     .default('ACTIVE')

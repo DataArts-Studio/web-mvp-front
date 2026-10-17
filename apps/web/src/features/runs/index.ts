@@ -13,6 +13,7 @@ export {
   updateTestCaseRunStatus,
   deleteTestRun,
   updateTestRunName,
+  closeTestRun,
   removeSuiteFromRun,
   bulkUpdateTestCaseRunStatus,
   testRunsQueryOptions,

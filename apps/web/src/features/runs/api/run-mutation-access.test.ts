@@ -2,6 +2,7 @@ import { requireProjectAccess } from '@/access/lib/require-access';
 import { getDatabase } from '@testea/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { closeTestRun } from './close-test-run';
 import { deleteTestRun } from './delete-test-run';
 import { removeSuiteFromRun } from './remove-suite-from-run';
 import { updateTestRunName } from './update-test-run-name';
@@ -12,7 +13,10 @@ vi.mock('@testea/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@testea/db')>()),
   getDatabase: vi.fn(),
 }));
-vi.mock('@/entities/test-run/api/run-scope', () => ({ recomputeTestRunStatus: vi.fn() }));
+vi.mock('@/entities/test-run/api/run-scope', () => ({
+  recomputeTestRunStatus: vi.fn(),
+  lockRunStatus: vi.fn(),
+}));
 
 const PROJECT_A = '00000000-0000-4000-8000-000000000001';
 const PROJECT_B = '00000000-0000-4000-8000-000000000002';
@@ -31,7 +35,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getDatabase).mockReturnValue(db as unknown as ReturnType<typeof getDatabase>);
   vi.mocked(requireProjectAccess).mockResolvedValue(false);
-  limit.mockResolvedValue([{ projectId: PROJECT_A }]);
+  limit.mockResolvedValue([{ projectId: PROJECT_A, lifecycleStatus: 'ACTIVE' }]);
   returning.mockResolvedValue([{ id: RUN_ID, name: '새 이름' }]);
 });
 
@@ -39,6 +43,7 @@ describe.each([
   ['실행 삭제', () => deleteTestRun(RUN_ID)],
   ['실행 이름 변경', () => updateTestRunName(RUN_ID, '  새 이름  ')],
   ['실행 스위트 제외', () => removeSuiteFromRun({ testRunId: RUN_ID, suiteId: SUITE_ID })],
+  ['실행 직접 완료', () => closeTestRun(RUN_ID)],
 ] as const)('%s 접근 제어', (_name, action) => {
   it('인증되지 않은 요청은 변경하지 않는다.', async () => {
     expect(await action()).toEqual({
@@ -96,4 +101,18 @@ describe('실행 이름 길이 (#417)', () => {
     expect((await updateTestRunName(RUN_ID, ` ${'a'.repeat(100)} `)).success).toBe(true);
     expect(set).toHaveBeenCalledWith(expect.objectContaining({ name: 'a'.repeat(100) }));
   });
+});
+
+it('직접 완료는 완료 시각을 남기고, 삭제된 실행은 완료하지 않는다 (06g).', async () => {
+  vi.mocked(requireProjectAccess).mockResolvedValue(true);
+  expect((await closeTestRun(RUN_ID)).success).toBe(true);
+  expect(set).toHaveBeenCalledWith(
+    expect.objectContaining({ status: 'COMPLETED', closed_at: expect.any(Date) })
+  );
+
+  vi.clearAllMocks();
+  vi.mocked(requireProjectAccess).mockResolvedValue(true);
+  limit.mockResolvedValue([{ projectId: PROJECT_A, lifecycleStatus: 'ARCHIVED' }]);
+  expect((await closeTestRun(RUN_ID)).success).toBe(false);
+  expect(db.update).not.toHaveBeenCalled();
 });
