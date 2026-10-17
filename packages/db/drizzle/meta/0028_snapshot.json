@@ -1,6 +1,6 @@
 {
-  "id": "34f74e10-8c45-48b2-b06f-0e10b22d1568",
-  "prevId": "988dc325-265d-4243-ae32-bc78a8103b48",
+  "id": "a491bd7f-5daf-44f7-8749-ce617926cb5d",
+  "prevId": "967eabde-f699-47f0-aea8-3509973e19fb",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -465,6 +465,12 @@
         },
         "archived_at": {
           "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_at": {
+          "name": "closed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
