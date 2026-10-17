@@ -105,4 +105,14 @@ describe('첨부 업로드의 프로젝트 경계', () => {
       expect.objectContaining({ project_id: PROJECT_A, test_case_id: CASE_ID })
     );
   });
+
+  it('저장 뒤 서명 URL 발급만 실패하면 업로드는 성공으로 돌려준다.', async () => {
+    createSignedUrls.mockResolvedValue({ data: null, error: new Error('sign failed') });
+    const result = await uploadAttachment(attachmentForm());
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toMatchObject({ id: 'attachment-id', url: '' });
+    }
+    expect(upload).toHaveBeenCalledOnce();
+  });
 });
