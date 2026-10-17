@@ -60,10 +60,16 @@ export async function POST(req: NextRequest) {
     // Webhook 서명 검증 (시크릿 미설정 시 fail-closed: 미서명 페이로드 거부).
     // 서명 확인 전에는 연결 없음·시크릿 없음·서명 불일치를 같은 응답으로 돌려
     // 어떤 저장소가 연결돼 있는지 드러나지 않게 한다.
-    if (
-      !conn?.webhook_secret ||
-      !verifySignature(rawBody, signature, decrypt(conn.webhook_secret))
-    ) {
+    let secret: string | null = null;
+    if (conn?.webhook_secret) {
+      try {
+        secret = decrypt(conn.webhook_secret);
+      } catch (decryptError) {
+        // 복호화 실패도 500 대신 같은 401로 돌려 연결 여부를 숨긴다.
+        Sentry.captureException(decryptError, { extra: { action: 'webhookSecretDecrypt' } });
+      }
+    }
+    if (!conn || !secret || !verifySignature(rawBody, signature, secret)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
