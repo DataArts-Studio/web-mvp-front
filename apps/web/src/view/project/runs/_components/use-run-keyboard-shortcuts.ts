@@ -12,6 +12,7 @@ interface UseRunKeyboardShortcutsOptions {
   onStatusChange: (status: TestCaseRunStatus) => void;
   onSelectCase: (id: string) => void;
   onToggleShortcuts: () => void;
+  enabled?: boolean;
 }
 
 export function useRunKeyboardShortcuts({
@@ -20,8 +21,10 @@ export function useRunKeyboardShortcuts({
   onStatusChange,
   onSelectCase,
   onToggleShortcuts,
+  enabled = true,
 }: UseRunKeyboardShortcutsOptions) {
   useEffect(() => {
+    if (!enabled) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
@@ -66,5 +69,5 @@ export function useRunKeyboardShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCaseId, filteredCases, onStatusChange, onSelectCase, onToggleShortcuts]);
+  }, [enabled, selectedCaseId, filteredCases, onStatusChange, onSelectCase, onToggleShortcuts]);
 }

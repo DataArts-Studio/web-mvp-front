@@ -4,22 +4,15 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { type TestCaseRunDetail } from '@/features/runs';
+import { useOutsideClick } from '@testea/lib';
+import { DsCheckbox } from '@testea/ui';
 import { cn } from '@testea/util';
-import {
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Filter,
-  FolderOpen,
-  MessageSquare,
-  Minus,
-  Search,
-  X,
-} from 'lucide-react';
+import { Check, ChevronDown, Filter, X } from 'lucide-react';
 
 import {
   type GroupedCases,
-  STATUS_CONFIG,
+  RESULT_META,
+  RESULT_ORDER,
   type StatusFilter,
   type TestCaseRunStatus,
 } from './run-detail-constants';
@@ -48,12 +41,6 @@ interface RunCaseListPanelProps {
   selectedCaseId: string | null;
   setSelectedCaseId: (id: string) => void;
   testRunStats: { total: number; pass: number; fail: number; blocked: number; untested: number };
-  showStatusFilterDropdown: boolean;
-  setShowStatusFilterDropdown: (show: boolean) => void;
-  showSuiteFilterDropdown: boolean;
-  setShowSuiteFilterDropdown: (show: boolean) => void;
-  statusFilterRef: React.RefObject<HTMLDivElement | null>;
-  suiteFilterRef: React.RefObject<HTMLDivElement | null>;
   onRemoveSuite?: (suiteId: string, suiteName: string) => void;
   /** 실행에 직접 연결된 스위트. 이 그룹에만 제거 버튼을 보인다 (#375). */
   removableSuiteIds?: ReadonlySet<string>;
@@ -65,6 +52,30 @@ interface RunCaseListPanelProps {
   // 인라인 상태 변경
   onInlineStatusChange: (caseId: string, status: TestCaseRunStatus) => void;
 }
+
+const STATUS_TABS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'untested', label: '미실행' },
+  { value: 'fail', label: '실패' },
+  { value: 'blocked', label: '차단' },
+  { value: 'pass', label: '통과' },
+];
+
+const CHECKBOX_CLASS =
+  'border-white/40 bg-transparent rounded-[3px] focus:ring-offset-0 data-[state=checked]:border-primary';
+
+const countByStatus = (cases: TestCaseRunDetail[]) => {
+  const counts = { pass: 0, fail: 0, blocked: 0, untested: 0 };
+  for (const tc of cases) counts[tc.status] += 1;
+  return counts;
+};
+
+const GroupCount = ({ label, value, tone }: { label: string; value: number; tone: string }) => (
+  <span className="flex items-center gap-1">
+    <span className="text-white/50">{label}</span>
+    <span className={cn('font-bold', value > 0 ? tone : 'text-white/30')}>{value}</span>
+  </span>
+);
 
 export const RunCaseListPanel = ({
   searchQuery,
@@ -80,12 +91,6 @@ export const RunCaseListPanel = ({
   selectedCaseId,
   setSelectedCaseId,
   testRunStats,
-  showStatusFilterDropdown,
-  setShowStatusFilterDropdown,
-  showSuiteFilterDropdown,
-  setShowSuiteFilterDropdown,
-  statusFilterRef,
-  suiteFilterRef,
   onRemoveSuite,
   removableSuiteIds,
   bulkSelection,
@@ -101,6 +106,10 @@ export const RunCaseListPanel = ({
   } | null>(null);
   const inlineDropdownTriggerRef = useRef<HTMLDivElement>(null);
   const inlineDropdownContentRef = useRef<HTMLDivElement>(null);
+  const [showSuiteMenu, setShowSuiteMenu] = useState(false);
+  const suiteMenuRef = useRef<HTMLDivElement>(null);
+  const suiteMenuId = React.useId();
+  useOutsideClick(suiteMenuRef, () => setShowSuiteMenu(false), showSuiteMenu);
 
   useEffect(() => {
     if (!inlineDropdownId) return;
@@ -123,7 +132,8 @@ export const RunCaseListPanel = ({
       window.removeEventListener('resize', close);
     };
   }, [inlineDropdownId]);
-  const hasSelection = bulkSelection.count > 0;
+
+  const selecting = bulkSelection.count > 0;
   const allSelected = filteredCases.length > 0 && bulkSelection.count === filteredCases.length;
 
   // 그룹별 선택 상태를 한 번에 계산 (렌더 시 그룹마다 반복 방지)
@@ -144,420 +154,380 @@ export const RunCaseListPanel = ({
     return result;
   }, [groupedCases, bulkSelection.selectedIds]);
 
+  const suiteLabel =
+    suiteFilter === 'all'
+      ? '전체'
+      : (availableSuites.find((s) => s.id === suiteFilter)?.name ?? '전체');
+
   return (
-    <div className="border-line-2 flex w-[60%] min-w-0 flex-col overflow-hidden border-r">
-      {/* Search & Filter */}
-      <div className="border-line-2 flex flex-col gap-3 border-b p-4">
-        <div className="relative">
-          <Search className="text-text-3 pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="케이스 검색..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-bg-2 border-line-2 text-text-1 placeholder:text-text-4 focus:border-primary focus:ring-primary w-full rounded-lg border py-2 pr-4 pl-10 text-sm focus:ring-1 focus:outline-none"
-          />
-        </div>
-
-        {/* Filter Dropdowns */}
-        <div className="flex gap-2">
-          {/* Status Filter Dropdown */}
-          <div className="relative flex-1" ref={statusFilterRef}>
-            <button
-              onClick={() => {
-                setShowStatusFilterDropdown(!showStatusFilterDropdown);
-                setShowSuiteFilterDropdown(false);
-              }}
-              className="bg-bg-2 border-line-2 hover:border-line-1 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                {statusFilter === 'all' ? (
-                  <>
-                    <Filter className="text-text-3 h-4 w-4" />
-                    <span className="text-text-1">전체 상태</span>
-                  </>
-                ) : (
-                  <>
-                    <span className={STATUS_CONFIG[statusFilter].style}>
-                      {STATUS_CONFIG[statusFilter].icon}
-                    </span>
-                    <span className="text-text-1">{STATUS_CONFIG[statusFilter].label}</span>
-                    <span className="text-text-3 text-xs">({testRunStats[statusFilter]})</span>
-                  </>
-                )}
-              </div>
-              <ChevronDown
-                className={cn(
-                  'text-text-3 h-4 w-4 transition-transform',
-                  showStatusFilterDropdown && 'rotate-180'
-                )}
-              />
-            </button>
-
-            {showStatusFilterDropdown && (
-              <div className="bg-bg-2 border-line-2 absolute top-full right-0 left-0 z-30 mt-1 overflow-hidden rounded-lg border shadow-xl">
-                <button
-                  onClick={() => {
-                    setStatusFilter('all');
-                    setShowStatusFilterDropdown(false);
-                  }}
-                  className={cn(
-                    'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
-                    statusFilter === 'all' ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
-                  )}
-                >
-                  <Filter className="h-4 w-4" />
-                  <span>전체 상태</span>
-                  <span className="text-text-3 ml-auto text-xs">({testRunStats.total})</span>
-                </button>
-                {(['untested', 'pass', 'fail', 'blocked'] as const).map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => {
-                      setStatusFilter(status);
-                      setShowStatusFilterDropdown(false);
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
-                      statusFilter === status ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
-                    )}
-                  >
-                    <span className={STATUS_CONFIG[status].style}>
-                      {STATUS_CONFIG[status].icon}
-                    </span>
-                    <span>{STATUS_CONFIG[status].label}</span>
-                    <span className="text-text-3 ml-auto text-xs">({testRunStats[status]})</span>
-                  </button>
-                ))}
-              </div>
+    <div className="border-line-2 flex w-full min-w-0 flex-col overflow-hidden border-r lg:w-[47%]">
+      {/* 검색 · 스위트 · 결과 탭 */}
+      <div className="flex flex-col px-4 pt-3.5 md:px-8">
+        <div className="flex items-center gap-2.5">
+          <label className="border-line-2 focus-within:border-primary/60 flex min-w-0 flex-1 items-center gap-2 rounded-[6px] border px-3 py-[7px]">
+            <span className="sr-only">케이스 검색</span>
+            <input
+              type="search"
+              placeholder="케이스 키, 제목 검색"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-white/90 outline-none placeholder:text-white/35 [&::-webkit-search-cancel-button]:hidden"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="검색어 지우기"
+                className="text-white/35 hover:text-white/70"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
             )}
-          </div>
+          </label>
 
-          {/* Suite Filter Dropdown */}
-          <div className="relative flex-1" ref={suiteFilterRef}>
+          <div className="relative shrink-0" ref={suiteMenuRef}>
             <button
-              onClick={() => {
-                setShowSuiteFilterDropdown(!showSuiteFilterDropdown);
-                setShowStatusFilterDropdown(false);
-              }}
-              className="bg-bg-2 border-line-2 hover:border-line-1 flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={showSuiteMenu}
+              aria-controls={showSuiteMenu ? suiteMenuId : undefined}
+              onClick={() => setShowSuiteMenu((prev) => !prev)}
+              className={cn(
+                'flex items-center gap-1 text-[12px] font-medium whitespace-nowrap',
+                suiteFilter !== 'all' ? 'text-primary' : 'text-white/55 hover:text-white/80'
+              )}
             >
-              <div className="flex items-center gap-2">
-                <FolderOpen
-                  className={cn('h-4 w-4', suiteFilter !== 'all' ? 'text-primary' : 'text-text-3')}
-                />
-                <span className="text-text-1 truncate">
-                  {suiteFilter === 'all'
-                    ? '스위트'
-                    : availableSuites.find((s) => s.id === suiteFilter)?.name || '스위트'}
-                </span>
-              </div>
-              <ChevronDown
-                className={cn(
-                  'text-text-3 h-4 w-4 flex-shrink-0 transition-transform',
-                  showSuiteFilterDropdown && 'rotate-180'
-                )}
-              />
+              스위트: <span className="max-w-[120px] truncate">{suiteLabel}</span>
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
-
-            {showSuiteFilterDropdown && (
-              <div className="bg-bg-2 border-line-2 absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border shadow-xl">
-                <button
-                  onClick={() => {
-                    setSuiteFilter('all');
-                    setShowSuiteFilterDropdown(false);
-                  }}
-                  className={cn(
-                    'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
-                    suiteFilter === 'all' ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
-                  )}
-                >
-                  <FolderOpen className="h-4 w-4" />
-                  <span>전체 스위트</span>
-                </button>
-                {availableSuites.length === 0 ? (
-                  <div className="text-text-3 px-3 py-2 text-sm">스위트 없음</div>
-                ) : (
-                  availableSuites.map((suite) => (
+            {showSuiteMenu && (
+              <div
+                id={suiteMenuId}
+                role="menu"
+                className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-30 mt-1 max-h-72 min-w-[200px] overflow-y-auto rounded-[6px] border py-1"
+              >
+                {[{ id: 'all', name: '전체' }, ...availableSuites].map((suite) => {
+                  const checked = suiteFilter === suite.id;
+                  return (
                     <button
                       key={suite.id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={checked}
                       onClick={() => {
                         setSuiteFilter(suite.id);
-                        setShowSuiteFilterDropdown(false);
+                        setShowSuiteMenu(false);
                       }}
                       className={cn(
-                        'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
-                        suiteFilter === suite.id ? 'bg-primary/10 text-primary' : 'hover:bg-bg-3'
+                        'hover:bg-bg-3 flex w-full items-center gap-2 px-3 py-2 text-left text-[13px]',
+                        checked ? 'text-primary' : 'text-white/75'
                       )}
                     >
-                      <FolderOpen className="h-4 w-4" />
+                      <Check
+                        className={cn('h-3.5 w-3.5 shrink-0', !checked && 'invisible')}
+                        aria-hidden="true"
+                      />
                       <span className="truncate">{suite.name}</span>
                     </button>
-                  ))
-                )}
+                  );
+                })}
               </div>
             )}
           </div>
+        </div>
+
+        <div role="tablist" aria-label="결과별 보기" className="flex flex-wrap gap-x-4 py-3">
+          {STATUS_TABS.map((tab) => {
+            const active = statusFilter === tab.value;
+            const count = tab.value === 'all' ? testRunStats.total : testRunStats[tab.value];
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setStatusFilter(tab.value)}
+                className={cn(
+                  'flex items-center gap-1.5 text-[12px] whitespace-nowrap',
+                  active ? 'font-bold text-white/95' : 'text-white/55 hover:text-white/80'
+                )}
+              >
+                {tab.label}
+                <span className={active ? 'text-white/60' : 'text-white/35'}>{count}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Bulk Action Toolbar */}
-      {hasSelection && (
-        <div className="border-line-2 bg-primary/5 flex items-center gap-2 border-b px-4 py-2">
-          <button
-            onClick={() =>
+      {/* 일괄 변경 줄 */}
+      {selecting && (
+        <div
+          role="toolbar"
+          aria-label="선택한 케이스 일괄 변경"
+          className="mx-4 mb-1.5 flex flex-wrap items-center gap-2 rounded-[4px] bg-white/[0.04] px-3 py-1.5 md:mx-8"
+        >
+          <DsCheckbox
+            checked={allSelected}
+            onCheckedChange={() =>
               allSelected ? bulkSelection.clear() : bulkSelection.selectAll(filteredCaseIds)
             }
-            className="text-primary typo-label-normal hover:underline"
-          >
-            {allSelected ? '선택 해제' : '전체 선택'}
-          </button>
-          <span className="text-text-3 text-xs">{bulkSelection.count}개 선택됨</span>
-          <div className="ml-auto flex items-center gap-1">
-            {(['pass', 'fail', 'blocked', 'untested'] as const).map((status) => (
+            aria-label={allSelected ? '전체 선택 해제' : '보이는 케이스 전체 선택'}
+            className={CHECKBOX_CLASS}
+          />
+          <span className="text-[12px] font-bold text-white/90">{bulkSelection.count}건 선택</span>
+          <span className="ml-2 text-[11px] text-white/40">일괄 변경</span>
+          {RESULT_ORDER.map((status) => {
+            const meta = RESULT_META[status];
+            return (
               <button
                 key={status}
+                type="button"
                 onClick={() => onBulkStatusChange(status)}
                 disabled={isBulkUpdating}
                 className={cn(
-                  'flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium transition-colors',
-                  STATUS_CONFIG[status].bgStyle,
-                  isBulkUpdating && 'cursor-not-allowed opacity-50'
+                  'flex items-center gap-1.5 rounded-[4px] border border-current/40 px-2 py-0.5 text-[12px] font-medium disabled:opacity-50',
+                  status === 'untested' ? 'text-white/80' : meta.text
                 )}
-                title={`선택된 케이스를 ${STATUS_CONFIG[status].label}로 변경`}
+                title={`선택한 케이스를 ${meta.label}(으)로 변경`}
               >
-                {STATUS_CONFIG[status].icon}
-                <span className="hidden lg:inline">{STATUS_CONFIG[status].shortcut}</span>
+                {meta.label}
+                <kbd className="font-mono text-[9px] text-white/30">{meta.shortcut}</kbd>
               </button>
-            ))}
-            <button
-              onClick={bulkSelection.clear}
-              className="text-text-3 hover:text-text-1 ml-1 rounded p-1 transition-colors"
-              title="선택 해제"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
+            );
+          })}
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={bulkSelection.clear}
+            className="text-[11px] text-white/50 hover:text-white/80"
+          >
+            선택 해제
+          </button>
         </div>
       )}
 
-      {/* Case List - Grouped by Source */}
-      <div className="flex-1 overflow-y-auto">
+      {/* 케이스 목록 (스위트별 묶음) */}
+      <div className="flex-1 overflow-y-auto px-4 pb-6 md:px-8">
         {filteredCases.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Filter className="text-text-3 mb-2 h-8 w-8" />
-            <p className="text-text-2">검색 결과가 없습니다.</p>
+            <Filter className="mb-2 h-8 w-8 text-white/30" aria-hidden="true" />
+            <p className="text-[13px] text-white/60">조건에 맞는 케이스가 없습니다.</p>
           </div>
         ) : (
-          groupedCases.map((group) => {
+          groupedCases.map((group, groupIndex) => {
             const isCollapsed = collapsedGroups.has(group.groupKey);
-            const groupPass = group.cases.filter((c) => c.status === 'pass').length;
-            const groupFail = group.cases.filter((c) => c.status === 'fail').length;
-            const groupBlocked = group.cases.filter((c) => c.status === 'blocked').length;
-
+            const counts = countByStatus(group.cases);
+            const total = group.cases.length;
+            const pct = (n: number) => `${(n / total) * 100}%`;
             const groupState = groupSelectionState.get(group.groupKey)!;
+            const canRemove =
+              onRemoveSuite && group.suiteId && removableSuiteIds?.has(group.suiteId);
 
             return (
-              <div key={group.groupKey}>
-                {/* Suite Group Header */}
-                <div className="group/header bg-bg-3 border-line-2 sticky top-0 z-10 flex cursor-pointer items-center gap-2 border-b px-3 py-1.5 select-none">
-                  {/* Group checkbox */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      bulkSelection.toggleGroup(groupState.caseIds);
-                    }}
+              <section key={group.groupKey} className={cn(groupIndex > 0 && 'mt-2')}>
+                {/* 스위트 머리 */}
+                <div className="group/header relative flex items-center gap-2.5 overflow-hidden rounded-[4px] bg-white/[0.03] py-[7px] pr-2.5 pl-[34px]">
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex">
+                    <div className="bg-result-pass/[0.07]" style={{ width: pct(counts.pass) }} />
+                    <div className="bg-result-fail/[0.09]" style={{ width: pct(counts.fail) }} />
+                    <div
+                      className="bg-result-blocked/[0.09]"
+                      style={{ width: pct(counts.blocked) }}
+                    />
+                  </div>
+                  <span
                     className={cn(
-                      'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
-                      groupState.allSelected
-                        ? 'bg-primary border-primary text-white'
-                        : groupState.partial
-                          ? 'bg-primary/30 border-primary text-white'
-                          : 'border-line-1 hover:border-primary'
+                      'absolute top-1/2 left-2.5 z-10 flex -translate-y-1/2 transition-opacity',
+                      selecting || groupState.allSelected || groupState.partial
+                        ? 'opacity-100'
+                        : 'opacity-0 group-focus-within/header:opacity-100 group-hover/header:opacity-100'
                     )}
                   >
-                    {groupState.allSelected && <CheckCircle2 className="h-3 w-3" />}
-                    {groupState.partial && <Minus className="h-3 w-3" />}
-                  </button>
-                  <div
-                    role="button"
-                    tabIndex={0}
+                    <DsCheckbox
+                      checked={groupState.allSelected}
+                      onCheckedChange={() => bulkSelection.toggleGroup(groupState.caseIds)}
+                      aria-label={`${group.suiteName} 케이스 전체 선택`}
+                      className={cn(
+                        CHECKBOX_CLASS,
+                        groupState.partial && 'border-primary bg-primary/40'
+                      )}
+                    />
+                  </span>
+                  <button
+                    type="button"
                     onClick={() => collapsedGroups.toggle(group.groupKey)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        collapsedGroups.toggle(group.groupKey);
-                      }
-                    }}
-                    className="flex flex-1 items-center gap-2"
+                    aria-expanded={!isCollapsed}
+                    className="relative flex min-w-0 flex-1 items-center gap-2.5 text-left"
                   >
                     <ChevronDown
                       className={cn(
-                        'text-text-4 h-3.5 w-3.5 transition-transform',
+                        'h-3.5 w-3.5 shrink-0 text-white/50 transition-transform',
                         isCollapsed && '-rotate-90'
                       )}
+                      aria-hidden="true"
                     />
-                    <FolderOpen className="text-text-3 h-3.5 w-3.5" />
-                    <span className="text-text-2 flex-1 text-xs font-semibold tracking-wide uppercase">
+                    <span className="truncate text-[13px] font-bold text-white/90">
                       {group.suiteName}
                     </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px]">
-                    {groupPass > 0 && <span className="text-green-400/70">{groupPass}P</span>}
-                    {groupFail > 0 && <span className="text-red-400/70">{groupFail}F</span>}
-                    {groupBlocked > 0 && <span className="text-amber-400/70">{groupBlocked}B</span>}
-                    <span className="text-text-4">{group.cases.length}</span>
-                  </div>
-                  {onRemoveSuite && group.suiteId && removableSuiteIds?.has(group.suiteId) && (
+                  </button>
+                  <p className="relative hidden items-center gap-3 text-[11px] whitespace-nowrap sm:flex">
+                    <GroupCount label="통과" value={counts.pass} tone="text-result-pass" />
+                    <GroupCount label="실패" value={counts.fail} tone="text-result-fail" />
+                    <GroupCount label="차단" value={counts.blocked} tone="text-result-blocked" />
+                    <GroupCount label="남음" value={counts.untested} tone="text-white/75" />
+                  </p>
+                  {canRemove && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemoveSuite(group.suiteId!, group.suiteName);
-                      }}
-                      className="text-text-4 hover:bg-system-red/10 hover:text-system-red ml-1 flex h-5 w-5 items-center justify-center rounded opacity-0 transition-all group-hover/header:opacity-100"
-                      title={`${group.suiteName} 스위트 제거`}
+                      type="button"
+                      onClick={() => onRemoveSuite!(group.suiteId!, group.suiteName)}
+                      className="hover:text-system-red relative flex h-5 w-5 items-center justify-center rounded text-white/40 opacity-0 transition-opacity group-focus-within/header:opacity-100 group-hover/header:opacity-100"
+                      aria-label={`${group.suiteName} 스위트를 실행에서 빼기`}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                     </button>
                   )}
                 </div>
 
-                {/* Test Case Items */}
-                {!isCollapsed &&
-                  group.cases.map((tc, index) => {
-                    const config = STATUS_CONFIG[tc.status];
-                    const isSelected = tc.id === selectedCaseId;
-                    const isChecked = bulkSelection.selectedIds.has(tc.id);
+                {/* 케이스 행 */}
+                {!isCollapsed && (
+                  <ul>
+                    {group.cases.map((tc) => {
+                      const meta = RESULT_META[tc.status];
+                      const isSelected = tc.id === selectedCaseId;
+                      const isChecked = bulkSelection.selectedIds.has(tc.id);
 
-                    return (
-                      <div
-                        key={tc.id}
-                        className={cn(
-                          'border-line-2 flex w-full items-center gap-3 overflow-hidden border-b py-3 pr-4 pl-4 text-left transition-colors',
-                          isSelected ? 'bg-primary/10' : 'hover:bg-bg-2',
-                          isChecked && !isSelected && 'bg-primary/5'
-                        )}
-                      >
-                        {/* Checkbox */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            bulkSelection.toggle(tc.id);
-                          }}
+                      return (
+                        <li
+                          key={tc.id}
                           className={cn(
-                            'flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors',
-                            isChecked
-                              ? 'bg-primary border-primary text-white'
-                              : 'border-line-1 hover:border-primary'
+                            'group/row border-line-2 relative flex items-center gap-3 border-b py-[9px] pr-2.5 pl-[34px]',
+                            meta.rowBg
                           )}
                         >
-                          {isChecked && <CheckCircle2 className="h-3 w-3" />}
-                        </button>
-                        {/* Case content — clickable for detail view */}
-                        <button
-                          onClick={() => setSelectedCaseId(tc.id)}
-                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-primary font-mono text-xs">
-                                {tc.code || `#${index + 1}`}
-                              </span>
-                              {tc.comment && <MessageSquare className="text-text-3 h-3 w-3" />}
-                            </div>
-                            <p className="text-text-1 truncate text-sm">
-                              {tc.title || '제목 없음'}
-                            </p>
-                          </div>
-                        </button>
-                        {/* Inline status dropdown (right side) */}
-                        <div
-                          className="flex-shrink-0"
-                          ref={inlineDropdownId === tc.id ? inlineDropdownTriggerRef : undefined}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (inlineDropdownId === tc.id) {
-                                setInlineDropdownId(null);
-                                setInlineDropdownAnchor(null);
-                                return;
-                              }
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setInlineDropdownAnchor({
-                                top: rect.bottom + 4,
-                                right: window.innerWidth - rect.right,
-                              });
-                              setInlineDropdownId(tc.id);
-                            }}
+                          {isSelected && (
+                            <div
+                              aria-hidden="true"
+                              className="pointer-events-none absolute inset-0 bg-white/[0.06]"
+                            />
+                          )}
+                          <span
                             className={cn(
-                              'flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors',
-                              config.style,
-                              STATUS_CONFIG[tc.status].bgStyle
+                              'absolute top-1/2 left-2.5 z-10 flex -translate-y-1/2 transition-opacity',
+                              selecting || isChecked
+                                ? 'opacity-100'
+                                : 'opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100'
                             )}
-                            title={`상태: ${config.label} (클릭하여 변경)`}
                           >
-                            {config.icon}
-                            <ChevronDown className="h-3 w-3" />
+                            <DsCheckbox
+                              checked={isChecked}
+                              onCheckedChange={() => bulkSelection.toggle(tc.id)}
+                              aria-label={`${tc.code} 선택`}
+                              className={CHECKBOX_CLASS}
+                            />
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCaseId(tc.id)}
+                            aria-current={isSelected ? 'true' : undefined}
+                            className="relative flex min-w-0 flex-1 items-center gap-3 text-left"
+                          >
+                            <span className="shrink-0 font-mono text-[11px] font-medium text-white/40">
+                              {tc.code}
+                            </span>
+                            <span
+                              className={cn(
+                                'truncate text-[13px]',
+                                isSelected
+                                  ? 'font-medium text-white'
+                                  : tc.status === 'untested'
+                                    ? 'text-white/75'
+                                    : 'text-white/90'
+                              )}
+                            >
+                              {tc.title || '제목 없음'}
+                            </span>
                           </button>
-                          {inlineDropdownId === tc.id &&
-                            inlineDropdownAnchor &&
-                            typeof document !== 'undefined' &&
-                            createPortal(
-                              <div
-                                ref={inlineDropdownContentRef}
-                                style={{
-                                  position: 'fixed',
-                                  top: inlineDropdownAnchor.top,
-                                  right: inlineDropdownAnchor.right,
-                                }}
-                                className="bg-bg-2 border-line-2 z-50 w-32 overflow-hidden rounded-lg border shadow-xl"
-                              >
-                                {(['pass', 'fail', 'blocked', 'untested'] as const).map((s) => (
-                                  <button
-                                    key={s}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onInlineStatusChange(tc.id, s);
-                                      setInlineDropdownId(null);
-                                      setInlineDropdownAnchor(null);
-                                    }}
-                                    className={cn(
-                                      'flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors',
-                                      tc.status === s
-                                        ? cn(
-                                            STATUS_CONFIG[s].bgStyle.split(' ')[0],
-                                            STATUS_CONFIG[s].style
-                                          )
-                                        : 'hover:bg-bg-3'
-                                    )}
-                                  >
-                                    <span className={STATUS_CONFIG[s].style}>
-                                      {STATUS_CONFIG[s].icon}
-                                    </span>
-                                    <span
-                                      className={
-                                        tc.status === s ? STATUS_CONFIG[s].style : 'text-text-1'
-                                      }
+                          {tc.comment && (
+                            <span className="relative shrink-0 text-[11px] text-white/35">
+                              메모
+                            </span>
+                          )}
+                          <div
+                            className="relative flex w-11 shrink-0 justify-end"
+                            ref={inlineDropdownId === tc.id ? inlineDropdownTriggerRef : undefined}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                if (inlineDropdownId === tc.id) {
+                                  setInlineDropdownId(null);
+                                  setInlineDropdownAnchor(null);
+                                  return;
+                                }
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setInlineDropdownAnchor({
+                                  top: rect.bottom + 4,
+                                  right: window.innerWidth - rect.right,
+                                });
+                                setInlineDropdownId(tc.id);
+                              }}
+                              aria-haspopup="menu"
+                              aria-expanded={inlineDropdownId === tc.id}
+                              aria-label={`${tc.code} 결과: ${meta.label} (눌러서 바꾸기)`}
+                              className={cn(
+                                'rounded-[3px] px-1 text-[12px] font-medium whitespace-nowrap hover:bg-white/10',
+                                meta.text
+                              )}
+                            >
+                              {meta.label}
+                            </button>
+                            {inlineDropdownId === tc.id &&
+                              inlineDropdownAnchor &&
+                              typeof document !== 'undefined' &&
+                              createPortal(
+                                <div
+                                  ref={inlineDropdownContentRef}
+                                  role="menu"
+                                  style={{
+                                    position: 'fixed',
+                                    top: inlineDropdownAnchor.top,
+                                    right: inlineDropdownAnchor.right,
+                                  }}
+                                  className="bg-bg-2 border-line-2 z-50 w-32 overflow-hidden rounded-[6px] border py-1 shadow-xl"
+                                >
+                                  {RESULT_ORDER.map((s) => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      role="menuitemradio"
+                                      aria-checked={tc.status === s}
+                                      onClick={() => {
+                                        onInlineStatusChange(tc.id, s);
+                                        setInlineDropdownId(null);
+                                        setInlineDropdownAnchor(null);
+                                      }}
+                                      className={cn(
+                                        'hover:bg-bg-3 flex w-full items-center gap-2 px-3 py-1.5 text-[12px]',
+                                        tc.status === s ? RESULT_META[s].text : 'text-white/80'
+                                      )}
                                     >
-                                      {STATUS_CONFIG[s].label}
-                                    </span>
-                                    <kbd className="text-text-4 ml-auto text-[10px]">
-                                      {STATUS_CONFIG[s].shortcut}
-                                    </kbd>
-                                  </button>
-                                ))}
-                              </div>,
-                              document.body
-                            )}
-                        </div>
-                        {isSelected && (
-                          <ChevronRight className="text-text-3 h-4 w-4 flex-shrink-0" />
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
+                                      {RESULT_META[s].label}
+                                      <kbd className="ml-auto font-mono text-[10px] text-white/30">
+                                        {RESULT_META[s].shortcut}
+                                      </kbd>
+                                    </button>
+                                  ))}
+                                </div>,
+                                document.body
+                              )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
             );
           })
         )}

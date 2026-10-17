@@ -4,8 +4,6 @@ import React from 'react';
 
 import { cn } from '@testea/util';
 
-import { STATUS_CONFIG, type TestCaseRunStatus } from './run-detail-constants';
-
 interface RunSummaryBarProps {
   stats: {
     total: number;
@@ -15,142 +13,51 @@ interface RunSummaryBarProps {
     untested: number;
     progressPercent: number;
   };
-  createdAt?: string;
 }
 
-const StatChip = ({
-  status,
-  count,
-  total,
-}: {
-  status: TestCaseRunStatus;
-  count: number;
-  total: number;
-}) => {
-  const config = STATUS_CONFIG[status];
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+const Count = ({ label, value, tone }: { label: string; value: number; tone: string }) => (
+  <span className="flex items-center gap-1">
+    <span className="text-white/50">{label}</span>
+    <span className={cn('font-bold', value > 0 ? tone : 'text-white/30')}>{value}</span>
+  </span>
+);
 
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-1.5 rounded-lg px-2.5 py-1',
-        config.bgStyle.split(' ')[0]
-      )}
-    >
-      <span className={config.style}>{config.icon}</span>
-      <span className={cn('text-sm font-semibold tabular-nums', config.style)}>{count}</span>
-      <span className="text-text-4 text-xs tabular-nums">({pct}%)</span>
-    </div>
-  );
-};
-
-/** 텍스트 요약 생성 */
-function buildSummaryText(stats: RunSummaryBarProps['stats']): string {
-  const { total, pass, fail, blocked, untested, progressPercent } = stats;
-
-  if (total === 0) return '실행할 테스트 케이스가 없습니다.';
-
-  const executed = total - untested;
-  const parts: string[] = [];
-
-  // 진행 상황
-  if (executed === 0) {
-    parts.push(`전체 ${total}건 미실행`);
-  } else if (untested === 0) {
-    parts.push(`전체 ${total}건 실행 완료 (${progressPercent}%)`);
-  } else {
-    parts.push(`전체 ${total}건 중 ${executed}건 실행 (${progressPercent}%)`);
-  }
-
-  // 문제 케이스 강조
-  const issues: string[] = [];
-  if (fail > 0) issues.push(`실패 ${fail}건`);
-  if (blocked > 0) issues.push(`차단 ${blocked}건`);
-
-  if (issues.length > 0) {
-    parts.push(issues.join(', '));
-  } else if (executed > 0 && pass === executed) {
-    parts.push('모두 통과');
-  }
-
-  // 남은 항목
-  if (untested > 0 && executed > 0) {
-    parts.push(`${untested}건 남음`);
-  }
-
-  return parts.join(' · ');
-}
-
+/** 실행 진행 띠. 배경 막대가 통과·실패·차단 비율을, 글자가 건수와 통과율을 보여 준다. */
 export const RunSummaryBar = ({ stats }: RunSummaryBarProps) => {
-  const { total, pass, fail, blocked, untested, progressPercent } = stats;
-
-  // Segmented progress bar widths
-  const passW = total > 0 ? (pass / total) * 100 : 0;
-  const failW = total > 0 ? (fail / total) * 100 : 0;
-  const blockedW = total > 0 ? (blocked / total) * 100 : 0;
-
-  const summaryText = buildSummaryText(stats);
-  const hasIssues = fail > 0 || blocked > 0;
+  const { total, pass, fail, blocked, untested } = stats;
+  const executed = total - untested;
+  const pct = (n: number) => `${total > 0 ? (n / total) * 100 : 0}%`;
+  const passRate = total > 0 ? Math.round((pass / total) * 100) : null;
 
   return (
-    <div className="border-line-2 bg-bg-1 border-b px-6 py-2.5">
-      {/* Row 1: Text summary */}
-      <p
-        className={cn(
-          'mb-2 text-xs',
-          hasIssues
-            ? 'text-amber-400'
-            : total > 0 && untested === 0
-              ? 'text-green-400'
-              : 'text-text-3'
-        )}
-      >
-        {summaryText}
-      </p>
-
-      {/* Row 2: Chips + Progress */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <StatChip status="pass" count={pass} total={total} />
-          <StatChip status="fail" count={fail} total={total} />
-          <StatChip status="blocked" count={blocked} total={total} />
-          <StatChip status="untested" count={untested} total={total} />
-        </div>
-
-        <div className="flex flex-1 items-center gap-3">
-          <div className="bg-bg-4 h-2 flex-1 overflow-hidden rounded-full">
-            <div className="flex h-full">
-              {passW > 0 && (
-                <div
-                  className="h-full bg-green-500 transition-all duration-300"
-                  style={{ width: `${passW}%` }}
-                />
-              )}
-              {failW > 0 && (
-                <div
-                  className="h-full bg-red-500 transition-all duration-300"
-                  style={{ width: `${failW}%` }}
-                />
-              )}
-              {blockedW > 0 && (
-                <div
-                  className="h-full bg-amber-500 transition-all duration-300"
-                  style={{ width: `${blockedW}%` }}
-                />
-              )}
-            </div>
-          </div>
-          <span className="text-text-2 shrink-0 text-sm font-semibold tabular-nums">
-            {progressPercent}%
-          </span>
-        </div>
-
-        <div className="bg-bg-3 shrink-0 rounded-lg px-2.5 py-1">
-          <span className="text-text-2 text-xs font-medium">
-            총 <span className="text-text-1 font-semibold">{total}</span>건
-          </span>
-        </div>
+    <section
+      aria-label="실행 진행"
+      className="border-line-2 relative flex flex-wrap items-center gap-x-5 gap-y-1 overflow-hidden rounded-[8px] border px-4 py-3"
+    >
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex">
+        <div className="bg-result-pass/[0.08] transition-[width]" style={{ width: pct(pass) }} />
+        <div className="bg-result-fail/[0.09] transition-[width]" style={{ width: pct(fail) }} />
+        <div
+          className="bg-result-blocked/[0.09] transition-[width]"
+          style={{ width: pct(blocked) }}
+        />
       </div>
-    </div>
+
+      <p className="relative text-[16px] whitespace-nowrap">
+        <span className="font-bold text-white/95">{executed}</span>
+        <span className="text-white/50"> / {total} 실행</span>
+      </p>
+      <p className="relative flex flex-wrap items-center gap-3 text-[13px] whitespace-nowrap">
+        <Count label="통과" value={pass} tone="text-result-pass" />
+        <Count label="실패" value={fail} tone="text-result-fail" />
+        <Count label="차단" value={blocked} tone="text-result-blocked" />
+        <Count label="남음" value={untested} tone="text-white/75" />
+      </p>
+      <div className="flex-1" />
+      <p className="relative flex items-center gap-1.5 text-[13px] whitespace-nowrap">
+        <span className="text-white/45">통과율</span>
+        <span className="font-bold text-white/95">{passRate === null ? '-' : `${passRate}%`}</span>
+      </p>
+    </section>
   );
 };

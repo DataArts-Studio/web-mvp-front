@@ -8,7 +8,7 @@ const SUITE_ID = '019c388f-7380-7468-bdbe-579b90481739';
 const { db, insertedRows, batchShouldFail, failingNames } = vi.hoisted(() => {
   const insertedRows: Array<Record<string, unknown>> = [];
   const state = { batchShouldFail: { value: false }, failingNames: new Set<string>() };
-  const db = {
+  const db: Record<string, unknown> = {
     select: vi.fn(() => ({
       from: () => ({ where: () => Promise.resolve([{ max: 0 }]) }),
     })),
@@ -31,6 +31,7 @@ const { db, insertedRows, batchShouldFail, failingNames } = vi.hoisted(() => {
       },
     })),
   };
+  db.transaction = vi.fn((cb: (tx: typeof db) => unknown) => cb(db));
   return { db, insertedRows, ...state };
 });
 
@@ -43,6 +44,10 @@ vi.mock('@testea/db', () => ({
     project_id: 'project_id',
     lifecycle_status: 'lifecycle_status',
   },
+}));
+vi.mock('@/entities/test-case/api/case-number-lock', () => ({
+  lockCaseNumbers: vi.fn(async () => undefined),
+  toCaseKey: (displayId: number) => `TC-${String(displayId).padStart(3, '0')}`,
 }));
 vi.mock('@/access/lib/require-access', () => ({ requireProjectAccess: vi.fn(async () => true) }));
 vi.mock('@/access/lib/project-scope', () => ({ belongsToProject: vi.fn(async () => true) }));

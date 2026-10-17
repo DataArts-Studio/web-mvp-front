@@ -7,14 +7,7 @@ interface BetaBannerProps {
   onDismiss: () => void;
 }
 
-const STORAGE_KEY = 'beta-banner-dismissed-v1';
-
 export const BetaBanner = ({ isVisible, onDismiss }: BetaBannerProps) => {
-  const handleDismiss = () => {
-    sessionStorage.setItem(STORAGE_KEY, 'true');
-    onDismiss();
-  };
-
   if (!isVisible) {
     return null;
   }
@@ -23,6 +16,7 @@ export const BetaBanner = ({ isVisible, onDismiss }: BetaBannerProps) => {
     <div
       role="region"
       aria-label="베타 버전 안내"
+      data-beta-banner
       className="border-line-2 bg-bg-3 fixed top-0 right-0 left-0 z-20 flex h-10 items-center justify-center gap-3 border-b px-4"
     >
       <div className="flex items-center gap-2">
@@ -42,7 +36,7 @@ export const BetaBanner = ({ isVisible, onDismiss }: BetaBannerProps) => {
       </div>
       <button
         type="button"
-        onClick={handleDismiss}
+        onClick={onDismiss}
         aria-label="베타 안내 닫기"
         className="rounded-2 text-text-3 hover:bg-bg-4 hover:text-text-1 ml-2 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center transition-colors"
       >

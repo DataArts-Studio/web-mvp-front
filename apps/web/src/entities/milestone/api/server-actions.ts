@@ -15,6 +15,7 @@ import {
 import { getMilestoneLatestResults } from '@/entities/milestone/api/latest-results';
 import { summarizeMilestoneProgress } from '@/entities/milestone/model/progress';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { lockSuiteRunSync } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { isDateRangeOrdered } from '@/shared/lib/date-only';
 import { toValidName } from '@/shared/lib/normalize-name';
@@ -454,39 +455,45 @@ export const addTestCasesToMilestone = async (
       test_case_id: testCaseId,
     }));
 
-    await db.insert(milestoneTestCases).values(values).onConflictDoNothing();
+    // 마일스톤 연결과 연결된 실행에 케이스를 넣는 일을 함께 반영한다 (#390).
+    await db.transaction(async (tx) => {
+      await tx.insert(milestoneTestCases).values(values).onConflictDoNothing();
 
-    // Sync: add new cases to existing test runs linked to this milestone
-    const linkedRuns = await db
-      .select({ id: testRuns.id })
-      .from(testRuns)
-      .where(eq(testRuns.milestone_id, milestoneId));
+      // Sync: add new cases to existing test runs linked to this milestone
+      const linkedRuns = await tx
+        .select({ id: testRuns.id })
+        .from(testRuns)
+        .where(eq(testRuns.milestone_id, milestoneId));
 
-    for (const run of linkedRuns) {
-      const existingRows = await db
-        .select({ test_case_id: testCaseRuns.test_case_id })
-        .from(testCaseRuns)
-        .where(
-          and(eq(testCaseRuns.test_run_id, run.id), inArray(testCaseRuns.test_case_id, testCaseIds))
-        );
-      const existingSet = new Set(existingRows.map((r) => r.test_case_id));
-      const newIds = testCaseIds.filter((id) => !existingSet.has(id));
+      for (const run of linkedRuns) {
+        const existingRows = await tx
+          .select({ test_case_id: testCaseRuns.test_case_id })
+          .from(testCaseRuns)
+          .where(
+            and(
+              eq(testCaseRuns.test_run_id, run.id),
+              inArray(testCaseRuns.test_case_id, testCaseIds)
+            )
+          );
+        const existingSet = new Set(existingRows.map((r) => r.test_case_id));
+        const newIds = testCaseIds.filter((id) => !existingSet.has(id));
 
-      if (newIds.length > 0) {
-        await db.insert(testCaseRuns).values(
-          newIds.map((caseId) => ({
-            id: uuidv7(),
-            test_run_id: run.id,
-            test_case_id: caseId,
-            status: 'untested' as const,
-            source_type: 'milestone' as const,
-            source_id: milestoneId,
-            created_at: new Date(),
-            updated_at: new Date(),
-          }))
-        );
+        if (newIds.length > 0) {
+          await tx.insert(testCaseRuns).values(
+            newIds.map((caseId) => ({
+              id: uuidv7(),
+              test_run_id: run.id,
+              test_case_id: caseId,
+              status: 'untested' as const,
+              source_type: 'milestone' as const,
+              source_id: milestoneId,
+              created_at: new Date(),
+              updated_at: new Date(),
+            }))
+          );
+        }
       }
-    }
+    });
 
     invalidateCache(INVALIDATE.milestones);
     return {
@@ -584,78 +591,86 @@ export const addTestSuitesToMilestone = async (
       test_suite_id: testSuiteId,
     }));
 
-    await db.insert(milestoneTestSuites).values(values).onConflictDoNothing();
+    // 마일스톤 연결과 연결된 실행에 스위트·케이스를 넣는 일을 함께 반영한다 (#390).
+    await db.transaction(async (tx) => {
+      // 같은 스위트에 케이스를 만들거나 옮기는 요청과 엇갈려 실행에서 케이스가 빠지지 않게 한다.
+      await lockSuiteRunSync(tx, testSuiteIds);
+      await tx.insert(milestoneTestSuites).values(values).onConflictDoNothing();
 
-    // Sync: resolve suite cases and add to existing test runs linked to this milestone
-    const linkedRuns = await db
-      .select({ id: testRuns.id })
-      .from(testRuns)
-      .where(eq(testRuns.milestone_id, milestoneId));
+      // Sync: resolve suite cases and add to existing test runs linked to this milestone
+      const linkedRuns = await tx
+        .select({ id: testRuns.id })
+        .from(testRuns)
+        .where(eq(testRuns.milestone_id, milestoneId));
 
-    if (linkedRuns.length > 0) {
-      // Always link suites to runs (even if suites are empty)
-      for (const run of linkedRuns) {
-        await db
-          .insert(testRunSuites)
-          .values(
-            testSuiteIds.map((suiteId) => ({
-              test_run_id: run.id,
-              test_suite_id: suiteId,
-            }))
-          )
-          .onConflictDoNothing();
-      }
-
-      // Get individual test cases from the added suites
-      // 스위트를 가리키는 다른 프로젝트 케이스가 있어도 실행에 섞이지 않게 프로젝트로 한 번 더 좁힌다.
-      const suiteCaseRows = await db
-        .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
-        .from(testCases)
-        .where(
-          and(
-            inArray(testCases.test_suite_id, testSuiteIds),
-            eq(testCases.project_id, ms.projectId),
-            eq(testCases.lifecycle_status, 'ACTIVE')
-          )
-        );
-
-      if (suiteCaseRows.length > 0) {
-        const caseIdToSuite = new Map<string, string>();
-        for (const row of suiteCaseRows) {
-          if (row.id && row.test_suite_id) {
-            caseIdToSuite.set(row.id, row.test_suite_id);
-          }
-        }
-        const caseIds = Array.from(caseIdToSuite.keys());
-
+      if (linkedRuns.length > 0) {
+        // Always link suites to runs (even if suites are empty)
         for (const run of linkedRuns) {
-          // Find which cases already exist in this run
-          const existingRows = await db
-            .select({ test_case_id: testCaseRuns.test_case_id })
-            .from(testCaseRuns)
-            .where(
-              and(eq(testCaseRuns.test_run_id, run.id), inArray(testCaseRuns.test_case_id, caseIds))
-            );
-          const existingSet = new Set(existingRows.map((r) => r.test_case_id));
-          const newCaseIds = caseIds.filter((id) => !existingSet.has(id));
-
-          if (newCaseIds.length > 0) {
-            await db.insert(testCaseRuns).values(
-              newCaseIds.map((caseId) => ({
-                id: uuidv7(),
+          await tx
+            .insert(testRunSuites)
+            .values(
+              testSuiteIds.map((suiteId) => ({
                 test_run_id: run.id,
-                test_case_id: caseId,
-                status: 'untested' as const,
-                source_type: 'suite' as const,
-                source_id: caseIdToSuite.get(caseId)!,
-                created_at: new Date(),
-                updated_at: new Date(),
+                test_suite_id: suiteId,
               }))
-            );
+            )
+            .onConflictDoNothing();
+        }
+
+        // Get individual test cases from the added suites
+        // 스위트를 가리키는 다른 프로젝트 케이스가 있어도 실행에 섞이지 않게 프로젝트로 한 번 더 좁힌다.
+        const suiteCaseRows = await tx
+          .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
+          .from(testCases)
+          .where(
+            and(
+              inArray(testCases.test_suite_id, testSuiteIds),
+              eq(testCases.project_id, ms.projectId),
+              eq(testCases.lifecycle_status, 'ACTIVE')
+            )
+          );
+
+        if (suiteCaseRows.length > 0) {
+          const caseIdToSuite = new Map<string, string>();
+          for (const row of suiteCaseRows) {
+            if (row.id && row.test_suite_id) {
+              caseIdToSuite.set(row.id, row.test_suite_id);
+            }
+          }
+          const caseIds = Array.from(caseIdToSuite.keys());
+
+          for (const run of linkedRuns) {
+            // Find which cases already exist in this run
+            const existingRows = await tx
+              .select({ test_case_id: testCaseRuns.test_case_id })
+              .from(testCaseRuns)
+              .where(
+                and(
+                  eq(testCaseRuns.test_run_id, run.id),
+                  inArray(testCaseRuns.test_case_id, caseIds)
+                )
+              );
+            const existingSet = new Set(existingRows.map((r) => r.test_case_id));
+            const newCaseIds = caseIds.filter((id) => !existingSet.has(id));
+
+            if (newCaseIds.length > 0) {
+              await tx.insert(testCaseRuns).values(
+                newCaseIds.map((caseId) => ({
+                  id: uuidv7(),
+                  test_run_id: run.id,
+                  test_case_id: caseId,
+                  status: 'untested' as const,
+                  source_type: 'suite' as const,
+                  source_id: caseIdToSuite.get(caseId)!,
+                  created_at: new Date(),
+                  updated_at: new Date(),
+                }))
+              );
+            }
           }
         }
       }
-    }
+    });
 
     invalidateCache(INVALIDATE.milestones);
     return {

@@ -32,9 +32,7 @@ export const GlobalHeader = () => {
       <header
         role="banner"
         aria-label={t('ariaBanner')}
-        className={`fixed right-0 left-0 z-10 flex h-16 items-center px-4 transition-[top] duration-200 md:px-10 ${
-          isBannerVisible ? 'top-10' : 'top-0'
-        }`}
+        className="fixed top-(--beta-banner-h) right-0 left-0 z-10 flex h-16 items-center px-4 transition-[top] duration-200 md:px-10"
       >
         {/* 본문과 같은 1200px 폭에 맞춰 로고와 메뉴가 콘텐츠 양끝에 정렬되게 한다. */}
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between">

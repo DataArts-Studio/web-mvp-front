@@ -19,3 +19,7 @@ export const ATTACHMENT_LIMITS = {
 } as const;
 
 export const BUCKET_NAME = 'test-attachments';
+
+// 서명 URL 유효 시간. 목록 재조회 주기(ATTACHMENT_URL_REFRESH_MS)보다 길어야 화면의 URL 이 만료되지 않는다.
+export const ATTACHMENT_SIGNED_URL_TTL_SECONDS = 60 * 60;
+export const ATTACHMENT_URL_REFRESH_MS = 50 * 60 * 1000;

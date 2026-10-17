@@ -5,26 +5,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { type TestRunDetail } from '@/entities/test-run';
-import { RUN_NAME_MAX_LENGTH, type SourceInfo } from '@/entities/test-run';
+import { RUN_NAME_MAX_LENGTH } from '@/entities/test-run';
 import { ShareButton } from '@/features/runs-share/ui/share-button';
 import { useOutsideClick } from '@testea/lib';
-import { RUN_STATUS_CONFIG } from '@testea/ui';
-import { cn } from '@testea/util';
-import { formatDateKR } from '@testea/util';
-import {
-  ArrowLeft,
-  BarChart3,
-  Check,
-  ChevronDown,
-  Keyboard,
-  Pencil,
-  Plus,
-  RotateCcw,
-  X,
-  Zap,
-} from 'lucide-react';
-
-import { SOURCE_TYPE_CONFIG } from './run-detail-constants';
+import { cn, toAppDateOnly } from '@testea/util';
+import { Check, ChevronLeft, MoreHorizontal, Pencil, X } from 'lucide-react';
 
 interface RunDetailHeaderProps {
   testRun: TestRunDetail;
@@ -39,7 +24,30 @@ interface RunDetailHeaderProps {
   isRerunning: boolean;
   onAutoRun: () => void;
   onAddTests: () => void;
+  /** 끝난 실행을 고치는 중이면 결과 요약 화면으로 돌아가는 메뉴를 보인다. */
+  onShowSummary?: () => void;
 }
+
+const STATUS_TEXT: Record<TestRunDetail['status'], { label: string; className: string }> = {
+  NOT_STARTED: { label: '시작 전', className: 'text-white/50' },
+  IN_PROGRESS: { label: '진행 중', className: 'text-result-running' },
+  COMPLETED: { label: '완료', className: 'text-result-pass' },
+};
+
+const shortDate = (date: Date) => toAppDateOnly(new Date(date)).slice(5).replace('-', '.');
+
+/** 실행 이름 옆 메타: 마일스톤, 스위트 수(또는 직접 고른 케이스), 만든 날. */
+const metaOf = (testRun: TestRunDetail): string[] => {
+  const milestone = testRun.sources.find((s) => s.type === 'milestone');
+  const suites = testRun.sources.filter((s) => s.type === 'suite');
+  const items: string[] = [];
+  if (milestone) items.push(milestone.name);
+  if (suites.length === 1) items.push(suites[0].name);
+  else if (suites.length > 1) items.push(`스위트 ${suites.length}`);
+  if (!milestone && suites.length === 0) items.push('직접 고른 케이스');
+  items.push(`${shortDate(testRun.createdAt)} 생성`);
+  return items;
+};
 
 export const RunDetailHeader = ({
   testRun,
@@ -54,13 +62,15 @@ export const RunDetailHeader = ({
   isRerunning,
   onAutoRun,
   onAddTests,
+  onShowSummary,
 }: RunDetailHeaderProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
-  const [showSourceDropdown, setShowSourceDropdown] = useState(false);
-  const sourceDropdownRef = useRef<HTMLDivElement>(null);
+  const [showMore, setShowMore] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  const moreMenuId = React.useId();
 
-  useOutsideClick(sourceDropdownRef, () => setShowSourceDropdown(false), showSourceDropdown);
+  useOutsideClick(moreRef, () => setShowMore(false), showMore);
 
   const prevIsRenaming = useRef(isRenaming);
   useEffect(() => {
@@ -70,223 +80,155 @@ export const RunDetailHeader = ({
     prevIsRenaming.current = isRenaming;
   }, [isRenaming]);
 
-  const statusInfo = RUN_STATUS_CONFIG[testRun.status] || RUN_STATUS_CONFIG.NOT_STARTED;
-  const sourceInfo = SOURCE_TYPE_CONFIG[testRun.sourceType] || SOURCE_TYPE_CONFIG.ADHOC;
+  const status = STATUS_TEXT[testRun.status] ?? STATUS_TEXT.NOT_STARTED;
+  const suites = testRun.sources.filter((s) => s.type === 'suite');
+
+  const menuItems: { label: string; onClick: () => void; disabled?: boolean }[] = [
+    ...(onShowSummary ? [{ label: '결과 요약 보기', onClick: onShowSummary }] : []),
+    { label: '테스트 추가', onClick: onAddTests },
+    { label: '자동 실행', onClick: onAutoRun },
+    {
+      label: isRerunning ? '재실행 만드는 중' : '다시 실행',
+      onClick: onRerun,
+      disabled: isRerunning,
+    },
+    { label: showCharts ? '통계 차트 닫기' : '통계 차트 보기', onClick: onToggleCharts },
+    { label: '키보드 단축키', onClick: onShowShortcuts },
+  ];
 
   return (
-    <header className="border-line-2 bg-bg-1 border-b px-6 py-3">
-      <div className="flex items-center gap-3">
-        {/* Back */}
-        <Link
-          href={`/projects/${projectSlug}/runs`}
-          className="text-text-3 hover:text-text-1 shrink-0 transition-colors"
-          aria-label="테스트 실행 목록으로 돌아가기"
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Link
+        href={`/projects/${projectSlug}/runs`}
+        className="shrink-0 text-white/50 transition-colors hover:text-white/90"
+        aria-label="테스트 실행 목록으로 돌아가기"
+      >
+        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+      </Link>
+
+      {isEditingTitle ? (
+        <form
+          className="flex min-w-0 items-center gap-1.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (editTitle.trim() && editTitle.trim() !== testRun.name) {
+              onRename(editTitle);
+            } else {
+              setIsEditingTitle(false);
+            }
+          }}
         >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-
-        {/* Title + Meta */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {isEditingTitle ? (
-              <form
-                className="flex items-center gap-1.5"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (editTitle.trim() && editTitle.trim() !== testRun.name) {
-                    onRename(editTitle);
-                  } else {
-                    setIsEditingTitle(false);
-                  }
-                }}
-              >
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  maxLength={RUN_NAME_MAX_LENGTH}
-                  aria-label="실행 이름"
-                  className="bg-bg-2 border-line-2 rounded-1 text-text-1 focus:border-primary focus:ring-primary border px-2 py-0.5 text-base font-semibold focus:ring-1 focus:outline-none"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setIsEditingTitle(false);
-                  }}
-                  disabled={isRenaming}
-                />
-                <button
-                  type="submit"
-                  className="text-primary hover:text-primary/80"
-                  disabled={isRenaming}
-                >
-                  <Check className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingTitle(false)}
-                  className="text-text-3 hover:text-text-1"
-                  disabled={isRenaming}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </form>
-            ) : (
-              <button
-                className="group/title hover:text-primary flex min-w-0 items-center gap-1.5 text-base font-semibold transition-colors"
-                onClick={() => {
-                  setEditTitle(testRun.name);
-                  setIsEditingTitle(true);
-                }}
-                title={testRun.name}
-              >
-                <span className="truncate">{testRun.name}</span>
-                <Pencil className="text-text-4 h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover/title:opacity-100" />
-              </button>
-            )}
-            <span
-              className={cn(
-                'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
-                statusInfo.style
-              )}
-            >
-              {statusInfo.label}
-            </span>
-          </div>
-
-          {/* Meta row */}
-          <div className="mt-0.5 flex items-center gap-3">
-            <SourceInfoCompact
-              sourceInfo={sourceInfo}
-              sources={testRun.sources}
-              sourceName={testRun.sourceName}
-              showSourceDropdown={showSourceDropdown}
-              setShowSourceDropdown={setShowSourceDropdown}
-              sourceDropdownRef={sourceDropdownRef}
-            />
-            <span className="text-text-4 text-[10px]">·</span>
-            <span className="text-text-4 text-xs">{formatDateKR(testRun.createdAt)}</span>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            onClick={onAddTests}
-            className="rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors"
-            aria-label="테스트 추가"
-            title="테스트 추가"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onAutoRun}
-            className="rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors"
-            aria-label="자동 실행"
-            title="자동 실행"
-          >
-            <Zap className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onRerun}
-            disabled={isRerunning}
-            className="rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="다시 실행"
-            title="다시 실행"
-          >
-            <RotateCcw className={cn('h-4 w-4', isRerunning && 'animate-spin')} />
-          </button>
-          <button
-            onClick={onToggleCharts}
-            className={cn(
-              'rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors',
-              showCharts && 'text-primary bg-primary/10 hover:text-primary'
-            )}
-            aria-label="통계 차트 토글"
-            title="통계 차트"
-          >
-            <BarChart3 className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onShowShortcuts}
-            className="rounded-1 text-text-3 hover:text-text-1 hover:bg-bg-2 p-1.5 transition-colors"
-            aria-label="키보드 단축키 보기"
-            title="키보드 단축키"
-          >
-            <Keyboard className="h-4 w-4" />
-          </button>
-          <ShareButton
-            testRunId={testRunId}
-            shareToken={testRun.shareToken}
-            shareExpiresAt={testRun.shareExpiresAt}
+          <input
+            type="text"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            maxLength={RUN_NAME_MAX_LENGTH}
+            aria-label="실행 이름"
+            className="bg-bg-2 border-line-2 focus:border-primary min-w-0 rounded-[6px] border px-2 py-0.5 text-[18px] font-bold text-white/95 outline-none"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setIsEditingTitle(false);
+            }}
+            disabled={isRenaming}
           />
-        </div>
-      </div>
-    </header>
-  );
-};
-
-// --- Compact source info ---
-
-interface SourceInfoCompactProps {
-  sourceInfo: { label: string; icon: React.ReactNode };
-  sources: SourceInfo[];
-  sourceName: string;
-  showSourceDropdown: boolean;
-  setShowSourceDropdown: (show: boolean) => void;
-  sourceDropdownRef: React.RefObject<HTMLDivElement | null>;
-}
-
-const SourceInfoCompact = ({
-  sourceInfo,
-  sources,
-  sourceName,
-  showSourceDropdown,
-  setShowSourceDropdown,
-  sourceDropdownRef,
-}: SourceInfoCompactProps) => {
-  const suites = sources.filter((s) => s.type === 'suite');
-  const milestoneSource = sources.find((s) => s.type === 'milestone');
-  const MAX_VISIBLE = 2;
-
-  return (
-    <div className="text-text-3 flex items-center gap-1.5 text-xs" ref={sourceDropdownRef}>
-      <span className="shrink-0 [&_svg]:h-3 [&_svg]:w-3">{sourceInfo.icon}</span>
-      {suites.length === 0 ? (
-        <span className="truncate">{sourceName}</span>
+          <button
+            type="submit"
+            className="text-primary hover:text-primary/80"
+            disabled={isRenaming}
+            aria-label="이름 저장"
+          >
+            <Check className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsEditingTitle(false)}
+            className="text-white/40 hover:text-white/80"
+            disabled={isRenaming}
+            aria-label="이름 변경 취소"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </form>
       ) : (
-        <span className="relative flex items-center gap-1">
-          <span className="truncate">
-            {suites
-              .slice(0, MAX_VISIBLE)
-              .map((s) => s.name)
-              .join(', ')}
-          </span>
-          {suites.length - MAX_VISIBLE > 0 && (
-            <>
-              <button
-                onClick={() => setShowSourceDropdown(!showSourceDropdown)}
-                className="bg-bg-4 text-text-2 hover:bg-bg-3 hover:text-text-1 inline-flex cursor-pointer items-center rounded px-1 py-0.5 text-[10px] font-medium transition-colors"
-              >
-                +{suites.length - MAX_VISIBLE}
-                <ChevronDown
-                  className={`ml-0.5 h-2.5 w-2.5 transition-transform ${showSourceDropdown ? 'rotate-180' : ''}`}
-                />
-              </button>
-              {showSourceDropdown && (
-                <span className="rounded-2 border-line-2 bg-bg-1 text-text-2 shadow-2 absolute top-full left-0 z-20 mt-1 w-max max-w-xs border px-3 py-2 text-xs">
-                  {suites.map((s, i) => (
-                    <span key={i} className="block py-0.5">
-                      {s.name}
-                    </span>
-                  ))}
-                </span>
-              )}
-            </>
-          )}
-          {milestoneSource && (
-            <span className="text-text-4 ml-1">| 마일스톤: {milestoneSource.name}</span>
-          )}
-        </span>
+        <h1 className="min-w-0">
+          <button
+            type="button"
+            className="group/title flex min-w-0 items-center gap-1.5 text-[20px] font-bold text-white/95"
+            onClick={() => {
+              setEditTitle(testRun.name);
+              setIsEditingTitle(true);
+            }}
+            title={`${testRun.name} (눌러서 이름 바꾸기)`}
+          >
+            <span className="truncate">{testRun.name}</span>
+            <Pencil
+              className="h-3.5 w-3.5 shrink-0 text-white/30 opacity-0 transition-opacity group-hover/title:opacity-100"
+              aria-hidden="true"
+            />
+          </button>
+        </h1>
       )}
+
+      <span className={cn('shrink-0 text-[13px] font-medium', status.className)}>
+        {status.label}
+      </span>
+
+      <p
+        className="hidden min-w-0 items-center gap-3 truncate text-[12px] text-white/38 md:flex"
+        title={suites.length > 1 ? suites.map((s) => s.name).join(', ') : undefined}
+      >
+        {metaOf(testRun).map((item) => (
+          <span key={item} className="truncate">
+            {item}
+          </span>
+        ))}
+      </p>
+
+      <div className="flex-1" />
+
+      <ShareButton
+        testRunId={testRunId}
+        shareToken={testRun.shareToken}
+        shareExpiresAt={testRun.shareExpiresAt}
+        variant="text"
+      />
+
+      <div className="relative shrink-0" ref={moreRef}>
+        <button
+          type="button"
+          onClick={() => setShowMore((prev) => !prev)}
+          aria-haspopup="menu"
+          aria-expanded={showMore}
+          aria-controls={showMore ? moreMenuId : undefined}
+          aria-label="실행 메뉴 더 보기"
+          className="flex h-[32px] w-[38px] items-center justify-center rounded-[6px] border border-white/[0.17] text-white/80 transition-colors hover:border-white/35"
+        >
+          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+        </button>
+        {showMore && (
+          <div
+            id={moreMenuId}
+            role="menu"
+            className="border-line-2 bg-bg-2 shadow-2 absolute top-full right-0 z-30 mt-1 min-w-[160px] rounded-[6px] border py-1"
+          >
+            {menuItems.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                role="menuitem"
+                disabled={item.disabled}
+                onClick={() => {
+                  setShowMore(false);
+                  item.onClick();
+                }}
+                className="hover:bg-bg-3 flex w-full px-3 py-2 text-left text-[13px] text-white/80 disabled:opacity-50"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
