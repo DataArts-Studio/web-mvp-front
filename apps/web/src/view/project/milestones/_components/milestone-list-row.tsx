@@ -26,6 +26,7 @@ export const MILESTONE_HEALTH: Record<
   { label: string; tone: string; border: string }
 > = {
   onTrack: { label: '순조로움', tone: 'text-result-pass', border: 'border-result-pass/45' },
+  atRisk: { label: '위험', tone: 'text-result-blocked', border: 'border-result-blocked/45' },
   delayed: { label: '지연', tone: 'text-result-fail', border: 'border-result-fail/45' },
   planned: { label: '예정', tone: 'text-[#999ea8]', border: 'border-[#999ea8]/45' },
   done: { label: '완료', tone: 'text-result-pass', border: 'border-result-pass/45' },
@@ -57,7 +58,13 @@ export const ProgressRing = ({ percent, health }: { percent: number; health: Mil
           strokeLinecap="round"
           transform="rotate(-90 8 8)"
           strokeDasharray={`${(value / 100) * length} ${length}`}
-          className={health === 'delayed' ? 'stroke-result-fail' : 'stroke-result-pass'}
+          className={
+            health === 'delayed'
+              ? 'stroke-result-fail'
+              : health === 'atRisk'
+                ? 'stroke-result-blocked'
+                : 'stroke-result-pass'
+          }
         />
       )}
     </svg>

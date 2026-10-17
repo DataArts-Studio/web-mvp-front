@@ -133,10 +133,11 @@ export const MilestoneDetailView = () => {
   const testSuites = milestone.testSuites ?? [];
   const testRuns = milestone.testRuns ?? [];
 
-  const health = milestoneHealthOf(milestone, today);
+  const series = buildProgressSeries(milestone, testCases, today);
+  // 그래프가 있으면 그래프의 완료 예상일로 판정해 경고 문구와 상태가 어긋나지 않게 한다.
+  const health = milestoneHealthOf(milestone, today, series ? series.expectedDate : undefined);
   const healthInfo = MILESTONE_HEALTH[health];
   const due = dueHintOf(milestone, today);
-  const series = buildProgressSeries(milestone, testCases, today);
   const risks = summarizeRisks(milestone, testCases, today);
   const suiteRows = progressBySuite(testSuites, testCases);
 

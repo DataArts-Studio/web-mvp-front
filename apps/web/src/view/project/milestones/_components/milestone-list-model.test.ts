@@ -8,6 +8,7 @@ import {
   milestoneHealthOf,
   milestonePhaseOf,
   passRateOf,
+  projectedFinishOf,
 } from './milestone-list-model';
 
 const TODAY = '2026-10-11';
@@ -68,6 +69,19 @@ describe('milestoneHealthOf · dueHintOf', () => {
     const dueToday = make({ id: 'c', startDate: '2026-10-01', endDate: TODAY });
     expect(milestoneHealthOf(dueToday, TODAY)).toBe('onTrack');
     expect(dueHintOf(dueToday, TODAY)?.text).toBe('오늘 마감');
+  });
+
+  it('지금 속도로 목표일 안에 못 끝나면 위험', () => {
+    const base = { startDate: '2026-10-01', endDate: '2026-10-15', runCount: 1 };
+    // 10일 동안 2건 → 남은 8건은 40일 뒤
+    const slow = make({ id: 'a', ...base, completedCases: 2 });
+    expect(projectedFinishOf(slow.startDate, 2, 10, TODAY)).toBe('2026-11-20');
+    expect(milestoneHealthOf(slow, TODAY)).toBe('atRisk');
+    // 10일 동안 8건 → 남은 2건은 3일 뒤
+    expect(milestoneHealthOf(make({ id: 'b', ...base, completedCases: 8 }), TODAY)).toBe('onTrack');
+    // 예상일을 직접 넘기면 그 값으로 판정한다
+    expect(milestoneHealthOf(slow, TODAY, null)).toBe('onTrack');
+    expect(milestoneHealthOf(slow, TODAY, '2026-10-16')).toBe('atRisk');
   });
 
   it('예정은 시작까지 남은 날, 완료는 문구 없음', () => {

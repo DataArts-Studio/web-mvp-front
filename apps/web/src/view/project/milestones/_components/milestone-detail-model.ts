@@ -1,17 +1,12 @@
 import type { MilestoneWithStats } from '@/entities/milestone';
 import { toDateOnly } from '@/shared/lib/date-only';
 
-import { daysBetween } from './milestone-list-model';
+import { addDays, daysBetween, projectedFinishOf } from './milestone-list-model';
 
 type MilestoneCase = NonNullable<MilestoneWithStats['testCases']>[number];
 
 const toDay = (value: Date | string | null | undefined) =>
   value ? toDateOnly(new Date(value)) : null;
-
-const addDays = (dateOnly: string, days: number) => {
-  const [y, m, d] = dateOnly.split('-').map(Number);
-  return toDateOnly(new Date(y, m - 1, d + days));
-};
 
 export type ProgressPoint = { date: string; executed: number; passed: number };
 
@@ -58,21 +53,13 @@ export const buildProgressSeries = (
     }
   }
 
-  const executedNow = firstDays.length;
-  const elapsed = daysBetween(start, today);
-  let expectedDate: string | null = null;
-  if (executedNow > 0 && executedNow < total && elapsed > 0) {
-    const perDay = executedNow / elapsed;
-    expectedDate = addDays(today, Math.ceil((total - executedNow) / perDay));
-  }
-
   return {
     start,
     end,
     total,
     points,
     today: today >= start && today <= end ? today : null,
-    expectedDate,
+    expectedDate: projectedFinishOf(start, firstDays.length, total, today),
   };
 };
 
