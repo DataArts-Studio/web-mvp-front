@@ -1,6 +1,7 @@
 'use server';
 
 import { escapeLikePattern, toContainsPattern } from '@/shared/lib/like-pattern';
+import { RATE_LIMITED_MESSAGE, isPublicActionLimited } from '@/shared/lib/rate-limit';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { and, desc, eq, ilike } from 'drizzle-orm';
@@ -34,6 +35,10 @@ export async function searchProjects(keyword: string): Promise<SearchProjectsRes
         success: false,
         error: validationError,
       };
+    }
+    // 자동완성이 디바운스 뒤 호출하므로 사람이 치는 속도로는 닿지 않는 값이다.
+    if (await isPublicActionLimited('search-projects', { limit: 60, windowMs: 60_000 })) {
+      return { success: false, error: RATE_LIMITED_MESSAGE };
     }
     const db = getDatabase();
 

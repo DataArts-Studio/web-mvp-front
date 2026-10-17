@@ -9,6 +9,7 @@ import type { CreateProjectDomain, ProjectDomain } from '@/entities';
 import { CreateProjectDomainSchema, PROJECT_NAME_ERRORS, toProjectDto } from '@/entities';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { isUniqueViolation } from '@/shared/lib/db-error';
+import { RATE_LIMITED_MESSAGE, isPublicActionLimited } from '@/shared/lib/rate-limit';
 import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -75,6 +76,10 @@ export async function createProject(
         success: false,
         errors: { _form: [parsed.error.issues[0]?.message ?? '입력값을 확인해주세요.'] },
       };
+    }
+
+    if (await isPublicActionLimited('create-project', { limit: 10, windowMs: 60 * 60_000 })) {
+      return { success: false, errors: { _form: [RATE_LIMITED_MESSAGE] } };
     }
 
     const db = getDatabase();
@@ -146,6 +151,10 @@ export async function createProject(
  */
 export async function checkProjectNameDuplicate(name: string): Promise<ActionResult<boolean>> {
   try {
+    if (await isPublicActionLimited('check-project-name', { limit: 30, windowMs: 60_000 })) {
+      return { success: false, errors: { _form: [RATE_LIMITED_MESSAGE] } };
+    }
+
     const db = getDatabase();
     // 동일한 정규화 적용
     const normalizedName = name.trim().replace(/\s+/g, ' ');
