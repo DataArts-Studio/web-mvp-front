@@ -1,5 +1,5 @@
-'use server';
-
+// 테스트·개발용 mock. 'use server' 로 두거나 feature 배럴로 내보내면 운영 번들에서
+// 공개 액션으로 노출되므로, 필요한 곳에서 이 파일을 직접 import 해 쓴다 (#471).
 import { revalidatePath } from 'next/cache';
 
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';

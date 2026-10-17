@@ -190,6 +190,13 @@
       "when": 1792073534741,
       "tag": "0026_private_attachments_bucket",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792246887501,
+      "tag": "0029_rate_limit_buckets",
+      "breakpoints": true
     }
   ]
 }
