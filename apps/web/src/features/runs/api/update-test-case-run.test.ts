@@ -18,10 +18,11 @@ const RUN_ID = '00000000-0000-4000-8000-000000000002';
 const limit = vi.fn();
 const returning = vi.fn();
 const set = vi.fn();
-const db = {
+const db: Record<string, unknown> = {
   select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn(() => ({ limit })) })) })),
   update: vi.fn(() => ({ set })),
 };
+db.transaction = vi.fn((cb: (tx: typeof db) => unknown) => cb(db));
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -77,6 +77,16 @@
   --color-system-green: #ecfbf6;
 
   /* ========================================= */
+  /* Result Colors (리뉴얼 v2 결과 표기) */
+  /* 행·칸 배경 막대는 /8~/10, 건수 글자는 원색으로 쓴다. */
+  /* ========================================= */
+  --color-result-pass: #0bb57f;
+  --color-result-fail: #fc4141;
+  --color-result-blocked: #f59e0b;
+  --color-result-running: #60a5fa;
+  --color-result-na: #b8bdc7;
+
+  /* ========================================= */
   /* Background Colors (Dark Mode Base) */
   /* ========================================= */
   --color-bg-1: #0c0d0e;
@@ -124,6 +134,16 @@
   html {
     scroll-behavior: smooth;
     min-height: 100vh;
+    /* 랜딩 베타 배너 높이(h-10). 닫은 세션은 첫 페인트 전 스크립트가 속성을 붙여 0이 된다 (#438). */
+    --beta-banner-h: 40px;
+  }
+
+  html[data-beta-banner-dismissed] {
+    --beta-banner-h: 0px;
+  }
+
+  html[data-beta-banner-dismissed] [data-beta-banner] {
+    display: none;
   }
 
   body {

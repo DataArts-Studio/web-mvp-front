@@ -38,42 +38,43 @@ export async function updateTestCaseRunStatus(
 
     const now = new Date();
 
-    const [updated] = await db
-      .update(testCaseRuns)
-      .set({
-        status: input.status,
-        // 코멘트를 보내지 않은 변경(목록의 상태 드롭다운)은 저장된 코멘트를 그대로 둔다 (#413).
-        ...(input.comment !== undefined ? { comment: input.comment } : {}),
-        executed_at: input.status !== 'untested' ? now : null,
-        // 사용자가 수동으로 수정하면 자동(auto) 출처를 manual 로 되돌려 출처가 stale 해지지 않게 한다.
-        result_source: 'manual',
-        updated_at: now,
-      })
-      .where(
-        and(
-          eq(testCaseRuns.id, input.testCaseRunId),
-          // 확인과 저장 사이에 실행이 삭제돼도 바꾸지 않는다 (#419).
-          inArray(
-            testCaseRuns.test_run_id,
-            db
-              .select({ id: testRuns.id })
-              .from(testRuns)
-              .where(eq(testRuns.lifecycle_status, 'ACTIVE'))
+    // 결과 저장과 실행 상태 재계산을 함께 반영한다 (#390).
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(testCaseRuns)
+        .set({
+          status: input.status,
+          // 코멘트를 보내지 않은 변경(목록의 상태 드롭다운)은 저장된 코멘트를 그대로 둔다 (#413).
+          ...(input.comment !== undefined ? { comment: input.comment } : {}),
+          executed_at: input.status !== 'untested' ? now : null,
+          // 사용자가 수동으로 수정하면 자동(auto) 출처를 manual 로 되돌려 출처가 stale 해지지 않게 한다.
+          result_source: 'manual',
+          updated_at: now,
+        })
+        .where(
+          and(
+            eq(testCaseRuns.id, input.testCaseRunId),
+            // 확인과 저장 사이에 실행이 삭제돼도 바꾸지 않는다 (#419).
+            inArray(
+              testCaseRuns.test_run_id,
+              tx
+                .select({ id: testRuns.id })
+                .from(testRuns)
+                .where(eq(testRuns.lifecycle_status, 'ACTIVE'))
+            )
           )
         )
-      )
-      .returning();
+        .returning();
+
+      if (row?.test_run_id) await recomputeTestRunStatus(tx, row.test_run_id);
+      return row;
+    });
 
     if (!updated) {
       return {
         success: false,
         errors: { _general: ['테스트 케이스 실행을 찾을 수 없습니다.'] },
       };
-    }
-
-    // Update test run status based on case results
-    if (updated.test_run_id) {
-      await recomputeTestRunStatus(db, updated.test_run_id);
     }
 
     invalidateCache(INVALIDATE.runs);

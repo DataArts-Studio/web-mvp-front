@@ -5,7 +5,7 @@ import {
   testCaseRuns,
   testRuns,
 } from '@testea/db';
-import { and, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import 'server-only';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -83,9 +83,36 @@ export function deriveTestRunStatus(statuses: string[]): TestRunStatus {
  * 실행 상태를 현재 범위 기준으로 다시 계산한다.
  * 결과 입력뿐 아니라 스위트 제거·추가, 동기화, 케이스 삭제·복원처럼 범위가 바뀌는 곳마다 호출한다 (#376).
  */
+/**
+ * 같은 실행의 상태 계산을 한 번에 하나씩 하게 실행 단위로 잠근다 (#390).
+ * 서로 다른 요청이 같은 실행의 마지막 결과들을 동시에 바꾸면, 각자 상대의 미커밋 변경을 못 본 채
+ * 상태를 계산해 모두 통과해도 완료로 바뀌지 않을 수 있다. 잠근 뒤 읽으면 먼저 끝난 쪽의 커밋을 본다.
+ * 트랜잭션 안에서 불러야 커밋까지 잠금이 유지된다. 교착을 피하려고 항상 같은 순서로 잠근다.
+ */
+export async function lockRunStatus(db: Executor, testRunIds: string[]) {
+  for (const id of [...new Set(testRunIds)].sort()) {
+    await db.execute(sql`SELECT pg_advisory_xact_lock(hashtext('run_status'), hashtext(${id}))`);
+  }
+}
+
+/**
+ * 스위트와 실행 사이의 케이스 동기화를 스위트 단위로 잠근다 (#390).
+ * 마일스톤에 스위트를 붙이는 쪽과 그 스위트에 케이스를 만드는 쪽이 동시에 돌면 서로의 미커밋 행을
+ * 못 봐 실행에서 케이스가 빠질 수 있다. 양쪽이 같은 잠금을 잡고 읽게 한다.
+ */
+export async function lockSuiteRunSync(db: Executor, suiteIds: string[]) {
+  for (const id of [...new Set(suiteIds)].sort()) {
+    await db.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext('suite_run_sync'), hashtext(${id}))`
+    );
+  }
+}
+
 export async function recomputeTestRunStatus(db: Executor, testRunIds: string | string[]) {
   const ids = [...new Set(Array.isArray(testRunIds) ? testRunIds : [testRunIds])];
   if (ids.length === 0) return;
+
+  await lockRunStatus(db, ids);
 
   const rows = await db
     .select({ runId: testCaseRuns.test_run_id, status: testCaseRuns.status })

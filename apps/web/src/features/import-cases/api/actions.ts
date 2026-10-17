@@ -2,6 +2,7 @@
 
 import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
 import { csvTextToSteps } from '@/entities/test-case/model/csv-columns';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
@@ -59,68 +60,76 @@ export async function importTestCases(input: {
     let insertedCount = 0;
 
     if (validRows.length > 0) {
-      // Get the current max display_id for this project
-      const [maxResult] = await db
-        .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
-        .from(testCases)
-        .where(eq(testCases.project_id, validated.projectId));
-      const nextDisplayId = (maxResult?.max ?? 0) + 1;
+      // 번호 계산부터 삽입까지 한 트랜잭션에서 프로젝트 번호를 잠근 채 한다 (#390).
+      insertedCount = await db.transaction(async (tx) => {
+        await lockCaseNumbers(tx, validated.projectId);
+        const [maxResult] = await tx
+          .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+          .from(testCases)
+          .where(eq(testCases.project_id, validated.projectId));
+        const nextDisplayId = (maxResult?.max ?? 0) + 1;
 
-      // Get the current max sort_order
-      const [maxOrder] = await db
-        .select({ max: sql<number>`COALESCE(MAX(${testCases.sort_order}), 0)` })
-        .from(testCases)
-        .where(
-          and(
-            eq(testCases.project_id, validated.projectId),
-            eq(testCases.lifecycle_status, 'ACTIVE')
-          )
-        );
-      const currentOrder = (maxOrder?.max ?? 0) + 1;
+        const [maxOrder] = await tx
+          .select({ max: sql<number>`COALESCE(MAX(${testCases.sort_order}), 0)` })
+          .from(testCases)
+          .where(
+            and(
+              eq(testCases.project_id, validated.projectId),
+              eq(testCases.lifecycle_status, 'ACTIVE')
+            )
+          );
+        const currentOrder = (maxOrder?.max ?? 0) + 1;
 
-      const toInsertValue = (data: ImportRowInput, offset: number) => {
-        const displayId = nextDisplayId + offset;
-        return {
-          id: uuidv7(),
-          project_id: validated.projectId,
-          test_suite_id: validated.suiteId,
-          name: data.name,
-          display_id: displayId,
-          case_key: `TC-${String(displayId).padStart(3, '0')}`,
-          test_type: data.testType || null,
-          tags: data.tags || [],
-          pre_condition: data.preCondition || '',
-          // 번호 목록 텍스트를 단계 저장 형식(JSON 배열)으로 되돌린다.
-          steps: csvTextToSteps(data.steps || ''),
-          expected_result: data.expectedResult || '',
-          sort_order: currentOrder + offset,
-          result_status: 'untested' as const,
-          created_at: new Date(),
-          updated_at: new Date(),
-          archived_at: null,
-          lifecycle_status: 'ACTIVE' as const,
+        const toInsertValue = (data: ImportRowInput, offset: number) => {
+          const displayId = nextDisplayId + offset;
+          return {
+            id: uuidv7(),
+            project_id: validated.projectId,
+            test_suite_id: validated.suiteId,
+            name: data.name,
+            display_id: displayId,
+            case_key: toCaseKey(displayId),
+            test_type: data.testType || null,
+            tags: data.tags || [],
+            pre_condition: data.preCondition || '',
+            // 번호 목록 텍스트를 단계 저장 형식(JSON 배열)으로 되돌린다.
+            steps: csvTextToSteps(data.steps || ''),
+            expected_result: data.expectedResult || '',
+            sort_order: currentOrder + offset,
+            result_status: 'untested' as const,
+            created_at: new Date(),
+            updated_at: new Date(),
+            archived_at: null,
+            lifecycle_status: 'ACTIVE' as const,
+          };
         };
-      };
 
-      try {
-        // 대부분은 한 번에 넣는다.
-        const inserted = await db
-          .insert(testCases)
-          .values(validRows.map((item, index) => toInsertValue(item.data, index)))
-          .returning({ id: testCases.id });
-        insertedCount = inserted.length;
-      } catch (batchError) {
-        // 한 번에 넣기가 실패하면 행마다 다시 시도해 어느 행이 문제인지 알린다.
-        Sentry.captureException(batchError, { extra: { action: 'importTestCases.batch' } });
-        for (const item of validRows) {
-          try {
-            await db.insert(testCases).values(toInsertValue(item.data, insertedCount));
-            insertedCount += 1;
-          } catch {
-            errors.push({ row: item.row, message: ROW_INSERT_FAILED });
+        try {
+          // 대부분은 한 번에 넣는다. 실패해도 트랜잭션 전체가 깨지지 않게 세이브포인트 안에서 넣는다.
+          const inserted = await tx.transaction((sp) =>
+            sp
+              .insert(testCases)
+              .values(validRows.map((item, index) => toInsertValue(item.data, index)))
+              .returning({ id: testCases.id })
+          );
+          return inserted.length;
+        } catch (batchError) {
+          // 한 번에 넣기가 실패하면 행마다 다시 시도해 어느 행이 문제인지 알린다.
+          Sentry.captureException(batchError, { extra: { action: 'importTestCases.batch' } });
+          let count = 0;
+          for (const item of validRows) {
+            try {
+              await tx.transaction((sp) =>
+                sp.insert(testCases).values(toInsertValue(item.data, count))
+              );
+              count += 1;
+            } catch {
+              errors.push({ row: item.row, message: ROW_INSERT_FAILED });
+            }
           }
+          return count;
         }
-      }
+      });
     }
 
     if (insertedCount > 0) invalidateCache(INVALIDATE.cases);

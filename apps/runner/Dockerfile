@@ -17,7 +17,8 @@ RUN corepack enable && corepack prepare pnpm@10.23.0 --activate
 
 # PID 1 로 tini 를 둔다. spec 이 setsid 로 빠져나간 뒤 종료된 고아 프로세스를 node 는
 # 거두지(reap) 않아 좀비로 쌓이므로, init 역할을 tini 가 맡는다.
-RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
+# iptables 는 spec uid 의 나가는 연결(메타데이터 서버·내부망)을 막는 데 쓴다 (src/egress-filter.ts).
+RUN apt-get update && apt-get install -y --no-install-recommends tini iptables && rm -rf /var/lib/apt/lists/*
 
 # --- Dependency layer -------------------------------------------------------
 # Copy only the manifest first so this layer caches across spec/code changes.
@@ -44,6 +45,21 @@ EXPOSE 8080
 # 그래서 여기서는 USER 를 바꾸지 않고 /app 소유권도 넘기지 않는다. spec uid 는
 # 요청마다 서버가 넘겨주는 run 디렉터리에만 쓸 수 있다.
 RUN mkdir -p /app/.runs && chmod 711 /app/.runs
+
+# spec uid 가 run 사이에 남길 수 있는 쓰기 경로를 이미지에서 없앤다. 베이스 이미지는 브라우저
+# 디렉터리(/ms-playwright)를 누구나 쓸 수 있게 두므로, 그대로면 spec 이 Chromium 을 바꿔치기해
+# 다음 run 이나 서버가 그 바이너리를 실행하게 된다. 남는 공유 경로(/tmp, /var/tmp, /dev/shm)는
+# run 이 끝날 때마다 서버가 spec uid 소유 파일을 지운다 (src/sandbox.ts cleanupSandbox).
+# 마지막 줄은 빠진 경로가 있으면 빌드를 실패시킨다.
+RUN set -eu; \
+  chown -R root:root /ms-playwright /home/pwuser; \
+  chmod -R go-w /ms-playwright /home/pwuser; \
+  find / -xdev \( -path /proc -o -path /sys -o -path /dev -o -path /tmp -o -path /var/tmp \) -prune \
+    -o \( -uid 1000 -o -perm -0002 \) ! -type l -print0 \
+    | xargs -0 -r sh -c 'chown root:root "$@" && chmod o-w "$@"' _; \
+  leftover="$(find / -xdev \( -path /proc -o -path /sys -o -path /dev -o -path /tmp -o -path /var/tmp \) -prune \
+    -o \( -uid 1000 -o -perm -0002 \) ! -type l -print)"; \
+  if [ -n "$leftover" ]; then echo "sandbox-writable paths remain: $leftover" >&2; exit 1; fi
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "dist/server.js"]

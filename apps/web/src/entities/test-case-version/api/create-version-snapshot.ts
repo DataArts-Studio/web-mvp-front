@@ -11,6 +11,9 @@ import { v7 as uuidv7 } from 'uuid';
 
 import type { ChangeType } from '../model/types';
 
+type Database = ReturnType<typeof getDatabase>;
+type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+
 export type SnapshotData = {
   name: string;
   test_type?: string | null;
@@ -20,25 +23,39 @@ export type SnapshotData = {
   expected_result?: string | null;
 };
 
+/**
+ * 케이스 변경과 같은 트랜잭션에서 기록하려면 tx 를 넘긴다. 그러면 케이스 저장과 버전 기록이
+ * 함께 반영되거나 함께 취소된다 (#390). 넘기지 않으면 자체 트랜잭션을 연다.
+ */
 export async function createVersionSnapshot(
   testCaseId: string,
   snapshotData: SnapshotData,
   changeType: ChangeType,
   changedFields: string[],
-  changeSummary: string
+  changeSummary: string,
+  tx?: Transaction
 ): Promise<void> {
-  const db = getDatabase();
-  const id = uuidv7();
+  if (!tx) {
+    await getDatabase().transaction((own) =>
+      createVersionSnapshot(testCaseId, snapshotData, changeType, changedFields, changeSummary, own)
+    );
+    return;
+  }
 
-  const [maxResult] = await db
+  // 다음 버전 번호를 "최댓값 + 1" 로 정하므로, 같은 케이스를 동시에 저장해도 번호가 겹쳐
+  // 유니크 제약에 걸리지 않게 케이스 단위로 잠근 뒤 세고 넣는다 (#390).
+  await tx.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtext('case_version_number'), hashtext(${testCaseId}))`
+  );
+  const [maxResult] = await tx
     .select({ max: sql<number>`COALESCE(MAX(${testCaseVersions.version_number}), 0)` })
     .from(testCaseVersions)
     .where(eq(testCaseVersions.test_case_id, testCaseId));
 
   const nextVersion = (maxResult?.max ?? 0) + 1;
 
-  await db.insert(testCaseVersions).values({
-    id,
+  await tx.insert(testCaseVersions).values({
+    id: uuidv7(),
     test_case_id: testCaseId,
     version_number: nextVersion,
     name: snapshotData.name,

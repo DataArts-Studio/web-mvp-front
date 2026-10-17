@@ -69,19 +69,31 @@ export class ProjectTestcasePage extends BasePage {
    * (= 케이스가 영속되지 않아 새로고침 시 사라진다). 생성 액션의 네트워크 왕복을
    * 수동으로 기다려 서버 커밋을 보장한 뒤 단언으로 넘어간다.
    *
-   * 생성 액션 POST 는 본문에 camelCase "projectId" 를 담아, 목록 조회 액션
-   * (snake_case "project_id") 과 구분된다.
+   * 서버 액션 응답은 헤더와 첫 행을 먼저 보내고 액션 결과는 뒤이어 스트리밍한다.
+   * waitForResponse 는 헤더 시점에 풀리므로, 본문이 끝날 때까지 기다려야 케이스
+   * 저장 트랜잭션이 커밋된 뒤다.
+   *
+   * 같은 화면에서 { projectId } 만 보내는 다른 조회 액션도 함께 나가므로, "projectId"
+   * 만으로 찾으면 그 응답에 먼저 풀려 생성 요청이 새로고침에 끊긴다. 입력한 제목이
+   * 본문에 있는 요청을 생성 액션으로 본다.
    */
   async submitAndWaitForPersist(): Promise<void> {
+    const title = await this.titleInput.inputValue();
     const createResponse = this.page.waitForResponse(
-      (res) =>
-        res.request().method() === 'POST' &&
-        res.url().includes('/cases') &&
-        (res.request().postData() ?? '').includes('"projectId"'),
+      (res) => {
+        const body = res.request().postData() ?? '';
+        return (
+          res.request().method() === 'POST' &&
+          res.url().includes('/cases') &&
+          body.includes('"projectId"') &&
+          body.includes(JSON.stringify(title))
+        );
+      },
       { timeout: 15_000 }
     );
     await this.submitButton.click();
-    await createResponse;
+    const response = await createResponse;
+    await response.finished();
   }
 
   async enterInput(text: string): Promise<void> {

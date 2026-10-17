@@ -14,10 +14,11 @@ vi.mock('@testea/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@testea/db')>()),
   getDatabase: vi.fn(),
 }));
-// 상태 재계산은 run-scope 테스트가 다룬다. 케이스 추가·복원(addCasesToRunScope)은 실제 구현을 쓴다.
+// 상태 재계산과 잠금은 run-scope 테스트·dev 검증이 다룬다. 케이스 추가·복원(addCasesToRunScope)은 실제 구현을 쓴다.
 vi.mock('@/entities/test-run/api/run-scope', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/entities/test-run/api/run-scope')>()),
   recomputeTestRunStatus: vi.fn(),
+  lockSuiteRunSync: vi.fn(),
 }));
 
 const A = '00000000-0000-4000-8000-000000000001';

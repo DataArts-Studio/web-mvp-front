@@ -1,6 +1,7 @@
 'use server';
 
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
+import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
@@ -170,6 +171,7 @@ export const saveGeneratedCases = async (input: {
     const now = new Date();
 
     const count = await db.transaction(async (tx) => {
+      await lockCaseNumbers(tx, projectId);
       // display_id 최대값 조회
       const [maxDisplayId] = await tx
         .select({
@@ -196,7 +198,7 @@ export const saveGeneratedCases = async (input: {
             expected_result: tc.expectedResult || null,
             tags: [...(tc.tags || []), 'ai-generated'],
             display_id: displayId,
-            case_key: `TC-${String(displayId).padStart(3, '0')}`,
+            case_key: toCaseKey(displayId),
             sort_order: nextSortOrder++,
             result_status: 'untested' as const,
             // DB 컬럼에 DEFAULT now() 가 박혀있지 않아 drizzle 의 DEFAULT 키워드만으로는

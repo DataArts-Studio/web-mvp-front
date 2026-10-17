@@ -12,6 +12,7 @@ import {
   testRuns,
   testSuites,
 } from '@testea/db';
+import { toAppDateOnly } from '@testea/util';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 export async function getTestRunsByProjectId(
@@ -53,10 +54,10 @@ export async function getTestRunsByProjectId(
       // (상세 조회와 같은 기준).
       milestoneIds.length > 0
         ? db
-            .select({ id: milestones.id, name: milestones.name })
+            .select({ id: milestones.id, name: milestones.name, endDate: milestones.end_date })
             .from(milestones)
             .where(inArray(milestones.id, milestoneIds))
-        : Promise.resolve([] as { id: string; name: string }[]),
+        : Promise.resolve([] as { id: string; name: string; endDate: string | null }[]),
 
       // 테스트 케이스 실행 결과 (논리 삭제 제외)
       db
@@ -66,7 +67,7 @@ export async function getTestRunsByProjectId(
     ]);
 
     const suiteMap = new Map(runSuiteRows.map((rs) => [rs.test_suite_id, rs.suiteName] as const));
-    const milestoneMap = new Map(milestoneRows.map((m) => [m.id, m.name]));
+    const milestoneMap = new Map(milestoneRows.map((m) => [m.id, m]));
 
     // 실행별 케이스 실행 그룹핑
     const caseRunsByRunId = new Map<string, typeof allCaseRuns>();
@@ -92,15 +93,18 @@ export async function getTestRunsByProjectId(
       .map((run) => {
         let sourceType: FetchedTestRun['sourceType'] = 'ADHOC';
         let sourceName = '직접 선택한 케이스';
+        let sourceKey: string | null = null;
 
         // 마일스톤으로 만든 실행은 마일스톤의 스위트도 함께 연결되므로 마일스톤을 먼저 본다 (#373).
         const runSuites = suitesByRunId.get(run.id) || [];
-        const milestoneName = run.milestone_id ? milestoneMap.get(run.milestone_id) : undefined;
-        if (milestoneName) {
+        const milestone = run.milestone_id ? milestoneMap.get(run.milestone_id) : undefined;
+        if (milestone) {
           sourceType = 'MILESTONE';
-          sourceName = milestoneName;
+          sourceName = milestone.name;
+          sourceKey = `milestone:${milestone.id}`;
         } else if (runSuites.length > 0) {
           sourceType = 'SUITE';
+          sourceKey = `suites:${[...runSuites].sort().join(',')}`;
           sourceName = runSuites
             .map((sid) => suiteMap.get(sid) || '')
             .filter(Boolean)
@@ -117,6 +121,17 @@ export async function getTestRunsByProjectId(
         const progressPercent =
           totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0;
 
+        const activityByDate = new Map<string, FetchedTestRun['activity'][number]>();
+        for (const cr of caseRuns) {
+          if (!cr.executed_at || cr.status === 'untested') continue;
+          const date = toAppDateOnly(cr.executed_at);
+          const day = activityByDate.get(date) ?? { date, pass: 0, fail: 0, blocked: 0 };
+          if (cr.status === 'pass' || cr.status === 'fail' || cr.status === 'blocked') {
+            day[cr.status] += 1;
+          }
+          activityByDate.set(date, day);
+        }
+
         return {
           id: run.id,
           name: run.name,
@@ -124,8 +139,12 @@ export async function getTestRunsByProjectId(
           status: run.status,
           sourceType,
           sourceName,
+          sourceKey,
+          milestoneEndDate: milestone?.endDate ?? null,
+          createdAt: run.created_at,
           updatedAt: run.updated_at,
           stats: { totalCases, completedCases, progressPercent, pass, fail, blocked, untested },
+          activity: [...activityByDate.values()],
         };
       });
 

@@ -128,6 +128,13 @@ if [[ -n "${AUTH_TOKEN}" ]]; then
     -H "Authorization: Bearer ${AUTH_TOKEN}" "${URL}/health" 2>/dev/null)"
   if [[ "${AUTH_CODE}" == "200" ]]; then
     ok "invoker 토큰 인증 요청 성공 (HTTP 200)"
+    # 런타임 SA 가 시크릿을 읽을 수 있으므로, spec 의 메타데이터 접근 차단이 켜져 있어야 한다.
+    HEALTH="$(curl -s --max-time 15 -H "Authorization: Bearer ${AUTH_TOKEN}" "${URL}/health" 2>/dev/null)"
+    if [[ "${HEALTH}" == *'"egressFilter":"active"'* ]]; then
+      ok "sandbox 나가는 연결 차단 활성"
+    else
+      bad "sandbox 나가는 연결 차단 비활성 (${HEALTH}). /run·/capture 가 503 으로 거부됨"
+    fi
   else
     bad "invoker 토큰 인증 요청 실패 (HTTP ${AUTH_CODE}, 기대 200)"
   fi
