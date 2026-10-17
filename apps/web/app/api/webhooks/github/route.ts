@@ -57,16 +57,19 @@ export async function POST(req: NextRequest) {
       .where(eq(githubConnections.repo_full_name, repoFullName))
       .limit(1);
 
-    if (!conn) {
-      return NextResponse.json({ message: 'No matching project' }, { status: 200 });
+    // Webhook 서명 검증 (시크릿 미설정 시 fail-closed: 미서명 페이로드 거부).
+    // 서명 확인 전에는 연결 없음·시크릿 없음·서명 불일치를 같은 응답으로 돌려
+    // 어떤 저장소가 연결돼 있는지 드러나지 않게 한다.
+    let secret: string | null = null;
+    if (conn?.webhook_secret) {
+      try {
+        secret = decrypt(conn.webhook_secret);
+      } catch (decryptError) {
+        // 복호화 실패도 500 대신 같은 401로 돌려 연결 여부를 숨긴다.
+        Sentry.captureException(decryptError, { extra: { action: 'webhookSecretDecrypt' } });
+      }
     }
-
-    // Webhook 서명 검증 (시크릿 미설정 시 fail-closed: 미서명 페이로드 거부)
-    if (!conn.webhook_secret) {
-      return NextResponse.json({ error: 'Webhook not configured' }, { status: 401 });
-    }
-    const secret = decrypt(conn.webhook_secret);
-    if (!verifySignature(rawBody, signature, secret)) {
+    if (!conn || !secret || !verifySignature(rawBody, signature, secret)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 

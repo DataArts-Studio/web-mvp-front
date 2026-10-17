@@ -17,6 +17,12 @@ import { MvpBottomNavbarLazy } from '@testea/ui';
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
 const siteUrl = 'https://gettestea.com';
 
+// CDN 의 폰트 CSS 가 바뀌면 브라우저가 적용을 거부하도록 해시를 고정한다(SRI). 버전을 올리면 해시도 다시 계산한다.
+const PRETENDARD_CSS_URL =
+  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';
+const PRETENDARD_CSS_INTEGRITY =
+  'sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j';
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -207,8 +213,10 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="preload"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          href={PRETENDARD_CSS_URL}
           as="style"
+          integrity={PRETENDARD_CSS_INTEGRITY}
+          crossOrigin="anonymous"
         />
         <link
           rel="preload"
@@ -219,14 +227,18 @@ export default async function RootLayout({
         />
         <link
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          href={PRETENDARD_CSS_URL}
+          integrity={PRETENDARD_CSS_INTEGRITY}
+          crossOrigin="anonymous"
           media="print"
           data-font-css
         />
         <noscript>
           <link
             rel="stylesheet"
-            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+            href={PRETENDARD_CSS_URL}
+            integrity={PRETENDARD_CSS_INTEGRITY}
+            crossOrigin="anonymous"
           />
         </noscript>
         <script
