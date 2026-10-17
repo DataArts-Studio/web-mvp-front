@@ -7,6 +7,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
+// Vercel 툴바(vercel.live)는 preview 전용이라 운영 CSP 에서는 허용하지 않는다.
+const vercelLive = process.env.VERCEL_ENV === 'production' ? '' : ' https://vercel.live';
+
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
@@ -17,13 +20,15 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googletagmanager.com static.cloudflareinsights.com https://challenges.cloudflare.com *.sentry-cdn.com https://vercel.live",
+      `script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googletagmanager.com static.cloudflareinsights.com https://challenges.cloudflare.com *.sentry-cdn.com${vercelLive}`,
       "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net",
       `img-src 'self' data: blob: ${supabaseUrl}`,
       "font-src 'self' cdn.jsdelivr.net",
       "worker-src 'self' blob:",
-      `connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io *.sentry-cdn.com https://challenges.cloudflare.com https://vercel.live cdn.jsdelivr.net ${supabaseUrl}`,
-      'frame-src https://challenges.cloudflare.com https://vercel.live',
+      `connect-src 'self' *.google-analytics.com *.analytics.google.com *.googletagmanager.com *.sentry.io *.sentry-cdn.com https://challenges.cloudflare.com${vercelLive} cdn.jsdelivr.net ${supabaseUrl}`,
+      `frame-src https://challenges.cloudflare.com${vercelLive}`,
+      // X-Frame-Options SAMEORIGIN 과 같은 정책을 CSP 로도 둔다(최신 브라우저는 이쪽을 우선).
+      "frame-ancestors 'self'",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
