@@ -13,6 +13,7 @@ import {
   runComparisonQueryOptions,
   testRunByIdQueryOptions,
   testRunsQueryOptions,
+  updateBlockedReason,
   updateTestCaseRunStatus,
   updateTestRunName,
 } from '@/features/runs';
@@ -208,6 +209,28 @@ export const TestRunDetailView = () => {
       toast.error('제목 변경 중 오류가 발생했습니다.');
     },
   });
+
+  const blockedReasonMutation = useMutation({
+    mutationFn: ({ ids, reason }: { ids: string[]; reason: string }) =>
+      updateBlockedReason({ testRunId, testCaseRunIds: ids, reason }),
+  });
+
+  const handleSaveBlockedReason = async (ids: string[], reason: string) => {
+    try {
+      const result = await blockedReasonMutation.mutateAsync({ ids, reason });
+      if (!result.success) {
+        toast.error(Object.values(result.errors).flat().join(', '));
+        return false;
+      }
+      toast.success(`${result.data.updatedCount}건의 차단 사유를 저장했습니다.`);
+      // 다시 불러오기는 기다리지 않는다. 편집을 바로 닫고, 새 묶음은 불러오는 대로 그린다.
+      queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+      return true;
+    } catch {
+      toast.error('차단 사유를 저장하는 중 오류가 발생했습니다.');
+      return false;
+    }
+  };
 
   const rerunMutation = useRerunRun();
 
@@ -436,6 +459,8 @@ export const TestRunDetailView = () => {
             showCharts={showCharts}
             onToggleCharts={() => setShowCharts((prev) => !prev)}
             onShowShortcuts={() => setShowShortcuts(true)}
+            onSaveBlockedReason={handleSaveBlockedReason}
+            isSavingBlockedReason={blockedReasonMutation.isPending}
           />
         </>
       ) : (
