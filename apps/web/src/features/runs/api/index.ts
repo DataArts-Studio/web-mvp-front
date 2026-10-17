@@ -4,6 +4,7 @@ export { getRunComparison } from './get-run-comparison';
 export { updateTestCaseRunStatus } from './update-test-case-run';
 export { deleteTestRun } from './delete-test-run';
 export { updateTestRunName } from './update-test-run-name';
+export { closeTestRun } from './close-test-run';
 export { removeSuiteFromRun } from './remove-suite-from-run';
 export { bulkUpdateTestCaseRunStatus } from './bulk-update-test-case-runs';
 export { testRunsQueryOptions, testRunByIdQueryOptions, runComparisonQueryOptions } from './query';

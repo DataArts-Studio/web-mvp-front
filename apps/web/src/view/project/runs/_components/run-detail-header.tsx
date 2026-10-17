@@ -26,6 +26,8 @@ interface RunDetailHeaderProps {
   onAddTests: () => void;
   /** 끝난 실행을 고치는 중이면 결과 요약 화면으로 돌아가는 메뉴를 보인다. */
   onShowSummary?: () => void;
+  /** 미실행이 남은 실행을 직접 완료한다 (06g). 끝난 실행에는 넘기지 않는다. */
+  onClose?: () => void;
 }
 
 const STATUS_TEXT: Record<TestRunDetail['status'], { label: string; className: string }> = {
@@ -63,6 +65,7 @@ export const RunDetailHeader = ({
   onAutoRun,
   onAddTests,
   onShowSummary,
+  onClose,
 }: RunDetailHeaderProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -192,6 +195,16 @@ export const RunDetailHeader = ({
         shareExpiresAt={testRun.shareExpiresAt}
         variant="text"
       />
+
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="bg-primary hover:bg-primary/90 shrink-0 rounded-[6px] px-3.5 py-[7px] text-[13px] font-bold whitespace-nowrap text-white"
+        >
+          실행 완료
+        </button>
+      )}
 
       <div className="relative shrink-0" ref={moreRef}>
         <button

@@ -10,6 +10,7 @@ export { RunSummaryBar } from './run-summary-bar';
 export { RunCompleteView } from './run-complete-view';
 export { RunDetailError } from './run-detail-error';
 export { RemoveSuiteDialog } from './remove-suite-dialog';
+export { CloseRunDialog } from './close-run-dialog';
 export { useRunKeyboardShortcuts } from './use-run-keyboard-shortcuts';
 
 // Runs list components

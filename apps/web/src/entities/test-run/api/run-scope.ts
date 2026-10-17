@@ -130,7 +130,8 @@ export async function recomputeTestRunStatus(db: Executor, testRunIds: string | 
     await db
       .update(testRuns)
       .set({ status, updated_at: now })
-      .where(and(eq(testRuns.id, runId), ne(testRuns.status, status)));
+      // 사람이 직접 완료한 실행은 미실행이 남아도 완료로 둔다 (06g).
+      .where(and(eq(testRuns.id, runId), ne(testRuns.status, status), isNull(testRuns.closed_at)));
   }
 }
 
