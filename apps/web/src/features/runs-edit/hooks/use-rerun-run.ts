@@ -2,10 +2,11 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { rerunTestRunAction } from '../model/rerun-test-run';
+import { type RerunTestRunOptions, rerunTestRunAction } from '../model/rerun-test-run';
 
 /**
  * 회귀 반복 실행 유도 (FDD-TR12): 원본 Run 을 동일 구성으로 다시 실행하는 새 Run 을 만든다.
+ * 이름과 고른 결과를 넘기면 그 케이스만 담는다 (06j).
  *
  * 성공 시 `['testRuns', projectId]` 와 `['dashboard']` 무효화. projectId 는
  * 서버 액션이 돌려준 새 Run 의 project_id 를 사용한다.
@@ -14,8 +15,8 @@ export const useRerunRun = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (runId: string) => {
-      const result = await rerunTestRunAction(runId);
+    mutationFn: async ({ runId, options }: { runId: string; options?: RerunTestRunOptions }) => {
+      const result = await rerunTestRunAction(runId, options);
       if (!result.success) {
         throw new Error(result.error || '회귀 재실행 생성에 실패했습니다.');
       }

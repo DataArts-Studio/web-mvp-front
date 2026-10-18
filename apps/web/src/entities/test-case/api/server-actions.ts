@@ -35,7 +35,7 @@ import {
   testRuns,
   testSuiteSections,
 } from '@testea/db';
-import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 /**
@@ -558,6 +558,7 @@ async function syncCaseToLinkedRuns(db: Transaction, caseId: string, suiteId: st
   if (candidateRunIds.size === 0) return;
 
   // 완료되었거나 삭제된 실행은 기록으로 두고 범위를 바꾸지 않는다 (#376).
+  // 골라 만든 재실행도 범위를 고정한다 (06j).
   const openRuns = await db
     .select({ id: testRuns.id })
     .from(testRuns)
@@ -565,7 +566,8 @@ async function syncCaseToLinkedRuns(db: Transaction, caseId: string, suiteId: st
       and(
         inArray(testRuns.id, Array.from(candidateRunIds)),
         ne(testRuns.status, 'COMPLETED'),
-        eq(testRuns.lifecycle_status, 'ACTIVE')
+        eq(testRuns.lifecycle_status, 'ACTIVE'),
+        isNull(testRuns.scope_locked_at)
       )
     );
   const runIds = openRuns.map((r) => r.id);
