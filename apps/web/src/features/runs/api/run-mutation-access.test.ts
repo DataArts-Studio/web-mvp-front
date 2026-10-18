@@ -92,6 +92,15 @@ describe('실행 이름 길이 (#417)', () => {
     expect(db.update).not.toHaveBeenCalled();
   });
 
+  it('앞뒤 공백을 뺀 길이가 2자 미만이면 저장하지 않는다.', async () => {
+    const result = await updateTestRunName(RUN_ID, ' a ');
+    expect(result).toEqual({
+      success: false,
+      errors: { name: ['실행 이름은 최소 2자 이상이어야 합니다.'] },
+    });
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
   it('앞뒤 공백을 뺀 길이가 100자면 저장한다.', async () => {
     expect((await updateTestRunName(RUN_ID, ` ${'a'.repeat(100)} `)).success).toBe(true);
     expect(set).toHaveBeenCalledWith(expect.objectContaining({ name: 'a'.repeat(100) }));
