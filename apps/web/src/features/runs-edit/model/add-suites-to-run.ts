@@ -2,7 +2,11 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
-import { addCasesToRunScope, recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
+import {
+  addCasesToRunScope,
+  lockSuiteRunSync,
+  recomputeTestRunStatus,
+} from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases, testRunSuites, testRuns } from '@testea/db';
@@ -43,6 +47,8 @@ export async function addSuitesToRunAction(
   try {
     const result = await db.transaction(async (tx) => {
       await assertRunResources(tx, run.projectId!, { suiteIds });
+      // 같은 스위트에 케이스를 만드는 요청과 엇갈려 실행에서 케이스가 빠지지 않게 한다 (#390).
+      await lockSuiteRunSync(tx, suiteIds);
 
       const suiteCaseRows = await tx
         .select({

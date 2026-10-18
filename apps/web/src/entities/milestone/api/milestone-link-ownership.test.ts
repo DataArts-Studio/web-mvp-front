@@ -33,7 +33,11 @@ vi.mock('@testea/db', () => {
   chain.limit = () => Promise.resolve([{ projectId: '0199a000-0000-7000-8000-0000000000aa' }]);
   return {
     getDatabase: () => {
-      const db: Record<string, unknown> = { select: () => chain, insert: mocks.insert };
+      const db: Record<string, unknown> = {
+        select: () => chain,
+        insert: mocks.insert,
+        execute: async () => undefined,
+      };
       db.transaction = (cb: (tx: typeof db) => unknown) => cb(db);
       return db;
     },

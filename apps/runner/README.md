@@ -63,10 +63,11 @@ invoker SA 자격증명으로 audience 고정 ID 토큰을 발급한다 (`runner
 
 ### 러너 (Cloud Run)
 
-| 이름                   | 용도                                                              |
-| ---------------------- | ----------------------------------------------------------------- |
-| `PORT`                 | 리슨 포트. Cloud Run 이 자동 주입(8080)                           |
-| `RUNNER_SHARED_SECRET` | Testea ↔ 러너 공유 시크릿. **Secret Manager 로 주입** (Cloud Run) |
+| 이름                   | 용도                                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| `PORT`                 | 리슨 포트. Cloud Run 이 자동 주입(8080)                                                            |
+| `RUNNER_SHARED_SECRET` | Testea ↔ 러너 공유 시크릿. **Secret Manager 로 주입** (Cloud Run)                                  |
+| `RUNNER_EGRESS_FILTER` | sandbox uid 나가는 연결 차단. 기본 `required`(못 걸면 실행 거부). `best-effort`·`off` 는 운영 금지 |
 
 ### 호출자 (Vercel: apps/web, apps/qaground)
 
@@ -110,15 +111,30 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
   `/run` 을 거부하고 `/health` 를 503 으로 돌려 플랫폼이 인스턴스를 교체하게 한다.
 - **fail-closed**: uid 분리를 쓸 수 없는 환경(root 가 아니거나 Linux 가 아님, 또는
   `RUNNER_SANDBOX_UID`/`GID` 가 0·음수·숫자 아님)에서는 `/run` 을 503 으로 거부한다.
+- **나가는 연결 차단**: 서버가 기동 시 iptables owner match 로 sandbox uid 의 연결 중
+  메타데이터 서버(169.254.0.0/16, DNS 53 만 예외)·사설/공유 대역·루프백의 러너 포트를
+  거부한다(`src/egress-filter.ts`). 런타임 SA 는 시크릿을 읽을 수 있으므로, spec 이
+  메타데이터 토큰으로 `RUNNER_SHARED_SECRET` 을 꺼내는 경로를 이 규칙이 막는다.
+  규칙을 못 걸면(`NET_ADMIN` 부재 등) `/run`·`/capture` 를 503 으로 거부하고
+  `/health` 에 `egressFilter: "inactive"` 로 알린다.
+- **캡처도 sandbox uid**: `/capture` 의 Chromium 은 root 가 아니라 spec 과 같은 uid 로
+  돌고(`src/capture-sandbox.ts`), 같은 단일 실행 잠금·정리 절차를 거친다. 그래서 DNS 해석
+  결과나 리다이렉트로 내부 주소에 닿는 경우도 위 차단에 걸린다.
+- **공유 쓰기 경로 제거**: 이미지 빌드에서 `/ms-playwright`(브라우저)·`/home/pwuser` 를
+  root 소유 읽기 전용으로 바꾸고, spec uid 가 쓸 수 있는 경로가 남으면 빌드를 실패시킨다.
+  남는 `/tmp`·`/var/tmp`·`/dev/shm` 은 run 마다 spec uid 소유 파일을 지우고, 못 지우면
+  인스턴스를 오염 상태로 둔다.
 - 보조 방어: `.runs` 는 0711(목록 조회 불가), 요청별 run 디렉터리는 0700,
   `storageState` 는 0600 으로 기록되고 실행 후 삭제된다. spec 의 `HOME`/`TMPDIR` 는
   요청별 디렉터리로 고정된다.
 
 ### 배포에서 반드시 충족해야 하는 것 (ops 책임, **P0**)
 
-- **아웃바운드 egress 차단**: spec 은 SSRF 가드(`url-guard.ts`)를 우회해 자체적으로
-  내부망/메타데이터/외부로 통신할 수 있다. 입력 가드는 보조 수단일 뿐, **본 방어는
-  컨테이너 egress 제한**(대상 사이트 대역만 허용)이다.
+- **아웃바운드 egress 차단 확인**: 내부망·메타데이터 차단은 코드가 건다(위). 배포 후
+  `verify-cloudrun.sh` 로 `/health` 의 `egressFilter` 가 `active` 인지 확인한다.
+  플랫폼이 컨테이너의 iptables 를 막으면 러너는 실행을 거부하므로, 이때는 VPC egress +
+  방화벽 등 플랫폼 수준 차단을 먼저 마련한다. 외부 인터넷 전체 허용은 여전하므로 대상
+  사이트 대역만 허용하는 정책은 플랫폼 몫이다.
 - **인스턴스당 동시 요청 1**: Cloud Run `--concurrency 1`, Fly `hard_limit = 1` 을 유지한다.
   코드도 단일 실행을 강제하지만, 플랫폼이 한 인스턴스에 요청을 몰아 503 이 나지 않게 한다.
 - **요청별 일회용 격리(권장)**: 인스턴스가 재사용되면 커널·네트워크 네임스페이스는 run 간에
@@ -136,8 +152,10 @@ IAM + 공유 시크릿으로 이중 인증된 호출만 받는다. 이 전제 �
 제외한 주소만 허용한다. 특수 대역 내 공개 예외 주소도 보수적으로 거부한다.
 이는 `/run`의 `baseUrl`과 `/capture`의 최초 `url`에만 적용되는 **입력 보조 방어**다.
 DNS 해석 결과, 리다이렉트, 페이지 하위 요청, spec의 직접 Node 통신은 검사하지 않는다.
-따라서 이 검사만으로 SSRF가 차단되었다고 판단하면 안 된다. 해당 경계의 실제 egress
-정책과 합성 데이터 기반 격리 검증은 #313의 후속 작업이며 운영 배포에서 검증되지 않았다.
+이 경로들의 내부망·메타데이터 접근은 sandbox uid 나가는 연결 차단이 커널에서 막는다.
+로컬 Docker(`--cap-add NET_ADMIN`)에서 메타데이터·루프백 러너 포트·사설 대역·`*.nip.io`
+경유 접근이 거부되고 공개 주소·DNS 는 통과함을 확인했다. Cloud Run 에서의 동작은 배포 후
+`verify-cloudrun.sh` 로 확인한다.
 
 URL 정책 회귀 테스트는 네트워크 없이 `pnpm --filter @testea/runner test`로 실행한다.
 

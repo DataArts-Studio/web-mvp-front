@@ -4,15 +4,12 @@ import React from 'react';
 
 import { useTranslations } from 'next-intl';
 
-import { useBetaBanner } from '@/widgets/global-header';
-
 /**
  * 상단 메뉴 바 뒤에 까는 배경과, 바 아래에서 스크롤 비율만큼 차오르는 진행 선.
  * 메뉴 바 자체(GlobalHeader)는 다른 페이지와 같이 쓰므로 건드리지 않고 랜딩에서만 덧댄다.
  */
 export const ScrollProgress = () => {
   const t = useTranslations('lending');
-  const { isVisible: isBannerVisible } = useBetaBanner();
   const fillRef = React.useRef<HTMLDivElement>(null);
   const [percent, setPercent] = React.useState(0);
 
@@ -40,11 +37,7 @@ export const ScrollProgress = () => {
   }, []);
 
   return (
-    <div
-      className={`bg-bg-1/80 pointer-events-none fixed right-0 left-0 z-[9] h-16 border-b border-white/5 backdrop-blur-md transition-[top] duration-200 ${
-        isBannerVisible ? 'top-10' : 'top-0'
-      }`}
-    >
+    <div className="bg-bg-1/80 pointer-events-none fixed top-(--beta-banner-h) right-0 left-0 z-[9] h-16 border-b border-white/5 backdrop-blur-md transition-[top] duration-200">
       <div
         role="progressbar"
         aria-label={t('progressAria')}

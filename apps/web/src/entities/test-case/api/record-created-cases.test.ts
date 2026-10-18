@@ -2,23 +2,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { recordCreatedCases } from './record-created-cases';
 
-const { createInitialVersions, recomputeTestRunStatus, tables } = vi.hoisted(() => ({
-  createInitialVersions: vi.fn(async () => undefined),
-  recomputeTestRunStatus: vi.fn(async () => undefined),
-  tables: {
-    testRunSuites: { name: 'test_run_suites', test_run_id: 'trs.run', test_suite_id: 'trs.suite' },
-    milestoneTestSuites: { name: 'milestone_test_suites', milestone_id: 'mts.milestone' },
-    testRuns: { name: 'test_runs', id: 'tr.id', milestone_id: 'tr.milestone' },
-    testCaseRuns: { name: 'test_case_runs', test_run_id: 'tcr.run', test_case_id: 'tcr.case' },
-    testCases: {},
-  },
-}));
+const { createInitialVersions, lockSuiteRunSync, recomputeTestRunStatus, tables } = vi.hoisted(
+  () => ({
+    createInitialVersions: vi.fn(async () => undefined),
+    lockSuiteRunSync: vi.fn(async () => undefined),
+    recomputeTestRunStatus: vi.fn(async () => undefined),
+    tables: {
+      testRunSuites: {
+        name: 'test_run_suites',
+        test_run_id: 'trs.run',
+        test_suite_id: 'trs.suite',
+      },
+      milestoneTestSuites: { name: 'milestone_test_suites', milestone_id: 'mts.milestone' },
+      testRuns: { name: 'test_runs', id: 'tr.id', milestone_id: 'tr.milestone' },
+      testCaseRuns: { name: 'test_case_runs', test_run_id: 'tcr.run', test_case_id: 'tcr.case' },
+      testCases: {},
+    },
+  })
+);
 
 vi.mock('server-only', () => ({}));
 vi.mock('@/entities/test-case-version/api/create-version-snapshot', () => ({
   createInitialVersions,
 }));
-vi.mock('@/entities/test-run/api/run-scope', () => ({ recomputeTestRunStatus }));
+vi.mock('@/entities/test-run/api/run-scope', () => ({ lockSuiteRunSync, recomputeTestRunStatus }));
 vi.mock('@testea/db', () => ({ getDatabase: vi.fn(), ...tables }));
 vi.mock('drizzle-orm', () => ({
   and: vi.fn(),
@@ -97,6 +104,7 @@ describe('recordCreatedCases (#391)', () => {
       ['run-1', 'c2', 'untested'],
     ]);
     expect(recomputeTestRunStatus).toHaveBeenCalledWith(tx, ['run-1']);
+    expect(lockSuiteRunSync).toHaveBeenCalledWith(tx, ['s1']);
   });
 
   it('실행에서 제외된 스위트면 케이스를 넣지 않는다', async () => {

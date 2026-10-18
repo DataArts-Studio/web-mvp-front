@@ -1,3 +1,4 @@
+import { lockRunStatus } from '@/entities/test-run/api/run-scope';
 import {
   type TestCaseRunResultSource,
   type TestCaseRunStatus,
@@ -96,6 +97,7 @@ type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 /** Run 상태 재계산 (auto-results route 와 동일 로직). */
 async function recalcRunStatus(db: Transaction, testRunId: string) {
+  await lockRunStatus(db, [testRunId]);
   const rows = await db
     .select({ status: testCaseRuns.status })
     .from(testCaseRuns)

@@ -4,6 +4,8 @@ export {
   CreateTestRunSchema,
   RUN_NAME_MAX_LENGTH,
   RUN_NAME_TOO_LONG_MESSAGE,
+  RUN_NAME_MIN_LENGTH,
+  RUN_NAME_TOO_SHORT_MESSAGE,
 } from './schema';
 export type {
   TestRunDTO,
@@ -15,6 +17,7 @@ export type {
   SourceInfo,
   TestRunDetail,
   FetchedTestRun,
+  RunComparison,
   UpdateTestCaseRunInput,
   UpdateTestCaseRunResult,
 } from './types';

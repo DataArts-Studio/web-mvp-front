@@ -1,5 +1,6 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { deleteAccessTokenCookie, setAccessTokenCookie } from '@/access/lib/cookies';
@@ -11,6 +12,7 @@ import type { ProjectDomain } from '@/entities/project';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { isUniqueViolation } from '@/shared/lib/db-error';
 import { toValidName } from '@/shared/lib/normalize-name';
+import { clearRateLimit, consumeRateLimit, getClientIp } from '@/shared/lib/rate-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
@@ -19,6 +21,10 @@ import { eq } from 'drizzle-orm';
 import { PROJECT_NAME_ERRORS } from '../model/constants';
 
 const PROJECT_NAME_MAX_LENGTH = 50;
+
+/** 비밀번호 변경 시 현재 비밀번호 확인도 접근 폼과 같은 횟수·잠금 시간으로 제한한다 (#471). */
+const CHANGE_IDENTIFIER_MAX_ATTEMPTS = 5;
+const CHANGE_IDENTIFIER_LOCKOUT_MS = 15 * 60 * 1000;
 
 export type ProjectBasicInfo = Pick<
   ProjectDomain,
@@ -120,7 +126,14 @@ export const getProjectById = async (id: string): Promise<ActionResult<ProjectBa
   }
 };
 
-export const archiveProject = async (id: string): Promise<ActionResult<{ id: string }>> => {
+/**
+ * 프로젝트 보관(소프트 삭제). 프로젝트 삭제와 같은 결과라 같은 이름 재확인을 요구한다.
+ * 확인 없이 부르면 설정 화면의 삭제 확인 절차를 건너뛸 수 있기 때문이다 (#471).
+ */
+export const archiveProject = async (
+  id: string,
+  confirmName: string
+): Promise<ActionResult<{ id: string }>> => {
   try {
     const hasAccess = await requireProjectAccess(id);
     if (!hasAccess) {
@@ -128,6 +141,18 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
     }
 
     const db = getDatabase();
+    const [target] = await db
+      .select({ name: projects.name })
+      .from(projects)
+      .where(eq(projects.id, id))
+      .limit(1);
+    if (!target) {
+      return { success: false, errors: { _project: ['프로젝트를 찾을 수 없습니다.'] } };
+    }
+    if (target.name !== confirmName) {
+      return { success: false, errors: { confirmName: ['프로젝트 이름이 일치하지 않습니다.'] } };
+    }
+
     const [archived] = await db
       .update(projects)
       .set({
@@ -270,6 +295,25 @@ export const changeProjectIdentifier = async (
       };
     }
 
+    // 세션을 가진 사람이 현재 비밀번호를 무제한으로 맞춰 보지 못하게, 검증 전에 먼저 센다.
+    const rateLimitKey = `change-identifier:project:${project.id}:ip:${getClientIp(await headers())}`;
+    const attempt = await consumeRateLimit(rateLimitKey, {
+      limit: CHANGE_IDENTIFIER_MAX_ATTEMPTS,
+      windowMs: CHANGE_IDENTIFIER_LOCKOUT_MS,
+      sliding: true,
+    });
+    if (!attempt.allowed) {
+      const minutes = Math.max(1, Math.ceil(attempt.retryAfterMs / 60_000));
+      return {
+        success: false,
+        errors: {
+          currentPassword: [
+            `현재 비밀번호를 ${CHANGE_IDENTIFIER_MAX_ATTEMPTS}회 잘못 입력해 잠겼습니다. ${minutes}분 후에 다시 시도해주세요.`,
+          ],
+        },
+      };
+    }
+
     const isValid = await verifyPassword(currentPassword, project.identifier);
     if (!isValid) {
       return {
@@ -277,6 +321,7 @@ export const changeProjectIdentifier = async (
         errors: { currentPassword: ['현재 비밀번호가 일치하지 않습니다.'] },
       };
     }
+    await clearRateLimit(rateLimitKey);
 
     const newHash = await hashPassword(newPassword);
 

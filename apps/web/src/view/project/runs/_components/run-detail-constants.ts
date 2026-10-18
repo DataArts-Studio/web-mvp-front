@@ -61,6 +61,44 @@ export const STATUS_CONFIG: Record<
   },
 };
 
+/** 리뉴얼 v2 결과 표기. 칩·아이콘 대신 색 글자와 행 배경으로 보여 준다. */
+export const RESULT_META: Record<
+  TestCaseRunStatus,
+  { label: string; text: string; rowBg: string; active: string; shortcut: string }
+> = {
+  pass: {
+    label: '통과',
+    text: 'text-result-pass',
+    rowBg: 'bg-result-pass/[0.06]',
+    active: 'border-result-pass/80 bg-result-pass/10 text-result-pass font-bold',
+    shortcut: 'P',
+  },
+  fail: {
+    label: '실패',
+    text: 'text-result-fail',
+    rowBg: 'bg-result-fail/[0.09]',
+    active: 'border-result-fail/80 bg-result-fail/10 text-result-fail font-bold',
+    shortcut: 'F',
+  },
+  blocked: {
+    label: '차단',
+    text: 'text-result-blocked',
+    rowBg: 'bg-result-blocked/[0.09]',
+    active: 'border-result-blocked/80 bg-result-blocked/10 text-result-blocked font-bold',
+    shortcut: 'B',
+  },
+  untested: {
+    label: '미실행',
+    text: 'text-white/45',
+    rowBg: '',
+    active: 'border-white/50 bg-white/5 text-white/90 font-bold',
+    shortcut: 'U',
+  },
+};
+
+/** 결과 버튼·일괄 변경 순서 */
+export const RESULT_ORDER: TestCaseRunStatus[] = ['pass', 'fail', 'blocked', 'untested'];
+
 export const SOURCE_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode }> = {
   SUITE: {
     label: '\uC2A4\uC704\uD2B8',

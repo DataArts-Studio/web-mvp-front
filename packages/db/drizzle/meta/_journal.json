@@ -183,6 +183,27 @@
       "when": 1791816357658,
       "tag": "0025_section_name_unique_active",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792073534741,
+      "tag": "0026_private_attachments_bucket",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792246883114,
+      "tag": "0028_revoke_anon_grants_force_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792246887501,
+      "tag": "0029_rate_limit_buckets",
+      "breakpoints": true
     }
   ]
 }

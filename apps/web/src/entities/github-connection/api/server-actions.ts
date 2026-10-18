@@ -1,5 +1,7 @@
 'use server';
 
+import { cookies } from 'next/headers';
+
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { decrypt, encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
@@ -8,6 +10,12 @@ import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from
 import crypto from 'crypto';
 import { and, asc, eq } from 'drizzle-orm';
 
+import {
+  OAUTH_STATE_COOKIE,
+  OAUTH_STATE_COOKIE_PATH,
+  OAUTH_STATE_TTL_SECONDS,
+  createOAuthState,
+} from '../lib/oauth-state';
 import { ConnectGithubSchema, CreateGithubIssueSchema, SelectRepoSchema } from '../model/schema';
 import type { ExternalLink, GithubConnection, GithubRepo } from '../model/types';
 
@@ -50,6 +58,28 @@ async function githubApi(token: string, path: string, options?: RequestInit) {
 }
 
 // --- 연결 (OAuth code 교환 + 저장) ---
+// --- OAuth 시작: state nonce 발급 ---
+// 콜백(app/api/auth/github/callback)이 이 쿠키와 쿼리 state 를 대조한다 (lib/oauth-state.ts).
+export const startGithubOAuth = async (
+  projectId: string
+): Promise<ActionResult<{ state: string }>> => {
+  if (!(await requireProjectAccess(projectId))) {
+    return { success: false, errors: { _github: ['접근 권한이 없습니다.'] } };
+  }
+
+  const { nonce, cookieValue } = createOAuthState(projectId);
+  const cookieStore = await cookies();
+  cookieStore.set(OAUTH_STATE_COOKIE, cookieValue, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    // GitHub 에서 콜백으로 돌아오는 최상위 GET 이동에는 Lax 쿠키가 실린다.
+    sameSite: 'lax',
+    maxAge: OAUTH_STATE_TTL_SECONDS,
+    path: OAUTH_STATE_COOKIE_PATH,
+  });
+  return { success: true, data: { state: nonce } };
+};
+
 export const connectGithub = async (input: {
   projectId: string;
   code: string;

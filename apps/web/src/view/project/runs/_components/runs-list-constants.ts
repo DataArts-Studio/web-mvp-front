@@ -1,28 +1,16 @@
+import type { FetchedTestRun } from '@/entities/test-run';
+
 export const PAGE_SIZE = 10;
 export const MAX_VISIBLE_SUITES = 2;
 
 export type RunStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 export type RunSourceType = 'SUITE' | 'MILESTONE' | 'ADHOC';
 export type RunStatusFilter = 'ALL' | RunStatus;
+/** 목록 탭. 시작 전 실행도 진행 중 탭에 넣는다. */
+export type RunListTab = 'ALL' | 'OPEN' | 'COMPLETED';
 export type RunSortOption = 'UPDATED' | 'NAME';
 
-export interface ITestRun {
-  id: string;
-  name: string;
-  sourceType: RunSourceType;
-  sourceName: string;
-  status: RunStatus;
-  updatedAt: Date;
-  stats: {
-    totalCases: number;
-    completedCases: number;
-    progressPercent: number;
-    pass: number;
-    fail: number;
-    blocked: number;
-    untested: number;
-  };
-}
+export type ITestRun = FetchedTestRun;
 
 export const getStatusFilterLabel = (filter: RunStatusFilter): string => {
   switch (filter) {

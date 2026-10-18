@@ -27,6 +27,8 @@ const STEP_RATIO = 0.6;
 /** 메뉴 바(h-16) 높이. 베타 배너가 보이면 그 높이(h-10)만큼 더 내려온다. */
 const HEADER_PX = 64;
 const BANNER_PX = 40;
+// 배치는 CSS 변수로 잡아 hydration 전에도 배너 유무와 맞춘다. 스크롤 계산은 위 px 값을 쓴다 (#438).
+const STICKY_TOP_CSS = `calc(${HEADER_PX}px + var(--beta-banner-h))`;
 
 /** 펼친 케이스 위에 바로 전 케이스 행을 이만큼(비율) 남겨, 목록이 이어진다는 걸 보여 준다. */
 const PEEK_RATIO = 0.6;
@@ -335,12 +337,12 @@ export const LandingRun = () => {
           ref={track}
           className="relative"
           style={{
-            height: `calc(100svh - ${stickyTop}px + ${CASE_IDS.length * STEP_RATIO * 100}svh)`,
+            height: `calc(100svh - ${STICKY_TOP_CSS} + ${CASE_IDS.length * STEP_RATIO * 100}svh)`,
           }}
         >
           <div
             className="sticky overflow-hidden"
-            style={{ top: stickyTop, height: `calc(100svh - ${stickyTop}px)` }}
+            style={{ top: STICKY_TOP_CSS, height: `calc(100svh - ${STICKY_TOP_CSS})` }}
           >
             {caseList}
           </div>

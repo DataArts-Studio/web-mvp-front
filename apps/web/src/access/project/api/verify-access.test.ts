@@ -1,3 +1,4 @@
+import { resetRateLimitMock } from '@/shared/test/__mocks__/rate-limit';
 import { getDatabase, projects } from '@testea/db';
 import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
@@ -15,6 +16,7 @@ vi.mock('@testea/db', async (original) => ({
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
+vi.mock('@/shared/lib/rate-limit', () => import('@/shared/test/__mocks__/rate-limit'));
 vi.mock('@/shared/lib/turnstile', () => ({ verifyTurnstileToken: vi.fn(async () => true) }));
 vi.mock('../../lib/cookies', () => ({
   setAccessTokenCookie: vi.fn(),
@@ -29,6 +31,7 @@ const where = vi.fn((_condition: SQL) => ({ limit }));
 const select = vi.fn(() => ({ from: () => ({ where }) }));
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRateLimitMock();
   vi.stubEnv('VERCEL_ENV', 'preview');
   vi.mocked(getDatabase).mockReturnValue({ select } as never);
 });

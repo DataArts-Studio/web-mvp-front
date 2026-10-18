@@ -15,6 +15,7 @@ import {
 import { getMilestoneLatestResults } from '@/entities/milestone/api/latest-results';
 import { summarizeMilestoneProgress } from '@/entities/milestone/model/progress';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { lockSuiteRunSync } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { isDateRangeOrdered } from '@/shared/lib/date-only';
 import { toValidName } from '@/shared/lib/normalize-name';
@@ -592,6 +593,8 @@ export const addTestSuitesToMilestone = async (
 
     // 마일스톤 연결과 연결된 실행에 스위트·케이스를 넣는 일을 함께 반영한다 (#390).
     await db.transaction(async (tx) => {
+      // 같은 스위트에 케이스를 만들거나 옮기는 요청과 엇갈려 실행에서 케이스가 빠지지 않게 한다.
+      await lockSuiteRunSync(tx, testSuiteIds);
       await tx.insert(milestoneTestSuites).values(values).onConflictDoNothing();
 
       // Sync: resolve suite cases and add to existing test runs linked to this milestone
