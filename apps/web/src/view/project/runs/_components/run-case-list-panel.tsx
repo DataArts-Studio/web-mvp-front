@@ -40,7 +40,14 @@ interface RunCaseListPanelProps {
   collapsedGroups: { has: (key: string) => boolean; toggle: (key: string) => void };
   selectedCaseId: string | null;
   setSelectedCaseId: (id: string) => void;
-  testRunStats: { total: number; pass: number; fail: number; blocked: number; untested: number };
+  testRunStats: {
+    total: number;
+    pass: number;
+    fail: number;
+    blocked: number;
+    na: number;
+    untested: number;
+  };
   onRemoveSuite?: (suiteId: string, suiteName: string) => void;
   /** 실행에 직접 연결된 스위트. 이 그룹에만 제거 버튼을 보인다 (#375). */
   removableSuiteIds?: ReadonlySet<string>;
@@ -58,6 +65,7 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
   { value: 'untested', label: '미실행' },
   { value: 'fail', label: '실패' },
   { value: 'blocked', label: '차단' },
+  { value: 'na', label: 'N/A' },
   { value: 'pass', label: '통과' },
 ];
 
@@ -65,7 +73,7 @@ const CHECKBOX_CLASS =
   'border-white/40 bg-transparent rounded-[3px] focus:ring-offset-0 data-[state=checked]:border-primary';
 
 const countByStatus = (cases: TestCaseRunDetail[]) => {
-  const counts = { pass: 0, fail: 0, blocked: 0, untested: 0 };
+  const counts = { pass: 0, fail: 0, blocked: 0, na: 0, untested: 0 };
   for (const tc of cases) counts[tc.status] += 1;
   return counts;
 };
@@ -265,7 +273,7 @@ export const RunCaseListPanel = ({
         <div
           role="toolbar"
           aria-label="선택한 케이스 일괄 변경"
-          className="mx-4 mb-1.5 flex flex-wrap items-center gap-2 rounded-[4px] bg-white/[0.04] px-3 py-1.5 md:mx-8"
+          className="mx-4 mb-1.5 flex flex-wrap items-center gap-1.5 rounded-[4px] bg-white/[0.04] px-3 py-1.5 md:mx-8"
         >
           <DsCheckbox
             checked={allSelected}
@@ -276,7 +284,7 @@ export const RunCaseListPanel = ({
             className={CHECKBOX_CLASS}
           />
           <span className="text-[12px] font-bold text-white/90">{bulkSelection.count}건 선택</span>
-          <span className="ml-2 text-[11px] text-white/40">일괄 변경</span>
+          <span className="ml-1 text-[11px] text-white/40">일괄 변경</span>
           {RESULT_ORDER.map((status) => {
             const meta = RESULT_META[status];
             return (
@@ -286,7 +294,7 @@ export const RunCaseListPanel = ({
                 onClick={() => onBulkStatusChange(status)}
                 disabled={isBulkUpdating}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-[4px] border border-current/40 px-2 py-0.5 text-[12px] font-medium disabled:opacity-50',
+                  'flex items-center gap-1 rounded-[4px] border border-current/40 px-1.5 py-0.5 text-[12px] font-medium disabled:opacity-50',
                   status === 'untested' ? 'text-white/80' : meta.text
                 )}
                 title={`선택한 케이스를 ${meta.label}(으)로 변경`}
@@ -375,6 +383,9 @@ export const RunCaseListPanel = ({
                     <GroupCount label="통과" value={counts.pass} tone="text-result-pass" />
                     <GroupCount label="실패" value={counts.fail} tone="text-result-fail" />
                     <GroupCount label="차단" value={counts.blocked} tone="text-result-blocked" />
+                    {counts.na > 0 && (
+                      <GroupCount label="N/A" value={counts.na} tone="text-white/85" />
+                    )}
                     <GroupCount label="남음" value={counts.untested} tone="text-white/75" />
                   </p>
                   {canRemove && (
@@ -449,8 +460,9 @@ export const RunCaseListPanel = ({
                             </span>
                           </button>
                           {tc.comment && (
-                            <span className="relative shrink-0 text-[11px] text-white/35">
-                              메모
+                            <span className="relative max-w-[140px] shrink-0 truncate text-[11px] text-white/35">
+                              {/* N/A 는 사유가 곧 판단 근거라 줄에 바로 보여 준다 (06k). */}
+                              {tc.status === 'na' ? tc.comment : '메모'}
                             </span>
                           )}
                           <div

@@ -116,8 +116,9 @@ export async function getTestRunsByProjectId(
         const pass = caseRuns.filter((cr) => cr.status === 'pass').length;
         const fail = caseRuns.filter((cr) => cr.status === 'fail').length;
         const blocked = caseRuns.filter((cr) => cr.status === 'blocked').length;
+        const na = caseRuns.filter((cr) => cr.status === 'na').length;
         const untested = caseRuns.filter((cr) => cr.status === 'untested').length;
-        const completedCases = pass + fail + blocked;
+        const completedCases = pass + fail + blocked + na;
         const progressPercent =
           totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0;
 
@@ -143,7 +144,7 @@ export async function getTestRunsByProjectId(
           milestoneEndDate: milestone?.endDate ?? null,
           createdAt: run.created_at,
           updatedAt: run.updated_at,
-          stats: { totalCases, completedCases, progressPercent, pass, fail, blocked, untested },
+          stats: { totalCases, completedCases, progressPercent, pass, fail, blocked, na, untested },
           activity: [...activityByDate.values()],
         };
       });

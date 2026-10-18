@@ -40,6 +40,9 @@ export function useRunKeyboardShortcuts({
         case 'b':
           onStatusChange('blocked');
           break;
+        case 'n':
+          onStatusChange('na');
+          break;
         case 'u':
           onStatusChange('untested');
           break;

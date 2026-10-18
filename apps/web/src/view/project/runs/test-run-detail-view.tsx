@@ -72,6 +72,7 @@ function applyOptimisticStatusUpdate(
     pass: 0,
     fail: 0,
     blocked: 0,
+    na: 0,
     untested: 0,
     progressPercent: 0,
   };
@@ -116,10 +117,8 @@ export const TestRunDetailView = () => {
   // ─── Data Fetching ─────────────────────────────────────────────
   const { data, isLoading, isError } = useQuery(testRunByIdQueryOptions(testRunId));
   const isCompleted = data?.success === true && data.data.status === 'COMPLETED';
-  const { data: comparisonData } = useQuery({
-    ...runComparisonQueryOptions(testRunId),
-    enabled: isCompleted,
-  });
+  // 진행 중인 실행도 케이스 상세에 최근 결과 흐름을 보여 줘서 항상 불러온다 (06k).
+  const { data: comparisonData } = useQuery(runComparisonQueryOptions(testRunId));
   const comparison = comparisonData?.success ? comparisonData.data : undefined;
   const { data: issueContextData } = useQuery({
     ...runIssueContextQueryOptions(testRunId),
@@ -332,11 +331,12 @@ export const TestRunDetailView = () => {
   const testRun = data?.success ? data.data : null;
 
   const testStatusData: TestStatusData = useMemo(() => {
-    if (!testRun) return { pass: 0, fail: 0, blocked: 0, untested: 0 };
+    if (!testRun) return { pass: 0, fail: 0, blocked: 0, na: 0, untested: 0 };
     return {
       pass: testRun.stats.pass,
       fail: testRun.stats.fail,
       blocked: testRun.stats.blocked,
+      na: testRun.stats.na,
       untested: testRun.stats.untested,
     };
   }, [testRun]);
@@ -577,6 +577,7 @@ export const TestRunDetailView = () => {
               setComment={setComment}
               handleStatusChange={handleStatusChange}
               updateMutation={updateMutation}
+              comparison={comparison}
             />
           </div>
         </>

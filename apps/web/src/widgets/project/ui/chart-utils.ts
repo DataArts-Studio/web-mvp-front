@@ -2,6 +2,7 @@ export const STATUS_COLORS = {
   pass: '#0BB57F',
   fail: '#FC4141',
   blocked: '#FBA900',
+  na: '#9CA3AF',
   untested: '#3B3E44',
 } as const;
 
@@ -9,6 +10,7 @@ export const STATUS_LABELS = {
   pass: 'Passed',
   fail: 'Failed',
   blocked: 'Blocked',
+  na: 'N/A',
   untested: 'Not Run',
 } as const;
 
@@ -18,6 +20,8 @@ export type TestStatusData = {
   pass: number;
   fail: number;
   blocked: number;
+  /** 실행 결과가 아닌 곳(대시보드 등)은 N/A 를 따로 세지 않아 비워 둔다 (06k). */
+  na?: number;
   untested: number;
 };
 
@@ -33,20 +37,29 @@ export type ArcSegment = ChartSegment & {
   path: string;
 };
 
-export const STATUS_KEYS: readonly StatusKey[] = ['pass', 'fail', 'blocked', 'untested'] as const;
+export const STATUS_KEYS: readonly StatusKey[] = [
+  'pass',
+  'fail',
+  'blocked',
+  'na',
+  'untested',
+] as const;
 
 export const RADIUS = 106;
 export const VIEW_SIZE = RADIUS * 2;
 export const GAP_DEGREES = 0;
 
 export function buildSegments(data: TestStatusData, total: number): ChartSegment[] {
-  return STATUS_KEYS.map((key) => ({
-    key,
-    value: data[key],
-    color: STATUS_COLORS[key],
-    label: STATUS_LABELS[key],
-    percentage: total > 0 ? (data[key] / total) * 100 : 0,
-  })).filter((s) => s.value > 0);
+  return STATUS_KEYS.map((key) => {
+    const value = data[key] ?? 0;
+    return {
+      key,
+      value,
+      color: STATUS_COLORS[key],
+      label: STATUS_LABELS[key],
+      percentage: total > 0 ? (value / total) * 100 : 0,
+    };
+  }).filter((s) => s.value > 0);
 }
 
 export function buildArcs(segments: ChartSegment[], total: number): ArcSegment[] {

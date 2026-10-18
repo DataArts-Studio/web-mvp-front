@@ -197,6 +197,13 @@
       "when": 1792294827327,
       "tag": "0030_run_scope_locked",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792297983250,
+      "tag": "0031_case_run_status_na",
+      "breakpoints": true
     }
   ]
 }

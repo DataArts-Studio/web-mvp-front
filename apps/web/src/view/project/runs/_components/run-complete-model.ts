@@ -9,6 +9,7 @@ export type Transition =
   | 'recovered'
   | 'stillFail'
   | 'blocked'
+  | 'na'
   | 'stillPass'
   | 'untested';
 
@@ -18,6 +19,7 @@ export const classifyTransition = (
 ): Transition => {
   if (current === 'untested') return 'untested';
   if (current === 'blocked') return 'blocked';
+  if (current === 'na') return 'na';
   if (current === 'fail') return previous === 'fail' ? 'stillFail' : 'newFail';
   return previous === 'fail' || previous === 'blocked' ? 'recovered' : 'stillPass';
 };
@@ -35,12 +37,14 @@ export const transitionTabsOf = (hasPrevious: boolean): TransitionTab[] =>
         { value: 'recovered', label: '복구' },
         { value: 'stillFail', label: '계속 실패' },
         { value: 'blocked', label: '차단' },
+        { value: 'na', label: 'N/A' },
         { value: 'stillPass', label: '그대로 통과' },
         { value: 'untested', label: '미실행' },
       ]
     : [
         { value: 'newFail', label: '실패' },
         { value: 'blocked', label: '차단' },
+        { value: 'na', label: 'N/A' },
         { value: 'stillPass', label: '통과' },
         { value: 'untested', label: '미실행' },
       ];
@@ -55,6 +59,7 @@ export interface SuiteDelta {
   pass: number;
   fail: number;
   blocked: number;
+  na: number;
   newFail: number;
   recovered: number;
   passRate: number;
@@ -75,6 +80,7 @@ export const summarizeSuiteDeltas = (
       pass: 0,
       fail: 0,
       blocked: 0,
+      na: 0,
       newFail: 0,
       recovered: 0,
       passRate: 0,
@@ -83,6 +89,7 @@ export const summarizeSuiteDeltas = (
     if (tc.status === 'pass') delta.pass += 1;
     if (tc.status === 'fail') delta.fail += 1;
     if (tc.status === 'blocked') delta.blocked += 1;
+    if (tc.status === 'na') delta.na += 1;
     const transition = transitionOf(tc, comparison);
     if (transition === 'newFail') delta.newFail += 1;
     if (transition === 'recovered') delta.recovered += 1;
@@ -90,7 +97,8 @@ export const summarizeSuiteDeltas = (
   }
   const deltas = [...bySuite.values()].map((d) => ({
     ...d,
-    passRate: d.total > 0 ? Math.round((d.pass / d.total) * 100) : 0,
+    // N/A 는 통과율 분모에서 뺀다 (06k).
+    passRate: d.total - d.na > 0 ? Math.round((d.pass / (d.total - d.na)) * 100) : 0,
   }));
   const weight = (d: SuiteDelta) => d.newFail * 3 + d.recovered * 2 + d.blocked + d.fail;
   return deltas.sort((a, b) => weight(b) - weight(a) || a.name.localeCompare(b.name));
@@ -105,7 +113,8 @@ export type HistoryTone = 'fail' | 'pass' | 'blocked' | 'neutral';
 export const summarizeHistory = (
   statuses: ResultStatus[]
 ): { text: string; tone: HistoryTone } | null => {
-  const executed = statuses.filter((s) => s !== 'untested');
+  // N/A 는 판정이 아니라 확인할 수 없던 기록이라 흐름 요약에서 뺀다 (06k).
+  const executed = statuses.filter((s) => s !== 'untested' && s !== 'na');
   const n = executed.length;
   if (n < 2) return null;
   const last = executed[n - 1];

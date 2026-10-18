@@ -5,6 +5,8 @@ export type MilestoneProgress = {
   pass: number;
   fail: number;
   blocked: number;
+  /** 확인할 수 없어 통과율에서 뺀 케이스. 판정은 끝난 것으로 센다 (06k). */
+  na: number;
   untested: number;
   completed: number;
   progressPercent: number;
@@ -23,19 +25,22 @@ export function summarizeMilestoneProgress(
   let pass = 0;
   let fail = 0;
   let blocked = 0;
+  let na = 0;
   for (const caseId of new Set(caseIds)) {
     total++;
     const status = latestStatuses.get(caseId);
     if (status === 'pass') pass++;
     else if (status === 'fail') fail++;
     else if (status === 'blocked') blocked++;
+    else if (status === 'na') na++;
   }
-  const completed = pass + fail + blocked;
+  const completed = pass + fail + blocked + na;
   return {
     total,
     pass,
     fail,
     blocked,
+    na,
     untested: total - completed,
     completed,
     progressPercent: total > 0 ? Math.round((completed / total) * 100) : 0,
