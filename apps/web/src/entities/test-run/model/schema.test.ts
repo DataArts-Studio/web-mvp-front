@@ -17,4 +17,14 @@ describe('CreateTestRunSchema 실행 이름 길이 (#417)', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues[0].message).toBe('실행 이름은 100자를 초과할 수 없습니다.');
   });
+
+  it('앞뒤 공백을 뺀 길이가 2자 미만이면 거부한다', () => {
+    const result = CreateTestRunSchema.safeParse({ ...base, name: ' a ' });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe('실행 이름은 최소 2자 이상이어야 합니다.');
+  });
+
+  it('2자 이름은 허용한다', () => {
+    expect(CreateTestRunSchema.safeParse({ ...base, name: 'ab' }).success).toBe(true);
+  });
 });
