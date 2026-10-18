@@ -70,3 +70,35 @@ export async function createVersionSnapshot(
     created_at: new Date(),
   });
 }
+
+/**
+ * 방금 만든 케이스들의 v1 버전을 한 번에 기록한다 (#391).
+ * 새 케이스에는 아직 버전이 없으므로 번호를 세거나 잠그지 않고 1 로 넣는다.
+ * 케이스 삽입과 같은 트랜잭션의 tx 를 넘겨 함께 반영되거나 함께 취소되게 한다.
+ */
+export async function createInitialVersions(
+  entries: { testCaseId: string; snapshot: SnapshotData }[],
+  changeSummary: string,
+  tx: Transaction
+): Promise<void> {
+  if (entries.length === 0) return;
+
+  const now = new Date();
+  await tx.insert(testCaseVersions).values(
+    entries.map(({ testCaseId, snapshot }) => ({
+      id: uuidv7(),
+      test_case_id: testCaseId,
+      version_number: 1,
+      name: snapshot.name,
+      test_type: snapshot.test_type ?? null,
+      tags: snapshot.tags ?? [],
+      pre_condition: snapshot.pre_condition ?? null,
+      steps: snapshot.steps ?? null,
+      expected_result: snapshot.expected_result ?? null,
+      change_summary: changeSummary,
+      change_type: 'create' as const,
+      changed_fields: [],
+      created_at: now,
+    }))
+  );
+}
