@@ -13,6 +13,7 @@ export {
   updateTestCaseRunStatus,
   deleteTestRun,
   updateTestRunName,
+  updateBlockedReason,
   removeSuiteFromRun,
   bulkUpdateTestCaseRunStatus,
   testRunsQueryOptions,

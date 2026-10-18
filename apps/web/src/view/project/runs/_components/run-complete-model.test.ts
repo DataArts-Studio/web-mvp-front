@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   classifyTransition,
+  groupBlockedByReason,
   runPeriodOf,
   summarizeHistory,
   summarizeSuiteDeltas,
@@ -105,5 +106,34 @@ describe('runPeriodOf', () => {
       '10.09 14:20 → 10.11 18:40 · 2일 4시간'
     );
     expect(runPeriodOf(new Date('2026-10-09T05:20:00Z'), [])).toBe('10.09 14:20 시작');
+  });
+});
+
+describe('groupBlockedByReason', () => {
+  it('차단만 사유별로 묶고, 많은 사유부터, 사유 미기록은 맨 뒤에 둔다', () => {
+    const groups = groupBlockedByReason([
+      makeCase({ status: 'blocked', comment: '해외 카드 없음', testSuiteName: '결제' }),
+      makeCase({ status: 'blocked', comment: null }),
+      makeCase({
+        status: 'blocked',
+        comment: ' 샌드박스 응답 없음 ',
+        executedAt: new Date('2026-10-10T06:00:00Z'),
+      }),
+      makeCase({
+        status: 'blocked',
+        comment: '샌드박스 응답 없음',
+        executedAt: new Date('2026-10-10T05:00:00Z'),
+        testSuiteName: '결제',
+      }),
+      makeCase({ status: 'blocked', comment: '   ' }),
+      makeCase({ status: 'fail', comment: '샌드박스 응답 없음' }),
+    ]);
+    expect(groups.map((g) => [g.reason, g.cases.length])).toEqual([
+      ['샌드박스 응답 없음', 2],
+      ['해외 카드 없음', 1],
+      [null, 2],
+    ]);
+    expect(groups[0].suiteNames).toEqual(['인증', '결제']);
+    expect(groups[0].firstRecordedAt).toEqual(new Date('2026-10-10T05:00:00Z'));
   });
 });

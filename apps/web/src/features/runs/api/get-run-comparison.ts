@@ -37,7 +37,11 @@ export async function getRunComparison(testRunId: string): Promise<ActionResult<
     }
 
     const caseRows = await db
-      .select({ testCaseId: testCaseRuns.test_case_id })
+      .select({
+        testCaseId: testCaseRuns.test_case_id,
+        status: testCaseRuns.status,
+        comment: testCaseRuns.comment,
+      })
       .from(testCaseRuns)
       .where(and(eq(testCaseRuns.test_run_id, run.id), isNull(testCaseRuns.excluded_at)));
     const caseIds = [...new Set(caseRows.map((r) => r.testCaseId).filter(Boolean))] as string[];
@@ -145,6 +149,52 @@ export async function getRunComparison(testRunId: string): Promise<ActionResult<
     // 화면은 오래된 것부터 보여 준다.
     for (const list of Object.values(historyByCase)) list.reverse();
 
+    // 4. 이 실행의 차단 사유가 이전 실행에도 있었는지
+    const reasons = [
+      ...new Set(
+        caseRows
+          .filter((r) => r.status === 'blocked' && r.comment?.trim())
+          .map((r) => r.comment!.trim())
+      ),
+    ];
+    const earlierIds = earlierRuns.map((r) => r.id);
+    const blockedRows =
+      reasons.length > 0 && earlierIds.length > 0
+        ? await db
+            .select({
+              runId: testCaseRuns.test_run_id,
+              reason: sql<string>`btrim(${testCaseRuns.comment})`,
+              count: sql<number>`count(*)::int`,
+            })
+            .from(testCaseRuns)
+            .where(
+              and(
+                inArray(testCaseRuns.test_run_id, earlierIds),
+                isNull(testCaseRuns.excluded_at),
+                eq(testCaseRuns.status, 'blocked'),
+                inArray(sql`btrim(${testCaseRuns.comment})`, reasons)
+              )
+            )
+            .groupBy(testCaseRuns.test_run_id, sql`btrim(${testCaseRuns.comment})`)
+        : [];
+    const runById = new Map(earlierRuns.map((r) => [r.id, r]));
+    const blockedHistory: RunComparison['blockedHistory'] = blockedRows
+      .flatMap((row) => {
+        const earlier = row.runId ? runById.get(row.runId) : undefined;
+        return earlier
+          ? [
+              {
+                reason: row.reason,
+                runId: earlier.id,
+                runName: earlier.name,
+                createdAt: earlier.createdAt,
+                count: row.count,
+              },
+            ]
+          : [];
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     const previousTotal = previousRows.length;
     const previousPass = previousRows.filter((r) => r.status === 'pass').length;
 
@@ -161,6 +211,7 @@ export async function getRunComparison(testRunId: string): Promise<ActionResult<
           : null,
         previousByCase,
         historyByCase,
+        blockedHistory,
       },
     };
   } catch (error) {
