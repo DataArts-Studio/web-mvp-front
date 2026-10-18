@@ -75,10 +75,10 @@ export class ProjectTestcasePage extends BasePage {
    *
    * 같은 화면에서 { projectId } 만 보내는 다른 조회 액션도 함께 나가므로, "projectId"
    * 만으로 찾으면 그 응답에 먼저 풀려 생성 요청이 새로고침에 끊긴다. 입력한 제목이
-   * 본문에 있는 요청을 생성 액션으로 본다.
+   * 본문에 있는 요청을 생성 액션으로 본다. 폼이 제목 앞뒤 공백을 지우고 보내므로 같게 맞춘다.
    */
   async submitAndWaitForPersist(): Promise<void> {
-    const title = await this.titleInput.inputValue();
+    const title = (await this.titleInput.inputValue()).trim();
     const createResponse = this.page.waitForResponse(
       (res) => {
         const body = res.request().postData() ?? '';
