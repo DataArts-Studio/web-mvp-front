@@ -23,4 +23,6 @@ export const testRuns = pgTable('test_runs', {
   share_token: varchar('share_token', { length: 36 }).unique(),
   share_expires_at: timestamp('share_expires_at'),
   share_ai_summary: text('share_ai_summary'),
+  /** 06j: 골라 만든 재실행. 있으면 마일스톤·스위트에 케이스가 늘어도 실행 범위에 채우지 않는다. */
+  scope_locked_at: timestamp('scope_locked_at', { withTimezone: true }),
 });

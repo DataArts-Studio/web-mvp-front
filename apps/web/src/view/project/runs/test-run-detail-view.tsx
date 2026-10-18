@@ -33,6 +33,7 @@ import {
   KeyboardShortcutsModal,
   RemoveSuiteDialog,
   RerunRunDialog,
+  RerunSheet,
   RunCaseDetailPanel,
   RunCaseListPanel,
   RunCompleteView,
@@ -106,6 +107,7 @@ export const TestRunDetailView = () => {
     null
   );
   const [showRerunDialog, setShowRerunDialog] = useState(false);
+  const [showRerunSheet, setShowRerunSheet] = useState(false);
   const [showAutoRunDialog, setShowAutoRunDialog] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   // 끝난 실행은 결과 요약(06f2)으로 연다. '결과 수정'을 누르면 기록 화면으로 바꾼다.
@@ -263,18 +265,37 @@ export const TestRunDetailView = () => {
   const rerunMutation = useRerunRun();
 
   const handleRerunConfirm = useCallback(() => {
-    rerunMutation.mutate(testRunId, {
-      onSuccess: (result) => {
-        toast.success('회귀 재실행이 생성되었습니다.');
-        setShowRerunDialog(false);
-        router.push(`/projects/${projectSlug}/runs/${result.testRun.id}`);
-      },
-      onError: (error) => {
-        toast.error(error instanceof Error ? error.message : '회귀 재실행 생성에 실패했습니다.');
-        setShowRerunDialog(false);
-      },
-    });
+    rerunMutation.mutate(
+      { runId: testRunId },
+      {
+        onSuccess: (result) => {
+          toast.success('회귀 재실행이 생성되었습니다.');
+          setShowRerunDialog(false);
+          router.push(`/projects/${projectSlug}/runs/${result.testRun.id}`);
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : '회귀 재실행 생성에 실패했습니다.');
+          setShowRerunDialog(false);
+        },
+      }
+    );
   }, [rerunMutation, testRunId, router, projectSlug]);
+
+  const handleRerunSubmit = (name: string, testCaseRunIds: string[]) => {
+    rerunMutation.mutate(
+      { runId: testRunId, options: { name, testCaseRunIds } },
+      {
+        onSuccess: (result) => {
+          toast.success('재실행을 만들었습니다.');
+          setShowRerunSheet(false);
+          router.push(`/projects/${projectSlug}/runs/${result.testRun.id}`);
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : '재실행을 만들지 못했습니다.');
+        },
+      }
+    );
+  };
 
   const bulkUpdateMutation = useMutation({
     mutationFn: bulkUpdateTestCaseRunStatus,
@@ -480,7 +501,7 @@ export const TestRunDetailView = () => {
               if (caseRunId) setSelectedCaseId(caseRunId);
               setEditingCompleted(true);
             }}
-            onRerun={() => setShowRerunDialog(true)}
+            onRerun={() => setShowRerunSheet(true)}
             isRerunning={rerunMutation.isPending}
             onAddTests={() => setShowAddModal(true)}
             onAutoRun={() => setShowAutoRunDialog(true)}
@@ -587,6 +608,17 @@ export const TestRunDetailView = () => {
           isPending={rerunMutation.isPending}
           onConfirm={handleRerunConfirm}
           onCancel={() => setShowRerunDialog(false)}
+        />
+      )}
+
+      {showRerunSheet && (
+        <RerunSheet
+          runName={testRun.name}
+          cases={testRun.testCaseRuns}
+          comparison={comparison}
+          isPending={rerunMutation.isPending}
+          onSubmit={handleRerunSubmit}
+          onClose={() => setShowRerunSheet(false)}
         />
       )}
 

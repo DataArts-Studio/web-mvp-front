@@ -32,7 +32,7 @@ import {
   testRunSuites,
   testRuns,
 } from '@testea/db';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 
@@ -463,7 +463,7 @@ export const addTestCasesToMilestone = async (
       const linkedRuns = await tx
         .select({ id: testRuns.id })
         .from(testRuns)
-        .where(eq(testRuns.milestone_id, milestoneId));
+        .where(and(eq(testRuns.milestone_id, milestoneId), isNull(testRuns.scope_locked_at)));
 
       for (const run of linkedRuns) {
         const existingRows = await tx
@@ -601,7 +601,7 @@ export const addTestSuitesToMilestone = async (
       const linkedRuns = await tx
         .select({ id: testRuns.id })
         .from(testRuns)
-        .where(eq(testRuns.milestone_id, milestoneId));
+        .where(and(eq(testRuns.milestone_id, milestoneId), isNull(testRuns.scope_locked_at)));
 
       if (linkedRuns.length > 0) {
         // Always link suites to runs (even if suites are empty)
