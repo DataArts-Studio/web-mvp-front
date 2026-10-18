@@ -125,6 +125,10 @@ export async function getMilestoneById(
       completedCases: progress.completed,
       progressRate: progress.progressPercent,
       runCount: relatedTestRuns.length,
+      passCases: progress.pass,
+      failCases: progress.fail,
+      blockedCases: progress.blocked,
+      suiteCount: suites.length,
     };
 
     const result: MilestoneWithStats = {

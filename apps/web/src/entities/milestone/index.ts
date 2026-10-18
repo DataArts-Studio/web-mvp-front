@@ -32,5 +32,3 @@ export {
   removeTestSuiteFromMilestone,
 } from './api';
 export { milestonesQueryOptions } from './api';
-// ui
-export { MilestoneCard } from './ui';

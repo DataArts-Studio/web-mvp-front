@@ -121,7 +121,6 @@ export {
   removeTestSuiteFromMilestone,
 } from './milestone';
 export { milestonesQueryOptions } from './milestone';
-export { MilestoneCard } from './milestone';
 
 // test-run
 export { TestRunStatusEnum, TestRunSchema, CreateTestRunSchema } from './test-run';
