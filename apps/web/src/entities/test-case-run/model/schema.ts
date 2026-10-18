@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const TestCaseRunStatusEnum = z.enum(['untested', 'pass', 'fail', 'blocked']);
+export const TestCaseRunStatusEnum = z.enum(['untested', 'pass', 'fail', 'blocked', 'na']);
 
 export const TestCaseRunSchema = z.object({
   id: z.string().uuid(),

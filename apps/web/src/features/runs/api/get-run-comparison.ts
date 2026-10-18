@@ -195,7 +195,8 @@ export async function getRunComparison(testRunId: string): Promise<ActionResult<
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const previousTotal = previousRows.length;
+    // N/A 는 통과율 분모에서 뺀다 (06k).
+    const previousTotal = previousRows.filter((r) => r.status !== 'na').length;
     const previousPass = previousRows.filter((r) => r.status === 'pass').length;
 
     return {

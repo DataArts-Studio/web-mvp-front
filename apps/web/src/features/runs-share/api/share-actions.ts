@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto';
 export interface SharedReportCaseItem {
   code: string;
   title: string;
-  status: 'untested' | 'pass' | 'fail' | 'blocked';
+  status: 'untested' | 'pass' | 'fail' | 'blocked' | 'na';
   comment: string | null;
   executedAt: string | null;
   suiteName: string | null;
@@ -31,6 +31,8 @@ export interface SharedReportSuiteBreakdown {
   pass: number;
   fail: number;
   blocked: number;
+  /** 확인할 수 없어 통과율에서 뺀 케이스 (06k) */
+  na: number;
   untested: number;
   passRate: number;
 }
@@ -48,6 +50,7 @@ export interface SharedReportData {
     pass: number;
     fail: number;
     blocked: number;
+    na: number;
     untested: number;
     progressPercent: number;
   };
@@ -97,6 +100,7 @@ function buildReportContext(
     pass: number;
     fail: number;
     blocked: number;
+    na: number;
     untested: number;
     progressPercent: number;
   },
@@ -106,7 +110,8 @@ function buildReportContext(
 ): string {
   const lines: string[] = [
     `${projectName}/${runName}`,
-    `T${stats.total} P${stats.pass} F${stats.fail} B${stats.blocked} U${stats.untested} ${stats.progressPercent}%`,
+    // N/A 가 없으면 기존 문맥과 같게 둬 이미 만든 요약의 캐시를 깨지 않는다.
+    `T${stats.total} P${stats.pass} F${stats.fail} B${stats.blocked}${stats.na > 0 ? ` N${stats.na}` : ''} U${stats.untested} ${stats.progressPercent}%`,
   ];
 
   if (suiteBreakdown.length > 0) {
@@ -184,10 +189,11 @@ async function loadReportSnapshot(
   const pass = caseRuns.filter((c) => c.status === 'pass').length;
   const fail = caseRuns.filter((c) => c.status === 'fail').length;
   const blocked = caseRuns.filter((c) => c.status === 'blocked').length;
+  const na = caseRuns.filter((c) => c.status === 'na').length;
   const untested = caseRuns.filter((c) => c.status === 'untested').length;
-  const completed = pass + fail + blocked;
+  const completed = pass + fail + blocked + na;
   const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const stats = { total, pass, fail, blocked, untested, progressPercent };
+  const stats = { total, pass, fail, blocked, na, untested, progressPercent };
 
   const suiteStatsMap = new Map<string, SharedReportSuiteBreakdown>();
   for (const c of caseRuns) {
@@ -199,6 +205,7 @@ async function loadReportSnapshot(
         pass: 0,
         fail: 0,
         blocked: 0,
+        na: 0,
         untested: 0,
         passRate: 0,
       });
@@ -208,10 +215,15 @@ async function loadReportSnapshot(
     if (c.status === 'pass') ss.pass++;
     else if (c.status === 'fail') ss.fail++;
     else if (c.status === 'blocked') ss.blocked++;
+    else if (c.status === 'na') ss.na++;
     else ss.untested++;
   }
+  // N/A 는 통과율 분모에서 뺀다 (06k).
   const suiteBreakdown = Array.from(suiteStatsMap.values())
-    .map((s) => ({ ...s, passRate: s.total > 0 ? Math.round((s.pass / s.total) * 100) : 0 }))
+    .map((s) => {
+      const base = s.total - s.na;
+      return { ...s, passRate: base > 0 ? Math.round((s.pass / base) * 100) : 0 };
+    })
     .sort((a, b) => a.suiteName.localeCompare(b.suiteName));
 
   const toCaseItem = (c: (typeof caseRuns)[number]): SharedReportCaseItem => ({

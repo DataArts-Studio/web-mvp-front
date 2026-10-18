@@ -59,15 +59,18 @@ function calcProgress(rows: { status: string }[]) {
   let pass = 0,
     fail = 0,
     blocked = 0,
+    na = 0,
     untested = 0;
   for (const r of rows) {
     if (r.status === 'pass') pass++;
     else if (r.status === 'fail') fail++;
     else if (r.status === 'blocked') blocked++;
+    else if (r.status === 'na') na++;
     else untested++;
   }
   const total = rows.length;
-  const completed = pass + fail + blocked;
+  // N/A 는 판정을 마친 것으로 센다 (06k).
+  const completed = pass + fail + blocked + na;
   return {
     total,
     pass,

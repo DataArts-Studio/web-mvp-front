@@ -68,6 +68,7 @@ const HISTORY_BAR: Record<TestCaseRunDetail['status'], string> = {
   pass: 'bg-result-pass',
   fail: 'bg-result-fail',
   blocked: 'bg-result-blocked',
+  na: 'bg-white/40',
   untested: 'bg-white/15',
 };
 
@@ -213,8 +214,9 @@ export const RunCompleteView = ({
   const changedDeltas = deltas.filter(hasSuiteChange);
   const unchangedCount = deltas.length - changedDeltas.length;
 
-  const { total, pass, fail, blocked, untested } = testRun.stats;
-  const passRate = total > 0 ? Math.round((pass / total) * 100) : 0;
+  const { total, pass, fail, blocked, na, untested } = testRun.stats;
+  // N/A 는 확인할 수 없는 케이스라 통과율 분모에서 뺀다 (06k).
+  const passRate = total - na > 0 ? Math.round((pass / (total - na)) * 100) : 0;
   const diff = previous?.passRate != null ? passRate - previous.passRate : null;
   const failTab = isFailTransition(tab);
   const unlinkedIds = listCases
@@ -354,6 +356,7 @@ export const RunCompleteView = ({
             <Count label="통과" value={pass} tone="text-result-pass" />
             <Count label="실패" value={fail} tone="text-result-fail" />
             <Count label="차단" value={blocked} tone="text-result-blocked" />
+            {na > 0 && <Count label="N/A" value={na} tone="text-white/85" />}
           </p>
         </div>
 
@@ -396,7 +399,7 @@ export const RunCompleteView = ({
           {tabs.map((item) => {
             const active = tab === item.value;
             const count = tabCounts[item.value] ?? 0;
-            if (item.value === 'untested' && count === 0) return null;
+            if ((item.value === 'untested' || item.value === 'na') && count === 0) return null;
             return (
               <button
                 key={item.value}
@@ -815,7 +818,13 @@ const CaseCompare = ({
   const history = comparison?.historyByCase[testCase.testCaseId] ?? [];
   const summary = summarizeHistory(history.map((h) => h.status));
   const memoLabel =
-    testCase.status === 'fail' ? '실패 메모' : testCase.status === 'blocked' ? '차단 사유' : '메모';
+    testCase.status === 'fail'
+      ? '실패 메모'
+      : testCase.status === 'blocked'
+        ? '차단 사유'
+        : testCase.status === 'na'
+          ? 'N/A 사유'
+          : '메모';
   const memoBar =
     testCase.status === 'fail'
       ? 'bg-result-fail/70'

@@ -39,6 +39,7 @@ describe('classifyTransition', () => {
     expect(classifyTransition('pass', undefined)).toBe('stillPass');
     expect(classifyTransition('blocked', 'fail')).toBe('blocked');
     expect(classifyTransition('untested', 'pass')).toBe('untested');
+    expect(classifyTransition('na', 'fail')).toBe('na');
   });
 });
 
@@ -66,6 +67,19 @@ describe('summarizeSuiteDeltas', () => {
       ['인증', 1, 1, 50],
       ['결제', 0, 0, 100],
     ]);
+  });
+});
+
+describe('summarizeSuiteDeltas N/A (06k)', () => {
+  it('N/A 는 스위트 통과율 분모에서 뺀다', () => {
+    const cases = [
+      makeCase({ status: 'pass' }),
+      makeCase({ status: 'fail' }),
+      makeCase({ status: 'na' }),
+      makeCase({ status: 'na' }),
+    ];
+    const [delta] = summarizeSuiteDeltas(cases, undefined);
+    expect(delta).toMatchObject({ total: 4, na: 2, passRate: 50 });
   });
 });
 

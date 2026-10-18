@@ -75,3 +75,23 @@ describe('삭제된 실행의 결과 변경 (#419)', () => {
     expect(db.update).not.toHaveBeenCalled();
   });
 });
+
+describe('결과 값 검증 (06k)', () => {
+  it('N/A 는 저장하고 판정 시각을 남긴다.', async () => {
+    await updateTestCaseRunStatus({
+      testCaseRunId: CASE_RUN_ID,
+      status: 'na',
+      comment: 'SSO 미사용',
+    });
+    expect(set.mock.calls[0][0]).toMatchObject({ status: 'na', executed_at: expect.any(Date) });
+  });
+
+  it('정해지지 않은 값은 저장하지 않는다.', async () => {
+    const result = await updateTestCaseRunStatus({
+      testCaseRunId: CASE_RUN_ID,
+      status: 'skipped' as never,
+    });
+    expect(result.success).toBe(false);
+    expect(db.update).not.toHaveBeenCalled();
+  });
+});

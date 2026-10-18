@@ -5,6 +5,7 @@ import {
   comparisonLabelOf,
   groupRuns,
   milestoneOverdueDays,
+  passRateOf,
   summarizeActivity,
   timeLabelOf,
 } from './runs-list-model';
@@ -29,6 +30,7 @@ const makeRun = (overrides: Partial<ITestRun> = {}): ITestRun => ({
     pass: 8,
     fail: 1,
     blocked: 1,
+    na: 0,
     untested: 0,
   },
   activity: [],
@@ -166,5 +168,39 @@ describe('summarizeActivity', () => {
     expect(cell('2026-09-01')).toMatchObject({ tone: 'pass', level: 2 });
     // 9/2 ~ 9/10 사이 9일
     expect(summary.longestGap).toEqual({ days: 9, label: '9월 초' });
+  });
+});
+
+describe('passRateOf', () => {
+  it('N/A 는 통과율 분모에서 뺀다', () => {
+    const run = makeRun({
+      stats: {
+        totalCases: 10,
+        completedCases: 10,
+        progressPercent: 100,
+        pass: 6,
+        fail: 1,
+        blocked: 1,
+        na: 2,
+        untested: 0,
+      },
+    });
+    expect(passRateOf(run.stats)).toBe(75);
+  });
+
+  it('모두 N/A 면 null', () => {
+    const run = makeRun({
+      stats: {
+        totalCases: 2,
+        completedCases: 2,
+        progressPercent: 100,
+        pass: 0,
+        fail: 0,
+        blocked: 0,
+        na: 2,
+        untested: 0,
+      },
+    });
+    expect(passRateOf(run.stats)).toBeNull();
   });
 });

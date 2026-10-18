@@ -6,8 +6,15 @@ import { RUN_NOT_ACTIVE_MESSAGE } from '@/entities/test-run/model/schema';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { type TestCaseRunStatus, getDatabase, testCaseRuns, testRuns } from '@testea/db';
+import {
+  type TestCaseRunStatus,
+  getDatabase,
+  testCaseRunStatus,
+  testCaseRuns,
+  testRuns,
+} from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 
 interface BulkUpdateInput {
   testCaseRunIds: string[];
@@ -25,6 +32,10 @@ export async function bulkUpdateTestCaseRunStatus(
   try {
     if (input.testCaseRunIds.length === 0) {
       return { success: false, errors: { _general: ['선택된 케이스가 없습니다.'] } };
+    }
+    // 정해진 결과 값만 저장한다 (06k 에서 N/A 추가).
+    if (!z.enum(testCaseRunStatus).safeParse(input.status).success) {
+      return { success: false, errors: { _general: ['결과 값이 올바르지 않습니다.'] } };
     }
 
     const db = getDatabase();
