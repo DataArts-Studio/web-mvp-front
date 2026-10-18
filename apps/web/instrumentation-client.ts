@@ -16,7 +16,8 @@ Sentry.init({
   replaysSessionSampleRate: isProduction ? 0.1 : 0,
   replaysOnErrorSampleRate: 1.0,
   enableLogs: true,
-  sendDefaultPii: true,
+  // IP·요청 헤더 같은 식별 정보는 보내지 않는다.
+  sendDefaultPii: false,
 
   // 브라우저 확장(패스워드 매니저·광고차단·DevTools 등)에서 새는 노이즈는 우리 코드와 무관.
   // Sentry 알림이 더러워지지 않도록 필터링한다.
@@ -40,9 +41,11 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development' && d
   Sentry.lazyLoadIntegration('replayIntegration')
     .then((replayIntegration) => {
       Sentry.addIntegration(
+        // 비공개 프로젝트 화면(케이스 내용 등)이 외부로 나가지 않도록 텍스트·입력·미디어를 가린다.
         replayIntegration({
-          maskAllText: false,
-          blockAllMedia: false,
+          maskAllText: true,
+          maskAllInputs: true,
+          blockAllMedia: true,
         })
       );
     })
