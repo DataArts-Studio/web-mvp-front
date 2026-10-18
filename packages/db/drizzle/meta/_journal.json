@@ -192,6 +192,13 @@
       "breakpoints": true
     },
     {
+      "idx": 28,
+      "version": "7",
+      "when": 1792246883114,
+      "tag": "0028_revoke_anon_grants_force_rls",
+      "breakpoints": true
+    },
+    {
       "idx": 29,
       "version": "7",
       "when": 1792246887501,
