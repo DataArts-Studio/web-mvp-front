@@ -4,7 +4,12 @@ import React, { useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
-import type { RunComparison, TestCaseRunDetail, TestRunDetail } from '@/entities/test-run';
+import type {
+  RunComparison,
+  RunIssueContext,
+  TestCaseRunDetail,
+  TestRunDetail,
+} from '@/entities/test-run';
 import { ShareButton } from '@/features/runs-share/ui/share-button';
 import { useOutsideClick } from '@testea/lib';
 import { cn } from '@testea/util';
@@ -26,6 +31,8 @@ import {
   transitionTabsOf,
 } from './run-complete-model';
 import { RESULT_META } from './run-detail-constants';
+import { buildIssueDraft, isFailTransition } from './run-issue-model';
+import { RunIssuePanel } from './run-issue-panel';
 
 interface RunCompleteViewProps {
   testRun: TestRunDetail;
@@ -43,6 +50,11 @@ interface RunCompleteViewProps {
   /** 차단 사유 묶음의 사유를 한 번에 고친다. 성공하면 true (06h). */
   onSaveBlockedReason: (testCaseRunIds: string[], reason: string) => Promise<boolean>;
   isSavingBlockedReason: boolean;
+  /** 이슈 등록 정보. 불러오기 전이면 이슈 표시와 등록을 숨긴다 (06i). */
+  issueContext: RunIssueContext | undefined;
+  /** 고른 실패 케이스로 GitHub 이슈를 만든다. 성공하면 true */
+  onCreateIssue: (testCaseRunIds: string[], title: string, body: string) => Promise<boolean>;
+  isCreatingIssue: boolean;
 }
 
 const HISTORY_TONE: Record<HistoryTone, string> = {
@@ -136,6 +148,9 @@ export const RunCompleteView = ({
   onShowShortcuts,
   onSaveBlockedReason,
   isSavingBlockedReason,
+  issueContext,
+  onCreateIssue,
+  isCreatingIssue,
 }: RunCompleteViewProps) => {
   const cases = testRun.testCaseRuns;
   const previous = comparison?.previous ?? null;
@@ -160,6 +175,9 @@ export const RunCompleteView = ({
   const [suiteFilter, setSuiteFilter] = useState<string>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null);
+  // 실패 탭에서 이슈로 묶을 케이스 선택과, 지금 이슈를 쓰고 있는 케이스 (06i)
+  const [checked, setChecked] = useState<Set<string>>(() => new Set());
+  const [issueTargetIds, setIssueTargetIds] = useState<string[] | null>(null);
 
   const [showSuiteMenu, setShowSuiteMenu] = useState(false);
   const suiteMenuRef = useRef<HTMLDivElement>(null);
@@ -198,6 +216,11 @@ export const RunCompleteView = ({
   const { total, pass, fail, blocked, untested } = testRun.stats;
   const passRate = total > 0 ? Math.round((pass / total) * 100) : 0;
   const diff = previous?.passRate != null ? passRate - previous.passRate : null;
+  const failTab = isFailTransition(tab);
+  const unlinkedIds = listCases
+    .filter((tc) => !issueContext?.issuesByCase[tc.testCaseId]?.length)
+    .map((tc) => tc.id);
+  const issueCases = issueTargetIds ? listCases.filter((tc) => issueTargetIds.includes(tc.id)) : [];
   const listSuiteNames = [...new Set(listCases.map((tc) => tc.testSuiteName ?? '미분류'))];
 
   const menuItems: { label: string; onClick: () => void }[] = [
@@ -384,6 +407,8 @@ export const RunCompleteView = ({
                   setTabChoice(item.value);
                   setSelectedId(null);
                   setSelectedGroupKey(null);
+                  setChecked(new Set());
+                  setIssueTargetIds(null);
                 }}
                 className={cn(
                   '-mb-px flex items-center gap-2 border-b-2 px-3.5 pt-2.5 pb-3 text-[14px] whitespace-nowrap',
@@ -442,6 +467,8 @@ export const RunCompleteView = ({
                       setSuiteFilter(suite.id);
                       setSelectedId(null);
                       setSelectedGroupKey(null);
+                      setChecked(new Set());
+                      setIssueTargetIds(null);
                       setShowSuiteMenu(false);
                     }}
                     className={cn(
@@ -465,15 +492,55 @@ export const RunCompleteView = ({
       {/* 본문: 케이스 목록 · 비교 */}
       <div className="flex flex-col pb-10 lg:flex-row">
         <div className="flex w-full flex-col lg:w-[440px] lg:shrink-0 lg:pr-4">
-          <p className="pt-3 pb-1.5 pl-[34px] text-[12px] text-white/40">
-            {tab === 'blocked' && listCases.length > 0
-              ? `판정하지 못한 ${listCases.length}건을 사유별로 묶었어요 · 행 배경은 ${listCases.length}건 중 비율`
-              : `${listCases.length}건${
-                  listSuiteNames.length === 1 && listCases.length > 0
-                    ? ` · 모두 ${listSuiteNames[0]}`
-                    : ''
-                }`}
-          </p>
+          {failTab && checked.size > 0 ? (
+            <div className="mt-2 mb-1 flex items-center gap-2.5 rounded-[6px] bg-white/[0.04] py-2 pr-3 pl-3 text-[13px]">
+              <span className="font-bold text-white/90">{checked.size}건 선택</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setIssueTargetIds(listCases.filter((tc) => checked.has(tc.id)).map((tc) => tc.id))
+                }
+                className="bg-primary hover:bg-primary/90 rounded-[4px] px-2.5 py-1 text-[12px] font-bold text-white"
+              >
+                {checked.size > 1 ? '한 이슈로 등록' : '이슈 등록'}
+              </button>
+              <span className="flex-1" />
+              <button
+                type="button"
+                onClick={() => setChecked(new Set())}
+                className="text-[12px] text-white/50 hover:text-white/80"
+              >
+                선택 해제
+              </button>
+            </div>
+          ) : (
+            <p className="flex items-center gap-2 pt-3 pb-1.5 pl-[34px] text-[12px] text-white/40">
+              <span className="min-w-0 truncate">
+                {tab === 'blocked' && listCases.length > 0
+                  ? `판정하지 못한 ${listCases.length}건을 사유별로 묶었어요 · 행 배경은 ${listCases.length}건 중 비율`
+                  : `${listCases.length}건${
+                      listSuiteNames.length === 1 && listCases.length > 0
+                        ? ` · 모두 ${listSuiteNames[0]}`
+                        : ''
+                    }`}
+              </span>
+              {failTab && unlinkedIds.length > 1 && issueContext && (
+                <>
+                  <span className="flex-1" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChecked(new Set(unlinkedIds));
+                      setIssueTargetIds(unlinkedIds);
+                    }}
+                    className="text-primary shrink-0 font-medium hover:underline"
+                  >
+                    미등록 {unlinkedIds.length}건 한 번에 이슈 등록
+                  </button>
+                </>
+              )}
+            </p>
+          )}
           {tab === 'blocked' && blockedGroups.length > 0 ? (
             <ul className="flex flex-col gap-3" aria-label="차단 사유별 케이스">
               {blockedGroups.map((group) => {
@@ -560,11 +627,47 @@ export const RunCompleteView = ({
               {listCases.map((tc) => {
                 const prevStatus = comparison?.previousByCase[tc.testCaseId]?.status;
                 const isSelected = selected?.id === tc.id;
+                const isChecked = checked.has(tc.id);
+                const issue = issueContext?.issuesByCase[tc.testCaseId]?.[0];
                 return (
-                  <li key={tc.id}>
+                  <li key={tc.id} className="group/row relative">
+                    {failTab && (
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={isChecked}
+                        aria-label={`${tc.code} 선택`}
+                        onClick={() =>
+                          setChecked((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(tc.id)) next.delete(tc.id);
+                            else next.add(tc.id);
+                            return next;
+                          })
+                        }
+                        className={cn(
+                          'absolute top-1/2 left-2.5 z-10 flex size-4 -translate-y-1/2 items-center justify-center rounded-[3px] border',
+                          isChecked
+                            ? 'bg-primary border-primary'
+                            : 'border-white/30 bg-transparent opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100',
+                          checked.size > 0 && 'opacity-100'
+                        )}
+                      >
+                        {isChecked && (
+                          <Check
+                            className="h-3 w-3 text-white"
+                            strokeWidth={3}
+                            aria-hidden="true"
+                          />
+                        )}
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => setSelectedId(tc.id)}
+                      onClick={() => {
+                        setSelectedId(tc.id);
+                        setIssueTargetIds(null);
+                      }}
                       aria-current={isSelected ? 'true' : undefined}
                       className={cn(
                         'relative flex w-full items-center gap-3 overflow-hidden rounded-[6px] py-[11px] pr-3 pl-[34px] text-left',
@@ -596,14 +699,33 @@ export const RunCompleteView = ({
                       {tc.comment && (
                         <span className="relative shrink-0 text-[11px] text-white/35">메모</span>
                       )}
-                      <span
-                        className={cn(
-                          'relative shrink-0 text-[12px] font-medium',
-                          RESULT_META[tc.status].text
-                        )}
-                      >
-                        {RESULT_META[tc.status].label}
-                      </span>
+                      {failTab && issueContext ? (
+                        <span
+                          className={cn(
+                            'relative shrink-0 text-[12px] font-medium',
+                            issueTargetIds?.includes(tc.id)
+                              ? 'text-white/70'
+                              : issue
+                                ? 'text-white/55'
+                                : 'text-result-fail/85'
+                          )}
+                        >
+                          {issueTargetIds?.includes(tc.id)
+                            ? '작성 중'
+                            : issue
+                              ? `이슈 #${issue.number}`
+                              : '이슈 미등록'}
+                        </span>
+                      ) : (
+                        <span
+                          className={cn(
+                            'relative shrink-0 text-[12px] font-medium',
+                            RESULT_META[tc.status].text
+                          )}
+                        >
+                          {RESULT_META[tc.status].label}
+                        </span>
+                      )}
                     </button>
                   </li>
                 );
@@ -628,14 +750,43 @@ export const RunCompleteView = ({
           />
         )}
 
-        {selected && (
-          <CaseCompare
-            testCase={selected}
-            comparison={comparison}
-            createdAt={testRun.createdAt}
+        {issueCases.length > 0 && issueContext ? (
+          <RunIssuePanel
+            key={issueCases.map((tc) => tc.id).join(',')}
+            cases={issueCases}
+            draft={buildIssueDraft(issueCases, testRun)}
+            repoFullName={issueContext.repoFullName}
             projectSlug={projectSlug}
-            onEditResults={onEditResults}
+            isSubmitting={isCreatingIssue}
+            onSubmit={async (title, body) => {
+              const ok = await onCreateIssue(
+                issueCases.map((tc) => tc.id),
+                title,
+                body
+              );
+              if (ok) {
+                setIssueTargetIds(null);
+                setChecked(new Set());
+              }
+            }}
+            onCancel={() => setIssueTargetIds(null)}
           />
+        ) : (
+          selected && (
+            <CaseCompare
+              testCase={selected}
+              comparison={comparison}
+              createdAt={testRun.createdAt}
+              projectSlug={projectSlug}
+              onEditResults={onEditResults}
+              issues={issueContext?.issuesByCase[selected.testCaseId] ?? []}
+              onCreateIssue={
+                issueContext && selected.status === 'fail'
+                  ? () => setIssueTargetIds([selected.id])
+                  : undefined
+              }
+            />
+          )
         )}
       </div>
     </div>
@@ -648,12 +799,16 @@ const CaseCompare = ({
   createdAt,
   projectSlug,
   onEditResults,
+  issues,
+  onCreateIssue,
 }: {
   testCase: TestCaseRunDetail;
   comparison: RunComparison | undefined;
   createdAt: Date;
   projectSlug: string;
   onEditResults: (caseRunId?: string) => void;
+  issues: RunIssueContext['issuesByCase'][string];
+  onCreateIssue?: () => void;
 }) => {
   const previous = comparison?.previous ?? null;
   const prevCase = comparison?.previousByCase[testCase.testCaseId];
@@ -775,6 +930,32 @@ const CaseCompare = ({
         </div>
       )}
 
+      {issues.length > 0 && (
+        <div className="mt-7">
+          <p className="text-[12px] text-white/40">연결된 이슈</p>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {issues.slice(0, 3).map((issue) => (
+              <li key={issue.url} className="flex min-w-0 items-center gap-2 text-[13px]">
+                <a
+                  href={issue.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary shrink-0 font-medium hover:underline"
+                >
+                  #{issue.number}
+                </a>
+                <span className="min-w-0 truncate text-white/75">{issue.title}</span>
+                {issue.status && (
+                  <span className="shrink-0 text-[11px] text-white/40">
+                    {issue.status === 'open' ? '열림' : '닫힘'}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-7 flex items-center gap-2.5">
         <button
           type="button"
@@ -783,6 +964,15 @@ const CaseCompare = ({
         >
           결과 수정
         </button>
+        {onCreateIssue && (
+          <button
+            type="button"
+            onClick={onCreateIssue}
+            className="rounded-[6px] border border-white/[0.17] px-3.5 py-[7px] text-[13px] font-medium text-white/85 hover:border-white/35"
+          >
+            이슈 등록
+          </button>
+        )}
         <div className="flex-1" />
         <Link
           href={`/projects/${projectSlug}/cases/${testCase.testCaseId}`}
