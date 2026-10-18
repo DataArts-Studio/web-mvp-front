@@ -5,6 +5,13 @@ export { updateTestCaseRunStatus } from './update-test-case-run';
 export { deleteTestRun } from './delete-test-run';
 export { updateTestRunName } from './update-test-run-name';
 export { updateBlockedReason } from './update-blocked-reason';
+export { getRunIssueContext } from './get-run-issue-context';
+export { createRunIssue } from './create-run-issue';
 export { removeSuiteFromRun } from './remove-suite-from-run';
 export { bulkUpdateTestCaseRunStatus } from './bulk-update-test-case-runs';
-export { testRunsQueryOptions, testRunByIdQueryOptions, runComparisonQueryOptions } from './query';
+export {
+  testRunsQueryOptions,
+  testRunByIdQueryOptions,
+  runComparisonQueryOptions,
+  runIssueContextQueryOptions,
+} from './query';

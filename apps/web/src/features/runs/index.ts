@@ -14,6 +14,8 @@ export {
   deleteTestRun,
   updateTestRunName,
   updateBlockedReason,
+  createRunIssue,
+  runIssueContextQueryOptions,
   removeSuiteFromRun,
   bulkUpdateTestCaseRunStatus,
   testRunsQueryOptions,

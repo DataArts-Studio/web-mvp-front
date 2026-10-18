@@ -10,6 +10,7 @@ import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from
 import crypto from 'crypto';
 import { and, asc, eq } from 'drizzle-orm';
 
+import { githubApi } from '../lib/github-api';
 import {
   OAUTH_STATE_COOKIE,
   OAUTH_STATE_COOKIE_PATH,
@@ -37,24 +38,6 @@ async function exchangeCodeForToken(code: string): Promise<string> {
   const data = await res.json();
   if (data.error) throw new Error(data.error_description || data.error);
   return data.access_token;
-}
-
-// --- GitHub API 호출 헬퍼 ---
-async function githubApi(token: string, path: string, options?: RequestInit) {
-  const res = await fetch(`https://api.github.com${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`GitHub API error ${res.status}: ${text}`);
-  }
-  return res.json();
 }
 
 // --- 연결 (OAuth code 교환 + 저장) ---
