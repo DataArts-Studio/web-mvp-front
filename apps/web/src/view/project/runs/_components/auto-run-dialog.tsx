@@ -4,13 +4,16 @@ import React, { useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
-import { type RunAutomatedTestData } from '@/features/auto-run';
+import { type RunAutomatedTestData, caseSpecKeys } from '@/features/auto-run';
 import { useRunAutomatedTest } from '@/features/auto-run';
 import { useTargetSites } from '@/features/target-sites';
+import { useQueryClient } from '@tanstack/react-query';
 import { DSButton, Dialog, DsInput, DsSelect } from '@testea/ui';
 import { cn } from '@testea/util';
 import { AlertTriangle, CheckCircle2, ChevronDown, Loader2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+
+import { AutoRunSpecReview } from './auto-run-spec-review';
 
 interface AutoRunCaseOption {
   /** testCaseRun 의 원본 케이스 id (= caseId, runAutomatedTest 입력). */
@@ -50,6 +53,7 @@ export const AutoRunDialog = ({
   );
 
   const runAutomatedTest = useRunAutomatedTest(projectId);
+  const queryClient = useQueryClient();
 
   const [targetSiteId, setTargetSiteId] = useState('');
   const [caseId, setCaseId] = useState(initialCaseId ?? cases[0]?.testCaseId ?? '');
@@ -82,6 +86,10 @@ export const AutoRunDialog = ({
       {
         onSuccess: (data) => {
           setResult(data);
+          // 새로 만든 코드는 검수 전 초안으로 저장되므로 검수 영역을 다시 불러온다.
+          void queryClient.invalidateQueries({
+            queryKey: caseSpecKeys.detail({ projectId, caseId, targetSiteId }),
+          });
           if (data.status === 'passed') {
             toast.success('자동 실행이 통과했습니다.');
           } else {
@@ -170,6 +178,16 @@ export const AutoRunDialog = ({
                 />
               </div>
 
+              {/* 실행 코드 검수 (#187) */}
+              {targetSiteId && caseId && (
+                <AutoRunSpecReview
+                  projectId={projectId}
+                  caseId={caseId}
+                  targetSiteId={targetSiteId}
+                  disabled={isPending}
+                />
+              )}
+
               {/* 진행 중 안내 */}
               {isPending && (
                 <div className="text-text-3 flex items-center gap-2 text-sm">
@@ -192,6 +210,28 @@ export const AutoRunDialog = ({
               {result && (
                 <div className="border-line-2 bg-bg-2 rounded-4 space-y-3 border p-3">
                   <ResultStatus status={result.status} durationMs={result.durationMs} />
+                  <p className="text-text-4 text-xs">
+                    {result.specSource === 'approved'
+                      ? '승인된 실행 코드로 실행했습니다.'
+                      : '실행 코드를 새로 만들어 실행했습니다.'}
+                  </p>
+
+                  {result.specWarnings.length > 0 && (
+                    <div className="text-text-3 flex items-start gap-1.5 text-xs">
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+                      <div>
+                        <p>
+                          실행 코드가 첫 화면에서 찾지 못한 요소를 가리킵니다. 검수 후 승인을
+                          권장합니다.
+                        </p>
+                        <ul className="mt-1 list-disc space-y-0.5 pl-4 break-all">
+                          {result.specWarnings.map((warning) => (
+                            <li key={warning}>{warning}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
 
                   {result.status !== 'passed' && result.errorMessage && (
                     <div className="border-line-2 bg-bg-1 rounded-2 border p-2">

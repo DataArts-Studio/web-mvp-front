@@ -204,6 +204,13 @@
       "when": 1792246887501,
       "tag": "0029_rate_limit_buckets",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792674654507,
+      "tag": "0032_case_generated_specs",
+      "breakpoints": true
     }
   ]
 }

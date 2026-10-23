@@ -5,6 +5,7 @@ import { getDatabase } from '@testea/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { generateSpec } from '../lib/generate-spec';
+import { findCaseSpec, saveDraftSpec } from './case-spec-store';
 import { recordAutoResult } from './record-result';
 import { runAutomatedTest } from './run-automated-test';
 import { captureSnapshot, runSpecOnRunner } from './runner-client';
@@ -20,6 +21,7 @@ vi.mock('@testea/db', async (importOriginal) => ({
 }));
 vi.mock('../lib/generate-spec', () => ({ generateSpec: vi.fn() }));
 vi.mock('./record-result', () => ({ recordAutoResult: vi.fn() }));
+vi.mock('./case-spec-store', () => ({ findCaseSpec: vi.fn(), saveDraftSpec: vi.fn() }));
 vi.mock('./runner-client', () => ({ captureSnapshot: vi.fn(), runSpecOnRunner: vi.fn() }));
 
 const PROJECT_A = '00000000-0000-4000-8000-000000000001';
@@ -56,6 +58,8 @@ beforeEach(() => {
   vi.mocked(generateSpec).mockResolvedValue('// synthetic spec; never executed');
   vi.mocked(runSpecOnRunner).mockResolvedValue({ ok: true, status: 'passed', durationMs: 10 });
   vi.mocked(recordAutoResult).mockResolvedValue({ matched: true });
+  vi.mocked(findCaseSpec).mockResolvedValue(null);
+  vi.mocked(saveDraftSpec).mockResolvedValue();
 });
 
 function expectNoExternalWork() {
@@ -96,11 +100,92 @@ describe('자동 실행 결과 대상의 프로젝트 경계', () => {
         errorMessage: undefined,
         recorded: true,
         caseKey: 'TC-001',
+        specSource: 'generated',
+        specWarnings: [],
       },
     });
     expect(recordAutoResult).toHaveBeenCalledWith(
       expect.objectContaining({ runId: params.runId, caseKey: 'TC-001', status: 'pass' })
     );
+    expect(runSpecOnRunner).toHaveBeenCalledOnce();
+  });
+});
+
+describe('생성 spec 저장과 검증 (#187)', () => {
+  const SNAPSHOT = ['- main:', '  - heading "대시보드" [level=1]'].join('\n');
+  const GOOD = "await expect(page.getByRole('heading', { name: '대시보드' })).toBeVisible();";
+  const BAD = "await expect(page.getByRole('region', { name: '푸터 영역' })).toBeVisible();";
+
+  beforeEach(() => {
+    vi.mocked(captureSnapshot).mockResolvedValue({ ok: true, snapshot: SNAPSHOT });
+  });
+
+  it('승인된 spec 이 있으면 캡처·생성 없이 그 spec 을 실행한다.', async () => {
+    vi.mocked(findCaseSpec).mockResolvedValue({
+      spec: 'approved spec',
+      status: 'approved',
+      path: null,
+      updatedAt: new Date(),
+    });
+    const result = await runAutomatedTest(params);
+    expect(result.success && result.data.specSource).toBe('approved');
+    expect(captureSnapshot).not.toHaveBeenCalled();
+    expect(generateSpec).not.toHaveBeenCalled();
+    expect(saveDraftSpec).not.toHaveBeenCalled();
+    expect(runSpecOnRunner).toHaveBeenCalledWith(
+      expect.objectContaining({ spec: 'approved spec' })
+    );
+  });
+
+  it('초안만 있으면 새로 생성하고 초안을 갱신한다.', async () => {
+    vi.mocked(findCaseSpec).mockResolvedValue({
+      spec: 'old draft',
+      status: 'draft',
+      path: null,
+      updatedAt: new Date(),
+    });
+    vi.mocked(generateSpec).mockResolvedValue(GOOD);
+    await runAutomatedTest(params);
+    expect(generateSpec).toHaveBeenCalledOnce();
+    expect(saveDraftSpec).toHaveBeenCalledWith(expect.objectContaining({ spec: GOOD, path: null }));
+  });
+
+  it('트리에 없는 셀렉터를 쓰면 지적 사항을 넣어 한 번 재생성한다.', async () => {
+    vi.mocked(generateSpec).mockResolvedValueOnce(BAD).mockResolvedValueOnce(GOOD);
+    const result = await runAutomatedTest(params);
+    expect(generateSpec).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(generateSpec).mock.calls[1][0].retry?.previousSpec).toBe(BAD);
+    expect(runSpecOnRunner).toHaveBeenCalledWith(expect.objectContaining({ spec: GOOD }));
+    expect(result.success && result.data.specWarnings).toEqual([]);
+  });
+
+  it('재생성해도 걸리면 실행은 하고 경고를 돌려준다.', async () => {
+    vi.mocked(generateSpec).mockResolvedValue(BAD);
+    const result = await runAutomatedTest(params);
+    expect(generateSpec).toHaveBeenCalledTimes(2);
+    expect(runSpecOnRunner).toHaveBeenCalledOnce();
+    expect(result.success && result.data.specWarnings).toHaveLength(1);
+  });
+
+  it('실행이 실패해도 재생성하지 않는다.', async () => {
+    vi.mocked(generateSpec).mockResolvedValue(GOOD);
+    vi.mocked(runSpecOnRunner).mockResolvedValue({
+      ok: false,
+      status: 'failed',
+      durationMs: 10,
+      errorMessage: 'expect failed',
+    });
+    await runAutomatedTest(params);
+    expect(generateSpec).toHaveBeenCalledOnce();
+    expect(recordAutoResult).toHaveBeenCalledWith(expect.objectContaining({ status: 'fail' }));
+  });
+
+  it('저장소 조회·저장이 실패해도 지금처럼 생성해서 실행한다.', async () => {
+    vi.mocked(findCaseSpec).mockRejectedValue(new Error('relation does not exist'));
+    vi.mocked(saveDraftSpec).mockRejectedValue(new Error('relation does not exist'));
+    vi.mocked(generateSpec).mockResolvedValue(GOOD);
+    const result = await runAutomatedTest(params);
+    expect(result.success).toBe(true);
     expect(runSpecOnRunner).toHaveBeenCalledOnce();
   });
 });

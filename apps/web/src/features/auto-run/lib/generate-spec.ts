@@ -24,6 +24,9 @@ const SPEC_SYSTEM_PROMPT = `너는 Playwright(@playwright/test, TypeScript) 테�
 - 첫 단언(또는 첫 상호작용 직전 대기)은 데이터 로딩 스켈레톤을 대비해 timeout 을 30000ms 로 넉넉히 준다.
 - 자연어 단계의 검증 의도를 expect 단언으로 옮긴다.`;
 
+/** OpenAI 응답 대기 상한. 응답이 멈춰도 서버 액션이 무한히 붙잡히지 않게 한다. */
+const SPEC_TIMEOUT_MS = 60_000;
+
 export class SpecGenerationError extends Error {
   constructor(message: string) {
     super(message);
@@ -44,6 +47,8 @@ export async function generateSpec(input: {
   caseTitle: string;
   /** 케이스가 가리키는 경로(상대). 없으면 모델이 트리 기준으로 판단. */
   path?: string;
+  /** 이전 생성본이 정적 검증에 걸렸을 때 다시 생성하도록 넘기는 지적 사항. */
+  retry?: { previousSpec: string; issues: string[] };
 }): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -59,6 +64,16 @@ export async function generateSpec(input: {
     '',
     '대상 페이지 접근성 트리:',
     input.snapshot,
+    ...(input.retry
+      ? [
+          '',
+          '이전에 생성한 코드가 접근성 트리에 없는 요소를 가리켰다. 아래 지적을 반영해 트리에 있는 요소로만 다시 작성한다.',
+          ...input.retry.issues.map((issue) => `- ${issue}`),
+          '',
+          '이전 코드:',
+          input.retry.previousSpec,
+        ]
+      : []),
   ]
     .filter((line) => line !== '')
     .join('\n');
@@ -68,6 +83,7 @@ export async function generateSpec(input: {
     res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(SPEC_TIMEOUT_MS),
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
