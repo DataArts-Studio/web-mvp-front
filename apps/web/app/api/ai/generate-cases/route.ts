@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { callLlm } from '@/entities/ai-config/api/call-llm';
 import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
 import { AiError } from '@/entities/ai-config/model/ai-error';
 import {
@@ -28,94 +29,6 @@ const MAX_CASES_PER_REQUEST = 10;
  * 파싱 비용 자체를 피해 사전 거부한다. 클라이언트가 헤더를 위조해도 후속 단계에서 한 번 더 잡힌다.
  */
 const MAX_MULTIPART_BYTES = 12 * 1024 * 1024;
-
-/** LLM 호출 전체 타임아웃. 프로바이더 응답이 지연·중단돼도 라우트가 무한 대기하지 않도록 한다. */
-const LLM_TIMEOUT_MS = 120_000;
-
-async function callOpenAI(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: model || 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 4000,
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw AiError.fromProviderResponse('openai', res.status, text);
-  }
-
-  const data = await res.json();
-  return data.choices[0]?.message?.content || '';
-}
-
-async function callAnthropic(
-  apiKey: string,
-  model: string,
-  systemPrompt: string,
-  userPrompt: string
-) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: model || 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw AiError.fromProviderResponse('anthropic', res.status, text);
-  }
-
-  const data = await res.json();
-  const textBlock = data.content?.find((b: { type: string }) => b.type === 'text');
-  return textBlock?.text || '';
-}
-
-async function callGemini(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
-  const modelId = model || 'gemini-2.0-flash';
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 4000 },
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw AiError.fromProviderResponse('gemini', res.status, text);
-  }
-
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
 
 function parseJsonResponse(raw: string): unknown[] {
   // JSON 블록 추출 (```json ... ``` 또는 순수 JSON)
@@ -283,19 +196,7 @@ export async function POST(req: NextRequest) {
     });
 
     // LLM 호출
-    let rawResponse: string;
-    if (config.provider === 'openai') {
-      rawResponse = await callOpenAI(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
-    } else if (config.provider === 'gemini') {
-      rawResponse = await callGemini(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
-    } else {
-      rawResponse = await callAnthropic(
-        config.apiKey,
-        config.model || '',
-        SYSTEM_PROMPT,
-        userPrompt
-      );
-    }
+    const rawResponse = await callLlm(config, SYSTEM_PROMPT, userPrompt);
 
     // JSON 파싱 + 검증
     let cases;
