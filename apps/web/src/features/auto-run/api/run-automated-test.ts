@@ -2,6 +2,8 @@
 
 import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
+import { AiError } from '@/entities/ai-config/model/ai-error';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
@@ -25,7 +27,7 @@ import { captureSnapshot, runSpecOnRunner } from './runner-client';
  *   2) 케이스 조회(steps, case_key)
  *   3) target_sites 복호화(baseUrl + auth → storageState)
  *   4) 승인된 spec 이 있으면 그대로 쓰고 5) 를 건너뛴다 (#187)
- *   5) 러너 /capture → 접근성 스냅샷 → OpenAI(gpt-4o-mini) spec 생성
+ *   5) 프로젝트 AI 키 확인 → 러너 /capture → 접근성 스냅샷 → 등록한 LLM 으로 spec 생성
  *      → 트리 대조 검증, 걸리면 지적 사항을 넣어 1회 재생성 → 초안으로 저장
  *   6) 러너 /run → pass/fail
  *   7) TR09 방식 결과 기록(result_source='auto')
@@ -154,6 +156,12 @@ export async function runAutomatedTest(
       spec = stored.spec;
       specSource = 'approved';
     } else {
+      // 코드 생성은 프로젝트에 등록한 AI 키로만 한다. 캡처 전에 확인해 러너 호출을 아낀다.
+      const llm = await getDecryptedApiKey(params.projectId);
+      if (!llm) {
+        return fail('AI 설정이 되어 있지 않습니다. 설정 페이지에서 API 키를 등록해주세요.');
+      }
+
       // 5) 러너 /capture → 접근성 스냅샷
       const captured = await captureSnapshot({
         url: captureUrl,
@@ -165,6 +173,7 @@ export async function runAutomatedTest(
 
       // OpenAI → Playwright spec, 트리에 없는 셀렉터가 있으면 1회 재생성
       const generationInput = {
+        llm,
         steps: testCase.steps,
         snapshot: captured.snapshot,
         caseTitle: testCase.name,
@@ -227,6 +236,13 @@ export async function runAutomatedTest(
       },
     };
   } catch (error) {
+    // 키 무효·한도 같은 사용자 환경 문제는 원인을 알려준다(키 값은 메시지에 없다).
+    if (error instanceof AiError) {
+      if (error.report) {
+        Sentry.captureException(error, { extra: { action: 'runAutomatedTest', kind: error.kind } });
+      }
+      return fail(error.userMessage);
+    }
     Sentry.captureException(error, { extra: { action: 'runAutomatedTest' } });
     return fail('자동 실행 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }

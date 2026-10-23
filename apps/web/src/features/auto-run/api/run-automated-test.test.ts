@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
+import { AiError } from '@/entities/ai-config/model/ai-error';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
 import { getDatabase } from '@testea/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,6 +13,7 @@ import { runAutomatedTest } from './run-automated-test';
 import { captureSnapshot, runSpecOnRunner } from './runner-client';
 
 vi.mock('@/access/lib/require-access', () => ({ requireProjectAccess: vi.fn() }));
+vi.mock('@/entities/ai-config/api/decrypt-api-key', () => ({ getDecryptedApiKey: vi.fn() }));
 vi.mock('@/features/target-sites/api/get-target-site-for-execution', () => ({
   getTargetSiteForExecution: vi.fn(),
 }));
@@ -26,6 +29,8 @@ vi.mock('./runner-client', () => ({ captureSnapshot: vi.fn(), runSpecOnRunner: v
 
 const PROJECT_A = '00000000-0000-4000-8000-000000000001';
 const PROJECT_B = '00000000-0000-4000-8000-000000000002';
+// 프로젝트에 등록한 AI 설정. 누가 봐도 가짜인 값을 쓴다.
+const PROJECT_LLM = { provider: 'openai', apiKey: 'sk-test-dummy', model: null };
 const params = {
   projectId: PROJECT_A,
   runId: '00000000-0000-4000-8000-000000000003',
@@ -59,6 +64,7 @@ beforeEach(() => {
   vi.mocked(runSpecOnRunner).mockResolvedValue({ ok: true, status: 'passed', durationMs: 10 });
   vi.mocked(recordAutoResult).mockResolvedValue({ matched: true });
   vi.mocked(findCaseSpec).mockResolvedValue(null);
+  vi.mocked(getDecryptedApiKey).mockResolvedValue(PROJECT_LLM);
   vi.mocked(saveDraftSpec).mockResolvedValue();
 });
 
@@ -187,5 +193,48 @@ describe('생성 spec 저장과 검증 (#187)', () => {
     const result = await runAutomatedTest(params);
     expect(result.success).toBe(true);
     expect(runSpecOnRunner).toHaveBeenCalledOnce();
+  });
+});
+
+describe('AI 키는 프로젝트에 등록한 것만 쓴다', () => {
+  it('생성할 때 프로젝트 AI 설정을 넘긴다.', async () => {
+    await runAutomatedTest(params);
+    expect(getDecryptedApiKey).toHaveBeenCalledWith(PROJECT_A);
+    expect(vi.mocked(generateSpec).mock.calls[0][0].llm).toBe(PROJECT_LLM);
+  });
+
+  it('AI 설정이 없으면 캡처·생성·실행 전에 안내하고 멈춘다.', async () => {
+    vi.mocked(getDecryptedApiKey).mockResolvedValue(null);
+    const result = await runAutomatedTest(params);
+    expect(result).toEqual({
+      success: false,
+      errors: {
+        _general: ['AI 설정이 되어 있지 않습니다. 설정 페이지에서 API 키를 등록해주세요.'],
+      },
+    });
+    expect(captureSnapshot).not.toHaveBeenCalled();
+    expect(generateSpec).not.toHaveBeenCalled();
+    expect(runSpecOnRunner).not.toHaveBeenCalled();
+  });
+
+  it('승인된 코드로 실행할 때는 AI 키가 없어도 된다.', async () => {
+    vi.mocked(getDecryptedApiKey).mockResolvedValue(null);
+    vi.mocked(findCaseSpec).mockResolvedValue({
+      spec: 'approved spec',
+      status: 'approved',
+      path: null,
+      updatedAt: new Date(),
+    });
+    const result = await runAutomatedTest(params);
+    expect(result.success).toBe(true);
+    expect(getDecryptedApiKey).not.toHaveBeenCalled();
+  });
+
+  it('제공자 오류는 사용자 안내 문구로 돌려준다.', async () => {
+    const error = AiError.fromProviderResponse('openai', 401, '{}');
+    vi.mocked(generateSpec).mockRejectedValue(error);
+    const result = await runAutomatedTest(params);
+    expect(result).toEqual({ success: false, errors: { _general: [error.userMessage] } });
+    expect(runSpecOnRunner).not.toHaveBeenCalled();
   });
 });
