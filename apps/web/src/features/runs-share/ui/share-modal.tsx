@@ -93,6 +93,10 @@ export const ShareModal = ({ testRunId, shareToken, shareExpiresAt, onClose }: S
         toast.error(result.errors._general?.[0] || 'AI 요약 갱신에 실패했습니다.');
       } else if (result.data.hasSummary) {
         toast.success('AI 요약을 최신 결과 기준으로 갱신했습니다.');
+      } else if (!result.data.aiConfigured) {
+        toast.warning(
+          'AI 설정이 되어 있지 않아 요약을 만들 수 없습니다. 설정 페이지에서 API 키를 등록해주세요.'
+        );
       } else {
         toast.warning('지금은 AI 요약을 만들 수 없어 공유 화면에 요약 없이 보입니다.');
       }

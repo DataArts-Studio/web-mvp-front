@@ -1,6 +1,9 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { callLlm } from '@/entities/ai-config/api/call-llm';
+import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
+import { AiError } from '@/entities/ai-config/model/ai-error';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -57,34 +60,26 @@ export interface SharedReportData {
   blockedCases: SharedReportCaseItem[];
 }
 
-// ─── Gemini AI Summary ──────────────────────────────────────────
+// ─── AI Summary ─────────────────────────────────────────────────
 
 const REPORT_SUMMARY_PROMPT = `QA 리포트 분석. 한국어. 3~4개 핵심 인사이트. 수치 포함. 이슈 원인+조치 포함. 150자 이내. 마크다운 문법 절대 사용 금지(*, **, #, - 등). 줄바꿈으로 구분된 평문 문장만 출력.`;
 
-async function generateAiSummary(reportContext: string): Promise<string | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+type LlmConfig = NonNullable<Awaited<ReturnType<typeof getDecryptedApiKey>>>;
 
+/** 키 무효·한도 같은 사용자 환경 문제는 알리지 않고, 예상 밖 실패만 Sentry 로 보낸다. */
+function reportAiError(error: unknown, action: string) {
+  if (error instanceof AiError && !error.report) return;
+  Sentry.captureException(error, { extra: { action } });
+}
+
+/** 프로젝트에 등록한 AI 설정으로만 요약한다. 서비스 소유 키로는 호출하지 않는다 (#505). */
+async function generateAiSummary(llm: LlmConfig, reportContext: string): Promise<string | null> {
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: REPORT_SUMMARY_PROMPT }] },
-          contents: [{ parts: [{ text: reportContext }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 200 },
-        }),
-      }
-    );
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    const text = await callLlm(llm, REPORT_SUMMARY_PROMPT, reportContext);
+    return text.trim() || null;
   } catch (error) {
     console.error('[generateAiSummary] error:', error);
+    reportAiError(error, 'generateAiSummary');
     return null;
   }
 }
@@ -305,25 +300,41 @@ async function claimDailySummarySlot(db: Database, projectId: string): Promise<b
 
 /**
  * 지금 결과 기준의 요약을 저장 형식으로 돌려준다. 기준이 같으면 저장된 요약을 그대로 쓰고,
- * 다르면 새로 만든다. 만들 수 없으면(키 없음, 일일 한도, 생성 실패) null 이라 옛 요약을 남기지 않는다.
+ * 다르면 새로 만든다. 만들 수 없으면(AI 설정 없음, 일일 한도, 생성 실패) summary 가 null 이라
+ * 옛 요약을 남기지 않는다. aiConfigured 는 설정이 없어 못 만든 경우를 안내하려고 함께 돌려준다.
  */
 async function resolveSummary(
   db: Database,
   projectId: string,
   existingRaw: string | null,
   context: string
-): Promise<string | null> {
+): Promise<{ summary: string | null; aiConfigured: boolean }> {
   const basis = basisOf(context);
-  if (parseStoredSummary(existingRaw)?.basis === basis) return existingRaw;
-  if (!process.env.GEMINI_API_KEY) return null;
+  if (parseStoredSummary(existingRaw)?.basis === basis) {
+    return { summary: existingRaw, aiConfigured: true };
+  }
+
+  // 복호화 실패는 공유 자체를 막지 않도록 요약 없음으로 처리한다
+  let llm: LlmConfig | null;
+  try {
+    llm = await getDecryptedApiKey(projectId);
+  } catch (error) {
+    console.error('[resolveSummary] AI config error:', error);
+    reportAiError(error, 'resolveSummary');
+    return { summary: null, aiConfigured: true };
+  }
+  if (!llm) return { summary: null, aiConfigured: false };
 
   if (!(await claimDailySummarySlot(db, projectId))) {
     console.log(`[resolveSummary] AI daily limit reached for project ${projectId}`);
-    return null;
+    return { summary: null, aiConfigured: true };
   }
 
-  const text = await generateAiSummary(context);
-  return text ? JSON.stringify({ basis, text } satisfies StoredSummary) : null;
+  const text = await generateAiSummary(llm, context);
+  return {
+    summary: text ? JSON.stringify({ basis, text } satisfies StoredSummary) : null,
+    aiConfigured: true,
+  };
 }
 
 /** 접근 권한과 공유할 수 있는(삭제되지 않은) 실행인지를 함께 확인한다. */
@@ -367,7 +378,12 @@ export async function generateShareLink(
     let aiSummary: string | null = null;
     try {
       const { context } = await loadReportSnapshot(db, run);
-      aiSummary = await resolveSummary(db, run.projectId, run.shareAiSummary, context);
+      ({ summary: aiSummary } = await resolveSummary(
+        db,
+        run.projectId,
+        run.shareAiSummary,
+        context
+      ));
     } catch (aiError) {
       console.error('[generateShareLink] AI summary error (non-blocking):', aiError);
     }
@@ -396,7 +412,7 @@ export async function generateShareLink(
 /** 공유 링크는 그대로 두고 AI 요약만 지금 결과 기준으로 다시 만든다 (#387). */
 export async function refreshShareSummary(
   testRunId: string
-): Promise<ActionResult<{ hasSummary: boolean }>> {
+): Promise<ActionResult<{ hasSummary: boolean; aiConfigured: boolean }>> {
   try {
     const db = getDatabase();
     const found = await findShareableRun(db, testRunId);
@@ -408,7 +424,12 @@ export async function refreshShareSummary(
     }
 
     const { context } = await loadReportSnapshot(db, run);
-    const aiSummary = await resolveSummary(db, run.projectId, run.shareAiSummary, context);
+    const { summary: aiSummary, aiConfigured } = await resolveSummary(
+      db,
+      run.projectId,
+      run.shareAiSummary,
+      context
+    );
 
     // 생성하는 동안 링크가 바뀌거나 실행이 삭제됐으면 저장하지 않는다
     const updated = await db
@@ -426,7 +447,7 @@ export async function refreshShareSummary(
       return { success: false, errors: { _general: ['공유 중인 링크가 없습니다.'] } };
     }
 
-    return { success: true, data: { hasSummary: aiSummary !== null } };
+    return { success: true, data: { hasSummary: aiSummary !== null, aiConfigured } };
   } catch (error) {
     console.error('[refreshShareSummary] error:', error);
     Sentry.captureException(error, { extra: { action: 'refreshShareSummary' } });
