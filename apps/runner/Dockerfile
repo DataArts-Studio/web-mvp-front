@@ -3,6 +3,10 @@
 # package.json과 러너 전용 lockfile의 버전을 이미지 내장 브라우저와 맞춘다.
 FROM mcr.microsoft.com/playwright:v1.60.0-jammy
 
+# 이미지 내장 Node(24.15.0)는 2026-10 보안 릴리스(Brotli RCE 등) 이전 버전이라
+# 공식 이미지의 패치된 node 바이너리로 덮어쓴다. 베이스 이미지를 올리면 이 줄이 필요한지 다시 본다.
+COPY --from=node:24.22.1-bookworm-slim /usr/local/bin/node /usr/bin/node
+
 WORKDIR /app
 
 # Build context is this directory (apps/runner). Cloud Run(`gcloud run deploy
