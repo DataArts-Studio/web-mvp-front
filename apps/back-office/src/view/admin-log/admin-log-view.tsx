@@ -1,3 +1,4 @@
+import { toKstParts } from '@/shared/lib/kst-datetime';
 import type { AdminActivityLog } from '@testea/db';
 import { Inbox } from 'lucide-react';
 
@@ -13,9 +14,10 @@ const ACTION_LABEL: Record<string, { label: string; cls: string }> = {
 };
 
 function formatDateTime(iso: string): string {
-  const d = new Date(iso);
+  const p = toKstParts(iso);
+  if (!p) return '-';
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${p.year}.${pad(p.month)}.${pad(p.day)} ${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}`;
 }
 
 export function AdminLogView({ logs }: { logs: AdminActivityLog[] }) {

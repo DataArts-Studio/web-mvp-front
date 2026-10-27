@@ -11,6 +11,7 @@ import {
   NOTICE_SEVERITIES,
   SEVERITY_LABELS,
 } from '@/features/notices/model/validation';
+import { isoToKstInput } from '@/shared/lib/kst-datetime';
 import type { AdminAnnouncement } from '@testea/db';
 
 type NoticeAction = (prev: NoticeFormState, formData: FormData) => Promise<NoticeFormState>;
@@ -18,15 +19,6 @@ type NoticeAction = (prev: NoticeFormState, formData: FormData) => Promise<Notic
 const fieldClass =
   'border-border text-text-primary placeholder:text-text-secondary rounded-lg border bg-white px-3 py-2.5 text-sm outline-none focus:border-[#155DFC]';
 const labelClass = 'text-text-primary text-sm font-medium';
-
-/** ISO(UTC) → datetime-local 입력값(YYYY-MM-DDTHH:mm, 로컬). */
-function toLocalInput(iso: string | null | undefined): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export function NoticeForm({
   action,
@@ -129,7 +121,7 @@ export function NoticeForm({
             id="publishedAt"
             name="publishedAt"
             type="datetime-local"
-            defaultValue={toLocalInput(initial?.publishedAt)}
+            defaultValue={isoToKstInput(initial?.publishedAt)}
             className={fieldClass}
           />
           <span className="text-text-secondary text-xs">비우면 즉시 시작</span>
@@ -143,7 +135,7 @@ export function NoticeForm({
             id="expiresAt"
             name="expiresAt"
             type="datetime-local"
-            defaultValue={toLocalInput(initial?.expiresAt)}
+            defaultValue={isoToKstInput(initial?.expiresAt)}
             className={fieldClass}
           />
           <span className="text-text-secondary text-xs">비우면 무기한</span>
