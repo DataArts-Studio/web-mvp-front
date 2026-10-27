@@ -688,7 +688,9 @@
       "cases": "{count, plural, other {#개}}",
       "runs": "{count, plural, other {#회}}",
       "issueSummary": "실패 {failed, plural, other {#개}} · Blocked {blocked, plural, other {#개}}",
-      "addCases": "{count, plural, other {#개 케이스 추가}}"
+      "addCases": "{count, plural, other {#개 케이스 추가}}",
+      "sections": "섹션 {count, plural, other {#개}}",
+      "runResultSummary": "통과 {passed} · 실패 {failed} · Blocked {blocked}"
     }
   }
 }
