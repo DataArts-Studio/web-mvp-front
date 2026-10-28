@@ -71,12 +71,13 @@ vi.mock('@testea/db', () => ({
 // ============================================================================
 const PROJECT_ID = '550e8400-e29b-41d4-a716-446655440000';
 const MOCK_DATE = new Date('2026-03-08');
+const DUMMY_GEMINI_KEY = 'AIza' + 'TestDummyKey'.padEnd(35, '0'); // 39자, 실제 키 아님
 
 const createMockAiConfigRow = (overrides: Record<string, unknown> = {}) => ({
   id: 'config-123',
   project_id: PROJECT_ID,
   provider: 'gemini',
-  api_key: 'encrypted_AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+  api_key: `encrypted_${DUMMY_GEMINI_KEY}`,
   model: null,
   lifecycle_status: 'ACTIVE',
   created_at: MOCK_DATE,
@@ -106,7 +107,7 @@ describe('saveAiConfig', () => {
     const result = await saveAiConfig({
       projectId: PROJECT_ID,
       provider: 'gemini',
-      apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+      apiKey: DUMMY_GEMINI_KEY,
     });
 
     expect(result.success).toBe(true);
@@ -115,7 +116,7 @@ describe('saveAiConfig', () => {
       expect(result.data.config.hasApiKey).toBe(true);
       expect(result.data.config.projectId).toBe(PROJECT_ID);
     }
-    expect(mockEncrypt).toHaveBeenCalledWith('AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA');
+    expect(mockEncrypt).toHaveBeenCalledWith(DUMMY_GEMINI_KEY);
     expect(mockInsert).toHaveBeenCalled();
     expect(mockOnConflictDoUpdate).toHaveBeenCalled();
   });
@@ -151,7 +152,7 @@ describe('saveAiConfig', () => {
     const result = await saveAiConfig({
       projectId: PROJECT_ID,
       provider: 'gemini',
-      apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+      apiKey: DUMMY_GEMINI_KEY,
     });
 
     expect(result.success).toBe(false);
@@ -228,7 +229,7 @@ describe('getDecryptedApiKey', () => {
 
     expect(result).not.toBeNull();
     expect(result!.provider).toBe('gemini');
-    expect(mockDecrypt).toHaveBeenCalledWith('encrypted_AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA');
+    expect(mockDecrypt).toHaveBeenCalledWith(`encrypted_${DUMMY_GEMINI_KEY}`);
   });
 
   it('설정이 없으면 null을 반환한다', async () => {

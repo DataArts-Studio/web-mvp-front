@@ -8,6 +8,8 @@ import {
   SaveGeneratedCasesSchema,
 } from './schema';
 
+const DUMMY_GEMINI_KEY = 'AIza' + 'TestDummyKey'.padEnd(35, '0'); // 39자, 실제 키 아님
+
 // ============================================================================
 // API_KEY_RULES 상수 검증
 // ============================================================================
@@ -39,7 +41,7 @@ describe('SaveAiConfigSchema', () => {
 
   // --- Gemini ---
   describe('Gemini API 키 검증', () => {
-    const validGeminiKey = 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA'; // 39자
+    const validGeminiKey = DUMMY_GEMINI_KEY; // 39자
 
     it('올바른 Gemini 키를 통과시킨다', () => {
       const result = SaveAiConfigSchema.safeParse({
@@ -174,7 +176,7 @@ describe('SaveAiConfigSchema', () => {
       const result = SaveAiConfigSchema.safeParse({
         projectId: validProjectId,
         provider: 'mistral',
-        apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+        apiKey: DUMMY_GEMINI_KEY,
       });
       expect(result.success).toBe(false);
     });
@@ -183,7 +185,7 @@ describe('SaveAiConfigSchema', () => {
       const result = SaveAiConfigSchema.safeParse({
         projectId: 'not-a-uuid',
         provider: 'gemini',
-        apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+        apiKey: DUMMY_GEMINI_KEY,
       });
       expect(result.success).toBe(false);
     });
@@ -192,13 +194,13 @@ describe('SaveAiConfigSchema', () => {
       const withModel = SaveAiConfigSchema.safeParse({
         projectId: validProjectId,
         provider: 'gemini',
-        apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+        apiKey: DUMMY_GEMINI_KEY,
         model: 'gemini-2.5-flash-lite',
       });
       const withoutModel = SaveAiConfigSchema.safeParse({
         projectId: validProjectId,
         provider: 'gemini',
-        apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+        apiKey: DUMMY_GEMINI_KEY,
       });
       expect(withModel.success).toBe(true);
       expect(withoutModel.success).toBe(true);
