@@ -1,8 +1,10 @@
-import { AiError } from '@/entities/ai-config/model/ai-error';
+import 'server-only';
+
+import { AiError } from '../model/ai-error';
 
 /**
- * 프로바이더별 LLM 호출. analyze-requirements / generate-cases 라우트의 동일 로직을
- * 시나리오 생성 라우트에서 재사용하기 위해 한곳으로 모은 것. (기존 두 라우트는 자체 사본 유지)
+ * 프로젝트 AI 설정(provider/apiKey/model)으로 LLM 을 호출한다.
+ * generate-cases, analyze-requirements, generate-scenarios 라우트가 같이 쓴다.
  */
 
 /** LLM 호출 전체 타임아웃. 응답이 지연·중단돼도 요청이 무한 대기하지 않도록 한다. */
@@ -95,7 +97,7 @@ async function callGemini(apiKey: string, model: string, systemPrompt: string, u
 
 /** provider 에 맞는 LLM 을 호출해 원문 텍스트를 돌려준다. */
 export async function callLlm(
-  config: { provider: string; apiKey: string; model: string },
+  config: { provider: string; apiKey: string; model: string | null },
   systemPrompt: string,
   userPrompt: string
 ): Promise<string> {
