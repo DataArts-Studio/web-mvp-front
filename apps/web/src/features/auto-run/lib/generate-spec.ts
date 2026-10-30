@@ -1,9 +1,10 @@
+import { callLlm } from '@/entities/ai-config/api/call-llm';
 import 'server-only';
 
 /**
  * 케이스 자연어 steps + 대상 페이지 접근성 트리 → Playwright spec 코드 LLM 생성.
  *
- * - 모델: OpenAI gpt-4o-mini (chat completions). 기존 Gemini 키 만료로 전환했다.
+ * - 모델: 프로젝트에 등록한 AI 설정(제공자·키·모델)을 쓴다. 서비스 소유 키로는 호출하지 않는다.
  * - 입력: steps + 실시간 접근성 트리(role/name/level).
  * - 규칙 프롬프트: 트리에 있는 role/name 만 getByRole, 추측 금지, 로딩 대비 첫 단언
  *   timeout 30s, 마크다운 펜스 금지.
@@ -24,6 +25,9 @@ const SPEC_SYSTEM_PROMPT = `너는 Playwright(@playwright/test, TypeScript) 테�
 - 첫 단언(또는 첫 상호작용 직전 대기)은 데이터 로딩 스켈레톤을 대비해 timeout 을 30000ms 로 넉넉히 준다.
 - 자연어 단계의 검증 의도를 expect 단언으로 옮긴다.`;
 
+/** LLM 응답 대기 상한. 응답이 멈춰도 서버 액션이 무한히 붙잡히지 않게 한다. */
+const SPEC_TIMEOUT_MS = 60_000;
+
 export class SpecGenerationError extends Error {
   constructor(message: string) {
     super(message);
@@ -39,17 +43,16 @@ function stripCodeFence(text: string): string {
 }
 
 export async function generateSpec(input: {
+  /** 프로젝트에 등록한 AI 설정(복호화된 키). */
+  llm: { provider: string; apiKey: string; model: string | null };
   steps: string;
   snapshot: string;
   caseTitle: string;
   /** 케이스가 가리키는 경로(상대). 없으면 모델이 트리 기준으로 판단. */
   path?: string;
+  /** 이전 생성본이 정적 검증에 걸렸을 때 다시 생성하도록 넘기는 지적 사항. */
+  retry?: { previousSpec: string; issues: string[] };
 }): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new SpecGenerationError('OPENAI_API_KEY is not set.');
-  }
-
   const userPrompt = [
     `케이스 제목: ${input.caseTitle}`,
     input.path ? `대상 경로: ${input.path}` : '',
@@ -59,40 +62,28 @@ export async function generateSpec(input: {
     '',
     '대상 페이지 접근성 트리:',
     input.snapshot,
+    ...(input.retry
+      ? [
+          '',
+          '이전에 생성한 코드가 접근성 트리에 없는 요소를 가리켰다. 아래 지적을 반영해 트리에 있는 요소로만 다시 작성한다.',
+          ...input.retry.issues.map((issue) => `- ${issue}`),
+          '',
+          '이전 코드:',
+          input.retry.previousSpec,
+        ]
+      : []),
   ]
     .filter((line) => line !== '')
     .join('\n');
 
-  let res: Response;
-  try {
-    res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: SPEC_SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.1,
-        max_tokens: 2048,
-      }),
-      cache: 'no-store',
-    });
-  } catch (error) {
-    throw new SpecGenerationError(
-      `OpenAI request failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-
-  if (!res.ok) {
-    throw new SpecGenerationError(`OpenAI responded ${res.status}.`);
-  }
-
-  const data = await res.json();
-  const text: string | undefined = data?.choices?.[0]?.message?.content;
-  if (!text || !text.trim()) {
-    throw new SpecGenerationError('OpenAI returned empty spec.');
+  // 제공자 오류(키 무효, 한도 등)는 AiError 로 올라가 호출부에서 사용자 안내로 바꾼다.
+  const text = await callLlm(input.llm, SPEC_SYSTEM_PROMPT, userPrompt, {
+    temperature: 0.1,
+    maxTokens: 2048,
+    timeoutMs: SPEC_TIMEOUT_MS,
+  });
+  if (!text.trim()) {
+    throw new SpecGenerationError('LLM returned empty spec.');
   }
 
   const spec = stripCodeFence(text);

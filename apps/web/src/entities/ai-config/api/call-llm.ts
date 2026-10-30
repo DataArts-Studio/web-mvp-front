@@ -7,13 +7,30 @@ import { AiError } from '../model/ai-error';
  * generate-cases, analyze-requirements, generate-scenarios 라우트가 같이 쓴다.
  */
 
-/** LLM 호출 전체 타임아웃. 응답이 지연·중단돼도 요청이 무한 대기하지 않도록 한다. */
-const LLM_TIMEOUT_MS = 120_000;
+/** 호출별로 바꿀 수 있는 생성 옵션. 기본값은 케이스·분석 생성 라우트 기준이다. */
+export interface LlmCallOptions {
+  temperature?: number;
+  maxTokens?: number;
+  /** 응답 대기 상한. 응답이 지연·중단돼도 요청이 무한 대기하지 않도록 한다. */
+  timeoutMs?: number;
+}
 
-async function callOpenAI(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
+const DEFAULT_OPTIONS: Required<LlmCallOptions> = {
+  temperature: 0.7,
+  maxTokens: 4000,
+  timeoutMs: 120_000,
+};
+
+async function callOpenAI(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  options: Required<LlmCallOptions>
+) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
+    signal: AbortSignal.timeout(options.timeoutMs),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
@@ -24,8 +41,8 @@ async function callOpenAI(apiKey: string, model: string, systemPrompt: string, u
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.7,
-      max_tokens: 4000,
+      temperature: options.temperature,
+      max_tokens: options.maxTokens,
     }),
   });
 
@@ -42,11 +59,12 @@ async function callAnthropic(
   apiKey: string,
   model: string,
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  options: Required<Omit<LlmCallOptions, 'temperature'>> & { temperature?: number }
 ) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
+    signal: AbortSignal.timeout(options.timeoutMs),
     headers: {
       'x-api-key': apiKey,
       'Content-Type': 'application/json',
@@ -54,7 +72,9 @@ async function callAnthropic(
     },
     body: JSON.stringify({
       model: model || 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
+      max_tokens: options.maxTokens,
+      // 기존 호출은 temperature 를 보내지 않았다(제공자 기본값). 명시한 호출만 보낸다.
+      ...(options.temperature === undefined ? {} : { temperature: options.temperature }),
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
@@ -70,18 +90,27 @@ async function callAnthropic(
   return textBlock?.text || '';
 }
 
-async function callGemini(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
+async function callGemini(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  options: Required<LlmCallOptions>
+) {
   const modelId = model || 'gemini-2.0-flash';
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
-      signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
+      signal: AbortSignal.timeout(options.timeoutMs),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 4000 },
+        generationConfig: {
+          temperature: options.temperature,
+          maxOutputTokens: options.maxTokens,
+        },
       }),
     }
   );
@@ -99,15 +128,20 @@ async function callGemini(apiKey: string, model: string, systemPrompt: string, u
 export async function callLlm(
   config: { provider: string; apiKey: string; model: string | null },
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  options: LlmCallOptions = {}
 ): Promise<string> {
+  const resolved = { ...DEFAULT_OPTIONS, ...options };
   if (config.provider === 'openai') {
-    return callOpenAI(config.apiKey, config.model || '', systemPrompt, userPrompt);
+    return callOpenAI(config.apiKey, config.model || '', systemPrompt, userPrompt, resolved);
   }
   if (config.provider === 'gemini') {
-    return callGemini(config.apiKey, config.model || '', systemPrompt, userPrompt);
+    return callGemini(config.apiKey, config.model || '', systemPrompt, userPrompt, resolved);
   }
-  return callAnthropic(config.apiKey, config.model || '', systemPrompt, userPrompt);
+  return callAnthropic(config.apiKey, config.model || '', systemPrompt, userPrompt, {
+    ...resolved,
+    temperature: options.temperature,
+  });
 }
 
 /** LLM 응답에서 JSON 객체를 추출한다 (```json ... ``` 또는 순수 객체). */

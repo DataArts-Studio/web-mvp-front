@@ -10,3 +10,9 @@ export {
   type RunAutomatedTestData,
 } from './api/run-automated-test';
 export { useRunAutomatedTest } from './hooks/use-run-automated-test';
+export {
+  caseSpecKeys,
+  useApproveCaseSpec,
+  useCaseSpec,
+  useRevokeCaseSpecApproval,
+} from './hooks/use-case-spec';
