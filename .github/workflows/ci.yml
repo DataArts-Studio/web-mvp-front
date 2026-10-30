@@ -111,7 +111,9 @@ jobs:
   # 전체 회귀는 머지 후 e2e-full 에서 돈다.
   e2e-smoke:
     name: e2e smoke (PR)
-    runs-on: ubuntu-latest
+    # ubuntu-latest(26.04) 는 Playwright 1.60 이 지원하지 않아 브라우저 설치가 실패한다(#518).
+    # 26.04 를 지원하는 Playwright 로 올리면 ubuntu-latest 로 되돌린다.
+    runs-on: ubuntu-24.04
     if: github.event_name == 'pull_request'
     timeout-minutes: 15
     env:
@@ -177,7 +179,8 @@ jobs:
   # 머지 후 회귀: dev/main push 에서 전체 스위트. PR 은 막지 않는다(baseline·회귀 추적용).
   e2e-full:
     name: e2e full (regression)
-    runs-on: ubuntu-latest
+    # e2e-smoke 와 같은 이유로 24.04 고정(#518).
+    runs-on: ubuntu-24.04
     if: github.event_name == 'push'
     timeout-minutes: 60
     env:
