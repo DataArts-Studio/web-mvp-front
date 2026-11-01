@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +10,7 @@ import {
   cleanupSandbox,
   handOverToSandbox,
   isolationAvailable,
+  readSandboxOutput,
 } from './sandbox.js';
 
 /**
@@ -267,12 +268,10 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
       });
     });
 
-    let raw: string | undefined;
-    try {
-      raw = await readFile(reportPath, 'utf8');
-    } catch {
-      raw = undefined;
-    }
+    // 읽기 전에 spec uid 프로세스를 먼저 정리한다. 남아 있는 백그라운드 프로세스가
+    // report.json 을 FIFO·심볼릭 링크로 바꿔 root 의 읽기를 멈추게 할 수 있다.
+    await cleanupSandbox().catch(() => {});
+    const raw = await readSandboxOutput(reportPath);
 
     if (!raw) {
       // reporter 산출물이 없으면 (타임아웃 강제종료/크래시) 실패로 본다.

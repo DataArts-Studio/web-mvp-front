@@ -71,6 +71,11 @@ app.use('*', async (c, next) => {
   return next();
 });
 
+// 요청 timeoutMs 상한. Cloud Run 요청 타임아웃(300s) 안에서 끝나야 runInFlight 가 풀린다.
+// 캡처는 내부적으로 timeoutMs * 3 + 10s 까지 기다리므로 더 낮게 둔다.
+const MAX_RUN_TIMEOUT_MS = 120_000;
+const MAX_CAPTURE_TIMEOUT_MS = 60_000;
+
 /**
  * 한 번에 하나의 spec·캡처만 실행한다. 같은 sandbox uid 로 도는 run 끼리는 파일 권한으로
  * 서로를 막을 수 없으므로, 동시 실행 자체를 없애는 것이 run 간 격리의 본 수단이다.
@@ -127,9 +132,15 @@ app.post('/run', async (c) => {
 
   if (
     body.timeoutMs !== undefined &&
-    (typeof body.timeoutMs !== 'number' || !Number.isFinite(body.timeoutMs) || body.timeoutMs <= 0)
+    (typeof body.timeoutMs !== 'number' ||
+      !Number.isFinite(body.timeoutMs) ||
+      body.timeoutMs <= 0 ||
+      body.timeoutMs > MAX_RUN_TIMEOUT_MS)
   ) {
-    return c.json({ ok: false, error: 'Field "timeoutMs" must be a positive number.' }, 400);
+    return c.json(
+      { ok: false, error: `Field "timeoutMs" must be a positive number up to ${MAX_RUN_TIMEOUT_MS}.` },
+      400
+    );
   }
 
   // fail-closed: uid 분리 격리를 못 쓰면 비신뢰 코드를 실행하지 않는다.
@@ -194,9 +205,15 @@ app.post('/capture', async (c) => {
 
   if (
     body.timeoutMs !== undefined &&
-    (typeof body.timeoutMs !== 'number' || !Number.isFinite(body.timeoutMs) || body.timeoutMs <= 0)
+    (typeof body.timeoutMs !== 'number' ||
+      !Number.isFinite(body.timeoutMs) ||
+      body.timeoutMs <= 0 ||
+      body.timeoutMs > MAX_CAPTURE_TIMEOUT_MS)
   ) {
-    return c.json({ ok: false, error: 'Field "timeoutMs" must be a positive number.' }, 400);
+    return c.json(
+      { ok: false, error: `Field "timeoutMs" must be a positive number up to ${MAX_CAPTURE_TIMEOUT_MS}.` },
+      400
+    );
   }
 
   const refusal = sandboxRefusal();
