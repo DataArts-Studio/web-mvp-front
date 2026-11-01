@@ -123,4 +123,23 @@ describe('recordCreatedCases (#391)', () => {
 
     expect(createInitialVersions).not.toHaveBeenCalled();
   });
+
+  it('케이스 실행이 많으면 드라이버 파라미터 상한을 넘지 않게 1,000행씩 나눠 넣는다', async () => {
+    const runs = ['run-1', 'run-2', 'run-3'];
+    const { tx, inserts } = createTx([
+      runs.map((id) => ({ test_run_id: id, excluded_at: null })),
+      [],
+      runs.map((id) => ({ id })),
+      [],
+    ]);
+    const cases = Array.from({ length: 900 }, (_, index) => caseRow(`c${index}`, 's1'));
+
+    await recordCreatedCases(tx as never, cases, '요약');
+
+    const batches = inserts
+      .filter((i) => i.table === 'test_case_runs')
+      .map((i) => (i.values as unknown[]).length);
+    expect(batches).toEqual([1000, 1000, 700]);
+    expect(recomputeTestRunStatus).toHaveBeenCalledTimes(1);
+  });
 });
