@@ -17,16 +17,6 @@ import { getDatabase, projects } from '@testea/db';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
-// ============================================================================
-// Helpers
-// ============================================================================
-/**
- * @deprecated hashPassword를 대신 사용하세요 (@/access/lib/password-hash)
- */
-export async function hashIdentifier(identifier: string): Promise<string> {
-  return hashPassword(identifier);
-}
-
 // Server Action에서 클라이언트로 전달할 때 Date 객체는 직렬화 불가능하므로 string으로 변환
 // identifier(해시)는 보안상 응답에 포함하지 않음
 type SerializableProjectDomain = Omit<

@@ -39,7 +39,7 @@ describe('SaveAiConfigSchema', () => {
 
   // --- Gemini ---
   describe('Gemini API 키 검증', () => {
-    const validGeminiKey = 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA'; // 39자
+    const validGeminiKey = 'AIzaFAKE-test-key-000000000000000000000'; // 39자
 
     it('올바른 Gemini 키를 통과시킨다', () => {
       const result = SaveAiConfigSchema.safeParse({
@@ -174,7 +174,7 @@ describe('SaveAiConfigSchema', () => {
       const result = SaveAiConfigSchema.safeParse({
         projectId: validProjectId,
         provider: 'mistral',
-        apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+        apiKey: 'AIzaFAKE-test-key-000000000000000000000',
       });
       expect(result.success).toBe(false);
     });
@@ -183,7 +183,7 @@ describe('SaveAiConfigSchema', () => {
       const result = SaveAiConfigSchema.safeParse({
         projectId: 'not-a-uuid',
         provider: 'gemini',
-        apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+        apiKey: 'AIzaFAKE-test-key-000000000000000000000',
       });
       expect(result.success).toBe(false);
     });
@@ -192,13 +192,13 @@ describe('SaveAiConfigSchema', () => {
       const withModel = SaveAiConfigSchema.safeParse({
         projectId: validProjectId,
         provider: 'gemini',
-        apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+        apiKey: 'AIzaFAKE-test-key-000000000000000000000',
         model: 'gemini-2.5-flash-lite',
       });
       const withoutModel = SaveAiConfigSchema.safeParse({
         projectId: validProjectId,
         provider: 'gemini',
-        apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+        apiKey: 'AIzaFAKE-test-key-000000000000000000000',
       });
       expect(withModel.success).toBe(true);
       expect(withoutModel.success).toBe(true);

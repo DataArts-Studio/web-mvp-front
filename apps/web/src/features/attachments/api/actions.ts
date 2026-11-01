@@ -10,6 +10,7 @@ import { createSupabaseServerClient } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
+import { matchesFileSignature } from '../lib/file-signature';
 import {
   ATTACHMENT_LIMITS,
   ATTACHMENT_SIGNED_URL_TTL_SECONDS,
@@ -153,7 +154,7 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
       };
     }
 
-    // Max files per case
+    // Max files per case: 개수 초과로 거부할 요청은 본문을 읽기 전에 돌려보낸다.
     const db = getDatabase();
     const existingFiles = await db
       .select({ id: testCaseAttachments.id })
@@ -176,19 +177,27 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
       };
     }
 
+    // file.type 은 클라이언트가 정한 값이다. 실제 바이트가 그 형식과 맞을 때만 받고,
+    // 저장·서빙에는 확인을 거친 타입만 쓴다.
+    const buffer = Buffer.from(await file.arrayBuffer());
+    if (!matchesFileSignature(file.type, buffer)) {
+      return {
+        success: false,
+        errors: { _attachment: ['파일 내용이 형식과 일치하지 않습니다.'] },
+      };
+    }
+    const contentType = file.type;
+
     // Upload to Supabase Storage
     const supabase = await createSupabaseServerClient();
     const fileId = uuidv7();
     const ext = getFileExtension(file.name);
     const storagePath = `${projectId}/${testCaseId}/${fileId}${ext ? `.${ext}` : ''}`;
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(storagePath, buffer, {
-        contentType: file.type,
+        contentType,
         upsert: false,
       });
 
@@ -211,7 +220,7 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
         project_id: projectId,
         file_name: file.name,
         file_size: file.size,
-        file_type: file.type || null,
+        file_type: contentType,
         storage_path: storagePath,
         created_at: new Date(),
       })

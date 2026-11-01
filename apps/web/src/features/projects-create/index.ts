@@ -1,2 +1,2 @@
-export { createProject, checkProjectNameDuplicate, hashIdentifier } from './api';
+export { createProject, checkProjectNameDuplicate } from './api';
 export { ProjectCreateForm } from './ui';
