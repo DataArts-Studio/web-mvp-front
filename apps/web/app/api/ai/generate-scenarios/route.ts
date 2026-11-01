@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { callLlm, parseJsonResponse } from '@/entities/ai-config/api/call-llm';
 import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
 import { AiError } from '@/entities/ai-config/model/ai-error';
 import {
@@ -8,7 +9,6 @@ import {
   getMonthlyUsage,
   recordUsageAtomic,
 } from '@/entities/ai-usage/api/server-actions';
-import { callLlm, parseJsonResponse } from '@/features/ai-generate-scenarios/lib/llm-client';
 import {
   SCENARIO_SYSTEM_PROMPT,
   buildScenarioPrompt,
