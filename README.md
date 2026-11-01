@@ -18,7 +18,7 @@
 
 <br />
 
-[**운영**](https://gettestea.com) · [**개발**](https://dev.gettestea.com) · **백오피스** admin.gettestea.com
+[**운영**](https://gettestea.com) · [**개발**](https://dev.gettestea.com) · **백오피스** back.gettestea.com
 
 </div>
 
@@ -48,7 +48,7 @@ pnpm workspace + Turborepo 기반 모노레포입니다.
 .
 ├── apps/
 │   ├── web/          # 사용자 대상 서비스 (gettestea.com)
-│   ├── back-office/  # 운영 백오피스 (admin.gettestea.com, 별도 배포)
+│   ├── back-office/  # 운영 백오피스 (back.gettestea.com, 별도 배포)
 │   └── runner/       # Playwright 자동 실행 러너 (Fly.io, 순수 실행기)
 └── packages/
     ├── db/           # Drizzle 스키마·쿼리·마이그레이션 (RLS deny-anon 정책 동반)

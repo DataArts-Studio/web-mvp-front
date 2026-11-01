@@ -19,6 +19,7 @@ import { getDatabase, projects } from '@testea/db';
 import { eq } from 'drizzle-orm';
 
 import { PROJECT_NAME_ERRORS } from '../model/constants';
+import { ChangeIdentifierFormSchema } from '../model/schema';
 
 const PROJECT_NAME_MAX_LENGTH = 50;
 
@@ -278,6 +279,22 @@ export const changeProjectIdentifier = async (
     const hasAccess = await requireProjectAccess(projectId);
     if (!hasAccess) {
       return { success: false, errors: { _project: ['접근 권한이 없습니다.'] } };
+    }
+
+    // 클라이언트 폼 검증을 우회한 호출도 막도록 같은 스키마로 서버에서 다시 검증한다.
+    // 확인 입력은 폼에서만 쓰이므로 새 비밀번호를 그대로 채워 길이 규칙만 적용한다.
+    const parsed = ChangeIdentifierFormSchema.safeParse({
+      currentPassword,
+      newPassword,
+      confirmPassword: newPassword,
+    });
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const field = issue?.path[0] === 'currentPassword' ? 'currentPassword' : 'newPassword';
+      return {
+        success: false,
+        errors: { [field]: [issue?.message ?? '입력값을 확인해주세요.'] },
+      };
     }
 
     const db = getDatabase();
