@@ -101,6 +101,7 @@ describe('signInAdminAction 브루트포스 방어', () => {
     for (let i = 0; i < 3; i += 1) {
       expect((await signInAdminAction({}, form('wrong'))).error).toMatch(/시도가 너무 많습니다/);
     }
+    expect(mocks.reserve).toHaveBeenCalledTimes(5);
     expect(mocks.rows.get(IP)).toHaveLength(5);
   });
 

@@ -81,15 +81,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    // 보관·삭제된 프로젝트에는 외부 이벤트로 링크를 새로 만들지 않는다.
+    // 보관·삭제된 프로젝트에는 외부 이벤트로 링크를 새로 만들거나 코멘트를 달지 않는다.
+    // 기존 링크의 PR 상태 갱신은 계속해, 복원했을 때 닫힌 PR 이 open 으로 남지 않게 한다.
     const [project] = await db
       .select({ lifecycle_status: projects.lifecycle_status })
       .from(projects)
       .where(eq(projects.id, conn.project_id))
       .limit(1);
-    if (project?.lifecycle_status !== 'ACTIVE') {
-      return NextResponse.json({ message: 'Project not active' }, { status: 200 });
+    if (!project) {
+      return NextResponse.json({ message: 'Project not found' }, { status: 200 });
     }
+    const projectActive = project.lifecycle_status === 'ACTIVE';
 
     const pr = payload.pull_request;
     const prTitle = pr?.title || '';
@@ -118,9 +120,9 @@ export async function POST(req: NextRequest) {
       .where(
         and(eq(testCases.project_id, conn.project_id), inArray(testCases.display_id, displayIds))
       );
-    const matchedCases = referencedCases.filter(
-      (tc) => tc.lifecycle_status === 'ACTIVE' && tc.archived_at === null
-    );
+    const isActiveCase = (tc: (typeof referencedCases)[number]) =>
+      projectActive && tc.lifecycle_status === 'ACTIVE' && tc.archived_at === null;
+    const matchedCases = referencedCases.filter(isActiveCase);
 
     if (referencedCases.length === 0) {
       return NextResponse.json({ message: 'No matching TCs' }, { status: 200 });
@@ -128,7 +130,7 @@ export async function POST(req: NextRequest) {
 
     // 링크 생성 (중복 방지: 같은 TC + 같은 PR number는 업데이트)
     for (const tc of referencedCases) {
-      const isActive = tc.lifecycle_status === 'ACTIVE' && tc.archived_at === null;
+      const isActive = isActiveCase(tc);
       const [existing] = await db
         .select({ id: testCaseExternalLinks.id })
         .from(testCaseExternalLinks)
