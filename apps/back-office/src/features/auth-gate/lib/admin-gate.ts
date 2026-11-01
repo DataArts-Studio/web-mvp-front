@@ -2,9 +2,10 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { initCloudflareDb } from '@/shared/db/cloudflare-db';
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 
 import { verifyAdminSession } from './admin-session';
+import { warnIfWeakSecret } from './secret-strength';
 
 /**
  * 백오피스 v1 임시 인증 게이트 (환경변수 공유키).
@@ -19,18 +20,21 @@ import { verifyAdminSession } from './admin-session';
 export const ADMIN_COOKIE = 'bo_admin_session';
 const GATE_PATH = '/notices/gate';
 
-/** 상수시간 문자열 비교. 길이 불일치는 즉시 false. */
+/**
+ * 상수시간 문자열 비교. 양쪽을 SHA-256 다이제스트(고정 32바이트)로 바꿔 비교하므로
+ * 길이 차이로 일찍 끝나지 않고, 비교 시간으로 공유키 길이가 드러나지 않는다.
+ */
 function safeEqual(a: string, b: string): boolean {
-  const ba = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (ba.length !== bb.length) return false;
-  return timingSafeEqual(ba, bb);
+  const da = createHash('sha256').update(a).digest();
+  const db = createHash('sha256').update(b).digest();
+  return timingSafeEqual(da, db);
 }
 
 /** 입력값이 설정된 공유키와 일치하는지. 시크릿 미설정 시 항상 false. */
 export function isValidSecret(candidate: string | undefined | null): boolean {
   const secret = process.env.BACKOFFICE_ADMIN_SECRET;
   if (!secret || !candidate) return false;
+  warnIfWeakSecret(secret);
   return safeEqual(candidate, secret);
 }
 

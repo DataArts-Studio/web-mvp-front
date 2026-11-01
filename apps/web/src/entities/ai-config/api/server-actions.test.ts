@@ -76,7 +76,7 @@ const createMockAiConfigRow = (overrides: Record<string, unknown> = {}) => ({
   id: 'config-123',
   project_id: PROJECT_ID,
   provider: 'gemini',
-  api_key: 'encrypted_AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+  api_key: 'encrypted_AIzaFAKE-test-key-000000000000000000000',
   model: null,
   lifecycle_status: 'ACTIVE',
   created_at: MOCK_DATE,
@@ -106,7 +106,7 @@ describe('saveAiConfig', () => {
     const result = await saveAiConfig({
       projectId: PROJECT_ID,
       provider: 'gemini',
-      apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+      apiKey: 'AIzaFAKE-test-key-000000000000000000000',
     });
 
     expect(result.success).toBe(true);
@@ -115,7 +115,7 @@ describe('saveAiConfig', () => {
       expect(result.data.config.hasApiKey).toBe(true);
       expect(result.data.config.projectId).toBe(PROJECT_ID);
     }
-    expect(mockEncrypt).toHaveBeenCalledWith('AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA');
+    expect(mockEncrypt).toHaveBeenCalledWith('AIzaFAKE-test-key-000000000000000000000');
     expect(mockInsert).toHaveBeenCalled();
     expect(mockOnConflictDoUpdate).toHaveBeenCalled();
   });
@@ -151,7 +151,7 @@ describe('saveAiConfig', () => {
     const result = await saveAiConfig({
       projectId: PROJECT_ID,
       provider: 'gemini',
-      apiKey: 'AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA',
+      apiKey: 'AIzaFAKE-test-key-000000000000000000000',
     });
 
     expect(result.success).toBe(false);
@@ -228,7 +228,7 @@ describe('getDecryptedApiKey', () => {
 
     expect(result).not.toBeNull();
     expect(result!.provider).toBe('gemini');
-    expect(mockDecrypt).toHaveBeenCalledWith('encrypted_AIzaSyCQeNta_oe4A-xlURzdEYZlx31-XsPIsAA');
+    expect(mockDecrypt).toHaveBeenCalledWith('encrypted_AIzaFAKE-test-key-000000000000000000000');
   });
 
   it('설정이 없으면 null을 반환한다', async () => {

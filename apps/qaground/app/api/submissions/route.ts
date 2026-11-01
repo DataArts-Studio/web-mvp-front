@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { gradeApiAttempts } from '@/shared/challenges/api-hidden-grader';
 import { getChallenge } from '@/shared/challenges/registry';
 import { createChallengeResultToken } from '@/shared/challenges/result-access.server';
+import { getClientIp } from '@/shared/rate-limit';
 import { getDatabase, qagroundSubmissions } from '@testea/db';
 import { z } from 'zod';
 
@@ -49,6 +50,9 @@ const ApiContentSchema = z
 
 // 제출 내용 jsonb 크기 상한(직렬화 기준). 남용·과대 페이로드 차단.
 const MAX_CONTENT_BYTES = 50_000;
+// 결과 jsonb 크기 상한(직렬화 기준). 실제 클라 결과는 status·score 등 수십~수백 바이트라
+// 넉넉히 잡되, 임의 대용량 객체가 DB 로 들어가지 않게 막는다.
+const MAX_RESULT_BYTES = 10_000;
 
 // 간단 인메모리 레이트리밋(서버 인스턴스별). 제출은 빈번하므로 이슈보다 넉넉히.
 const WINDOW_MS = 60 * 60 * 1000;
@@ -77,7 +81,7 @@ function rateLimited(ip: string): boolean {
  * - DB 접근은 서버(연결) 경유. 테이블은 RLS deny-anon.
  */
 export async function POST(request: Request) {
-  const ip = (request.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+  const ip = getClientIp(request);
   if (rateLimited(ip)) {
     return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 });
   }
@@ -101,6 +105,11 @@ export async function POST(request: Request) {
   const contentBytes = JSON.stringify(parsed.data.content ?? null).length;
   if (contentBytes > MAX_CONTENT_BYTES) {
     return NextResponse.json({ ok: false, error: 'content_too_large' }, { status: 413 });
+  }
+
+  const resultBytes = JSON.stringify(parsed.data.result ?? null).length;
+  if (resultBytes > MAX_RESULT_BYTES) {
+    return NextResponse.json({ ok: false, error: 'result_too_large' }, { status: 413 });
   }
 
   const apiContent =

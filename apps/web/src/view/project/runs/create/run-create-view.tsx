@@ -5,7 +5,12 @@ import { useForm } from 'react-hook-form';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import { milestonesQueryOptions } from '@/entities/milestone';
-import { RUN_NAME_MAX_LENGTH, RUN_NAME_TOO_LONG_MESSAGE } from '@/entities/test-run';
+import {
+  RUN_NAME_MAX_LENGTH,
+  RUN_NAME_MIN_LENGTH,
+  RUN_NAME_TOO_LONG_MESSAGE,
+  RUN_NAME_TOO_SHORT_MESSAGE,
+} from '@/entities/test-run';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import { type CreateRunInput, useCreateRun } from '@/features/runs-create';
 import { TESTRUN_EVENTS, track } from '@/shared/lib/analytics';
@@ -332,7 +337,9 @@ export const RunCreateView = () => {
                     disabled={isPending}
                     {...register('runName', {
                       required: '실행 이름을 입력해주세요.',
-                      minLength: { value: 2, message: '실행 이름은 최소 2자 이상이어야 합니다.' },
+                      // 서버가 앞뒤 공백을 빼고 검사하므로 화면도 같은 기준으로 센다.
+                      validate: (value) =>
+                        value.trim().length >= RUN_NAME_MIN_LENGTH || RUN_NAME_TOO_SHORT_MESSAGE,
                       maxLength: { value: RUN_NAME_MAX_LENGTH, message: RUN_NAME_TOO_LONG_MESSAGE },
                     })}
                   />
