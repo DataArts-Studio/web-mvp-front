@@ -1,19 +1,40 @@
 'use client';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { Milestone, MilestoneCard, MilestoneWithStats } from '@/entities/milestone';
+import { Milestone, MilestoneWithStats } from '@/entities/milestone';
 import { projectIdQueryOptions } from '@/entities/project';
 import { MilestoneCreateForm, milestonesQueryOptions } from '@/features/milestones-create';
 import { MilestoneEditForm } from '@/features/milestones-edit';
 import { MILESTONE_EVENTS, track } from '@/shared/lib/analytics';
+import { todayDateOnly } from '@/shared/lib/date-only';
 import { useQuery } from '@tanstack/react-query';
 import { useDisclosure } from '@testea/lib';
-import { MainContainer, Pagination, ProjectErrorFallback, Skeleton } from '@testea/ui';
-import { Plus, Search } from 'lucide-react';
+import { MainContainer, ProjectErrorFallback, Skeleton } from '@testea/ui';
+import { cn } from '@testea/util';
+import { ChevronDown, Plus, Search } from 'lucide-react';
 
-const PAGE_SIZE = 10;
+import {
+  type MilestoneListTab,
+  type MilestonePhase,
+  PHASE_ORDER,
+  groupMilestones,
+} from './_components/milestone-list-model';
+import { MILESTONE_ROW_GRID, MilestoneListRow } from './_components/milestone-list-row';
+
+const PHASE_LABEL: Record<MilestonePhase, string> = {
+  inProgress: '진행 중',
+  planned: '예정',
+  done: '완료',
+};
+
+const TABS: { value: MilestoneListTab; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'inProgress', label: PHASE_LABEL.inProgress },
+  { value: 'planned', label: PHASE_LABEL.planned },
+  { value: 'done', label: PHASE_LABEL.done },
+];
 
 export const MilestonesView = () => {
   const params = useParams();
@@ -21,7 +42,19 @@ export const MilestonesView = () => {
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<MilestoneListTab>('all');
+  const [collapsed, setCollapsed] = useState<Record<MilestonePhase, boolean>>({
+    inProgress: false,
+    planned: false,
+    done: false,
+  });
+
+  // 묶음·남은 날은 오늘 날짜에 달려 있어 서버와 어긋나지 않게 마운트 뒤에 그린다
+  const [today, setToday] = useState<string | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 후 로컬 날짜를 1회 확정. SSR↔CSR 미스매치 방지용
+    setToday(todayDateOnly());
+  }, []);
 
   const { data: projectIdData, isLoading: isLoadingProject } = useQuery(
     projectIdQueryOptions(params.slug as string)
@@ -38,46 +71,18 @@ export const MilestonesView = () => {
 
   const filteredMilestones = useMemo(() => {
     const searchLower = searchQuery.toLowerCase().trim();
-
     if (!searchLower) return milestonesData;
-
-    return milestonesData.filter((milestone: MilestoneWithStats) => {
-      return (
+    return milestonesData.filter(
+      (milestone) =>
         milestone.title.toLowerCase().includes(searchLower) ||
         (milestone.description?.toLowerCase().includes(searchLower) ?? false)
-      );
-    });
+    );
   }, [milestonesData, searchQuery]);
 
-  const totalItems = filteredMilestones.length;
-  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
-  const safeCurrentPage = Math.min(Math.max(currentPage, 1), Math.max(totalPages, 1));
-  const paginatedMilestones = useMemo(() => {
-    const start = (safeCurrentPage - 1) * PAGE_SIZE;
-    return filteredMilestones.slice(start, start + PAGE_SIZE);
-  }, [filteredMilestones, safeCurrentPage]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handlePageChange = (page: number) => {
-    if (totalPages === 0) {
-      setCurrentPage(1);
-      return;
-    }
-
-    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
-  };
-
-  const handleEdit = (milestone: Milestone) => {
-    setEditingMilestone(milestone);
-  };
-
-  const handleCloseEdit = () => {
-    setEditingMilestone(null);
-  };
+  const groups = useMemo(
+    () => (today ? groupMilestones(filteredMilestones, today) : null),
+    [filteredMilestones, today]
+  );
 
   React.useEffect(() => {
     if (milestonesResult?.success) {
@@ -85,130 +90,194 @@ export const MilestonesView = () => {
     }
   }, [milestonesResult?.success, projectId]);
 
-  if (isLoadingProject || isLoadingMilestones) {
+  if (!groups || !today || isLoadingProject || isLoadingMilestones) {
     return (
-      <MainContainer className="mx-auto grid min-h-screen w-full max-w-[1200px] flex-1 grid-cols-6 content-start gap-x-5 gap-y-6 px-10 py-8">
-        <header className="col-span-6 flex flex-col gap-2">
-          <Skeleton className="h-8 w-72" />
-          <Skeleton className="h-5 w-[420px]" />
+      <MainContainer className="flex h-screen w-full flex-1 flex-col overflow-hidden">
+        <header className="flex items-center justify-between gap-4 px-4 py-5 md:px-8">
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className="h-7 w-28" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Skeleton className="h-9 w-[350px] max-w-[50%]" />
         </header>
-        <div className="border-line-2 col-span-6 flex items-center justify-between gap-4 border-b pb-4">
-          <Skeleton className="rounded-1 h-9 max-w-md flex-1" />
-          <Skeleton className="rounded-1 h-9 w-36" />
+        <div className="border-line-2 flex gap-3 border-b px-4 pb-2.5 md:px-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-6 w-16" />
+          ))}
         </div>
-        <section className="col-span-6 flex min-h-[520px] flex-col overflow-hidden">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="border-line-2 grid grid-cols-1 gap-3 border-b px-1 py-4 md:grid-cols-[minmax(0,1fr)_220px] md:gap-6"
-            >
-              <div className="flex flex-col gap-2">
-                <Skeleton className="h-5 w-72" />
-                <Skeleton className="h-4 w-96 max-w-full" />
-                <Skeleton className="h-4 w-56" />
+        <div className="flex flex-col px-4 pt-4 md:px-8">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="border-line-2 flex items-center gap-4 border-b px-2.5 py-4">
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <div className="flex flex-1 flex-col gap-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-24" />
               </div>
-              <div className="flex flex-col gap-2 md:items-end">
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-2 w-44" />
-                <Skeleton className="h-4 w-28" />
-              </div>
+              <Skeleton className="hidden h-6 w-[250px] lg:block" />
+              <Skeleton className="h-5 w-12" />
             </div>
           ))}
-        </section>
+        </div>
       </MainContainer>
     );
   }
 
   if (!projectIdData?.success) return <ProjectErrorFallback />;
 
+  const tabCount = (tab: MilestoneListTab) =>
+    tab === 'all' ? filteredMilestones.length : groups[tab].length;
+  const visiblePhases = activeTab === 'all' ? PHASE_ORDER : [activeTab];
+  const visibleCount = visiblePhases.reduce((sum, phase) => sum + groups[phase].length, 0);
+  const isSearching = searchQuery.trim() !== '';
+
   return (
-    <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_1fr] gap-x-5 gap-y-5 overflow-hidden px-10 py-8">
-      <header className="col-span-6 flex w-full items-start justify-between gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="typo-title-heading">마일스톤 & 테스트 진행 현황</h1>
-          <p className="typo-body1-normal text-text-3">
-            마일스톤별 테스트 범위, 진행률, 실행 이력을 한 화면에서 확인하세요.
+    <MainContainer className="flex h-screen w-full flex-1 flex-col overflow-hidden">
+      <header className="flex flex-wrap items-center justify-between gap-4 px-4 py-5 md:px-8">
+        <div className="flex flex-col gap-0.5">
+          <h1 className="text-[20px] font-bold tracking-[-0.02em] text-white">마일스톤</h1>
+          <p className="text-[13px] tracking-[-0.02em] text-white/40">
+            릴리스 단위로 테스트 진행 현황과 일정을 추적합니다
           </p>
+        </div>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <label className="border-line-2 bg-bg-2 focus-within:border-primary/60 flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[6px] border px-3 sm:w-[240px] sm:flex-none">
+            <span className="sr-only">마일스톤 검색</span>
+            <Search className="h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="마일스톤 이름 검색"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-white/90 outline-none placeholder:text-white/40"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => onOpen()}
+            className="bg-primary hover:bg-primary/90 inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[4px] px-3.5 text-[14px] font-medium whitespace-nowrap text-white"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />새 마일스톤
+          </button>
         </div>
       </header>
 
+      <div className="border-line-2 flex flex-wrap items-center gap-2 border-b px-4 md:px-8">
+        <div role="tablist" aria-label="마일스톤 상태" className="flex flex-wrap gap-1">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveTab(tab.value)}
+                className={cn(
+                  '-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-[14px] whitespace-nowrap',
+                  active
+                    ? 'border-primary font-bold text-white'
+                    : 'border-transparent font-medium text-white/40 hover:text-white/70'
+                )}
+              >
+                {tab.label}
+                <span
+                  className={cn(
+                    'rounded-[4px] px-2 py-0.5 text-[11px] font-medium',
+                    active ? 'bg-primary/15 text-primary' : 'bg-white/[0.06] text-white'
+                  )}
+                >
+                  {tabCount(tab.value)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <section
         aria-label="마일스톤 목록"
-        className="col-span-6 flex min-h-0 flex-col overflow-hidden"
+        className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-8 md:px-8"
       >
-        <div className="border-line-2 flex flex-col gap-3 border-b pb-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <h2 className="typo-body2-heading text-text-1">마일스톤 목록</h2>
-            <p className="typo-caption-normal text-text-4">
-              {totalItems} / {milestonesData.length}
-              {searchQuery.trim() ? ` · "${searchQuery.trim()}"` : ''}
+        {visibleCount === 0 ? (
+          <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 px-6 text-center">
+            <p className="typo-body2-heading text-text-1">
+              {milestonesData.length === 0
+                ? '등록된 마일스톤이 없습니다.'
+                : isSearching
+                  ? '검색 결과가 없습니다.'
+                  : `${PHASE_LABEL[activeTab as MilestonePhase]} 마일스톤이 없습니다.`}
             </p>
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-2 lg:max-w-2xl lg:flex-row lg:items-center lg:justify-end">
-            <label className="relative min-w-0 flex-1 lg:max-w-md">
-              <span className="sr-only">마일스톤 이름 또는 키워드로 검색</span>
-              <Search
-                aria-hidden="true"
-                className="text-text-4 pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-                strokeWidth={1.8}
-              />
-              <input
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="마일스톤 이름 또는 키워드로 검색"
-                className="typo-body2-normal border-line-2 bg-bg-2 text-text-1 placeholder:text-text-4 focus:border-primary focus:ring-primary h-9 w-full border pr-3 pl-9 transition-colors outline-none focus:ring-1"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => onOpen()}
-              className="typo-body2-heading bg-primary hover:bg-primary/90 inline-flex h-9 shrink-0 items-center justify-center gap-2 px-3 text-white transition-colors"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              마일스톤 생성
-            </button>
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="flex flex-col">
-            {milestonesData.length === 0 ? (
-              <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-2 px-6 text-center">
-                <p className="typo-body2-heading text-text-1">등록된 마일스톤이 없습니다.</p>
-                <p className="typo-body2-normal text-text-3 max-w-md">
-                  새로운 마일스톤을 생성하여 테스트 관리를 시작해보세요.
-                </p>
-              </div>
-            ) : filteredMilestones.length === 0 ? (
-              <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-2 px-6 text-center">
-                <p className="typo-body2-heading text-text-1">검색 결과가 없습니다.</p>
-                <p className="typo-body2-normal text-text-3 max-w-md">
-                  다른 검색어를 시도해보세요.
-                </p>
-              </div>
-            ) : (
-              paginatedMilestones.map((milestone) => (
-                <MilestoneCard
-                  key={milestone.id}
-                  href={`/projects/${params.slug}/milestones/${milestone.id}`}
-                  projectSlug={params.slug as string}
-                  milestone={milestone}
-                  onEdit={() => handleEdit(milestone)}
-                />
-              ))
+            {(milestonesData.length === 0 || isSearching) && (
+              <p className="typo-body2-normal text-text-3 max-w-md">
+                {isSearching
+                  ? '다른 검색어를 시도해보세요.'
+                  : '새로운 마일스톤을 생성하여 테스트 관리를 시작해보세요.'}
+              </p>
             )}
           </div>
-        </div>
-        <Pagination
-          currentPage={safeCurrentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          className="border-line-2 border-t"
-        />
+        ) : (
+          <>
+            <div
+              aria-hidden="true"
+              className={cn(
+                'hidden px-2.5 pb-2 text-[11px] text-white/40 lg:grid',
+                MILESTONE_ROW_GRID
+              )}
+            >
+              <span>마일스톤</span>
+              <span>상태</span>
+              <span>진행</span>
+              <span />
+              <span>범위</span>
+              <span className="text-right">목표일</span>
+            </div>
+            {visiblePhases.map((phase) => {
+              const items = groups[phase];
+              if (items.length === 0) return null;
+              const isCollapsed = collapsed[phase];
+              const listId = `milestone-group-${phase}`;
+              return (
+                <div key={phase}>
+                  <button
+                    type="button"
+                    aria-expanded={!isCollapsed}
+                    aria-controls={listId}
+                    onClick={() => setCollapsed((prev) => ({ ...prev, [phase]: !prev[phase] }))}
+                    className="flex w-full items-center gap-2 rounded-[4px] bg-white/[0.04] px-2.5 py-[7px] text-[12px] font-medium hover:bg-white/[0.06]"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        'h-2.5 w-2.5 text-white/60 transition-transform',
+                        isCollapsed && '-rotate-90'
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span className="text-white/75">{PHASE_LABEL[phase]}</span>
+                    <span className="text-white/35">{items.length}</span>
+                  </button>
+                  {!isCollapsed && (
+                    <ul id={listId}>
+                      {items.map((milestone) => (
+                        <MilestoneListRow
+                          key={milestone.id}
+                          milestone={milestone}
+                          today={today}
+                          href={`/projects/${params.slug}/milestones/${milestone.id}`}
+                          projectSlug={params.slug as string}
+                          onEdit={() => setEditingMilestone(milestone)}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
       </section>
       {isOpen && projectId && <MilestoneCreateForm onClose={onClose} projectId={projectId} />}
       {editingMilestone && (
-        <MilestoneEditForm milestone={editingMilestone} onClose={handleCloseEdit} />
+        <MilestoneEditForm milestone={editingMilestone} onClose={() => setEditingMilestone(null)} />
       )}
     </MainContainer>
   );

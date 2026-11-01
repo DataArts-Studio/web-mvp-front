@@ -57,7 +57,8 @@ const rawGetMilestones = unstable_cache(
     const { getMilestones } = await import('@/entities/milestone/api/server-actions');
     return getMilestones({ projectId });
   },
-  ['milestones'],
+  // 응답에 결과별 수·스위트 수가 추가돼 키를 바꿔 이전 모양 캐시를 쓰지 않는다
+  ['milestones-v2'],
   { revalidate: 60, tags: [CACHE_TAGS.milestones] }
 );
 

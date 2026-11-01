@@ -20,6 +20,10 @@ export const milestonesMock: MilestoneWithStats[] = [
     completedCases: 38,
     progressRate: 84,
     runCount: 3,
+    passCases: 0,
+    failCases: 0,
+    blockedCases: 0,
+    suiteCount: 0,
   },
   {
     id: 'ms_v1_1_beta',
@@ -38,6 +42,10 @@ export const milestonesMock: MilestoneWithStats[] = [
     completedCases: 12,
     progressRate: 43,
     runCount: 1,
+    passCases: 0,
+    failCases: 0,
+    blockedCases: 0,
+    suiteCount: 0,
   },
   {
     id: 'ms_bug_sprint',
@@ -56,6 +64,10 @@ export const milestonesMock: MilestoneWithStats[] = [
     completedCases: 15,
     progressRate: 100,
     runCount: 2,
+    passCases: 0,
+    failCases: 0,
+    blockedCases: 0,
+    suiteCount: 0,
   },
   {
     id: 'ms_next_plan',
@@ -74,5 +86,9 @@ export const milestonesMock: MilestoneWithStats[] = [
     completedCases: 0,
     progressRate: 0,
     runCount: 0,
+    passCases: 0,
+    failCases: 0,
+    blockedCases: 0,
+    suiteCount: 0,
   },
 ];
