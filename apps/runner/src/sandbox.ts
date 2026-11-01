@@ -1,4 +1,5 @@
 import childProcess from 'node:child_process';
+import { constants as fsConstants } from 'node:fs';
 import fs from 'node:fs/promises';
 
 /**
@@ -181,5 +182,57 @@ export async function cleanupSandbox(): Promise<boolean> {
     compromised = true;
     console.error('[runner] sandbox file cleanup failed. Refusing further runs.');
     return false;
+  }
+}
+
+/** spec 산출물 파일 크기 상한. reporter JSON·캡처 결과는 이보다 훨씬 작다. */
+export const SANDBOX_OUTPUT_MAX_BYTES = 8 * 1024 * 1024;
+
+export type SandboxOutput =
+  | { status: 'ok'; text: string }
+  | { status: 'missing' }
+  | { status: 'too_large' };
+
+/**
+ * spec uid 가 쓸 수 있는 run 디렉터리의 산출물을 root 로 안전하게 읽는다.
+ * 반드시 cleanupSandbox() 이후에 호출한다(파일을 바꿔치기할 프로세스가 남지 않게).
+ *
+ * spec 이 산출물을 FIFO 로 바꾸면 일반 open 이 영구 블록되고, /dev/zero 같은 곳으로 가는
+ * 심볼릭 링크로 바꾸면 무한 읽기로 메모리가 고갈된다. 그래서 링크는 따라가지 않고
+ * (O_NOFOLLOW), 블록되지 않게 열고(O_NONBLOCK), 연 fd 가 일반 파일인지와 크기 상한을
+ * 확인한 뒤 상한만큼만 읽는다.
+ *
+ * @returns 읽은 내용, 또는 산출물이 없거나 쓸 수 없는 경우 'missing', 상한을 넘으면 'too_large'.
+ */
+export async function readSandboxOutput(
+  path: string,
+  maxBytes: number = SANDBOX_OUTPUT_MAX_BYTES
+): Promise<SandboxOutput> {
+  let handle: fs.FileHandle;
+  try {
+    handle = await fs.open(
+      path,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK
+    );
+  } catch {
+    return { status: 'missing' };
+  }
+  try {
+    const stat = await handle.stat();
+    if (!stat.isFile()) return { status: 'missing' };
+    if (stat.size > maxBytes) return { status: 'too_large' };
+    const buffer = Buffer.alloc(maxBytes + 1);
+    let length = 0;
+    while (length < buffer.length) {
+      const { bytesRead } = await handle.read(buffer, length, buffer.length - length, length);
+      if (bytesRead === 0) break;
+      length += bytesRead;
+    }
+    if (length > maxBytes) return { status: 'too_large' };
+    return { status: 'ok', text: buffer.subarray(0, length).toString('utf8') };
+  } catch {
+    return { status: 'missing' };
+  } finally {
+    await handle.close().catch(() => {});
   }
 }

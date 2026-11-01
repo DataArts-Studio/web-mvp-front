@@ -22,6 +22,9 @@ import { and, eq, inArray, ne } from 'drizzle-orm';
 import 'server-only';
 import { v7 as uuidv7 } from 'uuid';
 
+/** 케이스런 행당 8개 값 → 1,000행이면 8,000개 파라미터로 상한에 여유가 있다. */
+const CASE_RUN_INSERT_CHUNK = 1_000;
+
 type Database = ReturnType<typeof getDatabase>;
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 type CaseRow = typeof testCases.$inferSelect;
@@ -166,6 +169,10 @@ export async function syncCasesToLinkedRuns(db: Transaction, caseIds: string[], 
 
   if (newCaseRuns.length === 0) return;
 
-  await db.insert(testCaseRuns).values(newCaseRuns);
+  // postgres 드라이버의 바인딩 파라미터 상한(65,534)을 넘지 않도록 나눠 넣는다.
+  // 가져오기는 한 번에 2,000건까지 받으므로 실행이 여러 개면 한 문장으로는 넘칠 수 있다.
+  for (let start = 0; start < newCaseRuns.length; start += CASE_RUN_INSERT_CHUNK) {
+    await db.insert(testCaseRuns).values(newCaseRuns.slice(start, start + CASE_RUN_INSERT_CHUNK));
+  }
   await recomputeTestRunStatus(db, [...new Set(newCaseRuns.map((r) => r.test_run_id))]);
 }

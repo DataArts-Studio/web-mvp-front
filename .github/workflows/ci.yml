@@ -9,6 +9,10 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# 모든 잡의 GITHUB_TOKEN 을 읽기 전용으로 둔다. 쓰기가 필요한 잡만 잡 단위로 넓힌다.
+permissions:
+  contents: read
+
 jobs:
   runner-dependencies:
     permissions:

@@ -6,13 +6,14 @@ import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
 import { AiError } from '@/entities/ai-config/model/ai-error';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { consumeRateLimit } from '@/shared/lib/rate-limit';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { buildStorageState } from '../lib/build-storage-state';
-import { generateSpec } from '../lib/generate-spec';
+import { MAX_SNAPSHOT_CHARS, MAX_STEPS_CHARS, generateSpec } from '../lib/generate-spec';
 import { type SpecIssue, validateSpecAgainstSnapshot } from '../lib/validate-spec';
 import { findCaseSpec, saveDraftSpec } from './case-spec-store';
 import { recordAutoResult } from './record-result';
@@ -64,6 +65,23 @@ export interface RunAutomatedTestData {
   specSource: 'approved' | 'generated';
   /** 생성 spec 이 트리 대조 검증에 끝까지 걸린 항목. 없으면 빈 배열. */
   specWarnings: string[];
+}
+
+/**
+ * 한 번 실행할 때마다 러너 캡처·LLM·러너 실행 비용이 든다. 세션만 있으면 무제한으로
+ * 부를 수 있어 프로젝트 단위로 시간당 횟수를 제한한다.
+ */
+const AUTO_RUN_MAX_PER_WINDOW = 20;
+const AUTO_RUN_WINDOW_MS = 60 * 60 * 1000;
+const AUTO_RUN_RATE_LIMITED_MESSAGE = `자동 실행은 프로젝트당 1시간에 ${AUTO_RUN_MAX_PER_WINDOW}회까지 할 수 있습니다. 잠시 후 다시 시도해주세요.`;
+
+/** 외부 호출(캡처·LLM·러너) 직전에 센다. 입력 오류로 끝나는 요청은 횟수에 넣지 않는다. */
+async function consumeAutoRunQuota(projectId: string): Promise<boolean> {
+  const quota = await consumeRateLimit(`auto-run:project:${projectId}`, {
+    limit: AUTO_RUN_MAX_PER_WINDOW,
+    windowMs: AUTO_RUN_WINDOW_MS,
+  });
+  return quota.allowed;
 }
 
 function fail(message: string): ActionResult<RunAutomatedTestData> {
@@ -124,6 +142,10 @@ export async function runAutomatedTest(
     if (!testCase.steps || !testCase.steps.trim()) {
       return fail('케이스에 실행할 단계(steps)가 없습니다.');
     }
+    // 단계를 자르면 뒤쪽 검증이 spec 에서 빠진 채 pass 로 기록될 수 있으므로 실행을 거부한다.
+    if (testCase.steps.length > MAX_STEPS_CHARS) {
+      return fail(`케이스 단계(steps)가 ${MAX_STEPS_CHARS}자를 넘어 자동 실행할 수 없습니다.`);
+    }
 
     // 3) 대상 사이트 복호화 (baseUrl + auth → storageState)
     const target = await getTargetSiteForExecution(params.projectId, params.targetSiteId);
@@ -153,6 +175,9 @@ export async function runAutomatedTest(
     let specWarnings: string[] = [];
 
     if (stored?.status === 'approved') {
+      if (!(await consumeAutoRunQuota(params.projectId))) {
+        return fail(AUTO_RUN_RATE_LIMITED_MESSAGE);
+      }
       spec = stored.spec;
       specSource = 'approved';
     } else {
@@ -160,6 +185,9 @@ export async function runAutomatedTest(
       const llm = await getDecryptedApiKey(params.projectId);
       if (!llm) {
         return fail('AI 설정이 되어 있지 않습니다. 설정 페이지에서 API 키를 등록해주세요.');
+      }
+      if (!(await consumeAutoRunQuota(params.projectId))) {
+        return fail(AUTO_RUN_RATE_LIMITED_MESSAGE);
       }
 
       // 5) 러너 /capture → 접근성 스냅샷
@@ -169,6 +197,12 @@ export async function runAutomatedTest(
       });
       if (!captured.ok || !captured.snapshot) {
         return fail(`대상 페이지 캡처 실패: ${captured.errorMessage ?? '알 수 없는 오류'}`);
+      }
+      // 트리를 자르면 뒤쪽 컨트롤이 빠진 채 spec 이 만들어진다. 결과로 기록하지 않고 작업을 거부한다.
+      if (captured.snapshot.length > MAX_SNAPSHOT_CHARS) {
+        return fail(
+          `대상 페이지 접근성 트리가 ${MAX_SNAPSHOT_CHARS}자를 넘어 자동 실행할 수 없습니다.`
+        );
       }
 
       // OpenAI → Playwright spec, 트리에 없는 셀렉터가 있으면 1회 재생성
