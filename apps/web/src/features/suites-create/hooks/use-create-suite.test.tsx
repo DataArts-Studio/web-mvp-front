@@ -65,6 +65,25 @@ describe('스위트 생성·수정 훅의 실패 처리', () => {
     await expect(result.current.mutateAsync(createInput)).resolves.toEqual(success);
   });
 
+  it('생성이 성공하면 목록 재조회가 끝나기를 기다리지 않고 바로 끝나고, 재조회는 시작한다', async () => {
+    mockCreateTestSuite.mockResolvedValue({ success: true, data: { id: 'suite-1' } });
+    const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    // 끝나지 않는 목록 조회: 재조회를 기다리면 mutateAsync 도 끝나지 않는다 (#444).
+    const listKey = ['testSuites', 'list', 'project-1'];
+    client.setQueryDefaults(listKey, { queryFn: () => new Promise(() => {}) });
+    client.setQueryData(listKey, []);
+    const { result } = renderHook(() => useCreateSuite(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    });
+
+    await expect(result.current.mutateAsync(createInput)).resolves.toMatchObject({
+      success: true,
+    });
+    expect(client.getQueryState(listKey)?.fetchStatus).toBe('fetching');
+  });
+
   it('수정 서버 액션이 실패 결과를 돌려주면 reject 한다', async () => {
     mockUpdateTestSuite.mockResolvedValue({ success: false, errors: {} });
     const { result } = renderHook(() => useUpdateSuite(), { wrapper });
