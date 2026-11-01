@@ -4,7 +4,9 @@ import { CHALLENGES } from '@/shared/challenges/registry';
 
 // Sitemap for public crawlable qaground pages.
 const SITE_URL = 'https://qaground.gettestea.com';
-const CONTENT_UPDATED_AT = new Date('2026-07-01');
+// 콘텐츠(챌린지 등)를 실제로 추가·수정할 때 이 날짜를 갱신한다.
+// 매 배포마다 자동 갱신하면 전 페이지 lastmod 가 흔들려 크롤러 신뢰를 떨어뜨리므로 수동 관리.
+const CONTENT_UPDATED_AT = new Date('2026-07-07');
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
