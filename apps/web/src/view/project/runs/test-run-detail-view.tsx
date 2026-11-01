@@ -9,6 +9,7 @@ import { getTestSuites } from '@/entities/test-suite/api';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import {
   bulkUpdateTestCaseRunStatus,
+  closeTestRun,
   removeSuiteFromRun,
   runComparisonQueryOptions,
   testRunByIdQueryOptions,
@@ -26,6 +27,7 @@ import { toast } from 'sonner';
 
 import {
   AutoRunDialog,
+  CloseRunDialog,
   type GroupedCases,
   KeyboardShortcutsModal,
   RemoveSuiteDialog,
@@ -105,6 +107,7 @@ export const TestRunDetailView = () => {
   const [showRerunDialog, setShowRerunDialog] = useState(false);
   const [showAutoRunDialog, setShowAutoRunDialog] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
   // 끝난 실행은 결과 요약(06f2)으로 연다. '결과 수정'을 누르면 기록 화면으로 바꾼다.
   const [editingCompleted, setEditingCompleted] = useState(false);
 
@@ -206,6 +209,24 @@ export const TestRunDetailView = () => {
     },
     onError: () => {
       toast.error('제목 변경 중 오류가 발생했습니다.');
+    },
+  });
+
+  const closeMutation = useMutation({
+    mutationFn: () => closeTestRun(testRunId),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success('실행을 완료했습니다.');
+        setShowCloseDialog(false);
+        setEditingCompleted(false);
+        queryClient.invalidateQueries({ queryKey: ['testRun', testRunId] });
+        if (projectId) queryClient.invalidateQueries({ queryKey: ['testRuns', projectId] });
+      } else {
+        toast.error(Object.values(result.errors).flat().join(', '));
+      }
+    },
+    onError: () => {
+      toast.error('실행을 완료하는 중 오류가 발생했습니다.');
     },
   });
 
@@ -457,6 +478,7 @@ export const TestRunDetailView = () => {
               onShowSummary={
                 testRun.status === 'COMPLETED' ? () => setEditingCompleted(false) : undefined
               }
+              onClose={testRun.status !== 'COMPLETED' ? () => setShowCloseDialog(true) : undefined}
             />
 
             <RunSummaryBar stats={testRun.stats} />
@@ -522,6 +544,15 @@ export const TestRunDetailView = () => {
           availableCases={addableCases}
           availableSuites={addableSuites}
           onClose={() => setShowAddModal(false)}
+        />
+      )}
+
+      {showCloseDialog && (
+        <CloseRunDialog
+          stats={testRun.stats}
+          isPending={closeMutation.isPending}
+          onConfirm={() => closeMutation.mutate()}
+          onCancel={() => setShowCloseDialog(false)}
         />
       )}
 

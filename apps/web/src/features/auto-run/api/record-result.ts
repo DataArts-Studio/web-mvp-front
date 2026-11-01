@@ -116,5 +116,6 @@ async function recalcRunStatus(db: Transaction, testRunId: string) {
   await db
     .update(testRuns)
     .set({ status: next, updated_at: new Date() })
-    .where(eq(testRuns.id, testRunId));
+    // 사람이 직접 완료한 실행은 미실행이 남아도 완료로 둔다 (06g).
+    .where(and(eq(testRuns.id, testRunId), isNull(testRuns.closed_at)));
 }
