@@ -31,6 +31,7 @@ import {
   testCases,
   testRunSuites,
   testRuns,
+  testSuites,
 } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -86,10 +87,20 @@ export const getMilestones = async ({
             eq(testCases.lifecycle_status, 'ACTIVE')
           )
         ),
+      // 휴지통 스위트는 스위트 수에서 뺀다. 상세 화면도 같은 기준이다.
       db
-        .select()
+        .select({
+          milestone_id: milestoneTestSuites.milestone_id,
+          test_suite_id: milestoneTestSuites.test_suite_id,
+        })
         .from(milestoneTestSuites)
-        .where(inArray(milestoneTestSuites.milestone_id, milestoneIds)),
+        .innerJoin(testSuites, eq(testSuites.id, milestoneTestSuites.test_suite_id))
+        .where(
+          and(
+            inArray(milestoneTestSuites.milestone_id, milestoneIds),
+            eq(testSuites.lifecycle_status, 'ACTIVE')
+          )
+        ),
       getMilestoneLatestResults(db, milestoneIds),
     ]);
 
@@ -167,6 +178,10 @@ export const getMilestones = async ({
         completedCases: progress.completed,
         progressRate: progress.progressPercent,
         runCount: (runsByMilestone.get(row.id) || []).length,
+        passCases: progress.pass,
+        failCases: progress.fail,
+        blockedCases: progress.blocked,
+        suiteCount: suiteIdsForMs.length,
       };
     });
 

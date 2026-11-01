@@ -39,6 +39,12 @@ export type MilestoneStats = {
   completedCases: number;
   progressRate: number;
   runCount: number;
+  /** 범위 안 케이스의 최근 결과별 수. 목록 결과 막대에 쓴다. */
+  passCases: number;
+  failCases: number;
+  blockedCases: number;
+  /** 연결된 스위트 수 */
+  suiteCount: number;
 };
 
 export type MilestoneWithStats = Milestone &
