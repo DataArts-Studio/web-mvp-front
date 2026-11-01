@@ -177,13 +177,15 @@ function buildCfb(
 /**
  * FAT 섹터가 헤더 DIFAT 109 칸을 넘는 큰 CFB(약 7MB 넘는 .doc/.xls 에 해당).
  * 섹터 0~109 는 FAT, 110 은 추가 DIFAT, 111 은 디렉터리, 112 는 데이터다.
+ * FAT 110 개가 정당하려면 파일이 109×128 섹터보다 커야 하므로 나머지는 빈 섹터로 채운다.
  */
 function buildCfbWithExtraDifat(streamName: string, { difatNext = CFB_END } = {}): Uint8Array {
   const FAT_SECTORS = 110;
   const DIFAT = FAT_SECTORS;
   const DIRECTORY = DIFAT + 1;
   const DATA = DIRECTORY + 1;
-  const bytes = new Uint8Array(CFB_SECTOR * (DATA + 2));
+  const TOTAL_SECTORS = 109 * (CFB_SECTOR / 4) + 1;
+  const bytes = new Uint8Array(CFB_SECTOR * (TOTAL_SECTORS + 1));
   const view = new DataView(bytes.buffer);
   bytes.set([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
   view.setUint16(0x18, 0x003e, true);
@@ -320,6 +322,12 @@ describe('matchesFileSignature', () => {
     ).toBe(true);
   });
 
+  it('파일 크기에 필요한 것보다 큰 FAT 를 주장하는 작은 파일은 할당 전에 거부한다', () => {
+    const small = buildCfb('WordDocument');
+    new DataView(small.buffer).setUint32(0x2c, 2, true); // 섹터 3개짜리 파일에 FAT 2개
+    expect(matchesFileSignature('application/msword', small)).toBe(false);
+  });
+
   it('추가 DIFAT 체인이 끊기거나 FAT 수가 파일 크기를 넘으면 거부한다', () => {
     expect(
       matchesFileSignature(
@@ -331,7 +339,7 @@ describe('matchesFileSignature', () => {
     new DataView(broken.buffer).setUint32(0x44, CFB_END, true);
     expect(matchesFileSignature('application/msword', broken)).toBe(false);
     const oversized = buildCfbWithExtraDifat('WordDocument');
-    new DataView(oversized.buffer).setUint32(0x2c, 300, true); // 파일에 들어갈 수 없는 FAT 수
+    new DataView(oversized.buffer).setUint32(0x2c, 300, true); // 파일 크기에 필요한 것보다 큰 FAT
     expect(matchesFileSignature('application/msword', oversized)).toBe(false);
   });
 });

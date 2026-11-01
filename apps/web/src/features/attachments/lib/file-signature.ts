@@ -123,10 +123,13 @@ function readCfbStreamNames(bytes: Uint8Array): string[] | null {
   const sectorOffset = (sid: number) => (sid + 1) * sectorSize;
   const hasSector = (sid: number) => sectorOffset(sid) + sectorSize <= bytes.length;
 
-  // FAT 섹터 수는 파일에 실제로 들어갈 수 있는 섹터 수를 넘을 수 없다(거대한 값으로 반복을 부풀리는 입력 차단).
+  // FAT 는 파일 안의 섹터 수만큼만 항목이 필요하다. 그보다 큰 FAT 를 주장하면 조작된 파일로 보고
+  // 거부한다(10MB 파일로 수백만 항목을 할당하게 만드는 입력 차단).
   const fatSectorCount = view.getUint32(0x2c, true);
+  const entriesPerSector = sectorSize / 4;
   const totalSectors = Math.floor(bytes.length / sectorSize) - 1;
-  if (fatSectorCount === 0 || fatSectorCount > totalSectors) return null;
+  const maxFatSectors = Math.ceil(totalSectors / entriesPerSector);
+  if (fatSectorCount === 0 || fatSectorCount > maxFatSectors) return null;
 
   // FAT 섹터 위치는 헤더 DIFAT 109 칸에서 시작하고, 넘치면 추가 DIFAT 섹터 체인으로 이어진다.
   // 7MB 남짓을 넘는 512 바이트 섹터 파일은 추가 DIFAT 가 필요하므로 체인을 따라간다.
@@ -138,7 +141,7 @@ function readCfbStreamNames(bytes: Uint8Array): string[] | null {
   ) {
     fatSectors.push(view.getUint32(CFB_DIFAT_HEADER_OFFSET + index * 4, true));
   }
-  const entriesPerDifat = sectorSize / 4 - 1;
+  const entriesPerDifat = entriesPerSector - 1;
   const visitedDifat = new Set<number>();
   let difatSector = view.getUint32(0x44, true);
   while (fatSectors.length < fatSectorCount) {
@@ -158,12 +161,12 @@ function readCfbStreamNames(bytes: Uint8Array): string[] | null {
     difatSector = view.getUint32(base + entriesPerDifat * 4, true);
   }
 
-  const fat: number[] = [];
-  for (const fatSector of fatSectors) {
+  const fat = new Uint32Array(fatSectors.length * entriesPerSector);
+  for (const [index, fatSector] of fatSectors.entries()) {
     if (!hasSector(fatSector)) return null;
     const base = sectorOffset(fatSector);
-    for (let offset = 0; offset < sectorSize; offset += 4) {
-      fat.push(view.getUint32(base + offset, true));
+    for (let entry = 0; entry < entriesPerSector; entry++) {
+      fat[index * entriesPerSector + entry] = view.getUint32(base + entry * 4, true);
     }
   }
 
