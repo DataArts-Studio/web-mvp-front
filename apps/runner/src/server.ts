@@ -138,7 +138,10 @@ app.post('/run', async (c) => {
       body.timeoutMs > MAX_RUN_TIMEOUT_MS)
   ) {
     return c.json(
-      { ok: false, error: `Field "timeoutMs" must be a positive number up to ${MAX_RUN_TIMEOUT_MS}.` },
+      {
+        ok: false,
+        error: `Field "timeoutMs" must be a positive number up to ${MAX_RUN_TIMEOUT_MS}.`,
+      },
       400
     );
   }
@@ -211,7 +214,10 @@ app.post('/capture', async (c) => {
       body.timeoutMs > MAX_CAPTURE_TIMEOUT_MS)
   ) {
     return c.json(
-      { ok: false, error: `Field "timeoutMs" must be a positive number up to ${MAX_CAPTURE_TIMEOUT_MS}.` },
+      {
+        ok: false,
+        error: `Field "timeoutMs" must be a positive number up to ${MAX_CAPTURE_TIMEOUT_MS}.`,
+      },
       400
     );
   }
