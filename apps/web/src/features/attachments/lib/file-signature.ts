@@ -106,6 +106,7 @@ function readZipEntryNames(bytes: Uint8Array): string[] | null {
 const CFB_HEADER_SIZE = 512;
 const CFB_DIFAT_HEADER_OFFSET = 0x4c;
 const CFB_DIFAT_HEADER_ENTRIES = 109;
+const CFB_FREE_SECTOR = 0xffffffff;
 const CFB_DIRECTORY_ENTRY_SIZE = 128;
 const CFB_END_OF_CHAIN = 0xfffffffe;
 const CFB_STREAM_OBJECT = 2;
@@ -122,17 +123,50 @@ function readCfbStreamNames(bytes: Uint8Array): string[] | null {
   const sectorOffset = (sid: number) => (sid + 1) * sectorSize;
   const hasSector = (sid: number) => sectorOffset(sid) + sectorSize <= bytes.length;
 
-  // 헤더의 DIFAT 109 칸에 다 들어가지 않는 FAT(추가 DIFAT 섹터)는 첨부 크기 상한상 나올 수 없어 받지 않는다.
+  // FAT 는 파일 안의 섹터 수만큼만 항목이 필요하다. 그보다 큰 FAT 를 주장하면 조작된 파일로 보고
+  // 거부한다(10MB 파일로 수백만 항목을 할당하게 만드는 입력 차단).
   const fatSectorCount = view.getUint32(0x2c, true);
-  if (fatSectorCount === 0 || fatSectorCount > CFB_DIFAT_HEADER_ENTRIES) return null;
+  const entriesPerSector = sectorSize / 4;
+  const totalSectors = Math.floor(bytes.length / sectorSize) - 1;
+  const maxFatSectors = Math.ceil(totalSectors / entriesPerSector);
+  if (fatSectorCount === 0 || fatSectorCount > maxFatSectors) return null;
 
-  const fat: number[] = [];
-  for (let index = 0; index < fatSectorCount; index++) {
-    const fatSector = view.getUint32(CFB_DIFAT_HEADER_OFFSET + index * 4, true);
+  // FAT 섹터 위치는 헤더 DIFAT 109 칸에서 시작하고, 넘치면 추가 DIFAT 섹터 체인으로 이어진다.
+  // 7MB 남짓을 넘는 512 바이트 섹터 파일은 추가 DIFAT 가 필요하므로 체인을 따라간다.
+  const fatSectors: number[] = [];
+  for (
+    let index = 0;
+    index < CFB_DIFAT_HEADER_ENTRIES && fatSectors.length < fatSectorCount;
+    index++
+  ) {
+    fatSectors.push(view.getUint32(CFB_DIFAT_HEADER_OFFSET + index * 4, true));
+  }
+  const entriesPerDifat = entriesPerSector - 1;
+  const visitedDifat = new Set<number>();
+  let difatSector = view.getUint32(0x44, true);
+  while (fatSectors.length < fatSectorCount) {
+    if (
+      difatSector === CFB_END_OF_CHAIN ||
+      difatSector === CFB_FREE_SECTOR ||
+      visitedDifat.has(difatSector) ||
+      !hasSector(difatSector)
+    ) {
+      return null;
+    }
+    visitedDifat.add(difatSector);
+    const base = sectorOffset(difatSector);
+    for (let index = 0; index < entriesPerDifat && fatSectors.length < fatSectorCount; index++) {
+      fatSectors.push(view.getUint32(base + index * 4, true));
+    }
+    difatSector = view.getUint32(base + entriesPerDifat * 4, true);
+  }
+
+  const fat = new Uint32Array(fatSectors.length * entriesPerSector);
+  for (const [index, fatSector] of fatSectors.entries()) {
     if (!hasSector(fatSector)) return null;
     const base = sectorOffset(fatSector);
-    for (let offset = 0; offset < sectorSize; offset += 4) {
-      fat.push(view.getUint32(base + offset, true));
+    for (let entry = 0; entry < entriesPerSector; entry++) {
+      fat[index * entriesPerSector + entry] = view.getUint32(base + entry * 4, true);
     }
   }
 
