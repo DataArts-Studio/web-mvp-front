@@ -81,7 +81,8 @@ export const SuiteCaseListSection = ({
         <div>
           <h2 className="text-text-1 text-base font-semibold">{t('ui.includedTestCases')}</h2>
           <p className="text-text-3 mt-0.5 text-xs">
-            {t('count.cases', { count: testCases.length })} / ?? {sections.length}?
+            {t('count.cases', { count: testCases.length })} /{' '}
+            {t('count.sections', { count: sections.length })}
           </p>
         </div>
         <div className="flex items-center gap-2">

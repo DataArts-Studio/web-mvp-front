@@ -59,7 +59,11 @@ export const SuiteRecentRuns = ({ recentRuns }: SuiteRecentRunsProps) => {
                   <div className="bg-primary h-full" style={{ width: `${runPassRate}%` }} />
                 </div>
                 <p className="text-text-3 mt-2 text-xs">
-                  {run.passed} passed ? {run.failed} failed ? {run.blocked} blocked
+                  {t('count.runResultSummary', {
+                    passed: run.passed,
+                    failed: run.failed,
+                    blocked: run.blocked,
+                  })}
                 </p>
               </div>
             );

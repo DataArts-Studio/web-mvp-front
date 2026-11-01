@@ -688,7 +688,9 @@
       "cases": "{count, plural, other {# cases}}",
       "runs": "{count, plural, other {# runs}}",
       "issueSummary": "{failed, plural, other {# failed}} · Blocked {blocked, plural, other {#}}",
-      "addCases": "{count, plural, other {Add # cases}}"
+      "addCases": "{count, plural, other {Add # cases}}",
+      "sections": "{count, plural, one {# section} other {# sections}}",
+      "runResultSummary": "{passed} passed · {failed} failed · {blocked} blocked"
     }
   }
 }
