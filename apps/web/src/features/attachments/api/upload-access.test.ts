@@ -116,3 +116,49 @@ describe('첨부 업로드의 프로젝트 경계', () => {
     expect(upload).toHaveBeenCalledOnce();
   });
 });
+
+describe('첨부 업로드의 파일 형식 확인', () => {
+  function formWith(file: File) {
+    const form = attachmentForm();
+    form.set('file', file);
+    return form;
+  }
+
+  it('이미지로 주장했지만 바이트가 다르면 업로드하지 않는다.', async () => {
+    const spoofed = new File(['<html><script>alert(1)</script></html>'], 'x.png', {
+      type: 'image/png',
+    });
+    expect(await uploadAttachment(formWith(spoofed))).toEqual({
+      success: false,
+      errors: { _attachment: ['파일 내용이 형식과 일치하지 않습니다.'] },
+    });
+    expect(upload).not.toHaveBeenCalled();
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('SVG 는 형식 단계에서 거부한다.', async () => {
+    const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], 'x.svg', {
+      type: 'image/svg+xml',
+    });
+    expect(await uploadAttachment(formWith(svg))).toEqual({
+      success: false,
+      errors: { _attachment: ['지원하지 않는 파일 형식입니다.'] },
+    });
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('시그니처가 맞는 PNG 는 확인된 타입으로 저장한다.', async () => {
+    const png = new File(
+      [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])],
+      'shot.png',
+      { type: 'image/png' }
+    );
+    expect((await uploadAttachment(formWith(png))).success).toBe(true);
+    expect(upload).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Buffer),
+      expect.objectContaining({ contentType: 'image/png' })
+    );
+    expect(values).toHaveBeenCalledWith(expect.objectContaining({ file_type: 'image/png' }));
+  });
+});

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
+import { resetRateLimitMock } from '@/shared/test/__mocks__/rate-limit';
 import { getDatabase } from '@testea/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,6 +15,7 @@ vi.mock('@/features/target-sites/api/get-target-site-for-execution', () => ({
   getTargetSiteForExecution: vi.fn(),
 }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
+vi.mock('@/shared/lib/rate-limit', () => import('@/shared/test/__mocks__/rate-limit'));
 vi.mock('@testea/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@testea/db')>()),
   getDatabase: vi.fn(),
@@ -37,6 +39,7 @@ const db = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  resetRateLimitMock();
   vi.mocked(getDatabase).mockReturnValue(db as unknown as ReturnType<typeof getDatabase>);
   vi.mocked(requireProjectAccess).mockResolvedValue(true);
   limit.mockResolvedValueOnce([{ projectId: PROJECT_A }]).mockResolvedValue([
@@ -102,5 +105,32 @@ describe('자동 실행 결과 대상의 프로젝트 경계', () => {
       expect.objectContaining({ runId: params.runId, caseKey: 'TC-001', status: 'pass' })
     );
     expect(runSpecOnRunner).toHaveBeenCalledOnce();
+  });
+});
+
+describe('자동 실행 프로젝트별 횟수 제한', () => {
+  it('한 프로젝트에서 1시간에 20회를 넘기면 캡처·LLM 호출 전에 거부한다.', async () => {
+    // 매 호출마다 Run 소속 확인 → 케이스 조회 순으로 limit 이 불린다.
+    const caseRow = {
+      id: params.caseId,
+      projectId: PROJECT_A,
+      name: '정상 케이스',
+      steps: '화면 확인',
+      caseKey: 'TC-001',
+    };
+    let calls = 0;
+    limit
+      .mockReset()
+      .mockImplementation(async () => (calls++ % 2 === 0 ? [{ projectId: PROJECT_A }] : [caseRow]));
+    for (let attempt = 0; attempt < 20; attempt++) {
+      expect((await runAutomatedTest(params)).success).toBe(true);
+    }
+    expect(captureSnapshot).toHaveBeenCalledTimes(20);
+
+    const limited = await runAutomatedTest(params);
+    expect(limited.success).toBe(false);
+    if (!limited.success) expect(limited.errors._general?.[0]).toContain('1시간에 20회');
+    expect(captureSnapshot).toHaveBeenCalledTimes(20);
+    expect(generateSpec).toHaveBeenCalledTimes(20);
   });
 });

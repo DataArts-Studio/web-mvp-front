@@ -24,6 +24,19 @@ const SPEC_SYSTEM_PROMPT = `너는 Playwright(@playwright/test, TypeScript) 테�
 - 첫 단언(또는 첫 상호작용 직전 대기)은 데이터 로딩 스켈레톤을 대비해 timeout 을 30000ms 로 넉넉히 준다.
 - 자연어 단계의 검증 의도를 expect 단언으로 옮긴다.`;
 
+/**
+ * 프롬프트에 넣는 입력 길이 상한. 대상 페이지의 접근성 트리는 페이지가 정하고 steps 는
+ * 사용자 입력이라, 그대로 넣으면 토큰 비용이 끝없이 커질 수 있다.
+ */
+export const MAX_SNAPSHOT_CHARS = 20_000;
+export const MAX_STEPS_CHARS = 5_000;
+const MAX_TITLE_CHARS = 200;
+
+/** 상한을 넘으면 앞부분만 남기고 잘렸다는 표시를 붙인다. */
+function truncate(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max)}\n…(이하 생략)` : text;
+}
+
 export class SpecGenerationError extends Error {
   constructor(message: string) {
     super(message);
@@ -51,14 +64,14 @@ export async function generateSpec(input: {
   }
 
   const userPrompt = [
-    `케이스 제목: ${input.caseTitle}`,
+    `케이스 제목: ${truncate(input.caseTitle, MAX_TITLE_CHARS)}`,
     input.path ? `대상 경로: ${input.path}` : '',
     '',
     '자연어 단계:',
-    input.steps,
+    truncate(input.steps, MAX_STEPS_CHARS),
     '',
     '대상 페이지 접근성 트리:',
-    input.snapshot,
+    truncate(input.snapshot, MAX_SNAPSHOT_CHARS),
   ]
     .filter((line) => line !== '')
     .join('\n');

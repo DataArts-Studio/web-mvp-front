@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { parseTcIds } from '@/features/github-links/lib/parse-tc-ids';
 import { decrypt } from '@/shared/lib/crypto';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, githubConnections, testCaseExternalLinks, testCases } from '@testea/db';
+import {
+  getDatabase,
+  githubConnections,
+  projects,
+  testCaseExternalLinks,
+  testCases,
+} from '@testea/db';
 import crypto from 'crypto';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 function verifySignature(payload: string, signature: string, secret: string): boolean {
   const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(payload).digest('hex');
@@ -15,12 +22,13 @@ function verifySignature(payload: string, signature: string, secret: string): bo
   return crypto.timingSafeEqual(expectedBuf, signatureBuf);
 }
 
-// PR 본문에서 TC-XXX 패턴 파싱
-function parseTcIds(text: string): number[] {
-  const matches = text.match(/TC-(\d{3,})/gi);
-  if (!matches) return [];
-  return [...new Set(matches.map((m) => parseInt(m.replace(/TC-/i, ''), 10)))];
-}
+/** 링크를 갱신하는 PR 액션. 코멘트는 이 중 COMMENT_ACTIONS 에서만 단다. */
+const HANDLED_ACTIONS = ['opened', 'reopened', 'edited', 'closed'];
+/**
+ * PR 코멘트를 새로 다는 액션. edited 는 본문을 고칠 때마다 오므로 여기서 코멘트를 달면
+ * 같은 표가 반복해 쌓인다. edited 에서는 링크만 갱신하고 코멘트는 열릴 때 한 번만 단다.
+ */
+const COMMENT_ACTIONS = ['opened', 'reopened'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     const action = payload.action;
-    if (!['opened', 'edited', 'closed'].includes(action)) {
+    if (!HANDLED_ACTIONS.includes(action)) {
       return NextResponse.json({ message: 'Ignored action' }, { status: 200 });
     }
 
@@ -73,6 +81,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
+    // 보관·삭제된 프로젝트에는 외부 이벤트로 링크를 새로 만들지 않는다.
+    const [project] = await db
+      .select({ lifecycle_status: projects.lifecycle_status })
+      .from(projects)
+      .where(eq(projects.id, conn.project_id))
+      .limit(1);
+    if (project?.lifecycle_status !== 'ACTIVE') {
+      return NextResponse.json({ message: 'Project not active' }, { status: 200 });
+    }
+
     const pr = payload.pull_request;
     const prTitle = pr?.title || '';
     const prBody = pr?.body || '';
@@ -86,12 +104,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'No TC references found' }, { status: 200 });
     }
 
-    // display_id로 TC 조회
+    // display_id로 TC 조회 (보관·휴지통 케이스는 제외)
     const matchedCases = await db
       .select({ id: testCases.id, display_id: testCases.display_id, name: testCases.name })
       .from(testCases)
       .where(
-        and(eq(testCases.project_id, conn.project_id), inArray(testCases.display_id, displayIds))
+        and(
+          eq(testCases.project_id, conn.project_id),
+          inArray(testCases.display_id, displayIds),
+          eq(testCases.lifecycle_status, 'ACTIVE'),
+          isNull(testCases.archived_at)
+        )
       );
 
     if (matchedCases.length === 0) {
@@ -130,8 +153,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // PR에 코멘트 작성 (opened/edited 시에만)
-    if (['opened', 'edited'].includes(action)) {
+    // PR에 코멘트 작성 (opened/reopened 시에만)
+    if (COMMENT_ACTIONS.includes(action)) {
       try {
         const token = decrypt(conn.access_token);
 

@@ -8,7 +8,8 @@ vi.mock('server-only', () => ({}));
 // @testea/db mock: getDatabase() 의 select/update 체인을 통제
 const mockLimit = vi.fn();
 const mockSelectWhere = vi.fn(() => ({ limit: mockLimit }));
-const mockSelectFrom = vi.fn(() => ({ where: mockSelectWhere }));
+const mockInnerJoin = vi.fn(() => ({ where: mockSelectWhere }));
+const mockSelectFrom = vi.fn(() => ({ innerJoin: mockInnerJoin }));
 const mockSelect = vi.fn(() => ({ from: mockSelectFrom }));
 
 const mockUpdateWhere = vi.fn(() => Promise.resolve());
@@ -22,6 +23,10 @@ vi.mock('@testea/db', () => ({
     token_hash: { name: 'token_hash' },
     token_prefix: { name: 'token_prefix' },
     last_used_at: { name: 'last_used_at' },
+  },
+  projects: {
+    id: { name: 'id' },
+    lifecycle_status: { name: 'lifecycle_status' },
   },
 }));
 
@@ -37,6 +42,7 @@ describe('verifyAutomationTokenFromRequest', () => {
     mockLimit.mockReset();
     mockSelectWhere.mockClear();
     mockSelectFrom.mockClear();
+    mockInnerJoin.mockClear();
     mockSelect.mockClear();
     mockUpdate.mockClear();
     mockUpdateSet.mockClear();
@@ -86,7 +92,7 @@ describe('verifyAutomationTokenFromRequest', () => {
       {
         project_id: 'proj-1',
         token_prefix: prefix,
-        token_hash: 'whatever',
+        project_status: 'ACTIVE',
       },
     ]);
 
@@ -101,10 +107,28 @@ describe('verifyAutomationTokenFromRequest', () => {
     );
   });
 
+  it.each(['ARCHIVED', 'DELETED'])(
+    '프로젝트가 %s 상태면 토큰이 맞아도 null 이고 last_used_at 을 갱신하지 않는다',
+    async (status) => {
+      const { plaintext, prefix } = generateAutomationToken();
+      mockLimit.mockResolvedValueOnce([
+        { project_id: 'proj-3', token_prefix: prefix, project_status: status },
+      ]);
+
+      const result = await verifyAutomationTokenFromRequest(
+        makeRequest({ authorization: `Bearer ${plaintext}` })
+      );
+
+      expect(result).toBeNull();
+      expect(mockInnerJoin).toHaveBeenCalledTimes(1);
+      expect(mockUpdate).not.toHaveBeenCalled();
+    }
+  );
+
   it('대소문자 무시 헤더 (Authorization) 도 인식', async () => {
     const { plaintext, prefix } = generateAutomationToken();
     mockLimit.mockResolvedValueOnce([
-      { project_id: 'proj-2', token_prefix: prefix, token_hash: 'h' },
+      { project_id: 'proj-2', token_prefix: prefix, project_status: 'ACTIVE' },
     ]);
 
     const result = await verifyAutomationTokenFromRequest(

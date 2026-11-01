@@ -110,3 +110,14 @@ it('현재 비밀번호를 5번 틀리면 맞는 비밀번호로도 잠금 동�
   if (!locked.success) expect(locked.errors.currentPassword?.[0]).toContain('15분 후');
   expect(write).not.toHaveBeenCalled();
 });
+
+it('폼 규칙(8~16자)을 벗어난 새 비밀번호는 서버에서도 거부하고 해시하지 않는다.', async () => {
+  const tooShort = await changeProjectIdentifier(ID, 'old-password', 'short');
+  expect(!tooShort.success && tooShort.errors.newPassword?.[0]).toContain('최소 8자리');
+
+  const tooLong = await changeProjectIdentifier(ID, 'old-password', 'x'.repeat(17));
+  expect(!tooLong.success && tooLong.errors.newPassword?.[0]).toContain('최대 16자리');
+
+  expect(verifyPassword).not.toHaveBeenCalled();
+  expect(write).not.toHaveBeenCalled();
+});

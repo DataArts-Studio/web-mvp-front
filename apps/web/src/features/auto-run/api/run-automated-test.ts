@@ -4,6 +4,7 @@ import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { consumeRateLimit } from '@/shared/lib/rate-limit';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, testCases } from '@testea/db';
@@ -53,6 +54,14 @@ export interface RunAutomatedTestData {
   /** 매칭에 사용한 case_key. */
   caseKey: string;
 }
+
+/**
+ * 한 번 실행할 때마다 러너 캡처·LLM·러너 실행 비용이 든다. 세션만 있으면 무제한으로
+ * 부를 수 있어 프로젝트 단위로 시간당 횟수를 제한한다.
+ */
+const AUTO_RUN_MAX_PER_WINDOW = 20;
+const AUTO_RUN_WINDOW_MS = 60 * 60 * 1000;
+const AUTO_RUN_RATE_LIMITED_MESSAGE = `자동 실행은 프로젝트당 1시간에 ${AUTO_RUN_MAX_PER_WINDOW}회까지 할 수 있습니다. 잠시 후 다시 시도해주세요.`;
 
 function fail(message: string): ActionResult<RunAutomatedTestData> {
   return { success: false, errors: { _general: [message] } };
@@ -119,6 +128,15 @@ export async function runAutomatedTest(
     // 자동화는 이번 스코프 밖(주석). baseUrl 만으로도(비로그인) 동작한다.
     const storageState = buildStorageState(target.auth, target.baseUrl);
     const captureUrl = joinUrl(target.baseUrl, params.path);
+
+    // 외부 호출(캡처·LLM·러너) 직전에 센다. 입력 오류로 끝나는 요청은 횟수에 넣지 않는다.
+    const quota = await consumeRateLimit(`auto-run:project:${params.projectId}`, {
+      limit: AUTO_RUN_MAX_PER_WINDOW,
+      windowMs: AUTO_RUN_WINDOW_MS,
+    });
+    if (!quota.allowed) {
+      return fail(AUTO_RUN_RATE_LIMITED_MESSAGE);
+    }
 
     // 4) 러너 /capture → 접근성 스냅샷
     const captured = await captureSnapshot({
