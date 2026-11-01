@@ -1,3 +1,5 @@
+import { projects } from '@testea/db';
+import { SQL } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { generateAutomationToken } from './token';
@@ -8,7 +10,9 @@ vi.mock('server-only', () => ({}));
 // @testea/db mock: getDatabase() 의 select/update 체인을 통제
 const mockLimit = vi.fn();
 const mockSelectWhere = vi.fn(() => ({ limit: mockLimit }));
-const mockInnerJoin = vi.fn(() => ({ where: mockSelectWhere }));
+const mockInnerJoin = vi.fn<(table: unknown, on: unknown) => { where: typeof mockSelectWhere }>(
+  () => ({ where: mockSelectWhere })
+);
 const mockSelectFrom = vi.fn(() => ({ innerJoin: mockInnerJoin }));
 const mockSelect = vi.fn(() => ({ from: mockSelectFrom }));
 
@@ -121,6 +125,8 @@ describe('verifyAutomationTokenFromRequest', () => {
 
       expect(result).toBeNull();
       expect(mockInnerJoin).toHaveBeenCalledTimes(1);
+      // 프로젝트 상태를 보려면 projects 를 eq 조건으로 조인해야 한다.
+      expect(mockInnerJoin).toHaveBeenCalledWith(projects, expect.any(SQL));
       expect(mockUpdate).not.toHaveBeenCalled();
     }
   );

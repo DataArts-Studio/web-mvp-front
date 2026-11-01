@@ -19,6 +19,8 @@ const PROJECT_A = '00000000-0000-4000-8000-000000000001';
 const PROJECT_B = '00000000-0000-4000-8000-000000000002';
 const CASE_ID = '00000000-0000-4000-8000-000000000003';
 const limit = vi.fn();
+// 케이스에 이미 붙은 첨부 행. 개수 상한 조회(where 를 바로 await)가 이 값을 돌려받는다.
+let existingRows: { id: string }[] = [];
 const upload = vi.fn();
 const createSignedUrls = vi.fn();
 const returning = vi.fn();
@@ -26,7 +28,7 @@ const values = vi.fn(() => ({ returning }));
 const db = {
   select: vi.fn(() => ({
     from: vi.fn(() => ({
-      where: vi.fn(() => Object.assign(Promise.resolve([]), { limit })),
+      where: vi.fn(() => Object.assign(Promise.resolve(existingRows), { limit })),
     })),
   })),
   insert: vi.fn(() => ({ values })),
@@ -42,6 +44,7 @@ function attachmentForm() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  existingRows = [];
   vi.mocked(getDatabase).mockReturnValue(db as unknown as ReturnType<typeof getDatabase>);
   vi.mocked(requireProjectAccess).mockResolvedValue(true);
   vi.mocked(checkStorageLimit).mockResolvedValue(null);
@@ -144,6 +147,19 @@ describe('첨부 업로드의 파일 형식 확인', () => {
       success: false,
       errors: { _attachment: ['지원하지 않는 파일 형식입니다.'] },
     });
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('케이스당 첨부 개수를 넘기면 파일 본문을 읽지 않고 거부한다.', async () => {
+    existingRows = Array.from({ length: 10 }, (_, index) => ({ id: `attachment-${index}` }));
+    const file = new File(['test evidence'], 'evidence.txt', { type: 'text/plain' });
+    const readBody = vi.spyOn(file, 'arrayBuffer');
+
+    expect(await uploadAttachment(formWith(file))).toEqual({
+      success: false,
+      errors: { _attachment: ['테스트 케이스당 최대 10개의 파일만 첨부할 수 있습니다.'] },
+    });
+    expect(readBody).not.toHaveBeenCalled();
     expect(upload).not.toHaveBeenCalled();
   });
 

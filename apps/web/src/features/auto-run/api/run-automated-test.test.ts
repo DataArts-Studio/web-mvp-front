@@ -136,6 +136,14 @@ describe('자동 실행 프로젝트별 횟수 제한', () => {
     if (!limited.success) expect(limited.errors._general?.[0]).toContain('1시간에 20회');
     expect(captureSnapshot).toHaveBeenCalledTimes(20);
     expect(generateSpec).toHaveBeenCalledTimes(20);
+
+    // 횟수는 프로젝트별로 센다. PROJECT_A 를 다 써도 PROJECT_B 는 막히지 않는다.
+    limit
+      .mockReset()
+      .mockResolvedValueOnce([{ projectId: PROJECT_B }])
+      .mockResolvedValue([{ ...caseRow, projectId: PROJECT_B }]);
+    expect((await runAutomatedTest({ ...params, projectId: PROJECT_B })).success).toBe(true);
+    expect(captureSnapshot).toHaveBeenCalledTimes(21);
   });
 });
 

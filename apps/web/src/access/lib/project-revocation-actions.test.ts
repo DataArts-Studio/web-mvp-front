@@ -3,7 +3,7 @@ import { resetRateLimitMock } from '@/shared/test/__mocks__/rate-limit';
 import { getDatabase } from '@testea/db';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { verifyPassword } from './password-hash';
+import { hashPassword, verifyPassword } from './password-hash';
 import { createProjectSessionToken } from './project-session';
 import { requireProjectAccess } from './require-access';
 
@@ -119,5 +119,6 @@ it('폼 규칙(8~16자)을 벗어난 새 비밀번호는 서버에서도 거부�
   expect(!tooLong.success && tooLong.errors.newPassword?.[0]).toContain('최대 16자리');
 
   expect(verifyPassword).not.toHaveBeenCalled();
+  expect(hashPassword).not.toHaveBeenCalled();
   expect(write).not.toHaveBeenCalled();
 });
