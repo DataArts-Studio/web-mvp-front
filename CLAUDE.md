@@ -9,7 +9,7 @@ Claude Code 가 이 저장소에서 **코드를 작성**할 때 따르는 컨벤
 ## 저장소 구조
 
 - pnpm workspace + Turborepo
-- `apps/web` (사용자 대상), `apps/back-office` (운영 백오피스, `admin.gettestea.com` 별도 배포)
+- `apps/web` (사용자 대상), `apps/back-office` (운영 백오피스, `back.gettestea.com` 별도 배포, Cloudflare Workers)
 - `packages/db`, `packages/ui`, `packages/util`, `packages/lib`, `packages/fetch-kit`
 - 배포: prod `gettestea.com`, dev `dev.gettestea.com` (DB 는 Vercel env 분기로 prod 와 preview/dev 분리)
 - 제품명 Testea (테스티아). UI 한국어. 핵심 도메인: 프로젝트, 케이스, 스위트, 마일스톤, 테스트 런.
@@ -29,7 +29,7 @@ Claude Code 가 이 저장소에서 **코드를 작성**할 때 따르는 컨벤
 ## 인증·보안 기본 전제
 
 - 사용자 계정 없음. 프로젝트별 비밀번호(bcrypt 해시)로 진입. 봇 차단은 Cloudflare Turnstile (프로젝트 생성 Step 3 + 접근 폼).
-- 레이트 리밋: 현재 인메모리 Map (5회/15분 락아웃). 운영 스케일 시 Redis 로 교체 예정.
+- 레이트 리밋: DB 테이블 `rate_limit_buckets` 에 원자적 upsert 로 센다 (`apps/web/src/shared/lib/rate-limit`, #471). 프로젝트 비밀번호는 5회/15분 락아웃.
 - 새 API 라우트 (`apps/web/app/api/**`) 는 외부 입력·웹훅·LLM 응답을 신뢰하지 않는다. 입력 검증 + 권한 가드 필수. 프로젝트 접근 가드는 `requireProjectAccess` 패턴.
 - RLS 신규 테이블 deny-all 정책 누락은 보안 회귀. 마이그레이션 PR 에 정책 같이 들어가야 한다.
 
@@ -60,6 +60,7 @@ PR 생성·추가 커밋 push 전, cherry-pick/rebase 직후 모두 아래를 �
 - 단위/통합: Vitest (`apps/*/vitest.config.ts`).
 - E2E: Playwright, 위치 `apps/web/tests/`, 확장자 `*.spec.ts`. `src/` 아래에 두지 않는다.
 - POM·시나리오 규약은 `AGENTS.md` "테스트 아키텍처" 절 참조.
+- 작성·진단 판단 근거는 `docs/issues/test-refactor/methodology.md` (`[M1]`~`[M9]`, 커버리지 정책). 테스트 작성은 `write-test`, 기존 테스트 진단은 `diagnose-test` 스킬을 쓴다.
 
 ## 문서·기획
 

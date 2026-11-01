@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getChallenge } from '@/shared/challenges/registry';
+import { getClientIp } from '@/shared/rate-limit';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'llm_disabled' }, { status: 503 });
   }
 
-  const ip = (request.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+  const ip = getClientIp(request);
   if (rateLimited(ip)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }

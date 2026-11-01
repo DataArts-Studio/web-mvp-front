@@ -8,7 +8,13 @@ export const dynamic = 'force-dynamic';
 
 export default async function LogsPage() {
   await requireAdmin('/logs');
-  const logs = await listAdminActivity(100);
+  // 로그인 실패는 누구나 쌓을 수 있으므로 관리자 활동과 따로 가져와 합친다. 한 목록으로 받으면
+  // 실패 기록이 실제 관리자 활동을 페이지 밖으로 밀어낸다.
+  const [actions, failures] = await Promise.all([
+    listAdminActivity(100, { excludeActions: ['login.failed'] }),
+    listAdminActivity(50, { actions: ['login.failed'] }),
+  ]);
+  const logs = [...actions, ...failures].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <BackOfficeLayout

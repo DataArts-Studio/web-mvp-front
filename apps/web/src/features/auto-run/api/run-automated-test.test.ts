@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
+import { resetRateLimitMock } from '@/shared/test/__mocks__/rate-limit';
 import { getDatabase } from '@testea/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,11 +15,16 @@ vi.mock('@/features/target-sites/api/get-target-site-for-execution', () => ({
   getTargetSiteForExecution: vi.fn(),
 }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
+vi.mock('@/shared/lib/rate-limit', () => import('@/shared/test/__mocks__/rate-limit'));
 vi.mock('@testea/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@testea/db')>()),
   getDatabase: vi.fn(),
 }));
-vi.mock('../lib/generate-spec', () => ({ generateSpec: vi.fn() }));
+vi.mock('../lib/generate-spec', () => ({
+  MAX_SNAPSHOT_CHARS: 100_000,
+  MAX_STEPS_CHARS: 5_000,
+  generateSpec: vi.fn(),
+}));
 vi.mock('./record-result', () => ({ recordAutoResult: vi.fn() }));
 vi.mock('./runner-client', () => ({ captureSnapshot: vi.fn(), runSpecOnRunner: vi.fn() }));
 
@@ -37,6 +43,7 @@ const db = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  resetRateLimitMock();
   vi.mocked(getDatabase).mockReturnValue(db as unknown as ReturnType<typeof getDatabase>);
   vi.mocked(requireProjectAccess).mockResolvedValue(true);
   limit.mockResolvedValueOnce([{ projectId: PROJECT_A }]).mockResolvedValue([
@@ -102,5 +109,77 @@ describe('자동 실행 결과 대상의 프로젝트 경계', () => {
       expect.objectContaining({ runId: params.runId, caseKey: 'TC-001', status: 'pass' })
     );
     expect(runSpecOnRunner).toHaveBeenCalledOnce();
+  });
+});
+
+describe('자동 실행 프로젝트별 횟수 제한', () => {
+  it('한 프로젝트에서 1시간에 20회를 넘기면 캡처·LLM 호출 전에 거부한다.', async () => {
+    // 매 호출마다 Run 소속 확인 → 케이스 조회 순으로 limit 이 불린다.
+    const caseRow = {
+      id: params.caseId,
+      projectId: PROJECT_A,
+      name: '정상 케이스',
+      steps: '화면 확인',
+      caseKey: 'TC-001',
+    };
+    let calls = 0;
+    limit
+      .mockReset()
+      .mockImplementation(async () => (calls++ % 2 === 0 ? [{ projectId: PROJECT_A }] : [caseRow]));
+    for (let attempt = 0; attempt < 20; attempt++) {
+      expect((await runAutomatedTest(params)).success).toBe(true);
+    }
+    expect(captureSnapshot).toHaveBeenCalledTimes(20);
+
+    const limited = await runAutomatedTest(params);
+    expect(limited.success).toBe(false);
+    if (!limited.success) expect(limited.errors._general?.[0]).toContain('1시간에 20회');
+    expect(captureSnapshot).toHaveBeenCalledTimes(20);
+    expect(generateSpec).toHaveBeenCalledTimes(20);
+
+    // 횟수는 프로젝트별로 센다. PROJECT_A 를 다 써도 PROJECT_B 는 막히지 않는다.
+    limit
+      .mockReset()
+      .mockResolvedValueOnce([{ projectId: PROJECT_B }])
+      .mockResolvedValue([{ ...caseRow, projectId: PROJECT_B }]);
+    expect((await runAutomatedTest({ ...params, projectId: PROJECT_B })).success).toBe(true);
+    expect(captureSnapshot).toHaveBeenCalledTimes(21);
+  });
+});
+
+describe('자동 실행 단계 길이 제한', () => {
+  it('단계가 5,000자를 넘으면 잘라서 실행하지 않고 외부 호출 전에 거부한다.', async () => {
+    limit
+      .mockReset()
+      .mockResolvedValueOnce([{ projectId: PROJECT_A }])
+      .mockResolvedValue([
+        {
+          id: params.caseId,
+          projectId: PROJECT_A,
+          name: '긴 케이스',
+          steps: 'a'.repeat(5_001),
+          caseKey: 'TC-001',
+        },
+      ]);
+
+    const result = await runAutomatedTest(params);
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.errors._general?.[0]).toContain('5000자');
+    expectNoExternalWork();
+  });
+});
+
+describe('자동 실행 접근성 트리 길이 제한', () => {
+  it('트리가 상한을 넘으면 LLM·러너 호출과 결과 기록 없이 거부한다.', async () => {
+    vi.mocked(captureSnapshot).mockResolvedValue({ ok: true, snapshot: 'n'.repeat(100_001) });
+
+    const result = await runAutomatedTest(params);
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.errors._general?.[0]).toContain('100000자');
+    expect(generateSpec).not.toHaveBeenCalled();
+    expect(runSpecOnRunner).not.toHaveBeenCalled();
+    expect(recordAutoResult).not.toHaveBeenCalled();
   });
 });
