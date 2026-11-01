@@ -2,6 +2,7 @@
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { getRecentResultStatuses } from '@/entities/test-case/api/latest-result';
 import { excludeArchivedCasesFromRuns } from '@/entities/test-run/api/run-scope';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
@@ -9,7 +10,7 @@ import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
-import type { ActionResult } from '@/shared/types';
+import type { ActionResult, TestCaseResultStatus } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
   getDatabase,
@@ -135,9 +136,27 @@ export const getTestSuites = async ({
       };
     }
 
+    // 케이스 목록의 스위트 패널이 쓰는 스위트별 케이스 수 (휴지통 케이스 제외)
+    const suiteIds = rows.map((row) => row.id);
+    const caseCountRows =
+      suiteIds.length > 0
+        ? await db
+            .select({ suiteId: testCases.test_suite_id, count: count() })
+            .from(testCases)
+            .where(
+              and(
+                inArray(testCases.test_suite_id, suiteIds),
+                eq(testCases.lifecycle_status, 'ACTIVE')
+              )
+            )
+            .groupBy(testCases.test_suite_id)
+        : [];
+    const caseCounts = new Map(caseCountRows.map((row) => [row.suiteId, row.count]));
+
     const result: TestSuite[] = rows.map((row) => ({
       id: row.id,
       projectId: row.project_id ?? '',
+      caseCount: caseCounts.get(row.id) ?? 0,
       title: row.name,
       description: row.description ?? undefined,
       sortOrder: row.sort_order ?? 0,
@@ -340,6 +359,9 @@ export const updateTestSuite = async (
   }
 };
 
+/** 스위트 목록 이력 막대에 쓰는 스위트별 최근 실행 수 (리뉴얼 v2 01e) */
+const RECENT_RUNS_PER_SUITE = 30;
+
 /**
  * 스위트 목록 + 통계를 안전하게 조회 (각 관계 데이터를 별도 쿼리로 조회)
  */
@@ -433,6 +455,7 @@ export const getTestSuitesWithStats = async ({
           .select({
             suiteId: testRunSuites.test_suite_id,
             runId: testRuns.id,
+            runName: testRuns.name,
             runStatus: testRuns.status,
             runCreatedAt: testRuns.created_at,
           })
@@ -496,40 +519,56 @@ export const getTestSuitesWithStats = async ({
     // 스위트별 run 그룹핑
     const runsPerSuite = new Map<
       string,
-      Array<{ runId: string; status: string; createdAt: Date }>
+      Array<{ runId: string; name: string; status: string; createdAt: Date }>
     >();
     for (const r of recentRunRows) {
       if (!r.suiteId) continue;
       if (!runsPerSuite.has(r.suiteId)) runsPerSuite.set(r.suiteId, []);
       const arr = runsPerSuite.get(r.suiteId)!;
-      if (arr.length < 5) {
-        arr.push({ runId: r.runId, status: r.runStatus, createdAt: r.runCreatedAt });
+      if (arr.length < RECENT_RUNS_PER_SUITE) {
+        arr.push({
+          runId: r.runId,
+          name: r.runName,
+          status: r.runStatus,
+          createdAt: r.runCreatedAt,
+        });
       }
     }
 
-    // 7) 최근 run들의 케이스 결과 집계
-    const allRunIds = [...new Set(recentRunRows.map((r) => r.runId))];
+    // 7) 최근 run들의 케이스 결과 집계. 한 실행에 여러 스위트가 섞여 있어도
+    // 스위트 목록의 이력 막대는 그 스위트 케이스의 결과만 센다.
+    const allRunIds = [...new Set([...runsPerSuite.values()].flat().map((r) => r.runId))];
     const runCaseCountMap = new Map<
       string,
       { passed: number; failed: number; blocked: number; skipped: number; total: number }
     >();
+    const runSuiteKey = (runId: string, suiteId: string) => `${runId}:${suiteId}`;
     if (allRunIds.length > 0) {
       const caseRunRows = await db
         .select({
           runId: testCaseRuns.test_run_id,
+          suiteId: testCases.test_suite_id,
           status: testCaseRuns.status,
           cnt: count(),
         })
         .from(testCaseRuns)
-        .where(and(inArray(testCaseRuns.test_run_id, allRunIds), isNull(testCaseRuns.excluded_at)))
-        .groupBy(testCaseRuns.test_run_id, testCaseRuns.status);
+        .innerJoin(testCases, eq(testCaseRuns.test_case_id, testCases.id))
+        .where(
+          and(
+            inArray(testCaseRuns.test_run_id, allRunIds),
+            inArray(testCases.test_suite_id, suiteIds),
+            isNull(testCaseRuns.excluded_at)
+          )
+        )
+        .groupBy(testCaseRuns.test_run_id, testCases.test_suite_id, testCaseRuns.status);
 
       for (const r of caseRunRows) {
-        if (!r.runId) continue;
-        if (!runCaseCountMap.has(r.runId)) {
-          runCaseCountMap.set(r.runId, { passed: 0, failed: 0, blocked: 0, skipped: 0, total: 0 });
+        if (!r.runId || !r.suiteId) continue;
+        const key = runSuiteKey(r.runId, r.suiteId);
+        if (!runCaseCountMap.has(key)) {
+          runCaseCountMap.set(key, { passed: 0, failed: 0, blocked: 0, skipped: 0, total: 0 });
         }
-        const c = runCaseCountMap.get(r.runId)!;
+        const c = runCaseCountMap.get(key)!;
         const n = Number(r.cnt);
         c.total += n;
         if (r.status === 'pass') c.passed += n;
@@ -556,7 +595,7 @@ export const getTestSuitesWithStats = async ({
 
       const suiteRuns = runsPerSuite.get(row.id) ?? [];
       const recentRuns = suiteRuns.map((r) => {
-        const counts = runCaseCountMap.get(r.runId) ?? {
+        const counts = runCaseCountMap.get(runSuiteKey(r.runId, row.id)) ?? {
           passed: 0,
           failed: 0,
           blocked: 0,
@@ -565,6 +604,7 @@ export const getTestSuitesWithStats = async ({
         };
         return {
           runId: r.runId,
+          name: r.name,
           runAt: r.createdAt,
           status: deriveRunStatus(r.status, counts.failed, counts.blocked),
           passed: counts.passed,
@@ -576,7 +616,7 @@ export const getTestSuitesWithStats = async ({
 
       const lastRun = suiteRuns[0]
         ? (() => {
-            const counts = runCaseCountMap.get(suiteRuns[0].runId) ?? {
+            const counts = runCaseCountMap.get(runSuiteKey(suiteRuns[0].runId, row.id)) ?? {
               passed: 0,
               failed: 0,
               blocked: 0,
@@ -705,3 +745,29 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
  * @deprecated Use archiveTestSuite instead
  */
 export const deleteTestSuite = archiveTestSuite;
+
+/**
+ * 스위트 상세의 케이스 행에 그릴 최근 실행 결과. 케이스 id 마다 오래된 것부터 최대 5개.
+ * 케이스 목록 조회와 같은 기준(getRecentResultStatuses)을 쓴다.
+ */
+export const getSuiteCaseRecentResults = async (
+  suiteId: string
+): Promise<ActionResult<Record<string, TestCaseResultStatus[]>>> => {
+  try {
+    if (!(await canAccess('testSuite', suiteId))) return ACCESS_DENIED;
+
+    const db = getDatabase();
+    const rows = await db
+      .select({ id: testCases.id })
+      .from(testCases)
+      .where(and(eq(testCases.test_suite_id, suiteId), eq(testCases.lifecycle_status, 'ACTIVE')));
+    const recent = await getRecentResultStatuses(
+      db,
+      rows.map((row) => row.id)
+    );
+    return { success: true, data: Object.fromEntries(recent) };
+  } catch (error) {
+    Sentry.captureException(error, { extra: { action: 'getSuiteCaseRecentResults' } });
+    return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.LOAD_FAILED] } };
+  }
+};

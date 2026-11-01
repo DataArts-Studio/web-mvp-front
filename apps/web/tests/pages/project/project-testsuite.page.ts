@@ -16,10 +16,11 @@ export class ProjectTestsuitePage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.heading = page.getByRole('heading', { name: '테스트 스위트 관리' });
-    this.createButton = page.getByRole('button', {
-      name: '테스트 스위트 생성하기',
+    this.heading = page.getByRole('heading', {
+      name: '테스트 스위트',
+      exact: true,
     });
+    this.createButton = page.getByRole('button', { name: '새 스위트' });
     this.createDialog = page.getByRole('dialog', {
       name: '테스트 스위트 생성',
     });
@@ -27,9 +28,9 @@ export class ProjectTestsuitePage extends BasePage {
       name: '테스트 스위트 생성',
     });
     this.titleInput = page.getByPlaceholder('스위트 이름을 입력해 주세요.');
-    this.searchInput = page.getByPlaceholder('스위트 이름 또는 키워드로 검색');
+    this.searchInput = page.getByPlaceholder('스위트 이름, 설명 검색');
     this.suiteList = page.getByLabel('테스트 스위트 리스트');
-    // 트리거('테스트 스위트 생성하기')·진행중('생성 중...')과 겹치므로 exact
+    // 진행중('생성 중...')과 겹치므로 exact
     this.submitButton = page.getByRole('button', { name: '생성', exact: true });
     this.cancelButton = page.getByRole('button', { name: '취소' });
     // 모달 바깥(backdrop). 클릭 시 handleAbandon (suite-create-form.tsx 의 section)
@@ -75,7 +76,7 @@ export class ProjectTestsuitePage extends BasePage {
     await this.backdrop.click({ position: { x: 5, y: 5 } });
   }
 
-  /** 클라이언트 측 검색 필터. 페이지네이션(7개) 영향 없이 특정 제목의 존재/부재를 단언하기 위해 사용. */
+  /** 클라이언트 측 검색 필터. 목록이 길어도 특정 제목의 존재/부재를 단언하기 위해 사용. */
   async search(query: string): Promise<void> {
     await this.searchInput.fill(query);
   }
