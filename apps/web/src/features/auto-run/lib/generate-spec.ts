@@ -27,8 +27,10 @@ const SPEC_SYSTEM_PROMPT = `너는 Playwright(@playwright/test, TypeScript) 테�
 /**
  * 프롬프트에 넣는 입력 길이 상한. 대상 페이지의 접근성 트리는 페이지가 정하고 steps 는
  * 사용자 입력이라, 그대로 넣으면 토큰 비용이 끝없이 커질 수 있다.
+ * 잘린 입력으로 만든 spec 은 결과가 틀릴 수 있으므로 호출부(runAutomatedTest)가 상한을 넘는
+ * 입력을 먼저 거부한다. 여기서 자르는 것은 그 검사가 빠졌을 때의 안전망이다.
  */
-export const MAX_SNAPSHOT_CHARS = 20_000;
+export const MAX_SNAPSHOT_CHARS = 100_000;
 export const MAX_STEPS_CHARS = 5_000;
 const MAX_TITLE_CHARS = 200;
 

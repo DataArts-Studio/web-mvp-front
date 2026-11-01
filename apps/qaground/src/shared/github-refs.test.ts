@@ -32,4 +32,10 @@ describe('neutralizeGithubRefs', () => {
     const text = '@a #1 GH-2 github.com/x';
     expect(neutralizeGithubRefs(text).replaceAll(ZWSP, '')).toBe(text);
   });
+
+  it('HTML 엔티티로 쓴 멘션·참조가 풀리지 않게 & 를 이스케이프한다', () => {
+    expect(neutralizeGithubRefs('&#64;octocat &#35;12 &commat;org')).toBe(
+      `&amp;#${ZWSP}64;octocat &amp;#${ZWSP}35;12 &amp;commat;org`
+    );
+  });
 });

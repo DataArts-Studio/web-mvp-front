@@ -44,6 +44,29 @@ function startsWith(bytes: Uint8Array, { offset, bytes: expected }: Signature): 
 }
 
 /**
+ * 같은 컨테이너(ZIP·OLE)를 쓰는 Office 형식은 내부 항목 이름으로 하위 형식을 구분한다.
+ * ZIP 은 로컬 파일 헤더에 항목 이름(`word/`·`xl/`)이 평문으로, OLE 는 디렉터리 항목에
+ * 스트림 이름(`WordDocument`·`Workbook`/`Book`)이 UTF-16LE 로 들어 있다.
+ */
+const utf16le = (text: string) => [...text].flatMap((char) => [char.charCodeAt(0), 0x00]);
+
+const OFFICE_MARKERS: Record<string, number[][]> = {
+  'application/msword': [utf16le('WordDocument')],
+  'application/vnd.ms-excel': [utf16le('Workbook'), utf16le('Book')],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [ascii('word/')],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [ascii('xl/')],
+};
+
+function containsSequence(bytes: Uint8Array, sequence: number[]): boolean {
+  const first = sequence[0];
+  for (let index = bytes.indexOf(first); index !== -1; index = bytes.indexOf(first, index + 1)) {
+    if (index + sequence.length > bytes.length) return false;
+    if (sequence.every((byte, offset) => bytes[index + offset] === byte)) return true;
+  }
+  return false;
+}
+
+/**
  * `bytes` 가 `claimedType` 의 파일 형식과 맞으면 true.
  * 시그니처가 없는 텍스트 형식은 앞부분에 NUL 바이트가 없는지만 본다. 모르는 타입은 false.
  */
@@ -53,5 +76,7 @@ export function matchesFileSignature(claimedType: string, bytes: Uint8Array): bo
   }
   const signatures = SIGNATURES[claimedType];
   if (!signatures) return false;
-  return signatures.every((signature) => startsWith(bytes, signature));
+  if (!signatures.every((signature) => startsWith(bytes, signature))) return false;
+  const markers = OFFICE_MARKERS[claimedType];
+  return !markers || markers.some((marker) => containsSequence(bytes, marker));
 }

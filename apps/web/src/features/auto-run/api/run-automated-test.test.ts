@@ -20,7 +20,11 @@ vi.mock('@testea/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@testea/db')>()),
   getDatabase: vi.fn(),
 }));
-vi.mock('../lib/generate-spec', () => ({ MAX_STEPS_CHARS: 5_000, generateSpec: vi.fn() }));
+vi.mock('../lib/generate-spec', () => ({
+  MAX_SNAPSHOT_CHARS: 100_000,
+  MAX_STEPS_CHARS: 5_000,
+  generateSpec: vi.fn(),
+}));
 vi.mock('./record-result', () => ({ recordAutoResult: vi.fn() }));
 vi.mock('./runner-client', () => ({ captureSnapshot: vi.fn(), runSpecOnRunner: vi.fn() }));
 
@@ -155,5 +159,19 @@ describe('자동 실행 단계 길이 제한', () => {
     expect(result.success).toBe(false);
     if (!result.success) expect(result.errors._general?.[0]).toContain('5000자');
     expectNoExternalWork();
+  });
+});
+
+describe('자동 실행 접근성 트리 길이 제한', () => {
+  it('트리가 상한을 넘으면 LLM·러너 호출과 결과 기록 없이 거부한다.', async () => {
+    vi.mocked(captureSnapshot).mockResolvedValue({ ok: true, snapshot: 'n'.repeat(100_001) });
+
+    const result = await runAutomatedTest(params);
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.errors._general?.[0]).toContain('100000자');
+    expect(generateSpec).not.toHaveBeenCalled();
+    expect(runSpecOnRunner).not.toHaveBeenCalled();
+    expect(recordAutoResult).not.toHaveBeenCalled();
   });
 });

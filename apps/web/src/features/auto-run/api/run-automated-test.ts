@@ -11,7 +11,7 @@ import { getDatabase, testCases } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { buildStorageState } from '../lib/build-storage-state';
-import { MAX_STEPS_CHARS, generateSpec } from '../lib/generate-spec';
+import { MAX_SNAPSHOT_CHARS, MAX_STEPS_CHARS, generateSpec } from '../lib/generate-spec';
 import { recordAutoResult } from './record-result';
 import { captureSnapshot, runSpecOnRunner } from './runner-client';
 
@@ -149,6 +149,12 @@ export async function runAutomatedTest(
     });
     if (!captured.ok || !captured.snapshot) {
       return fail(`대상 페이지 캡처 실패: ${captured.errorMessage ?? '알 수 없는 오류'}`);
+    }
+    // 트리를 자르면 뒤쪽 컨트롤이 빠진 채 spec 이 만들어진다. 결과로 기록하지 않고 작업을 거부한다.
+    if (captured.snapshot.length > MAX_SNAPSHOT_CHARS) {
+      return fail(
+        `대상 페이지 접근성 트리가 ${MAX_SNAPSHOT_CHARS}자를 넘어 자동 실행할 수 없습니다.`
+      );
     }
 
     // 5) OpenAI → Playwright spec
