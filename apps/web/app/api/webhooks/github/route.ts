@@ -11,7 +11,7 @@ import {
   testCases,
 } from '@testea/db';
 import crypto from 'crypto';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 function verifySignature(payload: string, signature: string, secret: string): boolean {
   const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(payload).digest('hex');
@@ -25,10 +25,10 @@ function verifySignature(payload: string, signature: string, secret: string): bo
 /** 링크를 갱신하는 PR 액션. 코멘트는 이 중 COMMENT_ACTIONS 에서만 단다. */
 const HANDLED_ACTIONS = ['opened', 'reopened', 'edited', 'closed'];
 /**
- * PR 코멘트를 새로 다는 액션. edited 는 본문을 고칠 때마다 오므로 여기서 코멘트를 달면
- * 같은 표가 반복해 쌓인다. edited 에서는 링크만 갱신하고 코멘트는 열릴 때 한 번만 단다.
+ * PR 코멘트를 새로 다는 액션. edited·reopened 에서 코멘트를 달면 같은 표가 반복해 쌓인다.
+ * 그 액션에서는 링크만 갱신하고 코멘트는 처음 열릴 때 한 번만 단다.
  */
-const COMMENT_ACTIONS = ['opened', 'reopened'];
+const COMMENT_ACTIONS = ['opened'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -104,25 +104,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'No TC references found' }, { status: 200 });
     }
 
-    // display_id로 TC 조회 (보관·휴지통 케이스는 제외)
-    const matchedCases = await db
-      .select({ id: testCases.id, display_id: testCases.display_id, name: testCases.name })
+    // display_id로 TC 조회. 기존 링크 상태 갱신은 보관·휴지통 케이스도 대상으로 한다
+    // (복원했을 때 닫힌 PR 이 open 으로 남지 않게). 새 링크와 코멘트는 활성 케이스만.
+    const referencedCases = await db
+      .select({
+        id: testCases.id,
+        display_id: testCases.display_id,
+        name: testCases.name,
+        lifecycle_status: testCases.lifecycle_status,
+        archived_at: testCases.archived_at,
+      })
       .from(testCases)
       .where(
-        and(
-          eq(testCases.project_id, conn.project_id),
-          inArray(testCases.display_id, displayIds),
-          eq(testCases.lifecycle_status, 'ACTIVE'),
-          isNull(testCases.archived_at)
-        )
+        and(eq(testCases.project_id, conn.project_id), inArray(testCases.display_id, displayIds))
       );
+    const matchedCases = referencedCases.filter(
+      (tc) => tc.lifecycle_status === 'ACTIVE' && tc.archived_at === null
+    );
 
-    if (matchedCases.length === 0) {
+    if (referencedCases.length === 0) {
       return NextResponse.json({ message: 'No matching TCs' }, { status: 200 });
     }
 
     // 링크 생성 (중복 방지: 같은 TC + 같은 PR number는 업데이트)
-    for (const tc of matchedCases) {
+    for (const tc of referencedCases) {
+      const isActive = tc.lifecycle_status === 'ACTIVE' && tc.archived_at === null;
       const [existing] = await db
         .select({ id: testCaseExternalLinks.id })
         .from(testCaseExternalLinks)
@@ -140,7 +146,7 @@ export async function POST(req: NextRequest) {
           .update(testCaseExternalLinks)
           .set({ title: prTitle, status: prState })
           .where(eq(testCaseExternalLinks.id, existing.id));
-      } else {
+      } else if (isActive) {
         await db.insert(testCaseExternalLinks).values({
           test_case_id: tc.id,
           link_type: 'github_pr',
@@ -153,8 +159,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // PR에 코멘트 작성 (opened/reopened 시에만)
-    if (COMMENT_ACTIONS.includes(action)) {
+    // PR에 코멘트 작성 (opened 시에만)
+    if (COMMENT_ACTIONS.includes(action) && matchedCases.length > 0) {
       try {
         const token = decrypt(conn.access_token);
 

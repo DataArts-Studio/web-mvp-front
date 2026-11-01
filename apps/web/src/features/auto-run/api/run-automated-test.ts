@@ -11,7 +11,7 @@ import { getDatabase, testCases } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { buildStorageState } from '../lib/build-storage-state';
-import { generateSpec } from '../lib/generate-spec';
+import { MAX_STEPS_CHARS, generateSpec } from '../lib/generate-spec';
 import { recordAutoResult } from './record-result';
 import { captureSnapshot, runSpecOnRunner } from './runner-client';
 
@@ -116,6 +116,10 @@ export async function runAutomatedTest(
     }
     if (!testCase.steps || !testCase.steps.trim()) {
       return fail('케이스에 실행할 단계(steps)가 없습니다.');
+    }
+    // 단계를 자르면 뒤쪽 검증이 spec 에서 빠진 채 pass 로 기록될 수 있으므로 실행을 거부한다.
+    if (testCase.steps.length > MAX_STEPS_CHARS) {
+      return fail(`케이스 단계(steps)가 ${MAX_STEPS_CHARS}자를 넘어 자동 실행할 수 없습니다.`);
     }
 
     // 3) 대상 사이트 복호화 (baseUrl + auth → storageState)

@@ -71,9 +71,12 @@ export async function captureInSandbox(input: CaptureInput): Promise<CaptureResu
     // run-spec 과 같이 정리 후 안전하게 읽는다(FIFO·심볼릭 링크 바꿔치기 차단).
     await cleanupSandbox().catch(() => {});
     try {
-      const raw = await readSandboxOutput(outputPath);
-      if (raw === undefined) throw new Error('No capture output.');
-      return JSON.parse(raw) as CaptureResult;
+      const output = await readSandboxOutput(outputPath);
+      if (output.status === 'too_large') {
+        return { ok: false, errorMessage: 'Capture result exceeded the size limit.' };
+      }
+      if (output.status !== 'ok') throw new Error('No capture output.');
+      return JSON.parse(output.text) as CaptureResult;
     } catch {
       return { ok: false, errorMessage: 'Capture produced no result (timed out or crashed).' };
     }

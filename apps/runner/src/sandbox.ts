@@ -188,6 +188,11 @@ export async function cleanupSandbox(): Promise<boolean> {
 /** spec 산출물 파일 크기 상한. reporter JSON·캡처 결과는 이보다 훨씬 작다. */
 export const SANDBOX_OUTPUT_MAX_BYTES = 8 * 1024 * 1024;
 
+export type SandboxOutput =
+  | { status: 'ok'; text: string }
+  | { status: 'missing' }
+  | { status: 'too_large' };
+
 /**
  * spec uid 가 쓸 수 있는 run 디렉터리의 산출물을 root 로 안전하게 읽는다.
  * 반드시 cleanupSandbox() 이후에 호출한다(파일을 바꿔치기할 프로세스가 남지 않게).
@@ -197,12 +202,12 @@ export const SANDBOX_OUTPUT_MAX_BYTES = 8 * 1024 * 1024;
  * (O_NOFOLLOW), 블록되지 않게 열고(O_NONBLOCK), 연 fd 가 일반 파일인지와 크기 상한을
  * 확인한 뒤 상한만큼만 읽는다.
  *
- * @returns 파일 내용. 없거나 일반 파일이 아니거나 상한을 넘으면 undefined.
+ * @returns 읽은 내용, 또는 산출물이 없거나 쓸 수 없는 경우 'missing', 상한을 넘으면 'too_large'.
  */
 export async function readSandboxOutput(
   path: string,
   maxBytes: number = SANDBOX_OUTPUT_MAX_BYTES
-): Promise<string | undefined> {
+): Promise<SandboxOutput> {
   let handle: fs.FileHandle;
   try {
     handle = await fs.open(
@@ -210,11 +215,12 @@ export async function readSandboxOutput(
       fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK
     );
   } catch {
-    return undefined;
+    return { status: 'missing' };
   }
   try {
     const stat = await handle.stat();
-    if (!stat.isFile() || stat.size > maxBytes) return undefined;
+    if (!stat.isFile()) return { status: 'missing' };
+    if (stat.size > maxBytes) return { status: 'too_large' };
     const buffer = Buffer.alloc(maxBytes + 1);
     let length = 0;
     while (length < buffer.length) {
@@ -222,10 +228,10 @@ export async function readSandboxOutput(
       if (bytesRead === 0) break;
       length += bytesRead;
     }
-    if (length > maxBytes) return undefined;
-    return buffer.subarray(0, length).toString('utf8');
+    if (length > maxBytes) return { status: 'too_large' };
+    return { status: 'ok', text: buffer.subarray(0, length).toString('utf8') };
   } catch {
-    return undefined;
+    return { status: 'missing' };
   } finally {
     await handle.close().catch(() => {});
   }

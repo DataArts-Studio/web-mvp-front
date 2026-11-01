@@ -20,7 +20,7 @@ vi.mock('@testea/db', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@testea/db')>()),
   getDatabase: vi.fn(),
 }));
-vi.mock('../lib/generate-spec', () => ({ generateSpec: vi.fn() }));
+vi.mock('../lib/generate-spec', () => ({ MAX_STEPS_CHARS: 5_000, generateSpec: vi.fn() }));
 vi.mock('./record-result', () => ({ recordAutoResult: vi.fn() }));
 vi.mock('./runner-client', () => ({ captureSnapshot: vi.fn(), runSpecOnRunner: vi.fn() }));
 
@@ -132,5 +132,28 @@ describe('자동 실행 프로젝트별 횟수 제한', () => {
     if (!limited.success) expect(limited.errors._general?.[0]).toContain('1시간에 20회');
     expect(captureSnapshot).toHaveBeenCalledTimes(20);
     expect(generateSpec).toHaveBeenCalledTimes(20);
+  });
+});
+
+describe('자동 실행 단계 길이 제한', () => {
+  it('단계가 5,000자를 넘으면 잘라서 실행하지 않고 외부 호출 전에 거부한다.', async () => {
+    limit
+      .mockReset()
+      .mockResolvedValueOnce([{ projectId: PROJECT_A }])
+      .mockResolvedValue([
+        {
+          id: params.caseId,
+          projectId: PROJECT_A,
+          name: '긴 케이스',
+          steps: 'a'.repeat(5_001),
+          caseKey: 'TC-001',
+        },
+      ]);
+
+    const result = await runAutomatedTest(params);
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.errors._general?.[0]).toContain('5000자');
+    expectNoExternalWork();
   });
 });
