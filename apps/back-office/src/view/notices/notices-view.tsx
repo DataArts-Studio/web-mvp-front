@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 
 import { deleteNoticeAction, toggleNoticeAction } from '@/features/notices/api/actions';
+import { toKstParts } from '@/shared/lib/kst-datetime';
 import { Select } from '@/shared/ui';
 import type { AdminAnnouncement, AnnouncementStatus } from '@testea/db';
 import { AlertTriangle, Pencil, Plus, Search, Trash2 } from 'lucide-react';
@@ -42,17 +43,18 @@ const STATUS_BADGE: Record<AnnouncementStatus, { label: string; cls: string }> =
 const PAGE_SIZE = 8;
 
 function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  const hour = d.getHours();
-  const ampm = hour < 12 ? '오전' : '오후';
-  const h12 = hour % 12 === 0 ? 12 : hour % 12;
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${ampm} ${String(h12).padStart(2, '0')}:${mm}`;
+  const p = toKstParts(iso);
+  if (!p) return '-';
+  const ampm = p.hour < 12 ? '오전' : '오후';
+  const h12 = p.hour % 12 === 0 ? 12 : p.hour % 12;
+  const mm = String(p.minute).padStart(2, '0');
+  return `${p.month}월 ${p.day}일 ${ampm} ${String(h12).padStart(2, '0')}:${mm}`;
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+  const p = toKstParts(iso);
+  if (!p) return '-';
+  return `${p.year}. ${p.month}. ${p.day}.`;
 }
 
 function ToggleSwitch({

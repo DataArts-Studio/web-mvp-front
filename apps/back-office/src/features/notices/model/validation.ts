@@ -1,3 +1,4 @@
+import { kstInputToIso } from '@/shared/lib/kst-datetime';
 import type { AnnouncementInput } from '@testea/db';
 
 export const NOTICE_CATEGORIES = ['feature', 'maintenance', 'policy', 'event', 'notice'] as const;
@@ -25,12 +26,11 @@ export type ParseResult =
   | { ok: true; value: AnnouncementInput }
   | { ok: false; errors: NoticeFieldErrors };
 
-/** datetime-local 입력(로컬 시각, 타임존 없음)을 ISO 로. 빈 값은 null. */
+/** datetime-local 입력(KST 시각, 타임존 없음)을 ISO 로. 빈 값은 null. */
 function toIso(raw: FormDataEntryValue | null): string | null {
   const v = typeof raw === 'string' ? raw.trim() : '';
   if (!v) return null;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  return kstInputToIso(v);
 }
 
 /**
