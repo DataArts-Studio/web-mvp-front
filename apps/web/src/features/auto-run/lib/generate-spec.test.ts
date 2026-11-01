@@ -5,10 +5,12 @@ import { MAX_SNAPSHOT_CHARS, MAX_STEPS_CHARS, generateSpec } from './generate-sp
 
 vi.mock('server-only', () => ({}));
 
+// 프로젝트에 등록한 AI 설정을 흉내 낸다. 누가 봐도 가짜인 값을 쓴다.
+const TEST_LLM = { provider: 'openai', apiKey: 'sk-test-dummy', model: null };
+
 const fetchMock = vi.fn();
 
 beforeEach(() => {
-  vi.stubEnv('OPENAI_API_KEY', 'synthetic-openai-key');
   vi.stubGlobal('fetch', fetchMock);
   fetchMock.mockResolvedValue(
     new Response(
@@ -20,7 +22,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   fetchMock.mockReset();
 });
@@ -33,6 +34,7 @@ function sentUserPrompt(): string {
 describe('generateSpec 프롬프트 입력 길이', () => {
   it('스냅샷과 단계가 상한을 넘으면 잘라서 보낸다', async () => {
     await generateSpec({
+      llm: TEST_LLM,
       // 상한 뒤쪽은 다른 문자로 채워, 잘린 부분이 프롬프트에 섞이지 않는지 확인한다.
       steps: 's'.repeat(MAX_STEPS_CHARS) + 'x'.repeat(1_000),
       snapshot: 'n'.repeat(MAX_SNAPSHOT_CHARS * 5),
@@ -50,6 +52,7 @@ describe('generateSpec 프롬프트 입력 길이', () => {
 
   it('케이스 제목이 200자를 넘으면 200자까지만 보낸다', async () => {
     await generateSpec({
+      llm: TEST_LLM,
       steps: '로그인 확인',
       snapshot: '- button "로그인"',
       caseTitle: 'T'.repeat(201),
@@ -62,6 +65,7 @@ describe('generateSpec 프롬프트 입력 길이', () => {
 
   it('상한 이하 입력은 그대로 보낸다', async () => {
     await generateSpec({
+      llm: TEST_LLM,
       steps: '로그인 확인',
       snapshot: '- button "로그인"',
       caseTitle: '케이스',

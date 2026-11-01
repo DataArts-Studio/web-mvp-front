@@ -2,6 +2,8 @@
 
 import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
+import { AiError } from '@/entities/ai-config/model/ai-error';
 import { getTargetSiteForExecution } from '@/features/target-sites/api/get-target-site-for-execution';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { consumeRateLimit } from '@/shared/lib/rate-limit';
@@ -12,6 +14,8 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 import { buildStorageState } from '../lib/build-storage-state';
 import { MAX_SNAPSHOT_CHARS, MAX_STEPS_CHARS, generateSpec } from '../lib/generate-spec';
+import { type SpecIssue, validateSpecAgainstSnapshot } from '../lib/validate-spec';
+import { findCaseSpec, saveDraftSpec } from './case-spec-store';
 import { recordAutoResult } from './record-result';
 import { captureSnapshot, runSpecOnRunner } from './runner-client';
 
@@ -23,10 +27,14 @@ import { captureSnapshot, runSpecOnRunner } from './runner-client';
  *   1) requireProjectAccess 가드
  *   2) 케이스 조회(steps, case_key)
  *   3) target_sites 복호화(baseUrl + auth → storageState)
- *   4) 러너 /capture → 접근성 스냅샷
- *   5) OpenAI(gpt-4o-mini) → Playwright spec
+ *   4) 승인된 spec 이 있으면 그대로 쓰고 5) 를 건너뛴다 (#187)
+ *   5) 프로젝트 AI 키 확인 → 러너 /capture → 접근성 스냅샷 → 등록한 LLM 으로 spec 생성
+ *      → 트리 대조 검증, 걸리면 지적 사항을 넣어 1회 재생성 → 초안으로 저장
  *   6) 러너 /run → pass/fail
  *   7) TR09 방식 결과 기록(result_source='auto')
+ *
+ * 실행이 실패해도 재생성하지 않는다. 실패가 대상 앱의 실제 회귀일 수 있어서다.
+ * 검증에 끝까지 걸려도 실행은 하고 경고만 돌려준다(첫 화면 트리만 보는 검증이라 오탐이 있을 수 있다).
  *
  * 스코프 밖: username/password 폼 로그인 자동화, 다중 케이스 배치, UI 버튼.
  */
@@ -53,6 +61,10 @@ export interface RunAutomatedTestData {
   recorded: boolean;
   /** 매칭에 사용한 case_key. */
   caseKey: string;
+  /** approved: 승인된 spec 실행, generated: 이번에 생성한 spec 실행. */
+  specSource: 'approved' | 'generated';
+  /** 생성 spec 이 트리 대조 검증에 끝까지 걸린 항목. 없으면 빈 배열. */
+  specWarnings: string[];
 }
 
 /**
@@ -63,8 +75,21 @@ const AUTO_RUN_MAX_PER_WINDOW = 20;
 const AUTO_RUN_WINDOW_MS = 60 * 60 * 1000;
 const AUTO_RUN_RATE_LIMITED_MESSAGE = `자동 실행은 프로젝트당 1시간에 ${AUTO_RUN_MAX_PER_WINDOW}회까지 할 수 있습니다. 잠시 후 다시 시도해주세요.`;
 
+/** 외부 호출(캡처·LLM·러너) 직전에 센다. 입력 오류로 끝나는 요청은 횟수에 넣지 않는다. */
+async function consumeAutoRunQuota(projectId: string): Promise<boolean> {
+  const quota = await consumeRateLimit(`auto-run:project:${projectId}`, {
+    limit: AUTO_RUN_MAX_PER_WINDOW,
+    windowMs: AUTO_RUN_WINDOW_MS,
+  });
+  return quota.allowed;
+}
+
 function fail(message: string): ActionResult<RunAutomatedTestData> {
   return { success: false, errors: { _general: [message] } };
+}
+
+function describeIssues(issues: SpecIssue[]): string[] {
+  return issues.map((issue) => `${issue.selector}: ${issue.reason}`);
 }
 
 function joinUrl(baseUrl: string, path?: string): string {
@@ -133,37 +158,85 @@ export async function runAutomatedTest(
     const storageState = buildStorageState(target.auth, target.baseUrl);
     const captureUrl = joinUrl(target.baseUrl, params.path);
 
-    // 외부 호출(캡처·LLM·러너) 직전에 센다. 입력 오류로 끝나는 요청은 횟수에 넣지 않는다.
-    const quota = await consumeRateLimit(`auto-run:project:${params.projectId}`, {
-      limit: AUTO_RUN_MAX_PER_WINDOW,
-      windowMs: AUTO_RUN_WINDOW_MS,
-    });
-    if (!quota.allowed) {
-      return fail(AUTO_RUN_RATE_LIMITED_MESSAGE);
-    }
+    const specKey = {
+      projectId: params.projectId,
+      caseId: testCase.id,
+      targetSiteId: params.targetSiteId,
+    };
 
-    // 4) 러너 /capture → 접근성 스냅샷
-    const captured = await captureSnapshot({
-      url: captureUrl,
-      storageState: storageState ?? undefined,
+    // 4) 승인된 spec 조회. 저장소 장애(마이그레이션 전 배포 등)는 생성 경로로 넘어간다.
+    const stored = await findCaseSpec(specKey).catch((error) => {
+      Sentry.captureException(error, { extra: { action: 'runAutomatedTest.findCaseSpec' } });
+      return null;
     });
-    if (!captured.ok || !captured.snapshot) {
-      return fail(`대상 페이지 캡처 실패: ${captured.errorMessage ?? '알 수 없는 오류'}`);
-    }
-    // 트리를 자르면 뒤쪽 컨트롤이 빠진 채 spec 이 만들어진다. 결과로 기록하지 않고 작업을 거부한다.
-    if (captured.snapshot.length > MAX_SNAPSHOT_CHARS) {
-      return fail(
-        `대상 페이지 접근성 트리가 ${MAX_SNAPSHOT_CHARS}자를 넘어 자동 실행할 수 없습니다.`
-      );
-    }
 
-    // 5) OpenAI → Playwright spec
-    const spec = await generateSpec({
-      steps: testCase.steps,
-      snapshot: captured.snapshot,
-      caseTitle: testCase.name,
-      path: params.path,
-    });
+    let spec: string;
+    let specSource: RunAutomatedTestData['specSource'];
+    let specWarnings: string[] = [];
+
+    if (stored?.status === 'approved') {
+      if (!(await consumeAutoRunQuota(params.projectId))) {
+        return fail(AUTO_RUN_RATE_LIMITED_MESSAGE);
+      }
+      spec = stored.spec;
+      specSource = 'approved';
+    } else {
+      // 코드 생성은 프로젝트에 등록한 AI 키로만 한다. 캡처 전에 확인해 러너 호출을 아낀다.
+      const llm = await getDecryptedApiKey(params.projectId);
+      if (!llm) {
+        return fail('AI 설정이 되어 있지 않습니다. 설정 페이지에서 API 키를 등록해주세요.');
+      }
+      if (!(await consumeAutoRunQuota(params.projectId))) {
+        return fail(AUTO_RUN_RATE_LIMITED_MESSAGE);
+      }
+
+      // 5) 러너 /capture → 접근성 스냅샷
+      const captured = await captureSnapshot({
+        url: captureUrl,
+        storageState: storageState ?? undefined,
+      });
+      if (!captured.ok || !captured.snapshot) {
+        return fail(`대상 페이지 캡처 실패: ${captured.errorMessage ?? '알 수 없는 오류'}`);
+      }
+      // 트리를 자르면 뒤쪽 컨트롤이 빠진 채 spec 이 만들어진다. 결과로 기록하지 않고 작업을 거부한다.
+      if (captured.snapshot.length > MAX_SNAPSHOT_CHARS) {
+        return fail(
+          `대상 페이지 접근성 트리가 ${MAX_SNAPSHOT_CHARS}자를 넘어 자동 실행할 수 없습니다.`
+        );
+      }
+
+      // OpenAI → Playwright spec, 트리에 없는 셀렉터가 있으면 1회 재생성
+      const generationInput = {
+        llm,
+        steps: testCase.steps,
+        snapshot: captured.snapshot,
+        caseTitle: testCase.name,
+        path: params.path,
+      };
+      spec = await generateSpec(generationInput);
+      let issues = validateSpecAgainstSnapshot(spec, captured.snapshot);
+      if (issues.length > 0) {
+        // 재생성이 실패하면 첫 생성본으로 진행한다.
+        const retried = await generateSpec({
+          ...generationInput,
+          retry: { previousSpec: spec, issues: describeIssues(issues) },
+        }).catch((error) => {
+          Sentry.captureException(error, { extra: { action: 'runAutomatedTest.retrySpec' } });
+          return null;
+        });
+        if (retried) {
+          spec = retried;
+          issues = validateSpecAgainstSnapshot(spec, captured.snapshot);
+        }
+      }
+      specSource = 'generated';
+      specWarnings = describeIssues(issues);
+
+      // 초안 저장 실패는 실행을 막지 않는다.
+      await saveDraftSpec({ ...specKey, spec, path: params.path ?? null }).catch((error) => {
+        Sentry.captureException(error, { extra: { action: 'runAutomatedTest.saveDraftSpec' } });
+      });
+    }
 
     // 6) 러너 /run → pass/fail
     const runResult = await runSpecOnRunner({
@@ -192,9 +265,18 @@ export async function runAutomatedTest(
         errorMessage: runResult.errorMessage,
         recorded: matched,
         caseKey: testCase.caseKey,
+        specSource,
+        specWarnings,
       },
     };
   } catch (error) {
+    // 키 무효·한도 같은 사용자 환경 문제는 원인을 알려준다(키 값은 메시지에 없다).
+    if (error instanceof AiError) {
+      if (error.report) {
+        Sentry.captureException(error, { extra: { action: 'runAutomatedTest', kind: error.kind } });
+      }
+      return fail(error.userMessage);
+    }
     Sentry.captureException(error, { extra: { action: 'runAutomatedTest' } });
     return fail('자동 실행 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
