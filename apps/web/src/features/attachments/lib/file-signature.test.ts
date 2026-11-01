@@ -174,6 +174,67 @@ function buildCfb(
   return header.raw(fat.toBytes()).raw(directory.toBytes()).raw(data.toBytes()).toBytes();
 }
 
+/**
+ * FAT 섹터가 헤더 DIFAT 109 칸을 넘는 큰 CFB(약 7MB 넘는 .doc/.xls 에 해당).
+ * 섹터 0~109 는 FAT, 110 은 추가 DIFAT, 111 은 디렉터리, 112 는 데이터다.
+ */
+function buildCfbWithExtraDifat(streamName: string, { difatNext = CFB_END } = {}): Uint8Array {
+  const FAT_SECTORS = 110;
+  const DIFAT = FAT_SECTORS;
+  const DIRECTORY = DIFAT + 1;
+  const DATA = DIRECTORY + 1;
+  const bytes = new Uint8Array(CFB_SECTOR * (DATA + 2));
+  const view = new DataView(bytes.buffer);
+  bytes.set([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+  view.setUint16(0x18, 0x003e, true);
+  view.setUint16(0x1a, 3, true);
+  view.setUint16(0x1c, 0xfffe, true);
+  view.setUint16(0x1e, 9, true);
+  view.setUint16(0x20, 6, true);
+  view.setUint32(0x2c, FAT_SECTORS, true);
+  view.setUint32(0x30, DIRECTORY, true);
+  view.setUint32(0x38, 0x1000, true);
+  view.setUint32(0x3c, CFB_END, true);
+  view.setUint32(0x44, DIFAT, true);
+  view.setUint32(0x48, 1, true);
+  for (let index = 0; index < 109; index++) view.setUint32(0x4c + index * 4, index, true);
+
+  const sector = (sid: number) => CFB_SECTOR * (sid + 1);
+  // FAT 전체를 빈 칸으로 채우고 필요한 섹터만 표시한다.
+  for (let sid = 0; sid < FAT_SECTORS; sid++) {
+    for (let offset = 0; offset < CFB_SECTOR; offset += 4) {
+      view.setUint32(sector(sid) + offset, CFB_FREE, true);
+    }
+  }
+  const setFat = (sid: number, value: number) => view.setUint32(sector(0) + sid * 4, value, true);
+  for (let sid = 0; sid < FAT_SECTORS; sid++) setFat(sid, CFB_FAT_SECTOR);
+  setFat(DIFAT, 0xfffffffc);
+  setFat(DIRECTORY, CFB_END);
+  setFat(DATA, CFB_END);
+
+  // 추가 DIFAT 섹터: 110번째 FAT(섹터 109)를 가리키고, 마지막 칸은 다음 DIFAT 섹터.
+  for (let offset = 0; offset < CFB_SECTOR; offset += 4) {
+    view.setUint32(sector(DIFAT) + offset, CFB_FREE, true);
+  }
+  view.setUint32(sector(DIFAT), FAT_SECTORS - 1, true);
+  view.setUint32(sector(DIFAT) + CFB_SECTOR - 4, difatNext, true);
+
+  const writeEntry = (index: number, name: string, type: number) => {
+    const base = sector(DIRECTORY) + index * 128;
+    const nameBytes = utf16le(name);
+    bytes.set(nameBytes, base);
+    view.setUint16(base + 64, nameBytes.length + 2, true);
+    view.setUint8(base + 66, type);
+    view.setUint32(base + 68, CFB_FREE, true);
+    view.setUint32(base + 72, CFB_FREE, true);
+    view.setUint32(base + 76, type === 5 ? 1 : CFB_FREE, true);
+    view.setUint32(base + 116, type === 5 ? CFB_END : DATA, true);
+  };
+  writeEntry(0, 'Root Entry', 5);
+  writeEntry(1, streamName, 2);
+  return bytes;
+}
+
 const DOCX = buildZip({
   '[Content_Types].xml': '<Types/>',
   'word/document.xml': '<w:document/>',
@@ -249,4 +310,28 @@ describe('matchesFileSignature', () => {
       expect(matchesFileSignature(type, PNG)).toBe(false);
     }
   );
+
+  it('FAT 이 헤더 DIFAT 109 칸을 넘는 큰 doc 은 추가 DIFAT 체인을 따라가 통과시킨다', () => {
+    expect(matchesFileSignature('application/msword', buildCfbWithExtraDifat('WordDocument'))).toBe(
+      true
+    );
+    expect(
+      matchesFileSignature('application/vnd.ms-excel', buildCfbWithExtraDifat('Workbook'))
+    ).toBe(true);
+  });
+
+  it('추가 DIFAT 체인이 끊기거나 FAT 수가 파일 크기를 넘으면 거부한다', () => {
+    expect(
+      matchesFileSignature(
+        'application/msword',
+        buildCfbWithExtraDifat('WordDocument', { difatNext: 110 })
+      )
+    ).toBe(true); // 이미 필요한 FAT 를 다 모았으면 다음 칸은 읽지 않는다
+    const broken = buildCfbWithExtraDifat('WordDocument');
+    new DataView(broken.buffer).setUint32(0x44, CFB_END, true);
+    expect(matchesFileSignature('application/msword', broken)).toBe(false);
+    const oversized = buildCfbWithExtraDifat('WordDocument');
+    new DataView(oversized.buffer).setUint32(0x2c, 300, true); // 파일에 들어갈 수 없는 FAT 수
+    expect(matchesFileSignature('application/msword', oversized)).toBe(false);
+  });
 });
