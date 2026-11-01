@@ -399,7 +399,7 @@ const TestSuiteDetailView = () => {
 
         <SuiteStatsSection suite={suite} />
         {suite.lastRun && <SuiteLastRunSection lastRun={suite.lastRun} />}
-        <SuiteRecentRuns recentRuns={suite.recentRuns} />
+        <SuiteRecentRuns recentRuns={suite.recentRuns.slice(0, 5)} />
       </aside>
 
       {isEditing && suite && <SuiteEditForm suite={suite} onClose={() => setIsEditing(false)} />}
