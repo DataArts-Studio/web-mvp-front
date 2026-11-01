@@ -19,13 +19,16 @@ const PROJECT_A = '00000000-0000-4000-8000-000000000001';
 const PROJECT_B = '00000000-0000-4000-8000-000000000002';
 const CASE_ID = '00000000-0000-4000-8000-000000000003';
 const limit = vi.fn();
+// 케이스에 이미 붙은 첨부 행. 개수 상한 조회(where 를 바로 await)가 이 값을 돌려받는다.
+let existingRows: { id: string }[] = [];
 const upload = vi.fn();
+const createSignedUrls = vi.fn();
 const returning = vi.fn();
 const values = vi.fn(() => ({ returning }));
 const db = {
   select: vi.fn(() => ({
     from: vi.fn(() => ({
-      where: vi.fn(() => Object.assign(Promise.resolve([]), { limit })),
+      where: vi.fn(() => Object.assign(Promise.resolve(existingRows), { limit })),
     })),
   })),
   insert: vi.fn(() => ({ values })),
@@ -41,13 +44,18 @@ function attachmentForm() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  existingRows = [];
   vi.mocked(getDatabase).mockReturnValue(db as unknown as ReturnType<typeof getDatabase>);
   vi.mocked(requireProjectAccess).mockResolvedValue(true);
   vi.mocked(checkStorageLimit).mockResolvedValue(null);
   limit.mockResolvedValue([{ projectId: PROJECT_A }]);
   upload.mockResolvedValue({ error: null });
+  createSignedUrls.mockImplementation(async (paths: string[]) => ({
+    data: paths.map((path) => ({ path, signedUrl: `https://signed.example/${path}`, error: null })),
+    error: null,
+  }));
   vi.mocked(createSupabaseServerClient).mockResolvedValue({
-    storage: { from: vi.fn(() => ({ upload })) },
+    storage: { from: vi.fn(() => ({ upload, createSignedUrls })) },
   } as unknown as Awaited<ReturnType<typeof createSupabaseServerClient>>);
   returning.mockResolvedValue([
     {
@@ -92,10 +100,81 @@ describe('첨부 업로드의 프로젝트 경계', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toMatchObject({ projectId: PROJECT_A, testCaseId: CASE_ID });
+      expect(result.data.url).toBe(`https://signed.example/${PROJECT_A}/${CASE_ID}/evidence.txt`);
+      expect(result.data.url).not.toContain('/object/public/');
     }
     expect(upload).toHaveBeenCalledOnce();
     expect(values).toHaveBeenCalledWith(
       expect.objectContaining({ project_id: PROJECT_A, test_case_id: CASE_ID })
     );
+  });
+
+  it('저장 뒤 서명 URL 발급만 실패하면 업로드는 성공으로 돌려준다.', async () => {
+    createSignedUrls.mockResolvedValue({ data: null, error: new Error('sign failed') });
+    const result = await uploadAttachment(attachmentForm());
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toMatchObject({ id: 'attachment-id', url: '' });
+    }
+    expect(upload).toHaveBeenCalledOnce();
+  });
+});
+
+describe('첨부 업로드의 파일 형식 확인', () => {
+  function formWith(file: File) {
+    const form = attachmentForm();
+    form.set('file', file);
+    return form;
+  }
+
+  it('이미지로 주장했지만 바이트가 다르면 업로드하지 않는다.', async () => {
+    const spoofed = new File(['<html><script>alert(1)</script></html>'], 'x.png', {
+      type: 'image/png',
+    });
+    expect(await uploadAttachment(formWith(spoofed))).toEqual({
+      success: false,
+      errors: { _attachment: ['파일 내용이 형식과 일치하지 않습니다.'] },
+    });
+    expect(upload).not.toHaveBeenCalled();
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('SVG 는 형식 단계에서 거부한다.', async () => {
+    const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], 'x.svg', {
+      type: 'image/svg+xml',
+    });
+    expect(await uploadAttachment(formWith(svg))).toEqual({
+      success: false,
+      errors: { _attachment: ['지원하지 않는 파일 형식입니다.'] },
+    });
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('케이스당 첨부 개수를 넘기면 파일 본문을 읽지 않고 거부한다.', async () => {
+    existingRows = Array.from({ length: 10 }, (_, index) => ({ id: `attachment-${index}` }));
+    const file = new File(['test evidence'], 'evidence.txt', { type: 'text/plain' });
+    const readBody = vi.spyOn(file, 'arrayBuffer');
+
+    expect(await uploadAttachment(formWith(file))).toEqual({
+      success: false,
+      errors: { _attachment: ['테스트 케이스당 최대 10개의 파일만 첨부할 수 있습니다.'] },
+    });
+    expect(readBody).not.toHaveBeenCalled();
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('시그니처가 맞는 PNG 는 확인된 타입으로 저장한다.', async () => {
+    const png = new File(
+      [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])],
+      'shot.png',
+      { type: 'image/png' }
+    );
+    expect((await uploadAttachment(formWith(png))).success).toBe(true);
+    expect(upload).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Buffer),
+      expect.objectContaining({ contentType: 'image/png' })
+    );
+    expect(values).toHaveBeenCalledWith(expect.objectContaining({ file_type: 'image/png' }));
   });
 });

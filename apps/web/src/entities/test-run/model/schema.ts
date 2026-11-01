@@ -5,6 +5,10 @@ import { z } from 'zod';
 export const RUN_NAME_MAX_LENGTH = 100;
 export const RUN_NAME_TOO_LONG_MESSAGE = `실행 이름은 ${RUN_NAME_MAX_LENGTH}자를 초과할 수 없습니다.`;
 
+/** 테스트 실행 이름 최소 길이(앞뒤 공백 제외). 생성 화면·서버 생성·이름 변경이 같은 값을 쓴다. */
+export const RUN_NAME_MIN_LENGTH = 2;
+export const RUN_NAME_TOO_SHORT_MESSAGE = `실행 이름은 최소 ${RUN_NAME_MIN_LENGTH}자 이상이어야 합니다.`;
+
 /** 삭제(ARCHIVED)된 실행의 결과·코멘트를 바꾸려 할 때 안내 (#419). */
 export const RUN_NOT_ACTIVE_MESSAGE = '삭제된 테스트 실행은 결과를 바꿀 수 없습니다.';
 
@@ -29,6 +33,7 @@ export const CreateTestRunSchema = z.object({
     .string()
     .trim()
     .min(1, '실행 이름을 입력해주세요.')
+    .min(RUN_NAME_MIN_LENGTH, RUN_NAME_TOO_SHORT_MESSAGE)
     .max(RUN_NAME_MAX_LENGTH, RUN_NAME_TOO_LONG_MESSAGE),
   description: z.string().optional(),
   milestone_id: z.string().uuid({ message: '마일스톤을 선택해주세요.' }),

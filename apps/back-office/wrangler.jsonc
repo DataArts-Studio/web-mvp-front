@@ -6,6 +6,13 @@
   // nodejs_compat: node:crypto·node:net(postgres.js) 등 Node API 사용에 필요
   // global_fetch_strictly_public: 앱 내 fetch 가 공개 URL 로 나가도록
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // 운영자 화면은 커스텀 도메인으로만 연다. workers.dev·버전별 preview URL 이 켜져 있으면
+  // 커스텀 도메인에 건 Cloudflare Access 를 거치지 않는 주소가 생긴다.
+  "workers_dev": false,
+  "preview_urls": false,
+  // 대시보드에서 연결해 둔 커스텀 도메인을 설정에도 적어, workers.dev 를 끈 뒤에도 배포가
+  // 도메인 연결을 유지하게 한다.
+  "routes": [{ "pattern": "back.gettestea.com", "custom_domain": true }],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",

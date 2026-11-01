@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, notInArray, sql } from 'drizzle-orm';
 
 import { getDatabase } from '../client/drizzle';
 import { type AdminActivityAction, adminActivityLogs } from '../schema/admin-activity-logs';
@@ -93,12 +93,29 @@ export async function releaseFailedLogin(id: string): Promise<void> {
   await db.delete(adminActivityLogs).where(eq(adminActivityLogs.id, id));
 }
 
-/** 최신순 활동 로그를 반환한다. */
-export async function listAdminActivity(limit = 100): Promise<AdminActivityLog[]> {
+export type AdminActivityFilter = {
+  /** 이 액션들만 가져온다. */
+  actions?: AdminActivityAction[];
+  /** 이 액션들은 뺀다. 로그인 실패가 쌓여 실제 관리자 활동을 페이지 밖으로 밀어내지 않게 할 때 쓴다. */
+  excludeActions?: AdminActivityAction[];
+};
+
+/** 최신순 활동 로그를 반환한다. filter 로 액션을 좁히거나 뺄 수 있다. */
+export async function listAdminActivity(
+  limit = 100,
+  filter: AdminActivityFilter = {}
+): Promise<AdminActivityLog[]> {
   const db = getDatabase();
+  const { actions, excludeActions } = filter;
   const rows = await db
     .select()
     .from(adminActivityLogs)
+    .where(
+      and(
+        actions?.length ? inArray(adminActivityLogs.action, actions) : undefined,
+        excludeActions?.length ? notInArray(adminActivityLogs.action, excludeActions) : undefined
+      )
+    )
     .orderBy(desc(adminActivityLogs.created_at))
     .limit(limit);
 
