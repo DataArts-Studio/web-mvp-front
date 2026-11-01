@@ -60,6 +60,7 @@ PR 생성·추가 커밋 push 전, cherry-pick/rebase 직후 모두 아래를 �
 - 단위/통합: Vitest (`apps/*/vitest.config.ts`).
 - E2E: Playwright, 위치 `apps/web/tests/`, 확장자 `*.spec.ts`. `src/` 아래에 두지 않는다.
 - POM·시나리오 규약은 `AGENTS.md` "테스트 아키텍처" 절 참조.
+- 작성·진단 판단 근거는 `docs/issues/test-refactor/methodology.md` (`[M1]`~`[M9]`, 커버리지 정책). 테스트 작성은 `write-test`, 기존 테스트 진단은 `diagnose-test` 스킬을 쓴다.
 
 ## 문서·기획
 
