@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDisclosure } from '@testea/lib';
 import { MainContainer } from '@testea/ui';
 import { ProjectErrorFallback } from '@testea/ui';
+import { Plus, Search } from 'lucide-react';
 
 import { CaseListSection } from './_components/case-list-section';
 import { CasesLoadingSkeleton } from './_components/cases-loading-skeleton';
@@ -143,6 +144,7 @@ export const TestCasesView = () => {
         lastExecutedAt: null,
       }))
     : [];
+  const sections = testCasesData?.success ? testCasesData.data.sections : undefined;
 
   const pagination = testCasesData?.success ? testCasesData.data.pagination : null;
 
@@ -174,10 +176,10 @@ export const TestCasesView = () => {
   // 타이틀 결정
   const title =
     selectedSuiteId === 'all'
-      ? t('ui.title')
+      ? t('ui.allCases')
       : selectedSuiteId === '__uncategorized__'
         ? t('ui.uncategorized')
-        : suiteMap.get(selectedSuiteId) || t('ui.title');
+        : suiteMap.get(selectedSuiteId) || t('ui.allCases');
 
   // Loading (hydration 전에는 서버와 동일하게 스켈레톤 유지)
   if (!hydrated || isLoadingProject || (isLoadingCases && !testCasesData)) {
@@ -188,67 +190,100 @@ export const TestCasesView = () => {
 
   return (
     <>
-      <MainContainer className="flex min-h-screen w-full flex-1 overflow-hidden">
-        <SuiteSidebar
-          suites={suites}
-          selectedSuiteId={selectedSuiteId}
-          totalItems={pagination?.totalItems}
-          onSuiteChange={handleSuiteChange}
-        />
+      <MainContainer className="flex h-screen w-full flex-1 flex-col overflow-hidden">
+        <header className="border-line-2 flex flex-wrap items-center justify-between gap-4 border-b px-4 py-5 md:px-8">
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-[20px] font-bold tracking-[-0.02em] text-white">{t('ui.title')}</h1>
+            <p className="text-[13px] tracking-[-0.02em] text-white/40">{t('ui.subtitle')}</p>
+          </div>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <label className="border-line-2 bg-bg-2 focus-within:border-primary/60 flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[6px] border px-3 sm:w-[240px] sm:flex-none">
+              <Search className="h-3.5 w-3.5 shrink-0 text-white/40" aria-hidden="true" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder={t('ui.searchPlaceholder')}
+                aria-label={t('ui.searchAriaLabel')}
+                className="min-w-0 flex-1 bg-transparent text-[13px] text-white/90 outline-none placeholder:text-white/40"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                track(TESTCASE_EVENTS.CREATE_START, { project_id: projectId });
+                onOpen('create');
+              }}
+              className="bg-primary hover:bg-primary/90 inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[4px] px-3.5 text-[14px] font-medium whitespace-nowrap text-white"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              {t('ui.newCase')}
+            </button>
+          </div>
+        </header>
 
-        <div ref={listRef} className="flex h-screen w-full flex-1 flex-col overflow-y-auto">
-          <CasesToolbar
-            title={title}
-            totalItems={pagination?.totalItems}
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            sortOption={sortOption}
-            onSortChange={handleSortChange}
-            onCreateClick={() => {
-              track(TESTCASE_EVENTS.CREATE_START, { project_id: projectId });
-              onOpen('create');
-            }}
-            onAiGenerate={() => onOpen('ai-generate')}
-            onAiAnalyze={() => onOpen('ai-requirement-analysis')}
-            onImport={() => {
-              track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
-              onOpen('import');
-            }}
-            onExport={async () => {
-              if (!projectId) return;
-              // 현재 페이지가 아니라 필터에 맞는 전체를 내보낸다 (#382).
-              const count = await exportFilteredTestCases({
-                projectId,
-                filters: {
-                  sort: queryParams.sort,
-                  search: queryParams.search,
-                  suiteId: queryParams.suiteId,
-                },
-                suiteTitles: suiteMap,
-                projectName: decodeURIComponent(slug),
-              });
-              track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count });
-            }}
-          />
-
-          <CaseListSection
-            projectId={projectId!}
-            slug={slug}
-            items={testCaseItems}
-            sortOption={sortOption}
+        <div className="flex min-h-0 flex-1">
+          <SuiteSidebar
+            suites={suites}
             selectedSuiteId={selectedSuiteId}
-            isFetching={isFetching}
-            hasData={!!testCasesData}
-            debouncedSearch={debouncedSearch}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onResetFilters={handleResetFilters}
-            onSelectCase={(id) => {
-              track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: id });
-              setSelectedTestCaseId(id);
-              onOpen('detail');
-            }}
+            totalItems={
+              selectedSuiteId === 'all' && !debouncedSearch ? pagination?.totalItems : undefined
+            }
+            onSuiteChange={handleSuiteChange}
           />
+
+          <div ref={listRef} className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+            <CasesToolbar
+              title={title}
+              totalItems={pagination?.totalItems}
+              suites={suites}
+              selectedSuiteId={selectedSuiteId}
+              onSuiteChange={handleSuiteChange}
+              sortOption={sortOption}
+              onSortChange={handleSortChange}
+              onAiGenerate={() => onOpen('ai-generate')}
+              onAiAnalyze={() => onOpen('ai-requirement-analysis')}
+              onImport={() => {
+                track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
+                onOpen('import');
+              }}
+              onExport={async () => {
+                if (!projectId) return;
+                // 현재 페이지가 아니라 필터에 맞는 전체를 내보낸다 (#382).
+                const count = await exportFilteredTestCases({
+                  projectId,
+                  filters: {
+                    sort: queryParams.sort,
+                    search: queryParams.search,
+                    suiteId: queryParams.suiteId,
+                  },
+                  suiteTitles: suiteMap,
+                  projectName: decodeURIComponent(slug),
+                });
+                track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count });
+              }}
+            />
+
+            <CaseListSection
+              projectId={projectId!}
+              slug={slug}
+              items={testCaseItems}
+              sections={sections}
+              sortOption={sortOption}
+              selectedSuiteId={selectedSuiteId}
+              isFetching={isFetching}
+              hasData={!!testCasesData}
+              debouncedSearch={debouncedSearch}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onResetFilters={handleResetFilters}
+              onSelectCase={(id) => {
+                track(TESTCASE_EVENTS.ITEM_CLICK, { case_id: id });
+                setSelectedTestCaseId(id);
+                onOpen('detail');
+              }}
+            />
+          </div>
         </div>
       </MainContainer>
 

@@ -5,11 +5,11 @@ import React from 'react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@testea/util';
-import { FolderClosed, FolderOpen, Inbox } from 'lucide-react';
 
 interface Suite {
   id: string;
   title: string;
+  caseCount?: number;
 }
 
 interface SuiteSidebarProps {
@@ -19,15 +19,36 @@ interface SuiteSidebarProps {
   onSuiteChange: (id: string) => void;
 }
 
-const itemClass = (active: boolean, muted?: boolean) =>
-  cn(
-    'flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors',
-    active
-      ? 'bg-primary/10 text-primary font-medium'
-      : muted
-        ? 'text-text-3 hover:bg-bg-2'
-        : 'text-text-2 hover:bg-bg-2'
-  );
+const SuiteItem = ({
+  label,
+  count,
+  active,
+  muted,
+  onClick,
+}: {
+  label: string;
+  count?: number;
+  active: boolean;
+  muted?: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    aria-pressed={active}
+    onClick={onClick}
+    className={cn(
+      'flex w-full items-center gap-2 rounded-[6px] px-2 py-[7px] text-left text-[13px] transition-colors',
+      active
+        ? 'bg-white/[0.07] font-medium text-white'
+        : muted
+          ? 'text-white/45 hover:bg-white/[0.04] hover:text-white/70'
+          : 'text-white/70 hover:bg-white/[0.04] hover:text-white'
+    )}
+  >
+    <span className="min-w-0 flex-1 truncate">{label}</span>
+    {count != null && <span className="shrink-0 font-mono text-[11px] text-white/35">{count}</span>}
+  </button>
+);
 
 export const SuiteSidebar = ({
   suites,
@@ -39,55 +60,32 @@ export const SuiteSidebar = ({
   return (
     <nav
       aria-label={t('ui.suiteFilterAriaLabel')}
-      className="border-line-2 bg-bg-1 sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r"
+      className="border-line-2 hidden w-[236px] shrink-0 flex-col overflow-y-auto border-r px-6 py-5 md:flex"
     >
-      <div className="border-line-2 border-b px-4 py-3">
-        <h3 className="typo-body2-heading text-text-2">{t('ui.suites')}</h3>
-      </div>
-      <div className="flex-1 overflow-y-auto py-1">
-        {/* 전체 */}
-        <button
-          type="button"
-          aria-pressed={selectedSuiteId === 'all'}
-          onClick={() => onSuiteChange('all')}
-          className={itemClass(selectedSuiteId === 'all')}
-        >
-          <Inbox className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="flex-1 truncate">{t('ui.allCases')}</span>
-          {totalItems != null && <span className="text-text-3 text-xs">{totalItems}</span>}
-        </button>
-
-        {/* 스위트 목록 */}
-        {suites.map((suite) => {
-          const isSelected = selectedSuiteId === suite.id;
-          return (
-            <button
-              key={suite.id}
-              type="button"
-              aria-pressed={isSelected}
-              onClick={() => onSuiteChange(suite.id)}
-              className={itemClass(isSelected)}
-            >
-              {isSelected ? (
-                <FolderOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
-              ) : (
-                <FolderClosed className="h-4 w-4 shrink-0" aria-hidden="true" />
-              )}
-              <span className="flex-1 truncate">{suite.title}</span>
-            </button>
-          );
-        })}
-
-        {/* 미분류 */}
-        <button
-          type="button"
-          aria-pressed={selectedSuiteId === '__uncategorized__'}
+      <h2 className="mb-2 px-2 text-[11px] text-white/40">{t('ui.suites')}</h2>
+      <SuiteItem
+        label={t('ui.allCases')}
+        count={totalItems}
+        active={selectedSuiteId === 'all'}
+        onClick={() => onSuiteChange('all')}
+      />
+      <div className="my-1 border-t border-white/[0.06]" />
+      <div className="flex flex-col gap-px">
+        {suites.map((suite) => (
+          <SuiteItem
+            key={suite.id}
+            label={suite.title}
+            count={suite.caseCount}
+            active={selectedSuiteId === suite.id}
+            onClick={() => onSuiteChange(suite.id)}
+          />
+        ))}
+        <SuiteItem
+          label={t('ui.uncategorized')}
+          active={selectedSuiteId === '__uncategorized__'}
+          muted
           onClick={() => onSuiteChange('__uncategorized__')}
-          className={itemClass(selectedSuiteId === '__uncategorized__', true)}
-        >
-          <Inbox className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="flex-1 truncate">{t('ui.uncategorized')}</span>
-        </button>
+        />
       </div>
     </nav>
   );

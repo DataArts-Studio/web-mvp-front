@@ -33,18 +33,24 @@ export const SortableTestCaseRow = ({ id, children, disabled }: SortableTestCase
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(isDragging && 'bg-bg-3 opacity-50 shadow-lg')}
+      className={cn(
+        'group/row border-b border-white/[0.05]',
+        isDragging && 'bg-bg-3 opacity-50 shadow-lg'
+      )}
     >
       <div className="flex items-center">
-        {!disabled && (
+        {disabled ? (
+          // 손잡이가 없어도 키 열이 같은 자리에 오도록 폭을 남긴다
+          <span className="w-6 shrink-0" aria-hidden="true" />
+        ) : (
           <button
             type="button"
             aria-label={t('ui.dragToReorder')}
-            className="text-text-4 hover:text-text-2 flex h-full w-6 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
+            className="flex h-full w-6 shrink-0 cursor-grab items-center justify-center text-white/30 opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 hover:text-white/70 focus-visible:opacity-100 active:cursor-grabbing"
             {...attributes}
             {...listeners}
           >
-            <GripVertical className="h-4 w-4" aria-hidden="true" />
+            <GripVertical className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         )}
         <div className="min-w-0 flex-1">{children}</div>

@@ -135,9 +135,27 @@ export const getTestSuites = async ({
       };
     }
 
+    // 케이스 목록의 스위트 패널이 쓰는 스위트별 케이스 수 (휴지통 케이스 제외)
+    const suiteIds = rows.map((row) => row.id);
+    const caseCountRows =
+      suiteIds.length > 0
+        ? await db
+            .select({ suiteId: testCases.test_suite_id, count: count() })
+            .from(testCases)
+            .where(
+              and(
+                inArray(testCases.test_suite_id, suiteIds),
+                eq(testCases.lifecycle_status, 'ACTIVE')
+              )
+            )
+            .groupBy(testCases.test_suite_id)
+        : [];
+    const caseCounts = new Map(caseCountRows.map((row) => [row.suiteId, row.count]));
+
     const result: TestSuite[] = rows.map((row) => ({
       id: row.id,
       projectId: row.project_id ?? '',
+      caseCount: caseCounts.get(row.id) ?? 0,
       title: row.name,
       description: row.description ?? undefined,
       sortOrder: row.sort_order ?? 0,
