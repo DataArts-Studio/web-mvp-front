@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { neutralizeGithubRefs } from '@/shared/github-refs';
+import { getClientIp } from '@/shared/rate-limit';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '이슈 등록이 아직 설정되지 않았습니다.' }, { status: 503 });
   }
 
-  const ip = (request.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+  const ip = getClientIp(request);
   if (rateLimited(ip)) {
     return NextResponse.json(
       { error: '요청이 많습니다. 잠시 후 다시 시도해 주세요.' },
@@ -78,11 +80,17 @@ export async function POST(request: Request) {
   const { title, type, body, pageUrl } = parsed.data;
 
   const typeLabel = type ? TYPE_LABEL[type] : '기타';
-  const issueTitle = `[제보/${typeLabel}] ${title}`;
+  const issueTitle = `[제보/${typeLabel}] ${neutralizeGithubRefs(title)}`;
   const typeGhLabel = type ? TYPE_GH_LABEL[type] : '';
   const labels = ['qaground', ...(typeGhLabel ? [typeGhLabel] : [])];
   const assignee = process.env.QAGROUND_GH_ISSUE_ASSIGNEE ?? 'JangHwanPark';
-  const issueBody = [body, '', '---', '_qaground 사용자 제보_', pageUrl ? `페이지: ${pageUrl}` : '']
+  const issueBody = [
+    neutralizeGithubRefs(body),
+    '',
+    '---',
+    '_qaground 사용자 제보_',
+    pageUrl ? `페이지: ${neutralizeGithubRefs(pageUrl)}` : '',
+  ]
     .filter(Boolean)
     .join('\n');
 

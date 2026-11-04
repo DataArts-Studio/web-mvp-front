@@ -3,6 +3,7 @@
 import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
+import { recordCreatedCases } from '@/entities/test-case/api/record-created-cases';
 import { csvTextToSteps } from '@/entities/test-case/model/csv-columns';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
@@ -104,31 +105,33 @@ export async function importTestCases(input: {
           };
         };
 
+        let created: (typeof testCases.$inferSelect)[] = [];
         try {
           // 대부분은 한 번에 넣는다. 실패해도 트랜잭션 전체가 깨지지 않게 세이브포인트 안에서 넣는다.
-          const inserted = await tx.transaction((sp) =>
+          created = await tx.transaction((sp) =>
             sp
               .insert(testCases)
               .values(validRows.map((item, index) => toInsertValue(item.data, index)))
-              .returning({ id: testCases.id })
+              .returning()
           );
-          return inserted.length;
         } catch (batchError) {
           // 한 번에 넣기가 실패하면 행마다 다시 시도해 어느 행이 문제인지 알린다.
           Sentry.captureException(batchError, { extra: { action: 'importTestCases.batch' } });
-          let count = 0;
           for (const item of validRows) {
             try {
-              await tx.transaction((sp) =>
-                sp.insert(testCases).values(toInsertValue(item.data, count))
+              const [row] = await tx.transaction((sp) =>
+                sp.insert(testCases).values(toInsertValue(item.data, created.length)).returning()
               );
-              count += 1;
+              if (row) created.push(row);
             } catch {
               errors.push({ row: item.row, message: ROW_INSERT_FAILED });
             }
           }
-          return count;
         }
+
+        // 직접 만든 케이스처럼 v1 버전을 남기고 스위트에 연결된 실행에도 넣는다 (#391).
+        await recordCreatedCases(tx, created, 'CSV 가져오기로 생성');
+        return created.length;
       });
     }
 

@@ -7,6 +7,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob, mcp__chrome-devtools__navigate_page,
 # QA 에이전트
 
 공통 베이스: `AGENTS.md` "테스트 아키텍처"·"테스트 리뷰" 절, `apps/web/CLAUDE.md` "E2E (POM)" 절.
+판단 근거: `docs/issues/test-refactor/methodology.md`. 작성은 `write-test`, 진단은 `diagnose-test` 스킬 절차를 따른다.
 
 ## 책임 영역
 

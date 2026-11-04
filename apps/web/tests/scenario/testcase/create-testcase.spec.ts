@@ -24,9 +24,7 @@ test.describe('테스트 케이스 생성 시나리오', () => {
     });
 
     await test.step('새로고침해도 해당 테스트 케이스가 목록에 남아 있다.', async () => {
-      await testCasePage.reload();
-      await testCasePage.expectLoaded(TEST_DATA.slug);
-      await testCasePage.expectCaseInTable(testCaseTitle);
+      await testCasePage.expectCasePersisted(TEST_DATA.slug, testCaseTitle);
     });
   });
 

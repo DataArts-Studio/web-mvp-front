@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { githubConnectionQueryOptions, githubQueryKeys } from '@/entities/github-connection';
 import type { GithubRepo } from '@/entities/github-connection';
@@ -9,6 +9,7 @@ import {
   disconnectGithub,
   getGithubRepos,
   selectGithubRepo,
+  startGithubOAuth,
 } from '@/entities/github-connection/api/server-actions';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DSButton, SettingsCard } from '@testea/ui';
@@ -37,15 +38,24 @@ export const GithubConnectCard = ({ projectId }: Props) => {
     queryClient.invalidateQueries({ queryKey: githubQueryKeys.connection(projectId) });
   }, [queryClient, projectId]);
 
+  // 이 카드가 연 OAuth 팝업. 메시지는 이 창에서 온 것만 받는다.
+  const popupRef = useRef<Window | null>(null);
+
   // OAuth 메시지 수신
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
+      // 다른 오리진(공격자 페이지)이 이 창에 보낸 가짜 결과를 무시한다.
+      if (event.origin !== window.location.origin) return;
+      if (!popupRef.current || event.source !== popupRef.current) return;
       if (event.data?.type !== 'github-oauth') return;
+      popupRef.current = null;
 
       if (!event.data.success) {
         toast.error(event.data.error || 'GitHub 인증에 실패했습니다.');
         return;
       }
+      // 콜백이 state 쿠키에서 꺼낸 프로젝트가 이 화면의 프로젝트여야 한다.
+      if (event.data.projectId !== projectId) return;
 
       const result = await connectGithub({ projectId, code: event.data.code });
       if (!result.success) {
@@ -73,16 +83,34 @@ export const GithubConnectCard = ({ projectId }: Props) => {
     return () => window.removeEventListener('message', handler);
   }, [projectId, invalidate]);
 
-  const handleOAuthStart = () => {
+  const handleOAuthStart = async () => {
     const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
     if (!clientId) {
       toast.error('GitHub Client ID가 설정되지 않았습니다.');
       return;
     }
-    const redirectUri = `${window.location.origin}/api/auth/github/callback`;
-    const scope = 'repo';
-    const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${projectId}`;
-    window.open(url, 'github-oauth', 'width=600,height=700,left=200,top=100');
+    // 서버 응답을 기다린 뒤 열면 클릭 맥락이 끊겨 팝업이 차단되므로, 빈 창을 먼저 연다.
+    const popup = window.open('', 'github-oauth', 'width=600,height=700,left=200,top=100');
+    if (!popup) {
+      toast.error('팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도해주세요.');
+      return;
+    }
+
+    const started = await startGithubOAuth(projectId);
+    if (!started.success) {
+      popup.close();
+      toast.error(Object.values(started.errors).flat().join(', '));
+      return;
+    }
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: `${window.location.origin}/api/auth/github/callback`,
+      scope: 'repo',
+      state: started.data.state,
+    });
+    popupRef.current = popup;
+    popup.location.href = `https://github.com/login/oauth/authorize?${params}`;
   };
 
   const selectRepoMutation = useMutation({

@@ -21,7 +21,7 @@ const { db, insertedRows, batchShouldFail, failingNames } = vi.hoisted(() => {
         const run = () => {
           if (fail) return Promise.reject(new Error('insert failed'));
           insertedRows.push(...list);
-          return Promise.resolve(list.map((v) => ({ id: v.id })));
+          return Promise.resolve(list);
         };
         return {
           returning: run,
@@ -49,6 +49,10 @@ vi.mock('@/entities/test-case/api/case-number-lock', () => ({
   lockCaseNumbers: vi.fn(async () => undefined),
   toCaseKey: (displayId: number) => `TC-${String(displayId).padStart(3, '0')}`,
 }));
+const { recordCreatedCases } = vi.hoisted(() => ({
+  recordCreatedCases: vi.fn(async () => undefined),
+}));
+vi.mock('@/entities/test-case/api/record-created-cases', () => ({ recordCreatedCases }));
 vi.mock('@/access/lib/require-access', () => ({ requireProjectAccess: vi.fn(async () => true) }));
 vi.mock('@/access/lib/project-scope', () => ({ belongsToProject: vi.fn(async () => true) }));
 vi.mock('@/shared/lib/storage/check-storage-limit', () => ({
@@ -62,6 +66,28 @@ describe('importTestCases 행별 결과 (#382)', () => {
     insertedRows.length = 0;
     batchShouldFail.value = false;
     failingNames.clear();
+    recordCreatedCases.mockClear();
+  });
+
+  it('가져온 케이스도 v1 버전·실행 동기화를 공용 함수로 남긴다 (#391)', async () => {
+    await importTestCases({
+      projectId: PROJECT_ID,
+      suiteId: SUITE_ID,
+      rows: [
+        { row: 2, name: '첫 케이스' },
+        { row: 3, name: '두 번째' },
+      ],
+    });
+
+    expect(recordCreatedCases).toHaveBeenCalledTimes(1);
+    const [, rows, summary] = recordCreatedCases.mock.calls[0] as unknown as [
+      unknown,
+      Array<Record<string, unknown>>,
+      string,
+    ];
+    expect(rows.map((r) => r.name)).toEqual(['첫 케이스', '두 번째']);
+    expect(rows.every((r) => r.test_suite_id === SUITE_ID)).toBe(true);
+    expect(summary).toBe('CSV 가져오기로 생성');
   });
 
   it('잘못된 행이 있어도 나머지 행은 가져오고 잘못된 행 번호를 알려 준다', async () => {
@@ -104,5 +130,11 @@ describe('importTestCases 행별 결과 (#382)', () => {
     expect(result.data.errors).toEqual([{ row: 3, message: '저장하지 못했습니다.' }]);
     // 실패한 행이 케이스 번호를 차지하지 않는다.
     expect(insertedRows.map((r) => r.case_key)).toEqual(['TC-001', 'TC-002']);
+    // 실제로 들어간 행만 버전·실행 동기화 대상이 된다.
+    const [, rows] = recordCreatedCases.mock.calls[0] as unknown as [
+      unknown,
+      Array<Record<string, unknown>>,
+    ];
+    expect(rows.map((r) => r.name)).toEqual(['정상 1', '정상 2']);
   });
 });

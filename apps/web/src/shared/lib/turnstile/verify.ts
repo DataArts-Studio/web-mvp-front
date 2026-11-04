@@ -1,6 +1,7 @@
-'use server';
-
+// 'use server' 로 두면 외부에서 토큰 검증만 따로 호출할 수 있는 공개 액션이 된다.
+// 서버 액션 내부에서만 부르는 일반 모듈로 둔다 (#471).
 import * as Sentry from '@sentry/nextjs';
+import 'server-only';
 
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 

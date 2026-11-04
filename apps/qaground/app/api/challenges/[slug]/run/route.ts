@@ -19,6 +19,14 @@ export const runtime = 'nodejs';
 const RUN_LIMIT = 10;
 const RUN_WINDOW_MS = 60_000;
 
+/** 러너에 넘기는 spec 실행 타임아웃(ms). */
+const RUNNER_SPEC_TIMEOUT_MS = 30_000;
+/**
+ * 러너 호출 자체의 상한(ms). spec 타임아웃 + 컨테이너 기동·브라우저 준비 오버헤드를 덮는다.
+ * 러너가 응답하지 않아도 함수가 무한정 붙잡히지 않게 한다.
+ */
+const RUNNER_FETCH_TIMEOUT_MS = 90_000;
+
 const BodySchema = z
   .object({
     code: z.string().min(1).max(20_000),
@@ -134,7 +142,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     const res = await fetch(`${normalizedRunnerUrl}/run`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ spec: parsed.data.code, baseUrl, timeoutMs: 30_000 }),
+      body: JSON.stringify({ spec: parsed.data.code, baseUrl, timeoutMs: RUNNER_SPEC_TIMEOUT_MS }),
+      signal: AbortSignal.timeout(RUNNER_FETCH_TIMEOUT_MS),
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || !data) {
@@ -147,6 +156,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
         : {}),
     });
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      console.error('[challenges/run] 러너 응답 시간 초과', RUNNER_FETCH_TIMEOUT_MS);
+      return NextResponse.json({ error: '채점 서버 응답이 지연되고 있습니다.' }, { status: 504 });
+    }
     console.error('[challenges/run] 러너 호출 실패', error);
     return NextResponse.json({ error: '채점 서버에 연결하지 못했습니다.' }, { status: 502 });
   }
