@@ -192,10 +192,31 @@
       "breakpoints": true
     },
     {
+      "idx": 28,
+      "version": "7",
+      "when": 1792246883114,
+      "tag": "0028_revoke_anon_grants_force_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792246887501,
+      "tag": "0029_rate_limit_buckets",
+      "breakpoints": true
+    },
+    {
       "idx": 30,
       "version": "7",
-      "when": 1792294827327,
-      "tag": "0030_run_scope_locked",
+      "when": 1792246947501,
+      "tag": "0030_deny_anon_policy_parity",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793893851238,
+      "tag": "0033_run_scope_locked",
       "breakpoints": true
     }
   ]

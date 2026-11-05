@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { readFile, rm, writeFile } from 'node:fs/promises';
+import { rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +11,7 @@ import {
   cleanupSandbox,
   handOverToSandbox,
   isolationAvailable,
+  readSandboxOutput,
 } from './sandbox.js';
 
 /**
@@ -67,8 +68,15 @@ export async function captureInSandbox(input: CaptureInput): Promise<CaptureResu
       });
     });
 
+    // run-spec 과 같이 정리 후 안전하게 읽는다(FIFO·심볼릭 링크 바꿔치기 차단).
+    await cleanupSandbox().catch(() => {});
     try {
-      return JSON.parse(await readFile(outputPath, 'utf8')) as CaptureResult;
+      const output = await readSandboxOutput(outputPath);
+      if (output.status === 'too_large') {
+        return { ok: false, errorMessage: 'Capture result exceeded the size limit.' };
+      }
+      if (output.status !== 'ok') throw new Error('No capture output.');
+      return JSON.parse(output.text) as CaptureResult;
     } catch {
       return { ok: false, errorMessage: 'Capture produced no result (timed out or crashed).' };
     }

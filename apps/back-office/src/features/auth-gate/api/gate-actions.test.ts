@@ -96,6 +96,24 @@ describe('signInAdminAction 브루트포스 방어', () => {
     expect(mocks.cookieSet).not.toHaveBeenCalled();
   });
 
+  it('이미 잠긴 IP 의 시도는 실패 기록을 더 쌓지 않는다', async () => {
+    for (let i = 0; i < 5; i += 1) await signInAdminAction({}, form('wrong'));
+    for (let i = 0; i < 3; i += 1) {
+      expect((await signInAdminAction({}, form('wrong'))).error).toMatch(/시도가 너무 많습니다/);
+    }
+    expect(mocks.reserve).toHaveBeenCalledTimes(5);
+    expect(mocks.rows.get(IP)).toHaveLength(5);
+  });
+
+  it('운영에서 cf-connecting-ip 가 없으면 키를 확인하지 않고 거부한다 (fail-closed)', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    mocks.headers.clear();
+    const result = await signInAdminAction({}, form('correct-key'));
+    expect(result.error).toMatch(/로그인을 처리할 수 없습니다/);
+    expect(mocks.reserve).not.toHaveBeenCalled();
+    expect(mocks.cookieSet).not.toHaveBeenCalled();
+  });
+
   it('동시에 몰려온 시도도 임계치 이하로만 키 검증에 도달한다', async () => {
     const results = await Promise.all(
       Array.from({ length: 20 }, () => signInAdminAction({}, form('wrong')))

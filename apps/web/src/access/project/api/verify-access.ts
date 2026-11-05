@@ -9,140 +9,30 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
+import { clearRateLimit, consumeRateLimit, getClientIp } from '@/shared/lib/rate-limit';
 import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, projects } from '@testea/db';
-import { eq } from 'drizzle-orm';
 
 import { deleteAccessTokenCookie, setAccessTokenCookie } from '../../lib/cookies';
 import { verifyPassword } from '../../lib/password-hash';
 import { createProjectSessionToken } from '../../lib/project-session';
 import { VerifyProjectAccessRequestSchema } from '../model/schema';
-import type { ProjectAccessInfo, VerifyProjectAccessResponse } from '../model/types';
+import type { VerifyProjectAccessResponse } from '../model/types';
+import { getProjectAccessInfo } from './project-lookup';
 
 /**
- * 브루트포스 방지를 위한 인메모리 rate limiting
- *
- * ⚠️ TODO [프로덕션 전 필수]: Redis 기반으로 전환 필요
- * - 현재 인메모리 Map은 서버 재시작 시 초기화됨
- * - 멀티 인스턴스 배포 시 인스턴스별로 독립 카운팅되어 무력화됨
- * - 베타 단계(단일 인스턴스)에서만 유효
+ * 브루트포스 방지: 프로젝트 + IP 기준으로 실패를 센다.
+ * 카운터는 DB(rate_limit_buckets)에 있어 서버리스 인스턴스와 무관하게 유지된다 (#471).
+ * 마지막 시도부터 LOCKOUT_DURATION 동안 기억하고, MAX_ATTEMPTS 를 넘기면 잠근다.
  */
-const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15분
 
-/**
- * Rate limiting 체크
- */
-function checkRateLimit(key: string): { allowed: boolean; remainingAttempts: number } {
-  const now = Date.now();
-  const record = failedAttempts.get(key);
-
-  if (!record) {
-    return { allowed: true, remainingAttempts: MAX_ATTEMPTS };
-  }
-
-  // 락아웃 시간이 지났으면 리셋
-  if (now - record.lastAttempt > LOCKOUT_DURATION) {
-    failedAttempts.delete(key);
-    return { allowed: true, remainingAttempts: MAX_ATTEMPTS };
-  }
-
-  if (record.count >= MAX_ATTEMPTS) {
-    return { allowed: false, remainingAttempts: 0 };
-  }
-
-  return { allowed: true, remainingAttempts: MAX_ATTEMPTS - record.count };
-}
-
-/** 잠긴 키가 풀리기까지 남은 시간(분, 올림). 잠기지 않았으면 0. */
-function lockedMinutesLeft(key: string): number {
-  const record = failedAttempts.get(key);
-  if (!record || record.count < MAX_ATTEMPTS) return 0;
-  const left = LOCKOUT_DURATION - (Date.now() - record.lastAttempt);
-  return left > 0 ? Math.ceil(left / 60_000) : 0;
-}
-
 /** 잠금 안내 문구. 몇 분 뒤에 다시 시도할 수 있는지 함께 알려 준다 (#406). */
-function lockoutMessage(key: string): string {
-  const minutes = Math.max(1, lockedMinutesLeft(key));
+function lockoutMessage(retryAfterMs: number): string {
+  const minutes = Math.max(1, Math.ceil(retryAfterMs / 60_000));
   return `비밀번호를 ${MAX_ATTEMPTS}회 잘못 입력해 접근이 잠겼습니다. ${minutes}분 후에 다시 시도해주세요.`;
-}
-
-/**
- * 실패 횟수 기록
- */
-function recordFailedAttempt(key: string): number {
-  const now = Date.now();
-  const record = failedAttempts.get(key);
-
-  if (!record || now - record.lastAttempt > LOCKOUT_DURATION) {
-    failedAttempts.set(key, { count: 1, lastAttempt: now });
-    return MAX_ATTEMPTS - 1;
-  }
-
-  record.count += 1;
-  record.lastAttempt = now;
-  return Math.max(0, MAX_ATTEMPTS - record.count);
-}
-
-/**
- * 성공 시 기록 삭제
- */
-function clearFailedAttempts(key: string): void {
-  failedAttempts.delete(key);
-}
-
-/**
- * 신뢰 가능한 클라이언트 IP 추출 (rate limit 키용).
- * x-forwarded-for 의 좌측 값은 클라이언트가 헤더로 조작 가능하므로 신뢰하지 않는다
- * (헤더 회전으로 락아웃 우회 방지). 플랫폼이 설정하는 x-real-ip 를 우선하고,
- * 없으면 XFF 의 우측(가장 가까운 신뢰 hop)을 사용한다.
- */
-function getClientIp(headerStore: { get(name: string): string | null }): string {
-  const realIp = headerStore.get('x-real-ip')?.trim();
-  if (realIp) return realIp;
-
-  const xff = headerStore.get('x-forwarded-for');
-  if (xff) {
-    const parts = xff
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean);
-    if (parts.length > 0) return parts[parts.length - 1];
-  }
-
-  return 'unknown';
-}
-
-/**
- * 프로젝트 접근 정보 조회
- */
-async function getProjectAccessInfo(projectName: string): Promise<ProjectAccessInfo | null> {
-  const db = getDatabase();
-
-  const [project] = await db
-    .select({
-      id: projects.id,
-      name: projects.name,
-      identifier: projects.identifier,
-      lifecycleStatus: projects.lifecycle_status,
-    })
-    .from(projects)
-    .where(eq(projects.name, projectName))
-    .limit(1);
-
-  if (!project || project.lifecycleStatus !== 'ACTIVE') {
-    return null;
-  }
-
-  return {
-    id: project.id,
-    name: project.name,
-    identifierHash: project.identifier,
-  };
 }
 
 /**
@@ -183,30 +73,35 @@ export async function verifyProjectAccess(
       };
     }
 
-    // 2. Rate limiting 체크 (프로젝트 + IP 기반)
+    // 2. Rate limiting (프로젝트 + IP 기반). 검증 전에 먼저 한 번 세어, 동시에 보낸 요청도
+    // 잠금 횟수를 넘지 못하게 한다. 맞히면 아래에서 기록을 지운다.
     const headerStore = await headers();
     const clientIp = getClientIp(headerStore);
-    const rateLimitKey = `project:${projectName}:ip:${clientIp}`;
-    const rateLimit = checkRateLimit(rateLimitKey);
-    if (!rateLimit.allowed) {
+    const rateLimitKey = `verify-access:project:${projectName}:ip:${clientIp}`;
+    const attempt = await consumeRateLimit(rateLimitKey, {
+      limit: MAX_ATTEMPTS,
+      windowMs: LOCKOUT_DURATION,
+      sliding: true,
+    });
+    if (!attempt.allowed) {
       return {
         success: false,
-        error: lockoutMessage(rateLimitKey),
+        error: lockoutMessage(attempt.retryAfterMs),
         remainingAttempts: 0,
       };
     }
+    const remaining = MAX_ATTEMPTS - attempt.count;
 
     // 3. 프로젝트 조회
     const project = await getProjectAccessInfo(projectName);
     if (!project) {
-      // 프로젝트가 없어도 실패 횟수 기록 (정보 노출 방지)
-      const remaining = recordFailedAttempt(rateLimitKey);
+      // 프로젝트가 없어도 실패로 센다 (정보 노출 방지)
       return {
         success: false,
         // 이번 실패로 잠겼으면 다음 시도가 아니라 지금 바로 잠금을 알린다 (#406).
         error:
           remaining === 0
-            ? lockoutMessage(rateLimitKey)
+            ? lockoutMessage(attempt.retryAfterMs)
             : '프로젝트를 찾을 수 없거나 비밀번호가 일치하지 않습니다.',
         remainingAttempts: remaining,
       };
@@ -215,16 +110,16 @@ export async function verifyProjectAccess(
     // 4. 비밀번호 검증
     const isValid = await verifyPassword(password, project.identifierHash);
     if (!isValid) {
-      const remaining = recordFailedAttempt(rateLimitKey);
       return {
         success: false,
-        error: remaining === 0 ? lockoutMessage(rateLimitKey) : '비밀번호가 일치하지 않습니다.',
+        error:
+          remaining === 0 ? lockoutMessage(attempt.retryAfterMs) : '비밀번호가 일치하지 않습니다.',
         remainingAttempts: remaining,
       };
     }
 
     // 5. 성공 - 토큰 발급 및 쿠키 설정
-    clearFailedAttempts(rateLimitKey);
+    await clearRateLimit(rateLimitKey);
 
     const token = await createProjectSessionToken(project.id, project.name, project.identifierHash);
     await setAccessTokenCookie(project.name, token);
@@ -263,30 +158,5 @@ export async function revokeProjectAccess(projectName: string): Promise<ActionRe
       success: false,
       errors: { _form: ['접근 권한 해제에 실패했습니다.'] },
     };
-  }
-}
-
-/**
- * 프로젝트 비밀번호 존재 여부 확인 (접근 제어 활성화 여부)
- */
-export async function hasProjectPassword(projectName: string): Promise<boolean> {
-  const project = await getProjectAccessInfo(projectName);
-  if (!project) {
-    return false;
-  }
-
-  return !!project.identifierHash;
-}
-
-/**
- * 프로젝트 존재 여부 확인
- */
-export async function checkProjectExists(projectName: string): Promise<boolean> {
-  try {
-    const project = await getProjectAccessInfo(projectName);
-    return project !== null;
-  } catch (error) {
-    Sentry.captureException(error, { extra: { action: 'checkProjectExists' } });
-    return false;
   }
 }
