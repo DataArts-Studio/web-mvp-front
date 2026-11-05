@@ -211,6 +211,13 @@
       "when": 1792246947501,
       "tag": "0030_deny_anon_policy_parity",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793893851238,
+      "tag": "0033_run_scope_locked",
+      "breakpoints": true
     }
   ]
 }

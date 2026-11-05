@@ -17,6 +17,7 @@ import {
 import { toAppDateOnly } from '@testea/util';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
+import { z } from 'zod';
 
 type RerunTestRunSuccess = {
   success: true;
@@ -30,6 +31,19 @@ type RerunTestRunFailure = {
 
 export type RerunTestRunResult = RerunTestRunSuccess | RerunTestRunFailure;
 
+const RerunOptionsSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, '실행 이름은 최소 2자 이상이어야 합니다.')
+    .max(RUN_NAME_MAX_LENGTH, `실행 이름은 ${RUN_NAME_MAX_LENGTH}자를 초과할 수 없습니다.`)
+    .optional(),
+  /** 다시 볼 원본 결과 ID. 없으면 원본 범위 전체를 다시 실행한다. */
+  testCaseRunIds: z.array(z.string().uuid()).min(1, '다시 실행할 케이스를 골라주세요.').optional(),
+});
+
+export type RerunTestRunOptions = z.input<typeof RerunOptionsSchema>;
+
 /**
  * 회귀 반복 실행 유도 (FDD-TR12): 원본 Run 을 동일 구성으로 다시 실행하는 새 Run 을 만든다.
  *
@@ -38,8 +52,23 @@ export type RerunTestRunResult = RerunTestRunSuccess | RerunTestRunFailure;
  * - 원본의 결과(status/comment/executed_at)는 복사하지 않는다. 모두 `untested` 로 초기화.
  * - `test_run_suites` / `test_run_milestones` 링크도 원본 구성대로 복제 (excluded_at 배제).
  * - 전체를 트랜잭션으로 처리해 부분 생성 행을 남기지 않는다. 모든 INSERT 는 returning().
+ * - 06j: 원본 결과 일부만 고르면 그 케이스만 시드하고 스위트 링크는 복제하지 않는다. 새 실행은
+ *   scope_locked_at 으로 범위를 고정해 마일스톤·스위트 자동 채우기에서 빠진다. 고른 ID 는 모두
+ *   원본 실행의 제외되지 않은 결과여야 한다.
  */
-export async function rerunTestRunAction(runId: string): Promise<RerunTestRunResult> {
+export async function rerunTestRunAction(
+  runId: string,
+  options: RerunTestRunOptions = {}
+): Promise<RerunTestRunResult> {
+  const parsedRunId = z.string().uuid().safeParse(runId);
+  const parsedOptions = RerunOptionsSchema.safeParse(options);
+  if (!parsedRunId.success || !parsedOptions.success) {
+    return {
+      success: false,
+      error: parsedOptions.error?.issues[0]?.message ?? '입력이 올바르지 않습니다.',
+    };
+  }
+  const { name, testCaseRunIds } = parsedOptions.data;
   const db = getDatabase();
 
   // 1. 원본 Run 조회 + project_id 기반 접근 권한 확인
@@ -56,14 +85,25 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
 
   try {
     // 2. 원본 케이스 셋 조회 (excluded_at IS NULL 만)
-    const sourceCaseRunRows = await db
+    const allSourceRows = await db
       .select({
+        id: testCaseRuns.id,
         test_case_id: testCaseRuns.test_case_id,
         source_type: testCaseRuns.source_type,
         source_id: testCaseRuns.source_id,
       })
       .from(testCaseRuns)
       .where(and(eq(testCaseRuns.test_run_id, runId), isNull(testCaseRuns.excluded_at)));
+
+    // 고른 결과가 하나라도 이 실행의 것이 아니면 만들지 않는다.
+    const pickedIds = testCaseRunIds ? new Set(testCaseRunIds) : null;
+    const sourceCaseRunRows = pickedIds
+      ? allSourceRows.filter((row) => pickedIds.has(row.id))
+      : allSourceRows;
+    if (pickedIds && sourceCaseRunRows.length !== pickedIds.size) {
+      return { success: false, error: '이 실행의 케이스만 다시 실행할 수 있습니다.' };
+    }
+    const scopeLocked = sourceCaseRunRows.length < allSourceRows.length;
 
     if (sourceCaseRunRows.length === 0) {
       return {
@@ -131,9 +171,10 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
         .where(eq(testRunMilestones.test_run_id, runId)),
     ]);
 
-    const suiteIds = [
-      ...new Set(sourceSuiteLinks.map((r) => r.test_suite_id).filter(Boolean)),
-    ] as string[];
+    // 골라 만든 실행은 스위트 링크를 복제하지 않는다. 링크가 있으면 스위트 케이스가 다시 채워진다.
+    const suiteIds = scopeLocked
+      ? []
+      : ([...new Set(sourceSuiteLinks.map((r) => r.test_suite_id).filter(Boolean))] as string[]);
     const milestoneIds = [
       ...new Set(sourceMilestoneLinks.map((r) => r.milestone_id).filter(Boolean)),
     ] as string[];
@@ -165,7 +206,7 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
     const room = RUN_NAME_MAX_LENGTH - prefix.length - suffix.length;
     const sourceName =
       sourceRun.name.length > room ? `${sourceRun.name.slice(0, room - 1)}…` : sourceRun.name;
-    const proposedName = `${prefix}${sourceName}${suffix}`;
+    const proposedName = name ?? `${prefix}${sourceName}${suffix}`;
 
     const newTestRun = await db.transaction(async (tx) => {
       // 5-1. 새 Run 생성 (status=NOT_STARTED, milestone_id 는 원본 따라감)
@@ -176,6 +217,7 @@ export async function rerunTestRunAction(runId: string): Promise<RerunTestRunRes
           milestone_id: sourceRun.milestone_id,
           name: proposedName,
           status: 'NOT_STARTED',
+          scope_locked_at: scopeLocked ? now : null,
         })
         .returning();
 

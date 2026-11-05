@@ -26,5 +26,6 @@ export { RunsListToolbar } from './runs-list-toolbar';
 export { RunsListTable } from './runs-list-table';
 export { DeleteRunDialog } from './delete-run-dialog';
 export { RerunRunDialog } from './rerun-run-dialog';
+export { RerunSheet } from './rerun-sheet';
 export { AutoRunDialog } from './auto-run-dialog';
 export { SuiteSourceName } from './suite-source-name';

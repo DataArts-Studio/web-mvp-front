@@ -171,7 +171,8 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
 
     // Read-repair: 마일스톤 기반 테스트 실행의 누락 케이스 자동 백필.
     // 완료된 실행은 기록으로 두고 범위를 바꾸지 않는다. 채운 뒤에는 상태를 다시 계산한다 (#376).
-    if (run.milestone_id && run.status !== 'COMPLETED') {
+    // 골라 만든 재실행은 범위가 고정돼 채우지 않는다 (06j).
+    if (run.milestone_id && run.status !== 'COMPLETED' && !run.scope_locked_at) {
       try {
         const inserted = await repairTestRun(db, testRunId, run.milestone_id);
         if (inserted > 0) {
