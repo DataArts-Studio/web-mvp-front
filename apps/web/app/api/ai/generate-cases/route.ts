@@ -95,11 +95,12 @@ async function callAnthropic(
 async function callGemini(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
   const modelId = model || 'gemini-2.0-flash';
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`,
     {
       method: 'POST',
       signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
-      headers: { 'Content-Type': 'application/json' },
+      // 키를 URL 쿼리에 두면 프록시·로그에 남으므로 헤더로 보낸다.
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }],

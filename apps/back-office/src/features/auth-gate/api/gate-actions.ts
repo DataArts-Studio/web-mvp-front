@@ -38,11 +38,23 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
   const candidate = typeof secret === 'string' ? secret : '';
   const ip = await getClientIp();
 
+  // 운영(Cloudflare 뒤)에서는 cf-connecting-ip 가 항상 있다. 없으면 IP 락아웃이 꺼지므로
+  // 키를 확인하지 않고 거부한다(fail-closed). 로컬 dev 는 헤더가 없어도 그대로 둔다.
+  if (!ip && process.env.NODE_ENV === 'production') {
+    console.error('[auth-gate] cf-connecting-ip 없음, 로그인 거부');
+    return { error: UNAVAILABLE_MESSAGE };
+  }
+
+  // 이미 잠긴 IP 는 기록을 더 남기지 않고 바로 거부한다(잠긴 동안 시도가 행을 계속 쌓지 않게).
+  // 동시 요청은 이 사전 확인을 함께 통과할 수 있으므로, 아래 예약 후 재확인이 실제 상한을 지킨다:
   // 시도를 먼저 실패로 기록(예약)한 뒤 센다. 세고 나서 기록하면 동시 요청이 같은 개수를 보고
   // 모두 통과한다. 기록·조회가 실패하면 로그인을 거부한다(fail-closed).
   let reservationId: string;
   let failures: number;
   try {
+    if ((await countRecentFailedLogins(ip, LOCK_WINDOW_MIN)) >= LOCK_THRESHOLD) {
+      return { error: LOCKED_MESSAGE };
+    }
     reservationId = await reserveFailedLogin(ip);
     failures = await countRecentFailedLogins(ip, LOCK_WINDOW_MIN);
   } catch (error) {

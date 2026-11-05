@@ -67,18 +67,19 @@ export class ProjectTestcasePage extends BasePage {
    * 액션(POST)으로 나간다. 제출 직후 곧바로 능동 단언(폴링)으로 들어가면 폴링이
    * 메인 스레드를 점유해, 보류 중인 서버 액션 fetch 가 전송되지 못하고 중단된다
    * (= 케이스가 영속되지 않아 새로고침 시 사라진다). 생성 액션의 네트워크 왕복을
-   * 수동으로 기다려 서버 커밋을 보장한 뒤 단언으로 넘어간다.
+   * 수동으로 기다려 요청이 서버에 닿은 뒤 단언으로 넘어간다.
    *
-   * 서버 액션 응답은 헤더와 첫 행을 먼저 보내고 액션 결과는 뒤이어 스트리밍한다.
-   * waitForResponse 는 헤더 시점에 풀리므로, 본문이 끝날 때까지 기다려야 케이스
-   * 저장 트랜잭션이 커밋된 뒤다.
+   * 서버 액션 응답은 헤더를 먼저 보내고 결과를 뒤이어 스트리밍하므로, 여기서 풀려도
+   * 저장 트랜잭션이 커밋됐다는 보장은 없다. 본문 완료(response.finished())는 CI 에서
+   * 응답이 끝났는데도 풀리지 않는 경우가 있어 쓰지 않는다. 커밋 확인은
+   * expectCasePersisted 가 새로고침을 반복하며 한다.
    *
    * 같은 화면에서 { projectId } 만 보내는 다른 조회 액션도 함께 나가므로, "projectId"
    * 만으로 찾으면 그 응답에 먼저 풀려 생성 요청이 새로고침에 끊긴다. 입력한 제목이
-   * 본문에 있는 요청을 생성 액션으로 본다.
+   * 본문에 있는 요청을 생성 액션으로 본다. 폼이 제목 앞뒤 공백을 지우고 보내므로 같게 맞춘다.
    */
   async submitAndWaitForPersist(): Promise<void> {
-    const title = await this.titleInput.inputValue();
+    const title = (await this.titleInput.inputValue()).trim();
     const createResponse = this.page.waitForResponse(
       (res) => {
         const body = res.request().postData() ?? '';
@@ -92,8 +93,21 @@ export class ProjectTestcasePage extends BasePage {
       { timeout: 15_000 }
     );
     await this.submitButton.click();
-    const response = await createResponse;
-    await response.finished();
+    await createResponse;
+  }
+
+  /**
+   * 새로고침한 목록에 케이스가 남아 있는지 확인한다.
+   *
+   * 생성 요청이 서버에 닿은 뒤에도 커밋은 조금 늦을 수 있어, 새로고침과 검색을
+   * 묶어 보일 때까지 다시 시도한다. 저장되지 않았다면 끝내 보이지 않아 실패한다.
+   */
+  async expectCasePersisted(slug: string, title: string): Promise<void> {
+    await expect(async () => {
+      await this.reload();
+      await this.expectLoaded(slug);
+      await this.expectCaseInTable(title);
+    }).toPass({ timeout: 30_000 });
   }
 
   async enterInput(text: string): Promise<void> {

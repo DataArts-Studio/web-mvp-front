@@ -70,10 +70,11 @@ async function generateAiSummary(reportContext: string): Promise<string | null> 
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // 키를 URL 쿼리에 두면 프록시·로그에 남으므로 헤더로 보낸다.
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: REPORT_SUMMARY_PROMPT }] },
           contents: [{ parts: [{ text: reportContext }] }],
