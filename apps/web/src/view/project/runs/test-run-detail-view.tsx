@@ -9,8 +9,10 @@ import { getTestSuites } from '@/entities/test-suite/api';
 import { dashboardQueryOptions } from '@/features/dashboard';
 import {
   bulkUpdateTestCaseRunStatus,
+  createRunIssue,
   removeSuiteFromRun,
   runComparisonQueryOptions,
+  runIssueContextQueryOptions,
   testRunByIdQueryOptions,
   testRunsQueryOptions,
   updateBlockedReason,
@@ -117,6 +119,11 @@ export const TestRunDetailView = () => {
     enabled: isCompleted,
   });
   const comparison = comparisonData?.success ? comparisonData.data : undefined;
+  const { data: issueContextData } = useQuery({
+    ...runIssueContextQueryOptions(testRunId),
+    enabled: isCompleted,
+  });
+  const issueContext = issueContextData?.success ? issueContextData.data : undefined;
 
   const { data: dashboardData } = useQuery({
     ...dashboardQueryOptions.stats(projectSlug),
@@ -228,6 +235,27 @@ export const TestRunDetailView = () => {
       return true;
     } catch {
       toast.error('차단 사유를 저장하는 중 오류가 발생했습니다.');
+      return false;
+    }
+  };
+
+  const issueMutation = useMutation({
+    mutationFn: ({ ids, title, body }: { ids: string[]; title: string; body: string }) =>
+      createRunIssue({ testRunId, testCaseRunIds: ids, title, body }),
+  });
+
+  const handleCreateIssue = async (ids: string[], title: string, body: string) => {
+    try {
+      const result = await issueMutation.mutateAsync({ ids, title, body });
+      if (!result.success) {
+        toast.error(Object.values(result.errors).flat().join(', '));
+        return false;
+      }
+      toast.success(`이슈 #${result.data.number}을 만들었습니다.`);
+      queryClient.invalidateQueries({ queryKey: ['testRun', testRunId, 'issues'] });
+      return true;
+    } catch {
+      toast.error('이슈를 만들지 못했습니다.');
       return false;
     }
   };
@@ -461,6 +489,9 @@ export const TestRunDetailView = () => {
             onShowShortcuts={() => setShowShortcuts(true)}
             onSaveBlockedReason={handleSaveBlockedReason}
             isSavingBlockedReason={blockedReasonMutation.isPending}
+            issueContext={issueContext}
+            onCreateIssue={handleCreateIssue}
+            isCreatingIssue={issueMutation.isPending}
           />
         </>
       ) : (

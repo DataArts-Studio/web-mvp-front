@@ -124,3 +124,14 @@ export interface UpdateTestCaseRunResult {
   comment: string | null;
   executedAt: Date | null;
 }
+
+/** 실행 결과 화면의 이슈 등록 정보 (06i) */
+export interface RunIssueContext {
+  /** 이슈를 만들 GitHub 저장소. 연결하지 않았거나 저장소를 고르지 않았으면 null */
+  repoFullName: string | null;
+  /** test_case_id 별 연결된 GitHub 이슈. 최근 것부터 */
+  issuesByCase: Record<
+    string,
+    { number: string; url: string; title: string | null; status: string | null }[]
+  >;
+}
