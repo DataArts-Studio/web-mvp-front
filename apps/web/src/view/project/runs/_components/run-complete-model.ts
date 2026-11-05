@@ -162,3 +162,40 @@ export const runPeriodOf = (createdAt: Date, cases: TestCaseRunDetail[]): string
         : `${Math.max(1, mins)}분`;
   return `${dateTimeParts(start)} → ${dateTimeParts(end)} · ${duration}`;
 };
+
+export interface BlockedGroup {
+  /** 사유(앞뒤 공백 제거한 메모). 메모가 없으면 null */
+  reason: string | null;
+  cases: TestCaseRunDetail[];
+  suiteNames: string[];
+  /** 이 사유로 가장 먼저 기록한 시각 */
+  firstRecordedAt: Date | null;
+}
+
+export const blockedGroupKey = (reason: string | null) => reason ?? '__no_reason__';
+
+/** 차단 케이스를 사유별로 묶는다 (06h). 건수가 많은 사유부터, 사유 미기록은 맨 뒤. */
+export const groupBlockedByReason = (cases: TestCaseRunDetail[]): BlockedGroup[] => {
+  const groups = new Map<string, BlockedGroup>();
+  for (const tc of cases) {
+    if (tc.status !== 'blocked') continue;
+    const reason = tc.comment?.trim() || null;
+    const key = blockedGroupKey(reason);
+    const group = groups.get(key) ?? { reason, cases: [], suiteNames: [], firstRecordedAt: null };
+    group.cases.push(tc);
+    const suiteName = tc.testSuiteName ?? '미분류';
+    if (!group.suiteNames.includes(suiteName)) group.suiteNames.push(suiteName);
+    if (tc.executedAt) {
+      const at = new Date(tc.executedAt);
+      if (!group.firstRecordedAt || at < group.firstRecordedAt) group.firstRecordedAt = at;
+    }
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => {
+    if (!a.reason !== !b.reason) return a.reason ? -1 : 1;
+    return b.cases.length - a.cases.length || (a.reason ?? '').localeCompare(b.reason ?? '');
+  });
+};
+
+/** 'MM.DD HH:mm' (서비스 시간대) */
+export const shortDateTimeOf = (date: Date) => dateTimeParts(date);

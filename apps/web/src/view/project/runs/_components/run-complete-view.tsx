@@ -10,10 +10,13 @@ import { useOutsideClick } from '@testea/lib';
 import { cn } from '@testea/util';
 import { Check, ChevronDown, ChevronLeft, MoreHorizontal } from 'lucide-react';
 
+import { BlockedReasonPanel } from './blocked-reason-panel';
 import {
   type HistoryTone,
   type SuiteDelta,
   type Transition,
+  blockedGroupKey,
+  groupBlockedByReason,
   hasSuiteChange,
   runPeriodOf,
   shortDateOf,
@@ -37,6 +40,9 @@ interface RunCompleteViewProps {
   showCharts: boolean;
   onToggleCharts: () => void;
   onShowShortcuts: () => void;
+  /** 차단 사유 묶음의 사유를 한 번에 고친다. 성공하면 true (06h). */
+  onSaveBlockedReason: (testCaseRunIds: string[], reason: string) => Promise<boolean>;
+  isSavingBlockedReason: boolean;
 }
 
 const HISTORY_TONE: Record<HistoryTone, string> = {
@@ -128,6 +134,8 @@ export const RunCompleteView = ({
   showCharts,
   onToggleCharts,
   onShowShortcuts,
+  onSaveBlockedReason,
+  isSavingBlockedReason,
 }: RunCompleteViewProps) => {
   const cases = testRun.testCaseRuns;
   const previous = comparison?.previous ?? null;
@@ -151,6 +159,7 @@ export const RunCompleteView = ({
   const tab = tabChoice ?? firstTab;
   const [suiteFilter, setSuiteFilter] = useState<string>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null);
 
   const [showSuiteMenu, setShowSuiteMenu] = useState(false);
   const suiteMenuRef = useRef<HTMLDivElement>(null);
@@ -172,7 +181,16 @@ export const RunCompleteView = ({
       (suiteFilter === 'all' || (tc.testSuiteId ?? '__unclassified__') === suiteFilter)
   );
 
-  const selected = listCases.find((tc) => tc.id === selectedId) ?? listCases[0] ?? null;
+  // 차단 탭은 사유별로 묶는다. 케이스를 고르기 전에는 사유 묶음을 오른쪽에 보여 준다 (06h).
+  const blockedGroups = tab === 'blocked' ? groupBlockedByReason(listCases) : [];
+  const selectedCase = listCases.find((tc) => tc.id === selectedId) ?? null;
+  const selectedGroup =
+    tab === 'blocked' && !selectedCase
+      ? (blockedGroups.find((g) => blockedGroupKey(g.reason) === selectedGroupKey) ??
+        blockedGroups[0] ??
+        null)
+      : null;
+  const selected = tab === 'blocked' ? selectedCase : (selectedCase ?? listCases[0] ?? null);
   const deltas = useMemo(() => summarizeSuiteDeltas(cases, comparison), [cases, comparison]);
   const changedDeltas = deltas.filter(hasSuiteChange);
   const unchangedCount = deltas.length - changedDeltas.length;
@@ -365,6 +383,7 @@ export const RunCompleteView = ({
                 onClick={() => {
                   setTabChoice(item.value);
                   setSelectedId(null);
+                  setSelectedGroupKey(null);
                 }}
                 className={cn(
                   '-mb-px flex items-center gap-2 border-b-2 px-3.5 pt-2.5 pb-3 text-[14px] whitespace-nowrap',
@@ -422,6 +441,7 @@ export const RunCompleteView = ({
                     onClick={() => {
                       setSuiteFilter(suite.id);
                       setSelectedId(null);
+                      setSelectedGroupKey(null);
                       setShowSuiteMenu(false);
                     }}
                     className={cn(
@@ -446,12 +466,92 @@ export const RunCompleteView = ({
       <div className="flex flex-col pb-10 lg:flex-row">
         <div className="flex w-full flex-col lg:w-[440px] lg:shrink-0 lg:pr-4">
           <p className="pt-3 pb-1.5 pl-[34px] text-[12px] text-white/40">
-            {listCases.length}건
-            {listSuiteNames.length === 1 && listCases.length > 0
-              ? ` · 모두 ${listSuiteNames[0]}`
-              : ''}
+            {tab === 'blocked' && listCases.length > 0
+              ? `판정하지 못한 ${listCases.length}건을 사유별로 묶었어요 · 행 배경은 ${listCases.length}건 중 비율`
+              : `${listCases.length}건${
+                  listSuiteNames.length === 1 && listCases.length > 0
+                    ? ` · 모두 ${listSuiteNames[0]}`
+                    : ''
+                }`}
           </p>
-          {listCases.length === 0 ? (
+          {tab === 'blocked' && blockedGroups.length > 0 ? (
+            <ul className="flex flex-col gap-3" aria-label="차단 사유별 케이스">
+              {blockedGroups.map((group) => {
+                const key = blockedGroupKey(group.reason);
+                const groupSelected =
+                  selectedGroup !== null && blockedGroupKey(selectedGroup.reason) === key;
+                return (
+                  <li key={key} className="flex flex-col gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedGroupKey(key);
+                        setSelectedId(null);
+                      }}
+                      aria-current={groupSelected ? 'true' : undefined}
+                      className={cn(
+                        'relative flex w-full items-center gap-2 overflow-hidden rounded-[6px] px-3 py-2.5 text-left',
+                        groupSelected ? 'bg-white/[0.06]' : 'bg-white/[0.02] hover:bg-white/[0.04]'
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="bg-result-blocked/[0.12] pointer-events-none absolute inset-y-0 left-0"
+                        style={{ width: `${(group.cases.length / listCases.length) * 100}%` }}
+                      />
+                      <span
+                        className={cn(
+                          'relative min-w-0 truncate text-[14px] font-bold',
+                          group.reason ? 'text-white/95' : 'text-white/70'
+                        )}
+                      >
+                        {group.reason ?? '사유 미기록'}
+                      </span>
+                      <span className="relative shrink-0 text-[13px] text-white/45">
+                        {group.cases.length}
+                      </span>
+                      <span className="flex-1" />
+                      {!group.reason && (
+                        <span className="text-primary relative shrink-0 text-[12px] font-medium">
+                          사유 기록 →
+                        </span>
+                      )}
+                    </button>
+                    <ul className="flex flex-col">
+                      {group.cases.map((tc) => {
+                        const isSelected = selectedCase?.id === tc.id;
+                        return (
+                          <li key={tc.id}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedId(tc.id)}
+                              aria-current={isSelected ? 'true' : undefined}
+                              className={cn(
+                                'flex w-full items-center gap-3 rounded-[4px] py-[7px] pr-3 pl-[34px] text-left',
+                                isSelected ? 'bg-white/[0.05]' : 'hover:bg-white/[0.03]'
+                              )}
+                            >
+                              <span className="w-[54px] shrink-0 font-mono text-[11px] text-white/38">
+                                {tc.code}
+                              </span>
+                              <span
+                                className={cn(
+                                  'min-w-0 truncate text-[13px]',
+                                  isSelected ? 'font-bold text-white/95' : 'text-white/80'
+                                )}
+                              >
+                                {tc.title || '제목 없음'}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : listCases.length === 0 ? (
             <p className="py-10 text-center text-[13px] text-white/40">
               해당하는 케이스가 없습니다.
             </p>
@@ -511,6 +611,22 @@ export const RunCompleteView = ({
             </ul>
           )}
         </div>
+
+        {selectedGroup && (
+          <BlockedReasonPanel
+            key={blockedGroupKey(selectedGroup.reason)}
+            group={selectedGroup}
+            history={comparison?.blockedHistory ?? []}
+            projectSlug={projectSlug}
+            isSaving={isSavingBlockedReason}
+            onSaveReason={async (ids, reason) => {
+              const ok = await onSaveBlockedReason(ids, reason);
+              // 사유가 바뀌면 묶음 키도 바뀌므로 고친 사유의 묶음을 계속 보여 준다.
+              if (ok) setSelectedGroupKey(blockedGroupKey(reason.trim()));
+              return ok;
+            }}
+          />
+        )}
 
         {selected && (
           <CaseCompare

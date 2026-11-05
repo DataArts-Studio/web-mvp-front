@@ -99,6 +99,17 @@ export interface RunComparison {
     string,
     { status: import('@testea/db').TestCaseRunStatus; executedAt: Date; runId: string }[]
   >;
+  /**
+   * 이 실행의 차단 사유가 이전 실행에도 있었던 기록 (06h). 사유(앞뒤 공백 제거한 메모)와 실행별 건수.
+   * 이 실행보다 먼저 만든 활성 실행만 보고, 최근 실행부터 담는다.
+   */
+  blockedHistory: {
+    reason: string;
+    runId: string;
+    runName: string;
+    createdAt: Date;
+    count: number;
+  }[];
 }
 
 export interface UpdateTestCaseRunInput {
