@@ -64,4 +64,53 @@ describe('updateMilestone', () => {
     }
     consoleErrorSpy.mockRestore();
   });
+
+  describe('날짜 (#381)', () => {
+    const setCall = () => mockDb.update.mock.results[0].value.set.mock.calls[0][0];
+
+    it('고른 날짜를 시간대 변환 없이 그대로 저장한다', async () => {
+      setMockUpdateReturn(createMockMilestoneRow());
+
+      const result = await updateMilestone({
+        id: 'milestone-123',
+        startDate: '2026-10-01',
+        endDate: '2026-10-31',
+      });
+
+      expect(result.success).toBe(true);
+      expect(setCall()).toMatchObject({ start_date: '2026-10-01', end_date: '2026-10-31' });
+    });
+
+    it('종료일이 시작일보다 빠르면 저장하지 않는다', async () => {
+      const result = await updateMilestone({
+        id: 'milestone-123',
+        startDate: '2026-10-10',
+        endDate: '2026-10-01',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors._milestone).toContain('종료일은 시작일보다 빠를 수 없습니다.');
+      }
+      expect(mockDb.update).not.toHaveBeenCalled();
+    });
+
+    it('한쪽만 바꿔도 기존 날짜와 합쳐 기간 순서를 확인한다', async () => {
+      setMockSelectReturn([
+        { projectId: 'project-123', startDate: '2026-10-10', endDate: '2026-10-20' },
+      ]);
+
+      const result = await updateMilestone({ id: 'milestone-123', endDate: '2026-10-05' });
+
+      expect(result.success).toBe(false);
+      expect(mockDb.update).not.toHaveBeenCalled();
+    });
+
+    it('형식이 틀린 날짜는 거부한다', async () => {
+      const result = await updateMilestone({ id: 'milestone-123', startDate: '2026-02-30' });
+
+      expect(result.success).toBe(false);
+      expect(mockDb.update).not.toHaveBeenCalled();
+    });
+  });
 });

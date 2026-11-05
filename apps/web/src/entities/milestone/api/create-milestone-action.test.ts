@@ -54,8 +54,8 @@ describe('createMilestone', () => {
           projectId: mockRow.project_id,
           title: mockRow.name,
           description: mockRow.description,
-          startDate: new Date(mockRow.start_date!),
-          endDate: new Date(mockRow.end_date!),
+          startDate: mockRow.start_date,
+          endDate: mockRow.end_date,
           progressStatus: mockRow.progress_status,
           createdAt: mockRow.created_at,
           updatedAt: mockRow.updated_at,
@@ -69,6 +69,20 @@ describe('createMilestone', () => {
   });
 
   describe('실패 케이스', () => {
+    it('종료일이 시작일보다 빠르면 저장하지 않는다 (#381)', async () => {
+      const input = createMockCreateMilestoneInput({
+        startDate: '2026-10-10',
+        endDate: '2026-10-01',
+      });
+
+      const result = await createMilestone(input);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors._milestone).toContain('종료일은 시작일보다 빠를 수 없습니다.');
+      }
+    });
+
     it('DB insert가 실패하면 에러를 반환한다', async () => {
       const input = createMockCreateMilestoneInput();
       setMockInsertReturn(undefined);

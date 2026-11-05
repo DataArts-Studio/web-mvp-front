@@ -221,35 +221,38 @@ export async function rollbackToVersion(
       const changedFields = detectChangedFields(currentSnapshot, targetSnapshot);
       const changeSummary = generateChangeSummary(changedFields, 'rollback');
 
-      // 테스트케이스 업데이트
-      const [updated] = await db
-        .update(testCases)
-        .set({
-          name: targetRow.name,
-          test_type: targetRow.test_type,
-          tags: targetRow.tags as string[] | null,
-          pre_condition: targetRow.pre_condition,
-          steps: targetRow.steps,
-          expected_result: targetRow.expected_result,
-          updated_at: new Date(),
-        })
-        .where(eq(testCases.id, testCaseId))
-        .returning();
+      // 케이스 복원과 복원 버전 기록을 함께 반영한다. 기록이 실패하면 복원도 취소된다 (#390).
+      const updated = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(testCases)
+          .set({
+            name: targetRow.name,
+            test_type: targetRow.test_type,
+            tags: targetRow.tags as string[] | null,
+            pre_condition: targetRow.pre_condition,
+            steps: targetRow.steps,
+            expected_result: targetRow.expected_result,
+            updated_at: new Date(),
+          })
+          .where(eq(testCases.id, testCaseId))
+          .returning();
+        if (!row) return row;
+
+        await createVersionSnapshot(
+          testCaseId,
+          targetSnapshot,
+          'rollback',
+          changedFields,
+          changeSummary,
+          tx
+        );
+        return row;
+      });
 
       if (!updated) {
         return { success: false, errors: { _version: ['복원 도중 오류가 발생했습니다.'] } };
       }
-      // 케이스는 이미 바뀌었으므로, 이어지는 스냅샷 기록이 실패해도 캐시는 비운다.
       invalidateCache(INVALIDATE.cases);
-
-      // 롤백 버전 스냅샷 생성
-      await createVersionSnapshot(
-        testCaseId,
-        targetSnapshot,
-        'rollback',
-        changedFields,
-        changeSummary
-      );
 
       const result = toTestCase(updated as TestCaseDTO);
       return {

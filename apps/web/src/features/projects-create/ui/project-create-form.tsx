@@ -4,8 +4,8 @@ import { useForm } from 'react-hook-form';
 
 import { useRouter } from 'next/navigation';
 
-import { type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
-import { createProject } from '@/features/projects-create';
+import { PROJECT_NAME_ERRORS, type ProjectForm, ProjectFormSchema, formToDomain } from '@/entities';
+import { checkProjectNameDuplicate, createProject } from '@/features/projects-create';
 import { DSButton } from '@/shared';
 import { ENV } from '@/shared/constants';
 import { PROJECT_CREATE_EVENTS, track } from '@/shared/lib/analytics';
@@ -25,6 +25,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
   const [step, setStep] = useState(1);
   const [createdSlug, setCreatedSlug] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingName, setIsCheckingName] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
   const isLocalhost =
     typeof window !== 'undefined' &&
@@ -54,6 +55,19 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         trigger('termsAgreed'),
       ]);
       isStepValid = nameValid && ageValid && termsValid;
+      // 이름 중복은 마지막 단계가 아니라 여기서 바로 알려 준다 (#404).
+      // 확인 자체가 실패하면 막지 않고 진행한다. 생성 단계에서 서버가 다시 거른다.
+      if (nameValid) {
+        setIsCheckingName(true);
+        const duplicate = await checkProjectNameDuplicate(getValues('projectName')).catch(
+          () => null
+        );
+        setIsCheckingName(false);
+        if (duplicate?.success && duplicate.data) {
+          setError('projectName', { type: 'manual', message: PROJECT_NAME_ERRORS.TAKEN });
+          isStepValid = false;
+        }
+      }
     } else if (step === 2) {
       // 1. 첫 번째 필드(identifier) 유효성 검사
       const identifierValid = await trigger('identifier');
@@ -98,6 +112,13 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
         setStep(4);
       } else {
         track(PROJECT_CREATE_EVENTS.FAIL, { step });
+        // 그사이 같은 이름이 생긴 경우: 이름을 고칠 수 있게 1단계로 돌려보낸다.
+        const nameError = result.errors.projectName?.[0];
+        if (nameError) {
+          setStep(1);
+          setError('projectName', { type: 'manual', message: nameError });
+          return;
+        }
         const errorMessages = Object.values(result.errors).flat().join('\n');
         toast.error(`생성 실패: ${errorMessages}`);
       }
@@ -148,6 +169,7 @@ export const ProjectCreateForm = ({ onClick }: ProjectCreateFormProps) => {
               control={control}
               errors={errors}
               onNext={handleNext}
+              isChecking={isCheckingName}
             />
           )}
           {step === 2 && (

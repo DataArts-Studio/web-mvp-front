@@ -12,7 +12,7 @@ import { testSuitesQueryOptions } from '@/entities/test-suite';
 import { AiGenerateModal } from '@/features/ai-generate';
 import { RequirementAnalysisModal } from '@/features/ai-requirement-analysis';
 import { TestCaseDetailForm } from '@/features/cases-create';
-import { exportTestCasesToCSV } from '@/features/cases-export';
+import { exportFilteredTestCases } from '@/features/cases-export';
 import { testCasesQueryOptions } from '@/features/cases-list';
 import { ImportWizardModal } from '@/features/import-cases';
 import { TESTCASE_EVENTS, track } from '@/shared/lib/analytics';
@@ -214,9 +214,20 @@ export const TestCasesView = () => {
               track(TESTCASE_EVENTS.IMPORT_START, { project_id: projectId });
               onOpen('import');
             }}
-            onExport={() => {
-              track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count: testCaseItems.length });
-              exportTestCasesToCSV(testCaseItems, decodeURIComponent(slug));
+            onExport={async () => {
+              if (!projectId) return;
+              // 현재 페이지가 아니라 필터에 맞는 전체를 내보낸다 (#382).
+              const count = await exportFilteredTestCases({
+                projectId,
+                filters: {
+                  sort: queryParams.sort,
+                  search: queryParams.search,
+                  suiteId: queryParams.suiteId,
+                },
+                suiteTitles: suiteMap,
+                projectName: decodeURIComponent(slug),
+              });
+              track(TESTCASE_EVENTS.EXPORT, { project_id: projectId, count });
             }}
           />
 
@@ -230,7 +241,6 @@ export const TestCasesView = () => {
             hasData={!!testCasesData}
             debouncedSearch={debouncedSearch}
             pagination={pagination}
-            queryParams={queryParams}
             onPageChange={handlePageChange}
             onResetFilters={handleResetFilters}
             onSelectCase={(id) => {

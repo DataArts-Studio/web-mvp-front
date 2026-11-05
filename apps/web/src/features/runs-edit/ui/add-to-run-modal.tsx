@@ -2,25 +2,21 @@
 
 import React, { useMemo, useState } from 'react';
 
-import type { Milestone } from '@/entities/milestone';
 import type { TestCase } from '@/entities/test-case';
 import type { TestSuite } from '@/entities/test-suite';
 import { SelectionModal, cn } from '@/shared';
 import { useSelectionSet } from '@testea/lib';
-import { Clock, FileText, ListTodo } from 'lucide-react';
+import { FileText, ListTodo } from 'lucide-react';
+import { toast } from 'sonner';
 
-import {
-  useAddCasesToRun,
-  useAddMilestonesToRun,
-  useAddSuitesToRun,
-} from '../hooks/use-add-to-run';
+import { useAddCasesToRun, useAddSuitesToRun } from '../hooks/use-add-to-run';
 
-type TabType = 'case' | 'suite' | 'milestone';
+// 마일스톤 추가는 실행의 마일스톤 자체를 바꾸므로 여기서는 케이스·스위트만 다룬다.
+type TabType = 'case' | 'suite';
 
 const TABS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'case', label: '케이스', icon: <FileText className="h-4 w-4" /> },
   { key: 'suite', label: '스위트', icon: <ListTodo className="h-4 w-4" /> },
-  { key: 'milestone', label: '마일스톤', icon: <Clock className="h-4 w-4" /> },
 ];
 
 const TAB_CONFIG: Record<
@@ -39,19 +35,12 @@ const TAB_CONFIG: Record<
     emptyText: '추가할 수 있는 스위트가 없습니다.',
     submitUnit: '스위트',
   },
-  milestone: {
-    placeholder: '마일스톤 이름으로 검색...',
-    loadingText: '마일스톤을 추가하고 있어요',
-    emptyText: '추가할 수 있는 마일스톤이 없습니다.',
-    submitUnit: '마일스톤',
-  },
 };
 
 interface AddToRunModalProps {
   runId: string;
   availableCases: TestCase[];
   availableSuites: TestSuite[];
-  availableMilestones: Milestone[];
   onClose: () => void;
 }
 
@@ -59,7 +48,6 @@ export const AddToRunModal = ({
   runId,
   availableCases,
   availableSuites,
-  availableMilestones,
   onClose,
 }: AddToRunModalProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('case');
@@ -67,10 +55,9 @@ export const AddToRunModal = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   const addSuites = useAddSuitesToRun(runId);
-  const addMilestones = useAddMilestonesToRun(runId);
   const addCases = useAddCasesToRun(runId);
 
-  const isPending = addSuites.isPending || addMilestones.isPending || addCases.isPending;
+  const isPending = addSuites.isPending || addCases.isPending;
   const config = TAB_CONFIG[activeTab];
 
   const handleTabChange = (tab: TabType) => {
@@ -100,39 +87,33 @@ export const AddToRunModal = ({
     );
   }, [availableSuites, searchQuery]);
 
-  const filteredMilestones = useMemo(() => {
-    const search = searchQuery.toLowerCase().trim();
-    if (!search) return availableMilestones;
-    return availableMilestones.filter(
-      (m) =>
-        m.title.toLowerCase().includes(search) ||
-        (m.description?.toLowerCase().includes(search) ?? false)
-    );
-  }, [availableMilestones, searchQuery]);
-
-  const currentItems =
-    activeTab === 'case'
-      ? filteredCases
-      : activeTab === 'suite'
-        ? filteredSuites
-        : filteredMilestones;
-  const allItems =
-    activeTab === 'case'
-      ? availableCases
-      : activeTab === 'suite'
-        ? availableSuites
-        : availableMilestones;
+  const currentItems = activeTab === 'case' ? filteredCases : filteredSuites;
+  const allItems = activeTab === 'case' ? availableCases : availableSuites;
 
   const handleSubmit = () => {
     if (selection.count === 0) return;
     const ids = selection.toArray();
-    const onSuccess = (result: { success: boolean }) => {
-      if (result.success) onClose();
+    const handlers = {
+      onSuccess: (
+        result: { success: true; addedCount: number } | { success: false; error: string }
+      ) => {
+        if (!result.success) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success(
+          result.addedCount > 0
+            ? `${result.addedCount}개 케이스를 실행에 추가했습니다.`
+            : '이미 실행에 들어 있는 항목입니다.'
+        );
+        onClose();
+      },
+      onError: () =>
+        toast.error(`${config.submitUnit} 추가에 실패했습니다. 잠시 후 다시 시도해주세요.`),
     };
 
-    if (activeTab === 'case') addCases.mutate(ids, { onSuccess });
-    else if (activeTab === 'suite') addSuites.mutate(ids, { onSuccess });
-    else addMilestones.mutate(ids, { onSuccess });
+    if (activeTab === 'case') addCases.mutate(ids, handlers);
+    else addSuites.mutate(ids, handlers);
   };
 
   return (
@@ -214,20 +195,6 @@ export const AddToRunModal = ({
                     <span className="text-text-1 truncate">{suite.title}</span>
                     {suite.description && (
                       <p className="text-text-3 mt-0.5 truncate text-xs">{suite.description}</p>
-                    )}
-                  </SelectionModal.Item>
-                ))}
-
-              {activeTab === 'milestone' &&
-                filteredMilestones.map((milestone) => (
-                  <SelectionModal.Item
-                    key={milestone.id}
-                    checked={selection.has(milestone.id)}
-                    onToggle={() => selection.toggle(milestone.id)}
-                  >
-                    <span className="text-text-1 truncate">{milestone.title}</span>
-                    {milestone.description && (
-                      <p className="text-text-3 mt-0.5 truncate text-xs">{milestone.description}</p>
                     )}
                   </SelectionModal.Item>
                 ))}

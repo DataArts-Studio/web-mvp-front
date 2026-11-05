@@ -1,5 +1,8 @@
 'use server';
 
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+
 import { deleteAccessTokenCookie, setAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword, verifyPassword } from '@/access/lib/password-hash';
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
@@ -7,10 +10,22 @@ import { createProjectSessionToken } from '@/access/lib/project-session';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import type { ProjectDomain } from '@/entities/project';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { isUniqueViolation } from '@/shared/lib/db-error';
+import { toValidName } from '@/shared/lib/normalize-name';
+import { clearRateLimit, consumeRateLimit, getClientIp } from '@/shared/lib/rate-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { eq } from 'drizzle-orm';
+
+import { PROJECT_NAME_ERRORS } from '../model/constants';
+import { ChangeIdentifierFormSchema } from '../model/schema';
+
+const PROJECT_NAME_MAX_LENGTH = 50;
+
+/** 비밀번호 변경 시 현재 비밀번호 확인도 접근 폼과 같은 횟수·잠금 시간으로 제한한다 (#471). */
+const CHANGE_IDENTIFIER_MAX_ATTEMPTS = 5;
+const CHANGE_IDENTIFIER_LOCKOUT_MS = 15 * 60 * 1000;
 
 export type ProjectBasicInfo = Pick<
   ProjectDomain,
@@ -112,7 +127,14 @@ export const getProjectById = async (id: string): Promise<ActionResult<ProjectBa
   }
 };
 
-export const archiveProject = async (id: string): Promise<ActionResult<{ id: string }>> => {
+/**
+ * 프로젝트 보관(소프트 삭제). 프로젝트 삭제와 같은 결과라 같은 이름 재확인을 요구한다.
+ * 확인 없이 부르면 설정 화면의 삭제 확인 절차를 건너뛸 수 있기 때문이다 (#471).
+ */
+export const archiveProject = async (
+  id: string,
+  confirmName: string
+): Promise<ActionResult<{ id: string }>> => {
   try {
     const hasAccess = await requireProjectAccess(id);
     if (!hasAccess) {
@@ -120,6 +142,18 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
     }
 
     const db = getDatabase();
+    const [target] = await db
+      .select({ name: projects.name })
+      .from(projects)
+      .where(eq(projects.id, id))
+      .limit(1);
+    if (!target) {
+      return { success: false, errors: { _project: ['프로젝트를 찾을 수 없습니다.'] } };
+    }
+    if (target.name !== confirmName) {
+      return { success: false, errors: { confirmName: ['프로젝트 이름이 일치하지 않습니다.'] } };
+    }
+
     const [archived] = await db
       .update(projects)
       .set({
@@ -155,7 +189,9 @@ export const archiveProject = async (id: string): Promise<ActionResult<{ id: str
 export const updateProject = async (
   projectId: string,
   data: { name?: string; description?: string; ownerName?: string }
-): Promise<ActionResult<{ id: string }>> => {
+): Promise<ActionResult<{ id: string; name: string }>> => {
+  let renamedTo: string | null = null;
+  let result: ActionResult<{ id: string; name: string }>;
   try {
     const hasAccess = await requireProjectAccess(projectId);
     if (!hasAccess) {
@@ -164,16 +200,39 @@ export const updateProject = async (
 
     const db = getDatabase();
 
+    const [current] = await db
+      .select({ name: projects.name })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    if (!current) {
+      return { success: false, errors: { _project: ['프로젝트를 찾을 수 없습니다.'] } };
+    }
+
     const updateData: Record<string, unknown> = { updated_at: new Date() };
-    if (data.name !== undefined) updateData.name = data.name;
+    if (data.name !== undefined) {
+      const name = toValidName(data.name, PROJECT_NAME_MAX_LENGTH);
+      if (!name) {
+        return { success: false, errors: { _project: ['프로젝트 이름을 입력해주세요.'] } };
+      }
+      updateData.name = name.replace(/\s+/g, ' ');
+    }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.ownerName !== undefined) updateData.owner_name = data.ownerName;
 
-    const [updated] = await db
-      .update(projects)
-      .set(updateData)
-      .where(eq(projects.id, projectId))
-      .returning();
+    let updated;
+    try {
+      [updated] = await db
+        .update(projects)
+        .set(updateData)
+        .where(eq(projects.id, projectId))
+        .returning();
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        return { success: false, errors: { name: [PROJECT_NAME_ERRORS.TAKEN] } };
+      }
+      throw error;
+    }
 
     if (!updated) {
       return {
@@ -182,10 +241,19 @@ export const updateProject = async (
       };
     }
 
+    // 접근 쿠키 이름과 토큰은 프로젝트 이름(주소)에 묶여 있다. 이름이 바뀌면 새 이름으로
+    // 세션을 다시 발급하고 옛 쿠키를 지워, 새 주소에서 비밀번호를 다시 묻지 않게 한다 (#403).
+    if (updated.name !== current.name) {
+      const token = await createProjectSessionToken(updated.id, updated.name, updated.identifier);
+      await setAccessTokenCookie(updated.name, token);
+      await deleteAccessTokenCookie(current.name);
+      renamedTo = updated.name;
+    }
+
     invalidateCache(INVALIDATE.project);
-    return {
+    result = {
       success: true,
-      data: { id: updated.id },
+      data: { id: updated.id, name: updated.name },
       message: '프로젝트 정보가 수정되었습니다.',
     };
   } catch (error) {
@@ -195,6 +263,11 @@ export const updateProject = async (
       errors: { _project: ['프로젝트 정보를 수정하는 도중 오류가 발생했습니다.'] },
     };
   }
+  // 옛 쿠키를 지운 응답이 옛 주소를 다시 그리면 접근 페이지로 튕기므로, 액션 응답에서 바로
+  // 새 주소의 설정 화면으로 보낸다. 이름 변경은 설정 화면에서만 일어난다.
+  // redirect 는 예외로 동작하므로 try 밖에서 호출한다.
+  if (renamedTo) redirect(`/projects/${encodeURIComponent(renamedTo)}/settings?renamed=1`);
+  return result;
 };
 
 export const changeProjectIdentifier = async (
@@ -206,6 +279,22 @@ export const changeProjectIdentifier = async (
     const hasAccess = await requireProjectAccess(projectId);
     if (!hasAccess) {
       return { success: false, errors: { _project: ['접근 권한이 없습니다.'] } };
+    }
+
+    // 클라이언트 폼 검증을 우회한 호출도 막도록 같은 스키마로 서버에서 다시 검증한다.
+    // 확인 입력은 폼에서만 쓰이므로 새 비밀번호를 그대로 채워 길이 규칙만 적용한다.
+    const parsed = ChangeIdentifierFormSchema.safeParse({
+      currentPassword,
+      newPassword,
+      confirmPassword: newPassword,
+    });
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const field = issue?.path[0] === 'currentPassword' ? 'currentPassword' : 'newPassword';
+      return {
+        success: false,
+        errors: { [field]: [issue?.message ?? '입력값을 확인해주세요.'] },
+      };
     }
 
     const db = getDatabase();
@@ -223,6 +312,25 @@ export const changeProjectIdentifier = async (
       };
     }
 
+    // 세션을 가진 사람이 현재 비밀번호를 무제한으로 맞춰 보지 못하게, 검증 전에 먼저 센다.
+    const rateLimitKey = `change-identifier:project:${project.id}:ip:${getClientIp(await headers())}`;
+    const attempt = await consumeRateLimit(rateLimitKey, {
+      limit: CHANGE_IDENTIFIER_MAX_ATTEMPTS,
+      windowMs: CHANGE_IDENTIFIER_LOCKOUT_MS,
+      sliding: true,
+    });
+    if (!attempt.allowed) {
+      const minutes = Math.max(1, Math.ceil(attempt.retryAfterMs / 60_000));
+      return {
+        success: false,
+        errors: {
+          currentPassword: [
+            `현재 비밀번호를 ${CHANGE_IDENTIFIER_MAX_ATTEMPTS}회 잘못 입력해 잠겼습니다. ${minutes}분 후에 다시 시도해주세요.`,
+          ],
+        },
+      };
+    }
+
     const isValid = await verifyPassword(currentPassword, project.identifier);
     if (!isValid) {
       return {
@@ -230,6 +338,7 @@ export const changeProjectIdentifier = async (
         errors: { currentPassword: ['현재 비밀번호가 일치하지 않습니다.'] },
       };
     }
+    await clearRateLimit(rateLimitKey);
 
     const newHash = await hashPassword(newPassword);
 

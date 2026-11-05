@@ -27,7 +27,7 @@ import {
   Skeleton,
   StatusBadge,
 } from '@testea/ui';
-import { formatDateTime } from '@testea/util';
+import { formatDate, formatDateTime } from '@testea/util';
 import {
   ArrowLeft,
   Calendar,
@@ -98,9 +98,9 @@ export const MilestoneDetailView = () => {
           <Skeleton className="h-8 w-80" />
           <Skeleton className="mt-3 h-4 w-96" />
         </header>
-        <main className="min-h-[520px] py-5 lg:min-h-0">
+        <div className="min-h-[520px] py-5 lg:min-h-0">
           <Skeleton className="h-full min-h-[420px]" />
-        </main>
+        </div>
         <aside className="border-line-2 border-t py-5 lg:border-t-0 lg:border-l lg:pl-6">
           <Skeleton className="h-80" />
         </aside>
@@ -155,7 +155,7 @@ export const MilestoneDetailView = () => {
             <div className="text-text-3 mt-1 flex min-w-0 items-center gap-4 text-xs">
               <span className="inline-flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
-                {formatDateTime(milestone.startDate)} ~ {formatDateTime(milestone.endDate)}
+                {formatDate(milestone.startDate)} ~ {formatDate(milestone.endDate)}
               </span>
               <LastRunFreshnessLabel
                 lastExecutedAt={milestone.lastExecutedAt}
@@ -186,7 +186,7 @@ export const MilestoneDetailView = () => {
         </div>
       </header>
 
-      <main className="min-h-[520px] overflow-hidden py-5 lg:min-h-0">
+      <div className="min-h-[520px] overflow-hidden py-5 lg:min-h-0">
         <div className="flex h-full min-h-0 flex-col gap-6">
           <section className="flex min-h-0 flex-1 flex-col">
             <div className="border-line-2 flex shrink-0 items-center justify-between border-b pb-3">
@@ -317,7 +317,7 @@ export const MilestoneDetailView = () => {
             )}
           </section>
         </div>
-      </main>
+      </div>
 
       <aside className="border-line-2 flex min-h-0 flex-col gap-6 border-t py-5 lg:overflow-y-auto lg:border-t-0 lg:border-l lg:pl-6">
         <section className="border-line-2 border-b pb-5">

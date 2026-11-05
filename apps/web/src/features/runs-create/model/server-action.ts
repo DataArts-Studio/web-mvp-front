@@ -2,6 +2,7 @@
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { CreateTestRunSchema } from '@/entities/test-run';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { lockSuiteRunSync } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { FlatErrors } from '@/shared/types';
@@ -21,6 +22,9 @@ import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 
 type CreateRunInput = z.infer<typeof CreateTestRunSchema>;
+
+const EMPTY_SCOPE_MESSAGE =
+  '선택한 마일스톤에 실행할 케이스가 없습니다. 마일스톤에 스위트나 케이스를 추가한 뒤 다시 시도해주세요.';
 
 export const createTestRunAction = async (input: CreateRunInput) => {
   const validation = CreateTestRunSchema.safeParse(input);
@@ -46,16 +50,23 @@ export const createTestRunAction = async (input: CreateRunInput) => {
   const db = getDatabase();
 
   try {
-    const [newTestRun] = await db.transaction(async (tx) => {
+    const created = await db.transaction(async (tx) => {
       await assertRunResources(tx, project_id, { milestoneIds: [milestone_id] });
 
+      // 휴지통 케이스는 새 실행에 넣지 않는다 (#377).
       const milestoneCaseRows = await tx
         .select({
           test_case_id: milestoneTestCases.test_case_id,
           milestone_id: milestoneTestCases.milestone_id,
         })
         .from(milestoneTestCases)
-        .where(eq(milestoneTestCases.milestone_id, milestone_id));
+        .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+        .where(
+          and(
+            eq(milestoneTestCases.milestone_id, milestone_id),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        );
 
       const milestoneSuiteRows = await tx
         .select({
@@ -72,6 +83,8 @@ export const createTestRunAction = async (input: CreateRunInput) => {
         suiteIds,
         caseIds: milestoneCaseRows.map((row) => row.test_case_id!),
       });
+      // 같은 스위트에 케이스를 만드는 요청과 엇갈려 실행에서 케이스가 빠지지 않게 한다 (#390).
+      await lockSuiteRunSync(tx, suiteIds);
 
       const suiteCaseRows =
         suiteIds.length === 0
@@ -93,11 +106,21 @@ export const createTestRunAction = async (input: CreateRunInput) => {
         caseIds: suiteCaseRows.map((row) => row.id),
       });
 
+      // 실행할 케이스가 하나도 없으면 0/0 으로 남는 빈 실행을 만들지 않는다 (#385).
+      const scopeCaseIds = new Set([
+        ...milestoneCaseRows.map((row) => row.test_case_id),
+        ...suiteCaseRows.map((row) => row.id),
+      ]);
+      if (scopeCaseIds.size === 0) return null;
+
       // 1. Create the main test run entry and link the selected milestone
+      // 마일스톤 목록·상세·대시보드 집계와 실행 출처 표시는 test_runs.milestone_id 를 읽으므로
+      // 연결 테이블과 함께 반드시 채운다 (#373).
       const [run] = await tx
         .insert(testRuns)
         .values({
           project_id,
+          milestone_id,
           name,
           description,
         })
@@ -169,11 +192,18 @@ export const createTestRunAction = async (input: CreateRunInput) => {
         }
       }
 
-      return [run];
+      return run;
     });
 
+    if (!created) {
+      return {
+        success: false,
+        errors: { formErrors: [EMPTY_SCOPE_MESSAGE], fieldErrors: {} } as FlatErrors,
+      };
+    }
+
     invalidateCache(INVALIDATE.runs);
-    return { success: true, testRun: newTestRun };
+    return { success: true, testRun: created };
   } catch (error) {
     console.error('[createTestRunAction] Error:', error);
     Sentry.captureException(error, {

@@ -4,19 +4,16 @@ import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { aiUsageLogs, getDatabase } from '@testea/db';
+import { startOfAppMonth } from '@testea/util';
 import { and, eq, gte, sql } from 'drizzle-orm';
 
 const FREE_MONTHLY_LIMIT = 50;
 
 /**
- * 이번 달 1일 00:00:00 UTC. 사용량 합산의 하한 경계. 검사·기록이 같은 경계를 쓰도록 공유한다.
- * created_at 이 timestamptz(UTC) 이므로 경계도 UTC 로 잡아, 서버 로컬 타임존에 따라
- * 월말 일부 기록이 누락/중복 집계되지 않게 한다.
+ * 이번 달 1일 0시(서비스 시간대). 사용량 합산의 하한 경계. 검사·기록이 같은 경계를 쓰도록 공유한다.
+ * 서버 로컬 타임존과 무관하게 같은 순간을 가리켜, KST 1일 새벽 기록이 지난달로 잡히지 않게 한다.
  */
-const startOfCurrentMonth = (): Date => {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-};
+const startOfCurrentMonth = (): Date => startOfAppMonth();
 
 export const getMonthlyUsage = async (
   projectId: string

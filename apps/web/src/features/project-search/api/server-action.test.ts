@@ -1,3 +1,4 @@
+import { ilike } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { searchProjects } from './server-action';
@@ -55,13 +56,11 @@ describe('searchProjects', () => {
   });
 
   describe('유효성 검사', () => {
-    it('키워드가 2자 미만이면 에러를 반환한다', async () => {
+    it('한 글자 키워드는 이름 전체가 같은 프로젝트만 찾는다', async () => {
       const result = await searchProjects('a');
 
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBeDefined();
-      }
+      expect(result.success).toBe(true);
+      expect(ilike).toHaveBeenCalledWith('name', 'a');
     });
 
     it('키워드가 50자 초과하면 에러를 반환한다', async () => {
@@ -75,8 +74,8 @@ describe('searchProjects', () => {
       }
     });
 
-    it('허용되지 않는 특수문자가 포함되면 에러를 반환한다', async () => {
-      const result = await searchProjects('test@#$%');
+    it('제어 문자가 포함되면 에러를 반환한다', async () => {
+      const result = await searchProjects('testname');
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -129,6 +128,20 @@ describe('searchProjects', () => {
 
       expect(result.success).toBe(true);
       expect(mockSelect).toHaveBeenCalled();
+    });
+
+    it('점·괄호 등 이름에 쓸 수 있는 문자는 그대로 검색한다 (#405)', async () => {
+      const result = await searchProjects('[QA] Testea.v2 (1)');
+
+      expect(result.success).toBe(true);
+      expect(ilike).toHaveBeenCalledWith('name', '%[QA] Testea.v2 (1)%');
+    });
+
+    it('% 와 _ 는 와일드카드가 아니라 글자로 찾는다', async () => {
+      const result = await searchProjects('50%_off');
+
+      expect(result.success).toBe(true);
+      expect(ilike).toHaveBeenCalledWith('name', '%50\\%\\_off%');
     });
 
     it('검색 결과가 있으면 메시지를 포함한다', async () => {

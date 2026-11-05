@@ -28,15 +28,20 @@ vi.mock('uuid', () => ({
 const mockTxReturning = vi.fn();
 const mockTxValues = vi.fn(() => ({ returning: mockTxReturning }));
 const mockTxOnConflictDoNothing = vi.fn();
+const mockTxInsertValues = vi.fn(() => ({
+  returning: mockTxReturning,
+  onConflictDoNothing: mockTxOnConflictDoNothing,
+}));
 const mockTxInsert = vi.fn(() => ({
-  values: vi.fn(() => ({
-    returning: mockTxReturning,
-    onConflictDoNothing: mockTxOnConflictDoNothing,
-  })),
+  values: mockTxInsertValues,
 }));
 
 const mockTxSelectWhere = vi.fn();
-const mockTxSelectFrom = vi.fn(() => ({ where: mockTxSelectWhere }));
+// 마일스톤 케이스 조회는 휴지통 케이스를 거르려고 test_cases 와 innerJoin 한다.
+const mockTxSelectFrom = vi.fn(() => ({
+  where: mockTxSelectWhere,
+  innerJoin: vi.fn(() => ({ where: mockTxSelectWhere })),
+}));
 const mockTxSelect = vi.fn(() => ({ from: mockTxSelectFrom }));
 
 // 트랜잭션 객체
@@ -136,9 +141,12 @@ describe('createTestRunAction', () => {
     vi.clearAllMocks();
     mockTxReturning.mockResolvedValue([mockCreatedRun]);
     mockTxSelectWhere.mockReset().mockResolvedValue([]);
-    mockTxSelectWhere.mockResolvedValueOnce([
-      { id: validMilestoneId, projectId: validInput.project_id },
-    ]);
+    // 조회 순서: 마일스톤 소속 확인, 마일스톤 케이스, 마일스톤 스위트, 케이스 소속 확인
+    mockTxSelectWhere
+      .mockResolvedValueOnce([{ id: validMilestoneId, projectId: validInput.project_id }])
+      .mockResolvedValueOnce([{ test_case_id: 'case-1', milestone_id: validMilestoneId }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 'case-1', projectId: validInput.project_id }]);
   });
 
   describe('유효성 검사', () => {
@@ -209,6 +217,10 @@ describe('createTestRunAction', () => {
 
       expect(result.success).toBe(true);
       expect(mockTxInsert).toHaveBeenCalled();
+      // 집계가 읽는 test_runs.milestone_id 도 함께 채운다 (#373)
+      expect(mockTxInsertValues).toHaveBeenCalledWith(
+        expect.objectContaining({ milestone_id: validMilestoneId, name: validInput.name })
+      );
     });
 
     it('description이 없어도 생성에 성공한다', async () => {
@@ -221,6 +233,23 @@ describe('createTestRunAction', () => {
       const result = await createTestRunAction(inputWithoutDescription);
 
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('빈 범위 (#385)', () => {
+    it('마일스톤에 실행할 케이스가 없으면 실행을 만들지 않는다', async () => {
+      mockTxSelectWhere
+        .mockReset()
+        .mockResolvedValue([])
+        .mockResolvedValueOnce([{ id: validMilestoneId, projectId: validInput.project_id }]);
+
+      const result = await createTestRunAction(validInput);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors!.formErrors[0]).toContain('실행할 케이스가 없습니다');
+      }
+      expect(mockTxInsert).not.toHaveBeenCalled();
     });
   });
 

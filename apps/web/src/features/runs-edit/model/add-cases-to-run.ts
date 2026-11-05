@@ -1,11 +1,11 @@
 'use server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { addCasesToRunScope, recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCaseRuns, testCases, testRuns } from '@testea/db';
+import { getDatabase, testCases, testRuns } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
 
 type AddCasesToRunResult =
   | { success: true; addedCount: number }
@@ -33,40 +33,27 @@ export async function addCasesToRunAction(
 
   try {
     const result = await db.transaction(async (tx) => {
-      // 1. Find existing test case runs to avoid duplicates
-      const existingRows = await tx
-        .select({ test_case_id: testCaseRuns.test_case_id })
-        .from(testCaseRuns)
-        .where(
-          and(eq(testCaseRuns.test_run_id, runId), inArray(testCaseRuns.test_case_id, caseIds))
-        );
-
-      // IDOR 방지: run 의 프로젝트에 속한 케이스만 추가 (타 프로젝트 caseId 차단)
+      // IDOR 방지: run 의 프로젝트에 속한 케이스만 추가 (타 프로젝트 caseId 차단).
+      // 휴지통 케이스는 실행에 넣지 않는다 (#377).
       const ownedRows = await tx
         .select({ id: testCases.id })
         .from(testCases)
-        .where(and(eq(testCases.project_id, run.projectId), inArray(testCases.id, caseIds)));
-      const ownedCaseIds = new Set(ownedRows.map((r) => r.id));
+        .where(
+          and(
+            eq(testCases.project_id, run.projectId!),
+            inArray(testCases.id, caseIds),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        );
 
-      const existingCaseIds = new Set(existingRows.map((r) => r.test_case_id));
-      const newCaseIds = caseIds.filter((id) => ownedCaseIds.has(id) && !existingCaseIds.has(id));
+      const addedCount = await addCasesToRunScope(
+        tx,
+        runId,
+        ownedRows.map((row) => ({ caseId: row.id, sourceType: 'adhoc' as const, sourceId: null }))
+      );
 
-      if (newCaseIds.length === 0) return 0;
-
-      // 2. Create test case run records for new cases (adhoc - directly selected)
-      const newTestCaseRuns = newCaseIds.map((caseId) => ({
-        id: uuidv7(),
-        test_run_id: runId,
-        test_case_id: caseId,
-        status: 'untested' as const,
-        source_type: 'adhoc' as const,
-        source_id: null,
-        created_at: new Date(),
-        updated_at: new Date(),
-      }));
-
-      await tx.insert(testCaseRuns).values(newTestCaseRuns);
-      return newCaseIds.length;
+      await recomputeTestRunStatus(tx, runId);
+      return addedCount;
     });
 
     invalidateCache(INVALIDATE.runs);

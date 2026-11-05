@@ -29,8 +29,11 @@ export const INVALIDATE = {
   suites: [T.testSuites, T.testCases, T.dashboard, T.milestones, T.testRuns],
   /** 마일스톤 변경. 실행 목록이 마일스톤 이름을 보여주고, 구성 추가는 연결 실행을 동기화한다. */
   milestones: [T.milestones, T.dashboard, T.testRuns],
-  /** 실행·케이스 실행 결과. 마일스톤 진행률에 실행 결과가 들어간다. */
-  runs: [T.testRuns, T.dashboard, T.milestones],
+  /**
+   * 실행·케이스 실행 결과. 마일스톤 진행률에 실행 결과가 들어가고,
+   * 케이스 목록의 상태가 마지막 실행 결과라 케이스 목록도 함께 비운다 (#379).
+   */
+  runs: [T.testRuns, T.dashboard, T.milestones, T.testCases],
   project: [T.project, T.dashboard],
   all: Object.values(T),
 } as const satisfies Record<string, readonly CacheTag[]>;

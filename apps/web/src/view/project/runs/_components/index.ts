@@ -7,6 +7,7 @@ export { RunCaseDetailPanel } from './run-case-detail-panel';
 export { RunDetailHeader } from './run-detail-header';
 export { RunDetailCharts } from './run-detail-charts';
 export { RunSummaryBar } from './run-summary-bar';
+export { RunCompleteView } from './run-complete-view';
 export { RunDetailError } from './run-detail-error';
 export { RemoveSuiteDialog } from './remove-suite-dialog';
 export { useRunKeyboardShortcuts } from './use-run-keyboard-shortcuts';

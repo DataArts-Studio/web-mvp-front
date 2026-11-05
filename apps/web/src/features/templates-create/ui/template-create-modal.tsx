@@ -159,6 +159,7 @@ export const TemplateCreateModal = ({
                 control={control}
                 render={({ field }) => (
                   <DsSelect
+                    aria-label="테스트 유형"
                     className="w-full"
                     value={field.value ?? ''}
                     onChange={field.onChange}

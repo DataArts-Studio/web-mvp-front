@@ -1,6 +1,8 @@
 'use server';
 
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
+import { lockCaseNumbers, toCaseKey } from '@/entities/test-case/api/case-number-lock';
+import { recordCreatedCases } from '@/entities/test-case/api/record-created-cases';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { encrypt } from '@/shared/lib/crypto';
 import type { ActionResult } from '@/shared/types';
@@ -170,39 +172,50 @@ export const saveGeneratedCases = async (input: {
     const now = new Date();
 
     const count = await db.transaction(async (tx) => {
+      await lockCaseNumbers(tx, projectId);
       // display_id 최대값 조회
       const [maxDisplayId] = await tx
-        .select({ max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)` })
+        .select({
+          max: sql<number>`COALESCE(MAX(${testCases.display_id}), 0)`,
+          maxSortOrder: sql<number>`COALESCE(MAX(${testCases.sort_order}), 0)`,
+        })
         .from(testCases)
         .where(eq(testCases.project_id, projectId));
 
       let nextDisplayId = (maxDisplayId?.max ?? 0) + 1;
+      // 가져오기처럼 생성한 순서대로 커스텀 순서 맨 뒤에 붙인다 (#380).
+      let nextSortOrder = (maxDisplayId?.maxSortOrder ?? 0) + 1;
 
-      await tx.insert(testCases).values(
-        cases.map((tc) => {
-          const displayId = nextDisplayId++;
-          return {
-            id: crypto.randomUUID(),
-            project_id: projectId,
-            test_suite_id: suiteId ?? null,
-            name: tc.name,
-            pre_condition: tc.preCondition || null,
-            steps: tc.steps || null,
-            expected_result: tc.expectedResult || null,
-            tags: [...(tc.tags || []), 'ai-generated'],
-            display_id: displayId,
-            case_key: `TC-${String(displayId).padStart(3, '0')}`,
-            sort_order: 0,
-            result_status: 'untested' as const,
-            // DB 컬럼에 DEFAULT now() 가 박혀있지 않아 drizzle 의 DEFAULT 키워드만으로는
-            // NOT NULL 제약에서 막힌다. 단일 케이스 생성과 동일하게 값을 명시한다.
-            created_at: now,
-            updated_at: now,
-          };
-        })
-      );
+      const created = await tx
+        .insert(testCases)
+        .values(
+          cases.map((tc) => {
+            const displayId = nextDisplayId++;
+            return {
+              id: crypto.randomUUID(),
+              project_id: projectId,
+              test_suite_id: suiteId ?? null,
+              name: tc.name,
+              pre_condition: tc.preCondition || null,
+              steps: tc.steps || null,
+              expected_result: tc.expectedResult || null,
+              tags: [...(tc.tags || []), 'ai-generated'],
+              display_id: displayId,
+              case_key: toCaseKey(displayId),
+              sort_order: nextSortOrder++,
+              result_status: 'untested' as const,
+              // DB 컬럼에 DEFAULT now() 가 박혀있지 않아 drizzle 의 DEFAULT 키워드만으로는
+              // NOT NULL 제약에서 막힌다. 단일 케이스 생성과 동일하게 값을 명시한다.
+              created_at: now,
+              updated_at: now,
+            };
+          })
+        )
+        .returning();
 
-      return cases.length;
+      // 직접 만든 케이스처럼 v1 버전을 남기고 스위트에 연결된 실행에도 넣는다 (#391).
+      await recordCreatedCases(tx, created, 'AI 생성으로 생성');
+      return created.length;
     });
 
     invalidateCache(INVALIDATE.cases);

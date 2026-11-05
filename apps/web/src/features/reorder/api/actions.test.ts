@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { reorderTestCase, reorderTestSuite } from './actions';
+import { moveTestCaseOrder, reorderTestCase, reorderTestSuite } from './actions';
 
 // 전역 setup 은 requireProjectAccess 를 항상 true 로 mock 한다. IDOR 거부 경로를 검증하려면
 // 이 파일에서 동적 mock 으로 덮어 true/false 를 제어한다.
@@ -16,6 +16,7 @@ const mockDb = {
     from: vi.fn(() => ({ where: vi.fn(() => ({ limit: mockLimit })) })),
   })),
   update: mockUpdate,
+  transaction: vi.fn(),
 };
 vi.mock('@testea/db', () => ({
   getDatabase: () => mockDb,
@@ -70,5 +71,15 @@ describe('reorder 액션 — IDOR 가드 회귀', () => {
 
     expect(result.success).toBe(false);
     expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('moveTestCaseOrder: 대상 소유 프로젝트 접근이 거부되면 순서를 바꾸지 않는다', async () => {
+    mockLimit.mockResolvedValue([{ projectId: 'proj-A' }]);
+    mockAccess.mockResolvedValue(false);
+
+    const result = await moveTestCaseOrder('case-1', { beforeId: 'case-2' });
+
+    expect(result.success).toBe(false);
+    expect(mockDb.transaction).not.toHaveBeenCalled();
   });
 });

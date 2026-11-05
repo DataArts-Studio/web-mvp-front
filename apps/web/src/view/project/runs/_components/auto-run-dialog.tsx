@@ -135,6 +135,7 @@ export const AutoRunDialog = ({
               <div className="space-y-1.5">
                 <label className="text-text-2 text-sm font-medium">대상 사이트</label>
                 <DsSelect
+                  aria-label="대상 사이트"
                   value={targetSiteId}
                   onChange={setTargetSiteId}
                   options={targetOptions}
@@ -147,6 +148,7 @@ export const AutoRunDialog = ({
               <div className="space-y-1.5">
                 <label className="text-text-2 text-sm font-medium">실행할 케이스</label>
                 <DsSelect
+                  aria-label="실행할 케이스"
                   value={caseId}
                   onChange={setCaseId}
                   options={caseOptions}

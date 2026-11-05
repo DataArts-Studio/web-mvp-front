@@ -11,7 +11,7 @@ Claude Code 가 이 저장소에서 **코드를 작성**할 때 따르는 컨벤
 
 - pnpm workspace + Turborepo
 - `apps/web`: 사용자 대상 Testea, Next.js App Router + FSD 혼합, 기본 포트 3000.
-- `apps/back-office`: 운영 대시보드·공지·활동 로그, 기본 포트 3100. Next.js와 OpenNext/Cloudflare 배포 설정이 있으며 공지 변경은 관리자 액션 가드를 사용한다.
+- `apps/back-office`: 운영 대시보드·공지·활동 로그, 기본 포트 3100. `back.gettestea.com` 에 OpenNext 로 Cloudflare Workers 별도 배포하며 공지 변경은 관리자 액션 가드를 사용한다.
 - `apps/qaground`: QA 실습·챌린지·샌드박스·제출/채점, 기본 포트 3200. 가짜 연습 API와 실제 저장/LLM/러너 연동을 구분한다.
 - `apps/runner`: Hono + Playwright 서버, 기본 포트 8080. `/health`, `/capture`, `/run`. Cloud Run/Fly 설정이 있으며 DB에 직접 접근하지 않는다.
 - `packages/db`, `packages/ui`, `packages/util`, `packages/lib`, `packages/fetch-kit`
@@ -34,7 +34,7 @@ Claude Code 가 이 저장소에서 **코드를 작성**할 때 따르는 컨벤
 
 - 사용자 계정 없음. 프로젝트별 비밀번호(bcrypt 해시)로 진입. 봇 차단은 Cloudflare Turnstile (프로젝트 생성 Step 3 + 접근 폼).
 - 위 인증 모델은 web 기준이다. back-office는 `BACKOFFICE_ADMIN_SECRET` 기반 임시 게이트, qaground는 익명 실습 흐름, runner는 공유 시크릿과 배포 설정에 따른 IAM 인증을 사용한다.
-- 레이트 리밋: 현재 인메모리 Map (5회/15분 락아웃). 운영 스케일 시 Redis 로 교체 예정.
+- 레이트 리밋: DB 테이블 `rate_limit_buckets` 에 원자적 upsert 로 센다 (`apps/web/src/shared/lib/rate-limit`, #471). 프로젝트 비밀번호는 5회/15분 락아웃.
 - API 라우트와 `'use server'` 액션 모두 외부 입력·웹훅·LLM 응답을 신뢰하지 않는다. 입력 검증 + 권한 가드 필수. 프로젝트 접근 가드는 `requireProjectAccess` 패턴이며 조회/변경 모두 적용한다. 기존 모든 액션이 보호되어 있다고 가정하지 않는다.
 - `projectId`만 확인하지 말고 모든 연결 ID의 소유 프로젝트를 DB에서 확인한다. 무인증·다른 프로젝트 입력은 DB 쓰기·파일 업로드·외부 호출 전에 거부한다.
 - 비밀 복호화·내부 기록 함수는 `server-only` 모듈에 두고, 클라이언트 호출이 필요한 최소 함수만 서버 액션으로 노출한다. 응답·Sentry·로그에 비밀값을 포함하지 않는다.
@@ -88,6 +88,7 @@ Claude Code 가 이 저장소에서 **코드를 작성**할 때 따르는 컨벤
 - POM·시나리오 규약은 `AGENTS.md` "테스트 아키텍처" 절 참조.
 - web의 실제 시나리오 디렉터리는 `tests/scenario/`다. fixture는 `tests/fixtures/test.ts`, Page Object는 `tests/pages/`에 있다.
 - web의 전역 setup은 `requireProjectAccess`를 기본 허용 mock으로 바꾼다. 보안 변경 시 개별 테스트에서 거부·타 프로젝트 경로를 명시적으로 검증한다. 가드 유틸 테스트 통과만으로 액션 인가를 보증하지 않는다.
+- 작성·진단 판단 근거는 `docs/issues/test-refactor/methodology.md` (`[M1]`~`[M9]`, 커버리지 정책). 테스트 작성은 `write-test`, 기존 테스트 진단은 `diagnose-test` 스킬을 쓴다.
 
 ## 문서·기획
 

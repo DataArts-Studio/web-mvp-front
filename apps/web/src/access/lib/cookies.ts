@@ -8,17 +8,9 @@ import { cookies } from 'next/headers';
 
 import type { AccessTokenConfig } from '../policy/types';
 import { DEFAULT_ACCESS_TOKEN_CONFIG } from '../policy/types';
+import { getAccessTokenCookieName, isAccessTokenCookieName } from './cookie-name';
 
-/**
- * 프로젝트 접근 토큰 쿠키 이름 생성
- * @param projectName - 프로젝트 이름
- * @returns 쿠키 이름
- */
-export function getAccessTokenCookieName(projectName: string): string {
-  // 쿠키 이름에 사용할 수 없는 문자 제거
-  const sanitized = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  return `${DEFAULT_ACCESS_TOKEN_CONFIG.cookiePrefix}_${sanitized}`;
-}
+export { getAccessTokenCookieName };
 
 /**
  * 프로젝트 접근 토큰 쿠키 설정 (Server Component/Action용)
@@ -64,19 +56,15 @@ export async function deleteAccessTokenCookie(projectName: string): Promise<void
 
 /**
  * 모든 프로젝트 접근 토큰 쿠키 조회 (Server Component/Action용)
- * @returns 프로젝트 이름과 토큰의 맵
+ * @returns 쿠키 이름과 토큰의 맵
  */
 export async function getAllAccessTokenCookies(): Promise<Map<string, string>> {
   const cookieStore = await cookies();
-  const allCookies = cookieStore.getAll();
-  const prefix = DEFAULT_ACCESS_TOKEN_CONFIG.cookiePrefix;
-
   const tokens = new Map<string, string>();
 
-  for (const cookie of allCookies) {
-    if (cookie.name.startsWith(`${prefix}_`)) {
-      const projectName = cookie.name.slice(`${prefix}_`.length);
-      tokens.set(projectName, cookie.value);
+  for (const cookie of cookieStore.getAll()) {
+    if (isAccessTokenCookieName(cookie.name)) {
+      tokens.set(cookie.name, cookie.value);
     }
   }
 

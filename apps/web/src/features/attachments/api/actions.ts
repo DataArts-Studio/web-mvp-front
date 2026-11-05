@@ -1,5 +1,6 @@
 'use server';
 
+import { belongsToProject } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
@@ -9,7 +10,12 @@ import { createSupabaseServerClient } from '@testea/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
-import { ATTACHMENT_LIMITS, BUCKET_NAME } from '../model/constants';
+import { matchesFileSignature } from '../lib/file-signature';
+import {
+  ATTACHMENT_LIMITS,
+  ATTACHMENT_SIGNED_URL_TTL_SECONDS,
+  BUCKET_NAME,
+} from '../model/constants';
 import type { Attachment } from '../model/types';
 
 function getFileExtension(fileName: string): string {
@@ -17,14 +23,32 @@ function getFileExtension(fileName: string): string {
   return parts.length > 1 ? parts.pop()!.toLowerCase() : '';
 }
 
-function buildPublicUrl(supabaseUrl: string, storagePath: string): string {
-  return `${supabaseUrl}/storage/v1/object/public/${BUCKET_NAME}/${storagePath}`;
+type AttachmentRow = typeof testCaseAttachments.$inferSelect;
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+// 버킷은 비공개다. 권한 확인을 통과한 응답에만 만료되는 서명 URL 을 실어 보낸다.
+async function toAttachments(
+  supabase: SupabaseServerClient,
+  rows: AttachmentRow[]
+): Promise<Attachment[]> {
+  if (rows.length === 0) return [];
+
+  const { data, error } = await supabase.storage.from(BUCKET_NAME).createSignedUrls(
+    rows.map((row) => row.storage_path),
+    ATTACHMENT_SIGNED_URL_TTL_SECONDS
+  );
+  if (error) throw error;
+
+  const urlByPath = new Map(
+    (data ?? [])
+      .filter((item) => item.path && item.signedUrl)
+      .map((item) => [item.path, item.signedUrl])
+  );
+
+  return rows.map((row) => toAttachment(row, urlByPath.get(row.storage_path) ?? ''));
 }
 
-function toAttachment(
-  row: typeof testCaseAttachments.$inferSelect,
-  supabaseUrl: string
-): Attachment {
+function toAttachment(row: AttachmentRow, url: string): Attachment {
   return {
     id: row.id,
     testCaseId: row.test_case_id,
@@ -33,13 +57,9 @@ function toAttachment(
     fileSize: row.file_size,
     fileType: row.file_type,
     storagePath: row.storage_path,
-    url: buildPublicUrl(supabaseUrl, row.storage_path),
+    url,
     createdAt: row.created_at,
   };
-}
-
-function getSupabaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 }
 
 export async function getAttachments(testCaseId: string): Promise<ActionResult<Attachment[]>> {
@@ -66,8 +86,8 @@ export async function getAttachments(testCaseId: string): Promise<ActionResult<A
         )
       );
 
-    const supabaseUrl = getSupabaseUrl();
-    const attachments = rows.map((row) => toAttachment(row, supabaseUrl));
+    const supabase = await createSupabaseServerClient();
+    const attachments = await toAttachments(supabase, rows);
 
     return { success: true, data: attachments };
   } catch (error) {
@@ -101,6 +121,14 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
       };
     }
 
+    // 요청 projectId 권한만으로는 부족하다. 케이스가 그 프로젝트 소속이어야 파일을 연결한다.
+    if (!(await belongsToProject('testCase', testCaseId, projectId))) {
+      return {
+        success: false,
+        errors: { _attachment: ['접근 권한이 없습니다.'] },
+      };
+    }
+
     // Storage limit
     const storageError = await checkStorageLimit(projectId);
     if (storageError) return storageError;
@@ -126,7 +154,7 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
       };
     }
 
-    // Max files per case
+    // Max files per case: 개수 초과로 거부할 요청은 본문을 읽기 전에 돌려보낸다.
     const db = getDatabase();
     const existingFiles = await db
       .select({ id: testCaseAttachments.id })
@@ -149,19 +177,27 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
       };
     }
 
+    // file.type 은 클라이언트가 정한 값이다. 실제 바이트가 그 형식과 맞을 때만 받고,
+    // 저장·서빙에는 확인을 거친 타입만 쓴다.
+    const buffer = Buffer.from(await file.arrayBuffer());
+    if (!matchesFileSignature(file.type, buffer)) {
+      return {
+        success: false,
+        errors: { _attachment: ['파일 내용이 형식과 일치하지 않습니다.'] },
+      };
+    }
+    const contentType = file.type;
+
     // Upload to Supabase Storage
     const supabase = await createSupabaseServerClient();
     const fileId = uuidv7();
     const ext = getFileExtension(file.name);
     const storagePath = `${projectId}/${testCaseId}/${fileId}${ext ? `.${ext}` : ''}`;
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(storagePath, buffer, {
-        contentType: file.type,
+        contentType,
         upsert: false,
       });
 
@@ -184,7 +220,7 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
         project_id: projectId,
         file_name: file.name,
         file_size: file.size,
-        file_type: file.type || null,
+        file_type: contentType,
         storage_path: storagePath,
         created_at: new Date(),
       })
@@ -199,9 +235,19 @@ export async function uploadAttachment(formData: FormData): Promise<ActionResult
       };
     }
 
+    // 파일과 레코드는 이미 저장됐다. 서명 URL 만 못 받았으면 실패로 돌려주지 않는다(재시도하면 중복 저장).
+    // 성공 응답 뒤 목록을 다시 조회하면서 URL 을 받는다.
+    let attachment: Attachment;
+    try {
+      [attachment] = (await toAttachments(supabase, [record])) as [Attachment];
+    } catch (signError) {
+      Sentry.captureException(signError, { extra: { action: 'uploadAttachment:sign' } });
+      attachment = toAttachment(record, '');
+    }
+
     return {
       success: true,
-      data: toAttachment(record, getSupabaseUrl()),
+      data: attachment,
       message: '파일이 업로드되었습니다.',
     };
   } catch (error) {

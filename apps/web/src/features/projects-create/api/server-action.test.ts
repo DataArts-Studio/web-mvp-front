@@ -82,7 +82,7 @@ vi.mock('drizzle-orm', () => ({
 describe('createProject', () => {
   const mockInput = {
     projectName: 'Test Project',
-    identifier: 'test-identifier-123',
+    identifier: 'test-ident-123',
     description: '테스트 설명',
     ownerName: '홍길동',
   };
@@ -138,6 +138,20 @@ describe('createProject', () => {
     );
   });
 
+  it('공백만 있는 프로젝트명은 저장하지 않고 거부한다', async () => {
+    const result = await createProject({ ...mockInput, projectName: '   ' });
+
+    expect(result.success).toBe(false);
+    expect(mockValues).not.toHaveBeenCalled();
+  });
+
+  it('식별번호 길이 규칙을 서버에서도 검증한다', async () => {
+    const result = await createProject({ ...mockInput, identifier: 'short' });
+
+    expect(result.success).toBe(false);
+    expect(mockValues).not.toHaveBeenCalled();
+  });
+
   it('inserted가 없을 경우 success: false와 에러를 반환한다', async () => {
     mockReturning.mockResolvedValue([undefined]);
 
@@ -157,6 +171,20 @@ describe('createProject', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.errors._form).toContain('프로젝트 생성 중 오류가 발생했습니다.');
+    }
+  });
+
+  it('이름 유니크 위반은 이름 중복 오류로 구분해 돌려준다', async () => {
+    mockReturning.mockRejectedValue(
+      new Error('Failed query', { cause: { code: '23505', constraint: 'projects_name_unique' } })
+    );
+
+    const result = await createProject(mockInput);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.projectName?.[0]).toContain('이미 사용 중인 프로젝트 이름');
+      expect(result.errors._form).toBeUndefined();
     }
   });
 });

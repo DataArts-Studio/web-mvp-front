@@ -6,24 +6,16 @@ import { setAccessTokenCookie } from '@/access/lib/cookies';
 import { hashPassword } from '@/access/lib/password-hash';
 import { createProjectSessionToken } from '@/access/lib/project-session';
 import type { CreateProjectDomain, ProjectDomain } from '@/entities';
-import { toProjectDto } from '@/entities';
+import { CreateProjectDomainSchema, PROJECT_NAME_ERRORS, toProjectDto } from '@/entities';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { isUniqueViolation } from '@/shared/lib/db-error';
+import { RATE_LIMITED_MESSAGE, isPublicActionLimited } from '@/shared/lib/rate-limit';
 import { verifyTurnstileToken } from '@/shared/lib/turnstile';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-
-// ============================================================================
-// Helpers
-// ============================================================================
-/**
- * @deprecated hashPassword를 대신 사용하세요 (@/access/lib/password-hash)
- */
-export async function hashIdentifier(identifier: string): Promise<string> {
-  return hashPassword(identifier);
-}
 
 // Server Action에서 클라이언트로 전달할 때 Date 객체는 직렬화 불가능하므로 string으로 변환
 // identifier(해시)는 보안상 응답에 포함하지 않음
@@ -66,24 +58,47 @@ export async function createProject(
       }
     }
 
+    // 서버 액션은 클라이언트 폼을 거치지 않고 호출될 수 있으므로 입력을 다시 검증한다.
+    // 공백만 있는 이름은 여기서 거부된다 (#374).
+    const parsed = CreateProjectDomainSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        errors: { _form: [parsed.error.issues[0]?.message ?? '입력값을 확인해주세요.'] },
+      };
+    }
+
+    if (await isPublicActionLimited('create-project', { limit: 10, windowMs: 60 * 60_000 })) {
+      return { success: false, errors: { _form: [RATE_LIMITED_MESSAGE] } };
+    }
+
     const db = getDatabase();
-    const dto = toProjectDto(input);
+    const dto = toProjectDto(parsed.data);
     const hashedIdentifier = await hashPassword(dto.identifier);
     const id = uuidv7();
 
     // 프로젝트 이름 정규화: trim + 연속 공백을 단일 공백으로 변환
     const normalizedName = dto.name.trim().replace(/\s+/g, ' ');
 
-    const [inserted] = await db
-      .insert(projects)
-      .values({
-        id,
-        name: normalizedName,
-        identifier: hashedIdentifier,
-        description: dto.description ?? null,
-        owner_name: dto.owner_name ?? null,
-      })
-      .returning();
+    let inserted;
+    try {
+      [inserted] = await db
+        .insert(projects)
+        .values({
+          id,
+          name: normalizedName,
+          identifier: hashedIdentifier,
+          description: dto.description ?? null,
+          owner_name: dto.owner_name ?? null,
+        })
+        .returning();
+    } catch (error) {
+      // 이름 유니크 위반은 일반 오류가 아니라 이름 중복으로 알려 준다 (#404).
+      if (isUniqueViolation(error)) {
+        return { success: false, errors: { projectName: [PROJECT_NAME_ERRORS.TAKEN] } };
+      }
+      throw error;
+    }
 
     if (!inserted) {
       return {
@@ -126,6 +141,10 @@ export async function createProject(
  */
 export async function checkProjectNameDuplicate(name: string): Promise<ActionResult<boolean>> {
   try {
+    if (await isPublicActionLimited('check-project-name', { limit: 30, windowMs: 60_000 })) {
+      return { success: false, errors: { _form: [RATE_LIMITED_MESSAGE] } };
+    }
+
     const db = getDatabase();
     // 동일한 정규화 적용
     const normalizedName = name.trim().replace(/\s+/g, ' ');

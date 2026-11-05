@@ -73,6 +73,7 @@ export const BasicInfoFields = <T extends BasicInfoFieldsForm>({
         </DsFormField.Label>
         <DsSelect
           className="w-full"
+          aria-label={t('ui.suiteLabel')}
           value={selectedSuiteId || ''}
           onChange={(v: string) =>
             setValue('testSuiteId' as Path<T>, (v || null) as PathValue<T, Path<T>>)
@@ -98,6 +99,7 @@ export const BasicInfoFields = <T extends BasicInfoFieldsForm>({
           render={({ field }) => (
             <DsSelect
               className="w-full"
+              aria-label={t('ui.testTypeLabel')}
               value={field.value ?? ''}
               onChange={field.onChange}
               options={[

@@ -22,6 +22,7 @@ import {
 import { MILESTONE_EVENTS, track } from '@/shared/lib/analytics';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { useUpdateMilestone } from '../hooks';
 import { UpdateMilestone, UpdateMilestoneSchema } from '../model';
@@ -31,15 +32,8 @@ interface MilestoneEditFormProps {
   onClose?: () => void;
 }
 
-const toDateTimeInputValue = (date: Date | string | null | undefined): string => {
-  if (!date) return '';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '';
-  return d.toISOString().slice(0, 16);
-};
-
 export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps) => {
-  const { mutate, isPending } = useUpdateMilestone();
+  const { mutateAsync, isPending } = useUpdateMilestone();
   const queryClient = useQueryClient();
 
   // 현재 연결된 케이스/스위트 ID
@@ -62,14 +56,14 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 테스트 케이스 조회
-  const { data: casesResult } = useQuery({
+  const { data: casesResult, isPending: isCasesLoading } = useQuery({
     queryKey: ['testCases', 'forMilestoneEdit', milestone.projectId],
     queryFn: () => getTestCases({ project_id: milestone.projectId }),
   });
   const allCases = casesResult?.success ? (casesResult.data ?? []) : [];
 
   // 테스트 스위트 조회
-  const { data: suitesResult } = useQuery({
+  const { data: suitesResult, isPending: isSuitesLoading } = useQuery({
     queryKey: ['testSuites', 'forMilestoneEdit', milestone.projectId],
     queryFn: () => getTestSuites({ projectId: milestone.projectId }),
   });
@@ -85,8 +79,8 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
       id: milestone.id,
       title: milestone.title,
       description: milestone.description ?? '',
-      startDate: toDateTimeInputValue(milestone.startDate),
-      endDate: toDateTimeInputValue(milestone.endDate),
+      startDate: milestone.startDate ?? '',
+      endDate: milestone.endDate ?? '',
     },
   });
 
@@ -112,63 +106,78 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
   const onSubmit = async (data: UpdateMilestone) => {
     setIsSubmitting(true);
+
+    // 마일스톤 정보 업데이트. 실패하면 모달을 열어 둔 채 입력을 유지한다.
     try {
-      // 마일스톤 정보 업데이트
-      mutate(data, {
-        onSuccess: async () => {
-          track(MILESTONE_EVENTS.UPDATE, { milestone_id: milestone.id });
-          // 케이스 변경 처리
-          const casesToAdd = Array.from(selectedCaseIds).filter((id) => !initialCaseIds.has(id));
-          const casesToRemove = Array.from(initialCaseIds).filter((id) => !selectedCaseIds.has(id));
-
-          // 스위트 변경 처리
-          const suitesToAdd = Array.from(selectedSuiteIds).filter((id) => !initialSuiteIds.has(id));
-          const suitesToRemove = Array.from(initialSuiteIds).filter(
-            (id) => !selectedSuiteIds.has(id)
-          );
-
-          // 케이스 추가/삭제
-          if (casesToAdd.length > 0) {
-            await addTestCasesToMilestone(milestone.id, casesToAdd);
-          }
-          for (const caseId of casesToRemove) {
-            await removeTestCaseFromMilestone(milestone.id, caseId);
-          }
-
-          // 스위트 추가/삭제
-          if (suitesToAdd.length > 0) {
-            await addTestSuitesToMilestone(milestone.id, suitesToAdd);
-          }
-          for (const suiteId of suitesToRemove) {
-            await removeTestSuiteFromMilestone(milestone.id, suiteId);
-          }
-
-          // 쿼리 무효화
-          await Promise.all([
-            queryClient.invalidateQueries({
-              queryKey: ['milestone', milestone.id],
-              refetchType: 'all',
-            }),
-            queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
-            queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
-            queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
-            queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-          ]);
-
-          onClose?.();
-        },
-        onError: () => {
-          track(MILESTONE_EVENTS.UPDATE_FAIL, { milestone_id: milestone.id });
-        },
-      });
-    } finally {
+      await mutateAsync(data);
+    } catch (error) {
+      track(MILESTONE_EVENTS.UPDATE_FAIL, { milestone_id: milestone.id });
+      toast.error(error instanceof Error ? error.message : '마일스톤 수정에 실패했습니다.');
       setIsSubmitting(false);
+      return;
     }
+    track(MILESTONE_EVENTS.UPDATE, { milestone_id: milestone.id });
+
+    // 케이스 변경 처리
+    const casesToAdd = Array.from(selectedCaseIds).filter((id) => !initialCaseIds.has(id));
+    const casesToRemove = Array.from(initialCaseIds).filter((id) => !selectedCaseIds.has(id));
+
+    // 스위트 변경 처리
+    const suitesToAdd = Array.from(selectedSuiteIds).filter((id) => !initialSuiteIds.has(id));
+    const suitesToRemove = Array.from(initialSuiteIds).filter((id) => !selectedSuiteIds.has(id));
+
+    // 연결 변경은 정보 저장 이후라 일부만 실패할 수 있다. 실패를 모아 알리고,
+    // 이미 반영된 변경이 화면에 보이도록 무효화한 뒤 닫는다.
+    let linkFailed = false;
+    const runLinkChange = async (action: () => Promise<{ success: boolean }>) => {
+      try {
+        const result = await action();
+        if (!result.success) linkFailed = true;
+      } catch {
+        linkFailed = true;
+      }
+    };
+
+    // 케이스 추가/삭제
+    if (casesToAdd.length > 0) {
+      await runLinkChange(() => addTestCasesToMilestone(milestone.id, casesToAdd));
+    }
+    for (const caseId of casesToRemove) {
+      await runLinkChange(() => removeTestCaseFromMilestone(milestone.id, caseId));
+    }
+
+    // 스위트 추가/삭제
+    if (suitesToAdd.length > 0) {
+      await runLinkChange(() => addTestSuitesToMilestone(milestone.id, suitesToAdd));
+    }
+    for (const suiteId of suitesToRemove) {
+      await runLinkChange(() => removeTestSuiteFromMilestone(milestone.id, suiteId));
+    }
+
+    // 쿼리 무효화
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ['milestone', milestone.id],
+        refetchType: 'all',
+      }),
+      queryClient.invalidateQueries({ queryKey: ['milestones'], refetchType: 'all' }),
+      queryClient.invalidateQueries({ queryKey: ['testSuites'], refetchType: 'all' }),
+      queryClient.invalidateQueries({ queryKey: ['testCases'], refetchType: 'all' }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+    ]).catch(() => {});
+
+    if (linkFailed) {
+      toast.error('마일스톤 정보는 저장했지만 케이스·스위트 연결 변경 중 일부가 실패했습니다.');
+    }
+    setIsSubmitting(false);
+    onClose?.();
   };
 
   const isLoading = isPending || isSubmitting;
 
   const handleAbandon = () => {
+    // 저장 중에는 닫지 않는다. 닫히면 실패 알림과 입력 보존이 사라진다 (#371).
+    if (isLoading) return;
     track(MILESTONE_EVENTS.UPDATE_ABANDON, { milestone_id: milestone.id });
     onClose?.();
   };
@@ -242,9 +251,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField.Root className="flex flex-col gap-2">
-                  <FormField.Label className="text-text-1 font-medium">시작일시</FormField.Label>
+                  <FormField.Label className="text-text-1 font-medium">시작일</FormField.Label>
                   <FormField.Control
-                    type="datetime-local"
+                    type="date"
                     disabled={isLoading}
                     {...register('startDate')}
                     className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
@@ -255,9 +264,9 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
                 </FormField.Root>
 
                 <FormField.Root className="flex flex-col gap-2">
-                  <FormField.Label className="text-text-1 font-medium">종료일시</FormField.Label>
+                  <FormField.Label className="text-text-1 font-medium">종료일</FormField.Label>
                   <FormField.Control
-                    type="datetime-local"
+                    type="date"
                     disabled={isLoading}
                     {...register('endDate')}
                     className="rounded-4 border-line-2 bg-bg-1 text-text-1 placeholder:text-text-2 focus:border-primary h-[56px] w-full border px-6 text-base transition-colors outline-none"
@@ -271,6 +280,7 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
               {/* 테스트 케이스 선택 */}
               <CaseSelectionPanel
                 allCases={allCases}
+                isLoading={isCasesLoading}
                 selectedCaseIds={selectedCaseIds}
                 onToggleCase={toggleCase}
                 isExpanded={expandedSection === 'cases'}
@@ -282,6 +292,7 @@ export const MilestoneEditForm = ({ milestone, onClose }: MilestoneEditFormProps
               {/* 테스트 스위트 선택 */}
               <SuiteSelectionPanel
                 allSuites={allSuites}
+                isLoading={isSuitesLoading}
                 selectedSuiteIds={selectedSuiteIds}
                 onToggleSuite={toggleSuite}
                 isExpanded={expandedSection === 'suites'}

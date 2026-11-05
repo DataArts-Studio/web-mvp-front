@@ -33,6 +33,8 @@ import { ProjectTestsuitePage } from '../pages/project/project-testsuite.page';
 const NOTICE_DISMISS_KEYS = [
   'beta-notice-dismissed-v1',
   'db-outage-notice-dismissed-v1',
+  // 랜딩 헤더 베타 배너. 테스트마다 배너 유무로 헤더 위치가 달라지지 않게 미리 닫는다 (#438).
+  'beta-banner-dismissed-v1',
 ];
 
 type PomFixtures = {

@@ -10,11 +10,18 @@ import { QueryProvider } from '@/app-shell/providers/query-provider';
 import '@/app-shell/styles/globals.css';
 import { CriticalBanner } from '@/widgets/announcement-banner';
 import { AnnouncementPopup } from '@/widgets/announcement-popup';
+import { BETA_BANNER_INIT_SCRIPT } from '@/widgets/global-header/beta-banner-storage';
 import { MvpBottomNavbarLazy } from '@testea/ui';
 
 // production 또는 로컬 개발 환경에서는 indexing 허용, preview(dev 브랜치)에서만 차단
 const allowIndexing = process.env.VERCEL_ENV !== 'preview';
 const siteUrl = 'https://gettestea.com';
+
+// CDN 의 폰트 CSS 가 바뀌면 브라우저가 적용을 거부하도록 해시를 고정한다(SRI). 버전을 올리면 해시도 다시 계산한다.
+const PRETENDARD_CSS_URL =
+  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';
+const PRETENDARD_CSS_INTEGRITY =
+  'sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -198,13 +205,18 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    // 첫 페인트 전 스크립트가 <html> 에 배너 닫힘 속성을 붙이므로 그 속성 차이는 경고하지 않는다.
+    <html lang={locale} suppressHydrationWarning>
       <head>
+        {/* 배너를 닫은 세션이면 첫 페인트 전에 배너 자리를 0으로 잡는다 (#438). */}
+        <script dangerouslySetInnerHTML={{ __html: BETA_BANNER_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="preload"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          href={PRETENDARD_CSS_URL}
           as="style"
+          integrity={PRETENDARD_CSS_INTEGRITY}
+          crossOrigin="anonymous"
         />
         <link
           rel="preload"
@@ -215,14 +227,18 @@ export default async function RootLayout({
         />
         <link
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          href={PRETENDARD_CSS_URL}
+          integrity={PRETENDARD_CSS_INTEGRITY}
+          crossOrigin="anonymous"
           media="print"
           data-font-css
         />
         <noscript>
           <link
             rel="stylesheet"
-            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+            href={PRETENDARD_CSS_URL}
+            integrity={PRETENDARD_CSS_INTEGRITY}
+            crossOrigin="anonymous"
           />
         </noscript>
         <script

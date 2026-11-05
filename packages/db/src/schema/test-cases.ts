@@ -66,7 +66,8 @@ export const testCases = pgTable(
       .notNull(),
   }),
   (t) => ({
-    unq: unique().on(t.project_id, t.name),
+    // 케이스 이름은 중복을 허용한다. 식별자는 display_id(TC 키)이며, 이름 유니크는
+    // 휴지통·영구삭제 케이스까지 막아 같은 이름 재사용과 반복 복제를 실패시켰다 (#372).
     unqDisplayId: unique().on(t.project_id, t.display_id),
     automationStatusCheck: check(
       'test_cases_automation_status_check',

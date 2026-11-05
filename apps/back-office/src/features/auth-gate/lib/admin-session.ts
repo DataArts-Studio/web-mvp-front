@@ -3,11 +3,14 @@ import { and, eq, gt, lte } from 'drizzle-orm';
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import 'server-only';
 
+import { warnIfWeakSecret } from './secret-strength';
+
 export const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
 
 function secretVersion(): string {
   const secret = process.env.BACKOFFICE_ADMIN_SECRET;
   if (!secret) throw new Error('관리자 인증 설정이 없습니다.');
+  warnIfWeakSecret(secret);
   return createHmac('sha256', secret).update('backoffice-session-v1').digest('hex');
 }
 

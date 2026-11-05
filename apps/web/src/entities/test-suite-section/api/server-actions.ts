@@ -74,12 +74,16 @@ export const createSection = async (
       return { success: false, errors: { name: ['섹션 이름은 100자를 초과할 수 없습니다.'] } };
     }
 
-    // 중복 이름 확인
+    // 중복 이름 확인. 삭제한 섹션 이름은 다시 쓸 수 있다 (#410).
     const [existing] = await db
       .select({ id: testSuiteSections.id })
       .from(testSuiteSections)
       .where(
-        and(eq(testSuiteSections.suite_id, input.suiteId), eq(testSuiteSections.name, trimmedName))
+        and(
+          eq(testSuiteSections.suite_id, input.suiteId),
+          eq(testSuiteSections.name, trimmedName),
+          isNull(testSuiteSections.archived_at)
+        )
       )
       .limit(1);
 
@@ -155,14 +159,15 @@ export const updateSection = async (
         return { success: false, errors: { name: ['섹션 이름은 100자를 초과할 수 없습니다.'] } };
       }
 
-      // 중복 이름 확인 (자기 자신 제외)
+      // 중복 이름 확인 (자기 자신·삭제한 섹션 제외, #410)
       const [dup] = await db
         .select({ id: testSuiteSections.id })
         .from(testSuiteSections)
         .where(
           and(
             eq(testSuiteSections.suite_id, existing.suite_id),
-            eq(testSuiteSections.name, trimmedName)
+            eq(testSuiteSections.name, trimmedName),
+            isNull(testSuiteSections.archived_at)
           )
         )
         .limit(1);
@@ -219,17 +224,18 @@ export const deleteSection = async (sectionId: string): Promise<ActionResult<{ i
 
     const now = new Date();
 
-    // 하위 케이스의 section_id를 NULL로 설정
-    await db
-      .update(testCases)
-      .set({ section_id: null, updated_at: now })
-      .where(eq(testCases.section_id, sectionId));
+    // 케이스를 미분류로 옮기는 일과 섹션 삭제를 함께 반영한다 (#390).
+    await db.transaction(async (tx) => {
+      await tx
+        .update(testCases)
+        .set({ section_id: null, updated_at: now })
+        .where(eq(testCases.section_id, sectionId));
 
-    // 섹션 소프트 딜리트
-    await db
-      .update(testSuiteSections)
-      .set({ archived_at: now, updated_at: now })
-      .where(eq(testSuiteSections.id, sectionId));
+      await tx
+        .update(testSuiteSections)
+        .set({ archived_at: now, updated_at: now })
+        .where(eq(testSuiteSections.id, sectionId));
+    });
 
     invalidateCache(INVALIDATE.cases);
     return {
@@ -279,7 +285,7 @@ export const moveTestCaseToSection = async (
     const db = getDatabase();
 
     const [tc] = await db
-      .select({ projectId: testCases.project_id })
+      .select({ projectId: testCases.project_id, suiteId: testCases.test_suite_id })
       .from(testCases)
       .where(eq(testCases.id, caseId))
       .limit(1);
@@ -288,10 +294,32 @@ export const moveTestCaseToSection = async (
       return { success: false, errors: { _section: ['접근 권한이 없습니다.'] } };
     }
 
+    // 섹션은 케이스가 속한 스위트의 활성 섹션이어야 한다. 다른 프로젝트·다른 스위트의 섹션을
+    // 넣으면 케이스가 어느 목록에도 보이지 않게 된다 (#383).
+    if (sectionId !== null) {
+      if (!tc.suiteId) {
+        return { success: false, errors: { _section: ['접근 권한이 없습니다.'] } };
+      }
+      const [section] = await db
+        .select({ id: testSuiteSections.id })
+        .from(testSuiteSections)
+        .where(
+          and(
+            eq(testSuiteSections.id, sectionId),
+            eq(testSuiteSections.suite_id, tc.suiteId),
+            isNull(testSuiteSections.archived_at)
+          )
+        )
+        .limit(1);
+      if (!section) {
+        return { success: false, errors: { _section: ['접근 권한이 없습니다.'] } };
+      }
+    }
+
     await db
       .update(testCases)
       .set({ section_id: sectionId, updated_at: new Date() })
-      .where(eq(testCases.id, caseId));
+      .where(and(eq(testCases.id, caseId), eq(testCases.project_id, tc.projectId)));
 
     invalidateCache(INVALIDATE.cases);
     return { success: true, data: null };

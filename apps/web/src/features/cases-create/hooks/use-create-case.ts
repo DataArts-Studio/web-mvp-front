@@ -12,7 +12,10 @@ export const useCreateCase = () => {
 
   return useMutation({
     mutationFn: async (input: CreateTestCase) => {
-      const result = await createTestCase(input);
+      // 요청 자체가 실패하면 브라우저 원문 대신 실패 코드로 알린다.
+      const result = await createTestCase(input).catch(() => {
+        throw new Error(CASE_MESSAGE_CODES.CREATE_FAILED);
+      });
       if (!result.success) {
         const message =
           Object.values(result.errors ?? {})

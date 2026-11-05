@@ -38,6 +38,25 @@ export function generateRebalancedOrders(ids: string[]): Map<string, number> {
 }
 
 /**
+ * 케이스를 이웃 바로 뒤(beforeId), 이웃이 없으면 바로 앞(afterId)에 둔 새 순서를 만든다.
+ * 옮길 케이스나 이웃이 순서에 없으면 null.
+ */
+export function placeCaseInOrder(
+  ids: string[],
+  caseId: string,
+  neighbor: { beforeId?: string | null; afterId?: string | null }
+): string[] | null {
+  if (!ids.includes(caseId)) return null;
+  const rest = ids.filter((id) => id !== caseId);
+  const anchorId = neighbor.beforeId ?? neighbor.afterId;
+  if (!anchorId || anchorId === caseId) return null;
+  const anchorIndex = rest.indexOf(anchorId);
+  if (anchorIndex === -1) return null;
+  const insertAt = neighbor.beforeId ? anchorIndex + 1 : anchorIndex;
+  return [...rest.slice(0, insertAt), caseId, ...rest.slice(insertAt)];
+}
+
+/**
  * 배열에서 아이템을 oldIndex에서 newIndex로 이동
  */
 export function arrayMove<T>(array: T[], from: number, to: number): T[] {

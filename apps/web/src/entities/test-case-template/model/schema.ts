@@ -8,6 +8,7 @@ export const TestCaseTemplateDtoSchema = z.object({
   project_id: z.string().uuid().nullable(),
   name: z
     .string()
+    .trim()
     .min(1, '템플릿 이름은 최소 1글자 이상이어야 합니다.')
     .max(50, '템플릿 이름은 50자를 넘을 수 없습니다.'),
   description: z.string().max(200, '설명은 200자를 넘을 수 없습니다.').nullable().optional(),

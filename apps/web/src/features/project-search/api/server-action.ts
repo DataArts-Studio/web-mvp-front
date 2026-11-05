@@ -1,17 +1,27 @@
 'use server';
 
+import { escapeLikePattern, toContainsPattern } from '@/shared/lib/like-pattern';
+import { RATE_LIMITED_MESSAGE, isPublicActionLimited } from '@/shared/lib/rate-limit';
 import * as Sentry from '@sentry/nextjs';
 import { getDatabase, projects } from '@testea/db';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 
 import type { ProjectSearchResult, SearchProjectsResponse } from '../model/types';
 
-const KEYWORD_PATTERN = /^[가-힣a-zA-Z0-9\s\-_]+$/;
+// 프로젝트 이름은 어떤 문자든 쓸 수 있으므로, 검색도 제어 문자만 막고 나머지는 글자 그대로 찾는다 (#405).
+const hasControlChar = (value: string) =>
+  Array.from(value).some((char) => {
+    const code = char.charCodeAt(0);
+    return code < 0x20 || code === 0x7f;
+  });
+
+/** 이 길이 미만이면 부분 일치 대신 이름 전체가 같은 프로젝트만 찾는다(한 글자 이름도 찾을 수 있게). */
+const PARTIAL_MATCH_MIN_LENGTH = 2;
 
 function validateKeyword(keyword: string): string | null {
-  if (keyword.length < 2) return '최소 2자 이상 입력해주세요';
+  if (keyword.length === 0) return '검색어를 입력해주세요';
   if (keyword.length > 50) return '최대 50자까지 입력 가능합니다';
-  if (!KEYWORD_PATTERN.test(keyword)) return '허용되지 않는 문자가 포함되어 있습니다';
+  if (hasControlChar(keyword)) return '허용되지 않는 문자가 포함되어 있습니다';
   return null;
 }
 
@@ -26,6 +36,10 @@ export async function searchProjects(keyword: string): Promise<SearchProjectsRes
         error: validationError,
       };
     }
+    // 자동완성이 디바운스 뒤 호출하므로 사람이 치는 속도로는 닿지 않는 값이다.
+    if (await isPublicActionLimited('search-projects', { limit: 60, windowMs: 60_000 })) {
+      return { success: false, error: RATE_LIMITED_MESSAGE };
+    }
     const db = getDatabase();
 
     const rows = await db
@@ -37,7 +51,15 @@ export async function searchProjects(keyword: string): Promise<SearchProjectsRes
       })
       .from(projects)
       .where(
-        and(ilike(projects.name, `%${trimmedKeyword}%`), eq(projects.lifecycle_status, 'ACTIVE'))
+        and(
+          ilike(
+            projects.name,
+            trimmedKeyword.length < PARTIAL_MATCH_MIN_LENGTH
+              ? escapeLikePattern(trimmedKeyword)
+              : toContainsPattern(trimmedKeyword)
+          ),
+          eq(projects.lifecycle_status, 'ACTIVE')
+        )
       )
       .orderBy(desc(projects.created_at))
       .limit(10);

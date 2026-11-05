@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import type { AnnouncementWithReadState } from '@testea/db';
+import { APP_TIME_ZONE } from '@testea/util';
 import { Bell } from 'lucide-react';
 
 import { AnnouncementDetailDialog } from './announcement-detail-dialog';
@@ -172,6 +173,7 @@ function formatRelative(iso: string): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}일 전`;
   return date.toLocaleDateString('ko-KR', {
+    timeZone: APP_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

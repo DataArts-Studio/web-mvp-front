@@ -18,7 +18,7 @@ const mockSelectFrom = vi.fn(() => ({ where: mockSelectWhere }));
 const mockSelect = vi.fn(() => ({ from: mockSelectFrom }));
 
 // update(.set().where().returning()) - 스위트 아카이브.
-// 하위 케이스 cascade 는 update(.set().where()) 로 returning 없이 await 된다.
+// 하위 케이스 cascade 도 같은 체인으로 삭제된 케이스 id 를 돌려받는다.
 const mockReturning = vi.fn();
 const mockUpdateWhere = vi.fn(() => ({ returning: mockReturning }));
 const mockSet = vi.fn(() => ({ where: mockUpdateWhere }));
@@ -27,7 +27,14 @@ const mockUpdate = vi.fn(() => ({ set: mockSet }));
 const mockDb = {
   select: mockSelect,
   update: mockUpdate,
+  transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(mockDb)),
 };
+// 실행 범위 정리는 run-scope 단위 테스트가 다루므로 여기서는 호출 여부만 본다.
+const mockExcludeArchivedCasesFromRuns = vi.fn();
+vi.mock('@/entities/test-run/api/run-scope', () => ({
+  excludeArchivedCasesFromRuns: (...args: unknown[]) => mockExcludeArchivedCasesFromRuns(...args),
+  recomputeTestRunStatus: vi.fn(),
+}));
 
 const mockGetDatabase = vi.fn(() => mockDb);
 

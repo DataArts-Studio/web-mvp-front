@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getDashboardStats } from './get-dashboard-stats';
@@ -60,6 +61,7 @@ vi.mock('@testea/db', () => ({
     name: 'name',
     project_id: 'project_id',
     description: 'description',
+    lifecycle_status: 'suite_lifecycle_status',
     created_at: 'created_at',
   },
   testCases: {
@@ -149,6 +151,21 @@ describe('getDashboardStats', () => {
       expect(result.data.testSuites[1].case_count).toBe(3);
       expect(result.data.recentActivities).toHaveLength(2);
     }
+  });
+
+  it('스위트 집계와 최근 스위트는 활성 스위트만 본다', async () => {
+    queryResults.set('query_0', [
+      { id: 'proj-1', name: 'p', description: null, owner_name: null, created_at: new Date() },
+    ]);
+
+    await getDashboardStats({ slug: 'p' });
+
+    const activeSuiteFilters = vi
+      .mocked(eq)
+      .mock.calls.filter(
+        ([field, value]) => field === 'suite_lifecycle_status' && value === 'ACTIVE'
+      );
+    expect(activeSuiteFilters).toHaveLength(2);
   });
 
   it('프로젝트가 존재하지 않으면 에러를 반환한다', async () => {

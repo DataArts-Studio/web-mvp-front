@@ -2,11 +2,11 @@
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { addCasesToRunScope, recomputeTestRunStatus } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, milestoneTestCases, testCaseRuns, testRuns } from '@testea/db';
-import { and, eq, inArray } from 'drizzle-orm';
-import { v7 as uuidv7 } from 'uuid';
+import { getDatabase, milestoneTestCases, testCases, testRuns } from '@testea/db';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 type SetMilestoneForRunResult =
@@ -45,62 +45,41 @@ export async function addMilestonesToRunAction(
     const result = await db.transaction(async (tx) => {
       await assertRunResources(tx, run.projectId!, { milestoneIds });
 
-      // 2. Get test cases belonging to the milestone (with milestone_id for source tracking)
+      // 마일스톤에 직접 연결된 케이스. 휴지통 케이스는 실행에 넣지 않는다 (#377).
       const milestoneCaseRows = await tx
-        .select({
-          test_case_id: milestoneTestCases.test_case_id,
-          milestone_id: milestoneTestCases.milestone_id,
-        })
+        .select({ test_case_id: milestoneTestCases.test_case_id })
         .from(milestoneTestCases)
-        .where(eq(milestoneTestCases.milestone_id, milestoneId));
+        .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+        .where(
+          and(
+            eq(milestoneTestCases.milestone_id, milestoneId),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        );
 
       await assertRunResources(tx, run.projectId!, {
         caseIds: milestoneCaseRows.map((row) => row.test_case_id!),
       });
 
-      // 1. Update milestone_id directly on the test run
       await tx
         .update(testRuns)
         .set({ milestone_id: milestoneId, updated_at: new Date() })
         .where(eq(testRuns.id, runId));
 
-      const caseIdToMilestone = new Map<string, string>();
-      for (const row of milestoneCaseRows) {
-        if (row.test_case_id && row.milestone_id) {
-          caseIdToMilestone.set(row.test_case_id, row.milestone_id);
-        }
-      }
+      const addedCount = await addCasesToRunScope(
+        tx,
+        runId,
+        milestoneCaseRows
+          .filter((row) => row.test_case_id)
+          .map((row) => ({
+            caseId: row.test_case_id!,
+            sourceType: 'milestone' as const,
+            sourceId: milestoneId,
+          }))
+      );
 
-      const caseIds = Array.from(caseIdToMilestone.keys());
-      if (caseIds.length === 0) return 0;
-
-      // 3. Find existing test case runs to avoid duplicates
-      const existingRows = await tx
-        .select({ test_case_id: testCaseRuns.test_case_id })
-        .from(testCaseRuns)
-        .where(
-          and(eq(testCaseRuns.test_run_id, runId), inArray(testCaseRuns.test_case_id, caseIds))
-        );
-
-      const existingCaseIds = new Set(existingRows.map((r) => r.test_case_id));
-      const newCaseIds = caseIds.filter((id) => !existingCaseIds.has(id));
-
-      if (newCaseIds.length === 0) return 0;
-
-      // 4. Create test case run records for new cases with source tracking
-      const newTestCaseRuns = newCaseIds.map((caseId) => ({
-        id: uuidv7(),
-        test_run_id: runId,
-        test_case_id: caseId,
-        status: 'untested' as const,
-        source_type: 'milestone' as const,
-        source_id: caseIdToMilestone.get(caseId),
-        created_at: new Date(),
-        updated_at: new Date(),
-      }));
-
-      await tx.insert(testCaseRuns).values(newTestCaseRuns);
-      return newCaseIds.length;
+      await recomputeTestRunStatus(tx, runId);
+      return addedCount;
     });
 
     invalidateCache(INVALIDATE.runs);

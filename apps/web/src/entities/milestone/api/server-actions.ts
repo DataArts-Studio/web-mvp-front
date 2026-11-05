@@ -4,14 +4,21 @@ import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
 import {
   CreateMilestone,
+  MILESTONE_DATE_RANGE_ERROR,
   Milestone,
   MilestoneDTO,
   MilestoneWithStats,
+  getMilestoneDateError,
   toCreateMilestoneDTO,
   toMilestone,
 } from '@/entities/milestone';
+import { getMilestoneLatestResults } from '@/entities/milestone/api/latest-results';
+import { summarizeMilestoneProgress } from '@/entities/milestone/model/progress';
 import { assertRunResources } from '@/entities/test-run/api/assert-run-resources';
+import { lockSuiteRunSync } from '@/entities/test-run/api/run-scope';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { isDateRangeOrdered } from '@/shared/lib/date-only';
+import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -25,7 +32,7 @@ import {
   testRunSuites,
   testRuns,
 } from '@testea/db';
-import { and, eq, inArray, isNull, max } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 
@@ -36,6 +43,8 @@ type GetMilestonesParams = {
 /**
  * 프로젝트의 모든 마일스톤을 가져옵니다.
  */
+const MILESTONE_NAME_MAX_LENGTH = 50;
+
 export const getMilestones = async ({
   projectId,
 }: GetMilestonesParams): Promise<ActionResult<MilestoneWithStats[]>> => {
@@ -55,44 +64,34 @@ export const getMilestones = async ({
 
     const milestoneIds = rows.map((r) => r.id);
 
-    // 병렬 조회: 테스트 실행, 마일스톤-케이스, 마일스톤-스위트, 마지막 실행 시점
-    const [allRuns, allMtc, allMts, lastExecRows] = await Promise.all([
+    // 병렬 조회: 테스트 실행, 마일스톤-케이스, 마일스톤-스위트, 케이스별 최근 결과·마지막 실행 시점
+    const [allRuns, allMtc, allMts, latestResults] = await Promise.all([
       db
         .select({ id: testRuns.id, milestone_id: testRuns.milestone_id })
         .from(testRuns)
         .where(
           and(inArray(testRuns.milestone_id, milestoneIds), eq(testRuns.lifecycle_status, 'ACTIVE'))
         ),
+      // 휴지통 케이스는 마일스톤 케이스 수에서 뺀다. 실행 생성도 같은 기준이다 (#377, #385).
       db
-        .select()
+        .select({
+          milestone_id: milestoneTestCases.milestone_id,
+          test_case_id: milestoneTestCases.test_case_id,
+        })
         .from(milestoneTestCases)
-        .where(inArray(milestoneTestCases.milestone_id, milestoneIds)),
+        .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+        .where(
+          and(
+            inArray(milestoneTestCases.milestone_id, milestoneIds),
+            eq(testCases.lifecycle_status, 'ACTIVE')
+          )
+        ),
       db
         .select()
         .from(milestoneTestSuites)
         .where(inArray(milestoneTestSuites.milestone_id, milestoneIds)),
-      // FDD-TR12: 마일스톤별 마지막 실행 시점 (source_type='milestone' 기준, 논리 삭제 제외)
-      db
-        .select({
-          milestoneId: testCaseRuns.source_id,
-          lastExecutedAt: max(testCaseRuns.executed_at),
-        })
-        .from(testCaseRuns)
-        .where(
-          and(
-            eq(testCaseRuns.source_type, 'milestone'),
-            inArray(testCaseRuns.source_id, milestoneIds),
-            isNull(testCaseRuns.excluded_at)
-          )
-        )
-        .groupBy(testCaseRuns.source_id),
+      getMilestoneLatestResults(db, milestoneIds),
     ]);
-
-    const lastExecutedAtMap = new Map<string, Date | null>();
-    for (const r of lastExecRows) {
-      if (!r.milestoneId) continue;
-      lastExecutedAtMap.set(r.milestoneId, r.lastExecutedAt ? new Date(r.lastExecutedAt) : null);
-    }
 
     // 스위트에 속한 케이스 조회
     const allSuiteIds = [
@@ -108,22 +107,6 @@ export const getMilestones = async ({
                 inArray(testCases.test_suite_id, allSuiteIds),
                 eq(testCases.lifecycle_status, 'ACTIVE')
               )
-            )
-        : [];
-
-    // 테스트 실행 결과 조회
-    const allRunIds = allRuns.map((r) => r.id);
-    const allCaseRuns =
-      allRunIds.length > 0
-        ? await db
-            .select({
-              test_run_id: testCaseRuns.test_run_id,
-              test_case_id: testCaseRuns.test_case_id,
-              status: testCaseRuns.status,
-            })
-            .from(testCaseRuns)
-            .where(
-              and(inArray(testCaseRuns.test_run_id, allRunIds), isNull(testCaseRuns.excluded_at))
             )
         : [];
 
@@ -161,14 +144,6 @@ export const getMilestones = async ({
       casesBySuite.set(sc.test_suite_id, list);
     }
 
-    // 실행별 케이스 상태 매핑
-    const caseRunsByRunId = new Map<string, Map<string, string>>();
-    for (const cr of allCaseRuns) {
-      if (!cr.test_run_id || !cr.test_case_id) continue;
-      if (!caseRunsByRunId.has(cr.test_run_id)) caseRunsByRunId.set(cr.test_run_id, new Map());
-      caseRunsByRunId.get(cr.test_run_id)!.set(cr.test_case_id, cr.status);
-    }
-
     const result: MilestoneWithStats[] = rows.map((row) => {
       const base = toMilestone(row as MilestoneDTO);
 
@@ -181,31 +156,17 @@ export const getMilestones = async ({
         }
       }
 
-      const totalCases = directCaseIds.size;
-
-      // 완료된 케이스 계산 (마일스톤에 연결된 실행의 결과 기준)
-      const runIds = runsByMilestone.get(row.id) || [];
-      const caseStatusMap = new Map<string, string>();
-      for (const runId of runIds) {
-        const runCases = caseRunsByRunId.get(runId);
-        if (!runCases) continue;
-        for (const [caseId, status] of runCases) {
-          if (directCaseIds.has(caseId)) {
-            caseStatusMap.set(caseId, status);
-          }
-        }
-      }
-      const completedCases = Array.from(caseStatusMap.values()).filter(
-        (s) => s !== 'untested'
-      ).length;
+      // 완료된 케이스: 케이스마다 이 마일스톤 실행의 가장 최근 결과 기준 (#418)
+      const latest = latestResults.get(row.id);
+      const progress = summarizeMilestoneProgress(directCaseIds, latest?.statuses ?? new Map());
 
       return {
         ...base,
-        lastExecutedAt: lastExecutedAtMap.get(row.id) ?? null,
-        totalCases,
-        completedCases,
-        progressRate: totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0,
-        runCount: runIds.length,
+        lastExecutedAt: latest?.lastExecutedAt ?? null,
+        totalCases: progress.total,
+        completedCases: progress.completed,
+        progressRate: progress.progressPercent,
+        runCount: (runsByMilestone.get(row.id) || []).length,
       };
     });
 
@@ -266,8 +227,18 @@ export const createMilestone = async (input: CreateMilestone): Promise<ActionRes
     const storageError = await checkStorageLimit(input.projectId);
     if (storageError) return storageError;
 
+    const name = toValidName(input.title, MILESTONE_NAME_MAX_LENGTH);
+    if (!name) {
+      return { success: false, errors: { _milestone: ['마일스톤 이름을 입력해주세요.'] } };
+    }
+
+    const dateError = getMilestoneDateError(input.startDate, input.endDate);
+    if (dateError) {
+      return { success: false, errors: { _milestone: [dateError] } };
+    }
+
     const db = getDatabase();
-    const dto = toCreateMilestoneDTO(input);
+    const dto = toCreateMilestoneDTO({ ...input, title: name });
     const id = uuidv7();
 
     const [inserted] = await db
@@ -316,7 +287,11 @@ export const updateMilestone = async (
 
     // 접근 권한 확인
     const [existing] = await db
-      .select({ projectId: milestones.project_id })
+      .select({
+        projectId: milestones.project_id,
+        startDate: milestones.start_date,
+        endDate: milestones.end_date,
+      })
       .from(milestones)
       .where(eq(milestones.id, id))
       .limit(1);
@@ -330,24 +305,35 @@ export const updateMilestone = async (
     };
 
     if (updateFields.title !== undefined) {
-      setData.name = updateFields.title;
+      const name = toValidName(updateFields.title, MILESTONE_NAME_MAX_LENGTH);
+      if (!name) {
+        return { success: false, errors: { _milestone: ['마일스톤 이름을 입력해주세요.'] } };
+      }
+      setData.name = name;
     }
     if (updateFields.description !== undefined) {
       setData.description = updateFields.description;
     }
+    // 날짜는 'YYYY-MM-DD' 그대로 저장한다. 한쪽만 바꿔도 기존 값과 합쳐 기간 순서를 확인한다 (#381).
+    const nextStartDate =
+      updateFields.startDate !== undefined ? updateFields.startDate : existing.startDate;
+    const nextEndDate =
+      updateFields.endDate !== undefined ? updateFields.endDate : existing.endDate;
+    const dateError = getMilestoneDateError(
+      updateFields.startDate !== undefined ? updateFields.startDate : null,
+      updateFields.endDate !== undefined ? updateFields.endDate : null
+    );
+    if (dateError) {
+      return { success: false, errors: { _milestone: [dateError] } };
+    }
+    if (!isDateRangeOrdered(nextStartDate, nextEndDate)) {
+      return { success: false, errors: { _milestone: [MILESTONE_DATE_RANGE_ERROR] } };
+    }
     if (updateFields.startDate !== undefined) {
-      // Date 객체를 ISO 문자열로 변환
-      setData.start_date =
-        updateFields.startDate instanceof Date
-          ? updateFields.startDate.toISOString()
-          : updateFields.startDate;
+      setData.start_date = updateFields.startDate ?? null;
     }
     if (updateFields.endDate !== undefined) {
-      // Date 객체를 ISO 문자열로 변환
-      setData.end_date =
-        updateFields.endDate instanceof Date
-          ? updateFields.endDate.toISOString()
-          : updateFields.endDate;
+      setData.end_date = updateFields.endDate ?? null;
     }
 
     const [updated] = await db
@@ -469,39 +455,45 @@ export const addTestCasesToMilestone = async (
       test_case_id: testCaseId,
     }));
 
-    await db.insert(milestoneTestCases).values(values).onConflictDoNothing();
+    // 마일스톤 연결과 연결된 실행에 케이스를 넣는 일을 함께 반영한다 (#390).
+    await db.transaction(async (tx) => {
+      await tx.insert(milestoneTestCases).values(values).onConflictDoNothing();
 
-    // Sync: add new cases to existing test runs linked to this milestone
-    const linkedRuns = await db
-      .select({ id: testRuns.id })
-      .from(testRuns)
-      .where(eq(testRuns.milestone_id, milestoneId));
+      // Sync: add new cases to existing test runs linked to this milestone
+      const linkedRuns = await tx
+        .select({ id: testRuns.id })
+        .from(testRuns)
+        .where(eq(testRuns.milestone_id, milestoneId));
 
-    for (const run of linkedRuns) {
-      const existingRows = await db
-        .select({ test_case_id: testCaseRuns.test_case_id })
-        .from(testCaseRuns)
-        .where(
-          and(eq(testCaseRuns.test_run_id, run.id), inArray(testCaseRuns.test_case_id, testCaseIds))
-        );
-      const existingSet = new Set(existingRows.map((r) => r.test_case_id));
-      const newIds = testCaseIds.filter((id) => !existingSet.has(id));
+      for (const run of linkedRuns) {
+        const existingRows = await tx
+          .select({ test_case_id: testCaseRuns.test_case_id })
+          .from(testCaseRuns)
+          .where(
+            and(
+              eq(testCaseRuns.test_run_id, run.id),
+              inArray(testCaseRuns.test_case_id, testCaseIds)
+            )
+          );
+        const existingSet = new Set(existingRows.map((r) => r.test_case_id));
+        const newIds = testCaseIds.filter((id) => !existingSet.has(id));
 
-      if (newIds.length > 0) {
-        await db.insert(testCaseRuns).values(
-          newIds.map((caseId) => ({
-            id: uuidv7(),
-            test_run_id: run.id,
-            test_case_id: caseId,
-            status: 'untested' as const,
-            source_type: 'milestone' as const,
-            source_id: milestoneId,
-            created_at: new Date(),
-            updated_at: new Date(),
-          }))
-        );
+        if (newIds.length > 0) {
+          await tx.insert(testCaseRuns).values(
+            newIds.map((caseId) => ({
+              id: uuidv7(),
+              test_run_id: run.id,
+              test_case_id: caseId,
+              status: 'untested' as const,
+              source_type: 'milestone' as const,
+              source_id: milestoneId,
+              created_at: new Date(),
+              updated_at: new Date(),
+            }))
+          );
+        }
       }
-    }
+    });
 
     invalidateCache(INVALIDATE.milestones);
     return {
@@ -581,7 +573,7 @@ export const addTestSuitesToMilestone = async (
     if (!ms?.projectId || !(await requireProjectAccess(ms.projectId))) {
       return { success: false, errors: { _milestone: ['접근 권한이 없습니다.'] } };
     }
-    // 붙일 케이스가 모두 마일스톤과 같은 프로젝트 소속이어야 한다. 마일스톤에 연결된 실행으로
+    // 붙일 스위트가 모두 마일스톤과 같은 프로젝트 소속이어야 한다. 마일스톤에 연결된 실행으로
     // 곧바로 동기화되므로, 섞인 배열은 첫 쓰기 전에 통째로 거부한다.
     const parsedIds = z.array(z.string().uuid()).min(1).safeParse(rawIds);
     if (!parsedIds.success) {
@@ -599,76 +591,86 @@ export const addTestSuitesToMilestone = async (
       test_suite_id: testSuiteId,
     }));
 
-    await db.insert(milestoneTestSuites).values(values).onConflictDoNothing();
+    // 마일스톤 연결과 연결된 실행에 스위트·케이스를 넣는 일을 함께 반영한다 (#390).
+    await db.transaction(async (tx) => {
+      // 같은 스위트에 케이스를 만들거나 옮기는 요청과 엇갈려 실행에서 케이스가 빠지지 않게 한다.
+      await lockSuiteRunSync(tx, testSuiteIds);
+      await tx.insert(milestoneTestSuites).values(values).onConflictDoNothing();
 
-    // Sync: resolve suite cases and add to existing test runs linked to this milestone
-    const linkedRuns = await db
-      .select({ id: testRuns.id })
-      .from(testRuns)
-      .where(eq(testRuns.milestone_id, milestoneId));
+      // Sync: resolve suite cases and add to existing test runs linked to this milestone
+      const linkedRuns = await tx
+        .select({ id: testRuns.id })
+        .from(testRuns)
+        .where(eq(testRuns.milestone_id, milestoneId));
 
-    if (linkedRuns.length > 0) {
-      // Always link suites to runs (even if suites are empty)
-      for (const run of linkedRuns) {
-        await db
-          .insert(testRunSuites)
-          .values(
-            testSuiteIds.map((suiteId) => ({
-              test_run_id: run.id,
-              test_suite_id: suiteId,
-            }))
-          )
-          .onConflictDoNothing();
-      }
-
-      // Get individual test cases from the added suites
-      const suiteCaseRows = await db
-        .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
-        .from(testCases)
-        .where(
-          and(
-            inArray(testCases.test_suite_id, testSuiteIds),
-            eq(testCases.lifecycle_status, 'ACTIVE')
-          )
-        );
-
-      if (suiteCaseRows.length > 0) {
-        const caseIdToSuite = new Map<string, string>();
-        for (const row of suiteCaseRows) {
-          if (row.id && row.test_suite_id) {
-            caseIdToSuite.set(row.id, row.test_suite_id);
-          }
-        }
-        const caseIds = Array.from(caseIdToSuite.keys());
-
+      if (linkedRuns.length > 0) {
+        // Always link suites to runs (even if suites are empty)
         for (const run of linkedRuns) {
-          // Find which cases already exist in this run
-          const existingRows = await db
-            .select({ test_case_id: testCaseRuns.test_case_id })
-            .from(testCaseRuns)
-            .where(
-              and(eq(testCaseRuns.test_run_id, run.id), inArray(testCaseRuns.test_case_id, caseIds))
-            );
-          const existingSet = new Set(existingRows.map((r) => r.test_case_id));
-          const newCaseIds = caseIds.filter((id) => !existingSet.has(id));
-
-          if (newCaseIds.length > 0) {
-            await db.insert(testCaseRuns).values(
-              newCaseIds.map((caseId) => ({
-                id: uuidv7(),
+          await tx
+            .insert(testRunSuites)
+            .values(
+              testSuiteIds.map((suiteId) => ({
                 test_run_id: run.id,
-                test_case_id: caseId,
-                status: 'untested' as const,
-                source_type: 'suite' as const,
-                source_id: caseIdToSuite.get(caseId)!,
-                created_at: new Date(),
-                updated_at: new Date(),
+                test_suite_id: suiteId,
               }))
-            );
+            )
+            .onConflictDoNothing();
+        }
+
+        // Get individual test cases from the added suites
+        // 스위트를 가리키는 다른 프로젝트 케이스가 있어도 실행에 섞이지 않게 프로젝트로 한 번 더 좁힌다.
+        const suiteCaseRows = await tx
+          .select({ id: testCases.id, test_suite_id: testCases.test_suite_id })
+          .from(testCases)
+          .where(
+            and(
+              inArray(testCases.test_suite_id, testSuiteIds),
+              eq(testCases.project_id, ms.projectId),
+              eq(testCases.lifecycle_status, 'ACTIVE')
+            )
+          );
+
+        if (suiteCaseRows.length > 0) {
+          const caseIdToSuite = new Map<string, string>();
+          for (const row of suiteCaseRows) {
+            if (row.id && row.test_suite_id) {
+              caseIdToSuite.set(row.id, row.test_suite_id);
+            }
+          }
+          const caseIds = Array.from(caseIdToSuite.keys());
+
+          for (const run of linkedRuns) {
+            // Find which cases already exist in this run
+            const existingRows = await tx
+              .select({ test_case_id: testCaseRuns.test_case_id })
+              .from(testCaseRuns)
+              .where(
+                and(
+                  eq(testCaseRuns.test_run_id, run.id),
+                  inArray(testCaseRuns.test_case_id, caseIds)
+                )
+              );
+            const existingSet = new Set(existingRows.map((r) => r.test_case_id));
+            const newCaseIds = caseIds.filter((id) => !existingSet.has(id));
+
+            if (newCaseIds.length > 0) {
+              await tx.insert(testCaseRuns).values(
+                newCaseIds.map((caseId) => ({
+                  id: uuidv7(),
+                  test_run_id: run.id,
+                  test_case_id: caseId,
+                  status: 'untested' as const,
+                  source_type: 'suite' as const,
+                  source_id: caseIdToSuite.get(caseId)!,
+                  created_at: new Date(),
+                  updated_at: new Date(),
+                }))
+              );
+            }
           }
         }
       }
-    }
+    });
 
     invalidateCache(INVALIDATE.milestones);
     return {

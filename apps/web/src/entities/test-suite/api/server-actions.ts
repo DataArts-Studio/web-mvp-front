@@ -2,10 +2,12 @@
 
 import { ACCESS_DENIED, canAccess } from '@/access/lib/project-scope';
 import { requireProjectAccess } from '@/access/lib/require-access';
+import { excludeArchivedCasesFromRuns } from '@/entities/test-run/api/run-scope';
 import type { CreateTestSuite, RunStatus, TestSuite, TestSuiteCard } from '@/entities/test-suite';
 import { toCreateTestSuiteDTO } from '@/entities/test-suite/model/mapper';
 import { SUITE_MESSAGE_CODES } from '@/entities/test-suite/model/message-codes';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
+import { toValidName } from '@/shared/lib/normalize-name';
 import { checkStorageLimit } from '@/shared/lib/storage/check-storage-limit';
 import type { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
@@ -22,6 +24,16 @@ import {
 import { and, count, desc, eq, inArray, isNotNull, isNull, max } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
+// 생성 폼과 같은 기준. 수정 폼은 50자로 더 좁지만, 생성으로 만든 긴 이름의 스위트도
+// 수정할 수 있어야 하므로 서버는 생성 기준(3~200자)으로 받는다.
+const SUITE_NAME_MIN_LENGTH = 3;
+const SUITE_NAME_MAX_LENGTH = 200;
+
+const toValidSuiteName = (value: unknown): string | null => {
+  const name = toValidName(value, SUITE_NAME_MAX_LENGTH);
+  return name && name.length >= SUITE_NAME_MIN_LENGTH ? name : null;
+};
+
 type GetTestSuitesParams = {
   projectId: string;
   limits?: { offset: number; limit: number };
@@ -37,8 +49,13 @@ export const createTestSuite = async (input: CreateTestSuite): Promise<ActionRes
     const storageError = await checkStorageLimit(input.projectId);
     if (storageError) return storageError;
 
+    const name = toValidSuiteName(input.title);
+    if (!name) {
+      return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.NAME_REQUIRED] } };
+    }
+
     const db = getDatabase();
-    const dto = toCreateTestSuiteDTO(input);
+    const dto = toCreateTestSuiteDTO({ ...input, title: name });
     const id = uuidv7();
 
     const [inserted] = await db
@@ -269,7 +286,11 @@ export const updateTestSuite = async (
     };
 
     if (updateFields.title !== undefined) {
-      updateData.name = updateFields.title;
+      const name = toValidSuiteName(updateFields.title);
+      if (!name) {
+        return { success: false, errors: { _testSuite: [SUITE_MESSAGE_CODES.NAME_REQUIRED] } };
+      }
+      updateData.name = name;
     }
     if (updateFields.description !== undefined) {
       updateData.description = updateFields.description;
@@ -624,15 +645,38 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
 
     const now = new Date();
 
-    const [archived] = await db
-      .update(testSuites)
-      .set({
-        archived_at: now,
-        lifecycle_status: 'DELETED',
-        updated_at: now,
-      })
-      .where(eq(testSuites.id, id))
-      .returning();
+    const archived = await db.transaction(async (tx) => {
+      const [suite] = await tx
+        .update(testSuites)
+        .set({
+          archived_at: now,
+          lifecycle_status: 'DELETED',
+          updated_at: now,
+        })
+        .where(eq(testSuites.id, id))
+        .returning();
+      if (!suite) return null;
+
+      // cascade: 하위 TC도 함께 휴지통으로 이동. 스위트와 같은 archived_at 을 남겨
+      // 복원할 때 이 삭제로 함께 간 케이스만 되살린다 (#378).
+      const cases = await tx
+        .update(testCases)
+        .set({
+          archived_at: now,
+          lifecycle_status: 'DELETED',
+          updated_at: now,
+        })
+        .where(and(eq(testCases.test_suite_id, id), eq(testCases.lifecycle_status, 'ACTIVE')))
+        .returning({ id: testCases.id });
+
+      // 진행 중인 실행의 목록과 진행률에서 뺀다 (#377).
+      await excludeArchivedCasesFromRuns(
+        tx,
+        cases.map((row) => row.id),
+        now
+      );
+      return suite;
+    });
 
     if (!archived) {
       return {
@@ -641,17 +685,8 @@ export const archiveTestSuite = async (id: string): Promise<ActionResult<{ id: s
       };
     }
 
-    // cascade: 하위 TC도 함께 휴지통으로 이동
-    await db
-      .update(testCases)
-      .set({
-        archived_at: now,
-        lifecycle_status: 'DELETED',
-        updated_at: now,
-      })
-      .where(and(eq(testCases.test_suite_id, id), eq(testCases.lifecycle_status, 'ACTIVE')));
-
     invalidateCache(INVALIDATE.suites);
+    invalidateCache(INVALIDATE.runs);
     return {
       success: true,
       data: { id: archived.id },

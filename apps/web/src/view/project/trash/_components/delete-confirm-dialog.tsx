@@ -32,8 +32,8 @@ export function DeleteConfirmDialog({
             <div>
               <Dialog.Title className="typo-h2-heading text-text-1">영구 삭제</Dialog.Title>
               <Dialog.Description className="text-text-3 typo-body2-normal mt-1.5">
-                <span className="text-text-1 font-medium">&ldquo;{item.title}&rdquo;</span>
-                을(를) 영구 삭제하시겠습니까?
+                <span className="text-text-1 font-medium">&ldquo;{item.title}&rdquo;</span> 항목을
+                영구 삭제하시겠습니까?
                 <br />
                 <span className="font-medium text-red-400">이 작업은 되돌릴 수 없습니다.</span>
               </Dialog.Description>

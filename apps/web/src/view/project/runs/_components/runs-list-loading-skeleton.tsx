@@ -3,66 +3,35 @@ import React from 'react';
 import { MainContainer, Skeleton } from '@testea/ui';
 
 export const RunsListLoadingSkeleton = () => (
-  <MainContainer className="mx-auto grid h-screen w-full max-w-[1200px] flex-1 grid-cols-6 grid-rows-[auto_auto_1fr] gap-x-5 gap-y-4 overflow-hidden px-10 py-8">
-    <header className="border-line-2 col-span-6 border-b pb-4">
-      <div className="min-w-0 space-y-2">
-        <Skeleton className="h-7 w-44" />
-        <Skeleton className="h-4 w-72" />
-      </div>
+  <MainContainer className="mx-auto flex h-screen w-full max-w-[1280px] flex-1 flex-col overflow-hidden px-4 pt-6 pb-5 md:px-12">
+    <header className="flex items-center gap-3">
+      <Skeleton className="h-7 w-32" />
+      <div className="flex-1" />
+      <Skeleton className="bg-primary/30 h-9 w-20 rounded-[6px]" />
     </header>
 
-    <section className="bg-bg-1 col-span-6 py-3">
-      <div className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
-        <Skeleton className="bg-primary/30 h-9 w-36 shrink-0" />
-        <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-end">
-          <Skeleton className="border-line-2 bg-bg-2 h-9 min-w-0 flex-1 border lg:max-w-[520px]" />
-          <div className="flex shrink-0 items-center gap-2">
-            <Skeleton className="border-line-2 bg-bg-2 h-9 w-28 border" />
-            <Skeleton className="border-line-2 bg-bg-2 h-9 w-32 border" />
-          </div>
-        </div>
-      </div>
-    </section>
+    <Skeleton className="border-line-2 mt-3.5 h-[118px] w-full rounded-[10px] border bg-transparent" />
 
-    <section className="col-span-6 flex min-h-0 flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex flex-col">
-          {Array.from({ length: 7 }).map((_, index) => (
-            <div
-              key={index}
-              className="border-line-2 grid grid-cols-1 gap-3 border-b px-1 py-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_260px] md:items-start md:gap-6"
-            >
-              <div className="min-w-0 space-y-2">
-                <Skeleton className="h-5 w-56 max-w-full" />
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-3 w-10" />
-                  <Skeleton className="h-3 w-3" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-3 w-12" />
-                  <Skeleton className="h-3 w-3" />
-                  <Skeleton className="h-3 w-8" />
-                </div>
-              </div>
-              <div className="min-w-0 space-y-2 md:text-right">
-                <div className="flex items-center gap-2 md:justify-end">
-                  <Skeleton className="h-2 w-2 rounded-full" />
-                  <Skeleton className="h-6 w-16" />
-                </div>
-                <div className="md:ml-auto md:max-w-[220px]">
-                  <div className="mb-1 flex justify-between">
-                    <Skeleton className="h-3 w-8" />
-                    <Skeleton className="h-3 w-10" />
-                  </div>
-                  <Skeleton className="h-1.5 w-full" />
-                </div>
-                <Skeleton className="ml-auto h-3 w-24" />
-              </div>
-            </div>
-          ))}
+    <div className="border-line-2 mt-3.5 flex items-end gap-4 border-b pb-2">
+      <Skeleton className="h-6 w-16" />
+      <Skeleton className="h-6 w-20" />
+      <Skeleton className="h-6 w-14" />
+      <div className="flex-1" />
+      <Skeleton className="h-9 w-[220px] rounded-[6px]" />
+    </div>
+
+    <div className="mt-4 flex flex-col">
+      {Array.from({ length: 7 }).map((_, index) => (
+        <div key={index} className="border-line-2 flex items-center gap-6 border-b py-3 pr-3 pl-9">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-56" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+          <Skeleton className="hidden h-4 w-[180px] md:block" />
+          <Skeleton className="h-5 w-12" />
+          <Skeleton className="hidden h-4 w-10 md:block" />
         </div>
-      </div>
-    </section>
+      ))}
+    </div>
   </MainContainer>
 );

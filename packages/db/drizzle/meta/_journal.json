@@ -155,6 +155,62 @@
       "when": 1790522926345,
       "tag": "0021_admin_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791691048054,
+      "tag": "0022_drop_case_name_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791691060362,
+      "tag": "0023_backfill_run_milestone_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791699035678,
+      "tag": "0024_exclude_trashed_case_runs",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791816357658,
+      "tag": "0025_section_name_unique_active",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792073534741,
+      "tag": "0026_private_attachments_bucket",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792246883114,
+      "tag": "0028_revoke_anon_grants_force_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792246887501,
+      "tag": "0029_rate_limit_buckets",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792246947501,
+      "tag": "0030_deny_anon_policy_parity",
+      "breakpoints": true
     }
   ]
 }

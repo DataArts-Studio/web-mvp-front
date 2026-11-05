@@ -13,6 +13,7 @@ import {
   createAdminSession,
   revokeAdminSession,
 } from '../lib/admin-session';
+import { safeRedirect } from '../lib/safe-redirect';
 
 export type GateState = { error?: string };
 
@@ -24,12 +25,6 @@ const LOCK_THRESHOLD = 5;
 const LOCK_WINDOW_MIN = 15;
 const LOCKED_MESSAGE = `시도가 너무 많습니다. 약 ${LOCK_WINDOW_MIN}분 후 다시 시도해주세요.`;
 const UNAVAILABLE_MESSAGE = '지금은 로그인을 처리할 수 없습니다. 잠시 후 다시 시도해주세요.';
-
-/** 게이트 폼 제출 후 안전한 내부 경로만 허용 (open redirect 차단). */
-function safeRedirect(raw: FormDataEntryValue | null): string {
-  const value = typeof raw === 'string' ? raw : '';
-  return value.startsWith('/') && !value.startsWith('//') ? value : '/notices';
-}
 
 /**
  * 운영자 공유키 검증 후 세션 쿠키 발급.
@@ -43,11 +38,23 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
   const candidate = typeof secret === 'string' ? secret : '';
   const ip = await getClientIp();
 
+  // 운영(Cloudflare 뒤)에서는 cf-connecting-ip 가 항상 있다. 없으면 IP 락아웃이 꺼지므로
+  // 키를 확인하지 않고 거부한다(fail-closed). 로컬 dev 는 헤더가 없어도 그대로 둔다.
+  if (!ip && process.env.NODE_ENV === 'production') {
+    console.error('[auth-gate] cf-connecting-ip 없음, 로그인 거부');
+    return { error: UNAVAILABLE_MESSAGE };
+  }
+
+  // 이미 잠긴 IP 는 기록을 더 남기지 않고 바로 거부한다(잠긴 동안 시도가 행을 계속 쌓지 않게).
+  // 동시 요청은 이 사전 확인을 함께 통과할 수 있으므로, 아래 예약 후 재확인이 실제 상한을 지킨다:
   // 시도를 먼저 실패로 기록(예약)한 뒤 센다. 세고 나서 기록하면 동시 요청이 같은 개수를 보고
   // 모두 통과한다. 기록·조회가 실패하면 로그인을 거부한다(fail-closed).
   let reservationId: string;
   let failures: number;
   try {
+    if ((await countRecentFailedLogins(ip, LOCK_WINDOW_MIN)) >= LOCK_THRESHOLD) {
+      return { error: LOCKED_MESSAGE };
+    }
     reservationId = await reserveFailedLogin(ip);
     failures = await countRecentFailedLogins(ip, LOCK_WINDOW_MIN);
   } catch (error) {
@@ -72,10 +79,19 @@ export async function signInAdminAction(_prev: GateState, formData: FormData): P
   const store = await cookies();
   let sessionToken: string;
   try {
-    // 재로그인 시에도 현재 브라우저의 이전 세션을 재사용하지 않는다.
-    await revokeAdminSession(store.get(ADMIN_COOKIE)?.value);
+    // 새 세션을 먼저 만든다. 생성이 실패해도 지금 쓰던 세션은 살아 있어야 한다.
     sessionToken = await createAdminSession();
   } catch {
+    return { error: UNAVAILABLE_MESSAGE };
+  }
+  try {
+    // 재로그인 시에도 현재 브라우저의 이전 세션을 재사용하지 않는다.
+    await revokeAdminSession(store.get(ADMIN_COOKIE)?.value);
+  } catch {
+    // 이전 세션을 못 지웠으면 새 세션도 남기지 않는다(쿠키로 내보내지 않은 행이 쌓이지 않게).
+    await revokeAdminSession(sessionToken).catch((error) => {
+      console.error('[auth-gate] 미발급 세션 정리 실패', error);
+    });
     return { error: UNAVAILABLE_MESSAGE };
   }
   store.set(ADMIN_COOKIE, sessionToken, {

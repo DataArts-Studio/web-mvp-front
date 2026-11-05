@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,9 +7,10 @@ import { fileURLToPath } from 'node:url';
 import {
   SANDBOX_GID,
   SANDBOX_UID,
+  cleanupSandbox,
   handOverToSandbox,
   isolationAvailable,
-  killSandboxProcesses,
+  readSandboxOutput,
 } from './sandbox.js';
 
 /**
@@ -67,7 +68,7 @@ const ALLOWED_CHILD_ENV_KEYS = [
   'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD',
 ];
 
-function buildChildEnv(runDir: string): NodeJS.ProcessEnv {
+export function buildChildEnv(runDir: string): NodeJS.ProcessEnv {
   // 컨테이너 내장 브라우저 경로 재사용 (베이스 이미지 ms-playwright).
   const env: NodeJS.ProcessEnv = { CI: '1' };
   for (const key of ALLOWED_CHILD_ENV_KEYS) {
@@ -92,6 +93,19 @@ function buildChildEnv(runDir: string): NodeJS.ProcessEnv {
  */
 const APP_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const RUNS_ROOT = join(APP_ROOT, '.runs');
+
+/**
+ * 요청별 실행 디렉터리를 만든다. 상위 디렉터리는 통과(x)만 허용하고 목록 조회(r)는 막아,
+ * spec 은 자기 run 디렉터리로 들어갈 수는 있지만 다른 run 디렉터리 이름을 열거할 수 없다.
+ * 요청별 디렉터리는 소유자 전용(0700)으로 고정한다 (storage-state.json 등 민감 산출물 보호).
+ */
+export async function prepareRunDir(): Promise<string> {
+  await mkdir(RUNS_ROOT, { recursive: true });
+  await chmod(RUNS_ROOT, 0o711);
+  const dir = await mkdtemp(join(RUNS_ROOT, 'run-'));
+  await chmod(dir, 0o700);
+  return dir;
+}
 
 /** child_process 환경에서 @playwright/test CLI 진입점 경로를 해석한다. */
 function resolvePlaywrightCli(): string {
@@ -206,14 +220,7 @@ function findResultInSuite(suite: PwSuite): PwTestResult | undefined {
 export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
   const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const startedAt = Date.now();
-  await mkdir(RUNS_ROOT, { recursive: true });
-  // 상위 디렉터리는 통과(x)만 허용하고 목록 조회(r)는 막는다. spec 은 자기 run
-  // 디렉터리로 들어갈 수는 있지만 다른 run 디렉터리 이름을 열거할 수 없다.
-  await chmod(RUNS_ROOT, 0o711);
-  const dir = await mkdtemp(join(RUNS_ROOT, 'run-'));
-  // 요청별 디렉터리를 소유자 전용(0700)으로 고정한다. mkdtemp 가 기본 0700 이지만
-  // umask 영향 없이 명시적으로 보장한다 (storage-state.json 등 민감 산출물 보호).
-  await chmod(dir, 0o700);
+  const dir = await prepareRunDir();
 
   try {
     const { configPath, reportPath, inputPaths } = await writeRunFiles(dir, input);
@@ -261,13 +268,21 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
       });
     });
 
-    let raw: string | undefined;
-    try {
-      raw = await readFile(reportPath, 'utf8');
-    } catch {
-      raw = undefined;
+    // 읽기 전에 spec uid 프로세스를 먼저 정리한다. 남아 있는 백그라운드 프로세스가
+    // report.json 을 FIFO·심볼릭 링크로 바꿔 root 의 읽기를 멈추게 할 수 있다.
+    await cleanupSandbox().catch(() => {});
+    const output = await readSandboxOutput(reportPath);
+
+    if (output.status === 'too_large') {
+      return {
+        ok: false,
+        status: 'unknown',
+        durationMs: Date.now() - startedAt,
+        errorMessage: 'Run report exceeded the size limit.',
+      };
     }
 
+    const raw = output.status === 'ok' ? output.text : '';
     if (!raw) {
       // reporter 산출물이 없으면 (타임아웃 강제종료/크래시) 실패로 본다.
       return {
@@ -280,8 +295,9 @@ export async function runSpec(input: RunSpecInput): Promise<RunSpecResult> {
 
     return parseReport(raw);
   } finally {
-    // 프로세스 그룹을 빠져나간(setsid) 백그라운드 프로세스까지 회수한 뒤 디렉터리를 지운다.
-    await killSandboxProcesses().catch(() => {});
+    // 프로세스 그룹을 빠져나간(setsid) 백그라운드 프로세스와 공유 경로의 파일까지 회수한 뒤
+    // 디렉터리를 지운다.
+    await cleanupSandbox().catch(() => {});
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
 }

@@ -1,13 +1,20 @@
 'use server';
 
 import { ACCESS_DENIED, belongsToProject, canAccess } from '@/access/lib/project-scope';
+import { getMilestoneLatestResults } from '@/entities/milestone/api/latest-results';
+import {
+  type MilestoneProgress,
+  summarizeMilestoneProgress,
+} from '@/entities/milestone/model/progress';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
 import {
   getDatabase,
+  milestoneTestCases,
   milestoneTestSuites,
   milestones,
   testCaseRuns,
+  testCases,
   testRuns,
   testSuites,
 } from '@testea/db';
@@ -41,6 +48,11 @@ export interface DashboardMilestone {
     untested: number;
     progressPercent: number;
   };
+}
+
+function toStats(progress: MilestoneProgress): DashboardMilestone['stats'] {
+  const { total, pass, fail, blocked, untested, progressPercent } = progress;
+  return { total, pass, fail, blocked, untested, progressPercent };
 }
 
 function calcProgress(rows: { status: string }[]) {
@@ -111,6 +123,14 @@ export async function getDashboardMilestones(
       .where(and(inArray(milestones.id, milestoneIds), eq(milestones.lifecycle_status, 'ACTIVE')));
 
     // 3. 각 마일스톤별 스위트 + 진행률 계산
+    // 실행을 고르지 않은 전체 보기는 목록·상세와 같은 기준(케이스별 가장 최근 결과)으로 센다 (#418).
+    const latestResults = testRunId
+      ? null
+      : await getMilestoneLatestResults(
+          db,
+          milestoneRows.map((m) => m.id)
+        );
+
     const result: DashboardMilestone[] = await Promise.all(
       milestoneRows.map(async (m) => {
         // 3a. 마일스톤에 연결된 스위트 조회
@@ -123,52 +143,67 @@ export async function getDashboardMilestones(
           .innerJoin(testSuites, eq(testSuites.id, milestoneTestSuites.test_suite_id))
           .where(eq(milestoneTestSuites.milestone_id, m.id));
 
-        // 3b. 이 마일스톤 관련 testCaseRuns 조회
-        let caseRunRows: { status: string; source_type: string | null; source_id: string | null }[];
+        const base = {
+          id: m.id,
+          name: m.name,
+          startDate: m.start_date ?? null,
+          endDate: m.end_date ?? null,
+          progressStatus: m.progress_status,
+        };
 
-        if (testRunId) {
-          // 특정 실행 내에서만
-          caseRunRows = await db
-            .select({
-              status: testCaseRuns.status,
-              source_type: testCaseRuns.source_type,
-              source_id: testCaseRuns.source_id,
-            })
-            .from(testCaseRuns)
-            .where(and(eq(testCaseRuns.test_run_id, testRunId), isNull(testCaseRuns.excluded_at)));
-        } else {
-          // 마일스톤에 연결된 모든 실행에서
-          const runRows = await db
-            .select({ id: testRuns.id })
-            .from(testRuns)
-            .where(and(eq(testRuns.milestone_id, m.id), eq(testRuns.lifecycle_status, 'ACTIVE')));
+        if (latestResults) {
+          const statuses = latestResults.get(m.id)?.statuses ?? new Map();
+          const suiteIds = suiteLinks.map((s) => s.suiteId);
+          const [directCases, suiteCases] = await Promise.all([
+            db
+              .select({ id: testCases.id })
+              .from(milestoneTestCases)
+              .innerJoin(testCases, eq(testCases.id, milestoneTestCases.test_case_id))
+              .where(
+                and(
+                  eq(milestoneTestCases.milestone_id, m.id),
+                  eq(testCases.lifecycle_status, 'ACTIVE')
+                )
+              ),
+            suiteIds.length > 0
+              ? db
+                  .select({ id: testCases.id, suiteId: testCases.test_suite_id })
+                  .from(testCases)
+                  .where(
+                    and(
+                      inArray(testCases.test_suite_id, suiteIds),
+                      eq(testCases.lifecycle_status, 'ACTIVE')
+                    )
+                  )
+              : Promise.resolve([]),
+          ]);
 
-          const ids = runRows.map((r) => r.id);
-          if (ids.length === 0) {
-            return {
-              id: m.id,
-              name: m.name,
-              startDate: m.start_date ?? null,
-              endDate: m.end_date ?? null,
-              progressStatus: m.progress_status,
-              suites: suiteLinks.map((s) => ({
-                id: s.suiteId,
-                name: s.suiteName,
-                stats: { total: 0, pass: 0, fail: 0, blocked: 0, untested: 0, progressPercent: 0 },
-              })),
-              stats: { total: 0, pass: 0, fail: 0, blocked: 0, untested: 0, progressPercent: 0 },
-            };
-          }
-
-          caseRunRows = await db
-            .select({
-              status: testCaseRuns.status,
-              source_type: testCaseRuns.source_type,
-              source_id: testCaseRuns.source_id,
-            })
-            .from(testCaseRuns)
-            .where(and(inArray(testCaseRuns.test_run_id, ids), isNull(testCaseRuns.excluded_at)));
+          const caseIds = [...directCases, ...suiteCases].map((c) => c.id);
+          return {
+            ...base,
+            suites: suiteLinks.map((s) => ({
+              id: s.suiteId,
+              name: s.suiteName,
+              stats: toStats(
+                summarizeMilestoneProgress(
+                  suiteCases.filter((c) => c.suiteId === s.suiteId).map((c) => c.id),
+                  statuses
+                )
+              ),
+            })),
+            stats: toStats(summarizeMilestoneProgress(caseIds, statuses)),
+          };
         }
+
+        // 3b. 선택한 실행 안의 케이스 실행 결과
+        const caseRunRows = await db
+          .select({
+            status: testCaseRuns.status,
+            source_type: testCaseRuns.source_type,
+            source_id: testCaseRuns.source_id,
+          })
+          .from(testCaseRuns)
+          .where(and(eq(testCaseRuns.test_run_id, testRunId!), isNull(testCaseRuns.excluded_at)));
 
         // 3c. 스위트별 진행률 (source_type='suite' + source_id=suiteId)
         const suiteIdSet = new Set(suiteLinks.map((s) => s.suiteId));
@@ -189,15 +224,7 @@ export async function getDashboardMilestones(
           };
         });
 
-        return {
-          id: m.id,
-          name: m.name,
-          startDate: m.start_date ?? null,
-          endDate: m.end_date ?? null,
-          progressStatus: m.progress_status,
-          suites,
-          stats: calcProgress(milestoneDirectRuns),
-        };
+        return { ...base, suites, stats: calcProgress(milestoneDirectRuns) };
       })
     );
 

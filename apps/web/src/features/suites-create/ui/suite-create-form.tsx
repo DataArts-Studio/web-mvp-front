@@ -6,12 +6,14 @@ import { useTranslations } from 'next-intl';
 
 import { CreateTestSuiteSchema } from '@/entities/test-suite';
 import type { CreateTestSuite } from '@/entities/test-suite';
+import { translateSuiteErrors } from '@/entities/test-suite/lib/translate-message';
 import { useCreateSuite } from '@/features/suites-create';
 import { TESTSUITE_EVENTS, track } from '@/shared/lib/analytics';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DSButton, LoadingSpinner } from '@testea/ui';
 import { FormField } from '@testea/ui';
 import { cn } from '@testea/util';
+import { toast } from 'sonner';
 
 interface SuiteCreateFormProps {
   projectId: string;
@@ -20,7 +22,7 @@ interface SuiteCreateFormProps {
 
 export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) => {
   const t = useTranslations('suites');
-  const { mutate, isPending } = useCreateSuite();
+  const { mutate, isPending, isError } = useCreateSuite();
   const {
     register,
     handleSubmit,
@@ -43,8 +45,9 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
         track(TESTSUITE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
         onClose?.();
       },
-      onError: () => {
+      onError: (error) => {
         track(TESTSUITE_EVENTS.CREATE_FAIL, { project_id: projectId });
+        toast.error(translateSuiteErrors(t, error.message));
       },
     });
   };
@@ -94,6 +97,11 @@ export const SuiteCreateForm = ({ projectId, onClose }: SuiteCreateFormProps) =>
     // 마운트/언마운트 시 1회만 (handleAbandon 은 안정적)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 요청 중 버튼 비활성화로 빠진 포커스를 실패 후 되돌려 ESC·Tab 트랩이 동작하게 한다.
+  useEffect(() => {
+    if (isError) dialogRef.current?.focus();
+  }, [isError]);
 
   return (
     <section

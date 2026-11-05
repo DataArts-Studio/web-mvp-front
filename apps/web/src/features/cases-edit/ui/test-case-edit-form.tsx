@@ -32,7 +32,7 @@ interface TestCaseEditFormProps {
 
 export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditFormProps) => {
   const t = useTranslations('cases');
-  const { mutate } = useUpdateCase();
+  const { mutate, isPending } = useUpdateCase();
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(testCase.projectId),
@@ -75,14 +75,15 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   });
 
   const onSubmit = (data: UpdateTestCase) => {
-    // optimistic update로 즉시 반영 → 폼 바로 닫기
-    track(TESTCASE_EVENTS.UPDATE, { case_id: testCase.id });
-    onSuccess?.();
-    onClose();
-
+    // 저장이 끝난 뒤 닫는다. 실패하면 입력을 그대로 둔 채 재시도할 수 있게 한다.
     mutate(
       { ...data, projectId: testCase.projectId },
       {
+        onSuccess: () => {
+          track(TESTCASE_EVENTS.UPDATE, { case_id: testCase.id });
+          onSuccess?.();
+          onClose();
+        },
         onError: (error) => {
           track(TESTCASE_EVENTS.UPDATE_FAIL, { case_id: testCase.id });
           toast.error(translateCaseErrors(t, error.message) || t('ui.updateFailedFallback'));
@@ -92,6 +93,8 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
   };
 
   const handleAbandon = () => {
+    // 저장 중에는 배경 클릭·닫기 버튼으로도 닫지 않는다. 실패 시 수정 내용을 지키기 위함 (#371).
+    if (isPending) return;
     track(TESTCASE_EVENTS.UPDATE_ABANDON, { case_id: testCase.id });
     onClose();
   };
@@ -149,11 +152,11 @@ export const TestCaseEditForm = ({ testCase, onClose, onSuccess }: TestCaseEditF
 
           {/* Actions */}
           <div className="border-line-2 flex justify-end gap-3 border-t pt-6">
-            <DSButton type="button" variant="ghost" onClick={handleAbandon}>
+            <DSButton type="button" variant="ghost" disabled={isPending} onClick={handleAbandon}>
               {t('ui.cancel')}
             </DSButton>
-            <DSButton type="submit" variant="solid">
-              {t('ui.editCase')}
+            <DSButton type="submit" variant="solid" disabled={isPending}>
+              {isPending ? t('ui.savingShort') : t('ui.editCase')}
             </DSButton>
           </div>
         </form>

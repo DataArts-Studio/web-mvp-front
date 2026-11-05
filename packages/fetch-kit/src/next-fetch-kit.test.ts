@@ -7,7 +7,7 @@ describe('NextFetchKit', () => {
 
   beforeEach(() => {
     fetchMock.mockReset();
-    global.fetch = fetchMock;
+    globalThis.fetch = fetchMock;
   });
 
   it('builds requests with normalized base url and overridden headers', async () => {

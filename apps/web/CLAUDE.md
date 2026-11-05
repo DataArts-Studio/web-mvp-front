@@ -24,6 +24,7 @@ App Router + FSD 혼합.
 - `@testea/ui` 에 같은 컴포넌트가 있으면 그것을 쓴다. 새로 만들기 전 확인.
 - `DsInput`·`DsCheckbox` 등 cva 기반 컴포넌트의 인스턴스별 클래스 오버라이드는 후행 important (`px-3!`). 루트 CLAUDE.md "Tailwind v4 + cva" 참조.
 - 행 내부 absolute 드롭다운(케이스 상태 등)은 `createPortal` + `fixed` + 양쪽 ref outside-click. 그렇지 않으면 행 `overflow-hidden` 과 스크롤 컨테이너에 잘린다 (#134 회귀).
+- 화면 리뉴얼·신규 화면의 완료 조건에 역할·이름 점검을 넣는다 (#386). 콤보박스·아이콘 버튼·검색 입력에 접근 가능한 이름, 모달·패널에 `role="dialog"` + 제목 연결, 클릭 가능한 행은 `button`(선택형은 `role="checkbox"` + `aria-checked`), `main` 은 `MainContainer` 하나만, 화면에 내부 UUID 노출 금지. E2E 는 `getByRole(역할, { name })` 으로 찾을 수 있어야 한다.
 
 ## 서버 라우트 (`app/api/**`)
 

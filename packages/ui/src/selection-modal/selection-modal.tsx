@@ -1,6 +1,6 @@
 'use client';
 
-import React, { type ReactNode, createContext, useContext } from 'react';
+import React, { type ReactNode, createContext, useContext, useId } from 'react';
 
 import { cn } from '@testea/util';
 import { ListChecks, type LucideIcon, Search, X } from 'lucide-react';
@@ -14,6 +14,7 @@ import { LoadingSpinner } from '../loading-spinner';
 type SelectionModalContextValue = {
   onClose: () => void;
   isPending: boolean;
+  titleId: string;
 };
 
 const SelectionModalContext = createContext<SelectionModalContextValue | null>(null);
@@ -33,24 +34,33 @@ interface SelectionModalRootProps {
   className?: string;
 }
 
-const Root = ({ children, onClose, isPending = false, className }: SelectionModalRootProps) => (
-  <SelectionModalContext.Provider value={{ onClose, isPending }}>
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
-    >
-      <section
-        className={cn(
-          'bg-bg-1 rounded-4 relative flex max-h-[80vh] w-full max-w-[600px] flex-col overflow-hidden shadow-xl',
-          className
-        )}
-        onClick={(e) => e.stopPropagation()}
+const Root = ({ children, onClose, isPending = false, className }: SelectionModalRootProps) => {
+  const titleId = useId();
+  return (
+    <SelectionModalContext.Provider value={{ onClose, isPending, titleId }}>
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        onClick={onClose}
       >
-        {children}
-      </section>
-    </div>
-  </SelectionModalContext.Provider>
-);
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className={cn(
+            'bg-bg-1 rounded-4 relative flex max-h-[80vh] w-full max-w-[600px] flex-col overflow-hidden shadow-xl',
+            className
+          )}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && !isPending) onClose();
+          }}
+        >
+          {children}
+        </section>
+      </div>
+    </SelectionModalContext.Provider>
+  );
+};
 
 // ─── Loading ───────────────────────────────────────────────
 
@@ -83,7 +93,7 @@ interface SelectionModalHeaderProps {
 }
 
 const Header = ({ title, subtitle, className }: SelectionModalHeaderProps) => {
-  const { onClose } = useSelectionModal();
+  const { onClose, titleId } = useSelectionModal();
   return (
     <header
       className={cn(
@@ -92,11 +102,13 @@ const Header = ({ title, subtitle, className }: SelectionModalHeaderProps) => {
       )}
     >
       <div>
-        <h2 className="text-text-1 text-lg font-bold">{title}</h2>
+        <h2 id={titleId} className="text-text-1 text-lg font-bold">
+          {title}
+        </h2>
         {subtitle && <p className="text-text-3 mt-1 text-sm">{subtitle}</p>}
       </div>
-      <DSButton variant="ghost" size="small" onClick={onClose} className="p-2">
-        <X className="h-5 w-5" />
+      <DSButton variant="ghost" size="small" onClick={onClose} className="p-2" aria-label="닫기">
+        <X className="h-5 w-5" aria-hidden="true" />
       </DSButton>
     </header>
   );
@@ -114,9 +126,10 @@ interface SelectionModalSearchProps {
 const SearchBar = ({ value, onChange, placeholder, className }: SelectionModalSearchProps) => (
   <div className={cn('border-line-2 border-b px-6 py-3', className)}>
     <div className="bg-bg-2 border-line-2 flex items-center gap-2 rounded-lg border px-3 py-2">
-      <Search className="text-text-3 h-4 w-4" />
+      <Search className="text-text-3 h-4 w-4" aria-hidden="true" />
       <input
-        type="text"
+        type="search"
+        aria-label={placeholder ?? '검색'}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -178,9 +191,10 @@ const SelectAll = ({
     <DsCheckbox
       checked={checked}
       onCheckedChange={onCheckedChange}
+      aria-label="전체 선택"
       className="border-line-2 bg-bg-3 h-5 w-5"
     />
-    <span className="text-text-2 text-sm">
+    <span className="text-text-2 text-sm" aria-hidden="true">
       전체 선택 ({selectedCount}/{totalCount})
     </span>
   </div>
@@ -206,18 +220,32 @@ interface SelectionModalItemProps {
   className?: string;
 }
 
-const Item = ({ checked, onToggle, children, className }: SelectionModalItemProps) => (
-  <div
-    onClick={onToggle}
-    className={cn(
-      'hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors',
-      className
-    )}
-  >
-    <DsCheckbox checked={checked} className="border-line-2 bg-bg-3 h-5 w-5 shrink-0" />
-    <div className="min-w-0 flex-1">{children}</div>
-  </div>
-);
+const Item = ({ checked, onToggle, children, className }: SelectionModalItemProps) => {
+  const labelId = useId();
+  return (
+    <div
+      onClick={onToggle}
+      className={cn(
+        'hover:bg-bg-2 flex cursor-pointer items-center gap-3 px-6 py-3 transition-colors',
+        className
+      )}
+    >
+      {/* 행 클릭과 체크박스 클릭이 두 번 토글하지 않도록 체크박스 클릭은 행으로 올리지 않는다.
+          DsCheckbox 에 onClick 을 넘기면 내부 토글 핸들러를 덮어쓰므로 감싸는 요소에서 막는다. */}
+      <span className="flex shrink-0" onClick={(e) => e.stopPropagation()}>
+        <DsCheckbox
+          checked={checked}
+          onCheckedChange={onToggle}
+          aria-labelledby={labelId}
+          className="border-line-2 bg-bg-3 h-5 w-5 shrink-0"
+        />
+      </span>
+      <div id={labelId} className="min-w-0 flex-1">
+        {children}
+      </div>
+    </div>
+  );
+};
 
 // ─── Footer ────────────────────────────────────────────────
 

@@ -1,5 +1,6 @@
 export type {
   FetchedTestRun,
+  RunComparison,
   TestCaseRunDetail,
   SourceInfo,
   TestRunDetail,
@@ -16,4 +17,6 @@ export {
   bulkUpdateTestCaseRunStatus,
   testRunsQueryOptions,
   testRunByIdQueryOptions,
+  runComparisonQueryOptions,
+  getRunComparison,
 } from './api';

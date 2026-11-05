@@ -2,6 +2,8 @@ import { hasLocale } from 'next-intl';
 import { getRequestConfig } from 'next-intl/server';
 import { cookies } from 'next/headers';
 
+import { APP_TIME_ZONE } from '@testea/util';
+
 import { LOCALE_COOKIE, routing } from './routing';
 
 /**
@@ -22,6 +24,8 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
+    // 서버(UTC)와 브라우저 시간대가 달라도 같은 시각을 그리도록 서비스 시간대로 고정한다 (#416).
+    timeZone: APP_TIME_ZONE,
     messages: (await import(`./messages/${locale}.json`)).default,
   };
 });

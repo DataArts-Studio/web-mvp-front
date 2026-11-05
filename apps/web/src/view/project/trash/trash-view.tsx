@@ -68,8 +68,9 @@ export const TrashView = () => {
     restore.mutate(
       { targetType: item.type, targetId: item.id },
       {
-        onSuccess: () => {
-          toast.success(`${TYPE_CONFIG[item.type].label}이(가) 복원되었습니다.`);
+        onSuccess: (result) => {
+          // 스위트가 삭제돼 미분류로 복원한 경우처럼 서버가 알려 주는 안내가 있으면 그대로 보여 준다.
+          toast.success(result.message ?? `${TYPE_CONFIG[item.type].label}이(가) 복원되었습니다.`);
           setPendingAction(null);
         },
         onError: (error) => {

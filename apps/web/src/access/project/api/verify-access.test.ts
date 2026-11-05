@@ -1,3 +1,4 @@
+import { resetRateLimitMock } from '@/shared/test/__mocks__/rate-limit';
 import { getDatabase, projects } from '@testea/db';
 import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
@@ -15,6 +16,7 @@ vi.mock('@testea/db', async (original) => ({
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
+vi.mock('@/shared/lib/rate-limit', () => import('@/shared/test/__mocks__/rate-limit'));
 vi.mock('@/shared/lib/turnstile', () => ({ verifyTurnstileToken: vi.fn(async () => true) }));
 vi.mock('../../lib/cookies', () => ({
   setAccessTokenCookie: vi.fn(),
@@ -29,6 +31,7 @@ const where = vi.fn((_condition: SQL) => ({ limit }));
 const select = vi.fn(() => ({ from: () => ({ where }) }));
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRateLimitMock();
   vi.stubEnv('VERCEL_ENV', 'preview');
   vi.mocked(getDatabase).mockReturnValue({ select } as never);
 });
@@ -63,3 +66,30 @@ it.each(['%', '%41', '한글 프로젝트'])(
     expect(setAccessTokenCookie).toHaveBeenCalledWith(name, 'synthetic-token');
   }
 );
+it('5번째로 틀린 순간 잠금과 다시 시도할 시간을 알리고, 이후 시도도 잠금으로 막는다 (#406).', async () => {
+  limit.mockResolvedValue([
+    { id: 'id', name: 'lockout', identifier: 'synthetic-hash', lifecycleStatus: 'ACTIVE' },
+  ]);
+  vi.mocked(verifyPassword).mockResolvedValue(false);
+
+  const results = [];
+  for (let attempt = 0; attempt < 5; attempt++) {
+    results.push(await verifyProjectAccess('lockout', 'wrong-password'));
+  }
+  expect(results.slice(0, 4).map((result) => !result.success && result.remainingAttempts)).toEqual([
+    4, 3, 2, 1,
+  ]);
+  const fifth = results[4];
+  expect(fifth.success).toBe(false);
+  if (!fifth.success) {
+    expect(fifth.remainingAttempts).toBe(0);
+    expect(fifth.error).toContain('잠겼습니다');
+    expect(fifth.error).toContain('15분 후');
+  }
+
+  vi.mocked(verifyPassword).mockResolvedValue(true);
+  const sixth = await verifyProjectAccess('lockout', 'right-password');
+  expect(sixth.success).toBe(false);
+  if (!sixth.success) expect(sixth.error).toContain('잠겼습니다');
+  vi.mocked(verifyPassword).mockResolvedValue(true);
+});

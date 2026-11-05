@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { PROJECT_SEARCH_EVENTS, track } from '@/shared/lib/analytics';
 import { DSButton } from '@testea/ui';
+import { APP_TIME_ZONE } from '@testea/util';
 
 import type { ProjectSearchResult } from '../model/types';
 
@@ -19,6 +20,7 @@ export const ProjectSearchResultItem = ({ project, onNavigate }: ProjectSearchRe
   const [isNavigating, setIsNavigating] = React.useState(false);
 
   const formattedDate = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: APP_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

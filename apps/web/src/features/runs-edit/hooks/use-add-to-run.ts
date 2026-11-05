@@ -17,6 +17,8 @@ export const useAddSuitesToRun = (runId: string) => {
           queryKey: ['testRun', runId],
           refetchType: 'all',
         });
+        // 실행 목록의 진행률·상태도 범위 변경을 반영해야 한다.
+        queryClient.invalidateQueries({ queryKey: ['testRuns'] });
       }
     },
   });
@@ -33,6 +35,8 @@ export const useAddMilestonesToRun = (runId: string) => {
           queryKey: ['testRun', runId],
           refetchType: 'all',
         });
+        // 실행 목록의 진행률·상태도 범위 변경을 반영해야 한다.
+        queryClient.invalidateQueries({ queryKey: ['testRuns'] });
       }
     },
   });
@@ -49,6 +53,8 @@ export const useAddCasesToRun = (runId: string) => {
           queryKey: ['testRun', runId],
           refetchType: 'all',
         });
+        // 실행 목록의 진행률·상태도 범위 변경을 반영해야 한다.
+        queryClient.invalidateQueries({ queryKey: ['testRuns'] });
       }
     },
   });

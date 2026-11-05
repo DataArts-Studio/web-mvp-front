@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { ProjectSettingsFormSchema } from '@/entities/project';
 import type { ProjectSettingsForm } from '@/entities/project';
@@ -26,8 +28,19 @@ export const GeneralSettingsSection = ({
   defaultDescription,
   defaultOwnerName,
 }: GeneralSettingsSectionProps) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const updateProject = useUpdateProject();
   const [savedField, setSavedField] = useState<string | null>(null);
+
+  // 이름을 바꾸면 저장 액션이 새 주소로 보낸다 (#403). 도착한 뒤 저장 결과를 알려 준다.
+  const isRenamed = searchParams.get('renamed') === '1';
+  useEffect(() => {
+    if (!isRenamed) return;
+    toast.success('프로젝트 이름이 변경되었습니다.', { id: 'project-renamed' });
+    router.replace(pathname);
+  }, [isRenamed, pathname, router]);
 
   const {
     register,
@@ -48,6 +61,8 @@ export const GeneralSettingsSection = ({
         { projectId, [field]: data[field] },
         {
           onSuccess: (result) => {
+            // 이름을 바꾸면 액션이 새 주소로 이동시키므로 돌려받는 결과가 없을 수 있다.
+            if (!result) return;
             if (result.success) {
               toast.success(result.message ?? '저장되었습니다.');
               setSavedField(field);

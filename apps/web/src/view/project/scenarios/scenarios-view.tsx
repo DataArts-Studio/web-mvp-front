@@ -15,6 +15,7 @@ import { SCENARIO_STATUS_META } from '@/features/scenario-management';
 import { useQuery } from '@tanstack/react-query';
 import { useDisclosure } from '@testea/lib';
 import { DSButton, MainContainer, ProjectErrorFallback, Skeleton } from '@testea/ui';
+import { APP_TIME_ZONE } from '@testea/util';
 import {
   CalendarDays,
   FileText,
@@ -30,7 +31,13 @@ import { NewFeatureModal } from './_components/new-feature-modal';
 const STATUS_ORDER = ['CONFIRMED', 'REVIEW', 'DRAFT'] as const;
 
 const formatDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : '수동';
+  iso
+    ? new Date(iso).toLocaleDateString('ko-KR', {
+        timeZone: APP_TIME_ZONE,
+        month: 'long',
+        day: 'numeric',
+      })
+    : '수동';
 
 export const ScenarioFeaturesView = () => {
   const params = useParams();

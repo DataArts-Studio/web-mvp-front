@@ -22,7 +22,7 @@ const createTestCaseFormSchema = (titleRequiredMessage: string) =>
   z.object({
     projectId: z.string().uuid(),
     testSuiteId: z.string().uuid().nullable().optional(),
-    title: z.string().min(1, titleRequiredMessage),
+    title: z.string().trim().min(1, titleRequiredMessage),
     testType: z.string().optional(),
     tags: z.array(z.string().max(30)).max(10).optional(),
     preCondition: z.string().optional(),
@@ -46,7 +46,7 @@ export const TestCaseDetailForm = ({
   defaultSuiteId,
 }: TestCaseDetailFormProps) => {
   const t = useTranslations('cases');
-  const { mutate } = useCreateCase();
+  const { mutate, isPending, isError } = useCreateCase();
 
   const { data: suitesData } = useQuery({
     ...testSuitesQueryOptions(projectId),
@@ -85,12 +85,14 @@ export const TestCaseDetailForm = ({
       tags: data.tags?.length ? data.tags : undefined,
     };
 
-    // optimistic update로 즉시 반영 → 폼 바로 닫기
-    track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
-    onSuccess?.();
-    onClose();
-
+    // 목록에는 optimistic update 로 즉시 보이지만, 폼은 저장이 끝난 뒤 닫는다.
+    // 실패하면 입력을 그대로 둔 채 재시도할 수 있게 한다.
     mutate(payload, {
+      onSuccess: () => {
+        track(TESTCASE_EVENTS.CREATE_COMPLETE, { project_id: projectId });
+        onSuccess?.();
+        onClose();
+      },
       onError: (error) => {
         track(TESTCASE_EVENTS.CREATE_FAIL, { project_id: projectId });
         toast.error(translateCaseErrors(t, error.message) || t('ui.createFailedFallback'));
@@ -98,7 +100,16 @@ export const TestCaseDetailForm = ({
     });
   });
 
+  // 저장 중에는 배경 클릭·닫기 버튼·Escape 로도 닫지 않는다. 닫히면 폼이 언마운트되어
+  // 실패 알림과 입력 보존이 다시 사라진다 (#371). Escape 핸들러는 마운트 시 한 번 등록되므로
+  // 최신 상태를 ref 로 읽는다.
+  const isPendingRef = useRef(isPending);
+  useEffect(() => {
+    isPendingRef.current = isPending;
+  }, [isPending]);
+
   const handleAbandon = () => {
+    if (isPendingRef.current) return;
     track(TESTCASE_EVENTS.CREATE_ABANDON, { project_id: projectId });
     onClose();
   };
@@ -143,6 +154,12 @@ export const TestCaseDetailForm = ({
     // 마운트/언마운트 시 1회만 (handleAbandon 은 안정적)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 요청 중 제출 버튼이 비활성화되며 포커스가 모달 밖으로 빠진다.
+  // 실패 후 되돌려 놓아야 ESC 닫기와 Tab 포커스 트랩이 다시 동작한다.
+  useEffect(() => {
+    if (isError) dialogRef.current?.focus();
+  }, [isError]);
 
   return (
     <div
@@ -206,11 +223,11 @@ export const TestCaseDetailForm = ({
 
         {/* Actions - 스크롤 영역 밖 */}
         <div className="border-line-2 flex shrink-0 justify-end gap-3 border-t px-6 py-4">
-          <DSButton type="button" variant="ghost" onClick={handleAbandon}>
+          <DSButton type="button" variant="ghost" disabled={isPending} onClick={handleAbandon}>
             {t('ui.cancel')}
           </DSButton>
-          <DSButton type="submit" form="test-case-form" variant="solid">
-            {t('ui.createCase')}
+          <DSButton type="submit" form="test-case-form" variant="solid" disabled={isPending}>
+            {isPending ? t('ui.creatingShort') : t('ui.createCase')}
           </DSButton>
         </div>
       </section>

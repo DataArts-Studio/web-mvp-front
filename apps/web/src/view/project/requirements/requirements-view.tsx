@@ -12,6 +12,7 @@ import { RequirementAnalysisModal } from '@/features/ai-requirement-analysis';
 import { useQuery } from '@tanstack/react-query';
 import { useDisclosure } from '@testea/lib';
 import { DSButton, MainContainer, ProjectErrorFallback, Skeleton } from '@testea/ui';
+import { APP_TIME_ZONE } from '@testea/util';
 import {
   CalendarDays,
   FileSearch,
@@ -30,7 +31,12 @@ const LANGUAGE_LABEL: Record<string, string> = {
 };
 
 const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  new Date(iso).toLocaleDateString('ko-KR', {
+    timeZone: APP_TIME_ZONE,
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
 type RequirementsViewProps = {
   openCreateOnMount?: boolean;
