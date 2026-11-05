@@ -10,6 +10,7 @@ interface RunSummaryBarProps {
     pass: number;
     fail: number;
     blocked: number;
+    na: number;
     untested: number;
     progressPercent: number;
   };
@@ -22,12 +23,14 @@ const Count = ({ label, value, tone }: { label: string; value: number; tone: str
   </span>
 );
 
-/** 실행 진행 띠. 배경 막대가 통과·실패·차단 비율을, 글자가 건수와 통과율을 보여 준다. */
+/** 실행 진행 띠. 배경 막대가 통과·실패·차단·N/A 비율을, 글자가 건수와 통과율을 보여 준다. */
 export const RunSummaryBar = ({ stats }: RunSummaryBarProps) => {
-  const { total, pass, fail, blocked, untested } = stats;
+  const { total, pass, fail, blocked, na, untested } = stats;
   const executed = total - untested;
   const pct = (n: number) => `${total > 0 ? (n / total) * 100 : 0}%`;
-  const passRate = total > 0 ? Math.round((pass / total) * 100) : null;
+  // N/A 는 확인할 수 없는 케이스라 통과율 분모에서 뺀다 (06k).
+  const rateBase = total - na;
+  const passRate = rateBase > 0 ? Math.round((pass / rateBase) * 100) : null;
 
   return (
     <section
@@ -41,6 +44,7 @@ export const RunSummaryBar = ({ stats }: RunSummaryBarProps) => {
           className="bg-result-blocked/[0.09] transition-[width]"
           style={{ width: pct(blocked) }}
         />
+        <div className="bg-white/[0.05] transition-[width]" style={{ width: pct(na) }} />
       </div>
 
       <p className="relative text-[16px] whitespace-nowrap">
@@ -51,12 +55,14 @@ export const RunSummaryBar = ({ stats }: RunSummaryBarProps) => {
         <Count label="통과" value={pass} tone="text-result-pass" />
         <Count label="실패" value={fail} tone="text-result-fail" />
         <Count label="차단" value={blocked} tone="text-result-blocked" />
+        {na > 0 && <Count label="N/A" value={na} tone="text-white/85" />}
         <Count label="남음" value={untested} tone="text-white/75" />
       </p>
       <div className="flex-1" />
       <p className="relative flex items-center gap-1.5 text-[13px] whitespace-nowrap">
         <span className="text-white/45">통과율</span>
         <span className="font-bold text-white/95">{passRate === null ? '-' : `${passRate}%`}</span>
+        {na > 0 && <span className="text-white/40">N/A 제외</span>}
       </p>
     </section>
   );

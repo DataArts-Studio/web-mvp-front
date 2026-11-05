@@ -14,9 +14,11 @@ const weekdayOf = (date: string) => (new Date(`${date}T00:00:00Z`).getUTCDay() +
 
 export const isRunOpen = (run: Pick<ITestRun, 'status'>) => run.status !== 'COMPLETED';
 
-/** 통과율(%). 케이스가 없으면 null. N/A 상태가 생기면 분모에서 뺀다. */
-export const passRateOf = (stats: ITestRun['stats']): number | null =>
-  stats.totalCases > 0 ? Math.round((stats.pass / stats.totalCases) * 100) : null;
+/** 통과율(%). N/A 는 분모에서 뺀다 (06k). 셀 케이스가 없으면 null. */
+export const passRateOf = (stats: ITestRun['stats']): number | null => {
+  const base = stats.totalCases - stats.na;
+  return base > 0 ? Math.round((stats.pass / base) * 100) : null;
+};
 
 /** 같은 출처로 이 실행보다 먼저 만든 실행 중 가장 최근 것. */
 export const findPreviousRun = (run: ITestRun, runs: ITestRun[]): ITestRun | null => {

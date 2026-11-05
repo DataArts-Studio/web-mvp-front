@@ -18,5 +18,6 @@ export const TEST_STATUS_CONFIG: Record<string, { label: string; style: string }
   pass: { label: 'Passed', style: 'text-green-300' },
   fail: { label: 'Failed', style: 'text-red-300' },
   blocked: { label: 'Blocked', style: 'text-amber-300' },
+  na: { label: 'N/A', style: 'text-slate-300' },
   untested: { label: 'Untested', style: 'text-text-3' },
 };

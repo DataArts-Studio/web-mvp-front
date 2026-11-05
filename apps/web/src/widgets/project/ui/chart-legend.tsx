@@ -10,11 +10,12 @@ type ChartLegendProps = {
 };
 
 export const ChartLegend = ({ data, total }: ChartLegendProps) => {
+  // N/A 는 있을 때만 범례에 둔다 (06k).
   const legendItems = STATUS_KEYS.map((key) => ({
     key,
     label: STATUS_LABELS[key],
-    value: data[key],
-  }));
+    value: data[key] ?? 0,
+  })).filter((item) => item.key !== 'na' || item.value > 0);
 
   return (
     <div className="rounded-5 flex basis-[30%] flex-col justify-center gap-5 bg-[rgba(255,255,255,0.02)] p-6 backdrop-blur-[20px]">

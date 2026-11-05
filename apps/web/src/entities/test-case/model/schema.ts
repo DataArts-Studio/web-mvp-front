@@ -1,7 +1,7 @@
 import { LifecycleStatusEnum } from '@/shared/types';
 import { z } from 'zod';
 
-export const TestCaseResultStatusEnum = z.enum(['untested', 'pass', 'fail', 'blocked']);
+export const TestCaseResultStatusEnum = z.enum(['untested', 'pass', 'fail', 'blocked', 'na']);
 
 export const TestCaseDtoSchema = z.object({
   id: z.string().uuid(),

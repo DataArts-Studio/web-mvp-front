@@ -2,13 +2,15 @@
 
 import React from 'react';
 
+import type { RunComparison } from '@/entities/test-run';
 import { type TestCaseRunDetail } from '@/features/runs';
 import { type UseMutationResult } from '@tanstack/react-query';
 import { EmptyState } from '@testea/ui';
 import { APP_TIME_ZONE, cn } from '@testea/util';
 import { ChevronLeft, ChevronRight, ListTodo, Loader2 } from 'lucide-react';
 
-import { RESULT_META, RESULT_ORDER, type TestCaseRunStatus } from './run-detail-constants';
+import { type HistoryTone, summarizeHistory } from './run-complete-model';
+import { NA_HINT, RESULT_META, RESULT_ORDER, type TestCaseRunStatus } from './run-detail-constants';
 
 interface RunCaseDetailPanelProps {
   selectedCase: TestCaseRunDetail | null;
@@ -23,11 +25,21 @@ interface RunCaseDetailPanelProps {
     Error,
     { testCaseRunId: string; status: string; comment: string | null }
   >;
+  /** 최근 결과 흐름과 직전 실행 결과. 불러오기 전이면 줄을 숨긴다 (06k). */
+  comparison?: RunComparison;
 }
+
+const HISTORY_TONE: Record<HistoryTone, string> = {
+  fail: 'text-result-fail',
+  pass: 'text-result-pass',
+  blocked: 'text-result-blocked',
+  neutral: 'text-white/70',
+};
 
 const COMMENT_LABEL: Record<TestCaseRunStatus, string> = {
   fail: '실패 사유',
   blocked: '차단 사유',
+  na: 'N/A 사유',
   pass: '메모',
   untested: '메모',
 };
@@ -35,6 +47,7 @@ const COMMENT_LABEL: Record<TestCaseRunStatus, string> = {
 const COMMENT_PLACEHOLDER: Record<TestCaseRunStatus, string> = {
   fail: '어느 단계에서 무엇이 기대와 달랐는지 적어 주세요',
   blocked: '진행하지 못한 이유를 적어 주세요',
+  na: '확인할 수 없는 조건을 적어 주세요 (예: SSO 미사용 플랜)',
   pass: '남길 내용이 있으면 적어 주세요',
   untested: '남길 내용이 있으면 적어 주세요',
 };
@@ -63,6 +76,7 @@ export const RunCaseDetailPanel = ({
   setComment,
   handleStatusChange,
   updateMutation,
+  comparison,
 }: RunCaseDetailPanelProps) => {
   const currentIndex = filteredCases.findIndex((tc) => tc.id === selectedCaseId);
   const nextUntested = findNextUntested(filteredCases, currentIndex);
@@ -79,6 +93,18 @@ export const RunCaseDetailPanel = ({
       </div>
     );
   }
+
+  const history = comparison?.historyByCase[selectedCase.testCaseId] ?? [];
+  const historySummary = summarizeHistory(history.map((h) => h.status));
+  const previousStatus = comparison?.previous
+    ? comparison.previousByCase[selectedCase.testCaseId]?.status
+    : undefined;
+  const previousText =
+    previousStatus && previousStatus !== 'untested'
+      ? previousStatus === selectedCase.status
+        ? `직전 실행에서도 ${RESULT_META[previousStatus].label}`
+        : `직전 실행 ${RESULT_META[previousStatus].label}`
+      : null;
 
   const commentChanged = comment !== (selectedCase.comment || '');
   const saveComment = () => {
@@ -148,7 +174,19 @@ export const RunCaseDetailPanel = ({
               );
             })}
           </div>
+          <p className="mt-2 text-[11px] text-white/40">{NA_HINT}</p>
         </div>
+
+        {(historySummary || previousText) && (
+          <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
+            {historySummary && (
+              <span className={cn('font-medium', HISTORY_TONE[historySummary.tone])}>
+                {historySummary.text}
+              </span>
+            )}
+            {previousText && <span className="text-white/60">{previousText}</span>}
+          </p>
+        )}
 
         {selectedCase.preCondition && (
           <DetailSection title="사전 조건" content={selectedCase.preCondition} />

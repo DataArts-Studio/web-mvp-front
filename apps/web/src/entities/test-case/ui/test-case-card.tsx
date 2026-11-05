@@ -37,6 +37,12 @@ const STATUS_CONFIG: Record<
     label: 'Blocked',
     badge: 'bg-amber-500/10 text-amber-600',
   },
+  na: {
+    bar: 'bg-slate-400',
+    dot: 'bg-slate-400',
+    label: 'N/A',
+    badge: 'bg-slate-400/10 text-slate-500',
+  },
 };
 
 interface TestCaseCardProps {

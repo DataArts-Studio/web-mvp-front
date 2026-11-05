@@ -4,7 +4,8 @@ import { check, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-o
 import { testCases } from './test-cases';
 import { testRuns } from './test-runs';
 
-export const testCaseRunStatus = ['untested', 'pass', 'fail', 'blocked'] as const;
+/** na: 이 환경이나 조건에서는 확인할 수 없는 케이스(06k). 판정은 끝난 것으로 보고 통과율에서는 뺀다. */
+export const testCaseRunStatus = ['untested', 'pass', 'fail', 'blocked', 'na'] as const;
 export type TestCaseRunStatus = (typeof testCaseRunStatus)[number];
 
 export const testCaseRunSourceType = ['suite', 'milestone', 'adhoc'] as const;
@@ -51,6 +52,11 @@ export const testCaseRuns = pgTable(
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
+    // DB 에 먼저 있던 제약을 스키마로 옮기고 N/A 를 더했다 (0031, 06k).
+    statusCheck: check(
+      'status_check',
+      sql`${t.status} in ('untested', 'pass', 'fail', 'blocked', 'na')`
+    ),
     resultSourceCheck: check(
       'test_case_runs_result_source_check',
       sql`${t.result_source} in ('manual', 'auto')`

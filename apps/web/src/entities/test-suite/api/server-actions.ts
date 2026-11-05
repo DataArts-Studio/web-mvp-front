@@ -531,6 +531,8 @@ export const getTestSuitesWithStats = async ({
         }
         const c = runCaseCountMap.get(r.runId)!;
         const n = Number(r.cnt);
+        // N/A 는 통과율 계산에서 빠진다 (06k).
+        if (r.status === 'na') continue;
         c.total += n;
         if (r.status === 'pass') c.passed += n;
         else if (r.status === 'fail') c.failed += n;

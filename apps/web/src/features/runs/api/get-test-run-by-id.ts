@@ -298,7 +298,8 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
     const pass = testCaseRunDetails.filter((tc) => tc.status === 'pass').length;
     const fail = testCaseRunDetails.filter((tc) => tc.status === 'fail').length;
     const blocked = testCaseRunDetails.filter((tc) => tc.status === 'blocked').length;
-    const completed = pass + fail + blocked;
+    const na = testCaseRunDetails.filter((tc) => tc.status === 'na').length;
+    const completed = pass + fail + blocked + na;
     const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     const result: TestRunDetail = {
@@ -314,7 +315,7 @@ export async function getTestRunById(testRunId: string): Promise<ActionResult<Te
       shareExpiresAt: run.share_expires_at ?? null,
       testCaseRuns: testCaseRunDetails,
       sources,
-      stats: { total, untested, pass, fail, blocked, progressPercent },
+      stats: { total, untested, pass, fail, blocked, na, progressPercent },
     };
 
     return { success: true, data: result };

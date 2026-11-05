@@ -15,6 +15,7 @@ describe('summarizeMilestoneProgress (#418)', () => {
       pass: 1,
       fail: 1,
       blocked: 1,
+      na: 0,
       untested: 1,
       completed: 3,
       progressPercent: 75,
@@ -36,6 +37,19 @@ describe('summarizeMilestoneProgress (#418)', () => {
       total: 0,
       completed: 0,
       progressPercent: 0,
+    });
+  });
+
+  it('N/A 는 판정을 마친 것으로 세어 진행률에 넣는다 (06k).', () => {
+    const statuses = new Map<string, TestCaseResultStatus>([
+      ['a', 'pass'],
+      ['b', 'na'],
+    ]);
+    expect(summarizeMilestoneProgress(['a', 'b', 'c', 'd'], statuses)).toMatchObject({
+      na: 1,
+      untested: 2,
+      completed: 2,
+      progressPercent: 50,
     });
   });
 });

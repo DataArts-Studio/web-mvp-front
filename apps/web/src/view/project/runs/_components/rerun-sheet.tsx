@@ -34,6 +34,7 @@ const TONE: Record<Transition, { edge: string; bar: string; count: string }> = {
     count: 'text-result-blocked',
   },
   untested: { edge: 'bg-white/30', bar: 'bg-white/[0.05]', count: 'text-white/70' },
+  na: { edge: 'bg-white/50', bar: 'bg-white/[0.05]', count: 'text-white/80' },
   recovered: { edge: 'bg-result-pass', bar: 'bg-result-pass/[0.08]', count: 'text-result-pass' },
   stillPass: { edge: 'bg-result-pass', bar: 'bg-result-pass/[0.08]', count: 'text-result-pass' },
 };

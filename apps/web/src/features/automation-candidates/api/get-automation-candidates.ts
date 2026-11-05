@@ -80,7 +80,9 @@ export async function getAutomationCandidates(
         and(
           eq(testCases.project_id, projectId),
           isNull(testCaseRuns.excluded_at),
-          ne(testCaseRuns.status, 'untested')
+          ne(testCaseRuns.status, 'untested'),
+          // 확인할 수 없던 결과(N/A)는 통과율에 넣지 않는다 (06k).
+          ne(testCaseRuns.status, 'na')
         )
       )
       .groupBy(testCaseRuns.test_case_id);

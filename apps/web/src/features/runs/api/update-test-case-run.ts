@@ -7,13 +7,18 @@ import { RUN_NOT_ACTIVE_MESSAGE } from '@/entities/test-run/model/schema';
 import { INVALIDATE, invalidateCache } from '@/shared/lib/cache/tags';
 import { ActionResult } from '@/shared/types';
 import * as Sentry from '@sentry/nextjs';
-import { getDatabase, testCaseRuns, testRuns } from '@testea/db';
+import { getDatabase, testCaseRunStatus, testCaseRuns, testRuns } from '@testea/db';
 import { and, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 
 export async function updateTestCaseRunStatus(
   input: UpdateTestCaseRunInput
 ): Promise<ActionResult<UpdateTestCaseRunResult>> {
   try {
+    // 정해진 결과 값만 저장한다 (06k 에서 N/A 추가).
+    if (!z.enum(testCaseRunStatus).safeParse(input.status).success) {
+      return { success: false, errors: { _general: ['결과 값이 올바르지 않습니다.'] } };
+    }
     const db = getDatabase();
 
     // 접근 권한 확인: testCaseRun -> testRun -> project_id

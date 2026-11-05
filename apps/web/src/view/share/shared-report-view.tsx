@@ -71,6 +71,7 @@ const STATUS_ICON = {
   pass: <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />,
   fail: <XCircle className="h-3.5 w-3.5 text-red-400" />,
   blocked: <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />,
+  na: <Ban className="h-3.5 w-3.5 text-slate-300" />,
   untested: <Circle className="h-3.5 w-3.5 text-slate-400" />,
 } as const;
 
@@ -78,6 +79,7 @@ const STATUS_LABEL = {
   pass: 'Pass',
   fail: 'Fail',
   blocked: 'Blocked',
+  na: 'N/A',
   untested: 'Untested',
 } as const;
 
@@ -85,6 +87,7 @@ const STATUS_DOT = {
   pass: 'bg-green-400',
   fail: 'bg-red-400',
   blocked: 'bg-amber-400',
+  na: 'bg-slate-300',
   untested: 'bg-slate-400',
 } as const;
 
@@ -162,12 +165,14 @@ export const SharedReportView = ({ token }: SharedReportViewProps) => {
     pass: report.stats.pass,
     fail: report.stats.fail,
     blocked: report.stats.blocked,
+    na: report.stats.na,
     untested: report.stats.untested,
   };
   const executiveSummary = buildExecutiveSummary(report.stats);
   const hasIssues = report.stats.fail > 0 || report.stats.blocked > 0;
-  const passRate =
-    report.stats.total > 0 ? Math.round((report.stats.pass / report.stats.total) * 100) : 0;
+  // N/A 는 통과율 분모에서 뺀다 (06k).
+  const rateBase = report.stats.total - report.stats.na;
+  const passRate = rateBase > 0 ? Math.round((report.stats.pass / rateBase) * 100) : 0;
 
   return (
     <div className="bg-bg-1 text-text-1 flex min-h-screen flex-col font-sans">
@@ -297,6 +302,12 @@ export const SharedReportView = ({ token }: SharedReportViewProps) => {
                     style={{ width: `${(report.stats.blocked / report.stats.total) * 100}%` }}
                   />
                 )}
+                {report.stats.na > 0 && (
+                  <div
+                    className="h-full bg-slate-400 transition-all"
+                    style={{ width: `${(report.stats.na / report.stats.total) * 100}%` }}
+                  />
+                )}
               </div>
             </div>
             <span className="text-text-1 w-12 text-right text-sm font-bold tabular-nums">
@@ -305,7 +316,12 @@ export const SharedReportView = ({ token }: SharedReportViewProps) => {
           </div>
 
           {/* Status breakdown grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div
+            className={cn(
+              'grid grid-cols-2 gap-3',
+              report.stats.na > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'
+            )}
+          >
             <StatusMetric status="pass" count={report.stats.pass} total={report.stats.total} />
             <StatusMetric status="fail" count={report.stats.fail} total={report.stats.total} />
             <StatusMetric
@@ -313,6 +329,9 @@ export const SharedReportView = ({ token }: SharedReportViewProps) => {
               count={report.stats.blocked}
               total={report.stats.total}
             />
+            {report.stats.na > 0 && (
+              <StatusMetric status="na" count={report.stats.na} total={report.stats.total} />
+            )}
             <StatusMetric
               status="untested"
               count={report.stats.untested}

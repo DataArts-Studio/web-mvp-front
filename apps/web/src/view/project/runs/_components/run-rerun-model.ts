@@ -16,6 +16,7 @@ const GROUP_ORDER: Transition[] = [
   'stillFail',
   'blocked',
   'untested',
+  'na',
   'recovered',
   'stillPass',
 ];
@@ -26,6 +27,7 @@ export const DEFAULT_RERUN_GROUPS: Transition[] = ['newFail', 'stillFail', 'bloc
 const HINTS: Partial<Record<Transition, string>> = {
   recovered: '고친 게 맞는지 한 번 더 확인할 때',
   untested: '이번 실행에서 보지 못한 케이스',
+  na: '환경이 갖춰졌을 때 다시 확인',
 };
 
 /** 결과 요약과 같은 기준으로 케이스를 묶는다. 빈 묶음은 뺀다. */

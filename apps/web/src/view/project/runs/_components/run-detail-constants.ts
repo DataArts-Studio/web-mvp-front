@@ -3,6 +3,7 @@ import React from 'react';
 import { type TestCaseRunDetail } from '@/features/runs';
 import {
   AlertTriangle,
+  Ban,
   CheckCircle2,
   Circle,
   Clock,
@@ -11,8 +12,8 @@ import {
   XCircle,
 } from 'lucide-react';
 
-export type StatusFilter = 'all' | 'untested' | 'pass' | 'fail' | 'blocked';
-export type TestCaseRunStatus = 'untested' | 'pass' | 'fail' | 'blocked';
+export type StatusFilter = 'all' | 'untested' | 'pass' | 'fail' | 'blocked' | 'na';
+export type TestCaseRunStatus = 'untested' | 'pass' | 'fail' | 'blocked' | 'na';
 
 export interface GroupedCases {
   groupKey: string;
@@ -59,6 +60,13 @@ export const STATUS_CONFIG: Record<
     icon: React.createElement(AlertTriangle, { className: 'h-4 w-4' }),
     shortcut: 'B',
   },
+  na: {
+    label: 'N/A',
+    style: 'text-slate-300',
+    bgStyle: 'bg-slate-400/10 hover:bg-slate-400/20 border-slate-400/30',
+    icon: React.createElement(Ban, { className: 'h-4 w-4' }),
+    shortcut: 'N',
+  },
 };
 
 /** 리뉴얼 v2 결과 표기. 칩·아이콘 대신 색 글자와 행 배경으로 보여 준다. */
@@ -87,6 +95,14 @@ export const RESULT_META: Record<
     active: 'border-result-blocked/80 bg-result-blocked/10 text-result-blocked font-bold',
     shortcut: 'B',
   },
+  // 06k: 이 환경이나 조건에서는 확인할 수 없는 케이스. 판정 색 대신 무채색으로 둔다.
+  na: {
+    label: 'N/A',
+    text: 'text-white/85',
+    rowBg: 'bg-white/[0.035]',
+    active: 'border-white/60 bg-white/[0.08] text-white font-bold',
+    shortcut: 'N',
+  },
   untested: {
     label: '미실행',
     text: 'text-white/45',
@@ -97,7 +113,11 @@ export const RESULT_META: Record<
 };
 
 /** 결과 버튼·일괄 변경 순서 */
-export const RESULT_ORDER: TestCaseRunStatus[] = ['pass', 'fail', 'blocked', 'untested'];
+export const RESULT_ORDER: TestCaseRunStatus[] = ['pass', 'fail', 'blocked', 'na', 'untested'];
+
+/** 결과 버튼 아래 N/A 안내 (06k) */
+export const NA_HINT =
+  'N/A: 이 환경이나 조건에서는 확인할 수 없는 케이스. 통과율 계산에서 빠집니다.';
 
 export const SOURCE_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode }> = {
   SUITE: {

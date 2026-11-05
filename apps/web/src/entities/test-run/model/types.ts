@@ -53,6 +53,8 @@ export interface TestRunDetail {
     pass: number;
     fail: number;
     blocked: number;
+    /** 확인할 수 없어 통과율에서 뺀 케이스 (06k) */
+    na: number;
     progressPercent: number;
   };
 }
@@ -76,6 +78,7 @@ export interface FetchedTestRun {
     pass: number;
     fail: number;
     blocked: number;
+    na: number;
     untested: number;
   };
   /** 결과를 기록한 날(서비스 시간대 'YYYY-MM-DD')별 건수. */
