@@ -6,10 +6,15 @@ import { archiveTestSuite } from '@/entities/test-suite/api/server-actions';
 
 import { ArchiveTargetType } from './types';
 
-export const archiveAction = async (targetType: ArchiveTargetType, targetId: string) => {
+/** 프로젝트는 이름 재확인(confirmName)이 맞아야 보관된다. */
+export const archiveAction = async (
+  targetType: ArchiveTargetType,
+  targetId: string,
+  confirmName = ''
+) => {
   switch (targetType) {
     case 'project':
-      return archiveProject(targetId);
+      return archiveProject(targetId, confirmName);
     case 'milestone':
       return archiveMilestone(targetId);
     case 'case':
