@@ -1,5 +1,6 @@
 // This file configures the initialization of Sentry on the client.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
+import { onFirstInteraction } from '@/shared/lib/defer/on-first-interaction';
 import * as Sentry from '@sentry/nextjs';
 
 const isProduction = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
@@ -36,8 +37,13 @@ Sentry.init({
   enabled: process.env.NODE_ENV !== 'development' && !!dsn,
 });
 
+/** 랜딩(`/`, `/en`, `/ko`). 처음 방문자가 가장 많이 들어오는 화면이라 첫 몇 초를 가볍게 둔다. */
+const LANDING_PATH = /^\/(?:en|ko)?\/?$/;
+/** 랜딩에서 첫 상호작용이 없을 때 Replay 를 로드하기까지 기다리는 시간. */
+const LANDING_REPLAY_FALLBACK_MS = 8000;
+
 // Replay를 lazy load하여 초기 번들 크기 ~200KB 절감
-if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development' && dsn) {
+const loadReplay = () =>
   Sentry.lazyLoadIntegration('replayIntegration')
     .then((replayIntegration) => {
       Sentry.addIntegration(
@@ -52,6 +58,15 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development' && d
     .catch(() => {
       // Replay 로드 실패 시 무시 — 핵심 에러 추적에 영향 없음
     });
+
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development' && dsn) {
+  // 랜딩에서는 Replay 로드(스크립트 실행 약 250ms)를 첫 상호작용 뒤로 미룬다.
+  // 그 전에 난 오류는 Replay 없이 이벤트만 남는다. 다른 화면은 지금처럼 바로 로드한다.
+  if (LANDING_PATH.test(window.location.pathname)) {
+    onFirstInteraction(loadReplay, LANDING_REPLAY_FALLBACK_MS);
+  } else {
+    void loadReplay();
+  }
 }
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
