@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
+import { callLlm } from '@/entities/ai-config/lib/llm-client';
+import { extractJson } from '@/entities/ai-config/lib/llm-json';
 import { AiError } from '@/entities/ai-config/model/ai-error';
 import {
   type AttachmentUsageMeta,
   getMonthlyUsage,
   recordUsageAtomic,
 } from '@/entities/ai-usage/api/server-actions';
-import { callLlm, parseJsonResponse } from '@/features/ai-generate-scenarios/lib/llm-client';
 import {
   SCENARIO_SYSTEM_PROMPT,
   buildScenarioPrompt,
@@ -178,13 +179,13 @@ export async function POST(req: NextRequest) {
       language: input.language,
     });
 
-    const rawResponse = await callLlm(config, SCENARIO_SYSTEM_PROMPT, userPrompt);
+    const llm = await callLlm(config, SCENARIO_SYSTEM_PROMPT, userPrompt);
 
     let result;
     try {
-      result = GenerateScenariosResultSchema.parse(parseJsonResponse(rawResponse));
+      result = GenerateScenariosResultSchema.parse(extractJson(llm.text));
     } catch (error) {
-      throw AiError.responseUnparsable(error);
+      throw llm.truncated ? AiError.responseTruncated(error) : AiError.responseUnparsable(error);
     }
 
     // 한도 검사·기록을 원자적으로 처리(TOCTOU 방지)하고, 채택된 만큼만 잘라 반환한다.

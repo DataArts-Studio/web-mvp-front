@@ -20,6 +20,7 @@ export type AiErrorKind =
   | 'PROVIDER_UNAVAILABLE' // provider 5xx
   | 'PROVIDER_ERROR' // provider 그 외 비-2xx (예상 밖, 3xx 또는 알 수 없는 상태)
   | 'RESPONSE_UNPARSABLE' // LLM 응답이 JSON 으로 해석 불가
+  | 'RESPONSE_TRUNCATED' // 출력 토큰 한도에 걸려 쓸 수 있는 결과가 없음
   | 'ATTACHMENT_UNSUPPORTED_TYPE' // 첨부 파일 형식 미지원 (PDF / Markdown 외)
   | 'ATTACHMENT_TOO_LARGE' // 첨부 파일 크기 초과 (PDF 10MB / MD 1MB)
   | 'ATTACHMENT_EMPTY' // 첨부 파일이 비어있거나 추출 결과가 0자
@@ -89,6 +90,12 @@ const SPECS: Record<AiErrorKind, AiErrorSpec> = {
     httpStatus: 502,
     userMessage: 'AI 응답을 해석할 수 없습니다. 다시 시도해주세요.',
     report: true,
+  },
+  RESPONSE_TRUNCATED: {
+    httpStatus: 502,
+    userMessage: 'AI 응답이 길이 한도에서 잘렸습니다. 설명이나 첨부 범위를 나눠 다시 시도해주세요.',
+    // 입력이 길어서 생기는 정상 분기라 보고하지 않는다.
+    report: false,
   },
   ATTACHMENT_UNSUPPORTED_TYPE: {
     httpStatus: 400,
@@ -166,6 +173,10 @@ export class AiError extends Error {
 
   static responseUnparsable(cause?: unknown): AiError {
     return new AiError('RESPONSE_UNPARSABLE', {}, cause);
+  }
+
+  static responseTruncated(cause?: unknown): AiError {
+    return new AiError('RESPONSE_TRUNCATED', {}, cause);
   }
 
   /** 첨부 파일 형식 미지원 */

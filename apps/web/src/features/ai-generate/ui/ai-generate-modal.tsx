@@ -74,6 +74,7 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
       if (!res.ok) throw new Error(data.error || '생성에 실패했습니다.');
       return {
         cases: data.cases as GeneratedTestCase[],
+        partial: data.partial === true,
         attachment: data.attachment as {
           type: 'pdf' | 'markdown';
           truncated: boolean;
@@ -82,9 +83,15 @@ export const AiGenerateModal = ({ projectId, slug, onClose }: Props) => {
       };
     },
     onMutate: () => setStep('loading'),
-    onSuccess: ({ cases: result, attachment: attachmentMeta }) => {
+    onSuccess: ({ cases: result, partial, attachment: attachmentMeta }) => {
       setCases(result);
       setSelected(new Set(result.map((_, i) => i)));
+      // AI 응답이 길이 한도에서 잘려 앞부분만 받았으면, 다 만든 것처럼 보이지 않게 알린다.
+      if (partial) {
+        toast.warning(
+          `응답이 길어 ${result.length}건까지만 생성됐어요. 필요하면 범위를 나눠 다시 생성해주세요.`
+        );
+      }
       // 응답이 잘림을 알려주면 사용자에게 명시한다. 안 그러면 긴 문서 뒷부분의 요구사항이 누락된 채
       // 생성이 끝난 줄 알게 됨.
       if (attachmentMeta?.truncated) {

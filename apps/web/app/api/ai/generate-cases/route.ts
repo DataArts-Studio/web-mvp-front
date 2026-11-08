@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireProjectAccess } from '@/access/lib/require-access';
 import { getDecryptedApiKey } from '@/entities/ai-config/api/decrypt-api-key';
+import { callLlm } from '@/entities/ai-config/lib/llm-client';
 import { AiError } from '@/entities/ai-config/model/ai-error';
 import {
   GenerateCasesMultipartSchema,
   GenerateCasesSchema,
-  GeneratedTestCaseSchema,
 } from '@/entities/ai-config/model/schema';
 import {
   type AttachmentUsageMeta,
@@ -17,113 +17,19 @@ import {
   type AttachmentExtractResult,
   extractAttachmentText,
 } from '@/features/ai-generate/lib/extract-attachment';
-import { SYSTEM_PROMPT, buildUserPrompt } from '@/features/ai-generate/model/prompts';
+import { parseGeneratedCases } from '@/features/ai-generate/lib/normalize-cases';
+import {
+  MAX_CASES_PER_REQUEST,
+  SYSTEM_PROMPT,
+  buildUserPrompt,
+} from '@/features/ai-generate/model/prompts';
 import * as Sentry from '@sentry/nextjs';
-import { z } from 'zod';
-
-const MAX_CASES_PER_REQUEST = 10;
 
 /**
  * multipart 본문이 PDF 10MB / MD 1MB 한도 + multipart overhead 를 넘으면 formData()
  * 파싱 비용 자체를 피해 사전 거부한다. 클라이언트가 헤더를 위조해도 후속 단계에서 한 번 더 잡힌다.
  */
 const MAX_MULTIPART_BYTES = 12 * 1024 * 1024;
-
-/** LLM 호출 전체 타임아웃. 프로바이더 응답이 지연·중단돼도 라우트가 무한 대기하지 않도록 한다. */
-const LLM_TIMEOUT_MS = 120_000;
-
-async function callOpenAI(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: model || 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 4000,
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw AiError.fromProviderResponse('openai', res.status, text);
-  }
-
-  const data = await res.json();
-  return data.choices[0]?.message?.content || '';
-}
-
-async function callAnthropic(
-  apiKey: string,
-  model: string,
-  systemPrompt: string,
-  userPrompt: string
-) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: model || 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw AiError.fromProviderResponse('anthropic', res.status, text);
-  }
-
-  const data = await res.json();
-  const textBlock = data.content?.find((b: { type: string }) => b.type === 'text');
-  return textBlock?.text || '';
-}
-
-async function callGemini(apiKey: string, model: string, systemPrompt: string, userPrompt: string) {
-  const modelId = model || 'gemini-2.0-flash';
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`,
-    {
-      method: 'POST',
-      signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
-      // 키를 URL 쿼리에 두면 프록시·로그에 남으므로 헤더로 보낸다.
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 4000 },
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw AiError.fromProviderResponse('gemini', res.status, text);
-  }
-
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
-
-function parseJsonResponse(raw: string): unknown[] {
-  // JSON 블록 추출 (```json ... ``` 또는 순수 JSON)
-  const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || raw.match(/(\[[\s\S]*\])/);
-  const jsonStr = jsonMatch?.[1]?.trim() || raw.trim();
-  return JSON.parse(jsonStr);
-}
 
 /**
  * JSON 경로와 multipart 경로를 단일 구조로 수렴시킨다. 첨부 본문 추출은 사용량/설정
@@ -283,30 +189,24 @@ export async function POST(req: NextRequest) {
       language: input.language,
     });
 
-    // LLM 호출
-    let rawResponse: string;
-    if (config.provider === 'openai') {
-      rawResponse = await callOpenAI(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
-    } else if (config.provider === 'gemini') {
-      rawResponse = await callGemini(config.apiKey, config.model || '', SYSTEM_PROMPT, userPrompt);
-    } else {
-      rawResponse = await callAnthropic(
-        config.apiKey,
-        config.model || '',
-        SYSTEM_PROMPT,
-        userPrompt
-      );
-    }
+    const llm = await callLlm(config, SYSTEM_PROMPT, userPrompt);
 
-    // JSON 파싱 + 검증
-    let cases;
+    // 항목 단위로 다듬어 쓰고, 잘린 응답은 완결된 앞부분만 건진다.
+    let parsed;
     try {
-      const rawCases = parseJsonResponse(rawResponse);
-      cases = z.array(GeneratedTestCaseSchema).parse(rawCases);
+      parsed = parseGeneratedCases(llm.text, llm.truncated);
     } catch (error) {
-      // LLM 이 JSON 이 아닌/스키마 불일치 응답을 준 경우, 중앙 핸들러에서 분류한다.
-      throw AiError.responseUnparsable(error);
+      // 한도에 걸려 아무것도 못 건졌으면 입력을 줄이라고 안내하고, 그 외 형식 오류는 보고한다.
+      throw llm.truncated ? AiError.responseTruncated(error) : AiError.responseUnparsable(error);
     }
+    if (parsed.dropped > 0 || parsed.salvaged) {
+      Sentry.addBreadcrumb({
+        category: 'ai.generate-cases',
+        message: 'LLM 응답 일부를 버리거나 잘린 응답에서 건짐',
+        data: { dropped: parsed.dropped, salvaged: parsed.salvaged, provider: config.provider },
+      });
+    }
+    const cases = parsed.cases;
 
     // 1회 최대 건수 제한
     const limitedCases = cases.slice(0, MAX_CASES_PER_REQUEST);
@@ -334,6 +234,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       cases: acceptedCases,
+      // 잘린 응답에서 건졌으면 화면에서 "일부만 생성됐다" 고 알릴 수 있게 함께 내려준다.
+      partial: parsed.salvaged,
       attachment: attachment
         ? {
             type: attachment.type,
