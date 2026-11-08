@@ -6,6 +6,7 @@ import { GridBackground } from '@/shared/layout';
 import { GlobalHeader } from '@/widgets/global-header';
 
 import { LandingFaq } from './landing-faq';
+import { LandingFlow } from './landing-flow';
 import { LandingFooter } from './landing-footer';
 import { LandingHero } from './landing-hero';
 import { LandingRun } from './landing-run';
@@ -40,6 +41,7 @@ export const LendingView = async () => {
 
       <main aria-label={t('mainAria')} className="flex w-full flex-col">
         <LandingHero />
+        <LandingFlow />
         <LandingRun />
         <LandingFaq />
       </main>

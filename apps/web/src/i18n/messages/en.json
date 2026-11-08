@@ -107,6 +107,85 @@
       "tryIt": "See it for yourself",
       "scrollCue": "Scroll to check each case, starting with TC-001"
     },
+    "flow": {
+      "sectionAria": "How testea works",
+      "eyebrow": "HOW IT WORKS",
+      "title": "Your first test run in four steps",
+      "subtitle": "No sign-up, no install. Create a project and get started.",
+      "tablistAria": "Steps",
+      "stepLabel": "Step {n}",
+      "pause": "Pause autoplay",
+      "play": "Play autoplay",
+      "steps": [
+        {
+          "title": "Create a project",
+          "desc": "Pick a name and a password to get your team's own space. Only people with the password can get in."
+        },
+        {
+          "title": "Write or import cases",
+          "desc": "Upload the spreadsheet or CSV you already use, or paste requirements and get an AI draft."
+        },
+        {
+          "title": "Run your tests",
+          "desc": "Pick suites to start a run, then mark each case as pass, fail or blocked."
+        },
+        {
+          "title": "Share the results",
+          "desc": "Progress and failed cases are gathered for you. Share the results with one link."
+        }
+      ],
+      "mock": {
+        "create": {
+          "window": "New project",
+          "nameLabel": "Project name",
+          "name": "Shop renewal QA",
+          "passwordLabel": "Password",
+          "bot": "Verified you're human",
+          "submit": "Create project",
+          "done": "Project created",
+          "url": "gettestea.com/projects/shop-renewal"
+        },
+        "cases": {
+          "window": "Test cases",
+          "file": "signup_cases.csv",
+          "imported": "{count} imported",
+          "ai": "{count} AI drafts",
+          "rows": [
+            ["TC-001", "Sign up with email", "Account"],
+            ["TC-002", "Block duplicate email", "Account"],
+            ["TC-003", "Show password rules", "Account"],
+            ["TC-004", "Require terms consent", "Account"],
+            ["TC-005", "Send welcome email", "Notify"]
+          ]
+        },
+        "run": {
+          "window": "RUN #012 · Payment smoke",
+          "counter": "{done}/{total} done",
+          "pass": "Pass",
+          "fail": "Fail",
+          "blocked": "Blocked",
+          "items": [
+            "Card payment approval",
+            "Coupon discount amount",
+            "Partial point payment",
+            "Refund on cancel",
+            "Receipt email"
+          ]
+        },
+        "share": {
+          "window": "Run results",
+          "rate": "Pass rate",
+          "pass": "Pass",
+          "fail": "Fail",
+          "blocked": "Blocked",
+          "failed": "Failed cases",
+          "failedItem": "TC-014 Partial point payment",
+          "copy": "Copy link",
+          "copied": "Link copied",
+          "link": "gettestea.com/share/r/8f3a"
+        }
+      }
+    },
     "cta": {
       "sectionAria": "Get started",
       "buttonAria": "Start creating a free project",
